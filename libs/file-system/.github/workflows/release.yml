@@ -46,20 +46,10 @@ jobs:
           path: ./packages/*.nupkg
       
       - name: Create GitHub Release
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v1
         with:
-          artifacts: "./packages/*.nupkg"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: "Extensions.FileSystem v${{ steps.get_version.outputs.VERSION }}"
-          body: |
-            # Extensions.FileSystem v${{ steps.get_version.outputs.VERSION }}
-            
-            Cross-platform file system operations for .NET applications.
-            
-            ## Packages included in this release:
-            
-            - Ave.Extensions.FileSystem.Abstractions v${{ steps.get_version.outputs.VERSION }}
-            - Ave.Extensions.FileSystem v${{ steps.get_version.outputs.VERSION }}
-          draft: false
-          prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
-          generateReleaseNotes: true
+          name: Extensions.FileSystem ${{ steps.get_version.outputs.VERSION }}
+          files: ./packages/*.nupkg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
