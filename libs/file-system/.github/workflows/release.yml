@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed for GitVersion
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+      
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Restore dependencies
+        run: dotnet restore src/extensions-filesystem.sln
+      
+      - name: Build
+        run: dotnet build src/extensions-filesystem.sln --no-restore --configuration Release /p:Version=${{ steps.get_version.outputs.VERSION }}
+      
+      - name: Test
+        run: dotnet test src/extensions-filesystem.sln --no-build --configuration Release --verbosity normal
+      
+      - name: Pack
+        run: dotnet pack src/extensions-filesystem.sln --no-build --configuration Release /p:Version=${{ steps.get_version.outputs.VERSION }} --output ./packages
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget-packages
+          path: ./packages/*.nupkg
+      
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./packages/*.nupkg
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Push to NuGet
+        run: |
+          dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        # Uncomment when you have a NuGet API key set up in your repository secrets
+        # env:
+        #   NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
