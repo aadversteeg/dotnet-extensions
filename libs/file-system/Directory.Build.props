@@ -31,7 +31,7 @@
   
   <!-- Source Link for improved debugging experience -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
   </ItemGroup>
   
   <!-- Include README in all packages -->
