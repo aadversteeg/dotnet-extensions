@@ -13,7 +13,7 @@ namespace UnitTests.Extensions.FileSystem.FileSystemTests
         public async Task FileExists_WithExistingFile_ReturnsTrue()
         {
             // Arrange
-            var fileSystem = new FileSystem();
+            var fileSystem = new FileSystemService();
             var tempFilePath = Path.GetTempFileName();
             
             try
@@ -38,7 +38,7 @@ namespace UnitTests.Extensions.FileSystem.FileSystemTests
         public async Task FileExists_WithNonExistingFile_ReturnsFalse()
         {
             // Arrange
-            var fileSystem = new FileSystem();
+            var fileSystem = new FileSystemService();
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
@@ -52,7 +52,7 @@ namespace UnitTests.Extensions.FileSystem.FileSystemTests
         public async Task ReadWriteAllText_RoundTrip_Succeeds()
         {
             // Arrange
-            var fileSystem = new FileSystem();
+            var fileSystem = new FileSystemService();
             var tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             var expectedContent = "Hello World!";
             

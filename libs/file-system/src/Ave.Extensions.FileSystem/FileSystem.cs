@@ -10,7 +10,7 @@ namespace Ave.Extensions.FileSystem
     /// <summary>
     /// Default implementation of <see cref="IFileSystem"/> for cross-platform file operations.
     /// </summary>
-    public class FileSystem : IFileSystem
+    public class FileSystemService : IFileSystem
     {
         /// <inheritdoc />
         public Task<bool> FileExistsAsync(string path, CancellationToken cancellationToken = default)

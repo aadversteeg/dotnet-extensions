@@ -6,7 +6,7 @@ Cross-platform filesystem operations for .NET applications running on Windows an
 
 - Cross-platform file system operations
 - Consistent API across Windows and Linux
-- NetStandard 2.0 compatible for maximum compatibility
+- NetStandard 2.1 compatible
 
 ## Packages
 

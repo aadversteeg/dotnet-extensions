@@ -21,7 +21,7 @@ namespace Ave.Extensions.FileSystem
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.TryAddSingleton<IFileSystem, FileSystem>();
+            services.TryAddSingleton<IFileSystem, FileSystemService>();
             
             return services;
         }
