@@ -48,7 +48,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Extensions.FileSystem ${{ steps.get_version.outputs.VERSION }}
+          name: Ave.Extensions.FileSystem ${{ steps.get_version.outputs.VERSION }}
           files: ./packages/*.nupkg
           generate_release_notes: true
         env:
