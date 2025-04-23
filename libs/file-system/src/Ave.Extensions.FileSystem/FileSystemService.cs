@@ -74,5 +74,28 @@ namespace Ave.Extensions.FileSystem
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(Directory.GetDirectories(path).AsEnumerable());
         }
+        
+        /// <inheritdoc />
+        public Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var monitor = new FileSystemMonitor(this);
+            return Task.FromResult<IFileSystemMonitor>(monitor);
+        }
+        
+        /// <summary>
+        /// Normalizes a path for file system operations.
+        /// </summary>
+        /// <param name="path">The path to normalize.</param>
+        /// <returns>The normalized path.</returns>
+        internal string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+            
+            return Path.GetFullPath(path);
+        }
     }
 }

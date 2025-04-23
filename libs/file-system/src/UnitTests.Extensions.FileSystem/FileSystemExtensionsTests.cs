@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using FluentAssertions;
 using Moq;
-// Extension methods are in the implementation package
 
 namespace UnitTests.Extensions.FileSystem
 {

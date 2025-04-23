@@ -49,5 +49,12 @@ namespace Ave.Extensions.FileSystem
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A collection of directory paths.</returns>
         Task<IEnumerable<string>> GetDirectoriesAsync(string path, CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Creates a file system monitor configured to use this file system's path handling.
+        /// </summary>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A file system monitor instance.</returns>
+        Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -49,5 +49,12 @@ namespace Ave.Extensions.FileSystem
         {
             return _fileSystem.GetDirectoriesAsync(path, cancellationToken);
         }
+        
+        /// <inheritdoc />
+        public Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default)
+        {
+            // Always delegate to the wrapped file system
+            return _fileSystem.CreateMonitorAsync(cancellationToken);
+        }
     }
 }
