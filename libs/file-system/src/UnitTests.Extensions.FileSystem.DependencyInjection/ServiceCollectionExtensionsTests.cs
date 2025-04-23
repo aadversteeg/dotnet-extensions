@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.DependencyInjection;
 
-namespace UnitTests.Extensions.FileSystem
+namespace UnitTests.Extensions.FileSystem.DependencyInjection
 {
     public class ServiceCollectionExtensionsTests
     {

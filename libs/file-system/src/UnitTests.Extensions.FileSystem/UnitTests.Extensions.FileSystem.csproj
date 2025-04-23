@@ -30,7 +30,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
     <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.DependencyInjection\Ave.Extensions.FileSystem.DependencyInjection.csproj" />
   </ItemGroup>
 
   <ItemGroup>
