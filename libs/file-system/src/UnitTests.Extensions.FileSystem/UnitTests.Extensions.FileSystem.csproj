@@ -17,6 +17,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Moq" />
     <PackageReference Include="xunit" />
@@ -29,6 +30,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
     <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.FileSystem.DependencyInjection\Ave.Extensions.FileSystem.DependencyInjection.csproj" />
   </ItemGroup>
 
   <ItemGroup>

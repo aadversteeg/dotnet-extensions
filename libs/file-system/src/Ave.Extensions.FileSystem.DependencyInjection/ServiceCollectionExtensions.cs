@@ -1,8 +1,9 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Ave.Extensions.FileSystem;
 
-namespace Ave.Extensions.FileSystem
+namespace Ave.Extensions.FileSystem.DependencyInjection
 {
     /// <summary>
     /// Extension methods for setting up file system services in an <see cref="IServiceCollection" />.
