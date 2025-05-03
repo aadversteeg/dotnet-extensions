@@ -14,7 +14,7 @@
     <Authors>Aad Versteeg</Authors>
     <Company>Versteeg IT Solutions</Company>
     <Copyright>Copyright © Versteeg IT Solutions $([System.DateTime]::Now.Year)</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/aadversteeg/extensions-filesystem</PackageProjectUrl>
     <RepositoryUrl>https://github.com/aadversteeg/extensions-filesystem</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -34,8 +34,9 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
   </ItemGroup>
   
-  <!-- Include README in all packages -->
+  <!-- Include README and LICENSE in all packages -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" Condition="Exists('$(MSBuildThisFileDirectory)README.md')"/>
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" Visible="false"/>
   </ItemGroup>
 </Project>
