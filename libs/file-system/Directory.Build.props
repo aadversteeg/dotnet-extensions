@@ -11,12 +11,12 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     
     <!-- Package information -->
-    <Authors>Your Name/Company</Authors>
-    <Company>Your Company</Company>
-    <Copyright>Copyright © Your Company $([System.DateTime]::Now.Year)</Copyright>
+    <Authors>Aad Versteeg</Authors>
+    <Company>Versteeg IT Solutions</Company>
+    <Copyright>Copyright © Versteeg IT Solutions $([System.DateTime]::Now.Year)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/yourusername/extensions.filesystem</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/yourusername/extensions.filesystem</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/aadversteeg/extensions-filesystem</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/aadversteeg/extensions-filesystem</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
