@@ -1,6 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.Functional;
 using FluentAssertions;
 using Moq;
 
@@ -26,7 +28,9 @@ namespace UnitTests.Extensions.FileSystem
                 readOnlyFileSystem.GetType().GetMethod("WriteAllTextAsync") != null ||
                 readOnlyFileSystem.GetType().GetMethod("DeleteFileAsync") != null ||
                 readOnlyFileSystem.GetType().GetMethod("CreateDirectoryAsync") != null ||
-                readOnlyFileSystem.GetType().GetMethod("DeleteDirectoryAsync") != null;
+                readOnlyFileSystem.GetType().GetMethod("DeleteDirectoryAsync") != null ||
+                readOnlyFileSystem.GetType().GetMethod("OpenWriteAsync") != null ||
+                readOnlyFileSystem.GetType().GetMethod("OpenAsync") != null;
                 
             hasWriteOperations.Should().BeFalse();
         }
@@ -35,17 +39,19 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSE002()
         {
             // Arrange
+            var expectedResult = Result<bool, FileSystemError>.Success(true);
             var mockFileSystem = new Mock<Ave.Extensions.FileSystem.IFileSystem>();
             mockFileSystem.Setup(fs => fs.FileExistsAsync("test.txt", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
+                .ReturnsAsync(expectedResult);
             
             var readOnlyFileSystem = mockFileSystem.Object.AsReadOnly();
             
             // Act
-            var exists = await readOnlyFileSystem.FileExistsAsync("test.txt");
+            var result = await readOnlyFileSystem.FileExistsAsync("test.txt");
             
             // Assert
-            exists.Should().BeTrue();
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeTrue();
             mockFileSystem.Verify(fs => fs.FileExistsAsync("test.txt", It.IsAny<CancellationToken>()), Times.Once);
         }
         

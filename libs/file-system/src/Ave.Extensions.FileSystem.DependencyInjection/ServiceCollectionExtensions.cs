@@ -16,13 +16,54 @@ namespace Ave.Extensions.FileSystem.DependencyInjection
         /// <returns>The same service collection so that multiple calls can be chained.</returns>
         public static IServiceCollection AddFileSystem(this IServiceCollection services)
         {
+            return services.AddFileSystem(null);
+        }
+
+        /// <summary>
+        /// Adds the default implementation of <see cref="IFileSystem"/> to the specified <see cref="IServiceCollection" /> with configuration.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <param name="configure">An optional action to configure the file system options.</param>
+        /// <returns>The same service collection so that multiple calls can be chained.</returns>
+        public static IServiceCollection AddFileSystem(
+            this IServiceCollection services, 
+            Action<FileSystemOptions>? configure = null)
+        {
             if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.TryAddSingleton<IFileSystem, FileSystemService>();
+            var options = new FileSystemOptions();
+            configure?.Invoke(options);
+
+            // Register core file system services
+            services.TryAddScoped<IFileSystem, FileSystemService>();
             
+            // Register IReadOnlyFileSystem as a wrapper around IFileSystem
+            if (options.RegisterReadOnlyWrapper)
+            {
+                services.TryAddScoped<IReadOnlyFileSystem>(sp => sp.GetRequiredService<IFileSystem>());
+            }
+
+            // Register path utilities
+            if (options.RegisterPathUtilities)
+            {
+                services.TryAddSingleton<IPathUtilities, PathUtilities>();
+            }
+
+            // Register file system visitor
+            if (options.RegisterVisitor)
+            {
+                services.TryAddScoped<IFileSystemVisitor, FileSystemVisitor>();
+            }
+
+            // Register monitoring if enabled
+            if (options.EnableMonitoring)
+            {
+                services.TryAddSingleton<IFileSystemMonitor, FileSystemMonitor>();
+            }
+
             return services;
         }
         
@@ -39,14 +80,46 @@ namespace Ave.Extensions.FileSystem.DependencyInjection
             }
 
             // Ensure the file system is registered
-            services.AddFileSystem();
+            services.AddFileSystem(options => options.EnableMonitoring = true);
             
-            // Register factory for IFileSystemMonitor
-            services.TryAddTransient<IFileSystemMonitor>(sp =>
+            return services;
+        }
+
+        /// <summary>
+        /// Adds file system visitor capabilities to the specified <see cref="IServiceCollection" />.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <returns>The same service collection so that multiple calls can be chained.</returns>
+        public static IServiceCollection AddFileSystemVisitor(this IServiceCollection services)
+        {
+            if (services == null)
             {
-                var fileSystem = sp.GetRequiredService<IFileSystem>();
-                return fileSystem.CreateMonitorAsync().GetAwaiter().GetResult();
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            // Ensure the file system is registered with visitor support
+            services.AddFileSystem(options => 
+            {
+                options.RegisterVisitor = true;
+                options.RegisterPathUtilities = true;
             });
+            
+            return services;
+        }
+
+        /// <summary>
+        /// Adds path utilities to the specified <see cref="IServiceCollection" />.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <returns>The same service collection so that multiple calls can be chained.</returns>
+        public static IServiceCollection AddPathUtilities(this IServiceCollection services)
+        {
+            if (services == null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            services.TryAddSingleton<IPathUtilities, PathUtilities>();
             
             return services;
         }

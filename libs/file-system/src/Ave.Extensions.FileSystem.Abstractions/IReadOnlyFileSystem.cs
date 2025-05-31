@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem
 {
@@ -14,41 +17,82 @@ namespace Ave.Extensions.FileSystem
         /// </summary>
         /// <param name="path">The file path to check.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>True if the file exists; otherwise, false.</returns>
-        Task<bool> FileExistsAsync(string path, CancellationToken cancellationToken = default);
+        /// <returns>A result indicating whether the file exists or an error occurred.</returns>
+        Task<Result<bool, FileSystemError>> FileExistsAsync(string path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Determines whether the specified directory exists.
         /// </summary>
         /// <param name="path">The directory path to check.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>True if the directory exists; otherwise, false.</returns>
-        Task<bool> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default);
+        /// <returns>A result indicating whether the directory exists or an error occurred.</returns>
+        Task<Result<bool, FileSystemError>> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads all text from a file.
         /// </summary>
         /// <param name="path">The file path to read from.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A string containing all text from the file.</returns>
-        Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default);
+        /// <returns>A result containing the file content or an error.</returns>
+        Task<Result<string, FileSystemError>> ReadAllTextAsync(string path, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Opens a file for reading.
+        /// </summary>
+        /// <param name="path">The file path to open.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the file stream or an error.</returns>
+        Task<Result<Stream, FileSystemError>> OpenReadAsync(string path, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets metadata for a file.
+        /// </summary>
+        /// <param name="path">The file path to get metadata for.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the file metadata or an error.</returns>
+        Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(string path, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets metadata for a directory.
+        /// </summary>
+        /// <param name="path">The directory path to get metadata for.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the directory metadata or an error.</returns>
+        Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(string path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a list of files in the specified directory.
         /// </summary>
         /// <param name="path">The directory path to enumerate.</param>
         /// <param name="searchPattern">The search string to match against files.</param>
+        /// <param name="searchOption">Specifies whether to search subdirectories.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A collection of file paths.</returns>
-        Task<IEnumerable<string>> GetFilesAsync(string path, string searchPattern = "*", CancellationToken cancellationToken = default);
+        /// <returns>A result containing the file paths or an error.</returns>
+        Task<Result<string[], FileSystemError>> GetFilesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a list of directories in the specified directory.
         /// </summary>
         /// <param name="path">The directory path to enumerate.</param>
+        /// <param name="searchPattern">The search string to match against directories.</param>
+        /// <param name="searchOption">Specifies whether to search subdirectories.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A collection of directory paths.</returns>
-        Task<IEnumerable<string>> GetDirectoriesAsync(string path, CancellationToken cancellationToken = default);
+        /// <returns>A result containing the directory paths or an error.</returns>
+        Task<Result<string[], FileSystemError>> GetDirectoriesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Enumerates file system entries asynchronously.
+        /// </summary>
+        /// <param name="path">The directory path to enumerate.</param>
+        /// <param name="searchPattern">The search pattern to match.</param>
+        /// <param name="options">Options for enumeration.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>An async enumerable of file system entries or errors.</returns>
+        IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
+            string path,
+            string searchPattern = "*",
+            Models.EnumerationOptions? options = null,
+            CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Creates a file system monitor configured to use this file system's path handling.

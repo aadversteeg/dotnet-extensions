@@ -1,40 +1,31 @@
 using System;
+using System.Reactive;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Models;
 
 namespace Ave.Extensions.FileSystem
 {
     /// <summary>
     /// Represents a file system monitoring interface that can watch directories for changes.
     /// </summary>
-    public interface IFileSystemMonitor : IDisposable
+    public interface IFileSystemMonitor
     {
         /// <summary>
-        /// Event that is raised when a file system change is detected.
+        /// Starts monitoring a file system location with the specified options.
         /// </summary>
-        event EventHandler<FileSystemChangeEventArgs> FileChanged;
-        
-        /// <summary>
-        /// Begins watching a directory for changes.
-        /// </summary>
-        /// <param name="path">The directory path to watch.</param>
-        /// <param name="includeSubdirectories">Whether to include subdirectories in the watch.</param>
-        /// <param name="filter">The file filter to apply.</param>
-        /// <param name="notifyFilters">The types of changes to watch for.</param>
+        /// <param name="options">The monitoring options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A monitoring handle that can be used to control the watch.</returns>
-        Task<IMonitoringHandle> WatchDirectoryAsync(
-            string path, 
-            bool includeSubdirectories, 
-            string filter, 
-            FileSystemNotifyFilters notifyFilters, 
+        /// <returns>A monitoring session that can be used to receive changes and control monitoring.</returns>
+        Task<IMonitoringSession> StartMonitoringAsync(
+            MonitoringOptions options,
             CancellationToken cancellationToken = default);
     }
     
     /// <summary>
-    /// Represents a handle to an active file system monitor.
+    /// Represents an active monitoring session for file system changes.
     /// </summary>
-    public interface IMonitoringHandle : IDisposable
+    public interface IMonitoringSession : IDisposable
     {
         /// <summary>
         /// Gets the path being monitored.
@@ -42,7 +33,17 @@ namespace Ave.Extensions.FileSystem
         string Path { get; }
         
         /// <summary>
-        /// Stops the monitoring.
+        /// Gets a value indicating whether the monitoring session is currently active.
+        /// </summary>
+        bool IsActive { get; }
+        
+        /// <summary>
+        /// Gets an observable stream of file system changes.
+        /// </summary>
+        IObservable<FileSystemChangeEventArgs> Changes { get; }
+        
+        /// <summary>
+        /// Stops the monitoring session.
         /// </summary>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task representing the asynchronous operation.</returns>

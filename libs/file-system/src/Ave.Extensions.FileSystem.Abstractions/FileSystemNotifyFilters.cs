@@ -51,7 +51,7 @@ namespace Ave.Extensions.FileSystem
         /// <summary>
         /// The security settings of the file or directory.
         /// </summary>
-        Security = 128,
+        Security = 256,
         
         /// <summary>
         /// All possible monitor filters.

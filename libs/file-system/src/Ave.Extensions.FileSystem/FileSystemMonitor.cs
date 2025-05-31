@@ -1,249 +1,316 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Models;
 
 namespace Ave.Extensions.FileSystem
 {
     /// <summary>
     /// Implementation of <see cref="IFileSystemMonitor"/> that monitors file system changes.
     /// </summary>
-    internal class FileSystemMonitor : IFileSystemMonitor
+    public class FileSystemMonitor : IFileSystemMonitor
     {
-        private readonly IReadOnlyFileSystem _fileSystem;
-        private readonly ConcurrentDictionary<string, FileSystemWatcher> _watchers;
-        private bool _disposed;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FileSystemMonitor"/> class.
-        /// </summary>
-        /// <param name="fileSystem">The file system to use for path normalization.</param>
-        internal FileSystemMonitor(IReadOnlyFileSystem fileSystem)
-        {
-            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-            _watchers = new ConcurrentDictionary<string, FileSystemWatcher>();
-        }
-
         /// <inheritdoc />
-        public event EventHandler<FileSystemChangeEventArgs>? FileChanged;
-
-        /// <inheritdoc />
-        public async Task<IMonitoringHandle> WatchDirectoryAsync(
-            string path, 
-            bool includeSubdirectories, 
-            string filter, 
-            FileSystemNotifyFilters notifyFilters,
+        public Task<IMonitoringSession> StartMonitoringAsync(
+            MonitoringOptions options,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                throw new ArgumentException("Path cannot be null or empty.", nameof(path));
-            }
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
 
-            if (string.IsNullOrWhiteSpace(filter))
-            {
-                filter = "*";
-            }
+            if (string.IsNullOrEmpty(options.Path))
+                throw new ArgumentException("Path cannot be null or empty.", nameof(options));
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Verify directory exists
-            var exists = await _fileSystem.DirectoryExistsAsync(path, cancellationToken);
-            if (!exists)
-            {
-                throw new DirectoryNotFoundException($"Directory not found: {path}");
-            }
-
-            // Normalize path if we have access to the FileSystemService
-            string normalizedPath = path;
-            if (_fileSystem is FileSystemService fileSystemService)
-            {
-                normalizedPath = fileSystemService.NormalizePath(path);
-            }
-            else
-            {
-                normalizedPath = Path.GetFullPath(path);
-            }
-
-            // Create unique ID for this watcher
-            var watcherId = Guid.NewGuid().ToString();
-
-            // Create watcher
-            var watcher = new FileSystemWatcher
-            {
-                Path = normalizedPath,
-                Filter = filter,
-                IncludeSubdirectories = includeSubdirectories,
-                NotifyFilter = ConvertToFileSystemWatcherNotifyFilters(notifyFilters)
-            };
-
-            // Set up event handlers
-            watcher.Created += (s, e) => OnFileSystemChange(s, e, FileSystemChangeType.Created);
-            watcher.Deleted += (s, e) => OnFileSystemChange(s, e, FileSystemChangeType.Deleted);
-            watcher.Changed += (s, e) => OnFileSystemChange(s, e, FileSystemChangeType.Changed);
-            watcher.Renamed += (s, e) => OnFileSystemChange(s, e, FileSystemChangeType.Renamed);
-            watcher.Error += (s, e) => OnFileSystemError(s, e);
-
-            // Store the watcher
-            _watchers.TryAdd(watcherId, watcher);
-
-            // Start watching
-            watcher.EnableRaisingEvents = true;
-
-            // Return handle
-            return new MonitoringHandle(this, watcherId, normalizedPath);
+            var session = new MonitoringSession(options);
+            return Task.FromResult<IMonitoringSession>(session);
         }
+    }
+
+    /// <summary>
+    /// Represents an active monitoring session for file system changes.
+    /// </summary>
+    internal class MonitoringSession : IMonitoringSession
+    {
+        private readonly MonitoringOptions _options;
+        private readonly Subject<FileSystemChangeEventArgs> _changesSubject;
+        private readonly List<FileSystemWatcher> _watchers;
+        private readonly object _lock = new object();
+        private bool _disposed;
+        private bool _isActive;
 
         /// <summary>
-        /// Stops monitoring a directory.
+        /// Initializes a new instance of the <see cref="MonitoringSession"/> class.
         /// </summary>
-        /// <param name="watcherId">The ID of the watcher to stop.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        internal Task StopWatchingAsync(string watcherId, CancellationToken cancellationToken = default)
+        /// <param name="options">The monitoring options.</param>
+        public MonitoringSession(MonitoringOptions options)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (_watchers.TryRemove(watcherId, out var watcher))
-            {
-                watcher.EnableRaisingEvents = false;
-                watcher.Dispose();
-            }
-
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Converts FileSystemNotifyFilters to System.IO.NotifyFilters.
-        /// </summary>
-        private static NotifyFilters ConvertToFileSystemWatcherNotifyFilters(FileSystemNotifyFilters filters)
-        {
-            var result = NotifyFilters.FileName; // Default
-
-            if (filters == FileSystemNotifyFilters.None)
-            {
-                return result;
-            }
-
-            if (filters.HasFlag(FileSystemNotifyFilters.FileName))
-                result |= NotifyFilters.FileName;
-
-            if (filters.HasFlag(FileSystemNotifyFilters.DirectoryName))
-                result |= NotifyFilters.DirectoryName;
-
-            if (filters.HasFlag(FileSystemNotifyFilters.Attributes))
-                result |= NotifyFilters.Attributes;
-
-            if (filters.HasFlag(FileSystemNotifyFilters.Size))
-                result |= NotifyFilters.Size;
-
-            if (filters.HasFlag(FileSystemNotifyFilters.LastWrite))
-                result |= NotifyFilters.LastWrite;
-
-            if (filters.HasFlag(FileSystemNotifyFilters.LastAccess))
-                result |= NotifyFilters.LastAccess;
-
-            if (filters.HasFlag(FileSystemNotifyFilters.CreationTime))
-                result |= NotifyFilters.CreationTime;
-
-            if (filters.HasFlag(FileSystemNotifyFilters.Security))
-                result |= NotifyFilters.Security;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Handles file system change events.
-        /// </summary>
-        private void OnFileSystemChange(object sender, FileSystemEventArgs e, FileSystemChangeType changeType)
-        {
-            FileChanged?.Invoke(this, new FileSystemChangeEventArgs(e.FullPath, changeType));
-        }
-
-        /// <summary>
-        /// Handles file system error events.
-        /// </summary>
-        private void OnFileSystemError(object sender, ErrorEventArgs e)
-        {
-            FileChanged?.Invoke(this, new FileSystemChangeEventArgs(string.Empty, FileSystemChangeType.Error));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _changesSubject = new Subject<FileSystemChangeEventArgs>();
+            _watchers = new List<FileSystemWatcher>();
+            
+            StartMonitoring();
         }
 
         /// <inheritdoc />
-        public void Dispose()
+        public string Path => _options.Path;
+
+        /// <inheritdoc />
+        public bool IsActive
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            get
+            {
+                lock (_lock)
+                {
+                    return _isActive && !_disposed;
+                }
+            }
         }
 
-        /// <summary>
-        /// Disposes the resources used by this instance.
-        /// </summary>
-        /// <param name="disposing">Whether the method is being called from the Dispose method.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
+        /// <inheritdoc />
+        public IObservable<FileSystemChangeEventArgs> Changes => _changesSubject.AsObservable();
 
-            if (disposing)
+        /// <inheritdoc />
+        public Task StopAsync(CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
             {
-                // Stop and dispose all watchers
-                foreach (var watcher in _watchers.Values)
+                if (!_isActive || _disposed)
+                    return Task.CompletedTask;
+
+                _isActive = false;
+                
+                foreach (var watcher in _watchers)
                 {
-                    watcher.EnableRaisingEvents = false;
-                    watcher.Dispose();
+                    try
+                    {
+                        watcher.EnableRaisingEvents = false;
+                        watcher.Dispose();
+                    }
+                    catch
+                    {
+                        // Ignore disposal errors
+                    }
                 }
                 
                 _watchers.Clear();
             }
 
-            _disposed = true;
+            return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Implementation of <see cref="IMonitoringHandle"/>.
-        /// </summary>
-        private class MonitoringHandle : IMonitoringHandle
+        /// <inheritdoc />
+        public void Dispose()
         {
-            private readonly FileSystemMonitor _monitor;
-            private readonly string _watcherId;
-            private bool _disposed;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="MonitoringHandle"/> class.
-            /// </summary>
-            /// <param name="monitor">The monitor that created this handle.</param>
-            /// <param name="watcherId">The ID of the watcher.</param>
-            /// <param name="path">The path being monitored.</param>
-            public MonitoringHandle(FileSystemMonitor monitor, string watcherId, string path)
-            {
-                _monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
-                _watcherId = watcherId ?? throw new ArgumentNullException(nameof(watcherId));
-                Path = path ?? throw new ArgumentNullException(nameof(path));
-            }
-
-            /// <inheritdoc />
-            public string Path { get; }
-
-            /// <inheritdoc />
-            public Task StopAsync(CancellationToken cancellationToken = default)
-            {
-                return _monitor.StopWatchingAsync(_watcherId, cancellationToken);
-            }
-
-            /// <inheritdoc />
-            public void Dispose()
+            lock (_lock)
             {
                 if (_disposed)
-                {
                     return;
+
+                _disposed = true;
+                _isActive = false;
+
+                foreach (var watcher in _watchers)
+                {
+                    try
+                    {
+                        watcher.EnableRaisingEvents = false;
+                        watcher.Dispose();
+                    }
+                    catch
+                    {
+                        // Ignore disposal errors
+                    }
                 }
 
-                _monitor.StopWatchingAsync(_watcherId).GetAwaiter().GetResult();
-                _disposed = true;
+                _watchers.Clear();
+                _changesSubject.OnCompleted();
+                _changesSubject.Dispose();
             }
+        }
+
+        private void StartMonitoring()
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                    return;
+
+                try
+                {
+                    if (!Directory.Exists(_options.Path))
+                    {
+                        _changesSubject.OnError(new DirectoryNotFoundException($"Directory not found: {_options.Path}"));
+                        return;
+                    }
+
+                    // Create watchers for each include pattern
+                    foreach (var pattern in _options.IncludePatterns)
+                    {
+                        var watcher = CreateWatcher(_options.Path, pattern);
+                        if (watcher != null)
+                        {
+                            _watchers.Add(watcher);
+                            watcher.EnableRaisingEvents = true;
+                        }
+                    }
+
+                    _isActive = _watchers.Count > 0;
+                }
+                catch (Exception ex)
+                {
+                    _changesSubject.OnError(ex);
+                }
+            }
+        }
+
+        private FileSystemWatcher? CreateWatcher(string path, string pattern)
+        {
+            try
+            {
+                var watcher = new FileSystemWatcher(path, pattern)
+                {
+                    IncludeSubdirectories = _options.IncludeSubdirectories,
+                    NotifyFilter = (System.IO.NotifyFilters)_options.NotifyFilters,
+                    InternalBufferSize = _options.BufferSize
+                };
+
+                // Subscribe to events
+                watcher.Created += OnFileSystemEvent;
+                watcher.Changed += OnFileSystemEvent;
+                watcher.Deleted += OnFileSystemEvent;
+                watcher.Renamed += OnFileSystemRenamed;
+                watcher.Error += OnError;
+
+                return watcher;
+            }
+            catch (Exception ex)
+            {
+                _changesSubject.OnError(ex);
+                return null;
+            }
+        }
+
+        private void OnFileSystemEvent(object sender, FileSystemEventArgs e)
+        {
+            try
+            {
+                var changeType = e.ChangeType switch
+                {
+                    WatcherChangeTypes.Created => FileSystemChangeType.Created,
+                    WatcherChangeTypes.Changed => FileSystemChangeType.Changed,
+                    WatcherChangeTypes.Deleted => FileSystemChangeType.Deleted,
+                    _ => FileSystemChangeType.Created
+                };
+
+                var eventArgs = new FileSystemChangeEventArgs(e.FullPath, changeType);
+                
+                if (ShouldIncludeChange(eventArgs))
+                {
+                    _changesSubject.OnNext(eventArgs);
+                }
+            }
+            catch (Exception ex)
+            {
+                _changesSubject.OnError(ex);
+            }
+        }
+
+        private void OnFileSystemRenamed(object sender, RenamedEventArgs e)
+        {
+            try
+            {
+                // Emit both delete (old name) and create (new name) events for renames
+                var deleteEvent = new FileSystemChangeEventArgs(e.OldFullPath, FileSystemChangeType.Deleted);
+                var createEvent = new FileSystemChangeEventArgs(e.FullPath, FileSystemChangeType.Created);
+
+                if (ShouldIncludeChange(deleteEvent))
+                {
+                    _changesSubject.OnNext(deleteEvent);
+                }
+
+                if (ShouldIncludeChange(createEvent))
+                {
+                    _changesSubject.OnNext(createEvent);
+                }
+            }
+            catch (Exception ex)
+            {
+                _changesSubject.OnError(ex);
+            }
+        }
+
+        private void OnError(object sender, ErrorEventArgs e)
+        {
+            _changesSubject.OnError(e.GetException());
+        }
+
+        private bool ShouldIncludeChange(FileSystemChangeEventArgs changeArgs)
+        {
+            try
+            {
+                var path = changeArgs.FullPath;
+                var fileName = System.IO.Path.GetFileName(path);
+
+                // Check exclude patterns
+                if (_options.ExcludePatterns.Any(pattern => MatchesPattern(fileName, pattern)))
+                    return false;
+
+                // Check hidden/system file filters
+                if (File.Exists(path))
+                {
+                    var attributes = File.GetAttributes(path);
+                    
+                    if (!_options.IncludeHidden && attributes.HasFlag(FileAttributes.Hidden))
+                        return false;
+                    
+                    if (!_options.IncludeSystem && attributes.HasFlag(FileAttributes.System))
+                        return false;
+                }
+                else if (Directory.Exists(path))
+                {
+                    var attributes = File.GetAttributes(path);
+                    
+                    if (!_options.IncludeHidden && attributes.HasFlag(FileAttributes.Hidden))
+                        return false;
+                    
+                    if (!_options.IncludeSystem && attributes.HasFlag(FileAttributes.System))
+                        return false;
+                }
+
+                // Apply custom filter if provided
+                if (_options.CustomFilter != null && !_options.CustomFilter(changeArgs))
+                    return false;
+
+                return true;
+            }
+            catch
+            {
+                // If we can't determine whether to include the change, include it by default
+                return true;
+            }
+        }
+
+        private static bool MatchesPattern(string fileName, string pattern)
+        {
+            // Simple wildcard matching - could be enhanced with more sophisticated pattern matching
+            if (pattern == "*")
+                return true;
+
+            if (pattern.Contains('*'))
+            {
+                var regexPattern = "^" + pattern.Replace("*", ".*").Replace("?", ".") + "$";
+                return System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern, 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            }
+
+            return string.Equals(fileName, pattern, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
