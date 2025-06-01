@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Ave.Extensions.FileSystem
 {
@@ -175,6 +176,76 @@ namespace Ave.Extensions.FileSystem
             {
                 return false;
             }
+        }
+
+        /// <inheritdoc />
+        public string ToCanonicalPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+            
+            // Normalize separators to forward slashes
+            var normalized = path.Replace('\\', '/');
+            
+            // Handle Windows absolute paths
+            if (normalized.Length >= 2 && normalized[1] == ':')
+            {
+                var driveLetter = char.ToLowerInvariant(normalized[0]);
+                var remainingPath = normalized.Substring(2);
+                normalized = $"/{driveLetter}{remainingPath}";
+            }
+            
+            // Remove duplicate slashes
+            while (normalized.Contains("//"))
+            {
+                normalized = normalized.Replace("//", "/");
+            }
+            
+            return normalized;
+        }
+
+        /// <inheritdoc />
+        public bool IsCanonicalPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return false;
+            
+            // Canonical paths use forward slashes and don't contain backslashes
+            if (path.Contains('\\'))
+                return false;
+            
+            // Canonical paths for absolute Windows paths start with /letter/
+            if (path.Length >= 2 && path[0] == '/' && char.IsLetter(path[1]))
+                return true;
+            
+            // Unix absolute paths start with /
+            if (path.StartsWith('/'))
+                return true;
+            
+            // Relative paths are also considered canonical if they use forward slashes
+            return true;
+        }
+
+        /// <inheritdoc />
+        public string FromCanonicalPath(string canonicalPath)
+        {
+            if (string.IsNullOrEmpty(canonicalPath))
+                return canonicalPath;
+            
+            // On Unix, canonical paths are already correct
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return canonicalPath;
+            
+            // Handle Windows drive letters: /c/path -> C:\path
+            if (canonicalPath.Length >= 3 && canonicalPath[0] == '/' && char.IsLetter(canonicalPath[1]) && canonicalPath[2] == '/')
+            {
+                var driveLetter = char.ToUpperInvariant(canonicalPath[1]);
+                var remainingPath = canonicalPath.Substring(2).Replace('/', '\\');
+                return $"{driveLetter}:{remainingPath}";
+            }
+            
+            // Default: just replace forward slashes with backslashes on Windows
+            return canonicalPath.Replace('/', '\\');
         }
     }
 }

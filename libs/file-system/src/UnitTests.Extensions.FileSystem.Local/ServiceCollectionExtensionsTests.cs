@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.DependencyInjection;
+using Ave.Extensions.FileSystem.Local;
 
-namespace UnitTests.Extensions.FileSystem.DependencyInjection
+namespace UnitTests.Extensions.FileSystem.Local
 {
     public class ServiceCollectionExtensionsTests
     {
@@ -20,7 +20,7 @@ namespace UnitTests.Extensions.FileSystem.DependencyInjection
             
             // Assert
             fileSystem.Should().NotBeNull();
-            fileSystem.Should().BeOfType<FileSystemService>();
+            fileSystem.Should().BeOfType<LocalFileSystem>();
         }
         
         [Fact(DisplayName = "SCE-002: AddFileSystemMonitoring registers IFileSystemMonitor")]
@@ -38,7 +38,7 @@ namespace UnitTests.Extensions.FileSystem.DependencyInjection
             // Assert
             monitor.Should().NotBeNull();
             fileSystem.Should().NotBeNull();
-            fileSystem.Should().BeOfType<FileSystemService>();
+            fileSystem.Should().BeOfType<LocalFileSystem>();
         }
     }
 }

@@ -5,18 +5,19 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 
-namespace UnitTests.Extensions.FileSystem
+namespace UnitTests.Extensions.FileSystem.Local
 {
-    public class FileSystemServiceTests
+    public class LocalFileSystemTests
     {
-        [Fact(DisplayName = "FSS-001: FileExistsAsync returns success with true for existing file")]
-        public async Task FSS001()
+        [Fact(DisplayName = "LFS-001: FileExistsAsync returns success with true for existing file")]
+        public async Task LFS001()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempFilePath = Path.GetTempFileName();
             
             try
@@ -38,11 +39,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
         
-        [Fact(DisplayName = "FSS-002: FileExistsAsync returns success with false for non-existing file")]
-        public async Task FSS002()
+        [Fact(DisplayName = "LFS-002: FileExistsAsync returns success with false for non-existing file")]
+        public async Task LFS002()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
@@ -53,11 +54,11 @@ namespace UnitTests.Extensions.FileSystem
             result.Value.Should().BeFalse();
         }
 
-        [Fact(DisplayName = "FSS-003: FileExistsAsync returns failure for invalid path")]
-        public async Task FSS003()
+        [Fact(DisplayName = "LFS-003: FileExistsAsync returns failure for invalid path")]
+        public async Task LFS003()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var invalidPath = "";
             
             // Act
@@ -68,11 +69,11 @@ namespace UnitTests.Extensions.FileSystem
             result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
         }
         
-        [Fact(DisplayName = "FSS-004: DirectoryExistsAsync returns success with true for existing directory")]
-        public async Task FSS004()
+        [Fact(DisplayName = "LFS-004: DirectoryExistsAsync returns success with true for existing directory")]
+        public async Task LFS004()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempDir = Path.Combine(Path.GetTempPath(), "FileSystemTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             
@@ -95,11 +96,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-005: DirectoryExistsAsync returns success with false for non-existing directory")]
-        public async Task FSS005()
+        [Fact(DisplayName = "LFS-005: DirectoryExistsAsync returns success with false for non-existing directory")]
+        public async Task LFS005()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
             
             // Act
@@ -110,11 +111,11 @@ namespace UnitTests.Extensions.FileSystem
             result.Value.Should().BeFalse();
         }
         
-        [Fact(DisplayName = "FSS-006: ReadWriteAllText performs round trip successfully")]
-        public async Task FSS006()
+        [Fact(DisplayName = "LFS-006: ReadWriteAllText performs round trip successfully")]
+        public async Task LFS006()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             var expectedContent = "Hello World!";
             
@@ -139,11 +140,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-007: ReadAllTextAsync returns failure for non-existing file")]
-        public async Task FSS007()
+        [Fact(DisplayName = "LFS-007: ReadAllTextAsync returns failure for non-existing file")]
+        public async Task LFS007()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
@@ -154,11 +155,11 @@ namespace UnitTests.Extensions.FileSystem
             result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
         }
         
-        [Fact(DisplayName = "FSS-008: CreateDirectoryAsync creates the directory successfully")]
-        public async Task FSS008()
+        [Fact(DisplayName = "LFS-008: CreateDirectoryAsync creates the directory successfully")]
+        public async Task LFS008()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempDir = Path.Combine(Path.GetTempPath(), "FSTest_" + Guid.NewGuid().ToString("N"));
             
             try
@@ -181,11 +182,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
         
-        [Fact(DisplayName = "FSS-009: GetFilesAsync returns correct file list")]
-        public async Task FSS009()
+        [Fact(DisplayName = "LFS-009: GetFilesAsync returns correct file list")]
+        public async Task LFS009()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempDir = Path.Combine(Path.GetTempPath(), "FSTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             
@@ -216,11 +217,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-010: GetFilesAsync returns failure for non-existing directory")]
-        public async Task FSS010()
+        [Fact(DisplayName = "LFS-010: GetFilesAsync returns failure for non-existing directory")]
+        public async Task LFS010()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
             
             // Act
@@ -231,11 +232,11 @@ namespace UnitTests.Extensions.FileSystem
             result.Error.Type.Should().Be(FileSystemErrorType.DirectoryNotFound);
         }
 
-        [Fact(DisplayName = "FSS-011: GetDirectoriesAsync returns correct directory list")]
-        public async Task FSS011()
+        [Fact(DisplayName = "LFS-011: GetDirectoriesAsync returns correct directory list")]
+        public async Task LFS011()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempDir = Path.Combine(Path.GetTempPath(), "FSTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             
@@ -265,11 +266,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-012: GetFileMetadataAsync returns correct metadata")]
-        public async Task FSS012()
+        [Fact(DisplayName = "LFS-012: GetFileMetadataAsync returns correct metadata")]
+        public async Task LFS012()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempFilePath = Path.GetTempFileName();
             var content = "Test content for metadata";
             File.WriteAllText(tempFilePath, content);
@@ -296,11 +297,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-013: GetFileMetadataAsync returns failure for non-existing file")]
-        public async Task FSS013()
+        [Fact(DisplayName = "LFS-013: GetFileMetadataAsync returns failure for non-existing file")]
+        public async Task LFS013()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
@@ -311,11 +312,11 @@ namespace UnitTests.Extensions.FileSystem
             result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
         }
 
-        [Fact(DisplayName = "FSS-014: GetDirectoryMetadataAsync returns correct metadata")]
-        public async Task FSS014()
+        [Fact(DisplayName = "LFS-014: GetDirectoryMetadataAsync returns correct metadata")]
+        public async Task LFS014()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempDir = Path.Combine(Path.GetTempPath(), "FSTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             
@@ -339,11 +340,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-015: OpenReadAsync returns valid stream")]
-        public async Task FSS015()
+        [Fact(DisplayName = "LFS-015: OpenReadAsync returns valid stream")]
+        public async Task LFS015()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempFilePath = Path.GetTempFileName();
             var content = "Test content";
             File.WriteAllText(tempFilePath, content);
@@ -373,11 +374,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-016: DeleteFileAsync removes file successfully")]
-        public async Task FSS016()
+        [Fact(DisplayName = "LFS-016: DeleteFileAsync removes file successfully")]
+        public async Task LFS016()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempFilePath = Path.GetTempFileName();
             
             try
@@ -401,11 +402,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-017: DeleteDirectoryAsync removes directory successfully")]
-        public async Task FSS017()
+        [Fact(DisplayName = "LFS-017: DeleteDirectoryAsync removes directory successfully")]
+        public async Task LFS017()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempDir = Path.Combine(Path.GetTempPath(), "FSTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             
@@ -430,11 +431,11 @@ namespace UnitTests.Extensions.FileSystem
             }
         }
 
-        [Fact(DisplayName = "FSS-018: EnumerateFileSystemEntriesAsync yields correct entries")]
-        public async Task FSS018()
+        [Fact(DisplayName = "LFS-018: EnumerateFileSystemEntriesAsync yields correct entries")]
+        public async Task LFS018()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var tempDir = Path.Combine(Path.GetTempPath(), "FSTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             

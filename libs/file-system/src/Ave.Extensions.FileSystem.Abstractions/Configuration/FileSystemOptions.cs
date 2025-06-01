@@ -1,10 +1,33 @@
-namespace Ave.Extensions.FileSystem.DependencyInjection
+using System;
+using System.Collections.Generic;
+
+namespace Ave.Extensions.FileSystem.Configuration
 {
     /// <summary>
     /// Configuration options for file system services.
     /// </summary>
     public class FileSystemOptions
     {
+        /// <summary>
+        /// List of allowed directory paths for security validation
+        /// </summary>
+        public List<string> AllowedPaths { get; set; } = new();
+        
+        /// <summary>
+        /// Enable path security validation
+        /// </summary>
+        public bool EnablePathSecurity { get; set; } = false;
+        
+        /// <summary>
+        /// Use canonical path mapping (Unix-style paths)
+        /// </summary>
+        public bool UseCanonicalPaths { get; set; } = false;
+        
+        /// <summary>
+        /// Custom path mapper type (optional)
+        /// </summary>
+        public Type? PathMapperType { get; set; }
+        
         /// <summary>
         /// Gets or sets a value indicating whether to enable monitoring capabilities.
         /// </summary>

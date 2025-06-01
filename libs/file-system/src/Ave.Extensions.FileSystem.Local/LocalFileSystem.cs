@@ -7,13 +7,23 @@ using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 
-namespace Ave.Extensions.FileSystem
+namespace Ave.Extensions.FileSystem.Local
 {
     /// <summary>
-    /// Default implementation of <see cref="IFileSystem"/> for cross-platform file operations.
+    /// Local filesystem implementation of <see cref="IFileSystem"/> for cross-platform file operations.
     /// </summary>
-    public class FileSystemService : IFileSystem
+    public class LocalFileSystem : IFileSystem
     {
+        private readonly IPathMapper? _pathMapper;
+        
+        /// <summary>
+        /// Initializes a new instance of the LocalFileSystem class.
+        /// </summary>
+        /// <param name="pathMapper">Optional path mapper for canonical path support.</param>
+        public LocalFileSystem(IPathMapper? pathMapper = null)
+        {
+            _pathMapper = pathMapper;
+        }
         /// <inheritdoc />
         public Task<Result<bool, FileSystemError>> FileExistsAsync(string path, CancellationToken cancellationToken = default)
         {
@@ -25,7 +35,8 @@ namespace Ave.Extensions.FileSystem
                     return Task.FromResult(Result<bool, FileSystemError>.Failure(
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
-                var exists = File.Exists(path);
+                var systemPath = GetSystemPath(path);
+                var exists = File.Exists(systemPath);
                 return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
             }
             catch (OperationCanceledException)
@@ -50,7 +61,8 @@ namespace Ave.Extensions.FileSystem
                     return Task.FromResult(Result<bool, FileSystemError>.Failure(
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
-                var exists = Directory.Exists(path);
+                var systemPath = GetSystemPath(path);
+                var exists = Directory.Exists(systemPath);
                 return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
             }
             catch (OperationCanceledException)
@@ -73,7 +85,8 @@ namespace Ave.Extensions.FileSystem
                     return Result<string, FileSystemError>.Failure(
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath));
 
-                var content = await File.ReadAllTextAsync(path, cancellationToken);
+                var systemPath = GetSystemPath(path);
+                var content = await File.ReadAllTextAsync(systemPath, cancellationToken);
                 return Result<string, FileSystemError>.Success(content);
             }, path);
         }
@@ -88,7 +101,8 @@ namespace Ave.Extensions.FileSystem
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var stream = File.OpenRead(path);
+                var systemPath = GetSystemPath(path);
+                var stream = File.OpenRead(systemPath);
                 return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
             }, path);
         }
@@ -104,12 +118,15 @@ namespace Ave.Extensions.FileSystem
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var fileInfo = new FileInfo(path);
+                var systemPath = GetSystemPath(path);
+                var fileInfo = new FileInfo(systemPath);
                 if (!fileInfo.Exists)
                     return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
                         new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
 
                 var metadata = FileMetadata.FromFileInfo(fileInfo);
+                // Map the path back to canonical format if needed
+                metadata.FullPath = MapPathToCanonical(metadata.FullPath, path);
                 return Task.FromResult(Result<FileMetadata, FileSystemError>.Success(metadata));
             }, path);
         }
@@ -125,12 +142,15 @@ namespace Ave.Extensions.FileSystem
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var directoryInfo = new DirectoryInfo(path);
+                var systemPath = GetSystemPath(path);
+                var directoryInfo = new DirectoryInfo(systemPath);
                 if (!directoryInfo.Exists)
                     return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
                         new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
 
                 var metadata = DirectoryMetadata.FromDirectoryInfo(directoryInfo);
+                // Map the path back to canonical format if needed
+                metadata.FullPath = MapPathToCanonical(metadata.FullPath, path);
                 return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Success(metadata));
             }, path);
         }
@@ -146,8 +166,10 @@ namespace Ave.Extensions.FileSystem
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var files = Directory.GetFiles(path, searchPattern, searchOption);
-                return Task.FromResult(Result<string[], FileSystemError>.Success(files));
+                var systemPath = GetSystemPath(path);
+                var files = Directory.GetFiles(systemPath, searchPattern, searchOption);
+                var mappedFiles = MapPathsToCanonical(files, path);
+                return Task.FromResult(Result<string[], FileSystemError>.Success(mappedFiles));
             }, path);
         }
 
@@ -162,8 +184,10 @@ namespace Ave.Extensions.FileSystem
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var directories = Directory.GetDirectories(path, searchPattern, searchOption);
-                return Task.FromResult(Result<string[], FileSystemError>.Success(directories));
+                var systemPath = GetSystemPath(path);
+                var directories = Directory.GetDirectories(systemPath, searchPattern, searchOption);
+                var mappedDirectories = MapPathsToCanonical(directories, path);
+                return Task.FromResult(Result<string[], FileSystemError>.Success(mappedDirectories));
             }, path);
         }
 
@@ -183,7 +207,8 @@ namespace Ave.Extensions.FileSystem
 
             options ??= Models.EnumerationOptions.Default;
 
-            await foreach (var entry in EnumerateEntries(path, searchPattern, options, 0, cancellationToken))
+            var systemPath = GetSystemPath(path);
+            await foreach (var entry in EnumerateEntries(systemPath, searchPattern, options, 0, cancellationToken, path))
             {
                 yield return entry;
             }
@@ -199,7 +224,8 @@ namespace Ave.Extensions.FileSystem
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                Directory.CreateDirectory(path);
+                var systemPath = GetSystemPath(path);
+                Directory.CreateDirectory(systemPath);
                 return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
             }, path);
         }
@@ -216,7 +242,8 @@ namespace Ave.Extensions.FileSystem
                 if (contents == null)
                     contents = string.Empty;
 
-                await File.WriteAllTextAsync(path, contents, cancellationToken);
+                var systemPath = GetSystemPath(path);
+                await File.WriteAllTextAsync(systemPath, contents, cancellationToken);
                 return Result<Unit, FileSystemError>.Success(Unit.Value);
             }, path);
         }
@@ -231,7 +258,8 @@ namespace Ave.Extensions.FileSystem
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var stream = File.OpenWrite(path);
+                var systemPath = GetSystemPath(path);
+                var stream = File.OpenWrite(systemPath);
                 return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
             }, path);
         }
@@ -246,7 +274,8 @@ namespace Ave.Extensions.FileSystem
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var stream = new FileStream(path, mode, access, share);
+                var systemPath = GetSystemPath(path);
+                var stream = new FileStream(systemPath, mode, access, share);
                 return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
             }, path);
         }
@@ -261,7 +290,8 @@ namespace Ave.Extensions.FileSystem
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                File.Delete(path);
+                var systemPath = GetSystemPath(path);
+                File.Delete(systemPath);
                 return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
             }, path);
         }
@@ -276,7 +306,8 @@ namespace Ave.Extensions.FileSystem
                         new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                Directory.Delete(path, recursive);
+                var systemPath = GetSystemPath(path);
+                Directory.Delete(systemPath, recursive);
                 return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
             }, path);
         }
@@ -310,7 +341,8 @@ namespace Ave.Extensions.FileSystem
             string searchPattern,
             Models.EnumerationOptions options,
             int currentDepth,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
+            [EnumeratorCancellation] CancellationToken cancellationToken,
+            string? originalPath = null)
         {
             if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
                 yield break;
@@ -342,6 +374,11 @@ namespace Ave.Extensions.FileSystem
                     continue;
 
                 var entry = FileSystemEntry.FromFileInfo(file);
+                // Map entry path back to canonical format if needed
+                if (originalPath != null)
+                {
+                    entry.Path = MapPathToCanonical(entry.Path, originalPath);
+                }
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
             }
 
@@ -363,17 +400,87 @@ namespace Ave.Extensions.FileSystem
                     continue;
 
                 var entry = FileSystemEntry.FromDirectoryInfo(directory);
+                // Map entry path back to canonical format if needed
+                if (originalPath != null)
+                {
+                    entry.Path = MapPathToCanonical(entry.Path, originalPath);
+                }
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
 
                 // Recurse into subdirectory only if RecurseSubdirectories is enabled
                 if (options.RecurseSubdirectories)
                 {
-                    await foreach (var subEntry in EnumerateEntries(directory.FullName, searchPattern, options, currentDepth + 1, cancellationToken))
+                    await foreach (var subEntry in EnumerateEntries(directory.FullName, searchPattern, options, currentDepth + 1, cancellationToken, originalPath))
                     {
                         yield return subEntry;
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the system path from an input path, applying canonical mapping if available.
+        /// </summary>
+        /// <param name="inputPath">The input path that may be in canonical format.</param>
+        /// <returns>The system path to use for file operations.</returns>
+        private string GetSystemPath(string inputPath)
+        {
+            if (_pathMapper != null && IsCanonicalPath(inputPath))
+            {
+                var result = _pathMapper.MapToSystemPath(inputPath);
+                if (result.IsSuccess)
+                    return result.Value;
+            }
+            
+            // Return original path if no mapping needed or mapping failed
+            return inputPath;
+        }
+        
+        /// <summary>
+        /// Maps an array of system paths back to canonical format if needed.
+        /// </summary>
+        /// <param name="systemPaths">Array of system paths.</param>
+        /// <param name="originalPath">The original input path to determine if mapping is needed.</param>
+        /// <returns>Array of paths in appropriate format.</returns>
+        private string[] MapPathsToCanonical(string[] systemPaths, string originalPath)
+        {
+            if (_pathMapper == null || !IsCanonicalPath(originalPath))
+                return systemPaths;
+            
+            var canonicalPaths = new string[systemPaths.Length];
+            for (int i = 0; i < systemPaths.Length; i++)
+            {
+                var result = _pathMapper.MapToCanonicalPath(systemPaths[i]);
+                canonicalPaths[i] = result.IsSuccess ? result.Value : systemPaths[i];
+            }
+            
+            return canonicalPaths;
+        }
+        
+        /// <summary>
+        /// Maps a system path back to canonical format if needed.
+        /// </summary>
+        /// <param name="systemPath">The system path to map.</param>
+        /// <param name="originalPath">The original input path to determine if mapping is needed.</param>
+        /// <returns>Path in appropriate format.</returns>
+        private string MapPathToCanonical(string systemPath, string originalPath)
+        {
+            if (_pathMapper == null || !IsCanonicalPath(originalPath))
+                return systemPath;
+            
+            var result = _pathMapper.MapToCanonicalPath(systemPath);
+            return result.IsSuccess ? result.Value : systemPath;
+        }
+        
+        /// <summary>
+        /// Determines if a path is in canonical format.
+        /// </summary>
+        /// <param name="path">The path to check.</param>
+        /// <returns>True if the path is canonical.</returns>
+        private static bool IsCanonicalPath(string path)
+        {
+            // Simple check: canonical paths start with / or are drive letters like /c/
+            return path.StartsWith("/") && !path.StartsWith(@"\\");
         }
 
         /// <summary>

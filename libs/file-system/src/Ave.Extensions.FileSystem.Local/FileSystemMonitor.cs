@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
 
-namespace Ave.Extensions.FileSystem
+namespace Ave.Extensions.FileSystem.Local
 {
     /// <summary>
     /// Implementation of <see cref="IFileSystemMonitor"/> that monitors file system changes.

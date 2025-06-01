@@ -6,10 +6,11 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 
-namespace UnitTests.Extensions.FileSystem
+namespace UnitTests.Extensions.FileSystem.Local
 {
     public class FileSystemMonitorTests
     {
@@ -17,7 +18,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM001()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
 
             // Act
             var monitor = await fileSystem.CreateMonitorAsync();
@@ -31,7 +32,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM002()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var monitor = await fileSystem.CreateMonitorAsync();
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
@@ -66,7 +67,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM003()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var monitor = await fileSystem.CreateMonitorAsync();
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
@@ -115,7 +116,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM004()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var monitor = await fileSystem.CreateMonitorAsync();
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
@@ -146,7 +147,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM005()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var monitor = await fileSystem.CreateMonitorAsync();
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
@@ -203,7 +204,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM006()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var monitor = await fileSystem.CreateMonitorAsync();
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
@@ -260,7 +261,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM007()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var monitor = await fileSystem.CreateMonitorAsync();
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
@@ -307,7 +308,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSM008()
         {
             // Arrange
-            var fileSystem = new FileSystemService();
+            var fileSystem = new LocalFileSystem();
             var monitor = await fileSystem.CreateMonitorAsync();
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);

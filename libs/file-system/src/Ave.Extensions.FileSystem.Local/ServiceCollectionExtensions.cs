@@ -1,8 +1,12 @@
 using System;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Ave.Extensions.FileSystem.Configuration;
+using Ave.Extensions.FileSystem.Local.PathMappers;
+using Ave.Extensions.FileSystem.Security;
 
-namespace Ave.Extensions.FileSystem.DependencyInjection
+namespace Ave.Extensions.FileSystem.Local
 {
     /// <summary>
     /// Extension methods for setting up file system services in an <see cref="IServiceCollection" />.
@@ -27,38 +31,40 @@ namespace Ave.Extensions.FileSystem.DependencyInjection
         /// <returns>The same service collection so that multiple calls can be chained.</returns>
         public static IServiceCollection AddFileSystem(
             this IServiceCollection services, 
-            Action<FileSystemOptions>? configure = null)
+            Action<Configuration.FileSystemOptions>? configure = null)
         {
             if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            var options = new FileSystemOptions();
+            var options = new Configuration.FileSystemOptions();
             configure?.Invoke(options);
 
-            // Register core file system services
-            services.TryAddScoped<IFileSystem, FileSystemService>();
-            
-            // Register IReadOnlyFileSystem as a wrapper around IFileSystem
-            if (options.RegisterReadOnlyWrapper)
+            // Register shared utilities first
+            services.AddFileSystemUtilities(configure);
+
+            // Register path mapper based on platform or configuration (local filesystem specific)
+            if (options.UseCanonicalPaths)
             {
-                services.TryAddScoped<IReadOnlyFileSystem>(sp => sp.GetRequiredService<IFileSystem>());
+                if (options.PathMapperType != null)
+                {
+                    services.TryAddSingleton(typeof(IPathMapper), options.PathMapperType);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    services.TryAddSingleton<IPathMapper, WindowsPathMapper>();
+                }
+                else
+                {
+                    services.TryAddSingleton<IPathMapper, UnixPathMapper>();
+                }
             }
 
-            // Register path utilities
-            if (options.RegisterPathUtilities)
-            {
-                services.TryAddSingleton<IPathUtilities, PathUtilities>();
-            }
+            // Register local file system implementation
+            services.TryAddScoped<IFileSystem, LocalFileSystem>();
 
-            // Register file system visitor
-            if (options.RegisterVisitor)
-            {
-                services.TryAddScoped<IFileSystemVisitor, FileSystemVisitor>();
-            }
-
-            // Register monitoring if enabled
+            // Register monitoring if enabled (local filesystem specific)
             if (options.EnableMonitoring)
             {
                 services.TryAddSingleton<IFileSystemMonitor, FileSystemMonitor>();
@@ -85,43 +91,5 @@ namespace Ave.Extensions.FileSystem.DependencyInjection
             return services;
         }
 
-        /// <summary>
-        /// Adds file system visitor capabilities to the specified <see cref="IServiceCollection" />.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <returns>The same service collection so that multiple calls can be chained.</returns>
-        public static IServiceCollection AddFileSystemVisitor(this IServiceCollection services)
-        {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            // Ensure the file system is registered with visitor support
-            services.AddFileSystem(options => 
-            {
-                options.RegisterVisitor = true;
-                options.RegisterPathUtilities = true;
-            });
-            
-            return services;
-        }
-
-        /// <summary>
-        /// Adds path utilities to the specified <see cref="IServiceCollection" />.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <returns>The same service collection so that multiple calls can be chained.</returns>
-        public static IServiceCollection AddPathUtilities(this IServiceCollection services)
-        {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            services.TryAddSingleton<IPathUtilities, PathUtilities>();
-            
-            return services;
-        }
     }
 }
