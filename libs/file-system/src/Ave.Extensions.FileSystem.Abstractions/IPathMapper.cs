@@ -1,30 +1,24 @@
 using Ave.Extensions.Functional;
-using Ave.Extensions.FileSystem.Models;
 
 namespace Ave.Extensions.FileSystem
 {
     /// <summary>
-    /// Maps between canonical (Unix-style) paths and system-native paths
+    /// Provides platform-specific path mapping between canonical paths and system paths.
     /// </summary>
     public interface IPathMapper
     {
         /// <summary>
-        /// Maps a canonical path to the system-native path format
+        /// Maps a canonical path to a system-specific path.
         /// </summary>
-        /// <param name="canonicalPath">Unix-style path (e.g., /d/folder/file.txt)</param>
-        /// <returns>System path (e.g., D:\folder\file.txt on Windows)</returns>
-        Result<string, FileSystemError> MapToSystemPath(string canonicalPath);
+        /// <param name="canonicalPath">The canonical path to map.</param>
+        /// <returns>A result containing the system-specific path or an error.</returns>
+        Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath);
         
         /// <summary>
-        /// Maps a system path back to the canonical format
+        /// Maps a system-specific path to a canonical path.
         /// </summary>
-        /// <param name="systemPath">System-native path</param>
-        /// <returns>Canonical Unix-style path</returns>
-        Result<string, FileSystemError> MapToCanonicalPath(string systemPath);
-        
-        /// <summary>
-        /// Validates if the path format is valid
-        /// </summary>
-        bool IsValidPathFormat(string path);
+        /// <param name="systemPath">The system-specific path to map.</param>
+        /// <returns>A result containing the canonical path or an error.</returns>
+        Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath);
     }
 }

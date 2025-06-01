@@ -11,12 +11,12 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// Gets or sets the full path to the file system entry.
         /// </summary>
-        public string Path { get; set; } = string.Empty;
+        public CanonicalPath Path { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the file system entry.
+        /// Gets the name of the file system entry.
         /// </summary>
-        public string Name { get; set; } = string.Empty;
+        public string Name => Path.GetName();
 
         /// <summary>
         /// Gets or sets a value indicating whether this entry is a directory.
@@ -63,10 +63,13 @@ namespace Ave.Extensions.FileSystem.Models
             if (fileInfo == null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
+            var pathResult = CanonicalPath.Create(fileInfo.FullName.Replace('\\', '/'));
+            if (pathResult.IsFailure)
+                throw new ArgumentException($"Invalid file path: {fileInfo.FullName}", nameof(fileInfo));
+
             return new FileSystemEntry
             {
-                Path = fileInfo.FullName,
-                Name = fileInfo.Name,
+                Path = pathResult.Value,
                 IsDirectory = false,
                 Size = fileInfo.Length,
                 ModifiedUtc = fileInfo.LastWriteTimeUtc,
@@ -84,10 +87,13 @@ namespace Ave.Extensions.FileSystem.Models
             if (directoryInfo == null)
                 throw new ArgumentNullException(nameof(directoryInfo));
 
+            var pathResult = CanonicalPath.Create(directoryInfo.FullName.Replace('\\', '/'));
+            if (pathResult.IsFailure)
+                throw new ArgumentException($"Invalid directory path: {directoryInfo.FullName}", nameof(directoryInfo));
+
             return new FileSystemEntry
             {
-                Path = directoryInfo.FullName,
-                Name = directoryInfo.Name,
+                Path = pathResult.Value,
                 IsDirectory = true,
                 Size = null,
                 ModifiedUtc = directoryInfo.LastWriteTimeUtc,

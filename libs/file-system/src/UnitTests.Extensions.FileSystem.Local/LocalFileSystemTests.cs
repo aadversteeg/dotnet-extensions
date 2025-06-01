@@ -8,6 +8,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
+using UnitTests.Extensions.FileSystem.Local.TestHelpers;
 
 namespace UnitTests.Extensions.FileSystem.Local
 {
@@ -23,7 +24,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.FileExistsAsync(tempFilePath);
+                var result = await fileSystem.FileExistsAsync(tempFilePath.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
@@ -47,7 +48,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
-            var result = await fileSystem.FileExistsAsync(nonExistentPath);
+            var result = await fileSystem.FileExistsAsync(nonExistentPath.ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -55,18 +56,18 @@ namespace UnitTests.Extensions.FileSystem.Local
         }
 
         [Fact(DisplayName = "LFS-003: FileExistsAsync returns failure for invalid path")]
-        public async Task LFS003()
+        public void LFS003()
         {
             // Arrange
-            var fileSystem = new LocalFileSystem();
             var invalidPath = "";
             
             // Act
-            var result = await fileSystem.FileExistsAsync(invalidPath);
+            // For invalid path test, we need to use CanonicalPath.Create and check the failure
+            var canonicalPathResult = CanonicalPath.Create(invalidPath);
             
             // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            canonicalPathResult.IsFailure.Should().BeTrue();
+            canonicalPathResult.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathNullOrEmpty);
         }
         
         [Fact(DisplayName = "LFS-004: DirectoryExistsAsync returns success with true for existing directory")]
@@ -80,7 +81,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.DirectoryExistsAsync(tempDir);
+                var result = await fileSystem.DirectoryExistsAsync(tempDir.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
@@ -104,7 +105,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
             
             // Act
-            var result = await fileSystem.DirectoryExistsAsync(nonExistentPath);
+            var result = await fileSystem.DirectoryExistsAsync(nonExistentPath.ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -122,8 +123,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var writeResult = await fileSystem.WriteAllTextAsync(tempFilePath, expectedContent);
-                var readResult = await fileSystem.ReadAllTextAsync(tempFilePath);
+                var writeResult = await fileSystem.WriteAllTextAsync(tempFilePath.ToCanonicalPath(), expectedContent);
+                var readResult = await fileSystem.ReadAllTextAsync(tempFilePath.ToCanonicalPath());
                 
                 // Assert
                 writeResult.IsSuccess.Should().BeTrue();
@@ -148,7 +149,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
-            var result = await fileSystem.ReadAllTextAsync(nonExistentPath);
+            var result = await fileSystem.ReadAllTextAsync(nonExistentPath.ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -165,7 +166,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.CreateDirectoryAsync(tempDir);
+                var result = await fileSystem.CreateDirectoryAsync(tempDir.ToCanonicalPath());
                 var exists = Directory.Exists(tempDir);
                 
                 // Assert
@@ -199,13 +200,13 @@ namespace UnitTests.Extensions.FileSystem.Local
                 File.WriteAllText(file2, "Content 2");
                 
                 // Act
-                var result = await fileSystem.GetFilesAsync(tempDir);
+                var result = await fileSystem.GetFilesAsync(tempDir.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
                 result.Value.Should().HaveCount(2);
-                result.Value.Should().Contain(file1);
-                result.Value.Should().Contain(file2);
+                result.Value.Should().Contain(file1.ToCanonicalPath());
+                result.Value.Should().Contain(file2.ToCanonicalPath());
             }
             finally
             {
@@ -225,7 +226,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
             
             // Act
-            var result = await fileSystem.GetFilesAsync(nonExistentPath);
+            var result = await fileSystem.GetFilesAsync(nonExistentPath.ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -248,13 +249,13 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.GetDirectoriesAsync(tempDir);
+                var result = await fileSystem.GetDirectoriesAsync(tempDir.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
                 result.Value.Should().HaveCount(2);
-                result.Value.Should().Contain(subDir1);
-                result.Value.Should().Contain(subDir2);
+                result.Value.Should().Contain(subDir1.ToCanonicalPath());
+                result.Value.Should().Contain(subDir2.ToCanonicalPath());
             }
             finally
             {
@@ -278,7 +279,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.GetFileMetadataAsync(tempFilePath);
+                var result = await fileSystem.GetFileMetadataAsync(tempFilePath.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
@@ -305,7 +306,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
-            var result = await fileSystem.GetFileMetadataAsync(nonExistentPath);
+            var result = await fileSystem.GetFileMetadataAsync(nonExistentPath.ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -323,7 +324,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.GetDirectoryMetadataAsync(tempDir);
+                var result = await fileSystem.GetDirectoryMetadataAsync(tempDir.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
@@ -352,7 +353,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.OpenReadAsync(tempFilePath);
+                var result = await fileSystem.OpenReadAsync(tempFilePath.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
@@ -386,7 +387,7 @@ namespace UnitTests.Extensions.FileSystem.Local
                 File.Exists(tempFilePath).Should().BeTrue();
                 
                 // Act
-                var result = await fileSystem.DeleteFileAsync(tempFilePath);
+                var result = await fileSystem.DeleteFileAsync(tempFilePath.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
@@ -415,7 +416,7 @@ namespace UnitTests.Extensions.FileSystem.Local
                 Directory.Exists(tempDir).Should().BeTrue();
                 
                 // Act
-                var result = await fileSystem.DeleteDirectoryAsync(tempDir);
+                var result = await fileSystem.DeleteDirectoryAsync(tempDir.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
@@ -448,7 +449,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             {
                 // Act
                 var entries = new List<Result<FileSystemEntry, FileSystemError>>();
-                await foreach (var entry in fileSystem.EnumerateFileSystemEntriesAsync(tempDir))
+                await foreach (var entry in fileSystem.EnumerateFileSystemEntriesAsync(tempDir.ToCanonicalPath()))
                 {
                     entries.Add(entry);
                 }
@@ -460,8 +461,8 @@ namespace UnitTests.Extensions.FileSystem.Local
                 var fileEntry = entries.First(e => !e.Value.IsDirectory);
                 var dirEntry = entries.First(e => e.Value.IsDirectory);
                 
-                fileEntry.Value.Path.Should().Be(file1);
-                dirEntry.Value.Path.Should().Be(subDir);
+                fileEntry.Value.Path.Should().Be(file1.ToCanonicalPath());
+                dirEntry.Value.Path.Should().Be(subDir.ToCanonicalPath());
             }
             finally
             {

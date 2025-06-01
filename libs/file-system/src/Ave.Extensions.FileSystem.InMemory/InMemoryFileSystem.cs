@@ -20,8 +20,8 @@ namespace Ave.Extensions.FileSystem.InMemory
     public class InMemoryFileSystem : IFileSystem, IReadOnlyFileSystem
     {
         private readonly ILogger<InMemoryFileSystem> _logger;
-        private readonly ConcurrentDictionary<string, FileNode> _files;
-        private readonly ConcurrentDictionary<string, DirectoryNode> _directories;
+        private readonly ConcurrentDictionary<CanonicalPath, FileNode> _files;
+        private readonly ConcurrentDictionary<CanonicalPath, DirectoryNode> _directories;
         private readonly ReaderWriterLockSlim _lock;
         private readonly object _monitorLock = new object();
         private readonly List<FileSystemMonitor> _monitors;
@@ -33,26 +33,24 @@ namespace Ave.Extensions.FileSystem.InMemory
         public InMemoryFileSystem(ILogger<InMemoryFileSystem>? logger = null)
         {
             _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<InMemoryFileSystem>.Instance;
-            _files = new ConcurrentDictionary<string, FileNode>(StringComparer.OrdinalIgnoreCase);
-            _directories = new ConcurrentDictionary<string, DirectoryNode>(StringComparer.OrdinalIgnoreCase);
+            _files = new ConcurrentDictionary<CanonicalPath, FileNode>();
+            _directories = new ConcurrentDictionary<CanonicalPath, DirectoryNode>();
             _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
             _monitors = new List<FileSystemMonitor>();
             
             // Ensure root directory exists
-            var rootPath = NormalizePath("/");
-            _directories.TryAdd(rootPath, new DirectoryNode(rootPath, DateTime.UtcNow));
+            _directories.TryAdd(CanonicalPath.Root, new DirectoryNode(CanonicalPath.Root, DateTime.UtcNow));
         }
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> FileExistsAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    var exists = _files.ContainsKey(normalizedPath);
+                    var exists = _files.ContainsKey(path);
                     return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
                 }
                 finally
@@ -69,15 +67,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    var exists = _directories.ContainsKey(normalizedPath);
+                    var exists = _directories.ContainsKey(path);
                     return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
                 }
                 finally
@@ -94,15 +91,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<string, FileSystemError>> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_files.TryGetValue(normalizedPath, out var fileNode))
+                    if (!_files.TryGetValue(path, out var fileNode))
                     {
                         return Task.FromResult(Result<string, FileSystemError>.Failure(
                             new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
@@ -126,15 +122,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenReadAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_files.TryGetValue(normalizedPath, out var fileNode))
+                    if (!_files.TryGetValue(path, out var fileNode))
                     {
                         return Task.FromResult(Result<Stream, FileSystemError>.Failure(
                             new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
@@ -158,15 +153,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_files.TryGetValue(normalizedPath, out var fileNode))
+                    if (!_files.TryGetValue(path, out var fileNode))
                     {
                         return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
                             new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
@@ -175,7 +169,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     var metadata = new FileMetadata
                     {
                         FullPath = path,
-                        Name = Path.GetFileName(path),
+                        Name = path.GetName(),
                         Size = fileNode.Content.Length,
                         CreatedUtc = fileNode.CreatedUtc,
                         ModifiedUtc = fileNode.ModifiedUtc,
@@ -199,15 +193,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_directories.TryGetValue(normalizedPath, out var dirNode))
+                    if (!_directories.TryGetValue(path, out var dirNode))
                     {
                         return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
                             new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
@@ -216,7 +209,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     var metadata = new DirectoryMetadata
                     {
                         FullPath = path,
-                        Name = Path.GetFileName(path.TrimEnd('/')),
+                        Name = path.GetName(),
                         CreatedUtc = dirNode.CreatedUtc,
                         ModifiedUtc = dirNode.ModifiedUtc,
                         LastAccessUtc = dirNode.LastAccessUtc,
@@ -239,24 +232,23 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<string[], FileSystemError>> GetFilesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_directories.ContainsKey(normalizedPath))
+                    if (!_directories.ContainsKey(path))
                     {
-                        return Task.FromResult(Result<string[], FileSystemError>.Failure(
+                        return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
                             new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
                     }
 
-                    var files = new List<string>();
-                    CollectFiles(normalizedPath, searchPattern, searchOption, files);
+                    var files = new List<CanonicalPath>();
+                    CollectFiles(path, searchPattern, searchOption, files);
                     
-                    return Task.FromResult(Result<string[], FileSystemError>.Success(files.ToArray()));
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success((IReadOnlyList<CanonicalPath>)files));
                 }
                 finally
                 {
@@ -266,30 +258,29 @@ namespace Ave.Extensions.FileSystem.InMemory
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get files: {Path}", path);
-                return Task.FromResult(Result<string[], FileSystemError>.Failure(
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
                     new FileSystemError($"Failed to get files: {ex.Message}", path)));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<string[], FileSystemError>> GetDirectoriesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_directories.ContainsKey(normalizedPath))
+                    if (!_directories.ContainsKey(path))
                     {
-                        return Task.FromResult(Result<string[], FileSystemError>.Failure(
+                        return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
                             new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
                     }
 
-                    var directories = new List<string>();
-                    CollectDirectories(normalizedPath, searchPattern, searchOption, directories);
+                    var directories = new List<CanonicalPath>();
+                    CollectDirectories(path, searchPattern, searchOption, directories);
                     
-                    return Task.FromResult(Result<string[], FileSystemError>.Success(directories.ToArray()));
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success((IReadOnlyList<CanonicalPath>)directories));
                 }
                 finally
                 {
@@ -299,14 +290,14 @@ namespace Ave.Extensions.FileSystem.InMemory
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get directories: {Path}", path);
-                return Task.FromResult(Result<string[], FileSystemError>.Failure(
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
                     new FileSystemError($"Failed to get directories: {ex.Message}", path)));
             }
         }
 
         /// <inheritdoc />
         public async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            string path,
+            CanonicalPath path,
             string searchPattern = "*",
             Models.EnumerationOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -331,30 +322,29 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterWriteLock();
                 try
                 {
                     // Create parent directories if they don't exist
-                    CreateParentDirectories(normalizedPath);
+                    CreateParentDirectories(path);
                     
-                    if (!_directories.ContainsKey(normalizedPath))
+                    if (!_directories.ContainsKey(path))
                     {
                         var now = DateTime.UtcNow;
-                        _directories.TryAdd(normalizedPath, new DirectoryNode(normalizedPath, now));
+                        _directories.TryAdd(path, new DirectoryNode(path, now));
                         
                         // Update parent directory modified time
-                        var parentPath = GetParentPath(normalizedPath);
-                        if (!string.IsNullOrEmpty(parentPath) && _directories.TryGetValue(parentPath, out var parent))
+                        var parentResult = path.GetParent();
+                        if (parentResult.IsSuccess && _directories.TryGetValue(parentResult.Value, out var parent))
                         {
                             parent.ModifiedUtc = now;
                         }
                         
-                        NotifyFileSystemChange(normalizedPath, FileSystemChangeType.Created);
+                        NotifyFileSystemChange(path, FileSystemChangeType.Created);
                     }
                     
                     return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
@@ -373,28 +363,23 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> WriteAllTextAsync(string path, string contents, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 var content = Encoding.UTF8.GetBytes(contents ?? string.Empty);
                 
                 _lock.EnterWriteLock();
                 try
                 {
                     // Ensure parent directory exists
-                    var parentPath = GetParentPath(normalizedPath);
-                    if (!string.IsNullOrEmpty(parentPath))
-                    {
-                        CreateParentDirectories(normalizedPath);
-                    }
+                    CreateParentDirectories(path);
                     
                     var now = DateTime.UtcNow;
-                    var isNewFile = !_files.ContainsKey(normalizedPath);
+                    var isNewFile = !_files.ContainsKey(path);
                     
-                    var fileNode = _files.AddOrUpdate(normalizedPath,
-                        new FileNode(normalizedPath, content, now),
+                    var fileNode = _files.AddOrUpdate(path,
+                        new FileNode(path, content, now),
                         (key, existing) =>
                         {
                             existing.Content = content;
@@ -404,12 +389,13 @@ namespace Ave.Extensions.FileSystem.InMemory
                         });
                     
                     // Update parent directory modified time
-                    if (!string.IsNullOrEmpty(parentPath) && _directories.TryGetValue(parentPath, out var parent))
+                    var parentResult = path.GetParent();
+                    if (parentResult.IsSuccess && _directories.TryGetValue(parentResult.Value, out var parent))
                     {
                         parent.ModifiedUtc = now;
                     }
                     
-                    NotifyFileSystemChange(normalizedPath, isNewFile ? FileSystemChangeType.Created : FileSystemChangeType.Changed);
+                    NotifyFileSystemChange(path, isNewFile ? FileSystemChangeType.Created : FileSystemChangeType.Changed);
                     
                     return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
                 }
@@ -427,12 +413,11 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
-                var stream = new WriteStream(this, normalizedPath, _logger);
+                var stream = new WriteStream(this, path, _logger);
                 return Task.FromResult(Result<Stream, FileSystemError>.Success((Stream)stream));
             }
             catch (Exception ex)
@@ -444,7 +429,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public async Task<Result<Stream, FileSystemError>> OpenAsync(string path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
+        public async Task<Result<Stream, FileSystemError>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
         {
             // Map file mode and access to appropriate operations
             if (access == FileAccess.Read)
@@ -461,26 +446,25 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterWriteLock();
                 try
                 {
-                    if (_files.TryRemove(normalizedPath, out _))
+                    if (_files.TryRemove(path, out _))
                     {
                         var now = DateTime.UtcNow;
                         
                         // Update parent directory modified time
-                        var parentPath = GetParentPath(normalizedPath);
-                        if (!string.IsNullOrEmpty(parentPath) && _directories.TryGetValue(parentPath, out var parent))
+                        var parentResult = path.GetParent();
+                        if (parentResult.IsSuccess && _directories.TryGetValue(parentResult.Value, out var parent))
                         {
                             parent.ModifiedUtc = now;
                         }
                         
-                        NotifyFileSystemChange(normalizedPath, FileSystemChangeType.Deleted);
+                        NotifyFileSystemChange(path, FileSystemChangeType.Deleted);
                     }
                     
                     return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
@@ -499,15 +483,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(string path, bool recursive = false, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
         {
             try
             {
-                var normalizedPath = NormalizePath(path);
                 _lock.EnterWriteLock();
                 try
                 {
-                    if (!_directories.ContainsKey(normalizedPath))
+                    if (!_directories.ContainsKey(path))
                     {
                         return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
                     }
@@ -515,8 +498,8 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!recursive)
                     {
                         // Check if directory is empty
-                        var hasFiles = _files.Keys.Any(f => IsChildOf(f, normalizedPath));
-                        var hasDirectories = _directories.Keys.Any(d => d != normalizedPath && IsChildOf(d, normalizedPath));
+                        var hasFiles = _files.Keys.Any(f => f.IsChildOf(path));
+                        var hasDirectories = _directories.Keys.Any(d => !d.Equals(path) && d.IsChildOf(path));
                         
                         if (hasFiles || hasDirectories)
                         {
@@ -527,7 +510,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     else
                     {
                         // Delete all files in directory recursively
-                        var filesToDelete = _files.Keys.Where(f => IsChildOf(f, normalizedPath)).ToList();
+                        var filesToDelete = _files.Keys.Where(f => f.IsChildOf(path)).ToList();
                         foreach (var file in filesToDelete)
                         {
                             _files.TryRemove(file, out _);
@@ -536,8 +519,8 @@ namespace Ave.Extensions.FileSystem.InMemory
                         
                         // Delete all subdirectories recursively
                         var directoriesToDelete = _directories.Keys
-                            .Where(d => d != normalizedPath && IsChildOf(d, normalizedPath))
-                            .OrderByDescending(d => d.Length) // Delete deepest first
+                            .Where(d => !d.Equals(path) && d.IsChildOf(path))
+                            .OrderByDescending(d => d.Value.Length) // Delete deepest first
                             .ToList();
                         
                         foreach (var dir in directoriesToDelete)
@@ -548,20 +531,20 @@ namespace Ave.Extensions.FileSystem.InMemory
                     }
                     
                     // Delete the directory itself (but not root)
-                    if (normalizedPath != "/")
+                    if (!path.Equals(CanonicalPath.Root))
                     {
-                        _directories.TryRemove(normalizedPath, out _);
+                        _directories.TryRemove(path, out _);
                         
                         var now = DateTime.UtcNow;
                         
                         // Update parent directory modified time
-                        var parentPath = GetParentPath(normalizedPath);
-                        if (!string.IsNullOrEmpty(parentPath) && _directories.TryGetValue(parentPath, out var parent))
+                        var parentResult = path.GetParent();
+                        if (parentResult.IsSuccess && _directories.TryGetValue(parentResult.Value, out var parent))
                         {
                             parent.ModifiedUtc = now;
                         }
                         
-                        NotifyFileSystemChange(normalizedPath, FileSystemChangeType.Deleted);
+                        NotifyFileSystemChange(path, FileSystemChangeType.Deleted);
                     }
                     
                     return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
@@ -580,7 +563,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         // Internal method for write stream
-        internal Task<Result<Unit, FileSystemError>> WriteFileContentAsync(string normalizedPath, byte[] content)
+        internal Task<Result<Unit, FileSystemError>> WriteFileContentAsync(CanonicalPath path, byte[] content)
         {
             try
             {
@@ -588,17 +571,13 @@ namespace Ave.Extensions.FileSystem.InMemory
                 try
                 {
                     // Ensure parent directory exists
-                    var parentPath = GetParentPath(normalizedPath);
-                    if (!string.IsNullOrEmpty(parentPath))
-                    {
-                        CreateParentDirectories(normalizedPath);
-                    }
+                    CreateParentDirectories(path);
                     
                     var now = DateTime.UtcNow;
-                    var isNewFile = !_files.ContainsKey(normalizedPath);
+                    var isNewFile = !_files.ContainsKey(path);
                     
-                    var fileNode = _files.AddOrUpdate(normalizedPath,
-                        new FileNode(normalizedPath, content, now),
+                    var fileNode = _files.AddOrUpdate(path,
+                        new FileNode(path, content, now),
                         (key, existing) =>
                         {
                             existing.Content = content;
@@ -608,12 +587,13 @@ namespace Ave.Extensions.FileSystem.InMemory
                         });
                     
                     // Update parent directory modified time
-                    if (!string.IsNullOrEmpty(parentPath) && _directories.TryGetValue(parentPath, out var parent))
+                    var parentResult = path.GetParent();
+                    if (parentResult.IsSuccess && _directories.TryGetValue(parentResult.Value, out var parent))
                     {
                         parent.ModifiedUtc = now;
                     }
                     
-                    NotifyFileSystemChange(normalizedPath, isNewFile ? FileSystemChangeType.Created : FileSystemChangeType.Changed);
+                    NotifyFileSystemChange(path, isNewFile ? FileSystemChangeType.Created : FileSystemChangeType.Changed);
                     
                     return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
                 }
@@ -624,13 +604,13 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to write file content: {Path}", normalizedPath);
+                _logger.LogError(ex, "Failed to write file content: {Path}", path);
                 return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to write file content: {ex.Message}", normalizedPath)));
+                    new FileSystemError($"Failed to write file content: {ex.Message}", path)));
             }
         }
 
-        private void NotifyFileSystemChange(string path, FileSystemChangeType changeType)
+        private void NotifyFileSystemChange(CanonicalPath path, FileSystemChangeType changeType)
         {
             lock (_monitorLock)
             {
@@ -642,7 +622,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         private async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateEntriesRecursive(
-            string path,
+            CanonicalPath path,
             string searchPattern,
             Models.EnumerationOptions options,
             int currentDepth,
@@ -651,11 +631,10 @@ namespace Ave.Extensions.FileSystem.InMemory
             if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
                 yield break;
             
-            var normalizedPath = NormalizePath(path);
             _lock.EnterReadLock();
             try
             {
-                if (!_directories.ContainsKey(normalizedPath))
+                if (!_directories.ContainsKey(path))
                 {
                     yield return Result<FileSystemEntry, FileSystemError>.Failure(
                         new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound));
@@ -664,14 +643,14 @@ namespace Ave.Extensions.FileSystem.InMemory
 
                 // Enumerate directories
                 var childDirectories = _directories.Keys
-                    .Where(d => IsDirectChildOf(d, normalizedPath))
+                    .Where(d => IsDirectChildOf(d, path))
                     .ToList();
 
                 foreach (var childDir in childDirectories)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     
-                    var dirName = Path.GetFileName(childDir.TrimEnd('/'));
+                    var dirName = childDir.GetName();
                     
                     if (!options.IncludeHidden && dirName.StartsWith('.'))
                         continue;
@@ -684,7 +663,6 @@ namespace Ave.Extensions.FileSystem.InMemory
                         var entry = new FileSystemEntry
                         {
                             Path = childDir,
-                            Name = dirName,
                             IsDirectory = true,
                             Size = null,
                             ModifiedUtc = dirNode.ModifiedUtc,
@@ -706,14 +684,14 @@ namespace Ave.Extensions.FileSystem.InMemory
 
                 // Enumerate files
                 var childFiles = _files.Keys
-                    .Where(f => IsDirectChildOf(f, normalizedPath))
+                    .Where(f => IsDirectChildOf(f, path))
                     .ToList();
 
                 foreach (var childFile in childFiles)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     
-                    var fileName = Path.GetFileName(childFile);
+                    var fileName = childFile.GetName();
                     
                     if (!MatchesPattern(fileName, searchPattern))
                         continue;
@@ -729,7 +707,6 @@ namespace Ave.Extensions.FileSystem.InMemory
                         var entry = new FileSystemEntry
                         {
                             Path = childFile,
-                            Name = fileName,
                             IsDirectory = false,
                             Size = fileNode.Content.Length,
                             ModifiedUtc = fileNode.ModifiedUtc,
@@ -746,11 +723,11 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
         }
 
-        private void CollectFiles(string directoryPath, string searchPattern, SearchOption searchOption, List<string> files)
+        private void CollectFiles(CanonicalPath directoryPath, string searchPattern, SearchOption searchOption, List<CanonicalPath> files)
         {
             var childFiles = _files.Keys
                 .Where(f => IsDirectChildOf(f, directoryPath))
-                .Where(f => MatchesPattern(Path.GetFileName(f), searchPattern))
+                .Where(f => MatchesPattern(f.GetName(), searchPattern))
                 .ToList();
             
             files.AddRange(childFiles);
@@ -768,11 +745,11 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
         }
 
-        private void CollectDirectories(string directoryPath, string searchPattern, SearchOption searchOption, List<string> directories)
+        private void CollectDirectories(CanonicalPath directoryPath, string searchPattern, SearchOption searchOption, List<CanonicalPath> directories)
         {
             var childDirectories = _directories.Keys
                 .Where(d => IsDirectChildOf(d, directoryPath))
-                .Where(d => MatchesPattern(Path.GetFileName(d.TrimEnd('/')), searchPattern))
+                .Where(d => MatchesPattern(d.GetName(), searchPattern))
                 .ToList();
             
             directories.AddRange(childDirectories);
@@ -786,95 +763,32 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
         }
 
-        private void CreateParentDirectories(string path)
+        private void CreateParentDirectories(CanonicalPath path)
         {
-            var parentPath = GetParentPath(path);
-            if (string.IsNullOrEmpty(parentPath) || _directories.ContainsKey(parentPath))
+            var parentResult = path.GetParent();
+            if (parentResult.IsFailure || _directories.ContainsKey(parentResult.Value))
                 return;
             
-            CreateParentDirectories(parentPath);
+            CreateParentDirectories(parentResult.Value);
             
             var now = DateTime.UtcNow;
-            _directories.TryAdd(parentPath, new DirectoryNode(parentPath, now));
+            _directories.TryAdd(parentResult.Value, new DirectoryNode(parentResult.Value, now));
         }
 
-        private static string NormalizePath(string path)
+
+
+        private static bool IsChildOf(CanonicalPath childPath, CanonicalPath parentPath)
         {
-            if (string.IsNullOrEmpty(path))
-                return "/";
-            
-            // Convert to forward slashes and remove duplicate slashes
-            var normalized = path.Replace('\\', '/');
-            while (normalized.Contains("//"))
-            {
-                normalized = normalized.Replace("//", "/");
-            }
-            
-            // Ensure it starts with /
-            if (!normalized.StartsWith('/'))
-                normalized = '/' + normalized;
-            
-            // Remove trailing slash (except for root)
-            if (normalized.Length > 1 && normalized.EndsWith('/'))
-                normalized = normalized.TrimEnd('/');
-            
-            // Resolve . and .. path segments
-            var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            var resolvedSegments = new List<string>();
-            
-            foreach (var segment in segments)
-            {
-                if (segment == ".")
-                {
-                    // Current directory - skip
-                    continue;
-                }
-                else if (segment == "..")
-                {
-                    // Parent directory - remove last segment if possible
-                    if (resolvedSegments.Count > 0)
-                        resolvedSegments.RemoveAt(resolvedSegments.Count - 1);
-                }
-                else
-                {
-                    resolvedSegments.Add(segment);
-                }
-            }
-            
-            // Rebuild path
-            if (resolvedSegments.Count == 0)
-                return "/";
-            
-            return "/" + string.Join("/", resolvedSegments);
+            return childPath.IsChildOf(parentPath);
         }
 
-        private static string? GetParentPath(string path)
+        private static bool IsDirectChildOf(CanonicalPath childPath, CanonicalPath parentPath)
         {
-            if (path == "/")
-                return null;
-            
-            var lastSlash = path.LastIndexOf('/');
-            if (lastSlash <= 0)
-                return "/";
-            
-            return path.Substring(0, lastSlash);
-        }
-
-        private static bool IsChildOf(string childPath, string parentPath)
-        {
-            if (parentPath == "/")
-                return childPath != "/";
-            
-            return childPath.StartsWith(parentPath + "/", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsDirectChildOf(string childPath, string parentPath)
-        {
-            if (!IsChildOf(childPath, parentPath))
+            if (!childPath.IsChildOf(parentPath))
                 return false;
             
-            var relativePath = childPath.Substring(parentPath.Length + 1);
-            return !relativePath.Contains('/');
+            // Check if the child is exactly one level deeper than the parent
+            return childPath.Segments.Length == parentPath.Segments.Length + 1;
         }
 
         private static bool MatchesPattern(string name, string pattern)

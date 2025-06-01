@@ -9,6 +9,7 @@ using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
+using UnitTests.Extensions.FileSystem.InMemory.TestHelpers;
 using Xunit;
 
 namespace UnitTests.Extensions.FileSystem.InMemory
@@ -45,7 +46,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                     {
                         var path = $"/test/task{taskId}_file{j}.txt";
                         var content = $"Content from task {taskId}, file {j}";
-                        var result = await _fileSystem.WriteAllTextAsync(path, content);
+                        var result = await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), content);
                         result.IsSuccess.Should().BeTrue();
                     }
                 }));
@@ -54,7 +55,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             await Task.WhenAll(tasks);
 
             // Assert
-            var filesResult = await _fileSystem.GetFilesAsync("/test", "*", System.IO.SearchOption.AllDirectories);
+            var filesResult = await _fileSystem.GetFilesAsync("/test".ToCanonicalPath(), "*", System.IO.SearchOption.AllDirectories);
             filesResult.IsSuccess.Should().BeTrue();
             filesResult.Value.Should().HaveCount(concurrentTasks * filesPerTask);
 
@@ -64,7 +65,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                 for (int j = 0; j < filesPerTask; j++)
                 {
                     var path = $"/test/task{i}_file{j}.txt";
-                    var readResult = await _fileSystem.ReadAllTextAsync(path);
+                    var readResult = await _fileSystem.ReadAllTextAsync(path.ToCanonicalPath());
                     readResult.IsSuccess.Should().BeTrue();
                     readResult.Value.Should().Be($"Content from task {i}, file {j}");
                 }
@@ -85,14 +86,14 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                 tasks.Add(Task.Run(async () =>
                 {
                     var dirPath = $"/test/dir{taskId}";
-                    var result = await _fileSystem.CreateDirectoryAsync(dirPath);
+                    var result = await _fileSystem.CreateDirectoryAsync(dirPath.ToCanonicalPath());
                     result.IsSuccess.Should().BeTrue();
 
                     // Create some files in the directory
                     for (int j = 0; j < 5; j++)
                     {
                         var filePath = $"{dirPath}/file{j}.txt";
-                        var writeResult = await _fileSystem.WriteAllTextAsync(filePath, $"Content {j}");
+                        var writeResult = await _fileSystem.WriteAllTextAsync(filePath.ToCanonicalPath(), $"Content {j}");
                         writeResult.IsSuccess.Should().BeTrue();
                     }
                 }));
@@ -101,17 +102,17 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             await Task.WhenAll(tasks);
 
             // Assert
-            var dirsResult = await _fileSystem.GetDirectoriesAsync("/test");
+            var dirsResult = await _fileSystem.GetDirectoriesAsync("/test".ToCanonicalPath());
             dirsResult.IsSuccess.Should().BeTrue();
             dirsResult.Value.Should().HaveCount(concurrentTasks);
 
             for (int i = 0; i < concurrentTasks; i++)
             {
                 var dirPath = $"/test/dir{i}";
-                var dirExists = await _fileSystem.DirectoryExistsAsync(dirPath);
+                var dirExists = await _fileSystem.DirectoryExistsAsync(dirPath.ToCanonicalPath());
                 dirExists.Value.Should().BeTrue();
 
-                var filesResult = await _fileSystem.GetFilesAsync(dirPath);
+                var filesResult = await _fileSystem.GetFilesAsync(dirPath.ToCanonicalPath());
                 filesResult.IsSuccess.Should().BeTrue();
                 filesResult.Value.Should().HaveCount(5);
             }
@@ -125,7 +126,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             const string filePath = "/test/shared_file.txt";
             
             // Pre-create the file
-            await _fileSystem.WriteAllTextAsync(filePath, "Initial content");
+            await _fileSystem.WriteAllTextAsync(filePath.ToCanonicalPath(), "Initial content");
 
             var readTasks = new List<Task<string>>();
             var writeTasks = new List<Task>();
@@ -138,7 +139,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                 // Reader task
                 readTasks.Add(Task.Run(async () =>
                 {
-                    var result = await _fileSystem.ReadAllTextAsync(filePath);
+                    var result = await _fileSystem.ReadAllTextAsync(filePath.ToCanonicalPath());
                     result.IsSuccess.Should().BeTrue();
                     return result.Value;
                 }));
@@ -149,7 +150,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                     writeTasks.Add(Task.Run(async () =>
                     {
                         var content = $"Updated content {iteration}";
-                        var result = await _fileSystem.WriteAllTextAsync(filePath, content);
+                        var result = await _fileSystem.WriteAllTextAsync(filePath.ToCanonicalPath(), content);
                         result.IsSuccess.Should().BeTrue();
                     }));
                 }
@@ -160,10 +161,10 @@ namespace UnitTests.Extensions.FileSystem.InMemory
 
             // Assert - No exceptions should have been thrown
             // File should still exist and be readable
-            var finalResult = await _fileSystem.FileExistsAsync(filePath);
+            var finalResult = await _fileSystem.FileExistsAsync(filePath.ToCanonicalPath());
             finalResult.Value.Should().BeTrue();
 
-            var finalReadResult = await _fileSystem.ReadAllTextAsync(filePath);
+            var finalReadResult = await _fileSystem.ReadAllTextAsync(filePath.ToCanonicalPath());
             finalReadResult.IsSuccess.Should().BeTrue();
             finalReadResult.Value.Should().NotBeNull();
         }
@@ -180,13 +181,13 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             {
                 var path = $"/test/file{i}.txt";
                 filePaths.Add(path);
-                await _fileSystem.WriteAllTextAsync(path, $"Content {i}");
+                await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), $"Content {i}");
             }
 
             // Act - Delete files concurrently
             var deleteTasks = filePaths.Select(path => Task.Run(async () =>
             {
-                var result = await _fileSystem.DeleteFileAsync(path);
+                var result = await _fileSystem.DeleteFileAsync(path.ToCanonicalPath());
                 result.IsSuccess.Should().BeTrue();
             })).ToArray();
 
@@ -195,7 +196,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             // Assert
             foreach (var path in filePaths)
             {
-                var existsResult = await _fileSystem.FileExistsAsync(path);
+                var existsResult = await _fileSystem.FileExistsAsync(path.ToCanonicalPath());
                 existsResult.Value.Should().BeFalse();
             }
         }
@@ -225,8 +226,8 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             // Perform some file operations
             var operationTasks = Enumerable.Range(0, monitorCount).Select(async i =>
             {
-                await _fileSystem.CreateDirectoryAsync($"/test/dir{i}");
-                await _fileSystem.WriteAllTextAsync($"/test/dir{i}/file.txt", "test content");
+                await _fileSystem.CreateDirectoryAsync($"/test/dir{i}".ToCanonicalPath());
+                await _fileSystem.WriteAllTextAsync($"/test/dir{i}/file.txt".ToCanonicalPath(), "test content");
             }).ToArray();
 
             await Task.WhenAll(operationTasks);
@@ -261,12 +262,12 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             for (int i = 0; i < directoryCount; i++)
             {
                 var dirPath = $"/test/dir{i}";
-                await _fileSystem.CreateDirectoryAsync(dirPath);
+                await _fileSystem.CreateDirectoryAsync(dirPath.ToCanonicalPath());
                 
                 for (int j = 0; j < filesPerDirectory; j++)
                 {
                     var filePath = $"{dirPath}/file{j}.txt";
-                    await _fileSystem.WriteAllTextAsync(filePath, $"Content {i}-{j}");
+                    await _fileSystem.WriteAllTextAsync(filePath.ToCanonicalPath(), $"Content {i}-{j}");
                 }
             }
 
@@ -276,7 +277,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                 var dirPath = $"/test/dir{i}";
                 var entries = new List<FileSystemEntry>();
                 
-                await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(dirPath))
+                await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(dirPath.ToCanonicalPath()))
                 {
                     result.IsSuccess.Should().BeTrue();
                     entries.Add(result.Value);
@@ -317,26 +318,26 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                         {
                             case 0: // Create file
                                 var filePath = $"/test/mixed/file{index}.txt";
-                                await _fileSystem.WriteAllTextAsync(filePath, $"Content {index}");
+                                await _fileSystem.WriteAllTextAsync(filePath.ToCanonicalPath(), $"Content {index}");
                                 break;
                                 
                             case 1: // Create directory
                                 var dirPath = $"/test/mixed/dir{index}";
-                                await _fileSystem.CreateDirectoryAsync(dirPath);
+                                await _fileSystem.CreateDirectoryAsync(dirPath.ToCanonicalPath());
                                 break;
                                 
                             case 2: // Read file (might not exist)
                                 var readPath = $"/test/mixed/file{index % 50}.txt";
-                                await _fileSystem.ReadAllTextAsync(readPath);
+                                await _fileSystem.ReadAllTextAsync(readPath.ToCanonicalPath());
                                 break;
                                 
                             case 3: // Check existence
                                 var checkPath = $"/test/mixed/file{index % 100}.txt";
-                                await _fileSystem.FileExistsAsync(checkPath);
+                                await _fileSystem.FileExistsAsync(checkPath.ToCanonicalPath());
                                 break;
                                 
                             case 4: // List files
-                                await _fileSystem.GetFilesAsync("/test/mixed");
+                                await _fileSystem.GetFilesAsync("/test/mixed".ToCanonicalPath());
                                 break;
                         }
                     }
@@ -351,9 +352,9 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             await Task.WhenAll(tasks);
 
             // Assert - File system should be in a consistent state
-            var finalDirExists = await _fileSystem.DirectoryExistsAsync("/test/mixed");
-            var finalFilesResult = await _fileSystem.GetFilesAsync("/test/mixed", "*", System.IO.SearchOption.AllDirectories);
-            var finalDirsResult = await _fileSystem.GetDirectoriesAsync("/test/mixed", "*", System.IO.SearchOption.AllDirectories);
+            var finalDirExists = await _fileSystem.DirectoryExistsAsync("/test/mixed".ToCanonicalPath());
+            var finalFilesResult = await _fileSystem.GetFilesAsync("/test/mixed".ToCanonicalPath(), "*", System.IO.SearchOption.AllDirectories);
+            var finalDirsResult = await _fileSystem.GetDirectoriesAsync("/test/mixed".ToCanonicalPath(), "*", System.IO.SearchOption.AllDirectories);
 
             // The exact counts may vary due to race conditions, but the operations should complete successfully
             finalFilesResult.IsSuccess.Should().BeTrue();

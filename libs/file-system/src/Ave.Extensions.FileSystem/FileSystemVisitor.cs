@@ -44,9 +44,16 @@ namespace Ave.Extensions.FileSystem
             {
                 var result = new FileSystemVisitResult();
                 var fullRootPath = _pathUtilities.GetFullPath(rootPath);
+                var canonicalPath = _pathUtilities.ToCanonicalPath(fullRootPath);
+                var canonicalPathResult = CanonicalPath.Create(canonicalPath);
+                if (!canonicalPathResult.IsSuccess)
+                    return Result<FileSystemVisitResult, FileSystemError>.Failure(
+                        new FileSystemError($"Invalid path: {canonicalPathResult.Error.Message}", rootPath, FileSystemErrorType.InvalidPath));
+
+                var rootCanonicalPath = canonicalPathResult.Value;
 
                 // Check if root path exists
-                var existsResult = await _fileSystem.DirectoryExistsAsync(fullRootPath, cancellationToken);
+                var existsResult = await _fileSystem.DirectoryExistsAsync(rootCanonicalPath, cancellationToken);
                 if (!existsResult.IsSuccess)
                     return Result<FileSystemVisitResult, FileSystemError>.Failure(existsResult.Error);
 
@@ -54,7 +61,7 @@ namespace Ave.Extensions.FileSystem
                     return Result<FileSystemVisitResult, FileSystemError>.Failure(
                         new FileSystemError($"Directory does not exist: {rootPath}", rootPath, FileSystemErrorType.DirectoryNotFound));
 
-                await VisitDirectoryAsync(fullRootPath, fullRootPath, 0, options, result, cancellationToken);
+                await VisitDirectoryAsync(rootCanonicalPath, rootCanonicalPath, 0, options, result, cancellationToken);
 
                 return Result<FileSystemVisitResult, FileSystemError>.Success(result);
             }
@@ -85,12 +92,20 @@ namespace Ave.Extensions.FileSystem
 
             options ??= FileSystemVisitorOptions.Default;
 
-            string fullRootPath;
-            
-            fullRootPath = _pathUtilities.GetFullPath(rootPath);
+            var fullRootPath = _pathUtilities.GetFullPath(rootPath);
+            var canonicalPath = _pathUtilities.ToCanonicalPath(fullRootPath);
+            var canonicalPathResult = CanonicalPath.Create(canonicalPath);
+            if (!canonicalPathResult.IsSuccess)
+            {
+                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(
+                    new FileSystemError($"Invalid path: {canonicalPathResult.Error.Message}", rootPath, FileSystemErrorType.InvalidPath));
+                yield break;
+            }
+
+            var rootCanonicalPath = canonicalPathResult.Value;
 
             // Check if root path exists
-            var existsResult = await _fileSystem.DirectoryExistsAsync(fullRootPath, cancellationToken);
+            var existsResult = await _fileSystem.DirectoryExistsAsync(rootCanonicalPath, cancellationToken);
             if (!existsResult.IsSuccess)
             {
                 yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(existsResult.Error);
@@ -104,15 +119,15 @@ namespace Ave.Extensions.FileSystem
                 yield break;
             }
 
-            await foreach (var result in VisitDirectoryStreamAsync(fullRootPath, fullRootPath, 0, options, cancellationToken))
+            await foreach (var result in VisitDirectoryStreamAsync(rootCanonicalPath, rootCanonicalPath, 0, options, cancellationToken))
             {
                 yield return result;
             }
         }
 
         private async Task VisitDirectoryAsync(
-            string directoryPath, 
-            string rootPath, 
+            CanonicalPath directoryPath, 
+            CanonicalPath rootPath, 
             int depth, 
             FileSystemVisitorOptions options, 
             FileSystemVisitResult result, 
@@ -213,8 +228,8 @@ namespace Ave.Extensions.FileSystem
         }
 
         private async Task VisitFileAsync(
-            string filePath, 
-            string rootPath, 
+            CanonicalPath filePath, 
+            CanonicalPath rootPath, 
             int depth, 
             FileSystemVisitorOptions options, 
             FileSystemVisitResult result, 
@@ -272,8 +287,8 @@ namespace Ave.Extensions.FileSystem
         }
 
         private async IAsyncEnumerable<Result<FileVisitedEventArgs, FileSystemError>> VisitDirectoryStreamAsync(
-            string directoryPath,
-            string rootPath,
+            CanonicalPath directoryPath,
+            CanonicalPath rootPath,
             int depth,
             FileSystemVisitorOptions options,
             [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -290,7 +305,7 @@ namespace Ave.Extensions.FileSystem
             }
 
             var dirMetadata = dirMetadataResult.Value;
-            var relativePath = _pathUtilities.GetRelativePath(rootPath, directoryPath);
+            var relativePath = _pathUtilities.GetRelativePath(rootPath.Value, directoryPath.Value);
 
             // Check filters
             if (!options.IncludeHidden && dirMetadata.IsHidden)
@@ -333,8 +348,8 @@ namespace Ave.Extensions.FileSystem
         }
 
         private async Task<Result<FileVisitedEventArgs, FileSystemError>?> VisitFileStreamAsync(
-            string filePath,
-            string rootPath,
+            CanonicalPath filePath,
+            CanonicalPath rootPath,
             int depth,
             FileSystemVisitorOptions options,
             CancellationToken cancellationToken)
@@ -355,7 +370,7 @@ namespace Ave.Extensions.FileSystem
                 if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileMetadata))
                     return null;
 
-                var relativePath = _pathUtilities.GetRelativePath(rootPath, filePath);
+                var relativePath = _pathUtilities.GetRelativePath(rootPath.Value, filePath.Value);
                 return Result<FileVisitedEventArgs, FileSystemError>.Success(
                     new FileVisitedEventArgs(fileMetadata, depth, relativePath));
             }

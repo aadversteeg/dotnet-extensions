@@ -12,14 +12,14 @@ namespace Ave.Extensions.FileSystem.InMemory
     internal class WriteStream : MemoryStream
     {
         private readonly InMemoryFileSystem _fileSystem;
-        private readonly string _path;
+        private readonly CanonicalPath _path;
         private readonly ILogger _logger;
         private bool _disposed;
 
-        public WriteStream(InMemoryFileSystem fileSystem, string path, ILogger logger)
+        public WriteStream(InMemoryFileSystem fileSystem, CanonicalPath path, ILogger logger)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-            _path = path ?? throw new ArgumentNullException(nameof(path));
+            _path = path;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 

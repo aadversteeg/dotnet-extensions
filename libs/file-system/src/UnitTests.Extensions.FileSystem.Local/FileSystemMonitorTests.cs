@@ -9,6 +9,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
+using UnitTests.Extensions.FileSystem.Local.TestHelpers;
 
 namespace UnitTests.Extensions.FileSystem.Local
 {

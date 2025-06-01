@@ -11,6 +11,7 @@ using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
+using UnitTests.Extensions.FileSystem.InMemory.TestHelpers;
 using Xunit;
 
 namespace UnitTests.Extensions.FileSystem.InMemory
@@ -36,7 +37,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var path = "/test/file.txt";
 
             // Act
-            var result = await _fileSystem.FileExistsAsync(path);
+            var result = await _fileSystem.FileExistsAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -49,10 +50,10 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             // Arrange
             var path = "/test/file.txt";
             var content = "Hello, World!";
-            await _fileSystem.WriteAllTextAsync(path, content);
+            await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), content);
 
             // Act
-            var result = await _fileSystem.FileExistsAsync(path);
+            var result = await _fileSystem.FileExistsAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -66,7 +67,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var path = "/";
 
             // Act
-            var result = await _fileSystem.DirectoryExistsAsync(path);
+            var result = await _fileSystem.DirectoryExistsAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -80,7 +81,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var path = "/test/directory";
 
             // Act
-            var result = await _fileSystem.DirectoryExistsAsync(path);
+            var result = await _fileSystem.DirectoryExistsAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -94,12 +95,12 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var path = "/test/directory";
 
             // Act
-            var result = await _fileSystem.CreateDirectoryAsync(path);
+            var result = await _fileSystem.CreateDirectoryAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             
-            var existsResult = await _fileSystem.DirectoryExistsAsync(path);
+            var existsResult = await _fileSystem.DirectoryExistsAsync(path.ToCanonicalPath());
             existsResult.IsSuccess.Should().BeTrue();
             existsResult.Value.Should().BeTrue();
         }
@@ -112,12 +113,12 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var content = "Hello, World!";
 
             // Act
-            var result = await _fileSystem.WriteAllTextAsync(path, content);
+            var result = await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), content);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             
-            var readResult = await _fileSystem.ReadAllTextAsync(path);
+            var readResult = await _fileSystem.ReadAllTextAsync(path.ToCanonicalPath());
             readResult.IsSuccess.Should().BeTrue();
             readResult.Value.Should().Be(content);
         }
@@ -129,7 +130,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var path = "/test/nonexistent.txt";
 
             // Act
-            var result = await _fileSystem.ReadAllTextAsync(path);
+            var result = await _fileSystem.ReadAllTextAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsFailure.Should().BeTrue();
@@ -142,10 +143,10 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             // Arrange
             var path = "/test/file.txt";
             var content = "Hello, World!";
-            await _fileSystem.WriteAllTextAsync(path, content);
+            await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), content);
 
             // Act
-            var result = await _fileSystem.OpenReadAsync(path);
+            var result = await _fileSystem.OpenReadAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -163,7 +164,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var content = "Hello, World!";
 
             // Act
-            var result = await _fileSystem.OpenWriteAsync(path);
+            var result = await _fileSystem.OpenWriteAsync(path.ToCanonicalPath());
             result.IsSuccess.Should().BeTrue();
 
             using (var stream = result.Value)
@@ -173,7 +174,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             }
 
             // Assert
-            var readResult = await _fileSystem.ReadAllTextAsync(path);
+            var readResult = await _fileSystem.ReadAllTextAsync(path.ToCanonicalPath());
             readResult.IsSuccess.Should().BeTrue();
             readResult.Value.Should().Be(content);
         }
@@ -185,16 +186,16 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var path = "/test/file.txt";
             var content = "Hello, World!";
             var beforeWrite = DateTime.UtcNow;
-            await _fileSystem.WriteAllTextAsync(path, content);
+            await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), content);
             var afterWrite = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetFileMetadataAsync(path);
+            var result = await _fileSystem.GetFileMetadataAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             var metadata = result.Value;
-            metadata.FullPath.Should().Be(path);
+            metadata.FullPath.Should().Be(path.ToCanonicalPath());
             metadata.Name.Should().Be("file.txt");
             metadata.Size.Should().Be(Encoding.UTF8.GetBytes(content).Length);
             metadata.CreatedUtc.Should().BeOnOrAfter(beforeWrite).And.BeOnOrBefore(afterWrite);
@@ -208,16 +209,16 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             // Arrange
             var path = "/test/directory";
             var beforeCreate = DateTime.UtcNow;
-            await _fileSystem.CreateDirectoryAsync(path);
+            await _fileSystem.CreateDirectoryAsync(path.ToCanonicalPath());
             var afterCreate = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetDirectoryMetadataAsync(path);
+            var result = await _fileSystem.GetDirectoryMetadataAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             var metadata = result.Value;
-            metadata.FullPath.Should().Be(path);
+            metadata.FullPath.Should().Be(path.ToCanonicalPath());
             metadata.Name.Should().Be("directory");
             metadata.CreatedUtc.Should().BeOnOrAfter(beforeCreate).And.BeOnOrBefore(afterCreate);
             metadata.ModifiedUtc.Should().BeOnOrAfter(beforeCreate).And.BeOnOrBefore(afterCreate);
@@ -229,20 +230,20 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         {
             // Arrange
             var directory = "/test";
-            await _fileSystem.CreateDirectoryAsync(directory);
-            await _fileSystem.WriteAllTextAsync("/test/file1.txt", "content1");
-            await _fileSystem.WriteAllTextAsync("/test/file2.txt", "content2");
-            await _fileSystem.WriteAllTextAsync("/test/file3.log", "content3");
+            await _fileSystem.CreateDirectoryAsync(directory.ToCanonicalPath());
+            await _fileSystem.WriteAllTextAsync("/test/file1.txt".ToCanonicalPath(), "content1");
+            await _fileSystem.WriteAllTextAsync("/test/file2.txt".ToCanonicalPath(), "content2");
+            await _fileSystem.WriteAllTextAsync("/test/file3.log".ToCanonicalPath(), "content3");
 
             // Act
-            var result = await _fileSystem.GetFilesAsync(directory, "*.txt");
+            var result = await _fileSystem.GetFilesAsync(directory.ToCanonicalPath(), "*.txt");
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().HaveCount(2);
-            result.Value.Should().Contain("/test/file1.txt");
-            result.Value.Should().Contain("/test/file2.txt");
-            result.Value.Should().NotContain("/test/file3.log");
+            result.Value.Should().Contain("/test/file1.txt".ToCanonicalPath());
+            result.Value.Should().Contain("/test/file2.txt".ToCanonicalPath());
+            result.Value.Should().NotContain("/test/file3.log".ToCanonicalPath());
         }
 
         [Fact(DisplayName = "IMFS-013: GetDirectoriesAsync returns correct directory list")]
@@ -250,20 +251,20 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         {
             // Arrange
             var baseDirectory = "/test";
-            await _fileSystem.CreateDirectoryAsync(baseDirectory);
-            await _fileSystem.CreateDirectoryAsync("/test/subdir1");
-            await _fileSystem.CreateDirectoryAsync("/test/subdir2");
-            await _fileSystem.CreateDirectoryAsync("/test/other");
+            await _fileSystem.CreateDirectoryAsync(baseDirectory.ToCanonicalPath());
+            await _fileSystem.CreateDirectoryAsync("/test/subdir1".ToCanonicalPath());
+            await _fileSystem.CreateDirectoryAsync("/test/subdir2".ToCanonicalPath());
+            await _fileSystem.CreateDirectoryAsync("/test/other".ToCanonicalPath());
 
             // Act
-            var result = await _fileSystem.GetDirectoriesAsync(baseDirectory, "subdir*");
+            var result = await _fileSystem.GetDirectoriesAsync(baseDirectory.ToCanonicalPath(), "subdir*");
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().HaveCount(2);
-            result.Value.Should().Contain("/test/subdir1");
-            result.Value.Should().Contain("/test/subdir2");
-            result.Value.Should().NotContain("/test/other");
+            result.Value.Should().Contain("/test/subdir1".ToCanonicalPath());
+            result.Value.Should().Contain("/test/subdir2".ToCanonicalPath());
+            result.Value.Should().NotContain("/test/other".ToCanonicalPath());
         }
 
         [Fact(DisplayName = "IMFS-014: DeleteFileAsync removes file successfully")]
@@ -271,15 +272,15 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         {
             // Arrange
             var path = "/test/file.txt";
-            await _fileSystem.WriteAllTextAsync(path, "content");
+            await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), "content");
 
             // Act
-            var result = await _fileSystem.DeleteFileAsync(path);
+            var result = await _fileSystem.DeleteFileAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             
-            var existsResult = await _fileSystem.FileExistsAsync(path);
+            var existsResult = await _fileSystem.FileExistsAsync(path.ToCanonicalPath());
             existsResult.IsSuccess.Should().BeTrue();
             existsResult.Value.Should().BeFalse();
         }
@@ -289,15 +290,15 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         {
             // Arrange
             var path = "/test/directory";
-            await _fileSystem.CreateDirectoryAsync(path);
+            await _fileSystem.CreateDirectoryAsync(path.ToCanonicalPath());
 
             // Act
-            var result = await _fileSystem.DeleteDirectoryAsync(path);
+            var result = await _fileSystem.DeleteDirectoryAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             
-            var existsResult = await _fileSystem.DirectoryExistsAsync(path);
+            var existsResult = await _fileSystem.DirectoryExistsAsync(path.ToCanonicalPath());
             existsResult.IsSuccess.Should().BeTrue();
             existsResult.Value.Should().BeFalse();
         }
@@ -307,25 +308,25 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         {
             // Arrange
             var path = "/test/directory";
-            await _fileSystem.CreateDirectoryAsync(path);
-            await _fileSystem.CreateDirectoryAsync("/test/directory/subdir");
-            await _fileSystem.WriteAllTextAsync("/test/directory/file.txt", "content");
-            await _fileSystem.WriteAllTextAsync("/test/directory/subdir/file2.txt", "content2");
+            await _fileSystem.CreateDirectoryAsync(path.ToCanonicalPath());
+            await _fileSystem.CreateDirectoryAsync("/test/directory/subdir".ToCanonicalPath());
+            await _fileSystem.WriteAllTextAsync("/test/directory/file.txt".ToCanonicalPath(), "content");
+            await _fileSystem.WriteAllTextAsync("/test/directory/subdir/file2.txt".ToCanonicalPath(), "content2");
 
             // Act
-            var result = await _fileSystem.DeleteDirectoryAsync(path, recursive: true);
+            var result = await _fileSystem.DeleteDirectoryAsync(path.ToCanonicalPath(), recursive: true);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
             
-            var existsResult = await _fileSystem.DirectoryExistsAsync(path);
+            var existsResult = await _fileSystem.DirectoryExistsAsync(path.ToCanonicalPath());
             existsResult.IsSuccess.Should().BeTrue();
             existsResult.Value.Should().BeFalse();
             
-            var fileExistsResult = await _fileSystem.FileExistsAsync("/test/directory/file.txt");
+            var fileExistsResult = await _fileSystem.FileExistsAsync("/test/directory/file.txt".ToCanonicalPath());
             fileExistsResult.Value.Should().BeFalse();
             
-            var subdirExistsResult = await _fileSystem.DirectoryExistsAsync("/test/directory/subdir");
+            var subdirExistsResult = await _fileSystem.DirectoryExistsAsync("/test/directory/subdir".ToCanonicalPath());
             subdirExistsResult.Value.Should().BeFalse();
         }
 
@@ -334,14 +335,14 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         {
             // Arrange
             var directory = "/test";
-            await _fileSystem.CreateDirectoryAsync(directory);
-            await _fileSystem.CreateDirectoryAsync("/test/subdir");
-            await _fileSystem.WriteAllTextAsync("/test/file1.txt", "content1");
-            await _fileSystem.WriteAllTextAsync("/test/file2.txt", "content2");
+            await _fileSystem.CreateDirectoryAsync(directory.ToCanonicalPath());
+            await _fileSystem.CreateDirectoryAsync("/test/subdir".ToCanonicalPath());
+            await _fileSystem.WriteAllTextAsync("/test/file1.txt".ToCanonicalPath(), "content1");
+            await _fileSystem.WriteAllTextAsync("/test/file2.txt".ToCanonicalPath(), "content2");
 
             // Act
             var entries = new List<FileSystemEntry>();
-            await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(directory))
+            await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(directory.ToCanonicalPath()))
             {
                 result.IsSuccess.Should().BeTrue();
                 entries.Add(result.Value);
@@ -372,18 +373,23 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var content = "test content";
 
             // Act
-            await _fileSystem.WriteAllTextAsync("\\test\\file.txt", content);
-            await _fileSystem.WriteAllTextAsync("/test//file2.txt", content);
-            await _fileSystem.WriteAllTextAsync("/test/./file3.txt", content);
+            // Since ToCanonicalPath() is strict, we normalize paths before converting
+            var path1 = "\\test\\file.txt".Replace('\\', '/');
+            var path2 = "/test//file2.txt".Replace("//", "/");
+            var path3 = "/test/./file3.txt".Replace("/./", "/");
+            
+            await _fileSystem.WriteAllTextAsync(path1.ToCanonicalPath(), content);
+            await _fileSystem.WriteAllTextAsync(path2.ToCanonicalPath(), content);
+            await _fileSystem.WriteAllTextAsync(path3.ToCanonicalPath(), content);
 
             // Assert
-            var result1 = await _fileSystem.FileExistsAsync("/test/file.txt");
+            var result1 = await _fileSystem.FileExistsAsync("/test/file.txt".ToCanonicalPath());
             result1.Value.Should().BeTrue();
 
-            var result2 = await _fileSystem.FileExistsAsync("/test/file2.txt");
+            var result2 = await _fileSystem.FileExistsAsync("/test/file2.txt".ToCanonicalPath());
             result2.Value.Should().BeTrue();
 
-            var result3 = await _fileSystem.FileExistsAsync("/test/file3.txt");
+            var result3 = await _fileSystem.FileExistsAsync("/test/file3.txt".ToCanonicalPath());
             result3.Value.Should().BeTrue();
         }
 
@@ -395,19 +401,19 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var content = "test content";
 
             // Act
-            await _fileSystem.WriteAllTextAsync(path, content);
+            await _fileSystem.WriteAllTextAsync(path.ToCanonicalPath(), content);
 
             // Assert
-            var dirExists1 = await _fileSystem.DirectoryExistsAsync("/deep");
+            var dirExists1 = await _fileSystem.DirectoryExistsAsync("/deep".ToCanonicalPath());
             dirExists1.Value.Should().BeTrue();
 
-            var dirExists2 = await _fileSystem.DirectoryExistsAsync("/deep/nested");
+            var dirExists2 = await _fileSystem.DirectoryExistsAsync("/deep/nested".ToCanonicalPath());
             dirExists2.Value.Should().BeTrue();
 
-            var dirExists3 = await _fileSystem.DirectoryExistsAsync("/deep/nested/directory");
+            var dirExists3 = await _fileSystem.DirectoryExistsAsync("/deep/nested/directory".ToCanonicalPath());
             dirExists3.Value.Should().BeTrue();
 
-            var fileExists = await _fileSystem.FileExistsAsync(path);
+            var fileExists = await _fileSystem.FileExistsAsync(path.ToCanonicalPath());
             fileExists.Value.Should().BeTrue();
         }
 

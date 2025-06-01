@@ -24,18 +24,20 @@ namespace Ave.Extensions.FileSystem.Local
         {
             _pathMapper = pathMapper;
         }
+
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> FileExistsAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var exists = File.Exists(systemPath);
                 return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
             }
@@ -46,22 +48,23 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path)));
+                    FileSystemError.FromException(ex, path.Value)));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var exists = Directory.Exists(systemPath);
                 return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
             }
@@ -72,142 +75,157 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path)));
+                    FileSystemError.FromException(ex, path.Value)));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<string, FileSystemError>> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(async () =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Result<string, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var content = await File.ReadAllTextAsync(systemPath, cancellationToken);
                 return Result<string, FileSystemError>.Success(content);
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenReadAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var stream = File.OpenRead(systemPath);
                 return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var fileInfo = new FileInfo(systemPath);
                 if (!fileInfo.Exists)
                     return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
-                        new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
+                        new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound)));
 
                 var metadata = FileMetadata.FromFileInfo(fileInfo);
-                // Map the path back to canonical format if needed
-                metadata.FullPath = MapPathToCanonical(metadata.FullPath, path);
+                // Map the path back to canonical format
+                var canonicalPathResult = MapPathToCanonical(metadata.FullPath);
+                if (canonicalPathResult.IsSuccess)
+                    metadata.FullPath = canonicalPathResult.Value.Value;
+                else
+                    metadata.FullPath = path.Value;
                 return Task.FromResult(Result<FileMetadata, FileSystemError>.Success(metadata));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var directoryInfo = new DirectoryInfo(systemPath);
                 if (!directoryInfo.Exists)
                     return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
-                        new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
+                        new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
 
                 var metadata = DirectoryMetadata.FromDirectoryInfo(directoryInfo);
-                // Map the path back to canonical format if needed
-                metadata.FullPath = MapPathToCanonical(metadata.FullPath, path);
+                // Map the path back to canonical format
+                var canonicalPathResult = MapPathToCanonical(metadata.FullPath);
+                if (canonicalPathResult.IsSuccess)
+                    metadata.FullPath = canonicalPathResult.Value.Value;
+                else
+                    metadata.FullPath = path.Value;
                 return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Success(metadata));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<string[], FileSystemError>> GetFilesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
-                    return Task.FromResult(Result<string[], FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var files = Directory.GetFiles(systemPath, searchPattern, searchOption);
-                var mappedFiles = MapPathsToCanonical(files, path);
-                return Task.FromResult(Result<string[], FileSystemError>.Success(mappedFiles));
-            }, path);
+                var mappedFiles = MapPathsToCanonical(files);
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedFiles));
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<string[], FileSystemError>> GetDirectoriesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
-                    return Task.FromResult(Result<string[], FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var directories = Directory.GetDirectories(systemPath, searchPattern, searchOption);
-                var mappedDirectories = MapPathsToCanonical(directories, path);
-                return Task.FromResult(Result<string[], FileSystemError>.Success(mappedDirectories));
-            }, path);
+                var mappedDirectories = MapPathsToCanonical(directories);
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedDirectories));
+            }, path.Value);
         }
 
         /// <inheritdoc />
         public async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            string path,
+            CanonicalPath path,
             string searchPattern = "*",
             Models.EnumerationOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
+            var systemPathResult = GetSystemPath(path);
+            if (systemPathResult.IsFailure)
             {
                 yield return Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath));
+                    new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
                 yield break;
             }
 
             options ??= Models.EnumerationOptions.Default;
 
-            var systemPath = GetSystemPath(path);
+            var systemPath = systemPathResult.Value;
             await foreach (var entry in EnumerateEntries(systemPath, searchPattern, options, 0, cancellationToken, path))
             {
                 yield return entry;
@@ -215,101 +233,107 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 Directory.CreateDirectory(systemPath);
                 return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> WriteAllTextAsync(string path, string contents, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(async () =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
 
                 if (contents == null)
                     contents = string.Empty;
 
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 await File.WriteAllTextAsync(systemPath, contents, cancellationToken);
                 return Result<Unit, FileSystemError>.Success(Unit.Value);
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var stream = File.OpenWrite(systemPath);
                 return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenAsync(string path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, FileSystemError>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 var stream = new FileStream(systemPath, mode, access, share);
                 return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 File.Delete(systemPath);
                 return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(string path, bool recursive = false, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
-                if (string.IsNullOrEmpty(path))
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
                     return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Path cannot be null or empty.", path, FileSystemErrorType.InvalidPath)));
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var systemPath = GetSystemPath(path);
+                var systemPath = systemPathResult.Value;
                 Directory.Delete(systemPath, recursive);
                 return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
-            }, path);
+            }, path.Value);
         }
 
         /// <inheritdoc />
@@ -342,7 +366,7 @@ namespace Ave.Extensions.FileSystem.Local
             Models.EnumerationOptions options,
             int currentDepth,
             [EnumeratorCancellation] CancellationToken cancellationToken,
-            string? originalPath = null)
+            CanonicalPath originalPath)
         {
             if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
                 yield break;
@@ -374,10 +398,11 @@ namespace Ave.Extensions.FileSystem.Local
                     continue;
 
                 var entry = FileSystemEntry.FromFileInfo(file);
-                // Map entry path back to canonical format if needed
-                if (originalPath != null)
+                // Map entry path back to canonical format
+                var canonicalPathResult = MapPathToCanonical(entry.Path.Value);
+                if (canonicalPathResult.IsSuccess)
                 {
-                    entry.Path = MapPathToCanonical(entry.Path, originalPath);
+                    entry.Path = canonicalPathResult.Value;
                 }
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
             }
@@ -400,10 +425,11 @@ namespace Ave.Extensions.FileSystem.Local
                     continue;
 
                 var entry = FileSystemEntry.FromDirectoryInfo(directory);
-                // Map entry path back to canonical format if needed
-                if (originalPath != null)
+                // Map entry path back to canonical format
+                var canonicalPathResult = MapPathToCanonical(entry.Path.Value);
+                if (canonicalPathResult.IsSuccess)
                 {
-                    entry.Path = MapPathToCanonical(entry.Path, originalPath);
+                    entry.Path = canonicalPathResult.Value;
                 }
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
 
@@ -419,68 +445,71 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <summary>
-        /// Gets the system path from an input path, applying canonical mapping if available.
+        /// Gets the system path from a canonical path, applying mapping if available.
         /// </summary>
-        /// <param name="inputPath">The input path that may be in canonical format.</param>
-        /// <returns>The system path to use for file operations.</returns>
-        private string GetSystemPath(string inputPath)
+        /// <param name="canonicalPath">The canonical path to map.</param>
+        /// <returns>A result containing the system path or an error.</returns>
+        private Result<string, Error> GetSystemPath(CanonicalPath canonicalPath)
         {
-            if (_pathMapper != null && IsCanonicalPath(inputPath))
+            if (_pathMapper != null)
             {
-                var result = _pathMapper.MapToSystemPath(inputPath);
-                if (result.IsSuccess)
-                    return result.Value;
+                return _pathMapper.MapToSystemPath(canonicalPath);
             }
             
-            // Return original path if no mapping needed or mapping failed
-            return inputPath;
+            // Return canonical path value if no mapper is available
+            return Result<string, Error>.Success(canonicalPath.Value);
         }
         
         /// <summary>
-        /// Maps an array of system paths back to canonical format if needed.
+        /// Maps an array of system paths back to canonical format.
         /// </summary>
         /// <param name="systemPaths">Array of system paths.</param>
-        /// <param name="originalPath">The original input path to determine if mapping is needed.</param>
-        /// <returns>Array of paths in appropriate format.</returns>
-        private string[] MapPathsToCanonical(string[] systemPaths, string originalPath)
+        /// <returns>List of canonical paths.</returns>
+        private IReadOnlyList<CanonicalPath> MapPathsToCanonical(string[] systemPaths)
         {
-            if (_pathMapper == null || !IsCanonicalPath(originalPath))
-                return systemPaths;
+            var canonicalPaths = new List<CanonicalPath>();
             
-            var canonicalPaths = new string[systemPaths.Length];
-            for (int i = 0; i < systemPaths.Length; i++)
+            foreach (var systemPath in systemPaths)
             {
-                var result = _pathMapper.MapToCanonicalPath(systemPaths[i]);
-                canonicalPaths[i] = result.IsSuccess ? result.Value : systemPaths[i];
+                var result = MapPathToCanonical(systemPath);
+                if (result.IsSuccess)
+                {
+                    canonicalPaths.Add(result.Value);
+                }
+                else
+                {
+                    // Fallback: try to create canonical path from system path
+                    var fallbackResult = CanonicalPath.Create(systemPath.Replace('\\', '/'));
+                    if (fallbackResult.IsSuccess)
+                    {
+                        canonicalPaths.Add(fallbackResult.Value);
+                    }
+                }
             }
             
             return canonicalPaths;
         }
         
         /// <summary>
-        /// Maps a system path back to canonical format if needed.
+        /// Maps a system path back to canonical format.
         /// </summary>
         /// <param name="systemPath">The system path to map.</param>
-        /// <param name="originalPath">The original input path to determine if mapping is needed.</param>
-        /// <returns>Path in appropriate format.</returns>
-        private string MapPathToCanonical(string systemPath, string originalPath)
+        /// <returns>Result containing the canonical path or an error.</returns>
+        private Result<CanonicalPath, Error> MapPathToCanonical(string systemPath)
         {
-            if (_pathMapper == null || !IsCanonicalPath(originalPath))
-                return systemPath;
+            if (_pathMapper != null)
+            {
+                return _pathMapper.MapToCanonicalPath(systemPath);
+            }
             
-            var result = _pathMapper.MapToCanonicalPath(systemPath);
-            return result.IsSuccess ? result.Value : systemPath;
-        }
-        
-        /// <summary>
-        /// Determines if a path is in canonical format.
-        /// </summary>
-        /// <param name="path">The path to check.</param>
-        /// <returns>True if the path is canonical.</returns>
-        private static bool IsCanonicalPath(string path)
-        {
-            // Simple check: canonical paths start with / or are drive letters like /c/
-            return path.StartsWith("/") && !path.StartsWith(@"\\");
+            // Fallback: try to create canonical path from system path
+            var normalizedPath = systemPath.Replace('\\', '/');
+            if (!normalizedPath.StartsWith('/'))
+            {
+                normalizedPath = "/" + normalizedPath;
+            }
+            
+            return CanonicalPath.Create(normalizedPath);
         }
 
         /// <summary>

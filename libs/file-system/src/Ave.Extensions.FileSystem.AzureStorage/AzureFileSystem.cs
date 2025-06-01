@@ -17,7 +17,7 @@ using Microsoft.Extensions.Options;
 
 namespace Ave.Extensions.FileSystem.AzureStorage
 {
-    /// <summary>
+    /// <summary>y
     /// Azure File Share implementation of IFileSystem.
     /// </summary>
     public class AzureFileSystem : IFileSystem, IReadOnlyFileSystem
@@ -52,18 +52,18 @@ namespace Ave.Extensions.FileSystem.AzureStorage
         }
         
         /// <inheritdoc />
-        public async Task<Result<bool, FileSystemError>> FileExistsAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.ExistsAsync(cancellationToken);
@@ -75,25 +75,25 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to check file existence in Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to check file existence in Azure: {Path}", path.Value);
                 return Result<bool, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to check file existence: {ex.Message}", path));
+                    new FileSystemError($"Failed to check file existence: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<bool, FileSystemError>> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 var response = await directoryClient.ExistsAsync(cancellationToken);
@@ -105,25 +105,25 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to check directory existence in Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to check directory existence in Azure: {Path}", path.Value);
                 return Result<bool, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to check directory existence: {ex.Message}", path));
+                    new FileSystemError($"Failed to check directory existence: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<string, FileSystemError>> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<string, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.DownloadAsync(cancellationToken: cancellationToken);
@@ -135,29 +135,29 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
                 return Result<string, FileSystemError>.Failure(
-                    new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound));
+                    new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to read file from Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to read file from Azure: {Path}", path.Value);
                 return Result<string, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to read file: {ex.Message}", path));
+                    new FileSystemError($"Failed to read file: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Stream, FileSystemError>> OpenReadAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<Stream, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.DownloadAsync(cancellationToken: cancellationToken);
@@ -166,29 +166,29 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
                 return Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound));
+                    new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to open file from Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to open file from Azure: {Path}", path.Value);
                 return Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to open file: {ex.Message}", path));
+                    new FileSystemError($"Failed to open file: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<FileMetadata, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.GetPropertiesAsync(cancellationToken);
@@ -197,7 +197,7 @@ namespace Ave.Extensions.FileSystem.AzureStorage
                 var metadata = new FileMetadata
                 {
                     FullPath = path,
-                    Name = Path.GetFileName(path),
+                    Name = Path.GetFileName(path.Value),
                     Size = properties.ContentLength,
                     CreatedUtc = properties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
                     ModifiedUtc = properties.LastModified.DateTime,
@@ -210,29 +210,29 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
                 return Result<FileMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound));
+                    new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get file metadata from Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to get file metadata from Azure: {Path}", path.Value);
                 return Result<FileMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get file metadata: {ex.Message}", path));
+                    new FileSystemError($"Failed to get file metadata: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<DirectoryMetadata, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 var response = await directoryClient.GetPropertiesAsync(cancellationToken);
@@ -241,7 +241,7 @@ namespace Ave.Extensions.FileSystem.AzureStorage
                 var metadata = new DirectoryMetadata
                 {
                     FullPath = path,
-                    Name = Path.GetFileName(path.TrimEnd('/')),
+                    Name = Path.GetFileName(path.Value.TrimEnd('/')),
                     CreatedUtc = properties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
                     ModifiedUtc = properties.LastModified.DateTime,
                     LastAccessUtc = properties.SmbProperties.FileLastWrittenOn?.DateTime ?? properties.LastModified.DateTime,
@@ -253,104 +253,104 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
                 return Result<DirectoryMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound));
+                    new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get directory metadata from Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to get directory metadata from Azure: {Path}", path.Value);
                 return Result<DirectoryMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get directory metadata: {ex.Message}", path));
+                    new FileSystemError($"Failed to get directory metadata: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<string[], FileSystemError>> GetFilesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public async Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
-                        return Result<string[], FileSystemError>.Failure(validationResult.Error);
+                        return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
-                var files = new List<string>();
+                var files = new List<CanonicalPath>();
                 await foreach (var item in directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken))
                 {
                     if (!item.IsDirectory && MatchesPattern(item.Name, searchPattern))
                     {
-                        files.Add(CombinePath(path, item.Name));
+                        files.Add(CombinePath(path.Value, item.Name));
                     }
                 }
                 
-                return Result<string[], FileSystemError>.Success(files.ToArray());
+                return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(files);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return Result<string[], FileSystemError>.Failure(
-                    new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound));
+                return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
+                    new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get files from Azure: {Path}", path);
-                return Result<string[], FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get files: {ex.Message}", path));
+                _logger.LogError(ex, "Failed to get files from Azure: {Path}", path.Value);
+                return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to get files: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<string[], FileSystemError>> GetDirectoriesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public async Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
-                        return Result<string[], FileSystemError>.Failure(validationResult.Error);
+                        return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
-                var directories = new List<string>();
+                var directories = new List<CanonicalPath>();
                 await foreach (var item in directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken))
                 {
                     if (item.IsDirectory && MatchesPattern(item.Name, searchPattern))
                     {
-                        directories.Add(CombinePath(path, item.Name));
+                        directories.Add(CombinePath(path.Value, item.Name));
                     }
                 }
                 
-                return Result<string[], FileSystemError>.Success(directories.ToArray());
+                return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(directories);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return Result<string[], FileSystemError>.Failure(
-                    new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound));
+                return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
+                    new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get directories from Azure: {Path}", path);
-                return Result<string[], FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get directories: {ex.Message}", path));
+                _logger.LogError(ex, "Failed to get directories from Azure: {Path}", path.Value);
+                return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to get directories: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
         public async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            string path,
+            CanonicalPath path,
             string searchPattern = "*",
             Models.EnumerationOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             if (_pathSecurity != null && _options.AllowedPaths.Any())
             {
-                var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                 if (validationResult.IsFailure)
                 {
                     yield return Result<FileSystemEntry, FileSystemError>.Failure(validationResult.Error);
@@ -375,18 +375,18 @@ namespace Ave.Extensions.FileSystem.AzureStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 await directoryClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
@@ -394,25 +394,25 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to create directory in Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to create directory in Azure: {Path}", path.Value);
                 return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to create directory: {ex.Message}", path));
+                    new FileSystemError($"Failed to create directory: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> WriteAllTextAsync(string path, string contents, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, FileSystemError>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 // Ensure parent directory exists
@@ -433,27 +433,27 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to write file to Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to write file to Azure: {Path}", path.Value);
                 return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to write file: {ex.Message}", path));
+                    new FileSystemError($"Failed to write file: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Task.FromResult(Result<Stream, FileSystemError>.Failure(validationResult.Error));
                 }
                 
                 // Azure File Share doesn't support direct write streams
                 // Return a memory stream that can be uploaded when disposed
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var writeStream = new WriteStream(fileClient, _logger);
@@ -461,14 +461,14 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to open write stream for Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to open write stream for Azure: {Path}", path.Value);
                 return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to open write stream: {ex.Message}", path)));
+                    new FileSystemError($"Failed to open write stream: {ex.Message}", path.Value)));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Stream, FileSystemError>> OpenAsync(string path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
+        public async Task<Result<Stream, FileSystemError>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
         {
             // Map file mode and access to appropriate Azure operations
             if (access == FileAccess.Read)
@@ -481,22 +481,22 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             
             return Result<Stream, FileSystemError>.Failure(
-                new FileSystemError($"Unsupported file access mode: {access}", path, FileSystemErrorType.NotSupported));
+                new FileSystemError($"Unsupported file access mode: {access}", path.Value, FileSystemErrorType.NotSupported));
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, FileSystemError>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 await fileClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
@@ -504,25 +504,25 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to delete file from Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to delete file from Azure: {Path}", path.Value);
                 return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to delete file: {ex.Message}", path));
+                    new FileSystemError($"Failed to delete file: {ex.Message}", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(string path, bool recursive = false, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (_pathSecurity != null && _options.AllowedPaths.Any())
                 {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path, _options.AllowedPaths);
+                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 }
                 
-                var azurePath = GetAzurePath(path);
+                var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 if (recursive)
@@ -532,13 +532,13 @@ namespace Ave.Extensions.FileSystem.AzureStorage
                     {
                         if (item.IsDirectory)
                         {
-                            var subDirResult = await DeleteDirectoryAsync(CombinePath(path, item.Name), true, cancellationToken);
+                            var subDirResult = await DeleteDirectoryAsync(CombinePath(path.Value, item.Name), true, cancellationToken);
                             if (subDirResult.IsFailure)
                                 return subDirResult;
                         }
                         else
                         {
-                            var fileResult = await DeleteFileAsync(CombinePath(path, item.Name), cancellationToken);
+                            var fileResult = await DeleteFileAsync(CombinePath(path.Value, item.Name), cancellationToken);
                             if (fileResult.IsFailure)
                                 return fileResult;
                         }
@@ -550,9 +550,9 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to delete directory from Azure: {Path}", path);
+                _logger.LogError(ex, "Failed to delete directory from Azure: {Path}", path.Value);
                 return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to delete directory: {ex.Message}", path));
+                    new FileSystemError($"Failed to delete directory: {ex.Message}", path.Value));
             }
         }
 
@@ -617,9 +617,13 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             return System.Text.RegularExpressions.Regex.IsMatch(name, regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         }
         
-        private static string CombinePath(string basePath, string fileName)
+        private static CanonicalPath CombinePath(string basePath, string fileName)
         {
-            return basePath.TrimEnd('/') + "/" + fileName;
+            var combinedPath = basePath.TrimEnd('/') + "/" + fileName;
+            var result = CanonicalPath.Create(combinedPath);
+            if (result.IsFailure)
+                throw new InvalidOperationException($"Failed to create canonical path: {combinedPath}");
+            return result.Value;
         }
         
         private static FileAttributes ConvertSmbAttributes(NtfsFileAttributes? smbAttributes)
@@ -642,7 +646,7 @@ namespace Ave.Extensions.FileSystem.AzureStorage
         }
         
         private async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateEntriesRecursive(
-            string path,
+            CanonicalPath path,
             string searchPattern,
             Models.EnumerationOptions options,
             int currentDepth,
@@ -651,7 +655,7 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
                 yield break;
             
-            var azurePath = GetAzurePath(path);
+            var azurePath = GetAzurePath(path.Value);
             var directoryClient = GetDirectoryClient(azurePath);
             var items = directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken);
             
@@ -659,20 +663,19 @@ namespace Ave.Extensions.FileSystem.AzureStorage
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                var fullPath = CombinePath(path, item.Name);
+                var fullPath = CombinePath(path.Value, item.Name);
                 
                 if (item.IsDirectory)
                 {
                     if (!options.IncludeHidden && item.Name.StartsWith('.'))
                         continue;
                     
-                    if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(fullPath))
+                    if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(fullPath.Value))
                         continue;
                     
                     var entry = new FileSystemEntry
                     {
                         Path = fullPath,
-                        Name = item.Name,
                         IsDirectory = true,
                         Size = null,
                         ModifiedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
@@ -698,13 +701,12 @@ namespace Ave.Extensions.FileSystem.AzureStorage
                     if (!options.IncludeHidden && item.Name.StartsWith('.'))
                         continue;
                     
-                    if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(fullPath))
+                    if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(fullPath.Value))
                         continue;
                     
                     var entry = new FileSystemEntry
                     {
                         Path = fullPath,
-                        Name = item.Name,
                         IsDirectory = false,
                         Size = null, // Size not available in listing, would need separate API call
                         ModifiedUtc = item.Properties?.LastModified?.DateTime ?? DateTime.UtcNow,

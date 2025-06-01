@@ -6,6 +6,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
 using FluentAssertions;
+using IntegrationTests.Extensions.FileSystem.TestHelpers;
 using Xunit;
 
 namespace IntegrationTests.Extensions.FileSystem
@@ -55,19 +56,19 @@ namespace IntegrationTests.Extensions.FileSystem
             }
 
             // Act - Write using canonical path
-            var writeResult = await _fileSystemService.WriteAllTextAsync(canonicalPath, testContent);
+            var writeResult = await _fileSystemService.WriteAllTextAsync(canonicalPath.ToCanonicalPath(), testContent);
             writeResult.IsSuccess.Should().BeTrue();
 
             // Assert - File should exist at system path
             File.Exists(systemPath).Should().BeTrue();
 
             // Act - Read using canonical path
-            var readResult = await _fileSystemService.ReadAllTextAsync(canonicalPath);
+            var readResult = await _fileSystemService.ReadAllTextAsync(canonicalPath.ToCanonicalPath());
             readResult.IsSuccess.Should().BeTrue();
             readResult.Value.Should().Be(testContent);
 
             // Act - Check existence using canonical path
-            var existsResult = await _fileSystemService.FileExistsAsync(canonicalPath);
+            var existsResult = await _fileSystemService.FileExistsAsync(canonicalPath.ToCanonicalPath());
             existsResult.IsSuccess.Should().BeTrue();
             existsResult.Value.Should().BeTrue();
         }
@@ -82,14 +83,14 @@ namespace IntegrationTests.Extensions.FileSystem
             var systemPath = Path.Combine(_tempDirectory, fileName);
 
             // Act - Write using system path
-            var writeResult = await fileSystemServiceWithoutMapping.WriteAllTextAsync(systemPath, testContent);
+            var writeResult = await fileSystemServiceWithoutMapping.WriteAllTextAsync(systemPath.ToCanonicalPath(), testContent);
             writeResult.IsSuccess.Should().BeTrue();
 
             // Assert - File should exist
             File.Exists(systemPath).Should().BeTrue();
 
             // Act - Read using system path
-            var readResult = await fileSystemServiceWithoutMapping.ReadAllTextAsync(systemPath);
+            var readResult = await fileSystemServiceWithoutMapping.ReadAllTextAsync(systemPath.ToCanonicalPath());
             readResult.IsSuccess.Should().BeTrue();
             readResult.Value.Should().Be(testContent);
         }
@@ -121,7 +122,7 @@ namespace IntegrationTests.Extensions.FileSystem
             }
 
             // Act
-            var filesResult = await _fileSystemService.GetFilesAsync(canonicalDirPath);
+            var filesResult = await _fileSystemService.GetFilesAsync(canonicalDirPath.ToCanonicalPath());
 
             // Assert
             filesResult.IsSuccess.Should().BeTrue();
@@ -130,7 +131,7 @@ namespace IntegrationTests.Extensions.FileSystem
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // On Windows, paths should be mapped back to canonical format
-                filesResult.Value.Should().AllSatisfy(path => path.Should().StartWith("/"));
+                filesResult.Value.Should().AllSatisfy(path => path.ToString().Should().StartWith("/"));
             }
         }
 

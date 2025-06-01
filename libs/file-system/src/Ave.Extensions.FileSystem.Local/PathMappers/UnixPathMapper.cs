@@ -1,5 +1,4 @@
 using Ave.Extensions.Functional;
-using Ave.Extensions.FileSystem.Models;
 
 namespace Ave.Extensions.FileSystem.Local.PathMappers
 {
@@ -9,33 +8,23 @@ namespace Ave.Extensions.FileSystem.Local.PathMappers
     public class UnixPathMapper : IPathMapper
     {
         /// <inheritdoc />
-        public Result<string, FileSystemError> MapToSystemPath(string canonicalPath)
+        public Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
         {
             // On Unix systems, canonical paths are already system paths
-            if (string.IsNullOrWhiteSpace(canonicalPath))
-                return Result<string, FileSystemError>.Failure(new FileSystemError("Path cannot be empty"));
-                
-            return Result<string, FileSystemError>.Success(canonicalPath);
+            return Result<string, Error>.Success(canonicalPath.Value);
         }
         
         /// <inheritdoc />
-        public Result<string, FileSystemError> MapToCanonicalPath(string systemPath)
+        public Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
         {
             // On Unix systems, system paths are already canonical
             if (string.IsNullOrWhiteSpace(systemPath))
-                return Result<string, FileSystemError>.Failure(new FileSystemError("Path cannot be empty"));
+                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathNullOrEmpty);
                 
-            return Result<string, FileSystemError>.Success(systemPath);
-        }
-        
-        /// <inheritdoc />
-        public bool IsValidPathFormat(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-                return false;
-            
-            // Check for null bytes (invalid in Unix paths)
-            return !path.Contains('\0');
+            var result = CanonicalPath.Create(systemPath);
+            if (result.IsFailure)
+                return Result<CanonicalPath, Error>.Failure(result.Error);
+            return Result<CanonicalPath, Error>.Success(result.Value);
         }
     }
 }

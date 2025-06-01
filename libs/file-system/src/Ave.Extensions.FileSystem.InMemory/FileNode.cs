@@ -14,9 +14,9 @@ namespace Ave.Extensions.FileSystem.InMemory
         /// <param name="path">The file path.</param>
         /// <param name="content">The file content.</param>
         /// <param name="createdUtc">The creation time.</param>
-        public FileNode(string path, byte[] content, DateTime createdUtc)
+        public FileNode(CanonicalPath path, byte[] content, DateTime createdUtc)
         {
-            Path = path ?? throw new ArgumentNullException(nameof(path));
+            Path = path;
             Content = content ?? throw new ArgumentNullException(nameof(content));
             CreatedUtc = createdUtc;
             ModifiedUtc = createdUtc;
@@ -27,7 +27,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         /// <summary>
         /// Gets the file path.
         /// </summary>
-        public string Path { get; }
+        public CanonicalPath Path { get; }
 
         /// <summary>
         /// Gets or sets the file content.

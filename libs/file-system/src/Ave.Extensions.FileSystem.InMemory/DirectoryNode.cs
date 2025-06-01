@@ -13,9 +13,9 @@ namespace Ave.Extensions.FileSystem.InMemory
         /// </summary>
         /// <param name="path">The directory path.</param>
         /// <param name="createdUtc">The creation time.</param>
-        public DirectoryNode(string path, DateTime createdUtc)
+        public DirectoryNode(CanonicalPath path, DateTime createdUtc)
         {
-            Path = path ?? throw new ArgumentNullException(nameof(path));
+            Path = path;
             CreatedUtc = createdUtc;
             ModifiedUtc = createdUtc;
             LastAccessUtc = createdUtc;
@@ -25,7 +25,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         /// <summary>
         /// Gets the directory path.
         /// </summary>
-        public string Path { get; }
+        public CanonicalPath Path { get; }
 
         /// <summary>
         /// Gets the creation time in UTC.
