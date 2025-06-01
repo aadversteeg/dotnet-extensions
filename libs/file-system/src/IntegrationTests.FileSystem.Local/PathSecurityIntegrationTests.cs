@@ -4,14 +4,14 @@ using Ave.Extensions.FileSystem.Security;
 using FluentAssertions;
 using Xunit;
 
-namespace IntegrationTests.Extensions.FileSystem
+namespace IntegrationTests.FileSystem.Local
 {
     /// <summary>
     /// Integration tests for path security functionality.
     /// </summary>
     public class PathSecurityIntegrationTests
     {
-        [Theory]
+        [Theory(DisplayName = "PSIT-001: PathSecurity ValidatePathAccess should work correctly")]
         [InlineData("/app/data", new[] { "/app/data" }, true)]
         [InlineData("/app/data/file.txt", new[] { "/app/data" }, true)]
         [InlineData("/app/data/sub/file.txt", new[] { "/app/data" }, true)]
@@ -20,7 +20,7 @@ namespace IntegrationTests.Extensions.FileSystem
         [InlineData("/tmp/sub/file.txt", new[] { "/tmp/*" }, false)]
         [InlineData("/logs/app.log", new[] { "/logs/**" }, true)]
         [InlineData("/logs/sub/app.log", new[] { "/logs/**" }, true)]
-        public void PathSecurity_ValidatePathAccess_ShouldWorkCorrectly(string path, string[] allowedPaths, bool shouldBeAllowed)
+        public void PSIT001(string path, string[] allowedPaths, bool shouldBeAllowed)
         {
             // Arrange
             var pathUtilities = new PathUtilities();
@@ -41,14 +41,14 @@ namespace IntegrationTests.Extensions.FileSystem
             }
         }
 
-        [Theory]
+        [Theory(DisplayName = "PSIT-002: PathSecurity MatchesPattern should work with wildcards")]
         [InlineData("/config/app.json", "*.json", true)]
         [InlineData("/config/app.xml", "*.json", false)]
         [InlineData("/data/test.txt", "test.*", true)]
         [InlineData("/data/other.txt", "test.*", false)]
         [InlineData("/app/file.log", "*", true)]
         [InlineData("/app/file.log", "file.?og", true)]
-        public void PathSecurity_MatchesPattern_ShouldWorkWithWildcards(string path, string pattern, bool shouldMatch)
+        public void PSIT002(string path, string pattern, bool shouldMatch)
         {
             // Arrange
             var pathUtilities = new PathUtilities();
@@ -61,13 +61,13 @@ namespace IntegrationTests.Extensions.FileSystem
             matches.Should().Be(shouldMatch);
         }
 
-        [Theory]
+        [Theory(DisplayName = "PSIT-003: PathSecurity NormalizePath should resolve path components")]
         [InlineData("/app/../data/file.txt", "/data/file.txt")]
         [InlineData("/app/./data/file.txt", "/app/data/file.txt")]
         [InlineData("/app//data///file.txt", "/app/data/file.txt")]
         [InlineData("/app/data/", "/app/data")]
         [InlineData("/", "/")]
-        public void PathSecurity_NormalizePath_ShouldResolvePathComponents(string inputPath, string expectedPath)
+        public void PSIT003(string inputPath, string expectedPath)
         {
             // Arrange
             var pathUtilities = new PathUtilities();
@@ -80,8 +80,8 @@ namespace IntegrationTests.Extensions.FileSystem
             normalized.Should().Be(expectedPath);
         }
 
-        [Fact]
-        public void PathSecurity_ValidatePathAccess_WithNoAllowedPaths_ShouldAllowAll()
+        [Fact(DisplayName = "PSIT-004: PathSecurity ValidatePathAccess with no allowed paths should allow all")]
+        public void PSIT004()
         {
             // Arrange
             var pathUtilities = new PathUtilities();
@@ -95,11 +95,11 @@ namespace IntegrationTests.Extensions.FileSystem
             result.IsSuccess.Should().BeTrue();
         }
 
-        [Theory]
+        [Theory(DisplayName = "PSIT-005: PathSecurity ValidatePathAccess with empty path should return failure")]
         [InlineData("")]
         [InlineData("   ")]
         [InlineData(null)]
-        public void PathSecurity_ValidatePathAccess_WithEmptyPath_ShouldReturnFailure(string? emptyPath)
+        public void PSIT005(string? emptyPath)
         {
             // Arrange
             var pathUtilities = new PathUtilities();

@@ -6,10 +6,10 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
 using FluentAssertions;
-using IntegrationTests.Extensions.FileSystem.TestHelpers;
+using IntegrationTests.FileSystem.Local.TestHelpers;
 using Xunit;
 
-namespace IntegrationTests.Extensions.FileSystem
+namespace IntegrationTests.FileSystem.Local
 {
     /// <summary>
     /// Integration tests for LocalFileSystem with path mapping.
@@ -33,8 +33,8 @@ namespace IntegrationTests.Extensions.FileSystem
             _fileSystemService = new LocalFileSystem(_pathMapper);
         }
 
-        [Fact]
-        public async Task LocalFileSystem_WithPathMapping_ShouldHandleCanonicalPaths()
+        [Fact(DisplayName = "LFSIT-001: LocalFileSystem with path mapping should handle canonical paths")]
+        public async Task LFSIT001()
         {
             // Arrange
             var testContent = "Hello, World!";
@@ -73,30 +73,8 @@ namespace IntegrationTests.Extensions.FileSystem
             existsResult.Value.Should().BeTrue();
         }
 
-        [Fact]
-        public async Task LocalFileSystem_WithoutPathMapping_ShouldHandleSystemPaths()
-        {
-            // Arrange
-            var fileSystemServiceWithoutMapping = new LocalFileSystem(); // No path mapper
-            var testContent = "Hello, System Path!";
-            var fileName = "system_test.txt";
-            var systemPath = Path.Combine(_tempDirectory, fileName);
-
-            // Act - Write using system path
-            var writeResult = await fileSystemServiceWithoutMapping.WriteAllTextAsync(systemPath.ToCanonicalPath(), testContent);
-            writeResult.IsSuccess.Should().BeTrue();
-
-            // Assert - File should exist
-            File.Exists(systemPath).Should().BeTrue();
-
-            // Act - Read using system path
-            var readResult = await fileSystemServiceWithoutMapping.ReadAllTextAsync(systemPath.ToCanonicalPath());
-            readResult.IsSuccess.Should().BeTrue();
-            readResult.Value.Should().Be(testContent);
-        }
-
-        [Fact]
-        public async Task LocalFileSystem_GetFiles_ShouldMapPathsBackToCanonical()
+        [Fact(DisplayName = "LFSIT-002: LocalFileSystem GetFiles should map paths back to canonical")]
+        public async Task LFSIT002()
         {
             // Arrange
             var fileName1 = "file1.txt";

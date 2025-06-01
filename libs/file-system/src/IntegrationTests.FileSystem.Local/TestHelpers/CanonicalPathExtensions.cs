@@ -1,7 +1,7 @@
 using System;
 using Ave.Extensions.FileSystem;
 
-namespace IntegrationTests.Extensions.FileSystem.TestHelpers
+namespace IntegrationTests.FileSystem.Local.TestHelpers
 {
     /// <summary>
     /// Extension methods to make test code easier to read when working with CanonicalPath.
