@@ -190,20 +190,22 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var afterWrite = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetFileMetadataAsync(path.ToCanonicalPath());
+            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            var metadata = result.Value;
-            metadata.FullPath.Should().Be(path.ToCanonicalPath());
-            metadata.Name.Should().Be("file.txt");
-            metadata.Size.Should().Be(Encoding.UTF8.GetBytes(content).Length);
-            metadata.CreatedUtc.Should().BeOnOrAfter(beforeWrite).And.BeOnOrBefore(afterWrite);
-            metadata.ModifiedUtc.Should().BeOnOrAfter(beforeWrite).And.BeOnOrBefore(afterWrite);
-            metadata.Attributes.Should().Be(FileAttributes.Normal);
+            var entry = result.Value;
+            entry.Path.Should().Be(path.ToCanonicalPath());
+            entry.Name.Should().Be("file.txt");
+            entry.Size.Should().Be(Encoding.UTF8.GetBytes(content).Length);
+            entry.IsDirectory.Should().BeFalse();
+            entry.Extension.Should().Be(".txt");
+            entry.CreatedUtc.Should().BeOnOrAfter(beforeWrite).And.BeOnOrBefore(afterWrite);
+            entry.ModifiedUtc.Should().BeOnOrAfter(beforeWrite).And.BeOnOrBefore(afterWrite);
+            entry.Attributes.Should().Be(FileAttributes.Normal);
         }
 
-        [Fact(DisplayName = "IMFS-011: GetDirectoryMetadataAsync returns correct metadata")]
+        [Fact(DisplayName = "IMFS-011: GetEntryAsync returns correct metadata for directories")]
         public async Task IMFS011()
         {
             // Arrange
@@ -213,16 +215,19 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var afterCreate = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetDirectoryMetadataAsync(path.ToCanonicalPath());
+            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            var metadata = result.Value;
-            metadata.FullPath.Should().Be(path.ToCanonicalPath());
-            metadata.Name.Should().Be("directory");
-            metadata.CreatedUtc.Should().BeOnOrAfter(beforeCreate).And.BeOnOrBefore(afterCreate);
-            metadata.ModifiedUtc.Should().BeOnOrAfter(beforeCreate).And.BeOnOrBefore(afterCreate);
-            metadata.Attributes.Should().Be(FileAttributes.Directory);
+            var entry = result.Value;
+            entry.Path.Should().Be(path.ToCanonicalPath());
+            entry.Name.Should().Be("directory");
+            entry.IsDirectory.Should().BeTrue();
+            entry.Size.Should().BeNull();
+            entry.Extension.Should().BeNull();
+            entry.CreatedUtc.Should().BeOnOrAfter(beforeCreate).And.BeOnOrBefore(afterCreate);
+            entry.ModifiedUtc.Should().BeOnOrAfter(beforeCreate).And.BeOnOrBefore(afterCreate);
+            entry.Attributes.Should().Be(FileAttributes.Directory);
         }
 
         [Fact(DisplayName = "IMFS-012: GetFilesAsync returns correct file list")]

@@ -153,31 +153,51 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_files.TryGetValue(path, out var fileNode))
+                    // Check if it's a file
+                    if (_files.TryGetValue(path, out var fileNode))
                     {
-                        return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
-                            new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
+                        var entry = new FileSystemEntry
+                        {
+                            Path = path,
+                            IsDirectory = false,
+                            Size = fileNode.Content.Length,
+                            Extension = System.IO.Path.GetExtension(path.GetName()),
+                            CreatedUtc = fileNode.CreatedUtc,
+                            ModifiedUtc = fileNode.ModifiedUtc,
+                            LastAccessUtc = fileNode.LastAccessUtc,
+                            Attributes = fileNode.Attributes
+                        };
+
+                        return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+                    }
+                    
+                    // Check if it's a directory
+                    if (_directories.TryGetValue(path, out var dirNode))
+                    {
+                        var entry = new FileSystemEntry
+                        {
+                            Path = path,
+                            IsDirectory = true,
+                            Size = null,
+                            Extension = null,
+                            CreatedUtc = dirNode.CreatedUtc,
+                            ModifiedUtc = dirNode.ModifiedUtc,
+                            LastAccessUtc = dirNode.LastAccessUtc,
+                            Attributes = dirNode.Attributes
+                        };
+
+                        return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                     }
 
-                    var metadata = new FileMetadata
-                    {
-                        FullPath = path,
-                        Name = path.GetName(),
-                        Size = fileNode.Content.Length,
-                        CreatedUtc = fileNode.CreatedUtc,
-                        ModifiedUtc = fileNode.ModifiedUtc,
-                        LastAccessUtc = fileNode.LastAccessUtc,
-                        Attributes = fileNode.Attributes
-                    };
-
-                    return Task.FromResult(Result<FileMetadata, FileSystemError>.Success(metadata));
+                    return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
+                        new FileSystemError($"Path not found: {path}", path, FileSystemErrorType.PathNotFound)));
                 }
                 finally
                 {
@@ -186,48 +206,9 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get file metadata: {Path}", path);
-                return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get file metadata: {ex.Message}", path)));
-            }
-        }
-
-        /// <inheritdoc />
-        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                _lock.EnterReadLock();
-                try
-                {
-                    if (!_directories.TryGetValue(path, out var dirNode))
-                    {
-                        return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
-                            new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
-                    }
-
-                    var metadata = new DirectoryMetadata
-                    {
-                        FullPath = path,
-                        Name = path.GetName(),
-                        CreatedUtc = dirNode.CreatedUtc,
-                        ModifiedUtc = dirNode.ModifiedUtc,
-                        LastAccessUtc = dirNode.LastAccessUtc,
-                        Attributes = dirNode.Attributes
-                    };
-
-                    return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Success(metadata));
-                }
-                finally
-                {
-                    _lock.ExitReadLock();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get directory metadata: {Path}", path);
-                return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get directory metadata: {ex.Message}", path)));
+                _logger.LogError(ex, "Failed to get entry: {Path}", path);
+                return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to get entry: {ex.Message}", path)));
             }
         }
 
@@ -665,7 +646,10 @@ namespace Ave.Extensions.FileSystem.InMemory
                             Path = childDir,
                             IsDirectory = true,
                             Size = null,
+                            Extension = null,
+                            CreatedUtc = dirNode.CreatedUtc,
                             ModifiedUtc = dirNode.ModifiedUtc,
+                            LastAccessUtc = dirNode.LastAccessUtc,
                             Attributes = dirNode.Attributes
                         };
                         
@@ -709,7 +693,10 @@ namespace Ave.Extensions.FileSystem.InMemory
                             Path = childFile,
                             IsDirectory = false,
                             Size = fileNode.Content.Length,
+                            Extension = System.IO.Path.GetExtension(childFile.GetName()),
+                            CreatedUtc = fileNode.CreatedUtc,
                             ModifiedUtc = fileNode.ModifiedUtc,
+                            LastAccessUtc = fileNode.LastAccessUtc,
                             Attributes = fileNode.Attributes
                         };
                         

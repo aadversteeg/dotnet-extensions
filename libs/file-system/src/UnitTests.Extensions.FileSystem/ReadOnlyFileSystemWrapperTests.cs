@@ -118,56 +118,66 @@ namespace UnitTests.Extensions.FileSystem
             mockFileSystem.Verify(fs => fs.GetDirectoriesAsync("/test".ToCanonicalPath(), "*", SearchOption.TopDirectoryOnly, It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Fact(DisplayName = "RFSW-006: Wrapper delegates GetFileMetadataAsync to underlying filesystem")]
+        [Fact(DisplayName = "RFSW-006: Wrapper delegates GetEntryAsync to underlying filesystem for files")]
         public async Task RFSW006()
         {
             // Arrange
-            var metadata = new FileMetadata
+            var entry = new FileSystemEntry
             {
-                FullPath = "/test/file.txt".ToCanonicalPath(),
-                Name = "file.txt",
+                Path = "/test/file.txt".ToCanonicalPath(),
+                IsDirectory = false,
+                Size = 1024,
                 Extension = ".txt",
-                Size = 1024
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                LastAccessUtc = DateTime.UtcNow,
+                Attributes = FileAttributes.Normal
             };
-            var expectedResult = Result<FileMetadata, FileSystemError>.Success(metadata);
+            var expectedResult = Result<FileSystemEntry, FileSystemError>.Success(entry);
             var mockFileSystem = new Mock<IFileSystem>();
-            mockFileSystem.Setup(fs => fs.GetFileMetadataAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
+            mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
             
             var wrapper = mockFileSystem.Object.AsReadOnly();
             
             // Act
-            var result = await wrapper.GetFileMetadataAsync("/test/file.txt".ToCanonicalPath());
+            var result = await wrapper.GetEntryAsync("/test/file.txt".ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeTrue();
-            result.Value.Should().BeEquivalentTo(metadata);
-            mockFileSystem.Verify(fs => fs.GetFileMetadataAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
+            result.Value.Should().BeEquivalentTo(entry);
+            mockFileSystem.Verify(fs => fs.GetEntryAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Fact(DisplayName = "RFSW-007: Wrapper delegates GetDirectoryMetadataAsync to underlying filesystem")]
+        [Fact(DisplayName = "RFSW-007: Wrapper delegates GetEntryAsync to underlying filesystem for directories")]
         public async Task RFSW007()
         {
             // Arrange
-            var metadata = new DirectoryMetadata
+            var entry = new FileSystemEntry
             {
-                FullPath = "/test/dir".ToCanonicalPath(),
-                Name = "dir"
+                Path = "/test/dir".ToCanonicalPath(),
+                IsDirectory = true,
+                Size = null,
+                Extension = null,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                LastAccessUtc = DateTime.UtcNow,
+                Attributes = FileAttributes.Directory
             };
-            var expectedResult = Result<DirectoryMetadata, FileSystemError>.Success(metadata);
+            var expectedResult = Result<FileSystemEntry, FileSystemError>.Success(entry);
             var mockFileSystem = new Mock<IFileSystem>();
-            mockFileSystem.Setup(fs => fs.GetDirectoryMetadataAsync("/test/dir".ToCanonicalPath(), It.IsAny<CancellationToken>()))
+            mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/dir".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
             
             var wrapper = mockFileSystem.Object.AsReadOnly();
             
             // Act
-            var result = await wrapper.GetDirectoryMetadataAsync("/test/dir".ToCanonicalPath());
+            var result = await wrapper.GetEntryAsync("/test/dir".ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeTrue();
-            result.Value.Should().BeEquivalentTo(metadata);
-            mockFileSystem.Verify(fs => fs.GetDirectoryMetadataAsync("/test/dir".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
+            result.Value.Should().BeEquivalentTo(entry);
+            mockFileSystem.Verify(fs => fs.GetEntryAsync("/test/dir".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact(DisplayName = "RFSW-008: Wrapper delegates OpenReadAsync to underlying filesystem")]

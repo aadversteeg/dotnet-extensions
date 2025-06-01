@@ -48,15 +48,9 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
-        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
-            return _fileSystem.GetFileMetadataAsync(path, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
-        {
-            return _fileSystem.GetDirectoryMetadataAsync(path, cancellationToken);
+            return _fileSystem.GetEntryAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />

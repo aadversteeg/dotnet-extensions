@@ -267,7 +267,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             }
         }
 
-        [Fact(DisplayName = "LFS-012: GetFileMetadataAsync returns correct metadata")]
+        [Fact(DisplayName = "LFS-012: GetEntryAsync returns correct metadata for files")]
         public async Task LFS012()
         {
             // Arrange
@@ -279,14 +279,15 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.GetFileMetadataAsync(tempFilePath.ToCanonicalPath());
+                var result = await fileSystem.GetEntryAsync(tempFilePath.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
-                result.Value.FullPath.Should().Be(tempFilePath);
+                result.Value.Path.Value.Should().Be(tempFilePath.ToCanonicalPath().Value);
                 result.Value.Name.Should().Be(Path.GetFileName(tempFilePath));
                 result.Value.Extension.Should().Be(Path.GetExtension(tempFilePath));
                 result.Value.Size.Should().BeGreaterThan(0);
+                result.Value.IsDirectory.Should().BeFalse();
             }
             finally
             {
@@ -298,7 +299,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             }
         }
 
-        [Fact(DisplayName = "LFS-013: GetFileMetadataAsync returns failure for non-existing file")]
+        [Fact(DisplayName = "LFS-013: GetEntryAsync returns failure for non-existing path")]
         public async Task LFS013()
         {
             // Arrange
@@ -306,14 +307,14 @@ namespace UnitTests.Extensions.FileSystem.Local
             var nonExistentPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".txt");
             
             // Act
-            var result = await fileSystem.GetFileMetadataAsync(nonExistentPath.ToCanonicalPath());
+            var result = await fileSystem.GetEntryAsync(nonExistentPath.ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
+            result.Error.Type.Should().Be(FileSystemErrorType.PathNotFound);
         }
 
-        [Fact(DisplayName = "LFS-014: GetDirectoryMetadataAsync returns correct metadata")]
+        [Fact(DisplayName = "LFS-014: GetEntryAsync returns correct metadata for directories")]
         public async Task LFS014()
         {
             // Arrange
@@ -324,12 +325,15 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 // Act
-                var result = await fileSystem.GetDirectoryMetadataAsync(tempDir.ToCanonicalPath());
+                var result = await fileSystem.GetEntryAsync(tempDir.ToCanonicalPath());
                 
                 // Assert
                 result.IsSuccess.Should().BeTrue();
-                result.Value.FullPath.Should().Be(tempDir);
+                result.Value.Path.Value.Should().Be(tempDir.ToCanonicalPath().Value);
                 result.Value.Name.Should().Be(Path.GetFileName(tempDir));
+                result.Value.IsDirectory.Should().BeTrue();
+                result.Value.Size.Should().BeNull();
+                result.Value.Extension.Should().BeNull();
             }
             finally
             {

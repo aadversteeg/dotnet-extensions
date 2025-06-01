@@ -45,20 +45,12 @@ namespace Ave.Extensions.FileSystem
         Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Gets metadata for a file.
+        /// Gets metadata for a file system entry (file or directory).
         /// </summary>
-        /// <param name="path">The file path to get metadata for.</param>
+        /// <param name="path">The path to get metadata for.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the file metadata or an error.</returns>
-        Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Gets metadata for a directory.
-        /// </summary>
-        /// <param name="path">The directory path to get metadata for.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the directory metadata or an error.</returns>
-        Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        /// <returns>A result containing the file system entry or an error.</returns>
+        Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a list of files in the specified directory.

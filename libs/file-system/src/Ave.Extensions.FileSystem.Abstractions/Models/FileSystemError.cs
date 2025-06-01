@@ -101,6 +101,11 @@ namespace Ave.Extensions.FileSystem.Models
         DirectoryNotFound,
 
         /// <summary>
+        /// The specified path (file or directory) was not found.
+        /// </summary>
+        PathNotFound,
+
+        /// <summary>
         /// Access to the file or directory was denied.
         /// </summary>
         AccessDenied,

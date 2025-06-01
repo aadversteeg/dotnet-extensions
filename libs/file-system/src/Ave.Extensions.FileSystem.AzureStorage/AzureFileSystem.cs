@@ -177,7 +177,7 @@ namespace Ave.Extensions.FileSystem.AzureStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -185,81 +185,67 @@ namespace Ave.Extensions.FileSystem.AzureStorage
                 {
                     var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
-                        return Result<FileMetadata, FileSystemError>.Failure(validationResult.Error);
+                        return Result<FileSystemEntry, FileSystemError>.Failure(validationResult.Error);
                 }
                 
                 var azurePath = GetAzurePath(path.Value);
-                var fileClient = GetFileClient(azurePath);
                 
-                var response = await fileClient.GetPropertiesAsync(cancellationToken);
-                var properties = response.Value;
-                
-                var metadata = new FileMetadata
+                // Try as file first
+                try
                 {
-                    FullPath = path,
-                    Name = Path.GetFileName(path.Value),
-                    Size = properties.ContentLength,
-                    CreatedUtc = properties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
-                    ModifiedUtc = properties.LastModified.DateTime,
-                    LastAccessUtc = properties.SmbProperties.FileLastWrittenOn?.DateTime ?? properties.LastModified.DateTime,
-                    Attributes = ConvertSmbAttributes(properties.SmbProperties.FileAttributes)
-                };
-                
-                return Result<FileMetadata, FileSystemError>.Success(metadata);
-            }
-            catch (RequestFailedException ex) when (ex.Status == 404)
-            {
-                return Result<FileMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get file metadata from Azure: {Path}", path.Value);
-                return Result<FileMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get file metadata: {ex.Message}", path.Value));
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
-                        return Result<DirectoryMetadata, FileSystemError>.Failure(validationResult.Error);
+                    var fileClient = GetFileClient(azurePath);
+                    var fileResponse = await fileClient.GetPropertiesAsync(cancellationToken);
+                    var fileProperties = fileResponse.Value;
+                    
+                    var entry = new FileSystemEntry
+                    {
+                        Path = path,
+                        IsDirectory = false,
+                        Size = fileProperties.ContentLength,
+                        Extension = Path.GetExtension(path.Value),
+                        CreatedUtc = fileProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                        ModifiedUtc = fileProperties.LastModified.DateTime,
+                        LastAccessUtc = fileProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? fileProperties.LastModified.DateTime,
+                        Attributes = ConvertSmbAttributes(fileProperties.SmbProperties.FileAttributes)
+                    };
+                    
+                    return Result<FileSystemEntry, FileSystemError>.Success(entry);
                 }
-                
-                var azurePath = GetAzurePath(path.Value);
-                var directoryClient = GetDirectoryClient(azurePath);
-                
-                var response = await directoryClient.GetPropertiesAsync(cancellationToken);
-                var properties = response.Value;
-                
-                var metadata = new DirectoryMetadata
+                catch (RequestFailedException ex) when (ex.Status == 404)
                 {
-                    FullPath = path,
-                    Name = Path.GetFileName(path.Value.TrimEnd('/')),
-                    CreatedUtc = properties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
-                    ModifiedUtc = properties.LastModified.DateTime,
-                    LastAccessUtc = properties.SmbProperties.FileLastWrittenOn?.DateTime ?? properties.LastModified.DateTime,
-                    Attributes = ConvertSmbAttributes(properties.SmbProperties.FileAttributes)
-                };
-                
-                return Result<DirectoryMetadata, FileSystemError>.Success(metadata);
-            }
-            catch (RequestFailedException ex) when (ex.Status == 404)
-            {
-                return Result<DirectoryMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound));
+                    // Not a file, try as directory
+                    try
+                    {
+                        var directoryClient = GetDirectoryClient(azurePath);
+                        var dirResponse = await directoryClient.GetPropertiesAsync(cancellationToken);
+                        var dirProperties = dirResponse.Value;
+                        
+                        var entry = new FileSystemEntry
+                        {
+                            Path = path,
+                            IsDirectory = true,
+                            Size = null,
+                            Extension = null,
+                            CreatedUtc = dirProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                            ModifiedUtc = dirProperties.LastModified.DateTime,
+                            LastAccessUtc = dirProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? dirProperties.LastModified.DateTime,
+                            Attributes = ConvertSmbAttributes(dirProperties.SmbProperties.FileAttributes) | FileAttributes.Directory
+                        };
+                        
+                        return Result<FileSystemEntry, FileSystemError>.Success(entry);
+                    }
+                    catch (RequestFailedException dirEx) when (dirEx.Status == 404)
+                    {
+                        return Result<FileSystemEntry, FileSystemError>.Failure(
+                            new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get directory metadata from Azure: {Path}", path.Value);
-                return Result<DirectoryMetadata, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get directory metadata: {ex.Message}", path.Value));
+                _logger.LogError(ex, "Failed to get entry from Azure: {Path}", path.Value);
+                return Result<FileSystemEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value));
             }
         }
 
@@ -678,7 +664,10 @@ namespace Ave.Extensions.FileSystem.AzureStorage
                         Path = fullPath,
                         IsDirectory = true,
                         Size = null,
+                        Extension = null,
+                        CreatedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
                         ModifiedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
+                        LastAccessUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
                         Attributes = FileAttributes.Directory
                     };
                     
@@ -709,7 +698,10 @@ namespace Ave.Extensions.FileSystem.AzureStorage
                         Path = fullPath,
                         IsDirectory = false,
                         Size = null, // Size not available in listing, would need separate API call
-                        ModifiedUtc = item.Properties?.LastModified?.DateTime ?? DateTime.UtcNow,
+                        Extension = Path.GetExtension(item.Name),
+                        CreatedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
+                        ModifiedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing  
+                        LastAccessUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
                         Attributes = FileAttributes.Normal
                     };
                     

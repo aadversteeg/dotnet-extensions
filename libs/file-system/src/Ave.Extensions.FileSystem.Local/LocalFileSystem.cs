@@ -113,60 +113,37 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
+                    return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
                         new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
                 var systemPath = systemPathResult.Value;
-                var fileInfo = new FileInfo(systemPath);
-                if (!fileInfo.Exists)
-                    return Task.FromResult(Result<FileMetadata, FileSystemError>.Failure(
-                        new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound)));
-
-                var metadata = FileMetadata.FromFileInfo(fileInfo);
-                // Map the path back to canonical format
-                var canonicalPathResult = MapPathToCanonical(metadata.FullPath);
-                if (canonicalPathResult.IsSuccess)
-                    metadata.FullPath = canonicalPathResult.Value.Value;
-                else
-                    metadata.FullPath = path.Value;
-                return Task.FromResult(Result<FileMetadata, FileSystemError>.Success(metadata));
-            }, path.Value);
-        }
-
-        /// <inheritdoc />
-        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(CanonicalPath path, CancellationToken cancellationToken = default)
-        {
-            return ExecuteAsync(() =>
-            {
-                var systemPathResult = GetSystemPath(path);
-                if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
-
-                cancellationToken.ThrowIfCancellationRequested();
                 
-                var systemPath = systemPathResult.Value;
-                var directoryInfo = new DirectoryInfo(systemPath);
-                if (!directoryInfo.Exists)
-                    return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Failure(
-                        new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
-
-                var metadata = DirectoryMetadata.FromDirectoryInfo(directoryInfo);
-                // Map the path back to canonical format
-                var canonicalPathResult = MapPathToCanonical(metadata.FullPath);
-                if (canonicalPathResult.IsSuccess)
-                    metadata.FullPath = canonicalPathResult.Value.Value;
-                else
-                    metadata.FullPath = path.Value;
-                return Task.FromResult(Result<DirectoryMetadata, FileSystemError>.Success(metadata));
+                // Check if it's a file
+                if (File.Exists(systemPath))
+                {
+                    var fileInfo = new FileInfo(systemPath);
+                    var entry = FileSystemEntry.FromFileInfo(fileInfo, _pathMapper);
+                    return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+                }
+                
+                // Check if it's a directory
+                if (Directory.Exists(systemPath))
+                {
+                    var directoryInfo = new DirectoryInfo(systemPath);
+                    var entry = FileSystemEntry.FromDirectoryInfo(directoryInfo, _pathMapper);
+                    return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+                }
+                
+                return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound)));
             }, path.Value);
         }
 
@@ -397,13 +374,7 @@ namespace Ave.Extensions.FileSystem.Local
                 if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(file.FullName))
                     continue;
 
-                var entry = FileSystemEntry.FromFileInfo(file);
-                // Map entry path back to canonical format
-                var canonicalPathResult = MapPathToCanonical(entry.Path.Value);
-                if (canonicalPathResult.IsSuccess)
-                {
-                    entry.Path = canonicalPathResult.Value;
-                }
+                var entry = FileSystemEntry.FromFileInfo(file, _pathMapper);
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
             }
 
@@ -424,13 +395,7 @@ namespace Ave.Extensions.FileSystem.Local
                 if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(directory.FullName))
                     continue;
 
-                var entry = FileSystemEntry.FromDirectoryInfo(directory);
-                // Map entry path back to canonical format
-                var canonicalPathResult = MapPathToCanonical(entry.Path.Value);
-                if (canonicalPathResult.IsSuccess)
-                {
-                    entry.Path = canonicalPathResult.Value;
-                }
+                var entry = FileSystemEntry.FromDirectoryInfo(directory, _pathMapper);
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
 
                 // Recurse into subdirectory only if RecurseSubdirectories is enabled
