@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Storage.Files.Shares;
 using Azure.Storage.Files.Shares.Models;
-using Ave.Extensions.FileSystem.AzureStorage.Configuration;
+using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Security;
 using Ave.Extensions.Functional;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Ave.Extensions.FileSystem.AzureStorage
+namespace Ave.Extensions.FileSystem.AzureFileStorage
 {
     /// <summary>y
     /// Azure File Share implementation of IFileSystem.

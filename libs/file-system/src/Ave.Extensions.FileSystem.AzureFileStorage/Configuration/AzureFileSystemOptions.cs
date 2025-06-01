@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Ave.Extensions.FileSystem.AzureStorage.Configuration
+namespace Ave.Extensions.FileSystem.AzureFileStorage.Configuration
 {
     /// <summary>
     /// Configuration options for Azure File Share file system.

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Azure.Storage.Files.Shares;
 using Microsoft.Extensions.Logging;
 
-namespace Ave.Extensions.FileSystem.AzureStorage
+namespace Ave.Extensions.FileSystem.AzureFileStorage
 {
     /// <summary>
     /// A write-only stream that uploads to Azure File Share when disposed.

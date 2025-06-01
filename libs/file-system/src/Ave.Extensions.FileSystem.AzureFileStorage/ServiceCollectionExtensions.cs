@@ -1,6 +1,6 @@
 using System;
 using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.AzureStorage.Configuration;
+using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.Configuration;
 using Ave.Extensions.FileSystem.Local;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,9 +37,9 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             
             // Register Azure implementation as the primary file system
-            services.AddSingleton<Ave.Extensions.FileSystem.AzureStorage.AzureFileSystem>();
-            services.AddSingleton<IFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureStorage.AzureFileSystem>());
-            services.AddSingleton<IReadOnlyFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureStorage.AzureFileSystem>());
+            services.AddSingleton<Ave.Extensions.FileSystem.AzureFileStorage.AzureFileSystem>();
+            services.AddSingleton<IFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureFileStorage.AzureFileSystem>());
+            services.AddSingleton<IReadOnlyFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureFileStorage.AzureFileSystem>());
             
             return services;
         }
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddFileSystem();
             
             // Register Azure implementation as a named service
-            services.AddSingleton<Ave.Extensions.FileSystem.AzureStorage.AzureFileSystem>();
+            services.AddSingleton<Ave.Extensions.FileSystem.AzureFileStorage.AzureFileSystem>();
             
             return services;
         }
@@ -98,9 +98,9 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             
             // Register Azure implementation
-            services.AddSingleton<Ave.Extensions.FileSystem.AzureStorage.AzureFileSystem>();
-            services.AddSingleton<IFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureStorage.AzureFileSystem>());
-            services.AddSingleton<IReadOnlyFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureStorage.AzureFileSystem>());
+            services.AddSingleton<Ave.Extensions.FileSystem.AzureFileStorage.AzureFileSystem>();
+            services.AddSingleton<IFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureFileStorage.AzureFileSystem>());
+            services.AddSingleton<IReadOnlyFileSystem>(sp => sp.GetRequiredService<Ave.Extensions.FileSystem.AzureFileStorage.AzureFileSystem>());
             
             return services;
         }
