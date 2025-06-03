@@ -8,24 +8,19 @@ namespace Ave.Extensions.FileSystem.Models
     public class FileVisitedEventArgs : EventArgs
     {
         /// <summary>
-        /// Gets the file metadata for the visited file.
+        /// Gets the file system entry for the visited item.
         /// </summary>
-        public FileMetadata? File { get; }
-
-        /// <summary>
-        /// Gets the directory metadata for the visited directory.
-        /// </summary>
-        public DirectoryMetadata? Directory { get; }
+        public FileSystemEntry Entry { get; }
 
         /// <summary>
         /// Gets a value indicating whether this event represents a file visit.
         /// </summary>
-        public bool IsFile => File != null;
+        public bool IsFile => !Entry.IsDirectory;
 
         /// <summary>
         /// Gets a value indicating whether this event represents a directory visit.
         /// </summary>
-        public bool IsDirectory => Directory != null;
+        public bool IsDirectory => Entry.IsDirectory;
 
         /// <summary>
         /// Gets the current depth of traversal.
@@ -38,29 +33,14 @@ namespace Ave.Extensions.FileSystem.Models
         public string RelativePath { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileVisitedEventArgs"/> class for a file.
+        /// Initializes a new instance of the <see cref="FileVisitedEventArgs"/> class.
         /// </summary>
-        /// <param name="file">The file metadata.</param>
+        /// <param name="entry">The file system entry.</param>
         /// <param name="depth">The current depth.</param>
         /// <param name="relativePath">The relative path.</param>
-        public FileVisitedEventArgs(FileMetadata file, int depth, string relativePath)
+        public FileVisitedEventArgs(FileSystemEntry entry, int depth, string relativePath)
         {
-            File = file ?? throw new ArgumentNullException(nameof(file));
-            Directory = null;
-            Depth = depth;
-            RelativePath = relativePath ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FileVisitedEventArgs"/> class for a directory.
-        /// </summary>
-        /// <param name="directory">The directory metadata.</param>
-        /// <param name="depth">The current depth.</param>
-        /// <param name="relativePath">The relative path.</param>
-        public FileVisitedEventArgs(DirectoryMetadata directory, int depth, string relativePath)
-        {
-            File = null;
-            Directory = directory ?? throw new ArgumentNullException(nameof(directory));
+            Entry = entry ?? throw new ArgumentNullException(nameof(entry));
             Depth = depth;
             RelativePath = relativePath ?? string.Empty;
         }

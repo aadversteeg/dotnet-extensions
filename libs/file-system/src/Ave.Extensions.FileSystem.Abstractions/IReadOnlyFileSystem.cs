@@ -18,7 +18,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to check.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating whether the file exists or an error occurred.</returns>
-        Task<Result<bool, FileSystemError>> FileExistsAsync(string path, CancellationToken cancellationToken = default);
+        Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Determines whether the specified directory exists.
@@ -26,7 +26,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The directory path to check.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating whether the directory exists or an error occurred.</returns>
-        Task<Result<bool, FileSystemError>> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default);
+        Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads all text from a file.
@@ -34,7 +34,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to read from.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file content or an error.</returns>
-        Task<Result<string, FileSystemError>> ReadAllTextAsync(string path, CancellationToken cancellationToken = default);
+        Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Opens a file for reading.
@@ -42,23 +42,15 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to open.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file stream or an error.</returns>
-        Task<Result<Stream, FileSystemError>> OpenReadAsync(string path, CancellationToken cancellationToken = default);
+        Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Gets metadata for a file.
+        /// Gets metadata for a file system entry (file or directory).
         /// </summary>
-        /// <param name="path">The file path to get metadata for.</param>
+        /// <param name="path">The path to get metadata for.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the file metadata or an error.</returns>
-        Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(string path, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Gets metadata for a directory.
-        /// </summary>
-        /// <param name="path">The directory path to get metadata for.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the directory metadata or an error.</returns>
-        Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(string path, CancellationToken cancellationToken = default);
+        /// <returns>A result containing the file system entry or an error.</returns>
+        Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a list of files in the specified directory.
@@ -68,7 +60,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="searchOption">Specifies whether to search subdirectories.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file paths or an error.</returns>
-        Task<Result<string[], FileSystemError>> GetFilesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
+        Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a list of directories in the specified directory.
@@ -78,7 +70,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="searchOption">Specifies whether to search subdirectories.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the directory paths or an error.</returns>
-        Task<Result<string[], FileSystemError>> GetDirectoriesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
+        Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Enumerates file system entries asynchronously.
@@ -89,7 +81,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>An async enumerable of file system entries or errors.</returns>
         IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            string path,
+            CanonicalPath path,
             string searchPattern = "*",
             Models.EnumerationOptions? options = null,
             CancellationToken cancellationToken = default);

@@ -1,19 +1,25 @@
 # Ave.Extensions.FileSystem
 
-Cross-platform filesystem operations for .NET applications running on Windows and Linux.
+Cross-platform filesystem operations for .NET applications with advanced path mapping and security features.
 
 ## Features
 
-- Cross-platform file system operations
-- Consistent API across Windows and Linux
-- NetStandard 2.1 compatible
+- **Cross-platform file system operations** - Consistent API across Windows, Linux, and macOS
+- **Canonical path mapping** - Use Unix-style paths (`/c/folder/file.txt`) on all platforms
+- **Path security validation** - Restrict file access to allowed directories with wildcard support
+- **Functional error handling** - Uses `Result<T, Error>` pattern instead of exceptions
+- **Async enumeration** - Stream large directory listings efficiently
+- **File system monitoring** - Real-time change notifications with reactive streams
+- **Dependency injection ready** - Full integration with Microsoft.Extensions.DependencyInjection
+- **NetStandard 2.1 compatible** - Works with .NET Core 3.0+ and .NET 5+
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
 | `Ave.Extensions.FileSystem.Abstractions` | Interfaces and abstractions for file system operations |
-| `Ave.Extensions.FileSystem` | Implementation of the file system abstractions |
+| `Ave.Extensions.FileSystem` | Core implementation with path mapping and security features |
+| `Ave.Extensions.FileSystem.DependencyInjection` | Dependency injection extensions and configuration |
 
 ## Getting Started
 
@@ -21,9 +27,10 @@ Install the packages from NuGet:
 
 ```shell
 dotnet add package Ave.Extensions.FileSystem
+dotnet add package Ave.Extensions.FileSystem.DependencyInjection
 ```
 
-Basic usage:
+### Basic Usage
 
 ```csharp
 using Ave.Extensions.FileSystem;
@@ -44,14 +51,102 @@ public class MyService
     
     public async Task ProcessFile(string path)
     {
-        if (await _fileSystem.FileExistsAsync(path))
+        var result = await _fileSystem.FileExistsAsync(path);
+        if (result.IsSuccess && result.Value)
         {
-            var content = await _fileSystem.ReadAllTextAsync(path);
-            // Process content...
+            var contentResult = await _fileSystem.ReadAllTextAsync(path);
+            if (contentResult.IsSuccess)
+            {
+                var content = contentResult.Value;
+                // Process content...
+            }
         }
     }
 }
 ```
+
+### Canonical Path Mapping
+
+Use Unix-style paths across all platforms:
+
+```csharp
+// Setup with canonical path mapping
+services.AddFileSystem(options =>
+{
+    options.UseCanonicalPaths = true;
+});
+
+// Now you can use Unix-style paths on Windows
+var result = await fileSystem.ReadAllTextAsync("/c/users/documents/file.txt");
+// Automatically maps to C:\users\documents\file.txt on Windows
+```
+
+### Path Security
+
+Restrict file system access to specific directories:
+
+```csharp
+services.AddFileSystem(options =>
+{
+    options.EnablePathSecurity = true;
+    options.AllowedPaths.Add("/app/data");
+    options.AllowedPaths.Add("/tmp/*");
+    options.AllowedPaths.Add("/logs");
+});
+
+// Only paths under /app/data, /tmp/*, and /logs are accessible
+```
+
+### Advanced Configuration
+
+```csharp
+services.AddFileSystem(options =>
+{
+    // Enable canonical path mapping
+    options.UseCanonicalPaths = true;
+    
+    // Enable security validation
+    options.EnablePathSecurity = true;
+    options.AllowedPaths.Add("/app/**");
+    options.AllowedPaths.Add("/data/uploads/*");
+    
+    // Customize other features
+    options.EnableMonitoring = true;
+    options.RegisterVisitor = true;
+    options.DefaultBufferSize = 8192;
+});
+```
+
+## Path Mapping Reference
+
+When canonical path mapping is enabled, the library automatically converts between platform-specific and Unix-style paths:
+
+### Windows Path Mapping
+
+| Canonical Path | Windows System Path | Description |
+|----------------|-------------------|-------------|
+| `/c/folder/file.txt` | `C:\folder\file.txt` | Drive letter mapping |
+| `/d/data/logs` | `D:\data\logs` | Alternative drive |
+| `/mnt/c/folder/file.txt` | `C:\folder\file.txt` | WSL-style paths |
+| `//server/share/file` | `\\server\share\file` | UNC paths |
+
+### Unix Path Mapping
+
+On Unix systems (Linux/macOS), canonical paths are used directly:
+
+| Canonical Path | Unix System Path |
+|----------------|------------------|
+| `/home/user/file.txt` | `/home/user/file.txt` |
+| `/var/log/app.log` | `/var/log/app.log` |
+
+### Security Pattern Examples
+
+| Pattern | Matches | Description |
+|---------|---------|-------------|
+| `/app/data` | `/app/data` and `/app/data/subfolder/file.txt` | Exact path and subdirectories |
+| `/tmp/*` | `/tmp/file.txt` but not `/tmp/sub/file.txt` | Single level wildcard |
+| `/logs/**` | All files under `/logs` recursively | Recursive wildcard |
+| `/config/*.json` | `/config/app.json` but not `/config/sub/app.json` | File extension pattern |
 
 ## Development
 

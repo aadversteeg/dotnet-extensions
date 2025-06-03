@@ -24,56 +24,50 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> FileExistsAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.FileExistsAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.DirectoryExistsAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<string, FileSystemError>> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.ReadAllTextAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenReadAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.OpenReadAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<FileMetadata, FileSystemError>> GetFileMetadataAsync(string path, CancellationToken cancellationToken = default)
+        public Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
-            return _fileSystem.GetFileMetadataAsync(path, cancellationToken);
+            return _fileSystem.GetEntryAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<DirectoryMetadata, FileSystemError>> GetDirectoryMetadataAsync(string path, CancellationToken cancellationToken = default)
-        {
-            return _fileSystem.GetDirectoryMetadataAsync(path, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task<Result<string[], FileSystemError>> GetFilesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             return _fileSystem.GetFilesAsync(path, searchPattern, searchOption, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<string[], FileSystemError>> GetDirectoriesAsync(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             return _fileSystem.GetDirectoriesAsync(path, searchPattern, searchOption, cancellationToken);
         }
 
         /// <inheritdoc />
         public IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            string path,
+            CanonicalPath path,
             string searchPattern = "*",
             Models.EnumerationOptions? options = null,
             CancellationToken cancellationToken = default)

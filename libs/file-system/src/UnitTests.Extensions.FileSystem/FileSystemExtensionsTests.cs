@@ -5,6 +5,7 @@ using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using Moq;
+using UnitTests.Extensions.FileSystem.TestHelpers;
 
 namespace UnitTests.Extensions.FileSystem
 {
@@ -41,18 +42,18 @@ namespace UnitTests.Extensions.FileSystem
             // Arrange
             var expectedResult = Result<bool, FileSystemError>.Success(true);
             var mockFileSystem = new Mock<Ave.Extensions.FileSystem.IFileSystem>();
-            mockFileSystem.Setup(fs => fs.FileExistsAsync("test.txt", It.IsAny<CancellationToken>()))
+            mockFileSystem.Setup(fs => fs.FileExistsAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
             
             var readOnlyFileSystem = mockFileSystem.Object.AsReadOnly();
             
             // Act
-            var result = await readOnlyFileSystem.FileExistsAsync("test.txt");
+            var result = await readOnlyFileSystem.FileExistsAsync("/test.txt".ToCanonicalPath());
             
             // Assert
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().BeTrue();
-            mockFileSystem.Verify(fs => fs.FileExistsAsync("test.txt", It.IsAny<CancellationToken>()), Times.Once);
+            mockFileSystem.Verify(fs => fs.FileExistsAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
         }
         
         [Fact(DisplayName = "FSE-003: AsReadOnly returns same wrapper for already wrapped instance")]

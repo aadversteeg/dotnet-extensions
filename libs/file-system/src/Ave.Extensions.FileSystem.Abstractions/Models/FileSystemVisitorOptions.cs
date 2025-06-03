@@ -30,22 +30,22 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// Gets or sets a function that determines whether a directory should be visited.
         /// </summary>
-        public Func<DirectoryMetadata, bool>? ShouldVisitDirectory { get; set; }
+        public Func<FileSystemEntry, bool>? ShouldVisitDirectory { get; set; }
 
         /// <summary>
         /// Gets or sets a function that determines whether a file should be visited.
         /// </summary>
-        public Func<FileMetadata, bool>? ShouldVisitFile { get; set; }
+        public Func<FileSystemEntry, bool>? ShouldVisitFile { get; set; }
 
         /// <summary>
         /// Gets or sets a function called when visiting a directory.
         /// </summary>
-        public Func<DirectoryMetadata, FileSystemVisitorAction>? OnDirectoryVisited { get; set; }
+        public Func<FileSystemEntry, FileSystemVisitorAction>? OnDirectoryVisited { get; set; }
 
         /// <summary>
         /// Gets or sets a function called when visiting a file.
         /// </summary>
-        public Func<FileMetadata, FileSystemVisitorAction>? OnFileVisited { get; set; }
+        public Func<FileSystemEntry, FileSystemVisitorAction>? OnFileVisited { get; set; }
 
         /// <summary>
         /// Gets or sets a function called when an error occurs during traversal.

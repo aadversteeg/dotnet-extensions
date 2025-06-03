@@ -44,9 +44,16 @@ namespace Ave.Extensions.FileSystem
             {
                 var result = new FileSystemVisitResult();
                 var fullRootPath = _pathUtilities.GetFullPath(rootPath);
+                var canonicalPath = _pathUtilities.ToCanonicalPath(fullRootPath);
+                var canonicalPathResult = CanonicalPath.Create(canonicalPath);
+                if (!canonicalPathResult.IsSuccess)
+                    return Result<FileSystemVisitResult, FileSystemError>.Failure(
+                        new FileSystemError($"Invalid path: {canonicalPathResult.Error.Message}", rootPath, FileSystemErrorType.InvalidPath));
+
+                var rootCanonicalPath = canonicalPathResult.Value;
 
                 // Check if root path exists
-                var existsResult = await _fileSystem.DirectoryExistsAsync(fullRootPath, cancellationToken);
+                var existsResult = await _fileSystem.DirectoryExistsAsync(rootCanonicalPath, cancellationToken);
                 if (!existsResult.IsSuccess)
                     return Result<FileSystemVisitResult, FileSystemError>.Failure(existsResult.Error);
 
@@ -54,7 +61,7 @@ namespace Ave.Extensions.FileSystem
                     return Result<FileSystemVisitResult, FileSystemError>.Failure(
                         new FileSystemError($"Directory does not exist: {rootPath}", rootPath, FileSystemErrorType.DirectoryNotFound));
 
-                await VisitDirectoryAsync(fullRootPath, fullRootPath, 0, options, result, cancellationToken);
+                await VisitDirectoryAsync(rootCanonicalPath, rootCanonicalPath, 0, options, result, cancellationToken);
 
                 return Result<FileSystemVisitResult, FileSystemError>.Success(result);
             }
@@ -85,12 +92,20 @@ namespace Ave.Extensions.FileSystem
 
             options ??= FileSystemVisitorOptions.Default;
 
-            string fullRootPath;
-            
-            fullRootPath = _pathUtilities.GetFullPath(rootPath);
+            var fullRootPath = _pathUtilities.GetFullPath(rootPath);
+            var canonicalPath = _pathUtilities.ToCanonicalPath(fullRootPath);
+            var canonicalPathResult = CanonicalPath.Create(canonicalPath);
+            if (!canonicalPathResult.IsSuccess)
+            {
+                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(
+                    new FileSystemError($"Invalid path: {canonicalPathResult.Error.Message}", rootPath, FileSystemErrorType.InvalidPath));
+                yield break;
+            }
+
+            var rootCanonicalPath = canonicalPathResult.Value;
 
             // Check if root path exists
-            var existsResult = await _fileSystem.DirectoryExistsAsync(fullRootPath, cancellationToken);
+            var existsResult = await _fileSystem.DirectoryExistsAsync(rootCanonicalPath, cancellationToken);
             if (!existsResult.IsSuccess)
             {
                 yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(existsResult.Error);
@@ -104,15 +119,15 @@ namespace Ave.Extensions.FileSystem
                 yield break;
             }
 
-            await foreach (var result in VisitDirectoryStreamAsync(fullRootPath, fullRootPath, 0, options, cancellationToken))
+            await foreach (var result in VisitDirectoryStreamAsync(rootCanonicalPath, rootCanonicalPath, 0, options, cancellationToken))
             {
                 yield return result;
             }
         }
 
         private async Task VisitDirectoryAsync(
-            string directoryPath, 
-            string rootPath, 
+            CanonicalPath directoryPath, 
+            CanonicalPath rootPath, 
             int depth, 
             FileSystemVisitorOptions options, 
             FileSystemVisitResult result, 
@@ -123,14 +138,14 @@ namespace Ave.Extensions.FileSystem
 
             try
             {
-                // Get directory metadata
-                var dirMetadataResult = await _fileSystem.GetDirectoryMetadataAsync(directoryPath, cancellationToken);
-                if (!dirMetadataResult.IsSuccess)
+                // Get directory entry
+                var dirEntryResult = await _fileSystem.GetEntryAsync(directoryPath, cancellationToken);
+                if (!dirEntryResult.IsSuccess)
                 {
-                    result.Errors.Add(dirMetadataResult.Error);
+                    result.Errors.Add(dirEntryResult.Error);
                     if (options.OnError != null)
                     {
-                        var action = options.OnError(dirMetadataResult.Error);
+                        var action = options.OnError(dirEntryResult.Error);
                         if (action == FileSystemVisitorAction.Stop)
                         {
                             result.IsCompleted = false;
@@ -140,16 +155,16 @@ namespace Ave.Extensions.FileSystem
                     return;
                 }
 
-                var dirMetadata = dirMetadataResult.Value;
+                var dirEntry = dirEntryResult.Value;
 
                 // Check if we should visit this directory
-                if (options.ShouldVisitDirectory != null && !options.ShouldVisitDirectory(dirMetadata))
+                if (options.ShouldVisitDirectory != null && !options.ShouldVisitDirectory(dirEntry))
                     return;
 
                 // Check hidden/system filters
-                if (!options.IncludeHidden && dirMetadata.IsHidden)
+                if (!options.IncludeHidden && dirEntry.IsHidden)
                     return;
-                if (!options.IncludeSystem && dirMetadata.IsSystem)
+                if (!options.IncludeSystem && dirEntry.IsSystem)
                     return;
 
                 result.DirectoriesVisited++;
@@ -157,7 +172,7 @@ namespace Ave.Extensions.FileSystem
                 // Call directory visited callback
                 if (options.OnDirectoryVisited != null)
                 {
-                    var action = options.OnDirectoryVisited(dirMetadata);
+                    var action = options.OnDirectoryVisited(dirEntry);
                     if (action == FileSystemVisitorAction.Stop)
                     {
                         result.IsCompleted = false;
@@ -213,8 +228,8 @@ namespace Ave.Extensions.FileSystem
         }
 
         private async Task VisitFileAsync(
-            string filePath, 
-            string rootPath, 
+            CanonicalPath filePath, 
+            CanonicalPath rootPath, 
             int depth, 
             FileSystemVisitorOptions options, 
             FileSystemVisitResult result, 
@@ -222,38 +237,38 @@ namespace Ave.Extensions.FileSystem
         {
             try
             {
-                var fileMetadataResult = await _fileSystem.GetFileMetadataAsync(filePath, cancellationToken);
-                if (!fileMetadataResult.IsSuccess)
+                var fileEntryResult = await _fileSystem.GetEntryAsync(filePath, cancellationToken);
+                if (!fileEntryResult.IsSuccess)
                 {
-                    result.Errors.Add(fileMetadataResult.Error);
+                    result.Errors.Add(fileEntryResult.Error);
                     if (options.OnError != null)
                     {
-                        var action = options.OnError(fileMetadataResult.Error);
+                        var action = options.OnError(fileEntryResult.Error);
                         if (action == FileSystemVisitorAction.Stop)
                             result.IsCompleted = false;
                     }
                     return;
                 }
 
-                var fileMetadata = fileMetadataResult.Value;
+                var fileEntry = fileEntryResult.Value;
 
                 // Check if we should visit this file
-                if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileMetadata))
+                if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileEntry))
                     return;
 
                 // Check hidden/system filters
-                if (!options.IncludeHidden && fileMetadata.IsHidden)
+                if (!options.IncludeHidden && fileEntry.IsHidden)
                     return;
-                if (!options.IncludeSystem && fileMetadata.IsSystem)
+                if (!options.IncludeSystem && fileEntry.IsSystem)
                     return;
 
                 result.FilesVisited++;
-                result.TotalSize += fileMetadata.Size;
+                result.TotalSize += fileEntry.Size ?? 0;
 
                 // Call file visited callback
                 if (options.OnFileVisited != null)
                 {
-                    var action = options.OnFileVisited(fileMetadata);
+                    var action = options.OnFileVisited(fileEntry);
                     if (action == FileSystemVisitorAction.Stop)
                         result.IsCompleted = false;
                 }
@@ -272,8 +287,8 @@ namespace Ave.Extensions.FileSystem
         }
 
         private async IAsyncEnumerable<Result<FileVisitedEventArgs, FileSystemError>> VisitDirectoryStreamAsync(
-            string directoryPath,
-            string rootPath,
+            CanonicalPath directoryPath,
+            CanonicalPath rootPath,
             int depth,
             FileSystemVisitorOptions options,
             [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -281,27 +296,27 @@ namespace Ave.Extensions.FileSystem
             if (options.MaxDepth.HasValue && depth > options.MaxDepth.Value)
                 yield break;
 
-            // Get directory metadata and yield directory visit event
-            var dirMetadataResult = await _fileSystem.GetDirectoryMetadataAsync(directoryPath, cancellationToken);
-            if (!dirMetadataResult.IsSuccess)
+            // Get directory entry and yield directory visit event
+            var dirEntryResult = await _fileSystem.GetEntryAsync(directoryPath, cancellationToken);
+            if (!dirEntryResult.IsSuccess)
             {
-                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(dirMetadataResult.Error);
+                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(dirEntryResult.Error);
                 yield break;
             }
 
-            var dirMetadata = dirMetadataResult.Value;
-            var relativePath = _pathUtilities.GetRelativePath(rootPath, directoryPath);
+            var dirEntry = dirEntryResult.Value;
+            var relativePath = _pathUtilities.GetRelativePath(rootPath.Value, directoryPath.Value);
 
             // Check filters
-            if (!options.IncludeHidden && dirMetadata.IsHidden)
+            if (!options.IncludeHidden && dirEntry.IsHidden)
                 yield break;
-            if (!options.IncludeSystem && dirMetadata.IsSystem)
+            if (!options.IncludeSystem && dirEntry.IsSystem)
                 yield break;
-            if (options.ShouldVisitDirectory != null && !options.ShouldVisitDirectory(dirMetadata))
+            if (options.ShouldVisitDirectory != null && !options.ShouldVisitDirectory(dirEntry))
                 yield break;
 
             yield return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                new FileVisitedEventArgs(dirMetadata, depth, relativePath));
+                new FileVisitedEventArgs(dirEntry, depth, relativePath));
 
             // Process files
             var filesResult = await _fileSystem.GetFilesAsync(directoryPath, "*", SearchOption.TopDirectoryOnly, cancellationToken);
@@ -333,31 +348,31 @@ namespace Ave.Extensions.FileSystem
         }
 
         private async Task<Result<FileVisitedEventArgs, FileSystemError>?> VisitFileStreamAsync(
-            string filePath,
-            string rootPath,
+            CanonicalPath filePath,
+            CanonicalPath rootPath,
             int depth,
             FileSystemVisitorOptions options,
             CancellationToken cancellationToken)
         {
             try
             {
-                var fileMetadataResult = await _fileSystem.GetFileMetadataAsync(filePath, cancellationToken);
-                if (!fileMetadataResult.IsSuccess)
-                    return Result<FileVisitedEventArgs, FileSystemError>.Failure(fileMetadataResult.Error);
+                var fileEntryResult = await _fileSystem.GetEntryAsync(filePath, cancellationToken);
+                if (!fileEntryResult.IsSuccess)
+                    return Result<FileVisitedEventArgs, FileSystemError>.Failure(fileEntryResult.Error);
 
-                var fileMetadata = fileMetadataResult.Value;
+                var fileEntry = fileEntryResult.Value;
 
                 // Check filters
-                if (!options.IncludeHidden && fileMetadata.IsHidden)
+                if (!options.IncludeHidden && fileEntry.IsHidden)
                     return null;
-                if (!options.IncludeSystem && fileMetadata.IsSystem)
+                if (!options.IncludeSystem && fileEntry.IsSystem)
                     return null;
-                if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileMetadata))
+                if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileEntry))
                     return null;
 
-                var relativePath = _pathUtilities.GetRelativePath(rootPath, filePath);
+                var relativePath = _pathUtilities.GetRelativePath(rootPath.Value, filePath.Value);
                 return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                    new FileVisitedEventArgs(fileMetadata, depth, relativePath));
+                    new FileVisitedEventArgs(fileEntry, depth, relativePath));
             }
             catch (Exception ex)
             {

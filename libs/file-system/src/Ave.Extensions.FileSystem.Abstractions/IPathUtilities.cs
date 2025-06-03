@@ -115,5 +115,20 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The path to validate.</param>
         /// <returns>True if the path is valid; otherwise, false.</returns>
         bool IsValidPath(string path);
+
+        /// <summary>
+        /// Converts any path to canonical Unix-style format
+        /// </summary>
+        string ToCanonicalPath(string path);
+
+        /// <summary>
+        /// Checks if a path is in canonical format
+        /// </summary>
+        bool IsCanonicalPath(string path);
+
+        /// <summary>
+        /// Converts a canonical path to platform-specific format
+        /// </summary>
+        string FromCanonicalPath(string canonicalPath);
     }
 }
