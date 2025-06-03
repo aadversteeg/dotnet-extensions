@@ -373,10 +373,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 }
                 
                 var azurePath = GetAzurePath(path.Value);
-                var directoryClient = GetDirectoryClient(azurePath);
                 
-                await directoryClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                var result = await CreateDirectoryRecursiveAsync(azurePath, cancellationToken);
+                return result;
             }
             catch (Exception ex)
             {
@@ -405,15 +404,24 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 var parentDir = Path.GetDirectoryName(azurePath);
                 if (!string.IsNullOrEmpty(parentDir))
                 {
-                    var parentDirClient = GetDirectoryClient(parentDir);
-                    await parentDirClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+                    var parentDirResult = await CreateDirectoryRecursiveAsync(parentDir, cancellationToken);
+                    if (parentDirResult.IsFailure)
+                        return parentDirResult;
                 }
                 
                 var contentBytes = System.Text.Encoding.UTF8.GetBytes(contents ?? string.Empty);
-                using var stream = new MemoryStream(contentBytes);
                 
-                await fileClient.CreateAsync(contentBytes.Length, cancellationToken: cancellationToken);
-                await fileClient.UploadAsync(stream, cancellationToken: cancellationToken);
+                if (contentBytes.Length == 0)
+                {
+                    // Create empty file
+                    await fileClient.CreateAsync(0, cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    using var stream = new MemoryStream(contentBytes);
+                    await fileClient.CreateAsync(contentBytes.Length, cancellationToken: cancellationToken);
+                    await fileClient.UploadAsync(stream, cancellationToken: cancellationToken);
+                }
                 
                 return Result<Unit, FileSystemError>.Success(Unit.Value);
             }
@@ -426,7 +434,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -434,7 +442,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 {
                     var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
                     if (validationResult.IsFailure)
-                        return Task.FromResult(Result<Stream, FileSystemError>.Failure(validationResult.Error));
+                        return Result<Stream, FileSystemError>.Failure(validationResult.Error);
                 }
                 
                 // Azure File Share doesn't support direct write streams
@@ -442,14 +450,23 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
                 
+                // Ensure parent directory exists
+                var parentDir = Path.GetDirectoryName(azurePath);
+                if (!string.IsNullOrEmpty(parentDir))
+                {
+                    var parentDirResult = await CreateDirectoryRecursiveAsync(parentDir, cancellationToken);
+                    if (parentDirResult.IsFailure)
+                        return Result<Stream, FileSystemError>.Failure(parentDirResult.Error);
+                }
+                
                 var writeStream = new WriteStream(fileClient, _logger);
-                return Task.FromResult(Result<Stream, FileSystemError>.Success(writeStream));
+                return Result<Stream, FileSystemError>.Success(writeStream);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to open write stream for Azure: {Path}", path.Value);
-                return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to open write stream: {ex.Message}", path.Value)));
+                return Result<Stream, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to open write stream: {ex.Message}", path.Value));
             }
         }
 
@@ -543,6 +560,38 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         }
 
         // Helper methods
+        private async Task<Result<Unit, FileSystemError>> CreateDirectoryRecursiveAsync(string azurePath, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(azurePath))
+                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+
+                var pathParts = azurePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var currentPath = "";
+
+                for (int i = 0; i < pathParts.Length; i++)
+                {
+                    currentPath = string.IsNullOrEmpty(currentPath) ? pathParts[i] : $"{currentPath}/{pathParts[i]}";
+                    var directoryClient = GetDirectoryClient(currentPath);
+                    
+                    var exists = await directoryClient.ExistsAsync(cancellationToken);
+                    if (!exists.Value)
+                    {
+                        await directoryClient.CreateAsync(cancellationToken: cancellationToken);
+                    }
+                }
+
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create directory recursively in Azure: {Path}", azurePath);
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to create directory recursively: {ex.Message}", azurePath));
+            }
+        }
+        
         private string GetAzurePath(string path)
         {
             var normalized = path.Replace('\\', '/').TrimStart('/');

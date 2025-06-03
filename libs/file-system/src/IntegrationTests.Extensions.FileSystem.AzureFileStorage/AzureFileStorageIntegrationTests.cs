@@ -36,7 +36,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
         public AzureFileStorageIntegrationTests()
         {
             _testConfig = TestConfiguration.Load();
-            _testDirectoryPath = $"test/{DateTime.UtcNow:yyyyMMdd-HHmmssfff}";
+            _testDirectoryPath = $"/test/{DateTime.UtcNow:yyyyMMdd-HHmmssfff}";
             _createdFiles = new List<string>();
             _createdDirectories = new List<string>();
 
