@@ -30,45 +30,33 @@ namespace Ave.Extensions.FileSystem
 
         /// <inheritdoc />
         public async Task<Result<FileSystemVisitResult, FileSystemError>> VisitAsync(
-            string rootPath, 
+            CanonicalPath rootPath, 
             FileSystemVisitorOptions? options = null, 
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(rootPath))
-                return Result<FileSystemVisitResult, FileSystemError>.Failure(
-                    new FileSystemError("Root path cannot be null or empty.", null, FileSystemErrorType.InvalidPath));
-
             options ??= FileSystemVisitorOptions.Default;
 
             try
             {
                 var result = new FileSystemVisitResult();
-                var fullRootPath = _pathUtilities.GetFullPath(rootPath);
-                var canonicalPath = _pathUtilities.ToCanonicalPath(fullRootPath);
-                var canonicalPathResult = CanonicalPath.Create(canonicalPath);
-                if (!canonicalPathResult.IsSuccess)
-                    return Result<FileSystemVisitResult, FileSystemError>.Failure(
-                        new FileSystemError($"Invalid path: {canonicalPathResult.Error.Message}", rootPath, FileSystemErrorType.InvalidPath));
 
-                var rootCanonicalPath = canonicalPathResult.Value;
-
-                // Check if root path exists
-                var existsResult = await _fileSystem.DirectoryExistsAsync(rootCanonicalPath, cancellationToken);
+                // Check if root path exists - no path conversion needed since we already have a CanonicalPath
+                var existsResult = await _fileSystem.DirectoryExistsAsync(rootPath, cancellationToken);
                 if (!existsResult.IsSuccess)
                     return Result<FileSystemVisitResult, FileSystemError>.Failure(existsResult.Error);
 
                 if (!existsResult.Value)
                     return Result<FileSystemVisitResult, FileSystemError>.Failure(
-                        new FileSystemError($"Directory does not exist: {rootPath}", rootPath, FileSystemErrorType.DirectoryNotFound));
+                        new FileSystemError($"Directory does not exist: {rootPath}", rootPath.Value, FileSystemErrorType.DirectoryNotFound));
 
-                await VisitDirectoryAsync(rootCanonicalPath, rootCanonicalPath, 0, options, result, cancellationToken);
+                await VisitDirectoryAsync(rootPath, rootPath, 0, options, result, cancellationToken);
 
                 return Result<FileSystemVisitResult, FileSystemError>.Success(result);
             }
             catch (OperationCanceledException)
             {
                 return Result<FileSystemVisitResult, FileSystemError>.Failure(
-                    new FileSystemError("Operation was cancelled.", rootPath, FileSystemErrorType.Unknown));
+                    new FileSystemError("Operation was cancelled.", rootPath.Value, FileSystemErrorType.Unknown));
             }
             catch (Exception ex)
             {
@@ -79,33 +67,14 @@ namespace Ave.Extensions.FileSystem
 
         /// <inheritdoc />
         public async IAsyncEnumerable<Result<FileVisitedEventArgs, FileSystemError>> VisitStreamAsync(
-            string rootPath, 
+            CanonicalPath rootPath, 
             FileSystemVisitorOptions? options = null, 
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(rootPath))
-            {
-                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(
-                    new FileSystemError("Root path cannot be null or empty.", null, FileSystemErrorType.InvalidPath));
-                yield break;
-            }
-
             options ??= FileSystemVisitorOptions.Default;
 
-            var fullRootPath = _pathUtilities.GetFullPath(rootPath);
-            var canonicalPath = _pathUtilities.ToCanonicalPath(fullRootPath);
-            var canonicalPathResult = CanonicalPath.Create(canonicalPath);
-            if (!canonicalPathResult.IsSuccess)
-            {
-                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(
-                    new FileSystemError($"Invalid path: {canonicalPathResult.Error.Message}", rootPath, FileSystemErrorType.InvalidPath));
-                yield break;
-            }
-
-            var rootCanonicalPath = canonicalPathResult.Value;
-
-            // Check if root path exists
-            var existsResult = await _fileSystem.DirectoryExistsAsync(rootCanonicalPath, cancellationToken);
+            // Check if root path exists - no path conversion needed since we already have a CanonicalPath
+            var existsResult = await _fileSystem.DirectoryExistsAsync(rootPath, cancellationToken);
             if (!existsResult.IsSuccess)
             {
                 yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(existsResult.Error);
@@ -115,11 +84,11 @@ namespace Ave.Extensions.FileSystem
             if (!existsResult.Value)
             {
                 yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(
-                    new FileSystemError($"Directory does not exist: {rootPath}", rootPath, FileSystemErrorType.DirectoryNotFound));
+                    new FileSystemError($"Directory does not exist: {rootPath}", rootPath.Value, FileSystemErrorType.DirectoryNotFound));
                 yield break;
             }
 
-            await foreach (var result in VisitDirectoryStreamAsync(rootCanonicalPath, rootCanonicalPath, 0, options, cancellationToken))
+            await foreach (var result in VisitDirectoryStreamAsync(rootPath, rootPath, 0, options, cancellationToken))
             {
                 yield return result;
             }
