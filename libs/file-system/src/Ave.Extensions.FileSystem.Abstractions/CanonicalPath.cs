@@ -307,10 +307,5 @@ namespace Ave.Extensions.FileSystem
         /// <returns>The path string.</returns>
         public override string ToString() => Value;
 
-        /// <summary>
-        /// Implicitly converts a CanonicalPath to a string.
-        /// </summary>
-        /// <param name="path">The canonical path.</param>
-        public static implicit operator string(CanonicalPath path) => path.Value;
     }
 }

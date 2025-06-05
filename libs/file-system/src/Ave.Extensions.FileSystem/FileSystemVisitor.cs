@@ -61,7 +61,7 @@ namespace Ave.Extensions.FileSystem
             catch (Exception ex)
             {
                 return Result<FileSystemVisitResult, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, rootPath));
+                    FileSystemError.FromException(ex, rootPath.Value));
             }
         }
 
@@ -185,7 +185,7 @@ namespace Ave.Extensions.FileSystem
             }
             catch (Exception ex)
             {
-                var error = FileSystemError.FromException(ex, directoryPath);
+                var error = FileSystemError.FromException(ex, directoryPath.Value);
                 result.Errors.Add(error);
                 if (options.OnError != null)
                 {
@@ -244,7 +244,7 @@ namespace Ave.Extensions.FileSystem
             }
             catch (Exception ex)
             {
-                var error = FileSystemError.FromException(ex, filePath);
+                var error = FileSystemError.FromException(ex, filePath.Value);
                 result.Errors.Add(error);
                 if (options.OnError != null)
                 {
@@ -346,7 +346,7 @@ namespace Ave.Extensions.FileSystem
             catch (Exception ex)
             {
                 return Result<FileVisitedEventArgs, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, filePath));
+                    FileSystemError.FromException(ex, filePath.Value));
             }
         }
     }

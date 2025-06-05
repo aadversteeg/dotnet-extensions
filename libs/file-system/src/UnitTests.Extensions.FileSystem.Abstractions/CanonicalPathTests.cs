@@ -531,7 +531,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
             var path = CanonicalPath.Create("/users/documents").Value;
 
             // Act
-            string result = path;
+            string result = path.Value;
 
             // Assert
             result.Should().Be("/users/documents");

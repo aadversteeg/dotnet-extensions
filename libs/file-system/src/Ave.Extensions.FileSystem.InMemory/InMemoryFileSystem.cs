@@ -62,7 +62,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to check file existence: {Path}", path);
                 return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to check file existence: {ex.Message}", path)));
+                    new FileSystemError($"Failed to check file existence: {ex.Message}", path.Value)));
             }
         }
 
@@ -86,7 +86,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to check directory existence: {Path}", path);
                 return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to check directory existence: {ex.Message}", path)));
+                    new FileSystemError($"Failed to check directory existence: {ex.Message}", path.Value)));
             }
         }
 
@@ -101,7 +101,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!_files.TryGetValue(path, out var fileNode))
                     {
                         return Task.FromResult(Result<string, FileSystemError>.Failure(
-                            new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
+                            new FileSystemError($"File not found: {path}", path.Value, FileSystemErrorType.FileNotFound)));
                     }
 
                     fileNode.LastAccessUtc = DateTime.UtcNow;
@@ -117,7 +117,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to read file: {Path}", path);
                 return Task.FromResult(Result<string, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to read file: {ex.Message}", path)));
+                    new FileSystemError($"Failed to read file: {ex.Message}", path.Value)));
             }
         }
 
@@ -132,7 +132,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!_files.TryGetValue(path, out var fileNode))
                     {
                         return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                            new FileSystemError($"File not found: {path}", path, FileSystemErrorType.FileNotFound)));
+                            new FileSystemError($"File not found: {path}", path.Value, FileSystemErrorType.FileNotFound)));
                     }
 
                     fileNode.LastAccessUtc = DateTime.UtcNow;
@@ -148,7 +148,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to open file for reading: {Path}", path);
                 return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to open file for reading: {ex.Message}", path)));
+                    new FileSystemError($"Failed to open file for reading: {ex.Message}", path.Value)));
             }
         }
 
@@ -197,7 +197,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     }
 
                     return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
-                        new FileSystemError($"Path not found: {path}", path, FileSystemErrorType.PathNotFound)));
+                        new FileSystemError($"Path not found: {path}", path.Value, FileSystemErrorType.PathNotFound)));
                 }
                 finally
                 {
@@ -208,7 +208,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to get entry: {Path}", path);
                 return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get entry: {ex.Message}", path)));
+                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value)));
             }
         }
 
@@ -223,7 +223,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!_directories.ContainsKey(path))
                     {
                         return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
-                            new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
+                            new FileSystemError($"Directory not found: {path}", path.Value, FileSystemErrorType.DirectoryNotFound)));
                     }
 
                     var files = new List<CanonicalPath>();
@@ -240,7 +240,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to get files: {Path}", path);
                 return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get files: {ex.Message}", path)));
+                    new FileSystemError($"Failed to get files: {ex.Message}", path.Value)));
             }
         }
 
@@ -255,7 +255,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!_directories.ContainsKey(path))
                     {
                         return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
-                            new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound)));
+                            new FileSystemError($"Directory not found: {path}", path.Value, FileSystemErrorType.DirectoryNotFound)));
                     }
 
                     var directories = new List<CanonicalPath>();
@@ -272,7 +272,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to get directories: {Path}", path);
                 return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get directories: {ex.Message}", path)));
+                    new FileSystemError($"Failed to get directories: {ex.Message}", path.Value)));
             }
         }
 
@@ -339,7 +339,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to create directory: {Path}", path);
                 return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to create directory: {ex.Message}", path)));
+                    new FileSystemError($"Failed to create directory: {ex.Message}", path.Value)));
             }
         }
 
@@ -389,7 +389,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to write file: {Path}", path);
                 return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to write file: {ex.Message}", path)));
+                    new FileSystemError($"Failed to write file: {ex.Message}", path.Value)));
             }
         }
 
@@ -405,7 +405,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to open file for writing: {Path}", path);
                 return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to open file for writing: {ex.Message}", path)));
+                    new FileSystemError($"Failed to open file for writing: {ex.Message}", path.Value)));
             }
         }
 
@@ -423,7 +423,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
             
             return Result<Stream, FileSystemError>.Failure(
-                new FileSystemError($"Unsupported file access mode: {access}", path, FileSystemErrorType.NotSupported));
+                new FileSystemError($"Unsupported file access mode: {access}", path.Value, FileSystemErrorType.NotSupported));
         }
 
         /// <inheritdoc />
@@ -459,7 +459,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to delete file: {Path}", path);
                 return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to delete file: {ex.Message}", path)));
+                    new FileSystemError($"Failed to delete file: {ex.Message}", path.Value)));
             }
         }
 
@@ -485,7 +485,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                         if (hasFiles || hasDirectories)
                         {
                             return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                                new FileSystemError($"Directory is not empty: {path}", path, FileSystemErrorType.IOException)));
+                                new FileSystemError($"Directory is not empty: {path}", path.Value, FileSystemErrorType.IOException)));
                         }
                     }
                     else
@@ -539,7 +539,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to delete directory: {Path}", path);
                 return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to delete directory: {ex.Message}", path)));
+                    new FileSystemError($"Failed to delete directory: {ex.Message}", path.Value)));
             }
         }
 
@@ -587,7 +587,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 _logger.LogError(ex, "Failed to write file content: {Path}", path);
                 return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to write file content: {ex.Message}", path)));
+                    new FileSystemError($"Failed to write file content: {ex.Message}", path.Value)));
             }
         }
 
@@ -597,7 +597,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 foreach (var monitor in _monitors.ToList())
                 {
-                    monitor.NotifyChange(path, changeType);
+                    monitor.NotifyChange(path.Value, changeType);
                 }
             }
         }
@@ -618,7 +618,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                 if (!_directories.ContainsKey(path))
                 {
                     yield return Result<FileSystemEntry, FileSystemError>.Failure(
-                        new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound));
+                        new FileSystemError($"Directory not found: {path}", path.Value, FileSystemErrorType.DirectoryNotFound));
                     yield break;
                 }
 
@@ -636,7 +636,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!options.IncludeHidden && dirName.StartsWith('.'))
                         continue;
                     
-                    if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(childDir))
+                    if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(childDir.Value))
                         continue;
                     
                     if (_directories.TryGetValue(childDir, out var dirNode))
@@ -683,7 +683,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!options.IncludeHidden && fileName.StartsWith('.'))
                         continue;
                     
-                    if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(childFile))
+                    if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(childFile.Value))
                         continue;
                     
                     if (_files.TryGetValue(childFile, out var fileNode))
