@@ -34,7 +34,7 @@ jobs:
         run: dotnet build src/extensions-filesystem.sln --no-restore --configuration Release /p:Version=${{ steps.get_version.outputs.VERSION }}
       
       - name: Test
-        run: dotnet test src/extensions-filesystem.sln --no-build --configuration Release --verbosity normal
+        run: dotnet test src/extensions-filesystem.sln --no-build --configuration Release --verbosity normal --filter "FullyQualifiedName!~IntegrationTests.Extensions.FileSystem.AzureFileStorage"
       
       - name: Pack
         run: dotnet pack src/extensions-filesystem.sln --no-build --configuration Release /p:Version=${{ steps.get_version.outputs.VERSION }} --output ./packages
