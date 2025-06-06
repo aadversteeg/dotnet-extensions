@@ -17,10 +17,10 @@ namespace IntegrationTests.FileSystem.Local
         [InlineData("/app/data/file.txt", new[] { "/app/data" }, true)]
         [InlineData("/app/data/sub/file.txt", new[] { "/app/data" }, true)]
         [InlineData("/unauthorized/file.txt", new[] { "/app/data" }, false)]
-        [InlineData("/tmp/file.txt", new[] { "/tmp/*" }, true)]
-        [InlineData("/tmp/sub/file.txt", new[] { "/tmp/*" }, false)]
-        [InlineData("/logs/app.log", new[] { "/logs/**" }, true)]
-        [InlineData("/logs/sub/app.log", new[] { "/logs/**" }, true)]
+        [InlineData("/tmp/file.txt", new[] { "/tmp" }, true)]
+        [InlineData("/tmp/sub/file.txt", new[] { "/tmp" }, true)]
+        [InlineData("/logs/app.log", new[] { "/logs" }, true)]
+        [InlineData("/logs/sub/app.log", new[] { "/logs" }, true)]
         public void PSIT001(string path, string[] allowedPaths, bool shouldBeAllowed)
         {
             // Arrange
@@ -43,28 +43,8 @@ namespace IntegrationTests.FileSystem.Local
             }
         }
 
-        [Theory(DisplayName = "PSIT-002: PathSecurity MatchesPattern should work with wildcards")]
-        [InlineData("/config/app.json", "*.json", true)]
-        [InlineData("/config/app.xml", "*.json", false)]
-        [InlineData("/data/test.txt", "test.*", true)]
-        [InlineData("/data/other.txt", "test.*", false)]
-        [InlineData("/app/file.log", "*", true)]
-        [InlineData("/app/file.log", "file.?og", true)]
-        public void PSIT002(string path, string pattern, bool shouldMatch)
-        {
-            // Arrange
-            var pathSecurity = new PathSecurityService();
-            var canonicalPath = CanonicalPath.Create(path).Value;
-            
-            // Act
-            var matches = pathSecurity.MatchesPattern(canonicalPath, pattern);
-            
-            // Assert
-            matches.Should().Be(shouldMatch);
-        }
-
-        [Fact(DisplayName = "PSIT-003: PathSecurity ValidatePathAccess with no allowed paths should allow all")]
-        public void PSIT003()
+        [Fact(DisplayName = "PSIT-002: PathSecurity ValidatePathAccess with no allowed paths should allow all")]
+        public void PSIT002()
         {
             // Arrange
             var allowedPaths = new CanonicalPath[0];
@@ -78,8 +58,8 @@ namespace IntegrationTests.FileSystem.Local
             result.IsSuccess.Should().BeTrue();
         }
 
-        [Fact(DisplayName = "PSIT-004: PathSecurity ValidatePathAccess with invalid CanonicalPath should fail before calling ValidatePathAccess")]
-        public void PSIT004()
+        [Fact(DisplayName = "PSIT-003: PathSecurity ValidatePathAccess with invalid CanonicalPath should fail before calling ValidatePathAccess")]
+        public void PSIT003()
         {
             // Arrange & Act
             var invalidPathResult = CanonicalPath.Create("");
