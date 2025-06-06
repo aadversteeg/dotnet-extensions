@@ -261,7 +261,7 @@ namespace UnitTests.Extensions.FileSystem
         public void RFSW011()
         {
             // Arrange
-            var mockFileSystemInfo = new FileSystemInfo(
+            var mockFileSystemInfo = new Ave.Extensions.FileSystem.FileSystemInfo(
                 isDurable: true,
                 supportsMonitoring: false,
                 isReadOnly: false  // Original file system is not read-only

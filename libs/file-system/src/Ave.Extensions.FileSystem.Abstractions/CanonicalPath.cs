@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem

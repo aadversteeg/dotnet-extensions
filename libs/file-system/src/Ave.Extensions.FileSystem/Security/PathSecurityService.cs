@@ -40,5 +40,6 @@ namespace Ave.Extensions.FileSystem.Security
             return Result<Unit, FileSystemError>.Failure(
                 new FileSystemError($"Access to path '{path.Value}' is not allowed", path.Value, FileSystemErrorType.AccessDenied));
         }
+
     }
 }
