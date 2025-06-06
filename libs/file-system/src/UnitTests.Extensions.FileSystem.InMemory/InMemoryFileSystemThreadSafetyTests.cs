@@ -250,50 +250,6 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             }
         }
 
-        [Fact(DisplayName = "IMFS-TS-006: Concurrent enumeration operations are thread-safe")]
-        public async Task IMFSTS006()
-        {
-            // Arrange
-            const int directoryCount = 10;
-            const int filesPerDirectory = 10;
-
-            // Create test structure
-            for (int i = 0; i < directoryCount; i++)
-            {
-                var dirPath = $"/test/dir{i}";
-                await _fileSystem.CreateDirectoryAsync(dirPath.ToCanonicalPath());
-                
-                for (int j = 0; j < filesPerDirectory; j++)
-                {
-                    var filePath = $"{dirPath}/file{j}.txt";
-                    await _fileSystem.WriteAllTextAsync(filePath.ToCanonicalPath(), $"Content {i}-{j}");
-                }
-            }
-
-            // Act - Enumerate concurrently from different threads
-            var enumerationTasks = Enumerable.Range(0, directoryCount).Select(async i =>
-            {
-                var dirPath = $"/test/dir{i}";
-                var entries = new List<FileSystemEntry>();
-                
-                await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(dirPath.ToCanonicalPath()))
-                {
-                    result.IsSuccess.Should().BeTrue();
-                    entries.Add(result.Value);
-                }
-                
-                return entries;
-            }).ToArray();
-
-            var results = await Task.WhenAll(enumerationTasks);
-
-            // Assert
-            for (int i = 0; i < directoryCount; i++)
-            {
-                results[i].Should().HaveCount(filesPerDirectory);
-                results[i].Should().OnlyContain(entry => !entry.IsDirectory);
-            }
-        }
 
         [Fact(DisplayName = "IMFS-TS-007: Mixed concurrent operations maintain consistency")]
         public async Task IMFSTS007()

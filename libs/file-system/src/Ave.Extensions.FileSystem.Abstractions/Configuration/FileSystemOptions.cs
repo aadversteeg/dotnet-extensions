@@ -36,10 +36,6 @@ namespace Ave.Extensions.FileSystem.Configuration
         public int DefaultBufferSize { get; set; } = 4096;
 
 
-        /// <summary>
-        /// Gets or sets a value indicating whether to register the file system visitor.
-        /// </summary>
-        public bool RegisterVisitor { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether to register the read-only wrapper.

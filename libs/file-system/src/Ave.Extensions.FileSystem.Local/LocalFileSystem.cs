@@ -192,29 +192,6 @@ namespace Ave.Extensions.FileSystem.Local
             }, path.Value);
         }
 
-        /// <inheritdoc />
-        public async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            CanonicalPath path,
-            string searchPattern = "*",
-            Models.EnumerationOptions? options = null,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            var systemPathResult = GetSystemPath(path);
-            if (systemPathResult.IsFailure)
-            {
-                yield return Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
-                yield break;
-            }
-
-            options ??= Models.EnumerationOptions.Default;
-
-            var systemPath = systemPathResult.Value;
-            await foreach (var entry in EnumerateEntries(systemPath, searchPattern, options, 0, cancellationToken, path))
-            {
-                yield return entry;
-            }
-        }
 
         /// <inheritdoc />
         public Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
@@ -384,77 +361,6 @@ namespace Ave.Extensions.FileSystem.Local
             }
         }
 
-        private async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateEntries(
-            string path,
-            string searchPattern,
-            Models.EnumerationOptions options,
-            int currentDepth,
-            [EnumeratorCancellation] CancellationToken cancellationToken,
-            CanonicalPath originalPath)
-        {
-            if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
-                yield break;
-
-            DirectoryInfo directoryInfo;
-            directoryInfo = new DirectoryInfo(path);
-            if (!directoryInfo.Exists)
-            {
-                yield return Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound));
-                yield break;
-            }
-
-            // Enumerate files
-            FileInfo[] files;
-            files = directoryInfo.GetFiles(searchPattern);
-
-            foreach (var file in files)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Apply filters
-                if (!options.IncludeHidden && file.Attributes.HasFlag(FileAttributes.Hidden))
-                    continue;
-                if (!options.IncludeSystem && file.Attributes.HasFlag(FileAttributes.System))
-                    continue;
-
-                if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(file.FullName))
-                    continue;
-
-                var entry = file.ToFileSystemEntry(_pathMapper);
-                yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-            }
-
-            // Enumerate directories
-            DirectoryInfo[] directories;
-            directories = directoryInfo.GetDirectories();
-
-            foreach (var directory in directories)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Apply filters
-                if (!options.IncludeHidden && directory.Attributes.HasFlag(FileAttributes.Hidden))
-                    continue;
-                if (!options.IncludeSystem && directory.Attributes.HasFlag(FileAttributes.System))
-                    continue;
-
-                if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(directory.FullName))
-                    continue;
-
-                var entry = directory.ToFileSystemEntry(_pathMapper);
-                yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-
-                // Recurse into subdirectory only if RecurseSubdirectories is enabled
-                if (options.RecurseSubdirectories)
-                {
-                    await foreach (var subEntry in EnumerateEntries(directory.FullName, searchPattern, options, currentDepth + 1, cancellationToken, originalPath))
-                    {
-                        yield return subEntry;
-                    }
-                }
-            }
-        }
 
         /// <summary>
         /// Gets the system path from a canonical path, applying mapping if available.

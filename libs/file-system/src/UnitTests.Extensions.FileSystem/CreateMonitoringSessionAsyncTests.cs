@@ -56,7 +56,7 @@ namespace UnitTests.Extensions.FileSystem
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Should().BeSameAs(expectedError);
+            result.Error.Should().Be(expectedError);
             mockFileSystem.Verify(fs => fs.CreateMonitoringSessionAsync(options, default), Times.Once);
         }
     }

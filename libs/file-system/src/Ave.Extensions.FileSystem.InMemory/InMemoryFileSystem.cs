@@ -285,20 +285,6 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
         }
 
-        /// <inheritdoc />
-        public async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            CanonicalPath path,
-            string searchPattern = "*",
-            Models.EnumerationOptions? options = null,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            options ??= Models.EnumerationOptions.Default;
-            
-            await foreach (var entry in EnumerateEntriesRecursive(path, searchPattern, options, 0, cancellationToken))
-            {
-                yield return entry;
-            }
-        }
 
         /// <inheritdoc />
         public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
@@ -641,109 +627,6 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
         }
 
-        private async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateEntriesRecursive(
-            CanonicalPath path,
-            string searchPattern,
-            Models.EnumerationOptions options,
-            int currentDepth,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
-                yield break;
-            
-            _lock.EnterReadLock();
-            try
-            {
-                if (!_directories.ContainsKey(path))
-                {
-                    yield return Result<FileSystemEntry, FileSystemError>.Failure(
-                        new FileSystemError($"Directory not found: {path}", path.Value, FileSystemErrorType.DirectoryNotFound));
-                    yield break;
-                }
-
-                // Enumerate directories
-                var childDirectories = _directories.Keys
-                    .Where(d => IsDirectChildOf(d, path))
-                    .ToList();
-
-                foreach (var childDir in childDirectories)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    
-                    var dirName = childDir.GetName();
-                    
-                    if (!options.IncludeHidden && dirName.StartsWith('.'))
-                        continue;
-                    
-                    if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(childDir.Value))
-                        continue;
-                    
-                    if (_directories.TryGetValue(childDir, out var dirNode))
-                    {
-                        var entry = new FileSystemEntry(
-                            path: childDir,
-                            isDirectory: true,
-                            size: null,
-                            extension: null,
-                            createdUtc: dirNode.CreatedUtc,
-                            modifiedUtc: dirNode.ModifiedUtc,
-                            lastAccessUtc: dirNode.LastAccessUtc,
-                            attributes: dirNode.Attributes);
-                        
-                        yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-                        
-                        // Recurse if enabled
-                        if (options.RecurseSubdirectories)
-                        {
-                            await foreach (var subEntry in EnumerateEntriesRecursive(childDir, searchPattern, options, currentDepth + 1, cancellationToken))
-                            {
-                                yield return subEntry;
-                            }
-                        }
-                    }
-                }
-
-                // Enumerate files
-                var childFiles = _files.Keys
-                    .Where(f => IsDirectChildOf(f, path))
-                    .ToList();
-
-                foreach (var childFile in childFiles)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    
-                    var fileName = childFile.GetName();
-                    
-                    if (!MatchesPattern(fileName, searchPattern))
-                        continue;
-                    
-                    if (!options.IncludeHidden && fileName.StartsWith('.'))
-                        continue;
-                    
-                    if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(childFile.Value))
-                        continue;
-                    
-                    if (_files.TryGetValue(childFile, out var fileNode))
-                    {
-                        var entry = new FileSystemEntry(
-                            path: childFile,
-                            isDirectory: false,
-                            size: fileNode.Content.Length,
-                            extension: System.IO.Path.GetExtension(childFile.GetName()),
-                            createdUtc: fileNode.CreatedUtc,
-                            modifiedUtc: fileNode.ModifiedUtc,
-                            lastAccessUtc: fileNode.LastAccessUtc,
-                            attributes: fileNode.Attributes);
-                        
-                        yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-                    }
-                }
-            }
-            finally
-            {
-                _lock.ExitReadLock();
-            }
-        }
 
         private void CollectFiles(CanonicalPath directoryPath, string searchPattern, SearchOption searchOption, List<CanonicalPath> files)
         {

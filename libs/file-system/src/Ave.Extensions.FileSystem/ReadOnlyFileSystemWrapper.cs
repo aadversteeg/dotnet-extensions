@@ -72,15 +72,6 @@ namespace Ave.Extensions.FileSystem
             return _fileSystem.GetDirectoriesAsync(path, searchPattern, searchOption, cancellationToken);
         }
 
-        /// <inheritdoc />
-        public IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            CanonicalPath path,
-            string searchPattern = "*",
-            Models.EnumerationOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            return _fileSystem.EnumerateFileSystemEntriesAsync(path, searchPattern, options, cancellationToken);
-        }
         
         /// <inheritdoc />
         public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)

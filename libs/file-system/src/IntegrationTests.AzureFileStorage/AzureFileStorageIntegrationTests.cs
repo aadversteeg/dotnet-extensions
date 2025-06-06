@@ -452,42 +452,6 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             entry.ModifiedUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(5));
         }
 
-        [Fact(DisplayName = "AFSIT-012: EnumerateFileSystemEntriesAsync works correctly")]
-        public async Task AFSIT012()
-        {
-            // Arrange
-            SkipIfNotConfigured();
-            var enumDir = $"{_testDirectoryPath}/enum-test";
-            var enumDirCanonical = CanonicalPath.Create(enumDir);
-            enumDirCanonical.IsSuccess.Should().BeTrue();
-            _createdDirectories.Add(enumDir);
-
-            var file1 = $"{enumDir}/file1.txt";
-            var subDir = $"{enumDir}/subdir";
-            var file1Canonical = CanonicalPath.Create(file1);
-            var subDirCanonical = CanonicalPath.Create(subDir);
-            file1Canonical.IsSuccess.Should().BeTrue();
-            subDirCanonical.IsSuccess.Should().BeTrue();
-            _createdFiles.Add(file1);
-            _createdDirectories.Add(subDir);
-
-            await _fileSystem!.CreateDirectoryAsync(enumDirCanonical.Value);
-            await _fileSystem.WriteAllTextAsync(file1Canonical.Value, "Content");
-            await _fileSystem.CreateDirectoryAsync(subDirCanonical.Value);
-
-            // Act
-            var entries = new List<FileSystemEntry>();
-            await foreach (var entryResult in _fileSystem.EnumerateFileSystemEntriesAsync(enumDirCanonical.Value))
-            {
-                entryResult.IsSuccess.Should().BeTrue();
-                entries.Add(entryResult.Value);
-            }
-
-            // Assert
-            entries.Should().HaveCountGreaterOrEqualTo(2);
-            entries.Should().Contain(e => e.Path.Value.EndsWith("file1.txt") && !e.IsDirectory);
-            entries.Should().Contain(e => e.Path.Value.EndsWith("subdir") && e.IsDirectory);
-        }
 
         [Fact(DisplayName = "AFSIT-013: DeleteFileAsync removes file")]
         public async Task AFSIT013()

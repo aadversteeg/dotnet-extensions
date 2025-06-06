@@ -309,27 +309,6 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
         }
 
-        /// <inheritdoc />
-        public async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            CanonicalPath path,
-            string searchPattern = "*",
-            Models.EnumerationOptions? options = null,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            var validationResult = ValidatePathSecurity(path);
-            if (validationResult.IsFailure)
-            {
-                yield return Result<FileSystemEntry, FileSystemError>.Failure(validationResult.Error);
-                yield break;
-            }
-            
-            options ??= Models.EnumerationOptions.Default;
-            
-            await foreach (var entry in EnumerateEntriesRecursive(path, searchPattern, options, 0, cancellationToken))
-            {
-                yield return entry;
-            }
-        }
 
         /// <inheritdoc />
         public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
@@ -658,79 +637,5 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             return attributes;
         }
         
-        private async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateEntriesRecursive(
-            CanonicalPath path,
-            string searchPattern,
-            Models.EnumerationOptions options,
-            int currentDepth,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
-                yield break;
-            
-            var azurePath = GetAzurePath(path.Value);
-            var directoryClient = GetDirectoryClient(azurePath);
-            var items = directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken);
-            
-            await foreach (var item in items)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                
-                var fullPath = CombinePath(path.Value, item.Name);
-                
-                if (item.IsDirectory)
-                {
-                    if (!options.IncludeHidden && item.Name.StartsWith('.'))
-                        continue;
-                    
-                    if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(fullPath.Value))
-                        continue;
-                    
-                    var entry = new FileSystemEntry(
-                        path: fullPath,
-                        isDirectory: true,
-                        size: null,
-                        extension: null,
-                        createdUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
-                        modifiedUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
-                        lastAccessUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
-                        attributes: FileAttributes.Directory);
-                    
-                    yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-                    
-                    // Recurse if enabled
-                    if (options.RecurseSubdirectories)
-                    {
-                        await foreach (var subEntry in EnumerateEntriesRecursive(fullPath, searchPattern, options, currentDepth + 1, cancellationToken))
-                        {
-                            yield return subEntry;
-                        }
-                    }
-                }
-                else
-                {
-                    if (!MatchesPattern(item.Name, searchPattern))
-                        continue;
-                    
-                    if (!options.IncludeHidden && item.Name.StartsWith('.'))
-                        continue;
-                    
-                    if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(fullPath.Value))
-                        continue;
-                    
-                    var entry = new FileSystemEntry(
-                        path: fullPath,
-                        isDirectory: false,
-                        size: null, // Size not available in listing, would need separate API call
-                        extension: Path.GetExtension(item.Name),
-                        createdUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
-                        modifiedUtc: DateTime.UtcNow, // Azure doesn't provide this in listing  
-                        lastAccessUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
-                        attributes: FileAttributes.Normal);
-                    
-                    yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-                }
-            }
-        }
     }
 }

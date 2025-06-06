@@ -46,35 +46,10 @@ namespace Ave.Extensions.FileSystem
                 });
             }
 
-            // Register file system visitor
-            if (options.RegisterVisitor)
-            {
-                services.TryAddScoped<IFileSystemVisitor, FileSystemVisitor>();
-            }
 
             return services;
         }
 
-        /// <summary>
-        /// Adds file system visitor capabilities to the specified <see cref="IServiceCollection" />.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <returns>The same service collection so that multiple calls can be chained.</returns>
-        public static IServiceCollection AddFileSystemVisitor(this IServiceCollection services)
-        {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            // Ensure utilities are registered with visitor support
-            services.AddFileSystemUtilities(options => 
-            {
-                options.RegisterVisitor = true;
-            });
-            
-            return services;
-        }
 
 
         /// <summary>

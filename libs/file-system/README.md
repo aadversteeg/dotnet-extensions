@@ -112,7 +112,6 @@ services.AddFileSystem(options =>
     
     // Customize other features
     options.EnableMonitoring = true;
-    options.RegisterVisitor = true;
     options.DefaultBufferSize = 8192;
 });
 ```

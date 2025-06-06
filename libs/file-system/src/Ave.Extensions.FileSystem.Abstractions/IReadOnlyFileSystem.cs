@@ -76,19 +76,6 @@ namespace Ave.Extensions.FileSystem
         /// <returns>A result containing the directory paths or an error.</returns>
         Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Enumerates file system entries asynchronously.
-        /// </summary>
-        /// <param name="path">The directory path to enumerate.</param>
-        /// <param name="searchPattern">The search pattern to match.</param>
-        /// <param name="options">Options for enumeration.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>An async enumerable of file system entries or errors.</returns>
-        IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            CanonicalPath path,
-            string searchPattern = "*",
-            Models.EnumerationOptions? options = null,
-            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a monitoring session for watching file system changes at the specified path.

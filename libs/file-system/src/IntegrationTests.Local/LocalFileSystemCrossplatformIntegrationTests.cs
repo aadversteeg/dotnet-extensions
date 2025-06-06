@@ -545,42 +545,6 @@ namespace IntegrationTests.FileSystem.Local
 
         #region Enumeration Operations
 
-        [Fact(DisplayName = "LFSIT-019: EnumerateFileSystemEntriesAsync returns all entries")]
-        public async Task LFSIT019()
-        {
-            // Arrange - create mixed structure using System.IO
-            var baseDirName = "enumeration-test";
-            var physicalBaseDir = Path.Combine(_physicalTestDirectory, baseDirName);
-            var canonicalBaseDir = GetCanonicalDirectoryPath(baseDirName);
-            
-            Directory.CreateDirectory(physicalBaseDir);
-            _createdDirectories.Add(physicalBaseDir);
-
-            var subDir = Path.Combine(physicalBaseDir, "subdir");
-            var file1 = Path.Combine(physicalBaseDir, "file1.txt");
-            var file2 = Path.Combine(physicalBaseDir, "file2.txt");
-            
-            Directory.CreateDirectory(subDir);
-            File.WriteAllText(file1, "Content 1");
-            File.WriteAllText(file2, "Content 2");
-            
-            _createdDirectories.Add(subDir);
-            _createdFiles.AddRange(new[] { file1, file2 });
-
-            // Act
-            var entries = new List<FileSystemEntry>();
-            await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(canonicalBaseDir))
-            {
-                result.IsSuccess.Should().BeTrue();
-                entries.Add(result.Value);
-            }
-
-            // Assert
-            entries.Should().HaveCount(3); // 1 directory + 2 files
-            entries.Should().Contain(e => e.Name == "subdir" && e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file1.txt" && !e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file2.txt" && !e.IsDirectory);
-        }
 
         #endregion
 

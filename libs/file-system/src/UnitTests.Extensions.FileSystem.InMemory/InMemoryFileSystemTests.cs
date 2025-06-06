@@ -335,30 +335,6 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             subdirExistsResult.Value.Should().BeFalse();
         }
 
-        [Fact(DisplayName = "IMFS-017: EnumerateFileSystemEntriesAsync yields correct entries")]
-        public async Task IMFS017()
-        {
-            // Arrange
-            var directory = "/test";
-            await _fileSystem.CreateDirectoryAsync(directory.ToCanonicalPath());
-            await _fileSystem.CreateDirectoryAsync("/test/subdir".ToCanonicalPath());
-            await _fileSystem.WriteAllTextAsync("/test/file1.txt".ToCanonicalPath(), "content1");
-            await _fileSystem.WriteAllTextAsync("/test/file2.txt".ToCanonicalPath(), "content2");
-
-            // Act
-            var entries = new List<FileSystemEntry>();
-            await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(directory.ToCanonicalPath()))
-            {
-                result.IsSuccess.Should().BeTrue();
-                entries.Add(result.Value);
-            }
-
-            // Assert
-            entries.Should().HaveCount(3); // 1 directory + 2 files
-            entries.Should().Contain(e => e.Name == "subdir" && e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file1.txt" && !e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file2.txt" && !e.IsDirectory);
-        }
 
         [Fact(DisplayName = "IMFS-018: CreateMonitoringSessionAsync returns valid session")]
         public async Task IMFS018()
