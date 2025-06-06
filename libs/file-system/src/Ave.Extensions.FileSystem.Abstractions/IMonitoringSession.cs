@@ -23,7 +23,7 @@ namespace Ave.Extensions.FileSystem
         /// <summary>
         /// Gets an observable stream of file system changes.
         /// </summary>
-        IObservable<FileSystemChangeEventArgs> Changes { get; }
+        IObservable<FileSystemChangedEvent> Changes { get; }
         
         /// <summary>
         /// Stops the monitoring session.

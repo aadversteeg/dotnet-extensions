@@ -63,7 +63,7 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
-        public async IAsyncEnumerable<Result<FileVisitedEventArgs, FileSystemError>> VisitStreamAsync(
+        public async IAsyncEnumerable<Result<FileVisitedEvent, FileSystemError>> VisitStreamAsync(
             CanonicalPath rootPath, 
             FileSystemVisitorOptions? options = null, 
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -74,13 +74,13 @@ namespace Ave.Extensions.FileSystem
             var existsResult = await _fileSystem.DirectoryExistsAsync(rootPath, cancellationToken);
             if (!existsResult.IsSuccess)
             {
-                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(existsResult.Error);
+                yield return Result<FileVisitedEvent, FileSystemError>.Failure(existsResult.Error);
                 yield break;
             }
 
             if (!existsResult.Value)
             {
-                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(
+                yield return Result<FileVisitedEvent, FileSystemError>.Failure(
                     new FileSystemError($"Directory does not exist: {rootPath}", rootPath.Value, FileSystemErrorType.DirectoryNotFound));
                 yield break;
             }
@@ -252,7 +252,7 @@ namespace Ave.Extensions.FileSystem
             }
         }
 
-        private async IAsyncEnumerable<Result<FileVisitedEventArgs, FileSystemError>> VisitDirectoryStreamAsync(
+        private async IAsyncEnumerable<Result<FileVisitedEvent, FileSystemError>> VisitDirectoryStreamAsync(
             CanonicalPath directoryPath,
             CanonicalPath rootPath,
             int depth,
@@ -266,7 +266,7 @@ namespace Ave.Extensions.FileSystem
             var dirEntryResult = await _fileSystem.GetEntryAsync(directoryPath, cancellationToken);
             if (!dirEntryResult.IsSuccess)
             {
-                yield return Result<FileVisitedEventArgs, FileSystemError>.Failure(dirEntryResult.Error);
+                yield return Result<FileVisitedEvent, FileSystemError>.Failure(dirEntryResult.Error);
                 yield break;
             }
 
@@ -280,8 +280,8 @@ namespace Ave.Extensions.FileSystem
             if (options.ShouldVisitDirectory != null && !options.ShouldVisitDirectory(dirEntry))
                 yield break;
 
-            yield return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                new FileVisitedEventArgs(dirEntry, depth));
+            yield return Result<FileVisitedEvent, FileSystemError>.Success(
+                new FileVisitedEvent(dirEntry, depth));
 
             // Process files
             var filesResult = await _fileSystem.GetFilesAsync(directoryPath, "*", SearchOption.TopDirectoryOnly, cancellationToken);
@@ -312,7 +312,7 @@ namespace Ave.Extensions.FileSystem
             }
         }
 
-        private async Task<Result<FileVisitedEventArgs, FileSystemError>?> VisitFileStreamAsync(
+        private async Task<Result<FileVisitedEvent, FileSystemError>?> VisitFileStreamAsync(
             CanonicalPath filePath,
             CanonicalPath rootPath,
             int depth,
@@ -323,7 +323,7 @@ namespace Ave.Extensions.FileSystem
             {
                 var fileEntryResult = await _fileSystem.GetEntryAsync(filePath, cancellationToken);
                 if (!fileEntryResult.IsSuccess)
-                    return Result<FileVisitedEventArgs, FileSystemError>.Failure(fileEntryResult.Error);
+                    return Result<FileVisitedEvent, FileSystemError>.Failure(fileEntryResult.Error);
 
                 var fileEntry = fileEntryResult.Value;
 
@@ -335,12 +335,12 @@ namespace Ave.Extensions.FileSystem
                 if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileEntry))
                     return null;
 
-                return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                    new FileVisitedEventArgs(fileEntry, depth));
+                return Result<FileVisitedEvent, FileSystemError>.Success(
+                    new FileVisitedEvent(fileEntry, depth));
             }
             catch (Exception ex)
             {
-                return Result<FileVisitedEventArgs, FileSystemError>.Failure(
+                return Result<FileVisitedEvent, FileSystemError>.Failure(
                     FileSystemError.FromException(ex, filePath.Value));
             }
         }

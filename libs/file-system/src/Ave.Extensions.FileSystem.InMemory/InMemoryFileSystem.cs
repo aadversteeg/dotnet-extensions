@@ -25,7 +25,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         private readonly ConcurrentDictionary<CanonicalPath, DirectoryNode> _directories;
         private readonly ReaderWriterLockSlim _lock;
         private readonly object _monitorLock = new object();
-        private readonly Subject<FileSystemChangeEventArgs> _fileSystemEventsSubject;
+        private readonly Subject<FileSystemChangedEvent> _fileSystemEventsSubject;
 
         /// <summary>
         /// Initializes a new instance of the InMemoryFileSystem class.
@@ -37,7 +37,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             _files = new ConcurrentDictionary<CanonicalPath, FileNode>();
             _directories = new ConcurrentDictionary<CanonicalPath, DirectoryNode>();
             _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-            _fileSystemEventsSubject = new Subject<FileSystemChangeEventArgs>();
+            _fileSystemEventsSubject = new Subject<FileSystemChangedEvent>();
             
             // Ensure root directory exists
             _directories.TryAdd(CanonicalPath.Root, new DirectoryNode(CanonicalPath.Root, DateTime.UtcNow));
@@ -53,7 +53,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         /// <summary>
         /// Gets the observable stream of file system events for monitoring purposes.
         /// </summary>
-        internal IObservable<FileSystemChangeEventArgs> FileSystemEvents => _fileSystemEventsSubject;
+        internal IObservable<FileSystemChangedEvent> FileSystemEvents => _fileSystemEventsSubject;
 
         /// <inheritdoc />
         public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
@@ -640,7 +640,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             lock (_monitorLock)
             {
                 // Notify event stream for monitoring sessions
-                var eventArgs = new FileSystemChangeEventArgs(path, changeType);
+                var eventArgs = new FileSystemChangedEvent(path, changeType);
                 _fileSystemEventsSubject.OnNext(eventArgs);
             }
         }

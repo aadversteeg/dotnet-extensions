@@ -18,7 +18,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         private readonly MonitoringOptions _options;
         private readonly ILogger _logger;
         private readonly Action _onDispose;
-        private readonly Subject<FileSystemChangeEventArgs> _eventSubject;
+        private readonly Subject<FileSystemChangedEvent> _eventSubject;
         private IDisposable? _subscription;
         private bool _disposed;
 
@@ -34,7 +34,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _onDispose = onDispose ?? throw new ArgumentNullException(nameof(onDispose));
-            _eventSubject = new Subject<FileSystemChangeEventArgs>();
+            _eventSubject = new Subject<FileSystemChangedEvent>();
         }
 
         /// <inheritdoc />
@@ -44,14 +44,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         public bool IsActive => !_disposed;
 
         /// <inheritdoc />
-        public IObservable<FileSystemChangeEventArgs> Changes => _eventSubject.AsObservable();
+        public IObservable<FileSystemChangedEvent> Changes => _eventSubject.AsObservable();
 
         internal void SetSubscription(IDisposable subscription)
         {
             _subscription = subscription;
         }
 
-        internal void NotifyChange(FileSystemChangeEventArgs evt)
+        internal void NotifyChange(FileSystemChangedEvent evt)
         {
             if (!_disposed)
             {

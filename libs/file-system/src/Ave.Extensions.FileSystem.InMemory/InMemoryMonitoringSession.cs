@@ -14,7 +14,7 @@ namespace Ave.Extensions.FileSystem.InMemory
     {
         private readonly MonitoringOptions _options;
         private readonly InMemoryFileSystem _fileSystem;
-        private readonly Subject<FileSystemChangeEventArgs> _changesSubject;
+        private readonly Subject<FileSystemChangedEvent> _changesSubject;
         private readonly object _lock = new object();
         private bool _disposed;
         private bool _isActive;
@@ -29,7 +29,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-            _changesSubject = new Subject<FileSystemChangeEventArgs>();
+            _changesSubject = new Subject<FileSystemChangedEvent>();
             _isActive = true;
             
             StartMonitoring();
@@ -51,7 +51,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public IObservable<FileSystemChangeEventArgs> Changes => _changesSubject.AsObservable();
+        public IObservable<FileSystemChangedEvent> Changes => _changesSubject.AsObservable();
 
         /// <inheritdoc />
         public Task StopAsync(CancellationToken cancellationToken = default)
@@ -105,7 +105,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
         }
 
-        private bool ShouldNotify(FileSystemChangeEventArgs evt)
+        private bool ShouldNotify(FileSystemChangedEvent evt)
         {
             // Check if the event is within the monitored path
             var eventPath = evt.Path;

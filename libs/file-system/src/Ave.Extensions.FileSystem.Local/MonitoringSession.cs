@@ -16,7 +16,7 @@ namespace Ave.Extensions.FileSystem.Local
     {
         private readonly MonitoringOptions _options;
         private readonly IPathMapper _pathMapper;
-        private readonly Subject<FileSystemChangeEventArgs> _changesSubject;
+        private readonly Subject<FileSystemChangedEvent> _changesSubject;
         private readonly object _lock = new object();
         private FileSystemWatcher? _watcher;
         private bool _disposed;
@@ -31,7 +31,7 @@ namespace Ave.Extensions.FileSystem.Local
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
-            _changesSubject = new Subject<FileSystemChangeEventArgs>();
+            _changesSubject = new Subject<FileSystemChangedEvent>();
             
             StartMonitoring();
         }
@@ -52,7 +52,7 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public IObservable<FileSystemChangeEventArgs> Changes => _changesSubject.AsObservable();
+        public IObservable<FileSystemChangedEvent> Changes => _changesSubject.AsObservable();
 
         /// <inheritdoc />
         public Task StopAsync(CancellationToken cancellationToken = default)
@@ -192,7 +192,7 @@ namespace Ave.Extensions.FileSystem.Local
                 var canonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
                 if (canonicalPathResult.IsFailure)
                     return; // Skip invalid paths
-                var eventArgs = new FileSystemChangeEventArgs(canonicalPathResult.Value, changeType);
+                var eventArgs = new FileSystemChangedEvent(canonicalPathResult.Value, changeType);
                 
                 if (ShouldIncludeChange(eventArgs))
                 {
@@ -215,7 +215,7 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 if (oldCanonicalPathResult.IsSuccess)
                 {
-                    var deleteEvent = new FileSystemChangeEventArgs(oldCanonicalPathResult.Value, FileSystemChangeType.Deleted);
+                    var deleteEvent = new FileSystemChangedEvent(oldCanonicalPathResult.Value, FileSystemChangeType.Deleted);
                     if (ShouldIncludeChange(deleteEvent))
                     {
                         _changesSubject.OnNext(deleteEvent);
@@ -224,7 +224,7 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 if (newCanonicalPathResult.IsSuccess)
                 {
-                    var createEvent = new FileSystemChangeEventArgs(newCanonicalPathResult.Value, FileSystemChangeType.Created);
+                    var createEvent = new FileSystemChangedEvent(newCanonicalPathResult.Value, FileSystemChangeType.Created);
                     if (ShouldIncludeChange(createEvent))
                     {
                         _changesSubject.OnNext(createEvent);
@@ -242,7 +242,7 @@ namespace Ave.Extensions.FileSystem.Local
             _changesSubject.OnError(e.GetException());
         }
 
-        private bool ShouldIncludeChange(FileSystemChangeEventArgs changeArgs)
+        private bool ShouldIncludeChange(FileSystemChangedEvent changeArgs)
         {
             try
             {

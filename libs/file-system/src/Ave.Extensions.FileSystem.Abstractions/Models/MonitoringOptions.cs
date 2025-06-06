@@ -42,7 +42,7 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// Gets or sets a custom filter function for file changes.
         /// </summary>
-        public Func<FileSystemChangeEventArgs, bool>? CustomFilter { get; set; }
+        public Func<FileSystemChangedEvent, bool>? CustomFilter { get; set; }
 
         /// <summary>
         /// Gets default monitoring options for a path.

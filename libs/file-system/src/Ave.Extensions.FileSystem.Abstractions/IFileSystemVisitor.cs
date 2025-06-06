@@ -30,7 +30,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="options">Options controlling the visit behavior.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>An async enumerable of visit events or errors.</returns>
-        IAsyncEnumerable<Result<FileVisitedEventArgs, FileSystemError>> VisitStreamAsync(
+        IAsyncEnumerable<Result<FileVisitedEvent, FileSystemError>> VisitStreamAsync(
             CanonicalPath rootPath,
             FileSystemVisitorOptions? options = null,
             CancellationToken cancellationToken = default);

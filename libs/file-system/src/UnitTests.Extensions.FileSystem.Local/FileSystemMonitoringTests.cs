@@ -68,7 +68,7 @@ namespace UnitTests.Extensions.FileSystem.Local
                 using var session = sessionResult.Value;
                 var events = session.Changes.Take(1).Timeout(TimeSpan.FromSeconds(5));
                 var eventReceived = false;
-                FileSystemChangeEventArgs? receivedEvent = null;
+                FileSystemChangedEvent? receivedEvent = null;
 
                 events.Subscribe(evt =>
                 {
