@@ -120,30 +120,6 @@ namespace Ave.Extensions.FileSystem.InMemory
             // Check change type filters
             if (!_options.NotifyFilters.HasFlag(GetNotifyFilter(evt.ChangeType)))
                 return false;
-            
-            // Check include patterns
-            var fileName = eventPath.GetName();
-            if (_options.IncludePatterns.Count > 0)
-            {
-                bool matchesInclude = false;
-                foreach (var pattern in _options.IncludePatterns)
-                {
-                    if (MatchesPattern(fileName, pattern))
-                    {
-                        matchesInclude = true;
-                        break;
-                    }
-                }
-                if (!matchesInclude)
-                    return false;
-            }
-            
-            // Check exclude patterns
-            foreach (var pattern in _options.ExcludePatterns)
-            {
-                if (MatchesPattern(fileName, pattern))
-                    return false;
-            }
 
             // Apply custom filter if provided
             if (_options.CustomFilter != null && !_options.CustomFilter(evt))
@@ -164,15 +140,5 @@ namespace Ave.Extensions.FileSystem.InMemory
             };
         }
 
-        private static bool MatchesPattern(string name, string pattern)
-        {
-            if (pattern == "*") return true;
-            
-            var regex = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
-                .Replace("\\*", ".*")
-                .Replace("\\?", ".") + "$";
-            
-            return System.Text.RegularExpressions.Regex.IsMatch(name, regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        }
     }
 }

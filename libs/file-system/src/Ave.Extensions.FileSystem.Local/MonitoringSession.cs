@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -19,8 +17,8 @@ namespace Ave.Extensions.FileSystem.Local
         private readonly MonitoringOptions _options;
         private readonly IPathMapper _pathMapper;
         private readonly Subject<FileSystemChangeEventArgs> _changesSubject;
-        private readonly List<FileSystemWatcher> _watchers;
         private readonly object _lock = new object();
+        private FileSystemWatcher? _watcher;
         private bool _disposed;
         private bool _isActive;
 
@@ -34,7 +32,6 @@ namespace Ave.Extensions.FileSystem.Local
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
             _changesSubject = new Subject<FileSystemChangeEventArgs>();
-            _watchers = new List<FileSystemWatcher>();
             
             StartMonitoring();
         }
@@ -67,20 +64,19 @@ namespace Ave.Extensions.FileSystem.Local
 
                 _isActive = false;
                 
-                foreach (var watcher in _watchers)
+                if (_watcher != null)
                 {
                     try
                     {
-                        watcher.EnableRaisingEvents = false;
-                        watcher.Dispose();
+                        _watcher.EnableRaisingEvents = false;
+                        _watcher.Dispose();
+                        _watcher = null;
                     }
                     catch
                     {
                         // Ignore disposal errors
                     }
                 }
-                
-                _watchers.Clear();
             }
 
             return Task.CompletedTask;
@@ -97,20 +93,19 @@ namespace Ave.Extensions.FileSystem.Local
                 _disposed = true;
                 _isActive = false;
 
-                foreach (var watcher in _watchers)
+                if (_watcher != null)
                 {
                     try
                     {
-                        watcher.EnableRaisingEvents = false;
-                        watcher.Dispose();
+                        _watcher.EnableRaisingEvents = false;
+                        _watcher.Dispose();
+                        _watcher = null;
                     }
                     catch
                     {
                         // Ignore disposal errors
                     }
                 }
-
-                _watchers.Clear();
                 _changesSubject.OnCompleted();
                 _changesSubject.Dispose();
             }
@@ -140,18 +135,13 @@ namespace Ave.Extensions.FileSystem.Local
                         return;
                     }
 
-                    // Create watchers for each include pattern
-                    foreach (var pattern in _options.IncludePatterns)
+                    // Create single watcher for all files
+                    _watcher = CreateWatcher(physicalPath);
+                    if (_watcher != null)
                     {
-                        var watcher = CreateWatcher(physicalPath, pattern);
-                        if (watcher != null)
-                        {
-                            _watchers.Add(watcher);
-                            watcher.EnableRaisingEvents = true;
-                        }
+                        _watcher.EnableRaisingEvents = true;
+                        _isActive = true;
                     }
-
-                    _isActive = _watchers.Count > 0;
                 }
                 catch (Exception ex)
                 {
@@ -160,11 +150,11 @@ namespace Ave.Extensions.FileSystem.Local
             }
         }
 
-        private FileSystemWatcher? CreateWatcher(string path, string pattern)
+        private FileSystemWatcher? CreateWatcher(string path)
         {
             try
             {
-                var watcher = new FileSystemWatcher(path, pattern)
+                var watcher = new FileSystemWatcher(path)
                 {
                     IncludeSubdirectories = _options.IncludeSubdirectories,
                     NotifyFilter = (System.IO.NotifyFilters)_options.NotifyFilters,
@@ -262,11 +252,6 @@ namespace Ave.Extensions.FileSystem.Local
                     return true; // Include by default if path mapping fails
 
                 var systemPath = systemPathResult.Value;
-                var fileName = System.IO.Path.GetFileName(systemPath);
-
-                // Check exclude patterns
-                if (_options.ExcludePatterns.Any(pattern => MatchesPattern(fileName, pattern)))
-                    return false;
 
                 // Check hidden/system file filters
                 if (File.Exists(systemPath))
@@ -302,22 +287,5 @@ namespace Ave.Extensions.FileSystem.Local
                 return true;
             }
         }
-
-        private static bool MatchesPattern(string fileName, string pattern)
-        {
-            // Simple wildcard matching - could be enhanced with more sophisticated pattern matching
-            if (pattern == "*")
-                return true;
-
-            if (pattern.Contains('*'))
-            {
-                var regexPattern = "^" + pattern.Replace("*", ".*").Replace("?", ".") + "$";
-                return System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern, 
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            }
-
-            return string.Equals(fileName, pattern, StringComparison.OrdinalIgnoreCase);
-        }
-
     }
 }

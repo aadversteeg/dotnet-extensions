@@ -23,15 +23,6 @@ namespace Ave.Extensions.FileSystem.Models
         /// </summary>
         public FileSystemNotifyFilters NotifyFilters { get; set; } = FileSystemNotifyFilters.All;
 
-        /// <summary>
-        /// Gets or sets patterns of files to include in monitoring.
-        /// </summary>
-        public List<string> IncludePatterns { get; set; } = new List<string> { "*" };
-
-        /// <summary>
-        /// Gets or sets patterns of files to exclude from monitoring.
-        /// </summary>
-        public List<string> ExcludePatterns { get; set; } = new List<string>();
 
         /// <summary>
         /// Gets or sets a value indicating whether to include hidden files.
@@ -63,8 +54,6 @@ namespace Ave.Extensions.FileSystem.Models
             Path = path,
             IncludeSubdirectories = false,
             NotifyFilters = FileSystemNotifyFilters.All,
-            IncludePatterns = new List<string> { "*" },
-            ExcludePatterns = new List<string>(),
             IncludeHidden = false,
             IncludeSystem = false
         };
@@ -79,8 +68,6 @@ namespace Ave.Extensions.FileSystem.Models
             Path = path,
             IncludeSubdirectories = true,
             NotifyFilters = FileSystemNotifyFilters.All,
-            IncludePatterns = new List<string> { "*" },
-            ExcludePatterns = new List<string>(),
             IncludeHidden = false,
             IncludeSystem = false
         };

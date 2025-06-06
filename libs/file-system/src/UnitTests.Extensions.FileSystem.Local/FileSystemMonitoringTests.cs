@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
@@ -135,55 +132,5 @@ namespace UnitTests.Extensions.FileSystem.Local
             }
         }
 
-        [Fact(DisplayName = "FSM-004: Session filters by include patterns")]
-        public async Task FSM004()
-        {
-            // Arrange
-            var fileSystem = new LocalFileSystem(CreatePathMapper());
-            var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(tempDir);
-
-            try
-            {
-                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
-                options.IncludePatterns = new List<string> { "*.txt" };
-                    
-                var sessionResult = await fileSystem.CreateMonitoringSessionAsync(options);
-                sessionResult.IsSuccess.Should().BeTrue();
-                
-                using var session = sessionResult.Value;
-                var events = session.Changes.Take(1).Timeout(TimeSpan.FromSeconds(5));
-                var eventReceived = false;
-
-                events.Subscribe(evt => eventReceived = true);
-
-                // Give the monitor time to start
-                await Task.Delay(100);
-
-                // Act - create file that should be ignored
-                var ignoredFile = Path.Combine(tempDir, "test.log");
-                await File.WriteAllTextAsync(ignoredFile, "test content");
-                await Task.Delay(500);
-
-                // Act - create file that should be detected
-                var detectedFile = Path.Combine(tempDir, "test.txt");
-                await File.WriteAllTextAsync(detectedFile, "test content");
-
-                // Wait for event
-                var timeout = DateTime.UtcNow.AddSeconds(3);
-                while (!eventReceived && DateTime.UtcNow < timeout)
-                {
-                    await Task.Delay(50);
-                }
-
-                // Assert
-                eventReceived.Should().BeTrue("txt file creation should trigger an event");
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
-            }
-        }
     }
 }
