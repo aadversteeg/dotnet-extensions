@@ -122,17 +122,15 @@ namespace UnitTests.Extensions.FileSystem
         public async Task RFSW006()
         {
             // Arrange
-            var entry = new FileSystemEntry
-            {
-                Path = "/test/file.txt".ToCanonicalPath(),
-                IsDirectory = false,
-                Size = 1024,
-                Extension = ".txt",
-                CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
-                LastAccessUtc = DateTime.UtcNow,
-                Attributes = FileAttributes.Normal
-            };
+            var entry = new FileSystemEntry(
+                path: "/test/file.txt".ToCanonicalPath(),
+                isDirectory: false,
+                size: 1024,
+                extension: ".txt",
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Normal);
             var expectedResult = Result<FileSystemEntry, FileSystemError>.Success(entry);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
@@ -153,17 +151,15 @@ namespace UnitTests.Extensions.FileSystem
         public async Task RFSW007()
         {
             // Arrange
-            var entry = new FileSystemEntry
-            {
-                Path = "/test/dir".ToCanonicalPath(),
-                IsDirectory = true,
-                Size = null,
-                Extension = null,
-                CreatedUtc = DateTime.UtcNow,
-                ModifiedUtc = DateTime.UtcNow,
-                LastAccessUtc = DateTime.UtcNow,
-                Attributes = FileAttributes.Directory
-            };
+            var entry = new FileSystemEntry(
+                path: "/test/dir".ToCanonicalPath(),
+                isDirectory: true,
+                size: null,
+                extension: null,
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Directory);
             var expectedResult = Result<FileSystemEntry, FileSystemError>.Success(entry);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/dir".ToCanonicalPath(), It.IsAny<CancellationToken>()))

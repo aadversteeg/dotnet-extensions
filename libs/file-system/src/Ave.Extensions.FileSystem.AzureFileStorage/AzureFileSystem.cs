@@ -189,17 +189,15 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     var fileResponse = await fileClient.GetPropertiesAsync(cancellationToken);
                     var fileProperties = fileResponse.Value;
                     
-                    var entry = new FileSystemEntry
-                    {
-                        Path = path,
-                        IsDirectory = false,
-                        Size = fileProperties.ContentLength,
-                        Extension = Path.GetExtension(path.Value),
-                        CreatedUtc = fileProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
-                        ModifiedUtc = fileProperties.LastModified.DateTime,
-                        LastAccessUtc = fileProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? fileProperties.LastModified.DateTime,
-                        Attributes = ConvertSmbAttributes(fileProperties.SmbProperties.FileAttributes)
-                    };
+                    var entry = new FileSystemEntry(
+                        path: path,
+                        isDirectory: false,
+                        size: fileProperties.ContentLength,
+                        extension: Path.GetExtension(path.Value),
+                        createdUtc: fileProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                        modifiedUtc: fileProperties.LastModified.DateTime,
+                        lastAccessUtc: fileProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? fileProperties.LastModified.DateTime,
+                        attributes: ConvertSmbAttributes(fileProperties.SmbProperties.FileAttributes));
                     
                     return Result<FileSystemEntry, FileSystemError>.Success(entry);
                 }
@@ -212,17 +210,15 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         var dirResponse = await directoryClient.GetPropertiesAsync(cancellationToken);
                         var dirProperties = dirResponse.Value;
                         
-                        var entry = new FileSystemEntry
-                        {
-                            Path = path,
-                            IsDirectory = true,
-                            Size = null,
-                            Extension = null,
-                            CreatedUtc = dirProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
-                            ModifiedUtc = dirProperties.LastModified.DateTime,
-                            LastAccessUtc = dirProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? dirProperties.LastModified.DateTime,
-                            Attributes = ConvertSmbAttributes(dirProperties.SmbProperties.FileAttributes) | FileAttributes.Directory
-                        };
+                        var entry = new FileSystemEntry(
+                            path: path,
+                            isDirectory: true,
+                            size: null,
+                            extension: null,
+                            createdUtc: dirProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                            modifiedUtc: dirProperties.LastModified.DateTime,
+                            lastAccessUtc: dirProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? dirProperties.LastModified.DateTime,
+                            attributes: ConvertSmbAttributes(dirProperties.SmbProperties.FileAttributes) | FileAttributes.Directory);
                         
                         return Result<FileSystemEntry, FileSystemError>.Success(entry);
                     }
@@ -690,17 +686,15 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(fullPath.Value))
                         continue;
                     
-                    var entry = new FileSystemEntry
-                    {
-                        Path = fullPath,
-                        IsDirectory = true,
-                        Size = null,
-                        Extension = null,
-                        CreatedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
-                        ModifiedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
-                        LastAccessUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
-                        Attributes = FileAttributes.Directory
-                    };
+                    var entry = new FileSystemEntry(
+                        path: fullPath,
+                        isDirectory: true,
+                        size: null,
+                        extension: null,
+                        createdUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
+                        modifiedUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
+                        lastAccessUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
+                        attributes: FileAttributes.Directory);
                     
                     yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
                     
@@ -724,17 +718,15 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(fullPath.Value))
                         continue;
                     
-                    var entry = new FileSystemEntry
-                    {
-                        Path = fullPath,
-                        IsDirectory = false,
-                        Size = null, // Size not available in listing, would need separate API call
-                        Extension = Path.GetExtension(item.Name),
-                        CreatedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
-                        ModifiedUtc = DateTime.UtcNow, // Azure doesn't provide this in listing  
-                        LastAccessUtc = DateTime.UtcNow, // Azure doesn't provide this in listing
-                        Attributes = FileAttributes.Normal
-                    };
+                    var entry = new FileSystemEntry(
+                        path: fullPath,
+                        isDirectory: false,
+                        size: null, // Size not available in listing, would need separate API call
+                        extension: Path.GetExtension(item.Name),
+                        createdUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
+                        modifiedUtc: DateTime.UtcNow, // Azure doesn't provide this in listing  
+                        lastAccessUtc: DateTime.UtcNow, // Azure doesn't provide this in listing
+                        attributes: FileAttributes.Normal);
                     
                     yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
                 }

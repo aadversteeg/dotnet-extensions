@@ -25,13 +25,16 @@ namespace UnitTests.Extensions.FileSystem.Local
         public async Task FSM001()
         {
             // Arrange
-            var fileSystem = new LocalFileSystem(CreatePathMapper());
+            var pathMapper = CreatePathMapper();
+            var fileSystem = new LocalFileSystem(pathMapper);
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
 
             try
             {
-                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
+                var canonicalPathResult = pathMapper.MapToCanonicalPath(tempDir);
+                canonicalPathResult.IsSuccess.Should().BeTrue();
+                var options = MonitoringOptions.ForPath(canonicalPathResult.Value);
 
                 // Act
                 var result = await fileSystem.CreateMonitoringSessionAsync(options);
@@ -55,13 +58,16 @@ namespace UnitTests.Extensions.FileSystem.Local
         public async Task FSM002()
         {
             // Arrange
-            var fileSystem = new LocalFileSystem(CreatePathMapper());
+            var pathMapper = CreatePathMapper();
+            var fileSystem = new LocalFileSystem(pathMapper);
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
 
             try
             {
-                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
+                var canonicalPathResult = pathMapper.MapToCanonicalPath(tempDir);
+                canonicalPathResult.IsSuccess.Should().BeTrue();
+                var options = MonitoringOptions.ForPath(canonicalPathResult.Value);
                 var sessionResult = await fileSystem.CreateMonitoringSessionAsync(options);
                 sessionResult.IsSuccess.Should().BeTrue();
                 
@@ -106,13 +112,16 @@ namespace UnitTests.Extensions.FileSystem.Local
         public async Task FSM003()
         {
             // Arrange
-            var fileSystem = new LocalFileSystem(CreatePathMapper());
+            var pathMapper = CreatePathMapper();
+            var fileSystem = new LocalFileSystem(pathMapper);
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
 
             try
             {
-                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
+                var canonicalPathResult = pathMapper.MapToCanonicalPath(tempDir);
+                canonicalPathResult.IsSuccess.Should().BeTrue();
+                var options = MonitoringOptions.ForPath(canonicalPathResult.Value);
                 var sessionResult = await fileSystem.CreateMonitoringSessionAsync(options);
                 sessionResult.IsSuccess.Should().BeTrue();
                 

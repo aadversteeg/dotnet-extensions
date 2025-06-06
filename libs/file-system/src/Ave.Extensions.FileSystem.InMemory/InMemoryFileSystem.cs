@@ -176,17 +176,15 @@ namespace Ave.Extensions.FileSystem.InMemory
                     // Check if it's a file
                     if (_files.TryGetValue(path, out var fileNode))
                     {
-                        var entry = new FileSystemEntry
-                        {
-                            Path = path,
-                            IsDirectory = false,
-                            Size = fileNode.Content.Length,
-                            Extension = System.IO.Path.GetExtension(path.GetName()),
-                            CreatedUtc = fileNode.CreatedUtc,
-                            ModifiedUtc = fileNode.ModifiedUtc,
-                            LastAccessUtc = fileNode.LastAccessUtc,
-                            Attributes = fileNode.Attributes
-                        };
+                        var entry = new FileSystemEntry(
+                            path: path,
+                            isDirectory: false,
+                            size: fileNode.Content.Length,
+                            extension: System.IO.Path.GetExtension(path.GetName()),
+                            createdUtc: fileNode.CreatedUtc,
+                            modifiedUtc: fileNode.ModifiedUtc,
+                            lastAccessUtc: fileNode.LastAccessUtc,
+                            attributes: fileNode.Attributes);
 
                         return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                     }
@@ -194,17 +192,15 @@ namespace Ave.Extensions.FileSystem.InMemory
                     // Check if it's a directory
                     if (_directories.TryGetValue(path, out var dirNode))
                     {
-                        var entry = new FileSystemEntry
-                        {
-                            Path = path,
-                            IsDirectory = true,
-                            Size = null,
-                            Extension = null,
-                            CreatedUtc = dirNode.CreatedUtc,
-                            ModifiedUtc = dirNode.ModifiedUtc,
-                            LastAccessUtc = dirNode.LastAccessUtc,
-                            Attributes = dirNode.Attributes
-                        };
+                        var entry = new FileSystemEntry(
+                            path: path,
+                            isDirectory: true,
+                            size: null,
+                            extension: null,
+                            createdUtc: dirNode.CreatedUtc,
+                            modifiedUtc: dirNode.ModifiedUtc,
+                            lastAccessUtc: dirNode.LastAccessUtc,
+                            attributes: dirNode.Attributes);
 
                         return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                     }
@@ -684,17 +680,15 @@ namespace Ave.Extensions.FileSystem.InMemory
                     
                     if (_directories.TryGetValue(childDir, out var dirNode))
                     {
-                        var entry = new FileSystemEntry
-                        {
-                            Path = childDir,
-                            IsDirectory = true,
-                            Size = null,
-                            Extension = null,
-                            CreatedUtc = dirNode.CreatedUtc,
-                            ModifiedUtc = dirNode.ModifiedUtc,
-                            LastAccessUtc = dirNode.LastAccessUtc,
-                            Attributes = dirNode.Attributes
-                        };
+                        var entry = new FileSystemEntry(
+                            path: childDir,
+                            isDirectory: true,
+                            size: null,
+                            extension: null,
+                            createdUtc: dirNode.CreatedUtc,
+                            modifiedUtc: dirNode.ModifiedUtc,
+                            lastAccessUtc: dirNode.LastAccessUtc,
+                            attributes: dirNode.Attributes);
                         
                         yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
                         
@@ -731,17 +725,15 @@ namespace Ave.Extensions.FileSystem.InMemory
                     
                     if (_files.TryGetValue(childFile, out var fileNode))
                     {
-                        var entry = new FileSystemEntry
-                        {
-                            Path = childFile,
-                            IsDirectory = false,
-                            Size = fileNode.Content.Length,
-                            Extension = System.IO.Path.GetExtension(childFile.GetName()),
-                            CreatedUtc = fileNode.CreatedUtc,
-                            ModifiedUtc = fileNode.ModifiedUtc,
-                            LastAccessUtc = fileNode.LastAccessUtc,
-                            Attributes = fileNode.Attributes
-                        };
+                        var entry = new FileSystemEntry(
+                            path: childFile,
+                            isDirectory: false,
+                            size: fileNode.Content.Length,
+                            extension: System.IO.Path.GetExtension(childFile.GetName()),
+                            createdUtc: fileNode.CreatedUtc,
+                            modifiedUtc: fileNode.ModifiedUtc,
+                            lastAccessUtc: fileNode.LastAccessUtc,
+                            attributes: fileNode.Attributes);
                         
                         yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
                     }

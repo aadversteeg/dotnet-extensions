@@ -14,15 +14,15 @@ namespace Ave.Extensions.FileSystem.Local
     /// </summary>
     public class LocalFileSystem : IFileSystem
     {
-        private readonly IPathMapper? _pathMapper;
+        private readonly IPathMapper _pathMapper;
         
         /// <summary>
         /// Initializes a new instance of the LocalFileSystem class.
         /// </summary>
-        /// <param name="pathMapper">Optional path mapper for canonical path support.</param>
-        public LocalFileSystem(IPathMapper? pathMapper = null)
+        /// <param name="pathMapper">Path mapper for canonical path support.</param>
+        public LocalFileSystem(IPathMapper pathMapper)
         {
-            _pathMapper = pathMapper;
+            _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
         }
 
         /// <inheritdoc />
@@ -137,7 +137,7 @@ namespace Ave.Extensions.FileSystem.Local
                 if (File.Exists(systemPath))
                 {
                     var fileInfo = new FileInfo(systemPath);
-                    var entry = FileSystemEntry.FromFileInfo(fileInfo, _pathMapper);
+                    var entry = fileInfo.ToFileSystemEntry(_pathMapper);
                     return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                 }
                 
@@ -145,7 +145,7 @@ namespace Ave.Extensions.FileSystem.Local
                 if (Directory.Exists(systemPath))
                 {
                     var directoryInfo = new DirectoryInfo(systemPath);
-                    var entry = FileSystemEntry.FromDirectoryInfo(directoryInfo, _pathMapper);
+                    var entry = directoryInfo.ToFileSystemEntry(_pathMapper);
                     return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                 }
                 
@@ -421,7 +421,7 @@ namespace Ave.Extensions.FileSystem.Local
                 if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(file.FullName))
                     continue;
 
-                var entry = FileSystemEntry.FromFileInfo(file, _pathMapper);
+                var entry = file.ToFileSystemEntry(_pathMapper);
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
             }
 
@@ -442,7 +442,7 @@ namespace Ave.Extensions.FileSystem.Local
                 if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(directory.FullName))
                     continue;
 
-                var entry = FileSystemEntry.FromDirectoryInfo(directory, _pathMapper);
+                var entry = directory.ToFileSystemEntry(_pathMapper);
                 yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
 
                 // Recurse into subdirectory only if RecurseSubdirectories is enabled

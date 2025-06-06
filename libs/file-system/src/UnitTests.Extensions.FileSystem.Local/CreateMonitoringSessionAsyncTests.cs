@@ -57,9 +57,12 @@ namespace UnitTests.Extensions.FileSystem.Local
         public async Task CMSA003()
         {
             // Arrange
-            var fileSystem = new LocalFileSystem(CreatePathMapper());
+            var pathMapper = CreatePathMapper();
+            var fileSystem = new LocalFileSystem(pathMapper);
             var tempDir = System.IO.Path.GetTempPath();
-            var canonicalPath = tempDir.ToCanonicalPath();
+            var canonicalPathResult = pathMapper.MapToCanonicalPath(tempDir);
+            canonicalPathResult.IsSuccess.Should().BeTrue();
+            var canonicalPath = canonicalPathResult.Value;
             var options = MonitoringOptions.ForPath(canonicalPath);
 
             // Act
@@ -79,9 +82,12 @@ namespace UnitTests.Extensions.FileSystem.Local
         public async Task CMSA004()
         {
             // Arrange
-            var fileSystem = new LocalFileSystem(CreatePathMapper());
+            var pathMapper = CreatePathMapper();
+            var fileSystem = new LocalFileSystem(pathMapper);
             var tempDir = System.IO.Path.GetTempPath();
-            var canonicalPath = tempDir.ToCanonicalPath();
+            var canonicalPathResult = pathMapper.MapToCanonicalPath(tempDir);
+            canonicalPathResult.IsSuccess.Should().BeTrue();
+            var canonicalPath = canonicalPathResult.Value;
             var options = MonitoringOptions.ForPath(canonicalPath);
 
             // Act

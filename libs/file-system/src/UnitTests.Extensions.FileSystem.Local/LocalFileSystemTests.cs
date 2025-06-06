@@ -1,6 +1,8 @@
 using System;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Local.PathMappers;
 using FluentAssertions;
+using Moq;
 using Xunit;
 
 namespace UnitTests.Extensions.FileSystem.Local
@@ -30,7 +32,8 @@ namespace UnitTests.Extensions.FileSystem.Local
         public void LFS002()
         {
             // Arrange
-            var fileSystem = new Ave.Extensions.FileSystem.Local.LocalFileSystem();
+            var mockPathMapper = new Mock<IPathMapper>();
+            var fileSystem = new Ave.Extensions.FileSystem.Local.LocalFileSystem(mockPathMapper.Object);
 
             // Act
             var info = fileSystem.Info;

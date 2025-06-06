@@ -23,10 +23,6 @@ namespace Ave.Extensions.FileSystem.Configuration
         /// </summary>
         public bool UseCanonicalPaths { get; set; } = false;
         
-        /// <summary>
-        /// Custom path mapper type (optional)
-        /// </summary>
-        public Type? PathMapperType { get; set; }
         
 
         /// <summary>

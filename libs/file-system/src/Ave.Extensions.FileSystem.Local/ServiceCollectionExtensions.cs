@@ -44,21 +44,15 @@ namespace Ave.Extensions.FileSystem.Local
             // Register shared utilities first
             services.AddFileSystemUtilities(configure);
 
-            // Register path mapper based on platform or configuration (local filesystem specific)
-            if (options.UseCanonicalPaths)
+            // Register path mapper - always required for LocalFileSystem
+            // Platform-specific path mapper is automatically determined
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (options.PathMapperType != null)
-                {
-                    services.TryAddSingleton(typeof(IPathMapper), options.PathMapperType);
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    services.TryAddSingleton<IPathMapper, WindowsPathMapper>();
-                }
-                else
-                {
-                    services.TryAddSingleton<IPathMapper, UnixPathMapper>();
-                }
+                services.TryAddSingleton<IPathMapper, WindowsPathMapper>();
+            }
+            else
+            {
+                services.TryAddSingleton<IPathMapper, UnixPathMapper>();
             }
 
             // Register local file system implementation
