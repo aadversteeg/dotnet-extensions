@@ -360,15 +360,22 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             entries.Should().Contain(e => e.Name == "file2.txt" && !e.IsDirectory);
         }
 
-        [Fact(DisplayName = "IMFS-018: CreateMonitorAsync returns functional monitor")]
+        [Fact(DisplayName = "IMFS-018: CreateMonitoringSessionAsync returns valid session")]
         public async Task IMFS018()
         {
-            // Arrange & Act
-            var monitor = await _fileSystem.CreateMonitorAsync();
+            // Arrange
+            var options = MonitoringOptions.ForPath(CanonicalPath.Root);
+
+            // Act
+            var result = await _fileSystem.CreateMonitoringSessionAsync(options);
 
             // Assert
-            monitor.Should().NotBeNull();
-            monitor.Should().BeAssignableTo<IFileSystemMonitor>();
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value.Should().BeAssignableTo<IMonitoringSession>();
+            
+            // Clean up
+            result.Value.Dispose();
         }
 
         [Fact(DisplayName = "IMFS-019: Path normalization works correctly")]

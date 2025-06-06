@@ -24,22 +24,5 @@ namespace UnitTests.Extensions.FileSystem.Local
             fileSystem.Should().BeOfType<LocalFileSystem>();
         }
         
-        [Fact(DisplayName = "SCE-002: AddFileSystemMonitoring registers IFileSystemMonitor")]
-        public void SCE002()
-        {
-            // Arrange
-            var services = new ServiceCollection();
-            
-            // Act
-            services.AddFileSystemMonitoring();
-            var serviceProvider = services.BuildServiceProvider();
-            var monitor = serviceProvider.GetService<IFileSystemMonitor>();
-            var fileSystem = serviceProvider.GetService<IFileSystem>();
-            
-            // Assert
-            monitor.Should().NotBeNull();
-            fileSystem.Should().NotBeNull();
-            fileSystem.Should().BeOfType<LocalFileSystem>();
-        }
     }
 }

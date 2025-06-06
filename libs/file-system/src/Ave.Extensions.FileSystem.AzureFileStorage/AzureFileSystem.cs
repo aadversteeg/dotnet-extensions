@@ -336,11 +336,15 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         }
 
         /// <inheritdoc />
-        public Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default)
+        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             // Azure File Share doesn't support real-time monitoring
-            // Return a no-op monitor or throw NotSupportedException
-            throw new NotSupportedException("File system monitoring is not supported for Azure File Share");
+            var error = new FileSystemError(
+                "File system monitoring is not supported for Azure File Share", 
+                options?.Path.Value, 
+                FileSystemErrorType.NotSupported);
+            
+            return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(error));
         }
 
         /// <inheritdoc />

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -24,7 +25,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         private readonly ConcurrentDictionary<CanonicalPath, DirectoryNode> _directories;
         private readonly ReaderWriterLockSlim _lock;
         private readonly object _monitorLock = new object();
-        private readonly List<FileSystemMonitor> _monitors;
+        private readonly Subject<FileSystemChangeEventArgs> _fileSystemEventsSubject;
 
         /// <summary>
         /// Initializes a new instance of the InMemoryFileSystem class.
@@ -36,7 +37,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             _files = new ConcurrentDictionary<CanonicalPath, FileNode>();
             _directories = new ConcurrentDictionary<CanonicalPath, DirectoryNode>();
             _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-            _monitors = new List<FileSystemMonitor>();
+            _fileSystemEventsSubject = new Subject<FileSystemChangeEventArgs>();
             
             // Ensure root directory exists
             _directories.TryAdd(CanonicalPath.Root, new DirectoryNode(CanonicalPath.Root, DateTime.UtcNow));
@@ -48,6 +49,11 @@ namespace Ave.Extensions.FileSystem.InMemory
             supportsMonitoring: true,  // Supports monitoring via internal event system
             isReadOnly: false          // Supports read and write operations
         );
+
+        /// <summary>
+        /// Gets the observable stream of file system events for monitoring purposes.
+        /// </summary>
+        internal IObservable<FileSystemChangeEventArgs> FileSystemEvents => _fileSystemEventsSubject;
 
         /// <inheritdoc />
         public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
@@ -299,13 +305,44 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default)
+        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
-            lock (_monitorLock)
+            try
             {
-                var monitor = new FileSystemMonitor(_logger);
-                _monitors.Add(monitor);
-                return Task.FromResult<IFileSystemMonitor>(monitor);
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                if (options == null)
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError("Monitoring options cannot be null", null, FileSystemErrorType.Unknown)));
+                }
+
+                // Check if the directory exists
+                _lock.EnterReadLock();
+                try
+                {
+                    if (!_directories.ContainsKey(options.Path))
+                    {
+                        return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                            new FileSystemError($"Directory not found: {options.Path.Value}", options.Path.Value, FileSystemErrorType.DirectoryNotFound)));
+                    }
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
+
+                var session = new InMemoryMonitoringSession(options, this);
+                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Success(session));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, options?.Path.Value)));
             }
         }
 
@@ -602,10 +639,9 @@ namespace Ave.Extensions.FileSystem.InMemory
         {
             lock (_monitorLock)
             {
-                foreach (var monitor in _monitors.ToList())
-                {
-                    monitor.NotifyChange(path, changeType);
-                }
+                // Notify event stream for monitoring sessions
+                var eventArgs = new FileSystemChangeEventArgs(path, changeType);
+                _fileSystemEventsSubject.OnNext(eventArgs);
             }
         }
 
@@ -818,11 +854,8 @@ namespace Ave.Extensions.FileSystem.InMemory
                 
                 lock (_monitorLock)
                 {
-                    foreach (var monitor in _monitors)
-                    {
-                        monitor.Dispose();
-                    }
-                    _monitors.Clear();
+                    _fileSystemEventsSubject.OnCompleted();
+                    _fileSystemEventsSubject.Dispose();
                 }
             }
         }

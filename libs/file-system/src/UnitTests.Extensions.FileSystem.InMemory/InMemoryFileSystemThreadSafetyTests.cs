@@ -206,27 +206,32 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         {
             // Arrange
             const int monitorCount = 20;
-            var monitors = new List<IFileSystemMonitor>();
             var sessions = new List<IMonitoringSession>();
 
-            // Act - Create multiple monitors and sessions concurrently
-            var monitorTasks = Enumerable.Range(0, monitorCount).Select(async i =>
+            // Create directories first
+            var directoryTasks = Enumerable.Range(0, monitorCount).Select(async i =>
             {
-                var monitor = await _fileSystem.CreateMonitorAsync();
-                monitors.Add(monitor);
+                await _fileSystem.CreateDirectoryAsync($"/test/dir{i}".ToCanonicalPath());
+            }).ToArray();
+            
+            await Task.WhenAll(directoryTasks);
+
+            // Act - Create multiple monitoring sessions concurrently
+            var sessionTasks = Enumerable.Range(0, monitorCount).Select(async i =>
+            {
+                var options = MonitoringOptions.ForPath($"/test/dir{i}".ToCanonicalPath());
+                var result = await _fileSystem.CreateMonitoringSessionAsync(options);
+                result.IsSuccess.Should().BeTrue();
                 
-                var session = await monitor.StartMonitoringAsync(MonitoringOptions.ForPath($"/test/dir{i}".ToCanonicalPath()));
-                sessions.Add(session);
-                
-                return (monitor, session);
+                sessions.Add(result.Value);
+                return result.Value;
             }).ToArray();
 
-            await Task.WhenAll(monitorTasks);
+            await Task.WhenAll(sessionTasks);
 
             // Perform some file operations
             var operationTasks = Enumerable.Range(0, monitorCount).Select(async i =>
             {
-                await _fileSystem.CreateDirectoryAsync($"/test/dir{i}".ToCanonicalPath());
                 await _fileSystem.WriteAllTextAsync($"/test/dir{i}/file.txt".ToCanonicalPath(), "test content");
             }).ToArray();
 
@@ -235,19 +240,13 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             // Wait a bit for events to propagate
             await Task.Delay(100);
 
-            // Assert - All monitors and sessions should be functional
-            monitors.Should().HaveCount(monitorCount);
+            // Assert - All sessions should be functional
             sessions.Should().HaveCount(monitorCount);
 
             // Cleanup
             foreach (var session in sessions)
             {
                 session.Dispose();
-            }
-            foreach (var monitor in monitors)
-            {
-                if (monitor is IDisposable disposableMonitor)
-                    disposableMonitor.Dispose();
             }
         }
 

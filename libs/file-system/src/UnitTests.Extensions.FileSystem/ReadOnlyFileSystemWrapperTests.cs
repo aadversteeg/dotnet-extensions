@@ -238,25 +238,6 @@ namespace UnitTests.Extensions.FileSystem
             wrapperType.GetInterfaces().Should().NotContain(typeof(IFileSystem));
         }
 
-        [Fact(DisplayName = "RFSW-010: Wrapper delegates CreateMonitorAsync to underlying filesystem")]
-        public async Task RFSW010()
-        {
-            // Arrange
-            var mockMonitor = new Mock<IFileSystemMonitor>();
-            var mockFileSystem = new Mock<IFileSystem>();
-            mockFileSystem.Setup(fs => fs.CreateMonitorAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(mockMonitor.Object);
-            
-            var wrapper = mockFileSystem.Object.AsReadOnly();
-            
-            // Act
-            var result = await wrapper.CreateMonitorAsync();
-            
-            // Assert
-            result.Should().BeSameAs(mockMonitor.Object);
-            mockFileSystem.Verify(fs => fs.CreateMonitorAsync(It.IsAny<CancellationToken>()), Times.Once);
-        }
-
         [Fact(DisplayName = "RFSW-011: Info property returns read-only characteristics")]
         public void RFSW011()
         {
@@ -278,6 +259,29 @@ namespace UnitTests.Extensions.FileSystem
             info.IsDurable.Should().Be(mockFileSystemInfo.IsDurable, "durability should be preserved from underlying file system");
             info.SupportsMonitoring.Should().Be(mockFileSystemInfo.SupportsMonitoring, "monitoring support should be preserved from underlying file system");
             info.IsReadOnly.Should().BeTrue("wrapper should always be read-only regardless of underlying file system");
+        }
+
+        [Fact(DisplayName = "RFSW-012: Wrapper delegates CreateMonitoringSessionAsync to underlying filesystem")]
+        public async Task RFSW012()
+        {
+            // Arrange
+            var mockSession = new Mock<IMonitoringSession>();
+            var expectedResult = Result<IMonitoringSession, FileSystemError>.Success(mockSession.Object);
+            var options = MonitoringOptions.ForPath("/test".ToCanonicalPath());
+            
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.CreateMonitoringSessionAsync(options, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+
+            // Act
+            var result = await wrapper.CreateMonitoringSessionAsync(options);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeSameAs(mockSession.Object);
+            mockFileSystem.Verify(fs => fs.CreateMonitoringSessionAsync(options, It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

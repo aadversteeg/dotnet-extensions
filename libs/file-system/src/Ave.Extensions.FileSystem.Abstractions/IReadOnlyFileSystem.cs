@@ -89,12 +89,13 @@ namespace Ave.Extensions.FileSystem
             string searchPattern = "*",
             Models.EnumerationOptions? options = null,
             CancellationToken cancellationToken = default);
-        
+
         /// <summary>
-        /// Creates a file system monitor configured to use this file system's path handling.
+        /// Creates a monitoring session for watching file system changes at the specified path.
         /// </summary>
+        /// <param name="options">The monitoring options including path and filters.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A file system monitor instance.</returns>
-        Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default);
+        /// <returns>A result containing the monitoring session or an error.</returns>
+        Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default);
     }
 }

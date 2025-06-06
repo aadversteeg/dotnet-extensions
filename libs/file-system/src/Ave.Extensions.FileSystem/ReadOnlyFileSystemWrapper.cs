@@ -83,10 +83,10 @@ namespace Ave.Extensions.FileSystem
         }
         
         /// <inheritdoc />
-        public Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default)
+        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             // Always delegate to the wrapped file system
-            return _fileSystem.CreateMonitorAsync(cancellationToken);
+            return _fileSystem.CreateMonitoringSessionAsync(options, cancellationToken);
         }
     }
 }

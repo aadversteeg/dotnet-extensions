@@ -321,11 +321,51 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default)
+        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var monitor = new FileSystemMonitor();
-            return Task.FromResult<IFileSystemMonitor>(monitor);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                if (options == null)
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError("Monitoring options cannot be null", null, FileSystemErrorType.Unknown)));
+                }
+
+                if (_pathMapper == null)
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError("Path mapper is required for monitoring operations", options.Path.Value, FileSystemErrorType.Unknown)));
+                }
+
+                // Convert canonical path to system path for monitoring
+                var systemPathResult = GetSystemPath(options.Path);
+                if (systemPathResult.IsFailure)
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, options.Path.Value, FileSystemErrorType.InvalidPath)));
+                }
+
+                var systemPath = systemPathResult.Value;
+                if (!Directory.Exists(systemPath))
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError($"Directory not found: {options.Path.Value}", options.Path.Value, FileSystemErrorType.DirectoryNotFound)));
+                }
+
+                var session = new MonitoringSession(options, _pathMapper);
+                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Success(session));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, options?.Path.Value)));
+            }
         }
 
         private async Task<Result<T, FileSystemError>> ExecuteAsync<T>(Func<Task<Result<T, FileSystemError>>> operation, string? path = null)

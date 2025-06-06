@@ -64,32 +64,10 @@ namespace Ave.Extensions.FileSystem.Local
             // Register local file system implementation
             services.TryAddScoped<IFileSystem, LocalFileSystem>();
 
-            // Register monitoring if enabled (local filesystem specific)
-            if (options.EnableMonitoring)
-            {
-                services.TryAddSingleton<IFileSystemMonitor, FileSystemMonitor>();
-            }
 
             return services;
         }
         
-        /// <summary>
-        /// Adds file system monitoring capabilities to the specified <see cref="IServiceCollection" />.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <returns>The same service collection so that multiple calls can be chained.</returns>
-        public static IServiceCollection AddFileSystemMonitoring(this IServiceCollection services)
-        {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            // Ensure the file system is registered
-            services.AddFileSystem(options => options.EnableMonitoring = true);
-            
-            return services;
-        }
 
     }
 }

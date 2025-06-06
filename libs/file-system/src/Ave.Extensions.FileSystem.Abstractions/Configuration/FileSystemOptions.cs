@@ -28,10 +28,6 @@ namespace Ave.Extensions.FileSystem.Configuration
         /// </summary>
         public Type? PathMapperType { get; set; }
         
-        /// <summary>
-        /// Gets or sets a value indicating whether to enable monitoring capabilities.
-        /// </summary>
-        public bool EnableMonitoring { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether to use async enumeration features.

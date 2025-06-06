@@ -17,6 +17,7 @@ namespace Ave.Extensions.FileSystem.Local
     internal class MonitoringSession : IMonitoringSession
     {
         private readonly MonitoringOptions _options;
+        private readonly IPathMapper _pathMapper;
         private readonly Subject<FileSystemChangeEventArgs> _changesSubject;
         private readonly List<FileSystemWatcher> _watchers;
         private readonly object _lock = new object();
@@ -27,9 +28,11 @@ namespace Ave.Extensions.FileSystem.Local
         /// Initializes a new instance of the <see cref="MonitoringSession"/> class.
         /// </summary>
         /// <param name="options">The monitoring options.</param>
-        public MonitoringSession(MonitoringOptions options)
+        /// <param name="pathMapper">Path mapper for canonical path support.</param>
+        public MonitoringSession(MonitoringOptions options, IPathMapper pathMapper)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
             _changesSubject = new Subject<FileSystemChangeEventArgs>();
             _watchers = new List<FileSystemWatcher>();
             
@@ -122,10 +125,18 @@ namespace Ave.Extensions.FileSystem.Local
 
                 try
                 {
-                    var physicalPath = _options.Path.ToString();
+                    // Convert canonical path to system path using path mapper
+                    var systemPathResult = _pathMapper.MapToSystemPath(_options.Path);
+                    if (systemPathResult.IsFailure)
+                    {
+                        _changesSubject.OnError(new ArgumentException(systemPathResult.Error.Message));
+                        return;
+                    }
+
+                    var physicalPath = systemPathResult.Value;
                     if (!Directory.Exists(physicalPath))
                     {
-                        _changesSubject.OnError(new DirectoryNotFoundException($"Directory not found: {physicalPath}"));
+                        _changesSubject.OnError(new DirectoryNotFoundException($"Directory not found: {_options.Path.Value}"));
                         return;
                     }
 
@@ -188,7 +199,7 @@ namespace Ave.Extensions.FileSystem.Local
                     _ => FileSystemChangeType.Created
                 };
 
-                var canonicalPathResult = ConvertToCanonicalPath(e.FullPath);
+                var canonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
                 if (canonicalPathResult.IsFailure)
                     return; // Skip invalid paths
                 var eventArgs = new FileSystemChangeEventArgs(canonicalPathResult.Value, changeType);
@@ -209,8 +220,8 @@ namespace Ave.Extensions.FileSystem.Local
             try
             {
                 // Emit both delete (old name) and create (new name) events for renames
-                var oldCanonicalPathResult = ConvertToCanonicalPath(e.OldFullPath);
-                var newCanonicalPathResult = ConvertToCanonicalPath(e.FullPath);
+                var oldCanonicalPathResult = _pathMapper.MapToCanonicalPath(e.OldFullPath);
+                var newCanonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
                 
                 if (oldCanonicalPathResult.IsSuccess)
                 {
@@ -245,17 +256,22 @@ namespace Ave.Extensions.FileSystem.Local
         {
             try
             {
-                var path = changeArgs.Path.ToString();
-                var fileName = System.IO.Path.GetFileName(path);
+                // Convert canonical path to system path for file system operations
+                var systemPathResult = _pathMapper.MapToSystemPath(changeArgs.Path);
+                if (systemPathResult.IsFailure)
+                    return true; // Include by default if path mapping fails
+
+                var systemPath = systemPathResult.Value;
+                var fileName = System.IO.Path.GetFileName(systemPath);
 
                 // Check exclude patterns
                 if (_options.ExcludePatterns.Any(pattern => MatchesPattern(fileName, pattern)))
                     return false;
 
                 // Check hidden/system file filters
-                if (File.Exists(path))
+                if (File.Exists(systemPath))
                 {
-                    var attributes = File.GetAttributes(path);
+                    var attributes = File.GetAttributes(systemPath);
                     
                     if (!_options.IncludeHidden && attributes.HasFlag(FileAttributes.Hidden))
                         return false;
@@ -263,9 +279,9 @@ namespace Ave.Extensions.FileSystem.Local
                     if (!_options.IncludeSystem && attributes.HasFlag(FileAttributes.System))
                         return false;
                 }
-                else if (Directory.Exists(path))
+                else if (Directory.Exists(systemPath))
                 {
-                    var attributes = File.GetAttributes(path);
+                    var attributes = File.GetAttributes(systemPath);
                     
                     if (!_options.IncludeHidden && attributes.HasFlag(FileAttributes.Hidden))
                         return false;
@@ -303,24 +319,5 @@ namespace Ave.Extensions.FileSystem.Local
             return string.Equals(fileName, pattern, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static Result<CanonicalPath, Error> ConvertToCanonicalPath(string systemPath)
-        {
-            if (string.IsNullOrWhiteSpace(systemPath))
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathNullOrEmpty);
-
-            // Simple conversion for local file system paths
-            // Convert backslashes to forward slashes and create canonical path
-            var normalizedPath = systemPath.Replace('\\', '/');
-            
-            // Handle Windows absolute paths: C:\path -> /mnt/c/path
-            if (normalizedPath.Length >= 2 && normalizedPath[1] == ':')
-            {
-                var driveLetter = char.ToLowerInvariant(normalizedPath[0]);
-                var remainingPath = normalizedPath.Substring(2);
-                normalizedPath = $"/mnt/{driveLetter}{remainingPath}";
-            }
-            
-            return CanonicalPath.Create(normalizedPath);
-        }
     }
 }
