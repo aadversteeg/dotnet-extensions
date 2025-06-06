@@ -363,13 +363,17 @@ namespace Ave.Extensions.FileSystem.Local
         /// <returns>An appropriate traversal strategy.</returns>
         private ITraversalStrategy CreateStrategy(TraversalStrategyHint hint)
         {
-            return hint switch
+            switch (hint)
             {
-                TraversalStrategyHint.Parallel => new ParallelTraversalStrategy(),
-                TraversalStrategyHint.MemoryEfficient => new SequentialTraversalStrategy(),
-                TraversalStrategyHint.Search => new SequentialTraversalStrategy(),
-                _ => new SequentialTraversalStrategy()
-            };
+                case TraversalStrategyHint.Parallel:
+                    return new ParallelTraversalStrategy();
+                case TraversalStrategyHint.MemoryEfficient:
+                    return new SequentialTraversalStrategy();
+                case TraversalStrategyHint.Search:
+                    return new SequentialTraversalStrategy();
+                default:
+                    return new SequentialTraversalStrategy();
+            }
         }
 
         /// <summary>

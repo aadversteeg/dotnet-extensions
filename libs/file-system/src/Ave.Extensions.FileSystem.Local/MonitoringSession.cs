@@ -181,13 +181,22 @@ namespace Ave.Extensions.FileSystem.Local
         {
             try
             {
-                var changeType = e.ChangeType switch
+                FileSystemChangeType changeType;
+                switch (e.ChangeType)
                 {
-                    WatcherChangeTypes.Created => FileSystemChangeType.Created,
-                    WatcherChangeTypes.Changed => FileSystemChangeType.Changed,
-                    WatcherChangeTypes.Deleted => FileSystemChangeType.Deleted,
-                    _ => FileSystemChangeType.Created
-                };
+                    case WatcherChangeTypes.Created:
+                        changeType = FileSystemChangeType.Created;
+                        break;
+                    case WatcherChangeTypes.Changed:
+                        changeType = FileSystemChangeType.Changed;
+                        break;
+                    case WatcherChangeTypes.Deleted:
+                        changeType = FileSystemChangeType.Deleted;
+                        break;
+                    default:
+                        changeType = FileSystemChangeType.Created;
+                        break;
+                }
 
                 var canonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
                 if (canonicalPathResult.IsFailure)
