@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.FileSystem.Traversal.Strategies;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem.Local
@@ -295,6 +298,143 @@ namespace Ave.Extensions.FileSystem.Local
                 Directory.Delete(systemPath, recursive);
                 return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
             }, path.Value);
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+            CanonicalPath path,
+            ITraversalHandler handler,
+            TraversalOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return await ExecuteAsync(async () =>
+            {
+                options ??= new TraversalOptions();
+                
+                // Notify handler of traversal start
+                var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
+                if (startResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(startResult.Error);
+
+                var context = TraversalContext.CreateInitial(path);
+                var stats = new TraversalStats();
+                
+                // Get the starting entry
+                var entryResult = await GetEntryAsync(path, cancellationToken);
+                if (entryResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
+
+                // Use sequential strategy for local filesystem
+                var strategy = new SequentialTraversalStrategy();
+                
+                // Perform traversal
+                var traversalResult = await strategy.TraverseAsync(
+                    entryResult.Value, 
+                    handler, 
+                    options, 
+                    context, 
+                    stats,
+                    GetChildrenAsync,
+                    cancellationToken);
+
+                if (traversalResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(traversalResult.Error);
+
+                var summary = new TraversalSummary(
+                    stats.FilesProcessed,
+                    stats.DirectoriesProcessed,
+                    stats.TotalBytesProcessed,
+                    DateTime.UtcNow - context.StartTimeUtc,
+                    cancellationToken.IsCancellationRequested);
+
+                // Notify handler of completion
+                var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
+                if (completeResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(completeResult.Error);
+
+                return Result<TraversalSummary, FileSystemError>.Success(summary);
+            }, path.Value);
+        }
+
+        /// <summary>
+        /// Gets the children of a directory for traversal.
+        /// </summary>
+        /// <param name="path">The directory path.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the children or an error.</returns>
+        private Task<Result<IEnumerable<FileSystemEntry>, FileSystemError>> GetChildrenAsync(
+            CanonicalPath path, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+
+                var systemPath = systemPathResult.Value;
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (!Directory.Exists(systemPath))
+                    return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
+                        new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
+
+                var entries = new List<FileSystemEntry>();
+
+                // Get directories
+                var directories = Directory.GetDirectories(systemPath);
+                foreach (var dir in directories)
+                {
+                    var canonicalDirResult = MapPathToCanonical(dir);
+                    if (canonicalDirResult.IsSuccess)
+                    {
+                        var dirInfo = new DirectoryInfo(dir);
+                        var entry = new FileSystemEntry(
+                            canonicalDirResult.Value,
+                            true,
+                            null,
+                            null,
+                            dirInfo.CreationTimeUtc,
+                            dirInfo.LastWriteTimeUtc,
+                            dirInfo.LastAccessTimeUtc,
+                            dirInfo.Attributes);
+                        entries.Add(entry);
+                    }
+                }
+
+                // Get files
+                var files = Directory.GetFiles(systemPath);
+                foreach (var file in files)
+                {
+                    var canonicalFileResult = MapPathToCanonical(file);
+                    if (canonicalFileResult.IsSuccess)
+                    {
+                        var fileInfo = new FileInfo(file);
+                        var entry = new FileSystemEntry(
+                            canonicalFileResult.Value,
+                            false,
+                            fileInfo.Length,
+                            Path.GetExtension(file),
+                            fileInfo.CreationTimeUtc,
+                            fileInfo.LastWriteTimeUtc,
+                            fileInfo.LastAccessTimeUtc,
+                            fileInfo.Attributes);
+                        entries.Add(entry);
+                    }
+                }
+
+                return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Success(entries));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, path.Value)));
+            }
         }
 
         /// <inheritdoc />

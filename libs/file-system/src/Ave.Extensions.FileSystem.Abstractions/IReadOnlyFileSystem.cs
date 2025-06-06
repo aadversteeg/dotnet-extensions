@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem
@@ -57,24 +58,18 @@ namespace Ave.Extensions.FileSystem
         Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Gets a list of files in the specified directory.
+        /// Traverses the file system starting from the specified path.
         /// </summary>
-        /// <param name="path">The directory path to enumerate.</param>
-        /// <param name="searchPattern">The search string to match against files.</param>
-        /// <param name="searchOption">Specifies whether to search subdirectories.</param>
+        /// <param name="path">The starting path for traversal.</param>
+        /// <param name="handler">The handler to process each entry.</param>
+        /// <param name="options">Optional traversal options. If null, uses default options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the file paths or an error.</returns>
-        Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Gets a list of directories in the specified directory.
-        /// </summary>
-        /// <param name="path">The directory path to enumerate.</param>
-        /// <param name="searchPattern">The search string to match against directories.</param>
-        /// <param name="searchOption">Specifies whether to search subdirectories.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the directory paths or an error.</returns>
-        Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
+        /// <returns>A result containing traversal summary or an error.</returns>
+        Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+            CanonicalPath path,
+            ITraversalHandler handler,
+            TraversalOptions? options = null,
+            CancellationToken cancellationToken = default);
 
 
         /// <summary>

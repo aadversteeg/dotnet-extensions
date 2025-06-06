@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.FileSystem.Traversal.Handlers;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using Moq;
@@ -80,11 +82,29 @@ namespace UnitTests.Extensions.FileSystem
         public async Task RFSW004()
         {
             // Arrange
-            var files = new[] { "/test/file1.txt".ToCanonicalPath(), "/test/file2.txt".ToCanonicalPath() };
-            var expectedResult = Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(files);
             var mockFileSystem = new Mock<IFileSystem>();
-            mockFileSystem.Setup(fs => fs.GetFilesAsync("/test".ToCanonicalPath(), "*.txt", SearchOption.TopDirectoryOnly, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expectedResult);
+            
+            // Mock TraverseAsync which is called by the GetFilesAsync extension method
+            var summary = new TraversalSummary(2, 0, 0, TimeSpan.Zero, false);
+            mockFileSystem.Setup(fs => fs.TraverseAsync(
+                    "/test".ToCanonicalPath(),
+                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<TraversalOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((CanonicalPath path, ITraversalHandler handler, TraversalOptions options, CancellationToken token) =>
+                {
+                    // Simulate the PathCollectorHandler collecting files
+                    if (handler is PathCollectorHandler collector)
+                    {
+                        // Use reflection to add items to the internal list since we can't access it directly
+                        var pathsField = typeof(PathCollectorHandler).GetField("paths", 
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
+                        pathsList.Add("/test/file1.txt".ToCanonicalPath());
+                        pathsList.Add("/test/file2.txt".ToCanonicalPath());
+                    }
+                    return Task.FromResult(Result<TraversalSummary, FileSystemError>.Success(summary));
+                });
             
             var wrapper = mockFileSystem.Object.AsReadOnly();
             
@@ -93,19 +113,43 @@ namespace UnitTests.Extensions.FileSystem
             
             // Assert
             result.IsSuccess.Should().BeTrue();
-            result.Value.Should().BeEquivalentTo(files);
-            mockFileSystem.Verify(fs => fs.GetFilesAsync("/test".ToCanonicalPath(), "*.txt", SearchOption.TopDirectoryOnly, It.IsAny<CancellationToken>()), Times.Once);
+            result.Value.Should().HaveCount(2);
+            result.Value.Should().Contain("/test/file1.txt".ToCanonicalPath());
+            result.Value.Should().Contain("/test/file2.txt".ToCanonicalPath());
+            mockFileSystem.Verify(fs => fs.TraverseAsync(
+                "/test".ToCanonicalPath(),
+                It.IsAny<ITraversalHandler>(),
+                It.IsAny<TraversalOptions>(),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
         
         [Fact(DisplayName = "RFSW-005: Wrapper delegates GetDirectoriesAsync to underlying filesystem")]
         public async Task RFSW005()
         {
             // Arrange
-            var directories = new[] { "/test/dir1".ToCanonicalPath(), "/test/dir2".ToCanonicalPath() };
-            var expectedResult = Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(directories);
             var mockFileSystem = new Mock<IFileSystem>();
-            mockFileSystem.Setup(fs => fs.GetDirectoriesAsync("/test".ToCanonicalPath(), "*", SearchOption.TopDirectoryOnly, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expectedResult);
+            
+            // Mock TraverseAsync which is called by the GetDirectoriesAsync extension method
+            var summary = new TraversalSummary(0, 2, 0, TimeSpan.Zero, false);
+            mockFileSystem.Setup(fs => fs.TraverseAsync(
+                    "/test".ToCanonicalPath(),
+                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<TraversalOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((CanonicalPath path, ITraversalHandler handler, TraversalOptions options, CancellationToken token) =>
+                {
+                    // Simulate the PathCollectorHandler collecting directories
+                    if (handler is PathCollectorHandler collector)
+                    {
+                        // Use reflection to add items to the internal list since we can't access it directly
+                        var pathsField = typeof(PathCollectorHandler).GetField("paths", 
+                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
+                        pathsList.Add("/test/dir1".ToCanonicalPath());
+                        pathsList.Add("/test/dir2".ToCanonicalPath());
+                    }
+                    return Task.FromResult(Result<TraversalSummary, FileSystemError>.Success(summary));
+                });
             
             var wrapper = mockFileSystem.Object.AsReadOnly();
             
@@ -114,8 +158,14 @@ namespace UnitTests.Extensions.FileSystem
             
             // Assert
             result.IsSuccess.Should().BeTrue();
-            result.Value.Should().BeEquivalentTo(directories);
-            mockFileSystem.Verify(fs => fs.GetDirectoriesAsync("/test".ToCanonicalPath(), "*", SearchOption.TopDirectoryOnly, It.IsAny<CancellationToken>()), Times.Once);
+            result.Value.Should().HaveCount(2);
+            result.Value.Should().Contain("/test/dir1".ToCanonicalPath());
+            result.Value.Should().Contain("/test/dir2".ToCanonicalPath());
+            mockFileSystem.Verify(fs => fs.TraverseAsync(
+                "/test".ToCanonicalPath(),
+                It.IsAny<ITraversalHandler>(),
+                It.IsAny<TraversalOptions>(),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact(DisplayName = "RFSW-006: Wrapper delegates GetEntryAsync to underlying filesystem for files")]

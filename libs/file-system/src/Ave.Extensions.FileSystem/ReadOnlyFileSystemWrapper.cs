@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem
@@ -61,15 +62,13 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
-        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+            CanonicalPath path, 
+            ITraversalHandler handler, 
+            TraversalOptions? options = null, 
+            CancellationToken cancellationToken = default)
         {
-            return _fileSystem.GetFilesAsync(path, searchPattern, searchOption, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
-        {
-            return _fileSystem.GetDirectoriesAsync(path, searchPattern, searchOption, cancellationToken);
+            return _fileSystem.TraverseAsync(path, handler, options, cancellationToken);
         }
 
         
