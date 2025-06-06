@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests.Extensions.FileSy
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests.AzureFileStorage", "IntegrationTests.AzureFileStorage\IntegrationTests.AzureFileStorage.csproj", "{D9E8F7A6-B5C4-9876-DEF0-123456789ABC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "..\tests\Benchmarks\Benchmarks.csproj", "{4F66C77C-3A6B-445C-8FD2-813F43ECE735}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{D9E8F7A6-B5C4-9876-DEF0-123456789ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9E8F7A6-B5C4-9876-DEF0-123456789ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9E8F7A6-B5C4-9876-DEF0-123456789ABC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F66C77C-3A6B-445C-8FD2-813F43ECE735}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F66C77C-3A6B-445C-8FD2-813F43ECE735}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F66C77C-3A6B-445C-8FD2-813F43ECE735}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F66C77C-3A6B-445C-8FD2-813F43ECE735}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

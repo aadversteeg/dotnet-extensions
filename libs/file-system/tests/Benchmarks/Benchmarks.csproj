@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Condition="'$(OS)' == 'Windows_NT'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
+    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
+    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.InMemory\Ave.Extensions.FileSystem.InMemory.csproj" />
+  </ItemGroup>
+</Project>
