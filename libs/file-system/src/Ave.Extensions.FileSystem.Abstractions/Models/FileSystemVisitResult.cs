@@ -8,29 +8,51 @@ namespace Ave.Extensions.FileSystem.Models
     public class FileSystemVisitResult
     {
         /// <summary>
-        /// Gets or sets the total number of files visited.
+        /// Initializes a new instance of the <see cref="FileSystemVisitResult"/> class.
         /// </summary>
-        public int FilesVisited { get; set; }
+        /// <param name="filesVisited">The total number of files visited.</param>
+        /// <param name="directoriesVisited">The total number of directories visited.</param>
+        /// <param name="totalSize">The total size of all files visited, in bytes.</param>
+        /// <param name="errors">The errors that occurred during traversal.</param>
+        /// <param name="isCompleted">Whether the traversal completed without being stopped.</param>
+        public FileSystemVisitResult(
+            int filesVisited,
+            int directoriesVisited,
+            long totalSize,
+            List<FileSystemError> errors,
+            bool isCompleted = true)
+        {
+            FilesVisited = filesVisited;
+            DirectoriesVisited = directoriesVisited;
+            TotalSize = totalSize;
+            Errors = errors ?? new List<FileSystemError>();
+            IsCompleted = isCompleted;
+        }
 
         /// <summary>
-        /// Gets or sets the total number of directories visited.
+        /// Gets the total number of files visited.
         /// </summary>
-        public int DirectoriesVisited { get; set; }
+        public int FilesVisited { get; }
 
         /// <summary>
-        /// Gets or sets the total size of all files visited, in bytes.
+        /// Gets the total number of directories visited.
         /// </summary>
-        public long TotalSize { get; set; }
+        public int DirectoriesVisited { get; }
 
         /// <summary>
-        /// Gets or sets the errors that occurred during traversal.
+        /// Gets the total size of all files visited, in bytes.
         /// </summary>
-        public List<FileSystemError> Errors { get; set; } = new List<FileSystemError>();
+        public long TotalSize { get; }
+
+        /// <summary>
+        /// Gets the errors that occurred during traversal.
+        /// </summary>
+        public List<FileSystemError> Errors { get; }
 
         /// <summary>
         /// Gets a value indicating whether the traversal completed without being stopped.
         /// </summary>
-        public bool IsCompleted { get; set; } = true;
+        public bool IsCompleted { get; }
 
         /// <summary>
         /// Gets a value indicating whether any errors occurred during traversal.

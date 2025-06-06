@@ -99,7 +99,7 @@ namespace UnitTests.Extensions.FileSystem.Local
                 // Assert
                 eventReceived.Should().BeTrue("file creation should trigger an event");
                 receivedEvent.Should().NotBeNull();
-                receivedEvent!.ChangeType.Should().Be(FileSystemChangeType.Created);
+                receivedEvent.Value.ChangeType.Should().Be(FileSystemChangeType.Created);
             }
             finally
             {

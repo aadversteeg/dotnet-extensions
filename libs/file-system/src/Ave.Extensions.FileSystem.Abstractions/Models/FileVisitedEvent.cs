@@ -5,7 +5,7 @@ namespace Ave.Extensions.FileSystem.Models
     /// <summary>
     /// Event data for file visited events during file system traversal.
     /// </summary>
-    public class FileVisitedEvent
+    public readonly record struct FileVisitedEvent
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FileVisitedEvent"/> class.
@@ -14,7 +14,7 @@ namespace Ave.Extensions.FileSystem.Models
         /// <param name="depth">The current depth of traversal.</param>
         public FileVisitedEvent(FileSystemEntry entry, int depth)
         {
-            Entry = entry ?? throw new ArgumentNullException(nameof(entry));
+            Entry = entry;
             Depth = depth;
         }
 

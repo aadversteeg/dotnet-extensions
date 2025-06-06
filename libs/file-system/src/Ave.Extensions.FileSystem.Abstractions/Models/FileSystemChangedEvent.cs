@@ -5,10 +5,10 @@ namespace Ave.Extensions.FileSystem.Models
     /// <summary>
     /// Event data for file system change events.
     /// </summary>
-    public class FileSystemChangedEvent
+    public readonly record struct FileSystemChangedEvent
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileSystemChangedEvent"/> class.
+        /// Initializes a new instance of the <see cref="FileSystemChangedEvent"/> struct.
         /// </summary>
         /// <param name="path">The canonical path of the changed file.</param>
         /// <param name="changeType">The type of change that occurred.</param>

@@ -35,7 +35,7 @@ namespace Ave.Extensions.FileSystem
 
             try
             {
-                var result = new FileSystemVisitResult();
+                var initialResult = new FileSystemVisitResult(0, 0, 0, new List<FileSystemError>(), true);
 
                 // Check if root path exists - no path conversion needed since we already have a CanonicalPath
                 var existsResult = await _fileSystem.DirectoryExistsAsync(rootPath, cancellationToken);
@@ -46,9 +46,9 @@ namespace Ave.Extensions.FileSystem
                     return Result<FileSystemVisitResult, FileSystemError>.Failure(
                         new FileSystemError($"Directory does not exist: {rootPath}", rootPath.Value, FileSystemErrorType.DirectoryNotFound));
 
-                await VisitDirectoryAsync(rootPath, rootPath, 0, options, result, cancellationToken);
+                var finalResult = await VisitDirectoryAsync(rootPath, rootPath, 0, options, initialResult, cancellationToken);
 
-                return Result<FileSystemVisitResult, FileSystemError>.Success(result);
+                return Result<FileSystemVisitResult, FileSystemError>.Success(finalResult);
             }
             catch (OperationCanceledException)
             {
@@ -91,16 +91,16 @@ namespace Ave.Extensions.FileSystem
             }
         }
 
-        private async Task VisitDirectoryAsync(
+        private async Task<FileSystemVisitResult> VisitDirectoryAsync(
             CanonicalPath directoryPath, 
             CanonicalPath rootPath, 
             int depth, 
             FileSystemVisitorOptions options, 
-            FileSystemVisitResult result, 
+            FileSystemVisitResult currentResult, 
             CancellationToken cancellationToken)
         {
             if (options.MaxDepth.HasValue && depth > options.MaxDepth.Value)
-                return;
+                return currentResult;
 
             try
             {
@@ -108,32 +108,49 @@ namespace Ave.Extensions.FileSystem
                 var dirEntryResult = await _fileSystem.GetEntryAsync(directoryPath, cancellationToken);
                 if (!dirEntryResult.IsSuccess)
                 {
-                    result.Errors.Add(dirEntryResult.Error);
+                    var newErrors = new List<FileSystemError>(currentResult.Errors) { dirEntryResult.Error };
+                    var errorResult = new FileSystemVisitResult(
+                        currentResult.FilesVisited,
+                        currentResult.DirectoriesVisited,
+                        currentResult.TotalSize,
+                        newErrors,
+                        currentResult.IsCompleted);
+
                     if (options.OnError != null)
                     {
                         var action = options.OnError(dirEntryResult.Error);
                         if (action == FileSystemVisitorAction.Stop)
                         {
-                            result.IsCompleted = false;
-                            return;
+                            return new FileSystemVisitResult(
+                                errorResult.FilesVisited,
+                                errorResult.DirectoriesVisited,
+                                errorResult.TotalSize,
+                                errorResult.Errors,
+                                false);
                         }
                     }
-                    return;
+                    return errorResult;
                 }
 
                 var dirEntry = dirEntryResult.Value;
 
                 // Check if we should visit this directory
                 if (options.ShouldVisitDirectory != null && !options.ShouldVisitDirectory(dirEntry))
-                    return;
+                    return currentResult;
 
                 // Check hidden/system filters
                 if (!options.IncludeHidden && dirEntry.IsHidden)
-                    return;
+                    return currentResult;
                 if (!options.IncludeSystem && dirEntry.IsSystem)
-                    return;
+                    return currentResult;
 
-                result.DirectoriesVisited++;
+                // Create result with incremented directory count
+                var dirVisitedResult = new FileSystemVisitResult(
+                    currentResult.FilesVisited,
+                    currentResult.DirectoriesVisited + 1,
+                    currentResult.TotalSize,
+                    currentResult.Errors,
+                    currentResult.IsCompleted);
 
                 // Call directory visited callback
                 if (options.OnDirectoryVisited != null)
@@ -141,12 +158,18 @@ namespace Ave.Extensions.FileSystem
                     var action = options.OnDirectoryVisited(dirEntry);
                     if (action == FileSystemVisitorAction.Stop)
                     {
-                        result.IsCompleted = false;
-                        return;
+                        return new FileSystemVisitResult(
+                            dirVisitedResult.FilesVisited,
+                            dirVisitedResult.DirectoriesVisited,
+                            dirVisitedResult.TotalSize,
+                            dirVisitedResult.Errors,
+                            false);
                     }
                     if (action == FileSystemVisitorAction.SkipSubtree)
-                        return;
+                        return dirVisitedResult;
                 }
+
+                var accumulator = dirVisitedResult;
 
                 // Process files in the directory
                 var filesResult = await _fileSystem.GetFilesAsync(directoryPath, "*", SearchOption.TopDirectoryOnly, cancellationToken);
@@ -154,9 +177,9 @@ namespace Ave.Extensions.FileSystem
                 {
                     foreach (var filePath in filesResult.Value)
                     {
-                        await VisitFileAsync(filePath, rootPath, depth, options, result, cancellationToken);
-                        if (!result.IsCompleted)
-                            return;
+                        accumulator = await VisitFileAsync(filePath, rootPath, depth, options, accumulator, cancellationToken);
+                        if (!accumulator.IsCompleted)
+                            return accumulator;
                     }
                 }
 
@@ -168,37 +191,58 @@ namespace Ave.Extensions.FileSystem
                     {
                         foreach (var subDirPath in dirsResult.Value)
                         {
-                            await VisitDirectoryAsync(subDirPath, rootPath, depth + 1, options, result, cancellationToken);
-                            if (!result.IsCompleted)
-                                return;
+                            accumulator = await VisitDirectoryAsync(subDirPath, rootPath, depth + 1, options, accumulator, cancellationToken);
+                            if (!accumulator.IsCompleted)
+                                return accumulator;
                         }
                     }
                 }
+
+                return accumulator;
             }
             catch (OperationCanceledException)
             {
-                result.IsCompleted = false;
-                throw;
+                return new FileSystemVisitResult(
+                    currentResult.FilesVisited,
+                    currentResult.DirectoriesVisited,
+                    currentResult.TotalSize,
+                    currentResult.Errors,
+                    false);
             }
             catch (Exception ex)
             {
                 var error = FileSystemError.FromException(ex, directoryPath.Value);
-                result.Errors.Add(error);
+                var newErrors = new List<FileSystemError>(currentResult.Errors) { error };
+                var errorResult = new FileSystemVisitResult(
+                    currentResult.FilesVisited,
+                    currentResult.DirectoriesVisited,
+                    currentResult.TotalSize,
+                    newErrors,
+                    currentResult.IsCompleted);
+
                 if (options.OnError != null)
                 {
                     var action = options.OnError(error);
                     if (action == FileSystemVisitorAction.Stop)
-                        result.IsCompleted = false;
+                    {
+                        return new FileSystemVisitResult(
+                            errorResult.FilesVisited,
+                            errorResult.DirectoriesVisited,
+                            errorResult.TotalSize,
+                            errorResult.Errors,
+                            false);
+                    }
                 }
+                return errorResult;
             }
         }
 
-        private async Task VisitFileAsync(
+        private async Task<FileSystemVisitResult> VisitFileAsync(
             CanonicalPath filePath, 
             CanonicalPath rootPath, 
             int depth, 
             FileSystemVisitorOptions options, 
-            FileSystemVisitResult result, 
+            FileSystemVisitResult currentResult, 
             CancellationToken cancellationToken)
         {
             try
@@ -206,49 +250,92 @@ namespace Ave.Extensions.FileSystem
                 var fileEntryResult = await _fileSystem.GetEntryAsync(filePath, cancellationToken);
                 if (!fileEntryResult.IsSuccess)
                 {
-                    result.Errors.Add(fileEntryResult.Error);
+                    var newErrors = new List<FileSystemError>(currentResult.Errors) { fileEntryResult.Error };
+                    var errorResult = new FileSystemVisitResult(
+                        currentResult.FilesVisited,
+                        currentResult.DirectoriesVisited,
+                        currentResult.TotalSize,
+                        newErrors,
+                        currentResult.IsCompleted);
+
                     if (options.OnError != null)
                     {
                         var action = options.OnError(fileEntryResult.Error);
                         if (action == FileSystemVisitorAction.Stop)
-                            result.IsCompleted = false;
+                        {
+                            return new FileSystemVisitResult(
+                                errorResult.FilesVisited,
+                                errorResult.DirectoriesVisited,
+                                errorResult.TotalSize,
+                                errorResult.Errors,
+                                false);
+                        }
                     }
-                    return;
+                    return errorResult;
                 }
 
                 var fileEntry = fileEntryResult.Value;
 
                 // Check if we should visit this file
                 if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileEntry))
-                    return;
+                    return currentResult;
 
                 // Check hidden/system filters
                 if (!options.IncludeHidden && fileEntry.IsHidden)
-                    return;
+                    return currentResult;
                 if (!options.IncludeSystem && fileEntry.IsSystem)
-                    return;
+                    return currentResult;
 
-                result.FilesVisited++;
-                result.TotalSize += fileEntry.Size ?? 0;
+                // Create result with updated file count and size
+                var fileVisitedResult = new FileSystemVisitResult(
+                    currentResult.FilesVisited + 1,
+                    currentResult.DirectoriesVisited,
+                    currentResult.TotalSize + (fileEntry.Size ?? 0),
+                    currentResult.Errors,
+                    currentResult.IsCompleted);
 
                 // Call file visited callback
                 if (options.OnFileVisited != null)
                 {
                     var action = options.OnFileVisited(fileEntry);
                     if (action == FileSystemVisitorAction.Stop)
-                        result.IsCompleted = false;
+                    {
+                        return new FileSystemVisitResult(
+                            fileVisitedResult.FilesVisited,
+                            fileVisitedResult.DirectoriesVisited,
+                            fileVisitedResult.TotalSize,
+                            fileVisitedResult.Errors,
+                            false);
+                    }
                 }
+
+                return fileVisitedResult;
             }
             catch (Exception ex)
             {
                 var error = FileSystemError.FromException(ex, filePath.Value);
-                result.Errors.Add(error);
+                var newErrors = new List<FileSystemError>(currentResult.Errors) { error };
+                var errorResult = new FileSystemVisitResult(
+                    currentResult.FilesVisited,
+                    currentResult.DirectoriesVisited,
+                    currentResult.TotalSize,
+                    newErrors,
+                    currentResult.IsCompleted);
+
                 if (options.OnError != null)
                 {
                     var action = options.OnError(error);
                     if (action == FileSystemVisitorAction.Stop)
-                        result.IsCompleted = false;
+                    {
+                        return new FileSystemVisitResult(
+                            errorResult.FilesVisited,
+                            errorResult.DirectoriesVisited,
+                            errorResult.TotalSize,
+                            errorResult.Errors,
+                            false);
+                    }
                 }
+                return errorResult;
             }
         }
 

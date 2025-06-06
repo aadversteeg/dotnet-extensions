@@ -5,7 +5,7 @@ namespace Ave.Extensions.FileSystem.Models
     /// <summary>
     /// Represents an error that occurred during a file system operation.
     /// </summary>
-    public class FileSystemError
+    public readonly record struct FileSystemError
     {
         /// <summary>
         /// Gets the error message describing what went wrong.

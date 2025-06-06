@@ -6,7 +6,7 @@ namespace Ave.Extensions.FileSystem.Models
     /// <summary>
     /// Represents a file system entry (file or directory) with complete metadata.
     /// </summary>
-    public class FileSystemEntry
+    public readonly record struct FileSystemEntry
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSystemEntry"/> class.
