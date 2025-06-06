@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
     <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.FileSystem.InMemory\Ave.Extensions.FileSystem.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

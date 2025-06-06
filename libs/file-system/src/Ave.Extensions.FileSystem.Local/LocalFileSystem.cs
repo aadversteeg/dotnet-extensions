@@ -324,8 +324,8 @@ namespace Ave.Extensions.FileSystem.Local
                 if (entryResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
 
-                // Use sequential strategy for local filesystem
-                var strategy = new SequentialTraversalStrategy();
+                // Select strategy based on hint
+                var strategy = CreateStrategy(options.StrategyHint);
                 
                 // Perform traversal
                 var traversalResult = await strategy.TraverseAsync(
@@ -354,6 +354,22 @@ namespace Ave.Extensions.FileSystem.Local
 
                 return Result<TraversalSummary, FileSystemError>.Success(summary);
             }, path.Value);
+        }
+
+        /// <summary>
+        /// Creates a traversal strategy based on the provided hint.
+        /// </summary>
+        /// <param name="hint">The strategy hint.</param>
+        /// <returns>An appropriate traversal strategy.</returns>
+        private ITraversalStrategy CreateStrategy(TraversalStrategyHint hint)
+        {
+            return hint switch
+            {
+                TraversalStrategyHint.Parallel => new ParallelTraversalStrategy(),
+                TraversalStrategyHint.MemoryEfficient => new SequentialTraversalStrategy(),
+                TraversalStrategyHint.Search => new SequentialTraversalStrategy(),
+                _ => new SequentialTraversalStrategy()
+            };
         }
 
         /// <summary>

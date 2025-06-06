@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
@@ -88,6 +89,115 @@ namespace Ave.Extensions.FileSystem
             var result = await fileSystem.TraverseAsync(path, handler, options, cancellationToken);
             
             return result.OnSuccessMap(_ => handler.CollectedPaths);
+        }
+
+        /// <summary>
+        /// Enumerates files as an async stream, yielding results as they're discovered.
+        /// </summary>
+        /// <param name="fileSystem">The file system instance.</param>
+        /// <param name="path">The directory path to enumerate.</param>
+        /// <param name="searchPattern">The search string to match against files.</param>
+        /// <param name="recursive">Whether to search subdirectories recursively.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>An async enumerable of file paths.</returns>
+        public static async IAsyncEnumerable<CanonicalPath> EnumerateFilesAsync(
+            this IReadOnlyFileSystem fileSystem,
+            CanonicalPath path,
+            string searchPattern = "*",
+            bool recursive = true,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var handler = new StreamingHandler(searchPattern, includeFiles: true, includeDirectories: false);
+            var options = new TraversalOptions(
+                recursive: recursive,
+                strategyHint: TraversalStrategyHint.MemoryEfficient);
+
+            var traversalTask = fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+
+            await foreach (var item in handler.GetItemsAsync(cancellationToken))
+            {
+                yield return item;
+            }
+
+            var result = await traversalTask;
+            if (result.IsFailure)
+            {
+                throw new System.IO.IOException($"Traversal failed: {result.Error.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Enumerates directories as an async stream.
+        /// </summary>
+        /// <param name="fileSystem">The file system instance.</param>
+        /// <param name="path">The directory path to enumerate.</param>
+        /// <param name="searchPattern">The search string to match against directories.</param>
+        /// <param name="recursive">Whether to search subdirectories recursively.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>An async enumerable of directory paths.</returns>
+        public static async IAsyncEnumerable<CanonicalPath> EnumerateDirectoriesAsync(
+            this IReadOnlyFileSystem fileSystem,
+            CanonicalPath path,
+            string searchPattern = "*",
+            bool recursive = true,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var handler = new StreamingHandler(searchPattern, includeFiles: false, includeDirectories: true);
+            var options = new TraversalOptions(
+                recursive: recursive,
+                strategyHint: TraversalStrategyHint.MemoryEfficient);
+
+            var traversalTask = fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+
+            await foreach (var item in handler.GetItemsAsync(cancellationToken))
+            {
+                yield return item;
+            }
+
+            var result = await traversalTask;
+            if (result.IsFailure)
+            {
+                throw new System.IO.IOException($"Traversal failed: {result.Error.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Enumerates file entries (with metadata) as an async stream.
+        /// </summary>
+        /// <param name="fileSystem">The file system instance.</param>
+        /// <param name="path">The directory path to enumerate.</param>
+        /// <param name="searchPattern">The search string to match against entries.</param>
+        /// <param name="recursive">Whether to search subdirectories recursively.</param>
+        /// <param name="includeFiles">Whether to include files in the results.</param>
+        /// <param name="includeDirectories">Whether to include directories in the results.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>An async enumerable of file system entries.</returns>
+        public static async IAsyncEnumerable<FileSystemEntry> EnumerateEntriesAsync(
+            this IReadOnlyFileSystem fileSystem,
+            CanonicalPath path,
+            string searchPattern = "*",
+            bool recursive = true,
+            bool includeFiles = true,
+            bool includeDirectories = true,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var handler = new StreamingEntryHandler(searchPattern, includeFiles, includeDirectories);
+            var options = new TraversalOptions(
+                recursive: recursive,
+                strategyHint: TraversalStrategyHint.MemoryEfficient);
+
+            var traversalTask = fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+
+            await foreach (var entry in handler.GetEntriesAsync(cancellationToken))
+            {
+                yield return entry;
+            }
+
+            var result = await traversalTask;
+            if (result.IsFailure)
+            {
+                throw new System.IO.IOException($"Traversal failed: {result.Error.Message}");
+            }
         }
     }
 }
