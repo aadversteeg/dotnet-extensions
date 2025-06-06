@@ -422,6 +422,18 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             fileExists.Value.Should().BeTrue();
         }
 
+        [Fact(DisplayName = "IMFS-034: Info property returns correct characteristics for InMemoryFileSystem")]
+        public void IMFS034()
+        {
+            // Act
+            var info = _fileSystem.Info;
+
+            // Assert
+            info.IsDurable.Should().BeFalse("in-memory file system does not persist data across application restarts");
+            info.SupportsMonitoring.Should().BeTrue("in-memory file system supports monitoring via internal event system");
+            info.IsReadOnly.Should().BeFalse("in-memory file system supports both read and write operations");
+        }
+
         public void Dispose()
         {
             _fileSystem?.Dispose();

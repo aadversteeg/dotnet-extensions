@@ -24,6 +24,13 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
+        public FileSystemInfo Info => new FileSystemInfo(
+            isDurable: _fileSystem.Info.IsDurable,
+            supportsMonitoring: _fileSystem.Info.SupportsMonitoring,
+            isReadOnly: true  // This wrapper is always read-only
+        );
+
+        /// <inheritdoc />
         public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.FileExistsAsync(path, cancellationToken);

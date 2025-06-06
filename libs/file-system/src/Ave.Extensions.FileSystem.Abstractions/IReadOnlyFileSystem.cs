@@ -13,6 +13,10 @@ namespace Ave.Extensions.FileSystem
     public interface IReadOnlyFileSystem
     {
         /// <summary>
+        /// Gets information about the file system capabilities and characteristics.
+        /// </summary>
+        FileSystemInfo Info { get; }
+        /// <summary>
         /// Determines whether the specified file exists.
         /// </summary>
         /// <param name="path">The file path to check.</param>

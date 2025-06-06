@@ -256,5 +256,28 @@ namespace UnitTests.Extensions.FileSystem
             result.Should().BeSameAs(mockMonitor.Object);
             mockFileSystem.Verify(fs => fs.CreateMonitorAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
+
+        [Fact(DisplayName = "RFSW-011: Info property returns read-only characteristics")]
+        public void RFSW011()
+        {
+            // Arrange
+            var mockFileSystemInfo = new FileSystemInfo(
+                isDurable: true,
+                supportsMonitoring: false,
+                isReadOnly: false  // Original file system is not read-only
+            );
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.Info).Returns(mockFileSystemInfo);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var info = wrapper.Info;
+            
+            // Assert
+            info.IsDurable.Should().Be(mockFileSystemInfo.IsDurable, "durability should be preserved from underlying file system");
+            info.SupportsMonitoring.Should().Be(mockFileSystemInfo.SupportsMonitoring, "monitoring support should be preserved from underlying file system");
+            info.IsReadOnly.Should().BeTrue("wrapper should always be read-only regardless of underlying file system");
+        }
     }
 }

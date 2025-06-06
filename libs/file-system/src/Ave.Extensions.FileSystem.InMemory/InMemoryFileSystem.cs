@@ -43,6 +43,13 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
+        public FileSystemInfo Info { get; } = new FileSystemInfo(
+            isDurable: false,          // In-memory data is lost when application terminates
+            supportsMonitoring: true,  // Supports monitoring via internal event system
+            isReadOnly: false          // Supports read and write operations
+        );
+
+        /// <inheritdoc />
         public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try

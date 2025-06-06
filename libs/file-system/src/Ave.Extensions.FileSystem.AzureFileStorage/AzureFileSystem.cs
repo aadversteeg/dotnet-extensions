@@ -50,6 +50,13 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 _shareClient.CreateIfNotExists();
             }
         }
+
+        /// <inheritdoc />
+        public FileSystemInfo Info { get; } = new FileSystemInfo(
+            isDurable: true,           // Azure File Share provides persistent storage
+            supportsMonitoring: false, // Azure File Share does not support real-time monitoring
+            isReadOnly: false          // Supports read and write operations
+        );
         
         /// <inheritdoc />
         public async Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)

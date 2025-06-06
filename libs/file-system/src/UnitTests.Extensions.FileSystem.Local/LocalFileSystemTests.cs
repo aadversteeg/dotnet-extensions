@@ -25,5 +25,20 @@ namespace UnitTests.Extensions.FileSystem.Local
             canonicalPathResult.IsFailure.Should().BeTrue();
             canonicalPathResult.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathNullOrEmpty);
         }
+
+        [Fact(DisplayName = "LFS-002: Info property returns correct characteristics for LocalFileSystem")]
+        public void LFS002()
+        {
+            // Arrange
+            var fileSystem = new Ave.Extensions.FileSystem.Local.LocalFileSystem();
+
+            // Act
+            var info = fileSystem.Info;
+
+            // Assert
+            info.IsDurable.Should().BeTrue("local file system persists data across application restarts");
+            info.SupportsMonitoring.Should().BeTrue("local file system supports FileSystemWatcher for monitoring");
+            info.IsReadOnly.Should().BeFalse("local file system supports both read and write operations");
+        }
     }
 }

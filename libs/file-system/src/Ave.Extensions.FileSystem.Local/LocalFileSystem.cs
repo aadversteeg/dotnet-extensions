@@ -26,6 +26,13 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
+        public FileSystemInfo Info { get; } = new FileSystemInfo(
+            isDurable: true,           // Local file system persists data
+            supportsMonitoring: true,  // Supports FileSystemWatcher
+            isReadOnly: false          // Supports read and write operations
+        );
+
+        /// <inheritdoc />
         public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
