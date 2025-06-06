@@ -5,7 +5,7 @@ Cross-platform filesystem operations for .NET applications with advanced path ma
 ## Features
 
 - **Cross-platform file system operations** - Consistent API across Windows, Linux, and macOS
-- **Canonical path mapping** - Use Unix-style paths (`/c/folder/file.txt`) on all platforms
+- **Canonical path mapping** - Use Unix-style paths (`/mnt/c/folder/file.txt`) on all platforms
 - **Path security validation** - Restrict file access to allowed directories with wildcard support
 - **Functional error handling** - Uses `Result<T, Error>` pattern instead of exceptions
 - **Async enumeration** - Stream large directory listings efficiently
@@ -77,7 +77,7 @@ services.AddFileSystem(options =>
 });
 
 // Now you can use Unix-style paths on Windows
-var result = await fileSystem.ReadAllTextAsync("/c/users/documents/file.txt");
+var result = await fileSystem.ReadAllTextAsync("/mnt/c/users/documents/file.txt");
 // Automatically maps to C:\users\documents\file.txt on Windows
 ```
 
@@ -125,9 +125,9 @@ When canonical path mapping is enabled, the library automatically converts betwe
 
 | Canonical Path | Windows System Path | Description |
 |----------------|-------------------|-------------|
-| `/c/folder/file.txt` | `C:\folder\file.txt` | Drive letter mapping |
-| `/d/data/logs` | `D:\data\logs` | Alternative drive |
-| `/mnt/c/folder/file.txt` | `C:\folder\file.txt` | WSL-style paths |
+| `/mnt/c/folder/file.txt` | `C:\folder\file.txt` | Primary drive mapping (WSL-style) |
+| `/mnt/d/data/logs` | `D:\data\logs` | Alternative drive |
+| `/c/folder/file.txt` | `C:\folder\file.txt` | Legacy format (still supported for input) |
 | `//server/share/file` | `\\server\share\file` | UNC paths |
 
 ### Unix Path Mapping

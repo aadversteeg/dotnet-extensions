@@ -192,7 +192,7 @@ namespace Ave.Extensions.FileSystem
             {
                 var driveLetter = char.ToLowerInvariant(normalized[0]);
                 var remainingPath = normalized.Substring(2);
-                normalized = $"/{driveLetter}{remainingPath}";
+                normalized = $"/mnt/{driveLetter}{remainingPath}";
             }
             
             // Remove duplicate slashes
@@ -236,7 +236,16 @@ namespace Ave.Extensions.FileSystem
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return canonicalPath;
             
-            // Handle Windows drive letters: /c/path -> C:\path
+            // Handle WSL mount format: /mnt/c/path -> C:\path
+            if (canonicalPath.StartsWith("/mnt/") && canonicalPath.Length >= 6 && char.IsLetter(canonicalPath[5]) && 
+                (canonicalPath.Length == 6 || canonicalPath[6] == '/'))
+            {
+                var driveLetter = char.ToUpperInvariant(canonicalPath[5]);
+                var remainingPath = canonicalPath.Length > 6 ? canonicalPath.Substring(6).Replace('/', '\\') : "";
+                return $"{driveLetter}:{remainingPath}";
+            }
+            
+            // Handle legacy Windows drive format: /c/path -> C:\path (for backward compatibility)
             if (canonicalPath.Length >= 3 && canonicalPath[0] == '/' && char.IsLetter(canonicalPath[1]) && canonicalPath[2] == '/')
             {
                 var driveLetter = char.ToUpperInvariant(canonicalPath[1]);
