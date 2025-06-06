@@ -24,11 +24,5 @@ namespace Ave.Extensions.FileSystem.Security
         /// <returns>True if the path matches the pattern.</returns>
         bool MatchesPattern(CanonicalPath path, string pattern);
         
-        /// <summary>
-        /// Normalizes a path for security comparisons
-        /// </summary>
-        /// <param name="path">The path to normalize.</param>
-        /// <returns>The normalized canonical path.</returns>
-        CanonicalPath NormalizePath(CanonicalPath path);
     }
 }

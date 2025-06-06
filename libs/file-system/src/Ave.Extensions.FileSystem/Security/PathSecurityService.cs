@@ -94,7 +94,7 @@ namespace Ave.Extensions.FileSystem.Security
             var canonicalPathResult = CanonicalPath.Create(normalizedPath);
             if (canonicalPathResult.IsSuccess)
             {
-                normalizedPath = NormalizePath(canonicalPathResult.Value).Value;
+                normalizedPath = canonicalPathResult.Value.Value;
             }
             
             // Normalize the pattern (assume it's a valid path pattern)
@@ -102,7 +102,7 @@ namespace Ave.Extensions.FileSystem.Security
             var canonicalPatternResult = CanonicalPath.Create(normalizedPattern);
             if (canonicalPatternResult.IsSuccess)
             {
-                normalizedPattern = NormalizePath(canonicalPatternResult.Value).Value;
+                normalizedPattern = canonicalPatternResult.Value.Value;
             }
             
             // Handle recursive wildcard /** 
@@ -133,11 +133,5 @@ namespace Ave.Extensions.FileSystem.Security
             return Regex.IsMatch(normalizedPath, regexPattern, RegexOptions.IgnoreCase);
         }
         
-        /// <inheritdoc />
-        public CanonicalPath NormalizePath(CanonicalPath path)
-        {
-            // CanonicalPath is already normalized, so just return it as-is
-            return path;
-        }
     }
 }

@@ -63,27 +63,8 @@ namespace IntegrationTests.FileSystem.Local
             matches.Should().Be(shouldMatch);
         }
 
-        [Theory(DisplayName = "PSIT-003: PathSecurity NormalizePath returns the same CanonicalPath since it's already normalized")]
-        [InlineData("/app/data/file.txt")]
-        [InlineData("/data/file.txt")]
-        [InlineData("/app/data")]
-        [InlineData("/")]
-        public void PSIT003(string inputPath)
-        {
-            // Arrange
-            var pathSecurity = new PathSecurityService();
-            var canonicalInputPath = CanonicalPath.Create(inputPath).Value;
-            
-            // Act
-            var normalized = pathSecurity.NormalizePath(canonicalInputPath);
-            
-            // Assert
-            normalized.Should().Be(canonicalInputPath);
-            normalized.Value.Should().Be(inputPath);
-        }
-
-        [Fact(DisplayName = "PSIT-004: PathSecurity ValidatePathAccess with no allowed paths should allow all")]
-        public void PSIT004()
+        [Fact(DisplayName = "PSIT-003: PathSecurity ValidatePathAccess with no allowed paths should allow all")]
+        public void PSIT003()
         {
             // Arrange
             var allowedPaths = new CanonicalPath[0];
@@ -97,8 +78,8 @@ namespace IntegrationTests.FileSystem.Local
             result.IsSuccess.Should().BeTrue();
         }
 
-        [Fact(DisplayName = "PSIT-005: PathSecurity ValidatePathAccess with invalid CanonicalPath should fail before calling ValidatePathAccess")]
-        public void PSIT005()
+        [Fact(DisplayName = "PSIT-004: PathSecurity ValidatePathAccess with invalid CanonicalPath should fail before calling ValidatePathAccess")]
+        public void PSIT004()
         {
             // Arrange & Act
             var invalidPathResult = CanonicalPath.Create("");
