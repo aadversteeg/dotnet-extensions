@@ -23,9 +23,6 @@ namespace Ave.Extensions.FileSystem.Local
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
 
-            if (string.IsNullOrEmpty(options.Path))
-                throw new ArgumentException("Path cannot be null or empty.", nameof(options));
-
             cancellationToken.ThrowIfCancellationRequested();
 
             var session = new MonitoringSession(options);

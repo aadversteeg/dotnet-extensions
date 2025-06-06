@@ -11,9 +11,9 @@ namespace Ave.Extensions.FileSystem
     public interface IMonitoringSession : IDisposable
     {
         /// <summary>
-        /// Gets the path being monitored.
+        /// Gets the canonical path being monitored.
         /// </summary>
-        string Path { get; }
+        CanonicalPath Path { get; }
         
         /// <summary>
         /// Gets a value indicating whether the monitoring session is currently active.

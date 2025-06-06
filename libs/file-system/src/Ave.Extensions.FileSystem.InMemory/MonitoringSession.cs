@@ -14,7 +14,7 @@ namespace Ave.Extensions.FileSystem.InMemory
     internal class MonitoringSession : IMonitoringSession
     {
         private readonly string _sessionId;
-        private readonly string _path;
+        private readonly CanonicalPath _path;
         private readonly MonitoringOptions _options;
         private readonly ILogger _logger;
         private readonly Action _onDispose;
@@ -24,13 +24,13 @@ namespace Ave.Extensions.FileSystem.InMemory
 
         public MonitoringSession(
             string sessionId,
-            string path,
+            CanonicalPath path,
             MonitoringOptions options,
             ILogger logger,
             Action onDispose)
         {
             _sessionId = sessionId ?? throw new ArgumentNullException(nameof(sessionId));
-            _path = path ?? throw new ArgumentNullException(nameof(path));
+            _path = path;
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _onDispose = onDispose ?? throw new ArgumentNullException(nameof(onDispose));
@@ -38,7 +38,7 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public string Path => _path;
+        public CanonicalPath Path => _path;
 
         /// <inheritdoc />
         public bool IsActive => !_disposed;

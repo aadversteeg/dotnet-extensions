@@ -56,7 +56,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             return Task.FromResult<IMonitoringSession>(session);
         }
 
-        internal void NotifyChange(string path, FileSystemChangeType changeType)
+        internal void NotifyChange(CanonicalPath path, FileSystemChangeType changeType)
         {
             if (_disposed)
                 return;
@@ -66,15 +66,15 @@ namespace Ave.Extensions.FileSystem.InMemory
             _changeSubject.OnNext(evt);
         }
 
-        private static bool ShouldNotify(FileSystemChangeEventArgs evt, string monitorPath, MonitoringOptions options)
+        private static bool ShouldNotify(FileSystemChangeEventArgs evt, CanonicalPath monitorPath, MonitoringOptions options)
         {
-            // Normalize paths for comparison
-            var eventPath = NormalizePath(evt.FullPath);
-            var watchPath = NormalizePath(monitorPath);
+            // Compare canonical paths directly
+            var eventPath = evt.Path;
+            var watchPath = monitorPath;
             
             // Check if the event is within the monitored path
-            bool isInPath = eventPath == watchPath || 
-                           (options.IncludeSubdirectories && eventPath.StartsWith(watchPath + "/", StringComparison.OrdinalIgnoreCase));
+            bool isInPath = eventPath.Equals(watchPath) || 
+                           (options.IncludeSubdirectories && eventPath.IsChildOf(watchPath));
             
             if (!isInPath)
                 return false;
@@ -84,7 +84,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                 return false;
             
             // Check include patterns
-            var fileName = System.IO.Path.GetFileName(eventPath);
+            var fileName = eventPath.GetName();
             if (options.IncludePatterns.Any())
             {
                 bool matchesInclude = options.IncludePatterns.Any(pattern => MatchesPattern(fileName, pattern));
@@ -115,25 +115,6 @@ namespace Ave.Extensions.FileSystem.InMemory
             };
         }
 
-        private static string NormalizePath(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return "/";
-            
-            var normalized = path.Replace('\\', '/');
-            while (normalized.Contains("//"))
-            {
-                normalized = normalized.Replace("//", "/");
-            }
-            
-            if (!normalized.StartsWith('/'))
-                normalized = '/' + normalized;
-            
-            if (normalized.Length > 1 && normalized.EndsWith('/'))
-                normalized = normalized.TrimEnd('/');
-            
-            return normalized;
-        }
 
         private static bool MatchesPattern(string name, string pattern)
         {

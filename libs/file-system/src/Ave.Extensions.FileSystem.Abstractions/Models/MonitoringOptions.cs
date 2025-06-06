@@ -9,9 +9,9 @@ namespace Ave.Extensions.FileSystem.Models
     public class MonitoringOptions
     {
         /// <summary>
-        /// Gets or sets the path to monitor.
+        /// Gets or sets the canonical path to monitor.
         /// </summary>
-        public string Path { get; set; } = string.Empty;
+        public CanonicalPath Path { get; set; } = CanonicalPath.Root;
 
         /// <summary>
         /// Gets or sets a value indicating whether to monitor subdirectories.
@@ -56,9 +56,9 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// Gets default monitoring options for a path.
         /// </summary>
-        /// <param name="path">The path to monitor.</param>
+        /// <param name="path">The canonical path to monitor.</param>
         /// <returns>Default monitoring options.</returns>
-        public static MonitoringOptions ForPath(string path) => new MonitoringOptions
+        public static MonitoringOptions ForPath(CanonicalPath path) => new MonitoringOptions
         {
             Path = path,
             IncludeSubdirectories = false,
@@ -72,9 +72,9 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// Creates monitoring options for recursive monitoring.
         /// </summary>
-        /// <param name="path">The path to monitor.</param>
+        /// <param name="path">The canonical path to monitor.</param>
         /// <returns>Monitoring options configured for recursive monitoring.</returns>
-        public static MonitoringOptions Recursive(string path) => new MonitoringOptions
+        public static MonitoringOptions Recursive(CanonicalPath path) => new MonitoringOptions
         {
             Path = path,
             IncludeSubdirectories = true,

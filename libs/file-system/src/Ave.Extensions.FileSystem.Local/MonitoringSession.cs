@@ -7,6 +7,7 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem.Local
 {
@@ -36,7 +37,7 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public string Path => _options.Path;
+        public CanonicalPath Path => _options.Path;
 
         /// <inheritdoc />
         public bool IsActive
@@ -121,16 +122,17 @@ namespace Ave.Extensions.FileSystem.Local
 
                 try
                 {
-                    if (!Directory.Exists(_options.Path))
+                    var physicalPath = _options.Path.ToString();
+                    if (!Directory.Exists(physicalPath))
                     {
-                        _changesSubject.OnError(new DirectoryNotFoundException($"Directory not found: {_options.Path}"));
+                        _changesSubject.OnError(new DirectoryNotFoundException($"Directory not found: {physicalPath}"));
                         return;
                     }
 
                     // Create watchers for each include pattern
                     foreach (var pattern in _options.IncludePatterns)
                     {
-                        var watcher = CreateWatcher(_options.Path, pattern);
+                        var watcher = CreateWatcher(physicalPath, pattern);
                         if (watcher != null)
                         {
                             _watchers.Add(watcher);
@@ -186,7 +188,10 @@ namespace Ave.Extensions.FileSystem.Local
                     _ => FileSystemChangeType.Created
                 };
 
-                var eventArgs = new FileSystemChangeEventArgs(e.FullPath, changeType);
+                var canonicalPathResult = ConvertToCanonicalPath(e.FullPath);
+                if (canonicalPathResult.IsFailure)
+                    return; // Skip invalid paths
+                var eventArgs = new FileSystemChangeEventArgs(canonicalPathResult.Value, changeType);
                 
                 if (ShouldIncludeChange(eventArgs))
                 {
@@ -204,17 +209,25 @@ namespace Ave.Extensions.FileSystem.Local
             try
             {
                 // Emit both delete (old name) and create (new name) events for renames
-                var deleteEvent = new FileSystemChangeEventArgs(e.OldFullPath, FileSystemChangeType.Deleted);
-                var createEvent = new FileSystemChangeEventArgs(e.FullPath, FileSystemChangeType.Created);
-
-                if (ShouldIncludeChange(deleteEvent))
+                var oldCanonicalPathResult = ConvertToCanonicalPath(e.OldFullPath);
+                var newCanonicalPathResult = ConvertToCanonicalPath(e.FullPath);
+                
+                if (oldCanonicalPathResult.IsSuccess)
                 {
-                    _changesSubject.OnNext(deleteEvent);
+                    var deleteEvent = new FileSystemChangeEventArgs(oldCanonicalPathResult.Value, FileSystemChangeType.Deleted);
+                    if (ShouldIncludeChange(deleteEvent))
+                    {
+                        _changesSubject.OnNext(deleteEvent);
+                    }
                 }
-
-                if (ShouldIncludeChange(createEvent))
+                
+                if (newCanonicalPathResult.IsSuccess)
                 {
-                    _changesSubject.OnNext(createEvent);
+                    var createEvent = new FileSystemChangeEventArgs(newCanonicalPathResult.Value, FileSystemChangeType.Created);
+                    if (ShouldIncludeChange(createEvent))
+                    {
+                        _changesSubject.OnNext(createEvent);
+                    }
                 }
             }
             catch (Exception ex)
@@ -232,7 +245,7 @@ namespace Ave.Extensions.FileSystem.Local
         {
             try
             {
-                var path = changeArgs.FullPath;
+                var path = changeArgs.Path.ToString();
                 var fileName = System.IO.Path.GetFileName(path);
 
                 // Check exclude patterns
@@ -288,6 +301,26 @@ namespace Ave.Extensions.FileSystem.Local
             }
 
             return string.Equals(fileName, pattern, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static Result<CanonicalPath, Error> ConvertToCanonicalPath(string systemPath)
+        {
+            if (string.IsNullOrWhiteSpace(systemPath))
+                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathNullOrEmpty);
+
+            // Simple conversion for local file system paths
+            // Convert backslashes to forward slashes and create canonical path
+            var normalizedPath = systemPath.Replace('\\', '/');
+            
+            // Handle Windows absolute paths: C:\path -> /mnt/c/path
+            if (normalizedPath.Length >= 2 && normalizedPath[1] == ':')
+            {
+                var driveLetter = char.ToLowerInvariant(normalizedPath[0]);
+                var remainingPath = normalizedPath.Substring(2);
+                normalizedPath = $"/mnt/{driveLetter}{remainingPath}";
+            }
+            
+            return CanonicalPath.Create(normalizedPath);
         }
     }
 }

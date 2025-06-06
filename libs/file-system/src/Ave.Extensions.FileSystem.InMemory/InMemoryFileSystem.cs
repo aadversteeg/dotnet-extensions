@@ -597,7 +597,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 foreach (var monitor in _monitors.ToList())
                 {
-                    monitor.NotifyChange(path.Value, changeType);
+                    monitor.NotifyChange(path, changeType);
                 }
             }
         }

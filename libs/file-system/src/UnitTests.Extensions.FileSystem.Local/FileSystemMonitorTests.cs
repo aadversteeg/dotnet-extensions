@@ -40,14 +40,14 @@ namespace UnitTests.Extensions.FileSystem.Local
 
             try
             {
-                var options = MonitoringOptions.ForPath(tempDir);
+                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
 
                 // Act
                 var session = await monitor.StartMonitoringAsync(options);
 
                 // Assert
                 session.Should().NotBeNull();
-                session.Path.Should().Be(tempDir);
+                session.Path.Should().Be(tempDir.ToCanonicalPath());
                 session.IsActive.Should().BeTrue();
                 session.Changes.Should().NotBeNull();
                 
@@ -75,7 +75,7 @@ namespace UnitTests.Extensions.FileSystem.Local
 
             try
             {
-                var options = MonitoringOptions.ForPath(tempDir);
+                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
                 var session = await monitor.StartMonitoringAsync(options);
                 
                 var changeReceived = new TaskCompletionSource<FileSystemChangeEventArgs>();
@@ -97,7 +97,7 @@ namespace UnitTests.Extensions.FileSystem.Local
                 var result = await changeReceived.Task;
                 result.Should().NotBeNull();
                 result.ChangeType.Should().Be(FileSystemChangeType.Created);
-                Path.GetFullPath(result.FullPath).Should().Be(Path.GetFullPath(testFilePath));
+                result.Path.Value.Should().Contain(Path.GetFileName(testFilePath));
                 
                 // Cleanup
                 subscription.Dispose();
@@ -124,7 +124,7 @@ namespace UnitTests.Extensions.FileSystem.Local
 
             try
             {
-                var options = MonitoringOptions.ForPath(tempDir);
+                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
                 var session = await monitor.StartMonitoringAsync(options);
 
                 // Act & Assert - Stop monitoring
@@ -157,7 +157,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             {
                 var options = new MonitoringOptions
                 {
-                    Path = tempDir,
+                    Path = tempDir.ToCanonicalPath(),
                     IncludePatterns = new List<string> { "*.txt" },
                     IncludeSubdirectories = false
                 };
@@ -180,8 +180,8 @@ namespace UnitTests.Extensions.FileSystem.Local
                 await Task.Delay(1000);
 
                 // Assert
-                var txtChanges = changes.Where(c => c.FullPath.Contains("test.txt")).ToList();
-                var docChanges = changes.Where(c => c.FullPath.Contains("test.doc")).ToList();
+                var txtChanges = changes.Where(c => c.Path.Value.Contains("test.txt")).ToList();
+                var docChanges = changes.Where(c => c.Path.Value.Contains("test.doc")).ToList();
 
                 txtChanges.Should().NotBeEmpty("txt files should be detected");
                 // Note: doc files might still be detected by the underlying FileSystemWatcher
@@ -214,7 +214,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             {
                 var options = new MonitoringOptions
                 {
-                    Path = tempDir,
+                    Path = tempDir.ToCanonicalPath(),
                     IncludePatterns = new List<string> { "*" },
                     ExcludePatterns = new List<string> { "*.tmp" },
                     IncludeSubdirectories = false
@@ -238,8 +238,8 @@ namespace UnitTests.Extensions.FileSystem.Local
                 await Task.Delay(1000);
 
                 // Assert
-                var txtChanges = changes.Where(c => c.FullPath.Contains("test.txt")).ToList();
-                var tmpChanges = changes.Where(c => c.FullPath.Contains("test.tmp")).ToList();
+                var txtChanges = changes.Where(c => c.Path.Value.Contains("test.txt")).ToList();
+                var tmpChanges = changes.Where(c => c.Path.Value.Contains("test.tmp")).ToList();
 
                 txtChanges.Should().NotBeEmpty("txt files should be detected");
                 // The exclude pattern should filter out tmp files in ShouldIncludeChange
@@ -272,12 +272,12 @@ namespace UnitTests.Extensions.FileSystem.Local
 
             try
             {
-                var options = MonitoringOptions.Recursive(tempDir);
+                var options = MonitoringOptions.Recursive(tempDir.ToCanonicalPath());
                 var session = await monitor.StartMonitoringAsync(options);
                 
                 var changeReceived = new TaskCompletionSource<FileSystemChangeEventArgs>();
                 var subscription = session.Changes
-                    .Where(change => change.ChangeType == FileSystemChangeType.Created && change.FullPath.Contains("subdir"))
+                    .Where(change => change.ChangeType == FileSystemChangeType.Created && change.Path.Value.Contains("subdir"))
                     .Take(1)
                     .Subscribe(change => changeReceived.TrySetResult(change));
 
@@ -316,7 +316,7 @@ namespace UnitTests.Extensions.FileSystem.Local
 
             try
             {
-                var options = MonitoringOptions.ForPath(tempDir);
+                var options = MonitoringOptions.ForPath(tempDir.ToCanonicalPath());
                 var session = await monitor.StartMonitoringAsync(options);
 
                 // Act

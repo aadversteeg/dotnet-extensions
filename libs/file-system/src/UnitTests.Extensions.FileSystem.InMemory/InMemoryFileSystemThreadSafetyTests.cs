@@ -215,7 +215,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
                 var monitor = await _fileSystem.CreateMonitorAsync();
                 monitors.Add(monitor);
                 
-                var session = await monitor.StartMonitoringAsync(MonitoringOptions.ForPath($"/test/dir{i}"));
+                var session = await monitor.StartMonitoringAsync(MonitoringOptions.ForPath($"/test/dir{i}".ToCanonicalPath()));
                 sessions.Add(session);
                 
                 return (monitor, session);

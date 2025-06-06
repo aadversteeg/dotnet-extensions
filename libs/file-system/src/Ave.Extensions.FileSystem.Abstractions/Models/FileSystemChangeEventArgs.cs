@@ -10,18 +10,18 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSystemChangeEventArgs"/> class.
         /// </summary>
-        /// <param name="fullPath">The full path of the changed file.</param>
+        /// <param name="path">The canonical path of the changed file.</param>
         /// <param name="changeType">The type of change that occurred.</param>
-        public FileSystemChangeEventArgs(string fullPath, FileSystemChangeType changeType)
+        public FileSystemChangeEventArgs(CanonicalPath path, FileSystemChangeType changeType)
         {
-            FullPath = fullPath;
+            Path = path;
             ChangeType = changeType;
         }
 
         /// <summary>
-        /// Gets the full path of the changed file.
+        /// Gets the canonical path of the changed file.
         /// </summary>
-        public string FullPath { get; }
+        public CanonicalPath Path { get; }
 
         /// <summary>
         /// Gets the type of change that occurred.
