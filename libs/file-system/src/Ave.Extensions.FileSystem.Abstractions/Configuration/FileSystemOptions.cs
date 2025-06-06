@@ -43,10 +43,6 @@ namespace Ave.Extensions.FileSystem.Configuration
         /// </summary>
         public int DefaultBufferSize { get; set; } = 4096;
 
-        /// <summary>
-        /// Gets or sets a value indicating whether to register path utilities.
-        /// </summary>
-        public bool RegisterPathUtilities { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether to register the file system visitor.

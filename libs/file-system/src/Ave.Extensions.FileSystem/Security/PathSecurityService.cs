@@ -12,26 +12,17 @@ namespace Ave.Extensions.FileSystem.Security
     /// </summary>
     public class PathSecurityService : IPathSecurity
     {
-        private readonly IPathUtilities _pathUtilities;
-        
         /// <summary>
         /// Initializes a new instance of the PathSecurityService class.
         /// </summary>
-        /// <param name="pathUtilities">Path utilities for normalization.</param>
-        public PathSecurityService(IPathUtilities pathUtilities)
+        public PathSecurityService()
         {
-            _pathUtilities = pathUtilities ?? throw new ArgumentNullException(nameof(pathUtilities));
         }
         
         /// <inheritdoc />
-        public Result<Unit, FileSystemError> ValidatePathAccess(string path, IEnumerable<string> allowedPaths)
+        public Result<Unit, FileSystemError> ValidatePathAccess(CanonicalPath path, IEnumerable<CanonicalPath> allowedPaths)
         {
-            if (string.IsNullOrWhiteSpace(path))
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Path cannot be empty", path, FileSystemErrorType.InvalidPath));
-            
-            var normalizedPath = NormalizePath(path);
-            var allowedPathsList = allowedPaths?.ToList() ?? new List<string>();
+            var allowedPathsList = allowedPaths?.ToList() ?? new List<CanonicalPath>();
             
             // If no allowed paths specified, allow all
             if (!allowedPathsList.Any())
@@ -39,19 +30,16 @@ namespace Ave.Extensions.FileSystem.Security
             
             foreach (var allowedPath in allowedPathsList)
             {
-                var normalizedAllowedPath = NormalizePath(allowedPath);
-                
-                // Check direct match or subdirectory
-                if (normalizedPath.Equals(normalizedAllowedPath, StringComparison.OrdinalIgnoreCase) ||
-                    normalizedPath.StartsWith(normalizedAllowedPath + "/", StringComparison.OrdinalIgnoreCase))
+                // Check direct match or if path is a child of allowed path
+                if (path.Equals(allowedPath) || path.IsChildOf(allowedPath))
                 {
                     return Result<Unit, FileSystemError>.Success(Unit.Value);
                 }
                 
                 // Check wildcard patterns
-                if (allowedPath.Contains('*') || allowedPath.Contains('?'))
+                if (allowedPath.Value.Contains('*') || allowedPath.Value.Contains('?'))
                 {
-                    if (MatchesPattern(normalizedPath, normalizedAllowedPath))
+                    if (MatchesPattern(path, allowedPath.Value))
                     {
                         return Result<Unit, FileSystemError>.Success(Unit.Value);
                     }
@@ -59,13 +47,13 @@ namespace Ave.Extensions.FileSystem.Security
             }
             
             return Result<Unit, FileSystemError>.Failure(
-                new FileSystemError($"Access to path '{path}' is not allowed", path, FileSystemErrorType.AccessDenied));
+                new FileSystemError($"Access to path '{path.Value}' is not allowed", path.Value, FileSystemErrorType.AccessDenied));
         }
         
         /// <inheritdoc />
-        public bool MatchesPattern(string path, string pattern)
+        public bool MatchesPattern(CanonicalPath path, string pattern)
         {
-            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(pattern))
+            if (string.IsNullOrEmpty(pattern))
                 return false;
             
             try
@@ -73,17 +61,17 @@ namespace Ave.Extensions.FileSystem.Security
                 // If pattern doesn't contain path separators, match against filename only
                 if (!pattern.Contains('/') && !pattern.Contains('\\'))
                 {
-                    var fileName = _pathUtilities.GetFileName(path);
+                    var fileName = path.GetName();
                     return MatchesWildcardPattern(fileName, pattern);
                 }
                 
                 // For path-based patterns, handle glob-style matching
-                return MatchesPathPattern(path, pattern);
+                return MatchesPathPattern(path.Value, pattern);
             }
             catch (Exception)
             {
                 // If pattern matching fails, fall back to simple string comparison
-                return path.Equals(pattern, StringComparison.OrdinalIgnoreCase);
+                return path.Value.Equals(pattern, StringComparison.OrdinalIgnoreCase);
             }
         }
         
@@ -99,8 +87,21 @@ namespace Ave.Extensions.FileSystem.Security
         
         private bool MatchesPathPattern(string path, string pattern)
         {
-            var normalizedPath = NormalizePath(path);
-            var normalizedPattern = NormalizePath(pattern);
+            // Normalize the input path using CanonicalPath if possible, otherwise basic normalization
+            var normalizedPath = path.Replace('\\', '/');
+            var canonicalPathResult = CanonicalPath.Create(normalizedPath);
+            if (canonicalPathResult.IsSuccess)
+            {
+                normalizedPath = NormalizePath(canonicalPathResult.Value).Value;
+            }
+            
+            // Normalize the pattern (assume it's a valid path pattern)
+            var normalizedPattern = pattern.Replace('\\', '/');
+            var canonicalPatternResult = CanonicalPath.Create(normalizedPattern);
+            if (canonicalPatternResult.IsSuccess)
+            {
+                normalizedPattern = NormalizePath(canonicalPatternResult.Value).Value;
+            }
             
             // Handle recursive wildcard /** 
             if (normalizedPattern.EndsWith("/**"))
@@ -131,34 +132,10 @@ namespace Ave.Extensions.FileSystem.Security
         }
         
         /// <inheritdoc />
-        public string NormalizePath(string path)
+        public CanonicalPath NormalizePath(CanonicalPath path)
         {
-            if (string.IsNullOrEmpty(path))
-                return path;
-            
-            // Convert to canonical format using path utilities
-            var normalized = _pathUtilities.ToCanonicalPath(path);
-            
-            // Remove trailing slashes (except for root)
-            if (normalized.Length > 1 && normalized.EndsWith('/'))
-                normalized = normalized.TrimEnd('/');
-            
-            // Resolve . and .. components
-            var parts = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            var stack = new Stack<string>();
-            
-            foreach (var part in parts)
-            {
-                if (part == ".")
-                    continue;
-                else if (part == ".." && stack.Count > 0)
-                    stack.Pop();
-                else if (part != "..")
-                    stack.Push(part);
-            }
-            
-            var result = "/" + string.Join("/", stack.Reverse());
-            return result == "/" ? "/" : result;
+            // CanonicalPath is already normalized, so just return it as-is
+            return path;
         }
     }
 }

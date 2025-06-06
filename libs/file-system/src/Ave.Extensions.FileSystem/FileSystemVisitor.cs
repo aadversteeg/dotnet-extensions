@@ -15,17 +15,14 @@ namespace Ave.Extensions.FileSystem
     public class FileSystemVisitor : IFileSystemVisitor
     {
         private readonly IFileSystem _fileSystem;
-        private readonly IPathUtilities _pathUtilities;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FileSystemVisitor"/> class.
         /// </summary>
         /// <param name="fileSystem">The file system to use for traversal.</param>
-        /// <param name="pathUtilities">The path utilities for path operations.</param>
-        public FileSystemVisitor(IFileSystem fileSystem, IPathUtilities pathUtilities)
+        public FileSystemVisitor(IFileSystem fileSystem)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-            _pathUtilities = pathUtilities ?? throw new ArgumentNullException(nameof(pathUtilities));
         }
 
         /// <inheritdoc />
@@ -274,7 +271,6 @@ namespace Ave.Extensions.FileSystem
             }
 
             var dirEntry = dirEntryResult.Value;
-            var relativePath = _pathUtilities.GetRelativePath(rootPath.Value, directoryPath.Value);
 
             // Check filters
             if (!options.IncludeHidden && dirEntry.IsHidden)
@@ -285,7 +281,7 @@ namespace Ave.Extensions.FileSystem
                 yield break;
 
             yield return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                new FileVisitedEventArgs(dirEntry, depth, relativePath));
+                new FileVisitedEventArgs(dirEntry, depth, directoryPath.Value));
 
             // Process files
             var filesResult = await _fileSystem.GetFilesAsync(directoryPath, "*", SearchOption.TopDirectoryOnly, cancellationToken);
@@ -339,9 +335,8 @@ namespace Ave.Extensions.FileSystem
                 if (options.ShouldVisitFile != null && !options.ShouldVisitFile(fileEntry))
                     return null;
 
-                var relativePath = _pathUtilities.GetRelativePath(rootPath.Value, filePath.Value);
                 return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                    new FileVisitedEventArgs(fileEntry, depth, relativePath));
+                    new FileVisitedEventArgs(fileEntry, depth, filePath.Value));
             }
             catch (Exception ex)
             {

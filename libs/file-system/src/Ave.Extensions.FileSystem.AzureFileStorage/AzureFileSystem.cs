@@ -56,12 +56,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
-                        return Result<bool, FileSystemError>.Failure(validationResult.Error);
-                }
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 
                 var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
@@ -86,12 +83,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
-                        return Result<bool, FileSystemError>.Failure(validationResult.Error);
-                }
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 
                 var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
@@ -116,12 +110,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<string, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
@@ -150,12 +141,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<Stream, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
@@ -181,12 +169,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<FileSystemEntry, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 
@@ -254,12 +239,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
@@ -293,12 +275,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
@@ -334,14 +313,11 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             Models.EnumerationOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (_pathSecurity != null && _options.AllowedPaths.Any())
+            var validationResult = ValidatePathSecurity(path);
+            if (validationResult.IsFailure)
             {
-                var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                if (validationResult.IsFailure)
-                {
-                    yield return Result<FileSystemEntry, FileSystemError>.Failure(validationResult.Error);
-                    yield break;
-                }
+                yield return Result<FileSystemEntry, FileSystemError>.Failure(validationResult.Error);
+                yield break;
             }
             
             options ??= Models.EnumerationOptions.Default;
@@ -365,12 +341,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 
@@ -390,12 +363,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
@@ -438,12 +408,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<Stream, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 // Azure File Share doesn't support direct write streams
                 // Return a memory stream that can be uploaded when disposed
@@ -492,12 +459,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 var fileClient = GetFileClient(azurePath);
@@ -518,12 +482,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                if (_pathSecurity != null && _options.AllowedPaths.Any())
-                {
-                    var validationResult = _pathSecurity.ValidatePathAccess(path.Value, _options.AllowedPaths);
-                    if (validationResult.IsFailure)
+                var validationResult = ValidatePathSecurity(path);
+                if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
-                }
                 
                 var azurePath = GetAzurePath(path.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
@@ -590,6 +551,21 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 return Result<Unit, FileSystemError>.Failure(
                     new FileSystemError($"Failed to create directory recursively: {ex.Message}", azurePath));
             }
+        }
+        
+        private Result<Unit, FileSystemError> ValidatePathSecurity(CanonicalPath path)
+        {
+            if (_pathSecurity != null && _options.AllowedPaths.Any())
+            {
+                var allowedCanonicalPaths = _options.AllowedPaths
+                    .Select(p => CanonicalPath.Create(p))
+                    .Where(r => r.IsSuccess)
+                    .Select(r => r.Value);
+                
+                return _pathSecurity.ValidatePathAccess(path, allowedCanonicalPaths);
+            }
+            
+            return Result<Unit, FileSystemError>.Success(Unit.Value);
         }
         
         private string GetAzurePath(string path)

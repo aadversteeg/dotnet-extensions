@@ -28,21 +28,21 @@ namespace Ave.Extensions.FileSystem.Models
         public int Depth { get; }
 
         /// <summary>
-        /// Gets the relative path from the root of the traversal.
+        /// Gets the absolute canonical path of the visited item.
         /// </summary>
-        public string RelativePath { get; }
+        public string Path { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FileVisitedEventArgs"/> class.
         /// </summary>
         /// <param name="entry">The file system entry.</param>
         /// <param name="depth">The current depth.</param>
-        /// <param name="relativePath">The relative path.</param>
-        public FileVisitedEventArgs(FileSystemEntry entry, int depth, string relativePath)
+        /// <param name="path">The absolute canonical path.</param>
+        public FileVisitedEventArgs(FileSystemEntry entry, int depth, string path)
         {
             Entry = entry ?? throw new ArgumentNullException(nameof(entry));
             Depth = depth;
-            RelativePath = relativePath ?? string.Empty;
+            Path = path ?? string.Empty;
         }
     }
 }

@@ -36,11 +36,6 @@ namespace Ave.Extensions.FileSystem
                 services.TryAddSingleton<IPathSecurity, PathSecurityService>();
             }
 
-            // Register path utilities
-            if (options.RegisterPathUtilities)
-            {
-                services.TryAddSingleton<IPathUtilities, PathUtilities>();
-            }
 
             // Register IReadOnlyFileSystem as a wrapper around IFileSystem
             if (options.RegisterReadOnlyWrapper)
@@ -77,28 +72,11 @@ namespace Ave.Extensions.FileSystem
             services.AddFileSystemUtilities(options => 
             {
                 options.RegisterVisitor = true;
-                options.RegisterPathUtilities = true;
             });
             
             return services;
         }
 
-        /// <summary>
-        /// Adds path utilities to the specified <see cref="IServiceCollection" />.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <returns>The same service collection so that multiple calls can be chained.</returns>
-        public static IServiceCollection AddPathUtilities(this IServiceCollection services)
-        {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            services.TryAddSingleton<IPathUtilities, PathUtilities>();
-            
-            return services;
-        }
 
         /// <summary>
         /// Adds path security services to the specified <see cref="IServiceCollection" />.
