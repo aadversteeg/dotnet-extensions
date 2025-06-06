@@ -281,7 +281,7 @@ namespace Ave.Extensions.FileSystem
                 yield break;
 
             yield return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                new FileVisitedEventArgs(dirEntry, depth, directoryPath.Value));
+                new FileVisitedEventArgs(dirEntry, depth));
 
             // Process files
             var filesResult = await _fileSystem.GetFilesAsync(directoryPath, "*", SearchOption.TopDirectoryOnly, cancellationToken);
@@ -336,7 +336,7 @@ namespace Ave.Extensions.FileSystem
                     return null;
 
                 return Result<FileVisitedEventArgs, FileSystemError>.Success(
-                    new FileVisitedEventArgs(fileEntry, depth, filePath.Value));
+                    new FileVisitedEventArgs(fileEntry, depth));
             }
             catch (Exception ex)
             {
