@@ -13,9 +13,8 @@ namespace Ave.Extensions.FileSystem.Security
         /// Validates if a path is within allowed boundaries
         /// </summary>
         /// <param name="path">The path to validate.</param>
-        /// <param name="allowedPaths">Collection of allowed canonical path patterns.</param>
         /// <returns>Success if the path is allowed, failure otherwise.</returns>
-        Result<Unit, FileSystemError> ValidatePathAccess(CanonicalPath path, IEnumerable<CanonicalPath> allowedPaths);
+        Result<Unit, FileSystemError> ValidatePathAccess(CanonicalPath path);
         
         /// <summary>
         /// Checks if a path matches a wildcard pattern

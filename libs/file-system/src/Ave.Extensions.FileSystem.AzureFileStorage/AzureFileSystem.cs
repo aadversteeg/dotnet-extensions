@@ -555,14 +555,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         
         private Result<Unit, FileSystemError> ValidatePathSecurity(CanonicalPath path)
         {
-            if (_pathSecurity != null && _options.AllowedPaths.Any())
+            if (_pathSecurity != null)
             {
-                var allowedCanonicalPaths = _options.AllowedPaths
-                    .Select(p => CanonicalPath.Create(p))
-                    .Where(r => r.IsSuccess)
-                    .Select(r => r.Value);
-                
-                return _pathSecurity.ValidatePathAccess(path, allowedCanonicalPaths);
+                return _pathSecurity.ValidatePathAccess(path);
             }
             
             return Result<Unit, FileSystemError>.Success(Unit.Value);

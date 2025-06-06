@@ -12,23 +12,25 @@ namespace Ave.Extensions.FileSystem.Security
     /// </summary>
     public class PathSecurityService : IPathSecurity
     {
+        private readonly IReadOnlyList<CanonicalPath> _allowedPaths;
+        
         /// <summary>
         /// Initializes a new instance of the PathSecurityService class.
         /// </summary>
-        public PathSecurityService()
+        /// <param name="allowedPaths">Collection of allowed canonical path patterns.</param>
+        public PathSecurityService(IEnumerable<CanonicalPath>? allowedPaths = null)
         {
+            _allowedPaths = allowedPaths?.ToList() ?? new List<CanonicalPath>();
         }
         
         /// <inheritdoc />
-        public Result<Unit, FileSystemError> ValidatePathAccess(CanonicalPath path, IEnumerable<CanonicalPath> allowedPaths)
+        public Result<Unit, FileSystemError> ValidatePathAccess(CanonicalPath path)
         {
-            var allowedPathsList = allowedPaths?.ToList() ?? new List<CanonicalPath>();
-            
             // If no allowed paths specified, allow all
-            if (!allowedPathsList.Any())
+            if (!_allowedPaths.Any())
                 return Result<Unit, FileSystemError>.Success(Unit.Value);
             
-            foreach (var allowedPath in allowedPathsList)
+            foreach (var allowedPath in _allowedPaths)
             {
                 // Check direct match or if path is a child of allowed path
                 if (path.Equals(allowedPath) || path.IsChildOf(allowedPath))

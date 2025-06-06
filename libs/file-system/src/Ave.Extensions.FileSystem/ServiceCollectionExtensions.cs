@@ -33,7 +33,7 @@ namespace Ave.Extensions.FileSystem
             // Register security if enabled
             if (options.EnablePathSecurity)
             {
-                services.TryAddSingleton<IPathSecurity, PathSecurityService>();
+                services.TryAddSingleton<IPathSecurity>(sp => new PathSecurityService());
             }
 
 
@@ -90,7 +90,7 @@ namespace Ave.Extensions.FileSystem
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.TryAddSingleton<IPathSecurity, PathSecurityService>();
+            services.TryAddSingleton<IPathSecurity>(sp => new PathSecurityService());
             
             return services;
         }

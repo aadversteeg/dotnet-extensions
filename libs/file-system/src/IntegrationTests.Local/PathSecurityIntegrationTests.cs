@@ -24,12 +24,12 @@ namespace IntegrationTests.FileSystem.Local
         public void PSIT001(string path, string[] allowedPaths, bool shouldBeAllowed)
         {
             // Arrange
-            var pathSecurity = new PathSecurityService();
-            var canonicalPath = CanonicalPath.Create(path).Value;
             var canonicalAllowedPaths = allowedPaths.Select(p => CanonicalPath.Create(p).Value);
+            var pathSecurity = new PathSecurityService(canonicalAllowedPaths);
+            var canonicalPath = CanonicalPath.Create(path).Value;
             
             // Act
-            var result = pathSecurity.ValidatePathAccess(canonicalPath, canonicalAllowedPaths);
+            var result = pathSecurity.ValidatePathAccess(canonicalPath);
             
             // Assert
             if (shouldBeAllowed)
@@ -86,12 +86,12 @@ namespace IntegrationTests.FileSystem.Local
         public void PSIT004()
         {
             // Arrange
-            var pathSecurity = new PathSecurityService();
             var allowedPaths = new CanonicalPath[0];
+            var pathSecurity = new PathSecurityService(allowedPaths);
             var canonicalPath = CanonicalPath.Create("/any/path/file.txt").Value;
             
             // Act
-            var result = pathSecurity.ValidatePathAccess(canonicalPath, allowedPaths);
+            var result = pathSecurity.ValidatePathAccess(canonicalPath);
             
             // Assert
             result.IsSuccess.Should().BeTrue();
