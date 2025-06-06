@@ -108,7 +108,7 @@ namespace UnitTests.Extensions.FileSystem
             var result = await mockFileSystem.Object.GetFilesAsync(
                 "/test".ToCanonicalPath(), 
                 "*.txt", 
-                SearchOption.TopDirectoryOnly);
+                recursive: false);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -143,7 +143,7 @@ namespace UnitTests.Extensions.FileSystem
             await mockFileSystem.Object.GetFilesAsync(
                 "/test".ToCanonicalPath(), 
                 "*", 
-                SearchOption.AllDirectories);
+                recursive: true);
 
             // Assert
             mockFileSystem.Verify(fs => fs.TraverseAsync(
@@ -183,7 +183,7 @@ namespace UnitTests.Extensions.FileSystem
             var result = await mockFileSystem.Object.GetDirectoriesAsync(
                 "/test".ToCanonicalPath(), 
                 "*", 
-                SearchOption.TopDirectoryOnly);
+                recursive: false);
 
             // Assert
             result.IsSuccess.Should().BeTrue();

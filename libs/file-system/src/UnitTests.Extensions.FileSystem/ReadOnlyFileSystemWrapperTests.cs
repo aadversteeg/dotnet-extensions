@@ -109,7 +109,7 @@ namespace UnitTests.Extensions.FileSystem
             var wrapper = mockFileSystem.Object.AsReadOnly();
             
             // Act
-            var result = await wrapper.GetFilesAsync("/test".ToCanonicalPath(), "*.txt", SearchOption.TopDirectoryOnly);
+            var result = await wrapper.GetFilesAsync("/test".ToCanonicalPath(), "*.txt", recursive: false);
             
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -154,7 +154,7 @@ namespace UnitTests.Extensions.FileSystem
             var wrapper = mockFileSystem.Object.AsReadOnly();
             
             // Act
-            var result = await wrapper.GetDirectoriesAsync("/test".ToCanonicalPath(), "*", SearchOption.TopDirectoryOnly);
+            var result = await wrapper.GetDirectoriesAsync("/test".ToCanonicalPath(), "*", recursive: false);
             
             // Assert
             result.IsSuccess.Should().BeTrue();
