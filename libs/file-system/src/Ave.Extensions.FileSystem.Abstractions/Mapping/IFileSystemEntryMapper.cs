@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 
@@ -15,10 +16,12 @@ namespace Ave.Extensions.FileSystem.Mapping
         /// Maps a file entry to a custom type.
         /// </summary>
         /// <param name="entry">The file entry to map.</param>
+        /// <param name="fileReader">A file reader for accessing file content.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
         Task<Result<TEntry, FileSystemError>> MapFileAsync(
             IFileEntry entry,
+            IFileReader fileReader,
             CancellationToken cancellationToken = default);
 
         /// <summary>

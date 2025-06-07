@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 
@@ -19,6 +20,7 @@ namespace Ave.Extensions.FileSystem.Mapping
         /// <inheritdoc />
         public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
             IFileEntry entry,
+            IFileReader fileReader,
             CancellationToken cancellationToken = default)
         {
             // Convert from IFileEntry back to FileSystemEntry

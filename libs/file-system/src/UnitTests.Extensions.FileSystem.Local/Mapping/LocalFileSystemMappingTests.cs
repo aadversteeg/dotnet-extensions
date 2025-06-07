@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
 using Ave.Extensions.FileSystem.Mapping;
@@ -170,6 +171,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
         {
             public Task<Result<FileInfoDto, FileSystemError>> MapFileAsync(
                 IFileEntry entry,
+                IFileReader fileReader,
                 CancellationToken cancellationToken = default)
             {
                 var dto = new FileInfoDto
@@ -205,6 +207,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
         {
             public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
                 IFileEntry entry,
+                IFileReader fileReader,
                 CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("Mapper error");

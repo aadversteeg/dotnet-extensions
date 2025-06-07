@@ -7,6 +7,7 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
@@ -251,7 +252,10 @@ namespace Ave.Extensions.FileSystem.InMemory
                             System.IO.Path.GetExtension(path.GetName()));
                         
                         var fileEntry = new Models.FileEntry(path, fileInfoModel);
-                        return await mapper.MapFileAsync(fileEntry, cancellationToken);
+                        
+                        // Create file reader for this specific file
+                        var fileReader = new InMemoryFileReader(this, path);
+                        return await mapper.MapFileAsync(fileEntry, fileReader, cancellationToken);
                     }
                     
                     // Check if it's a directory
@@ -1031,6 +1035,51 @@ namespace Ave.Extensions.FileSystem.InMemory
                     _fileSystemEventsSubject.OnCompleted();
                     _fileSystemEventsSubject.Dispose();
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// File reader implementation for in-memory file system.
+    /// </summary>
+    internal sealed class InMemoryFileReader : IFileReader
+    {
+        private readonly InMemoryFileSystem _fileSystem;
+        private readonly CanonicalPath _filePath;
+
+        public InMemoryFileReader(InMemoryFileSystem fileSystem, CanonicalPath filePath)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _filePath = filePath;
+        }
+
+        public async Task<Result<byte[], FileSystemError>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var openResult = await _fileSystem.OpenReadAsync(_filePath, cancellationToken);
+                if (openResult.IsFailure)
+                    return Result<byte[], FileSystemError>.Failure(openResult.Error);
+
+                using var stream = openResult.Value;
+                var buffer = new byte[Math.Min(maxBytes, (int)stream.Length)];
+                var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                
+                if (bytesRead < buffer.Length)
+                {
+                    Array.Resize(ref buffer, bytesRead);
+                }
+                
+                return Result<byte[], FileSystemError>.Success(buffer);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<byte[], FileSystemError>.Failure(
+                    new FileSystemError($"Failed to read file: {ex.Message}", _filePath.Value, FileSystemErrorType.IOException));
             }
         }
     }

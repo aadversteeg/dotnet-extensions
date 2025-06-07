@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Storage.Files.Shares;
 using Azure.Storage.Files.Shares.Models;
+using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
@@ -210,7 +211,10 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     
                     // Create FileEntry
                     var fileEntry = new Models.FileEntry(path, fileInfo);
-                    return await mapper.MapFileAsync(fileEntry, cancellationToken);
+                    
+                    // Create file reader for this specific file
+                    var fileReader = new AzureFileReader(this, path);
+                    return await mapper.MapFileAsync(fileEntry, fileReader, cancellationToken);
                 }
                 catch (RequestFailedException ex) when (ex.Status == 404)
                 {
@@ -861,5 +865,50 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             return attributes;
         }
         
+    }
+
+    /// <summary>
+    /// File reader implementation for Azure file system.
+    /// </summary>
+    internal sealed class AzureFileReader : IFileReader
+    {
+        private readonly AzureFileSystem _fileSystem;
+        private readonly CanonicalPath _filePath;
+
+        public AzureFileReader(AzureFileSystem fileSystem, CanonicalPath filePath)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _filePath = filePath;
+        }
+
+        public async Task<Result<byte[], FileSystemError>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var openResult = await _fileSystem.OpenReadAsync(_filePath, cancellationToken);
+                if (openResult.IsFailure)
+                    return Result<byte[], FileSystemError>.Failure(openResult.Error);
+
+                using var stream = openResult.Value;
+                var buffer = new byte[Math.Min(maxBytes, (int)stream.Length)];
+                var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                
+                if (bytesRead < buffer.Length)
+                {
+                    Array.Resize(ref buffer, bytesRead);
+                }
+                
+                return Result<byte[], FileSystemError>.Success(buffer);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<byte[], FileSystemError>.Failure(
+                    new FileSystemError($"Failed to read file: {ex.Message}", _filePath.Value, FileSystemErrorType.IOException));
+            }
+        }
     }
 }
