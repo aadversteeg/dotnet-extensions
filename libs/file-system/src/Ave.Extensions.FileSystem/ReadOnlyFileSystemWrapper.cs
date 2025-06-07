@@ -69,13 +69,16 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
-        public Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+        public Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
             CanonicalPath path, 
-            ITraversalHandler handler, 
+            ITraversalHandler<TEntry> handler, 
+            IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions? options = null, 
             CancellationToken cancellationToken = default)
         {
-            return _fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+            // Create a wrapper mapper that provides the IFileReader for files
+            var wrapperMapper = new ReadOnlyMapperWrapper<TEntry>(mapper, this);
+            return _fileSystem.TraverseAsync(path, handler, wrapperMapper, options, cancellationToken);
         }
 
         

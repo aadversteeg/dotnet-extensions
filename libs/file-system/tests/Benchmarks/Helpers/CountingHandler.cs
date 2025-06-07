@@ -7,7 +7,7 @@ using Ave.Extensions.Functional;
 
 namespace Benchmarks.Helpers;
 
-public class CountingHandler : ITraversalHandler
+public class CountingHandler : ITraversalHandler<FileSystemEntry>
 {
     public int FileCount { get; private set; }
     public int DirectoryCount { get; private set; }
@@ -24,7 +24,7 @@ public class CountingHandler : ITraversalHandler
     }
 
     public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
-        IDirectoryEntry directory,
+        FileSystemEntry directory,
         TraversalContext context,
         CancellationToken cancellationToken = default)
     {
@@ -32,17 +32,17 @@ public class CountingHandler : ITraversalHandler
     }
 
     public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
-        IFileEntry file,
+        FileSystemEntry file,
         TraversalContext context,
         CancellationToken cancellationToken = default)
     {
         FileCount++;
-        TotalSize += file.Info.Size;
+        TotalSize += file.Size ?? 0;
         return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
     }
 
     public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
-        IDirectoryEntry directory,
+        FileSystemEntry directory,
         TraversalContext context,
         CancellationToken cancellationToken = default)
     {

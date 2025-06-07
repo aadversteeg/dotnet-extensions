@@ -9,11 +9,12 @@ using Ave.Extensions.Functional;
 namespace Ave.Extensions.FileSystem.Traversal.Handlers
 {
     /// <summary>
-    /// Handler that streams FileSystemEntry results for IAsyncEnumerable support.
+    /// Handler that streams mapped entries for IAsyncEnumerable support.
     /// </summary>
-    internal sealed class StreamingEntryHandler : ITraversalHandler
+    /// <typeparam name="TEntry">The type of entries this handler processes.</typeparam>
+    internal sealed class StreamingEntryHandler<TEntry> : ITraversalHandler<TEntry>
     {
-        private readonly ConcurrentQueue<FileSystemEntry> _queue;
+        private readonly ConcurrentQueue<TEntry> _queue;
         private readonly bool _includeFiles;
         private readonly bool _includeDirectories;
         private readonly PatternMatcher _matcher;
@@ -25,11 +26,11 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             _includeFiles = includeFiles;
             _includeDirectories = includeDirectories;
             _matcher = new PatternMatcher(searchPattern);
-            _queue = new ConcurrentQueue<FileSystemEntry>();
+            _queue = new ConcurrentQueue<TEntry>();
             _completionSource = new TaskCompletionSource<bool>();
         }
 
-        public async IAsyncEnumerable<FileSystemEntry> GetEntriesAsync(
+        public async IAsyncEnumerable<TEntry> GetEntriesAsync(
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             while (!_isCompleted || !_queue.IsEmpty)
@@ -53,7 +54,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         }
 
         public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
@@ -61,41 +62,48 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         }
 
         public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
-            IFileEntry file,
+            TEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeFiles && _matcher.IsMatch(file.Info.Info.Name))
+            // For generic entries, we need to check if they implement IFileSystemEntry for name matching
+            if (_includeFiles)
             {
-                _queue.Enqueue(new FileSystemEntry(
-                    file.Path,
-                    false, // isDirectory
-                    file.Info.Size,
-                    file.Info.Extension,
-                    file.Info.Info.CreatedUtc,
-                    file.Info.Info.ModifiedUtc,
-                    file.Info.Info.LastAccessUtc,
-                    file.Info.Info.Attributes));
+                if (file is IFileSystemEntry entryWithPath)
+                {
+                    if (_matcher.IsMatch(entryWithPath.Path.GetName()))
+                    {
+                        _queue.Enqueue(file);
+                    }
+                }
+                else
+                {
+                    // If the entry doesn't have path info, just include it
+                    _queue.Enqueue(file);
+                }
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }
 
         public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Info.Info.Name))
+            if (_includeDirectories && context.CurrentDepth > 0)
             {
-                _queue.Enqueue(new FileSystemEntry(
-                    directory.Path,
-                    true, // isDirectory
-                    null, // size
-                    null, // extension
-                    directory.Info.Info.CreatedUtc,
-                    directory.Info.Info.ModifiedUtc,
-                    directory.Info.Info.LastAccessUtc,
-                    directory.Info.Info.Attributes));
+                if (directory is IFileSystemEntry entryWithPath)
+                {
+                    if (_matcher.IsMatch(entryWithPath.Path.GetName()))
+                    {
+                        _queue.Enqueue(directory);
+                    }
+                }
+                else
+                {
+                    // If the entry doesn't have path info, just include it
+                    _queue.Enqueue(directory);
+                }
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }

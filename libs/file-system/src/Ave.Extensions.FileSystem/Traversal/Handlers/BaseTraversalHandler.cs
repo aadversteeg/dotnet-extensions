@@ -8,7 +8,8 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
     /// <summary>
     /// Base implementation of ITraversalHandler with virtual methods.
     /// </summary>
-    public abstract class BaseTraversalHandler : ITraversalHandler
+    /// <typeparam name="TEntry">The type of entries this handler processes.</typeparam>
+    public abstract class BaseTraversalHandler<TEntry> : ITraversalHandler<TEntry>
     {
         /// <summary>
         /// Called before traversal begins.
@@ -26,12 +27,12 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <summary>
         /// Called when entering a directory before processing its contents.
         /// </summary>
-        /// <param name="directory">The directory entry being entered.</param>
+        /// <param name="directory">The mapped directory entry being entered.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
         public virtual Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
@@ -41,24 +42,24 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <summary>
         /// Handles a file entry during traversal.
         /// </summary>
-        /// <param name="file">The file entry to handle.</param>
+        /// <param name="file">The mapped file entry to handle.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
         public abstract Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
-            IFileEntry file,
+            TEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Handles a directory entry during traversal.
         /// </summary>
-        /// <param name="directory">The directory entry to handle.</param>
+        /// <param name="directory">The mapped directory entry to handle.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
         public abstract Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default);
 

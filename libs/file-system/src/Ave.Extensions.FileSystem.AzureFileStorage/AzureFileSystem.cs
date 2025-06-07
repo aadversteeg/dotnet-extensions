@@ -14,6 +14,7 @@ using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Security;
 using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.FileSystem.Traversal.Strategies;
 using Ave.Extensions.Functional;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -260,9 +261,10 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
             CanonicalPath path,
-            ITraversalHandler handler,
+            ITraversalHandler<TEntry> handler,
+            IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -274,34 +276,46 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
 
                 options ??= new TraversalOptions();
                 
+                // Notify handler of traversal start
                 var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
-                if (startResult.IsFailure) 
+                if (startResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(startResult.Error);
 
-                var startTime = DateTime.UtcNow;
-                long filesProcessed = 0;
-                long directoriesProcessed = 0;
-                long totalBytesProcessed = 0;
+                var context = TraversalContext.CreateInitial(path);
+                var stats = new TraversalStats();
+                
+                // Get the starting entry as IFileSystemEntry
+                var entryResult = await GetStartingEntryAsync(path, cancellationToken);
+                if (entryResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
 
-                var traversalResult = await TraverseDirectoryRecursiveAsync(
-                    path, 
-                    handler, 
+                // Select strategy based on hint
+                var strategy = CreateAzureStrategy(options.StrategyHint);
+                
+                // Perform traversal
+                var traversalResult = await strategy.TraverseAsync(
+                    entryResult.Value, 
+                    handler,
+                    mapper,
                     options, 
-                    TraversalContext.CreateInitial(path),
+                    context, 
+                    stats,
+                    GetChildrenAsync,
                     cancellationToken);
 
                 if (traversalResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(traversalResult.Error);
 
-                filesProcessed = traversalResult.Value.FilesProcessed;
-                directoriesProcessed = traversalResult.Value.DirectoriesProcessed;
-                totalBytesProcessed = traversalResult.Value.TotalBytesProcessed;
+                var summary = new TraversalSummary(
+                    stats.FilesProcessed,
+                    stats.DirectoriesProcessed,
+                    stats.TotalBytesProcessed,
+                    DateTime.UtcNow - context.StartTimeUtc,
+                    cancellationToken.IsCancellationRequested);
 
-                var duration = DateTime.UtcNow - startTime;
-                var summary = new TraversalSummary(filesProcessed, directoriesProcessed, totalBytesProcessed, duration, false);
-
+                // Notify handler of completion
                 var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
-                if (completeResult.IsFailure) 
+                if (completeResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(completeResult.Error);
 
                 return Result<TraversalSummary, FileSystemError>.Success(summary);
@@ -311,158 +325,166 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 return Result<TraversalSummary, FileSystemError>.Failure(
                     new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound));
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to traverse Azure directory: {Path}", path.Value);
                 return Result<TraversalSummary, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to traverse directory: {ex.Message}", path.Value));
+                    FileSystemError.FromException(ex, path.Value));
             }
         }
 
-        private async Task<Result<TraversalSummary, FileSystemError>> TraverseDirectoryRecursiveAsync(
-            CanonicalPath directoryPath,
-            ITraversalHandler handler,
-            TraversalOptions options,
-            TraversalContext context,
+        /// <summary>
+        /// Creates a traversal strategy based on the provided hint.
+        /// </summary>
+        /// <param name="hint">The strategy hint.</param>
+        /// <returns>An appropriate traversal strategy.</returns>
+        private ITraversalStrategy CreateAzureStrategy(TraversalStrategyHint hint)
+        {
+            return hint switch
+            {
+                TraversalStrategyHint.Parallel => new AzureParallelTraversalStrategy(this),
+                TraversalStrategyHint.MemoryEfficient => new AzureSequentialTraversalStrategy(this),
+                TraversalStrategyHint.Search => new AzureSequentialTraversalStrategy(this),
+                _ => new AzureSequentialTraversalStrategy(this)
+            };
+        }
+
+        /// <summary>
+        /// Gets a single entry as IFileSystemEntry for traversal starting point.
+        /// </summary>
+        /// <param name="path">The path to get the entry for.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the entry or an error.</returns>
+        private async Task<Result<IFileSystemEntry, FileSystemError>> GetStartingEntryAsync(
+            CanonicalPath path, 
             CancellationToken cancellationToken)
         {
-            long filesProcessed = 0;
-            long directoriesProcessed = 0;
-            long totalBytesProcessed = 0;
-
             try
             {
-                var azurePath = GetAzurePath(directoryPath.Value);
-                var directoryClient = GetDirectoryClient(azurePath);
-
-                // Process current directory - notify enter
-                if (context.CurrentDepth > 0 || directoryPath.Value != context.RootPath.Value)
+                var azurePath = GetAzurePath(path.Value);
+                
+                // Try as file first
+                try
                 {
-                    var directoryEntry = await CreateDirectoryEntryInternalAsync(directoryPath, directoryClient, cancellationToken);
-                    if (directoryEntry.IsSuccess)
+                    var fileClient = GetFileClient(azurePath);
+                    var fileResponse = await fileClient.GetPropertiesAsync(cancellationToken);
+                    var fileProperties = fileResponse.Value;
+                    
+                    // Create EntryInfo
+                    var entryInfo = new EntryInfo(
+                        Path.GetFileName(path.Value),
+                        fileProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                        fileProperties.LastModified.DateTime,
+                        fileProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? fileProperties.LastModified.DateTime,
+                        ConvertSmbAttributes(fileProperties.SmbProperties.FileAttributes));
+                    
+                    // Create FileInfo
+                    var fileInfo = new Models.FileInfo(entryInfo, fileProperties.ContentLength, Path.GetExtension(path.Value));
+                    
+                    // Create FileEntry
+                    IFileSystemEntry entry = new Models.FileEntry(path, fileInfo);
+                    return Result<IFileSystemEntry, FileSystemError>.Success(entry);
+                }
+                catch (RequestFailedException ex) when (ex.Status == 404)
+                {
+                    // Not a file, try as directory
+                    try
                     {
-                        var enterResult = await handler.OnDirectoryEnterAsync(directoryEntry.Value, context, cancellationToken);
-                        if (enterResult.IsFailure)
-                            return Result<TraversalSummary, FileSystemError>.Failure(enterResult.Error);
-
-                        if (enterResult.Value.Action == TraversalAction.Stop)
-                            return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(0, 1, 0, TimeSpan.Zero, true));
-
-                        if (enterResult.Value.Action == TraversalAction.Skip)
-                            return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(0, 1, 0, TimeSpan.Zero, false));
-
-                        // Also process the directory itself
-                        var dirResult = await handler.OnDirectoryAsync(directoryEntry.Value, context, cancellationToken);
-                        if (dirResult.IsFailure)
-                            return Result<TraversalSummary, FileSystemError>.Failure(dirResult.Error);
-
-                        if (dirResult.Value.Action == TraversalAction.Stop)
-                            return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(0, 1, 0, TimeSpan.Zero, true));
-
-                        directoriesProcessed++;
+                        var directoryClient = GetDirectoryClient(azurePath);
+                        var dirResponse = await directoryClient.GetPropertiesAsync(cancellationToken);
+                        var dirProperties = dirResponse.Value;
+                        
+                        // Create EntryInfo
+                        var entryInfo = new EntryInfo(
+                            Path.GetFileName(path.Value.TrimEnd('/')) ?? string.Empty,
+                            dirProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                            dirProperties.LastModified.DateTime,
+                            dirProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? dirProperties.LastModified.DateTime,
+                            ConvertSmbAttributes(dirProperties.SmbProperties.FileAttributes) | FileAttributes.Directory);
+                        
+                        // Create DirectoryInfo
+                        var directoryInfo = new Models.DirectoryInfo(entryInfo);
+                        
+                        // Create DirectoryEntry
+                        IFileSystemEntry entry = new Models.DirectoryEntry(path, directoryInfo);
+                        return Result<IFileSystemEntry, FileSystemError>.Success(entry);
+                    }
+                    catch (RequestFailedException dirEx) when (dirEx.Status == 404)
+                    {
+                        return Result<IFileSystemEntry, FileSystemError>.Failure(
+                            new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<IFileSystemEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value, FileSystemErrorType.Unknown));
+            }
+        }
 
-                // Process files and subdirectories
+        /// <summary>
+        /// Gets the children of a directory for traversal.
+        /// </summary>
+        /// <param name="path">The directory path.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the children or an error.</returns>
+        private async Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildrenAsync(
+            CanonicalPath path, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var azurePath = GetAzurePath(path.Value);
+                var directoryClient = GetDirectoryClient(azurePath);
+
+                var entries = new List<IFileSystemEntry>();
+
                 await foreach (var item in directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var itemPath = CombinePath(directoryPath.Value, item.Name);
+                    var itemPath = CombinePath(path.Value, item.Name);
 
                     if (!item.IsDirectory)
                     {
-                        // Handle file
-                        var fileEntry = await CreateFileEntryInternalAsync(itemPath, item, cancellationToken);
-                        if (fileEntry.IsSuccess)
+                        // Create file entry
+                        var fileResult = await CreateFileEntryInternalAsync(itemPath, item, cancellationToken);
+                        if (fileResult.IsSuccess)
                         {
-                            var fileResult = await handler.OnFileAsync(fileEntry.Value, context, cancellationToken);
-                            if (fileResult.IsFailure)
-                                return Result<TraversalSummary, FileSystemError>.Failure(fileResult.Error);
-
-                            if (fileResult.Value.Action == TraversalAction.Stop)
-                            {
-                                var stoppedSummary = new TraversalSummary(filesProcessed + 1, directoriesProcessed, totalBytesProcessed, TimeSpan.Zero, true);
-                                return Result<TraversalSummary, FileSystemError>.Success(stoppedSummary);
-                            }
-
-                            filesProcessed++;
-                            totalBytesProcessed += fileEntry.Value.Info.Size;
+                            entries.Add(fileResult.Value);
                         }
                     }
                     else
                     {
-                        // Handle subdirectory
-                        var directoryEntry = await CreateDirectoryEntryInternalAsync(itemPath, GetDirectoryClient(GetAzurePath(itemPath.Value)), cancellationToken);
-                        if (directoryEntry.IsSuccess)
+                        // Create directory entry
+                        var dirClient = GetDirectoryClient(GetAzurePath(itemPath.Value));
+                        var directoryResult = await CreateDirectoryEntryInternalAsync(itemPath, dirClient, cancellationToken);
+                        if (directoryResult.IsSuccess)
                         {
-                            var nextContext = context.NextLevel(itemPath);
-                            
-                            // Notify enter
-                            var enterResult = await handler.OnDirectoryEnterAsync(directoryEntry.Value, nextContext, cancellationToken);
-                            if (enterResult.IsFailure)
-                                return Result<TraversalSummary, FileSystemError>.Failure(enterResult.Error);
-
-                            if (enterResult.Value.Action == TraversalAction.Stop)
-                            {
-                                var stoppedSummary = new TraversalSummary(filesProcessed, directoriesProcessed + 1, totalBytesProcessed, TimeSpan.Zero, true);
-                                return Result<TraversalSummary, FileSystemError>.Success(stoppedSummary);
-                            }
-
-                            if (enterResult.Value.Action == TraversalAction.Skip)
-                            {
-                                directoriesProcessed++;
-                                continue;
-                            }
-                            
-                            // Process directory
-                            var dirResult = await handler.OnDirectoryAsync(directoryEntry.Value, nextContext, cancellationToken);
-                            if (dirResult.IsFailure)
-                                return Result<TraversalSummary, FileSystemError>.Failure(dirResult.Error);
-
-                            if (dirResult.Value.Action == TraversalAction.Stop)
-                            {
-                                var stoppedSummary = new TraversalSummary(filesProcessed, directoriesProcessed + 1, totalBytesProcessed, TimeSpan.Zero, true);
-                                return Result<TraversalSummary, FileSystemError>.Success(stoppedSummary);
-                            }
-
-                            if (dirResult.Value.Action == TraversalAction.Skip)
-                            {
-                                directoriesProcessed++;
-                                continue;
-                            }
-                        }
-                        directoriesProcessed++;
-
-                        // Handle subdirectory recursively if requested
-                        if (options.Recursive && (options.MaxDepth == null || context.CurrentDepth < options.MaxDepth))
-                        {
-                            var nextContext = context.NextLevel(itemPath);
-                            var subResult = await TraverseDirectoryRecursiveAsync(itemPath, handler, options, nextContext, cancellationToken);
-                            
-                            if (subResult.IsFailure)
-                                return subResult;
-
-                            filesProcessed += subResult.Value.FilesProcessed;
-                            directoriesProcessed += subResult.Value.DirectoriesProcessed;
-                            totalBytesProcessed += subResult.Value.TotalBytesProcessed;
-
-                            if (subResult.Value.WasCancelled)
-                            {
-                                var cancelledSummary = new TraversalSummary(filesProcessed, directoriesProcessed, totalBytesProcessed, TimeSpan.Zero, true);
-                                return Result<TraversalSummary, FileSystemError>.Success(cancelledSummary);
-                            }
+                            entries.Add(directoryResult.Value);
                         }
                     }
                 }
 
-                return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(filesProcessed, directoriesProcessed, totalBytesProcessed, TimeSpan.Zero, false));
+                return Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(entries);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to traverse directory: {Path}", directoryPath.Value);
-                return Result<TraversalSummary, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to traverse directory: {ex.Message}", directoryPath.Value));
+                return Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, path.Value));
             }
         }
 
@@ -473,20 +495,22 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                var azurePath = GetAzurePath(filePath.Value);
-                var fileClient = GetFileClient(azurePath);
-                var properties = await fileClient.GetPropertiesAsync(cancellationToken);
-
                 var extension = Path.GetExtension(fileItem.Name);
                 if (string.IsNullOrEmpty(extension))
                     extension = null;
 
+                // For basic directory listing, we need to get the file properties
+                // This is required for the Azure SDK to work correctly
+                var azurePath = GetAzurePath(filePath.Value);
+                var fileClient = GetFileClient(azurePath);
+                var properties = await fileClient.GetPropertiesAsync(cancellationToken);
+
                 // Create EntryInfo
                 var entryInfo = new EntryInfo(
                     fileItem.Name,
-                    properties.Value.SmbProperties?.FileCreatedOn?.UtcDateTime ?? DateTime.MinValue,
+                    properties.Value.SmbProperties?.FileCreatedOn?.UtcDateTime ?? DateTime.UtcNow,
                     properties.Value.LastModified.UtcDateTime,
-                    properties.Value.SmbProperties?.FileLastWrittenOn?.UtcDateTime ?? DateTime.MinValue,
+                    properties.Value.SmbProperties?.FileLastWrittenOn?.UtcDateTime ?? properties.Value.LastModified.UtcDateTime,
                     ConvertSmbAttributes(properties.Value.SmbProperties?.FileAttributes));
                 
                 // Create FileInfo
@@ -560,6 +584,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
                 var azurePath = GetAzurePath(path.Value);
+                _logger.LogDebug("CreateDirectoryAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
                 
                 var result = await CreateDirectoryRecursiveAsync(azurePath, cancellationToken);
                 return result;
@@ -582,6 +607,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
                 var azurePath = GetAzurePath(path.Value);
+                _logger.LogDebug("WriteAllTextAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
                 var fileClient = GetFileClient(azurePath);
                 
                 // Ensure parent directory exists
@@ -865,6 +891,43 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             return attributes;
         }
         
+    }
+
+    /// <summary>
+    /// Sequential traversal strategy for Azure file system that can create AzureFileReader instances.
+    /// </summary>
+    internal sealed class AzureSequentialTraversalStrategy : SequentialTraversalStrategy
+    {
+        private readonly AzureFileSystem _fileSystem;
+
+        public AzureSequentialTraversalStrategy(AzureFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new AzureFileReader(_fileSystem, fileEntry.Path);
+        }
+    }
+
+    /// <summary>
+    /// Parallel traversal strategy for Azure file system that can create AzureFileReader instances.
+    /// </summary>
+    internal sealed class AzureParallelTraversalStrategy : ParallelTraversalStrategy
+    {
+        private readonly AzureFileSystem _fileSystem;
+
+        public AzureParallelTraversalStrategy(AzureFileSystem fileSystem, int? maxConcurrency = null) 
+            : base(maxConcurrency)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new AzureFileReader(_fileSystem, fileEntry.Path);
+        }
     }
 
     /// <summary>

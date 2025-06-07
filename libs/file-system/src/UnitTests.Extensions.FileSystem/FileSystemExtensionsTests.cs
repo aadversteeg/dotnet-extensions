@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.Traversal.Handlers;
@@ -85,16 +86,17 @@ namespace UnitTests.Extensions.FileSystem
             
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     It.IsAny<CanonicalPath>(),
-                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                    It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
-                .Returns((CanonicalPath path, ITraversalHandler handler, TraversalOptions options, CancellationToken token) =>
+                .Returns((CanonicalPath path, ITraversalHandler<FileSystemEntry> handler, IFileSystemEntryMapper<FileSystemEntry> mapper, TraversalOptions options, CancellationToken token) =>
                 {
                     // Simulate collecting files by accessing the handler's paths
-                    if (handler is PathCollectorHandler collector)
+                    if (handler is PathCollectorHandler<FileSystemEntry> collector)
                     {
                         // Use reflection to simulate files being collected
-                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
+                        var pathsField = typeof(PathCollectorHandler<FileSystemEntry>).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/file1.txt".ToCanonicalPath());
@@ -117,7 +119,8 @@ namespace UnitTests.Extensions.FileSystem
             
             mockFileSystem.Verify(fs => fs.TraverseAsync(
                 "/test".ToCanonicalPath(),
-                It.Is<ITraversalHandler>(h => h is PathCollectorHandler),
+                It.Is<ITraversalHandler<FileSystemEntry>>(h => h is PathCollectorHandler<FileSystemEntry>),
+                It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                 It.Is<TraversalOptions>(o => 
                     o.Recursive == false &&
                     o.StrategyHint == TraversalStrategyHint.Search),
@@ -133,7 +136,8 @@ namespace UnitTests.Extensions.FileSystem
             
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     It.IsAny<CanonicalPath>(),
-                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                    It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<TraversalSummary, FileSystemError>.Success(expectedSummary));
@@ -147,7 +151,8 @@ namespace UnitTests.Extensions.FileSystem
             // Assert
             mockFileSystem.Verify(fs => fs.TraverseAsync(
                 "/test".ToCanonicalPath(),
-                It.IsAny<ITraversalHandler>(),
+                It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                 It.Is<TraversalOptions>(o => o.Recursive == true),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -161,15 +166,16 @@ namespace UnitTests.Extensions.FileSystem
             
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     It.IsAny<CanonicalPath>(),
-                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                    It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
-                .Returns((CanonicalPath path, ITraversalHandler handler, TraversalOptions options, CancellationToken token) =>
+                .Returns((CanonicalPath path, ITraversalHandler<FileSystemEntry> handler, IFileSystemEntryMapper<FileSystemEntry> mapper, TraversalOptions options, CancellationToken token) =>
                 {
                     // Simulate collecting directories
-                    if (handler is PathCollectorHandler collector)
+                    if (handler is PathCollectorHandler<FileSystemEntry> collector)
                     {
-                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
+                        var pathsField = typeof(PathCollectorHandler<FileSystemEntry>).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/dir1".ToCanonicalPath());
@@ -192,7 +198,8 @@ namespace UnitTests.Extensions.FileSystem
             
             mockFileSystem.Verify(fs => fs.TraverseAsync(
                 "/test".ToCanonicalPath(),
-                It.Is<ITraversalHandler>(h => h is PathCollectorHandler),
+                It.Is<ITraversalHandler<FileSystemEntry>>(h => h is PathCollectorHandler<FileSystemEntry>),
+                It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                 It.Is<TraversalOptions>(o => 
                     o.Recursive == false &&
                     o.StrategyHint == TraversalStrategyHint.Search),
@@ -208,7 +215,8 @@ namespace UnitTests.Extensions.FileSystem
             
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     It.IsAny<CanonicalPath>(),
-                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                    It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<TraversalSummary, FileSystemError>.Failure(expectedError));
@@ -230,7 +238,8 @@ namespace UnitTests.Extensions.FileSystem
             
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     It.IsAny<CanonicalPath>(),
-                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                    It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<TraversalSummary, FileSystemError>.Failure(expectedError));

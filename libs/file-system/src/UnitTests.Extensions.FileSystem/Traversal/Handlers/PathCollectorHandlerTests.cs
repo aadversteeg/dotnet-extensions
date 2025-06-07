@@ -19,7 +19,7 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public void PCH001()
         {
             // Arrange & Act
-            var handler = new PathCollectorHandler("*.txt", includeFiles: true, includeDirectories: false);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*.txt", includeFiles: true, includeDirectories: false);
 
             // Assert
             handler.Should().NotBeNull();
@@ -31,7 +31,7 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH002()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: true);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
             var rootPath = "/test".ToCanonicalPath();
 
             // Act
@@ -46,13 +46,16 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH003()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*.txt", includeFiles: true, includeDirectories: false);
-            var fileEntry = new FileEntry(
+            var handler = new PathCollectorHandler<FileSystemEntry>("*.txt", includeFiles: true, includeDirectories: false);
+            var fileEntry = new FileSystemEntry(
                 path: "/test/file.txt".ToCanonicalPath(),
-                info: new Ave.Extensions.FileSystem.Models.FileInfo(
-                    new EntryInfo("file.txt", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal),
-                    1024,
-                    ".txt"));
+                isDirectory: false,
+                size: 1024,
+                extension: ".txt",
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Normal);
             var context = TraversalContext.CreateInitial("/test".ToCanonicalPath());
 
             // Act
@@ -68,13 +71,16 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH004()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*.txt", includeFiles: true, includeDirectories: false);
-            var fileEntry = new FileEntry(
+            var handler = new PathCollectorHandler<FileSystemEntry>("*.txt", includeFiles: true, includeDirectories: false);
+            var fileEntry = new FileSystemEntry(
                 path: "/test/file.doc".ToCanonicalPath(),
-                info: new Ave.Extensions.FileSystem.Models.FileInfo(
-                    new EntryInfo("file.doc", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal),
-                    1024,
-                    ".doc"));
+                isDirectory: false,
+                size: 1024,
+                extension: ".doc",
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Normal);
             var context = TraversalContext.CreateInitial("/test".ToCanonicalPath());
 
             // Act
@@ -90,13 +96,16 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH005()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*.txt", includeFiles: false, includeDirectories: true);
-            var fileEntry = new FileEntry(
+            var handler = new PathCollectorHandler<FileSystemEntry>("*.txt", includeFiles: false, includeDirectories: true);
+            var fileEntry = new FileSystemEntry(
                 path: "/test/file.txt".ToCanonicalPath(),
-                info: new Ave.Extensions.FileSystem.Models.FileInfo(
-                    new EntryInfo("file.txt", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal),
-                    1024,
-                    ".txt"));
+                isDirectory: false,
+                size: 1024,
+                extension: ".txt",
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Normal);
             var context = TraversalContext.CreateInitial("/test".ToCanonicalPath());
 
             // Act
@@ -112,11 +121,16 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH006()
         {
             // Arrange
-            var handler = new PathCollectorHandler("test*", includeFiles: false, includeDirectories: true);
-            var directoryEntry = new DirectoryEntry(
+            var handler = new PathCollectorHandler<FileSystemEntry>("test*", includeFiles: false, includeDirectories: true);
+            var directoryEntry = new FileSystemEntry(
                 path: "/root/testdir".ToCanonicalPath(),
-                info: new Ave.Extensions.FileSystem.Models.DirectoryInfo(
-                    new EntryInfo("testdir", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Directory)));
+                isDirectory: true,
+                size: null,
+                extension: null,
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Directory);
             var context = TraversalContext.CreateInitial("/root".ToCanonicalPath()).NextLevel("/root/testdir".ToCanonicalPath()); // Depth > 0 to include directory
 
             // Act
@@ -132,11 +146,16 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH007()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: false, includeDirectories: true);
-            var directoryEntry = new DirectoryEntry(
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: false, includeDirectories: true);
+            var directoryEntry = new FileSystemEntry(
                 path: "/root".ToCanonicalPath(),
-                info: new Ave.Extensions.FileSystem.Models.DirectoryInfo(
-                    new EntryInfo("root", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Directory)));
+                isDirectory: true,
+                size: null,
+                extension: null,
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Directory);
             var context = TraversalContext.CreateInitial("/root".ToCanonicalPath()); // Depth 0 = root directory
 
             // Act
@@ -152,11 +171,16 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH008()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: false);
-            var directoryEntry = new DirectoryEntry(
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: false);
+            var directoryEntry = new FileSystemEntry(
                 path: "/root/subdir".ToCanonicalPath(),
-                info: new Ave.Extensions.FileSystem.Models.DirectoryInfo(
-                    new EntryInfo("subdir", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Directory)));
+                isDirectory: true,
+                size: null,
+                extension: null,
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Directory);
             var context = TraversalContext.CreateInitial("/root".ToCanonicalPath()).NextLevel("/root/subdir".ToCanonicalPath());
 
             // Act
@@ -172,7 +196,7 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH009()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: true);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
             var summary = new TraversalSummary(10, 5, 0, TimeSpan.FromSeconds(1), false);
 
             // Act
@@ -187,7 +211,7 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public void PCH010()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: true);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
 
             // Act
             var collectedPaths = handler.CollectedPaths;
@@ -204,12 +228,12 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
         public async Task PCH011()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: false);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: false);
             var entries = new[]
             {
-                new FileEntry("/test/file1.txt".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.FileInfo(new EntryInfo("file1.txt", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal), 100, ".txt")),
-                new FileEntry("/test/file2.doc".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.FileInfo(new EntryInfo("file2.doc", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal), 200, ".doc")),
-                new FileEntry("/test/readme".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.FileInfo(new EntryInfo("readme", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal), 50, null))
+                new FileSystemEntry("/test/file1.txt".ToCanonicalPath(), false, 100, ".txt", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal),
+                new FileSystemEntry("/test/file2.doc".ToCanonicalPath(), false, 200, ".doc", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal),
+                new FileSystemEntry("/test/readme".ToCanonicalPath(), false, 50, null, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal)
             };
             var context = TraversalContext.CreateInitial("/test".ToCanonicalPath());
 

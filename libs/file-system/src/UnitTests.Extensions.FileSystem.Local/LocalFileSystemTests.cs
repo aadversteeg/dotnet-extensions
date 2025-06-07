@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Traversal;
 using FluentAssertions;
 using Moq;
@@ -51,12 +52,13 @@ namespace UnitTests.Extensions.FileSystem.Local
             // Arrange
             var mockPathMapper = new Mock<IPathMapper>();
             var fileSystem = new Ave.Extensions.FileSystem.Local.LocalFileSystem(mockPathMapper.Object);
-            var mockHandler = new Mock<ITraversalHandler>();
+            var mockHandler = new Mock<ITraversalHandler<FileSystemEntry>>();
 
             // Act & Assert - null handler should be handled by implementation
-            var result = await fileSystem.TraverseAsync(
+            var result = await fileSystem.TraverseAsync<FileSystemEntry>(
                 "/nonexistent".ToCanonicalPath(),
                 mockHandler.Object,
+                IdentityMapper.Instance,
                 null);
 
             // The result should indicate directory not found or similar error since /nonexistent won't exist
@@ -73,12 +75,13 @@ namespace UnitTests.Extensions.FileSystem.Local
                 .Returns((CanonicalPath path) => Ave.Extensions.Functional.Result<string, Error>.Success(path.Value));
 
             var fileSystem = new Ave.Extensions.FileSystem.Local.LocalFileSystem(mockPathMapper.Object);
-            var mockHandler = new Mock<ITraversalHandler>();
+            var mockHandler = new Mock<ITraversalHandler<FileSystemEntry>>();
 
             // Act - passing null options should use defaults
-            var result = await fileSystem.TraverseAsync(
+            var result = await fileSystem.TraverseAsync<FileSystemEntry>(
                 "/nonexistent".ToCanonicalPath(),
                 mockHandler.Object,
+                IdentityMapper.Instance,
                 null); // null options
 
             // Assert - should handle null options gracefully (error will be due to path not existing)

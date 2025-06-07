@@ -11,7 +11,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
     /// <summary>
     /// Handler that streams results through a queue for IAsyncEnumerable support.
     /// </summary>
-    internal sealed class StreamingHandler : ITraversalHandler
+    /// <typeparam name="TEntry">The type of entries that must implement IFileSystemEntry.</typeparam>
+    internal sealed class StreamingHandler<TEntry> : ITraversalHandler<TEntry>
+        where TEntry : IFileSystemEntry
     {
         private readonly ConcurrentQueue<CanonicalPath> _queue;
         private readonly bool _includeFiles;
@@ -56,7 +58,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         }
 
         public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
@@ -64,11 +66,11 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         }
 
         public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
-            IFileEntry file,
+            TEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeFiles && _matcher.IsMatch(file.Info.Info.Name))
+            if (_includeFiles && _matcher.IsMatch(file.Path.GetName()))
             {
                 _queue.Enqueue(file.Path);
             }
@@ -76,11 +78,11 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         }
 
         public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Info.Info.Name))
+            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Path.GetName()))
             {
                 _queue.Enqueue(directory.Path);
             }

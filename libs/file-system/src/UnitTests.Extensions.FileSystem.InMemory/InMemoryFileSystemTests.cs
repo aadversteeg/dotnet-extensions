@@ -421,11 +421,11 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         public async Task IMFS035()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: true);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
             var options = new TraversalOptions();
 
             // Act
-            var result = await _fileSystem.TraverseAsync("/".ToCanonicalPath(), handler, options);
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), handler, IdentityMapper.Instance, options);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -442,11 +442,11 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             await _fileSystem.WriteAllTextAsync("/subdir/file2.txt".ToCanonicalPath(), "content2");
             await _fileSystem.CreateDirectoryAsync("/emptydir".ToCanonicalPath());
 
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: true);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
             var options = new TraversalOptions(recursive: true);
 
             // Act
-            var result = await _fileSystem.TraverseAsync("/".ToCanonicalPath(), handler, options);
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), handler, IdentityMapper.Instance, options);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -466,12 +466,12 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             await _fileSystem.WriteAllTextAsync("/file1.txt".ToCanonicalPath(), "content1");
             await _fileSystem.CreateDirectoryAsync("/testdir".ToCanonicalPath());
 
-            var fileOnlyHandler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: false);
-            var dirOnlyHandler = new PathCollectorHandler("*", includeFiles: false, includeDirectories: true);
+            var fileOnlyHandler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: false);
+            var dirOnlyHandler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: false, includeDirectories: true);
 
             // Act
-            var fileResult = await _fileSystem.TraverseAsync("/".ToCanonicalPath(), fileOnlyHandler, new TraversalOptions());
-            var dirResult = await _fileSystem.TraverseAsync("/".ToCanonicalPath(), dirOnlyHandler, new TraversalOptions());
+            var fileResult = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), fileOnlyHandler, IdentityMapper.Instance, new TraversalOptions());
+            var dirResult = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), dirOnlyHandler, IdentityMapper.Instance, new TraversalOptions());
 
             // Assert
             fileResult.IsSuccess.Should().BeTrue();
@@ -491,10 +491,10 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             await _fileSystem.WriteAllTextAsync("/file2.doc".ToCanonicalPath(), "content2");
             await _fileSystem.WriteAllTextAsync("/readme".ToCanonicalPath(), "content3");
 
-            var handler = new PathCollectorHandler("*.txt", includeFiles: true, includeDirectories: false);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*.txt", includeFiles: true, includeDirectories: false);
 
             // Act
-            var result = await _fileSystem.TraverseAsync("/".ToCanonicalPath(), handler, new TraversalOptions());
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), handler, IdentityMapper.Instance, new TraversalOptions());
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -507,10 +507,10 @@ namespace UnitTests.Extensions.FileSystem.InMemory
         public async Task IMFS039()
         {
             // Arrange
-            var handler = new PathCollectorHandler("*", includeFiles: true, includeDirectories: true);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
 
             // Act
-            var result = await _fileSystem.TraverseAsync("/nonexistent".ToCanonicalPath(), handler, new TraversalOptions());
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/nonexistent".ToCanonicalPath(), handler, IdentityMapper.Instance, new TraversalOptions());
 
             // Assert
             result.IsFailure.Should().BeTrue();

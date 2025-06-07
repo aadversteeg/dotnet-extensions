@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Traversal;
 using Benchmarks.Config;
 using Benchmarks.Helpers;
@@ -32,7 +33,7 @@ public class TraversalStrategyBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(recursive: true, strategyHint: TraversalStrategyHint.Auto);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
     }
@@ -43,7 +44,7 @@ public class TraversalStrategyBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(recursive: true, strategyHint: TraversalStrategyHint.Search);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
     }
@@ -54,7 +55,7 @@ public class TraversalStrategyBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(recursive: true, strategyHint: TraversalStrategyHint.FullScan);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
     }
@@ -65,7 +66,7 @@ public class TraversalStrategyBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(recursive: true, strategyHint: TraversalStrategyHint.MemoryEfficient);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
     }
@@ -76,7 +77,7 @@ public class TraversalStrategyBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(recursive: true, strategyHint: TraversalStrategyHint.Parallel);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
     }
@@ -87,7 +88,7 @@ public class TraversalStrategyBenchmarks
         var handler = new CountingHandler();
         var options = TraversalOptions.TopLevelOnly;
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
     }
@@ -98,7 +99,7 @@ public class TraversalStrategyBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(maxDepth: 2, recursive: true, strategyHint: TraversalStrategyHint.Auto);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
     }

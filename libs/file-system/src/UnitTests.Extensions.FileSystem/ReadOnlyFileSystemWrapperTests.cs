@@ -89,16 +89,17 @@ namespace UnitTests.Extensions.FileSystem
             var summary = new TraversalSummary(2, 0, 0, TimeSpan.Zero, false);
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     "/test".ToCanonicalPath(),
-                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                    It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
-                .Returns((CanonicalPath path, ITraversalHandler handler, TraversalOptions options, CancellationToken token) =>
+                .Returns((CanonicalPath path, ITraversalHandler<FileSystemEntry> handler, IFileSystemEntryMapper<FileSystemEntry> mapper, TraversalOptions options, CancellationToken token) =>
                 {
                     // Simulate the PathCollectorHandler collecting files
-                    if (handler is PathCollectorHandler collector)
+                    if (handler is PathCollectorHandler<FileSystemEntry> collector)
                     {
                         // Use reflection to add items to the internal list since we can't access it directly
-                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
+                        var pathsField = typeof(PathCollectorHandler<FileSystemEntry>).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/file1.txt".ToCanonicalPath());
@@ -119,7 +120,8 @@ namespace UnitTests.Extensions.FileSystem
             result.Value.Should().Contain("/test/file2.txt".ToCanonicalPath());
             mockFileSystem.Verify(fs => fs.TraverseAsync(
                 "/test".ToCanonicalPath(),
-                It.IsAny<ITraversalHandler>(),
+                It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                 It.IsAny<TraversalOptions>(),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -134,16 +136,17 @@ namespace UnitTests.Extensions.FileSystem
             var summary = new TraversalSummary(0, 2, 0, TimeSpan.Zero, false);
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     "/test".ToCanonicalPath(),
-                    It.IsAny<ITraversalHandler>(),
+                    It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                    It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
-                .Returns((CanonicalPath path, ITraversalHandler handler, TraversalOptions options, CancellationToken token) =>
+                .Returns((CanonicalPath path, ITraversalHandler<FileSystemEntry> handler, IFileSystemEntryMapper<FileSystemEntry> mapper, TraversalOptions options, CancellationToken token) =>
                 {
                     // Simulate the PathCollectorHandler collecting directories
-                    if (handler is PathCollectorHandler collector)
+                    if (handler is PathCollectorHandler<FileSystemEntry> collector)
                     {
                         // Use reflection to add items to the internal list since we can't access it directly
-                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
+                        var pathsField = typeof(PathCollectorHandler<FileSystemEntry>).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/dir1".ToCanonicalPath());
@@ -164,7 +167,8 @@ namespace UnitTests.Extensions.FileSystem
             result.Value.Should().Contain("/test/dir2".ToCanonicalPath());
             mockFileSystem.Verify(fs => fs.TraverseAsync(
                 "/test".ToCanonicalPath(),
-                It.IsAny<ITraversalHandler>(),
+                It.IsAny<ITraversalHandler<FileSystemEntry>>(),
+                It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                 It.IsAny<TraversalOptions>(),
                 It.IsAny<CancellationToken>()), Times.Once);
         }

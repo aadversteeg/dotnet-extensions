@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.Traversal.Handlers;
@@ -55,12 +56,13 @@ namespace Ave.Extensions.FileSystem
             bool recursive = false,
             CancellationToken cancellationToken = default)
         {
-            var handler = new PathCollectorHandler(searchPattern, includeFiles: true, includeDirectories: false);
+            var handler = new PathCollectorHandler<FileSystemEntry>(searchPattern, includeFiles: true, includeDirectories: false);
+            var mapper = IdentityMapper.Instance;
             var options = new TraversalOptions(
                 recursive: recursive,
                 strategyHint: TraversalStrategyHint.Search);
 
-            var result = await fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+            var result = await fileSystem.TraverseAsync(path, handler, mapper, options, cancellationToken);
             
             return result.OnSuccessMap(_ => handler.CollectedPaths);
         }
@@ -81,12 +83,13 @@ namespace Ave.Extensions.FileSystem
             bool recursive = false,
             CancellationToken cancellationToken = default)
         {
-            var handler = new PathCollectorHandler(searchPattern, includeFiles: false, includeDirectories: true);
+            var handler = new PathCollectorHandler<FileSystemEntry>(searchPattern, includeFiles: false, includeDirectories: true);
+            var mapper = IdentityMapper.Instance;
             var options = new TraversalOptions(
                 recursive: recursive,
                 strategyHint: TraversalStrategyHint.Search);
 
-            var result = await fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+            var result = await fileSystem.TraverseAsync(path, handler, mapper, options, cancellationToken);
             
             return result.OnSuccessMap(_ => handler.CollectedPaths);
         }
@@ -107,12 +110,13 @@ namespace Ave.Extensions.FileSystem
             bool recursive = true,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var handler = new StreamingHandler(searchPattern, includeFiles: true, includeDirectories: false);
+            var handler = new StreamingHandler<FileSystemEntry>(searchPattern, includeFiles: true, includeDirectories: false);
+            var mapper = IdentityMapper.Instance;
             var options = new TraversalOptions(
                 recursive: recursive,
                 strategyHint: TraversalStrategyHint.MemoryEfficient);
 
-            var traversalTask = fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+            var traversalTask = fileSystem.TraverseAsync(path, handler, mapper, options, cancellationToken);
 
             await foreach (var item in handler.GetItemsAsync(cancellationToken))
             {
@@ -142,12 +146,13 @@ namespace Ave.Extensions.FileSystem
             bool recursive = true,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var handler = new StreamingHandler(searchPattern, includeFiles: false, includeDirectories: true);
+            var handler = new StreamingHandler<FileSystemEntry>(searchPattern, includeFiles: false, includeDirectories: true);
+            var mapper = IdentityMapper.Instance;
             var options = new TraversalOptions(
                 recursive: recursive,
                 strategyHint: TraversalStrategyHint.MemoryEfficient);
 
-            var traversalTask = fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+            var traversalTask = fileSystem.TraverseAsync(path, handler, mapper, options, cancellationToken);
 
             await foreach (var item in handler.GetItemsAsync(cancellationToken))
             {
@@ -181,12 +186,13 @@ namespace Ave.Extensions.FileSystem
             bool includeDirectories = true,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var handler = new StreamingEntryHandler(searchPattern, includeFiles, includeDirectories);
+            var handler = new StreamingEntryHandler<FileSystemEntry>(searchPattern, includeFiles, includeDirectories);
+            var mapper = IdentityMapper.Instance;
             var options = new TraversalOptions(
                 recursive: recursive,
                 strategyHint: TraversalStrategyHint.MemoryEfficient);
 
-            var traversalTask = fileSystem.TraverseAsync(path, handler, options, cancellationToken);
+            var traversalTask = fileSystem.TraverseAsync(path, handler, mapper, options, cancellationToken);
 
             await foreach (var entry in handler.GetEntriesAsync(cancellationToken))
             {

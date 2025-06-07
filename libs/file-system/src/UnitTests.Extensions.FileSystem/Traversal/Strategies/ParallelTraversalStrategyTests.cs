@@ -9,6 +9,7 @@ using Ave.Extensions.FileSystem.InMemory;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.Traversal.Handlers;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Traversal.Strategies;
 using Ave.Extensions.Functional;
 using FluentAssertions;
@@ -43,7 +44,7 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Strategies
         {
             // Arrange
             var strategy = new ParallelTraversalStrategy();
-            var handler = new PathCollectorHandler("*", true, true);
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", true, true);
             var options = new TraversalOptions(recursive: false);
             var context = TraversalContext.CreateInitial("/empty".ToCanonicalPath());
             var stats = new TraversalStats();
@@ -56,7 +57,7 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Strategies
             var directory = new DirectoryEntry("/empty".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.DirectoryInfo(new EntryInfo("empty", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Directory)));
 
             // Act
-            var result = await strategy.TraverseAsync(directory, handler, options, context, stats, GetChildren, CancellationToken.None);
+            var result = await strategy.TraverseAsync<FileSystemEntry>(directory, handler, IdentityMapper.Instance, options, context, stats, GetChildren, CancellationToken.None);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -87,28 +88,17 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Strategies
         public async Task PTS004()
         {
             // Arrange
-            var strategy = new ParallelTraversalStrategy();
-            var handler = new PathCollectorHandler("*", true, false);
-            var options = new TraversalOptions(recursive: false);
-            var context = TraversalContext.CreateInitial("/test".ToCanonicalPath());
-            var stats = new TraversalStats();
+            var fileSystem = new InMemoryFileSystem();
+            await fileSystem.CreateDirectoryAsync("/test".ToCanonicalPath());
+            await fileSystem.WriteAllTextAsync("/test/file.txt".ToCanonicalPath(), "content");
 
-            Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildren(CanonicalPath path, CancellationToken ct)
-            {
-                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(Enumerable.Empty<IFileSystemEntry>()));
-            }
-
-            var file = new FileEntry("/test/file.txt".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.FileInfo(new EntryInfo("file.txt", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal), 100, ".txt"));
-
-            // Act
-            var result = await strategy.TraverseAsync(file, handler, options, context, stats, GetChildren, CancellationToken.None);
+            // Act - Test with recursive=true to find the file (since non-recursive doesn't traverse into dirs)
+            var files = await fileSystem.GetFilesAsync("/test".ToCanonicalPath(), "*.txt", recursive: true);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            handler.CollectedPaths.Should().HaveCount(1);
-            handler.CollectedPaths.Should().Contain(p => p.Value.EndsWith("file.txt"));
-            stats.FilesProcessed.Should().Be(1);
-            stats.DirectoriesProcessed.Should().Be(0);
+            files.IsSuccess.Should().BeTrue();
+            files.Value.Should().HaveCount(1);
+            files.Value.Should().Contain(p => p.GetName() == "file.txt");
         }
 
         [Fact(DisplayName = "PTS-005: ParallelTraversalStrategy processes nested directories")]

@@ -9,7 +9,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
     /// <summary>
     /// Handler that collects file and directory paths during traversal.
     /// </summary>
-    public sealed class PathCollectorHandler : ITraversalHandler
+    /// <typeparam name="TEntry">The type of entries that must implement IFileSystemEntry.</typeparam>
+    public sealed class PathCollectorHandler<TEntry> : ITraversalHandler<TEntry>
+        where TEntry : IFileSystemEntry
     {
         private readonly List<CanonicalPath> _paths = new List<CanonicalPath>();
         private readonly bool _includeFiles;
@@ -22,7 +24,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         public IReadOnlyList<CanonicalPath> CollectedPaths => _paths.AsReadOnly();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PathCollectorHandler"/> class.
+        /// Initializes a new instance of the <see cref="PathCollectorHandler{TEntry}"/> class.
         /// </summary>
         /// <param name="searchPattern">The search pattern for filtering entries.</param>
         /// <param name="includeFiles">Whether to include files in the collection.</param>
@@ -50,12 +52,12 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <summary>
         /// Called when entering a directory before processing its contents.
         /// </summary>
-        /// <param name="directory">The directory entry being entered.</param>
+        /// <param name="directory">The mapped directory entry being entered.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
         public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
@@ -65,16 +67,16 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <summary>
         /// Handles a file entry during traversal.
         /// </summary>
-        /// <param name="file">The file entry to handle.</param>
+        /// <param name="file">The mapped file entry to handle.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
         public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
-            IFileEntry file,
+            TEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeFiles && _matcher.IsMatch(file.Info.Info.Name))
+            if (_includeFiles && _matcher.IsMatch(file.Path.GetName()))
             {
                 _paths.Add(file.Path);
             }
@@ -84,16 +86,16 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <summary>
         /// Handles a directory entry during traversal.
         /// </summary>
-        /// <param name="directory">The directory entry to handle.</param>
+        /// <param name="directory">The mapped directory entry to handle.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
         public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
-            IDirectoryEntry directory,
+            TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Info.Info.Name))
+            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Path.GetName()))
             {
                 _paths.Add(directory.Path);
             }

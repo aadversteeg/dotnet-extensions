@@ -6,6 +6,7 @@ using BenchmarkDotNet.Attributes;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
 using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.FileSystem.Mapping;
 using Benchmarks.Config;
 using Benchmarks.Helpers;
 
@@ -90,7 +91,7 @@ public class MemoryUsageBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(recursive: true, strategyHint: TraversalStrategyHint.MemoryEfficient);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
 
@@ -105,7 +106,7 @@ public class MemoryUsageBenchmarks
         var handler = new CountingHandler();
         var options = new TraversalOptions(recursive: true, strategyHint: TraversalStrategyHint.FullScan);
         
-        var result = await _fileSystem.TraverseAsync(_rootPath, handler, options);
+        var result = await _fileSystem.TraverseAsync(_rootPath, handler, IdentityMapper.Instance, options);
         if (result.IsFailure)
             throw new InvalidOperationException($"Traversal failed: {result.Error.Message}");
 

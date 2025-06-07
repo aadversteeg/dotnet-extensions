@@ -2,7 +2,6 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-  
   <ItemGroup>
     <!-- Common dependencies -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
@@ -12,10 +11,8 @@
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
     <PackageVersion Include="Ave.Extensions.Functional" Version="0.0.5-preview.1" />
     <PackageVersion Include="System.Reactive" Version="6.0.0" />
-    
     <!-- Azure Storage dependencies -->
     <PackageVersion Include="Azure.Storage.Files.Shares" Version="12.22.0" />
-    
     <!-- Test dependencies -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageVersion Include="xunit" Version="2.5.3" />
@@ -28,10 +25,9 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="6.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
-    
     <!-- Benchmark dependencies -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
     <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.13.5" />

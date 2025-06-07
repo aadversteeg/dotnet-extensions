@@ -377,9 +377,10 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
             CanonicalPath path,
-            ITraversalHandler handler,
+            ITraversalHandler<TEntry> handler,
+            IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -400,13 +401,14 @@ namespace Ave.Extensions.FileSystem.Local
                 if (entryResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
 
-                // Select strategy based on hint
-                var strategy = CreateStrategy(options.StrategyHint);
+                // Select strategy based on hint and provide file reader factory
+                var strategy = CreateLocalStrategy(options.StrategyHint);
                 
                 // Perform traversal
                 var traversalResult = await strategy.TraverseAsync(
                     entryResult.Value, 
-                    handler, 
+                    handler,
+                    mapper,
                     options, 
                     context, 
                     stats,
@@ -449,6 +451,21 @@ namespace Ave.Extensions.FileSystem.Local
                     return new SequentialTraversalStrategy();
                 default:
                     return new SequentialTraversalStrategy();
+            }
+        }
+
+        private ITraversalStrategy CreateLocalStrategy(TraversalStrategyHint hint)
+        {
+            switch (hint)
+            {
+                case TraversalStrategyHint.Parallel:
+                    return new LocalParallelTraversalStrategy(this);
+                case TraversalStrategyHint.MemoryEfficient:
+                    return new LocalSequentialTraversalStrategy(this);
+                case TraversalStrategyHint.Search:
+                    return new LocalSequentialTraversalStrategy(this);
+                default:
+                    return new LocalSequentialTraversalStrategy(this);
             }
         }
 
@@ -786,6 +803,42 @@ namespace Ave.Extensions.FileSystem.Local
             {
                 return Result<byte[], FileSystemError>.Failure(FileSystemError.FromException(ex, _filePath.Value));
             }
+        }
+    }
+
+    /// <summary>
+    /// Local file system specific sequential traversal strategy.
+    /// </summary>
+    internal sealed class LocalSequentialTraversalStrategy : SequentialTraversalStrategy
+    {
+        private readonly LocalFileSystem _fileSystem;
+
+        public LocalSequentialTraversalStrategy(LocalFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new LocalFileReader(_fileSystem, fileEntry.Path);
+        }
+    }
+
+    /// <summary>
+    /// Local file system specific parallel traversal strategy.
+    /// </summary>
+    internal sealed class LocalParallelTraversalStrategy : ParallelTraversalStrategy
+    {
+        private readonly LocalFileSystem _fileSystem;
+
+        public LocalParallelTraversalStrategy(LocalFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new LocalFileReader(_fileSystem, fileEntry.Path);
         }
     }
 }

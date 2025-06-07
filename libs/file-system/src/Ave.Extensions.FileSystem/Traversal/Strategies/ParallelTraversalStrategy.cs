@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 
@@ -11,7 +12,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
     /// <summary>
     /// Traversal strategy that processes files and directories in parallel for improved performance.
     /// </summary>
-    public sealed class ParallelTraversalStrategy : BaseTraversalStrategy
+    public class ParallelTraversalStrategy : BaseTraversalStrategy
     {
         private readonly int _maxConcurrency;
         private readonly SemaphoreSlim _semaphore;
@@ -27,9 +28,10 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
         }
 
         /// <inheritdoc />
-        public override async Task<Result<Unit, FileSystemError>> TraverseAsync(
+        public override async Task<Result<Unit, FileSystemError>> TraverseAsync<TEntry>(
             IFileSystemEntry entry,
-            ITraversalHandler handler,
+            ITraversalHandler<TEntry> handler,
+            IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions options,
             TraversalContext context,
             TraversalStats stats,
@@ -40,8 +42,15 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
             {
                 stats.IncrementDirectories();
                 
-                // First call OnDirectoryEnterAsync
-                var enterResult = await handler.OnDirectoryEnterAsync(directoryEntry, context, cancellationToken);
+                // Map the directory entry first
+                var mappedDirectoryResult = await MapEntryAsync(directoryEntry, mapper, cancellationToken);
+                if (mappedDirectoryResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(mappedDirectoryResult.Error);
+
+                var mappedDirectory = mappedDirectoryResult.Value;
+                
+                // First call OnDirectoryEnterAsync with mapped entry
+                var enterResult = await handler.OnDirectoryEnterAsync(mappedDirectory, context, cancellationToken);
                 if (enterResult.IsFailure)
                     return Result<Unit, FileSystemError>.Failure(enterResult.Error);
 
@@ -49,8 +58,8 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                 if (enterControl.Action == TraversalAction.Stop)
                     return Result<Unit, FileSystemError>.Success(Unit.Value);
 
-                // Then call OnDirectoryAsync
-                var controlResult = await handler.OnDirectoryAsync(directoryEntry, context, cancellationToken);
+                // Then call OnDirectoryAsync with mapped entry
+                var controlResult = await handler.OnDirectoryAsync(mappedDirectory, context, cancellationToken);
                 if (controlResult.IsFailure)
                     return Result<Unit, FileSystemError>.Failure(controlResult.Error);
 
@@ -81,7 +90,13 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
 
                                 if (ShouldProcessEntry(file, options))
                                 {
-                                    var fileControl = await handler.OnFileAsync(file, context, cancellationToken);
+                                    // Map the file entry first
+                                    var mappedFileResult = await MapEntryAsync(file, mapper, cancellationToken);
+                                    if (mappedFileResult.IsFailure)
+                                        return false;
+
+                                    var mappedFile = mappedFileResult.Value;
+                                    var fileControl = await handler.OnFileAsync(mappedFile, context, cancellationToken);
                                     return fileControl.IsSuccess && fileControl.Value.Action != TraversalAction.Stop;
                                 }
                                 return true;
@@ -108,7 +123,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                                 {
                                     var childContext = context.NextLevel(dir.Path);
                                     var result = await TraverseAsync(
-                                        dir, handler, options, childContext, stats, getChildren, cancellationToken);
+                                        dir, handler, mapper, options, childContext, stats, getChildren, cancellationToken);
                                     return result.IsSuccess;
                                 }
                                 finally
@@ -130,7 +145,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                                     
                                 var childContext = context.NextLevel(dir.Path);
                                 var result = await TraverseAsync(
-                                    dir, handler, options, childContext, stats, getChildren, cancellationToken);
+                                    dir, handler, mapper, options, childContext, stats, getChildren, cancellationToken);
                                     
                                 if (result.IsFailure)
                                     return result;
@@ -146,7 +161,13 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
 
                 if (ShouldProcessEntry(entry, options))
                 {
-                    var controlResult = await handler.OnFileAsync(fileEntry, context, cancellationToken);
+                    // Map the file entry first
+                    var mappedFileResult = await MapEntryAsync(fileEntry, mapper, cancellationToken);
+                    if (mappedFileResult.IsFailure)
+                        return Result<Unit, FileSystemError>.Failure(mappedFileResult.Error);
+
+                    var mappedFile = mappedFileResult.Value;
+                    var controlResult = await handler.OnFileAsync(mappedFile, context, cancellationToken);
                     if (controlResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(controlResult.Error);
                 }

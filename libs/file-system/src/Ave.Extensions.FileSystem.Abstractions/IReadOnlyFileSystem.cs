@@ -65,14 +65,17 @@ namespace Ave.Extensions.FileSystem
         /// <summary>
         /// Traverses the file system starting from the specified path.
         /// </summary>
+        /// <typeparam name="TEntry">The type of entries to map and handle.</typeparam>
         /// <param name="path">The starting path for traversal.</param>
-        /// <param name="handler">The handler to process each entry.</param>
+        /// <param name="handler">The handler to process each mapped entry.</param>
+        /// <param name="mapper">The mapper to transform file system entries to TEntry.</param>
         /// <param name="options">Optional traversal options. If null, uses default options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal summary or an error.</returns>
-        Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+        Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
             CanonicalPath path,
-            ITraversalHandler handler,
+            ITraversalHandler<TEntry> handler,
+            IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions? options = null,
             CancellationToken cancellationToken = default);
 

@@ -360,9 +360,10 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
-        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(
+        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
             CanonicalPath path,
-            ITraversalHandler handler,
+            ITraversalHandler<TEntry> handler,
+            IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -384,12 +385,13 @@ namespace Ave.Extensions.FileSystem.InMemory
                     return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
 
                 // Select strategy based on hint
-                var strategy = CreateStrategy(options.StrategyHint);
+                var strategy = CreateInMemoryStrategy(options.StrategyHint);
                 
                 // Perform traversal
                 var traversalResult = await strategy.TraverseAsync(
                     entryResult.Value, 
-                    handler, 
+                    handler,
+                    mapper,
                     options, 
                     context, 
                     stats,
@@ -429,14 +431,14 @@ namespace Ave.Extensions.FileSystem.InMemory
         /// </summary>
         /// <param name="hint">The strategy hint.</param>
         /// <returns>An appropriate traversal strategy.</returns>
-        private ITraversalStrategy CreateStrategy(TraversalStrategyHint hint)
+        private ITraversalStrategy CreateInMemoryStrategy(TraversalStrategyHint hint)
         {
             return hint switch
             {
-                TraversalStrategyHint.Parallel => new ParallelTraversalStrategy(),
-                TraversalStrategyHint.MemoryEfficient => new SequentialTraversalStrategy(),
-                TraversalStrategyHint.Search => new SequentialTraversalStrategy(),
-                _ => new SequentialTraversalStrategy()
+                TraversalStrategyHint.Parallel => new InMemoryParallelTraversalStrategy(this),
+                TraversalStrategyHint.MemoryEfficient => new InMemorySequentialTraversalStrategy(this),
+                TraversalStrategyHint.Search => new InMemorySequentialTraversalStrategy(this),
+                _ => new InMemorySequentialTraversalStrategy(this)
             };
         }
 
@@ -1036,6 +1038,43 @@ namespace Ave.Extensions.FileSystem.InMemory
                     _fileSystemEventsSubject.Dispose();
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Sequential traversal strategy for in-memory file system that can create InMemoryFileReader instances.
+    /// </summary>
+    internal sealed class InMemorySequentialTraversalStrategy : SequentialTraversalStrategy
+    {
+        private readonly InMemoryFileSystem _fileSystem;
+
+        public InMemorySequentialTraversalStrategy(InMemoryFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new InMemoryFileReader(_fileSystem, fileEntry.Path);
+        }
+    }
+
+    /// <summary>
+    /// Parallel traversal strategy for in-memory file system that can create InMemoryFileReader instances.
+    /// </summary>
+    internal sealed class InMemoryParallelTraversalStrategy : ParallelTraversalStrategy
+    {
+        private readonly InMemoryFileSystem _fileSystem;
+
+        public InMemoryParallelTraversalStrategy(InMemoryFileSystem fileSystem, int? maxConcurrency = null) 
+            : base(maxConcurrency)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new InMemoryFileReader(_fileSystem, fileEntry.Path);
         }
     }
 

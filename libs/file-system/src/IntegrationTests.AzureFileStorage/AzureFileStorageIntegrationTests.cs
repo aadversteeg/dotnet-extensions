@@ -1,15 +1,15 @@
-using Azure.Storage.Files.Shares;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
+using Azure.Storage.Files.Shares;
 using FluentAssertions;
 using IntegrationTests.Extensions.FileSystem.AzureFileStorage.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Runtime.CompilerServices;
 
 namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
 {
@@ -36,14 +36,42 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
 
         public AzureFileStorageIntegrationTests()
         {
-            _testConfig = TestConfiguration.Load();
+
             _testDirectoryPath = $"/test/{DateTime.UtcNow:yyyyMMdd-HHmmssfff}";
             _createdFiles = new List<string>();
             _createdDirectories = new List<string>();
 
-            if (!_testConfig.IsConfigured() || _testConfig.SkipIntegrationTests)
+
+            // Add appsettings.json configuration, use full path in case working folder is different
+            string? basePath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            basePath ??= Directory.GetCurrentDirectory();
+
+            // Start with a more explicit configuration setup for WSL compatibility
+            var configBuilder = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(basePath, "appsettings.test.json"), optional: true)
+                .AddUserSecrets<TestConfiguration>(optional: true)
+                .AddEnvironmentVariables("AZURE_FILESTORAGE_");
+
+            var configuration = configBuilder.Build();
+            _testConfig = new TestConfiguration();
+            
+            // Use section-based binding to handle both flat colon-delimited keys (AzureFileStorage:AccountName) 
+            // and hierarchical JSON structure. This approach works correctly with both formats.
+            var azureSection = configuration.GetSection("AzureFileStorage");
+            _testConfig.AzureFileStorage = azureSection.Get<AzureFileStorageTestSettings>() ?? new AzureFileStorageTestSettings();
+            
+            // Bind remaining root-level properties
+            _testConfig.SkipIntegrationTests = configuration.GetValue<bool>("SkipIntegrationTests");
+
+            if (!_testConfig.IsConfigured())
             {
-                // FileSystem will be null, tests will be skipped
+                Console.Error.WriteLine("Azure File Storage integration tests are not configured.");
+                return;
+            }
+
+            if (_testConfig.SkipIntegrationTests)
+            {
+                Console.Error.WriteLine("Azure File Storage integration tests are skipped as configured.");
                 return;
             }
 
@@ -67,6 +95,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             services.AddSingleton<IReadOnlyFileSystem>(provider => provider.GetRequiredService<AzureFileSystem>());
 
             var serviceProvider = services.BuildServiceProvider();
+
             _fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
             _readOnlyFileSystem = serviceProvider.GetRequiredService<IReadOnlyFileSystem>();
 
