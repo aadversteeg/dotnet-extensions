@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local.PathMappers;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using IntegrationTests.FileSystem.Local.TestHelpers;

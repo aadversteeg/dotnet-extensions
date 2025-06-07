@@ -1,13 +1,10 @@
-using System;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.Local.PathMappers;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using FluentAssertions;
 using Moq;
 using UnitTests.Extensions.FileSystem.Local.TestHelpers;
-using Xunit;
 
 namespace UnitTests.Extensions.FileSystem.Local
 {

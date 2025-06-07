@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
-using Ave.Extensions.FileSystem.Traversal;
 using Benchmarks.Config;
 using Benchmarks.Helpers;
 

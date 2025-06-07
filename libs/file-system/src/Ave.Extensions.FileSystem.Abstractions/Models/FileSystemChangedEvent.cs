@@ -1,5 +1,3 @@
-using System;
-
 namespace Ave.Extensions.FileSystem.Models
 {
     /// <summary>

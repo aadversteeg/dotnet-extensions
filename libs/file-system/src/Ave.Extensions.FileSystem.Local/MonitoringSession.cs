@@ -5,7 +5,6 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
-using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem.Local
 {

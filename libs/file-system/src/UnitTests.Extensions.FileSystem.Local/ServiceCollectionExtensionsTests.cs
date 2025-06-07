@@ -2,7 +2,6 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
-using UnitTests.Extensions.FileSystem.Local.TestHelpers;
 
 namespace UnitTests.Extensions.FileSystem.Local
 {

@@ -8,7 +8,6 @@ using Ave.Extensions.FileSystem.InMemory;
 using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using UnitTests.Extensions.FileSystem.TestHelpers;
-using Xunit;
 
 namespace UnitTests.Extensions.FileSystem
 {

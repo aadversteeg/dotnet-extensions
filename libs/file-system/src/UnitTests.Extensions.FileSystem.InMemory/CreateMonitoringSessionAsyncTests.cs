@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
 using Ave.Extensions.FileSystem.Models;
-using Ave.Extensions.Functional;
 using FluentAssertions;
 using UnitTests.Extensions.FileSystem.InMemory.TestHelpers;
 using Xunit;

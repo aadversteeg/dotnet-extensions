@@ -4,10 +4,8 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
 using Ave.Extensions.FileSystem.Models;
-using Ave.Extensions.Functional;
 using FluentAssertions;
 using UnitTests.Extensions.FileSystem.Local.TestHelpers;
-using Xunit;
 
 namespace UnitTests.Extensions.FileSystem.Local
 {

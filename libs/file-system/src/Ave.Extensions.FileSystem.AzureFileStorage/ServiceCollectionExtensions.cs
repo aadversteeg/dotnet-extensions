@@ -5,8 +5,6 @@ using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.Configuration;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Security;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

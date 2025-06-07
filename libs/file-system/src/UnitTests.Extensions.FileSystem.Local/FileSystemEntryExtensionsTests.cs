@@ -3,12 +3,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using Moq;
 using UnitTests.Extensions.FileSystem.Local.TestHelpers;
-using Xunit;
 
 namespace UnitTests.Extensions.FileSystem.Local
 {

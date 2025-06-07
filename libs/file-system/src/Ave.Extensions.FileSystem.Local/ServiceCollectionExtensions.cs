@@ -2,9 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Ave.Extensions.FileSystem.Configuration;
 using Ave.Extensions.FileSystem.Local.PathMappers;
-using Ave.Extensions.FileSystem.Security;
 
 namespace Ave.Extensions.FileSystem.Local
 {

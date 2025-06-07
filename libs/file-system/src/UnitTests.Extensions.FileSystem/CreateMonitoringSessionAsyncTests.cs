@@ -5,7 +5,6 @@ using Ave.Extensions.Functional;
 using FluentAssertions;
 using Moq;
 using UnitTests.Extensions.FileSystem.TestHelpers;
-using Xunit;
 
 namespace UnitTests.Extensions.FileSystem
 {

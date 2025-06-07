@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
-using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem.Traversal.Handlers
