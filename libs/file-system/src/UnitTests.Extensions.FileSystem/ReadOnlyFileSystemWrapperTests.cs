@@ -97,7 +97,7 @@ namespace UnitTests.Extensions.FileSystem
                     if (handler is PathCollectorHandler collector)
                     {
                         // Use reflection to add items to the internal list since we can't access it directly
-                        var pathsField = typeof(PathCollectorHandler).GetField("paths", 
+                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/file1.txt".ToCanonicalPath());
@@ -142,7 +142,7 @@ namespace UnitTests.Extensions.FileSystem
                     if (handler is PathCollectorHandler collector)
                     {
                         // Use reflection to add items to the internal list since we can't access it directly
-                        var pathsField = typeof(PathCollectorHandler).GetField("paths", 
+                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/dir1".ToCanonicalPath());

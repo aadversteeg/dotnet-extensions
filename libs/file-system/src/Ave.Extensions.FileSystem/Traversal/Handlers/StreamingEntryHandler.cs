@@ -13,32 +13,32 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
     /// </summary>
     internal sealed class StreamingEntryHandler : ITraversalHandler
     {
-        private readonly ConcurrentQueue<FileSystemEntry> queue;
-        private readonly bool includeFiles;
-        private readonly bool includeDirectories;
-        private readonly PatternMatcher matcher;
-        private volatile bool isCompleted;
-        private readonly TaskCompletionSource<bool> completionSource;
+        private readonly ConcurrentQueue<FileSystemEntry> _queue;
+        private readonly bool _includeFiles;
+        private readonly bool _includeDirectories;
+        private readonly PatternMatcher _matcher;
+        private volatile bool _isCompleted;
+        private readonly TaskCompletionSource<bool> _completionSource;
 
         public StreamingEntryHandler(string searchPattern, bool includeFiles, bool includeDirectories)
         {
-            this.includeFiles = includeFiles;
-            this.includeDirectories = includeDirectories;
-            this.matcher = new PatternMatcher(searchPattern);
-            this.queue = new ConcurrentQueue<FileSystemEntry>();
-            this.completionSource = new TaskCompletionSource<bool>();
+            _includeFiles = includeFiles;
+            _includeDirectories = includeDirectories;
+            _matcher = new PatternMatcher(searchPattern);
+            _queue = new ConcurrentQueue<FileSystemEntry>();
+            _completionSource = new TaskCompletionSource<bool>();
         }
 
         public async IAsyncEnumerable<FileSystemEntry> GetEntriesAsync(
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            while (!isCompleted || !queue.IsEmpty)
+            while (!_isCompleted || !_queue.IsEmpty)
             {
-                if (queue.TryDequeue(out var entry))
+                if (_queue.TryDequeue(out var entry))
                 {
                     yield return entry;
                 }
-                else if (!isCompleted)
+                else if (!_isCompleted)
                 {
                     await Task.Delay(1, cancellationToken);
                 }
@@ -57,9 +57,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             TraversalContext context,
             CancellationToken cancellationToken)
         {
-            if (includeFiles && matcher.IsMatch(file.Name))
+            if (_includeFiles && _matcher.IsMatch(file.Name))
             {
-                queue.Enqueue(file);
+                _queue.Enqueue(file);
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }
@@ -69,9 +69,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             TraversalContext context,
             CancellationToken cancellationToken)
         {
-            if (includeDirectories && context.CurrentDepth > 0 && matcher.IsMatch(directory.Name))
+            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Name))
             {
-                queue.Enqueue(directory);
+                _queue.Enqueue(directory);
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }
@@ -80,8 +80,8 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             TraversalSummary summary,
             CancellationToken cancellationToken)
         {
-            isCompleted = true;
-            completionSource.SetResult(true);
+            _isCompleted = true;
+            _completionSource.SetResult(true);
             return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
         }
     }

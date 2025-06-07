@@ -11,15 +11,15 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
     /// </summary>
     public sealed class PathCollectorHandler : ITraversalHandler
     {
-        private readonly List<CanonicalPath> paths = new List<CanonicalPath>();
-        private readonly bool includeFiles;
-        private readonly bool includeDirectories;
-        private readonly PatternMatcher matcher;
+        private readonly List<CanonicalPath> _paths = new List<CanonicalPath>();
+        private readonly bool _includeFiles;
+        private readonly bool _includeDirectories;
+        private readonly PatternMatcher _matcher;
 
         /// <summary>
         /// Gets the collected paths.
         /// </summary>
-        public IReadOnlyList<CanonicalPath> CollectedPaths => paths.AsReadOnly();
+        public IReadOnlyList<CanonicalPath> CollectedPaths => _paths.AsReadOnly();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PathCollectorHandler"/> class.
@@ -29,9 +29,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <param name="includeDirectories">Whether to include directories in the collection.</param>
         public PathCollectorHandler(string searchPattern, bool includeFiles, bool includeDirectories)
         {
-            this.includeFiles = includeFiles;
-            this.includeDirectories = includeDirectories;
-            this.matcher = new PatternMatcher(searchPattern);
+            _includeFiles = includeFiles;
+            _includeDirectories = includeDirectories;
+            _matcher = new PatternMatcher(searchPattern);
         }
 
         /// <summary>
@@ -59,9 +59,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (includeFiles && matcher.IsMatch(file.Name))
+            if (_includeFiles && _matcher.IsMatch(file.Name))
             {
-                paths.Add(file.Path);
+                _paths.Add(file.Path);
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }
@@ -78,9 +78,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (includeDirectories && context.CurrentDepth > 0 && matcher.IsMatch(directory.Name))
+            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Name))
             {
-                paths.Add(directory.Path);
+                _paths.Add(directory.Path);
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }

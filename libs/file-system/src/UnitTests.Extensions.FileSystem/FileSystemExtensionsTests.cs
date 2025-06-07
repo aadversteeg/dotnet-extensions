@@ -94,7 +94,7 @@ namespace UnitTests.Extensions.FileSystem
                     if (handler is PathCollectorHandler collector)
                     {
                         // Use reflection to simulate files being collected
-                        var pathsField = typeof(PathCollectorHandler).GetField("paths", 
+                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/file1.txt".ToCanonicalPath());
@@ -169,7 +169,7 @@ namespace UnitTests.Extensions.FileSystem
                     // Simulate collecting directories
                     if (handler is PathCollectorHandler collector)
                     {
-                        var pathsField = typeof(PathCollectorHandler).GetField("paths", 
+                        var pathsField = typeof(PathCollectorHandler).GetField("_paths", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         var pathsList = (List<CanonicalPath>)pathsField!.GetValue(collector)!;
                         pathsList.Add("/test/dir1".ToCanonicalPath());

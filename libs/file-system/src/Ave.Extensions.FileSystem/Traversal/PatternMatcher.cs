@@ -7,8 +7,8 @@ namespace Ave.Extensions.FileSystem.Traversal
     /// </summary>
     public sealed class PatternMatcher
     {
-        private readonly Regex regex;
-        private readonly string pattern;
+        private readonly Regex _regex;
+        private readonly string _pattern;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PatternMatcher"/> class.
@@ -16,13 +16,13 @@ namespace Ave.Extensions.FileSystem.Traversal
         /// <param name="pattern">The glob pattern to match against.</param>
         public PatternMatcher(string pattern)
         {
-            this.pattern = pattern ?? "*";
+            _pattern = pattern ?? "*";
             
             // Convert glob pattern to regex
-            var regexPattern = "^" + Regex.Escape(this.pattern)
+            var regexPattern = "^" + Regex.Escape(_pattern)
                 .Replace("\\*", ".*")
                 .Replace("\\?", ".") + "$";
-            regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
+            _regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
         }
 
         /// <summary>
@@ -30,11 +30,11 @@ namespace Ave.Extensions.FileSystem.Traversal
         /// </summary>
         /// <param name="input">The input string to test.</param>
         /// <returns>true if the input matches the pattern; otherwise, false.</returns>
-        public bool IsMatch(string input) => regex.IsMatch(input);
+        public bool IsMatch(string input) => _regex.IsMatch(input);
         
         /// <summary>
         /// Gets the original pattern.
         /// </summary>
-        public string Pattern => pattern;
+        public string Pattern => _pattern;
     }
 }

@@ -12,15 +12,15 @@ namespace Ave.Extensions.FileSystem.Traversal.Internal
     /// </summary>
     internal sealed class SimplePathCollectorHandler : ITraversalHandler
     {
-        private readonly List<CanonicalPath> paths = new List<CanonicalPath>();
-        private readonly bool includeFiles;
-        private readonly bool includeDirectories;
-        private readonly Regex regex;
+        private readonly List<CanonicalPath> _paths = new List<CanonicalPath>();
+        private readonly bool _includeFiles;
+        private readonly bool _includeDirectories;
+        private readonly Regex _regex;
 
         /// <summary>
         /// Gets the collected paths.
         /// </summary>
-        public IReadOnlyList<CanonicalPath> CollectedPaths => paths.AsReadOnly();
+        public IReadOnlyList<CanonicalPath> CollectedPaths => _paths.AsReadOnly();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SimplePathCollectorHandler"/> class.
@@ -30,15 +30,15 @@ namespace Ave.Extensions.FileSystem.Traversal.Internal
         /// <param name="includeDirectories">Whether to include directories in the collection.</param>
         public SimplePathCollectorHandler(string searchPattern, bool includeFiles, bool includeDirectories)
         {
-            this.includeFiles = includeFiles;
-            this.includeDirectories = includeDirectories;
+            _includeFiles = includeFiles;
+            _includeDirectories = includeDirectories;
             
             // Convert glob pattern to regex
             var pattern = searchPattern ?? "*";
             var regexPattern = "^" + Regex.Escape(pattern)
                 .Replace("\\*", ".*")
                 .Replace("\\?", ".") + "$";
-            this.regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
+            _regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
         }
 
         /// <summary>
@@ -66,9 +66,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Internal
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (includeFiles && IsMatch(file.Name))
+            if (_includeFiles && IsMatch(file.Name))
             {
-                paths.Add(file.Path);
+                _paths.Add(file.Path);
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }
@@ -85,9 +85,9 @@ namespace Ave.Extensions.FileSystem.Traversal.Internal
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (includeDirectories && context.CurrentDepth > 0 && IsMatch(directory.Name))
+            if (_includeDirectories && context.CurrentDepth > 0 && IsMatch(directory.Name))
             {
-                paths.Add(directory.Path);
+                _paths.Add(directory.Path);
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }
@@ -107,7 +107,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Internal
 
         private bool IsMatch(string input)
         {
-            return regex.IsMatch(input);
+            return _regex.IsMatch(input);
         }
     }
 }

@@ -13,8 +13,8 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
     /// </summary>
     public sealed class ParallelTraversalStrategy : BaseTraversalStrategy
     {
-        private readonly int maxConcurrency;
-        private readonly SemaphoreSlim semaphore;
+        private readonly int _maxConcurrency;
+        private readonly SemaphoreSlim _semaphore;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ParallelTraversalStrategy"/> class.
@@ -22,8 +22,8 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
         /// <param name="maxConcurrency">The maximum number of concurrent operations. Defaults to Environment.ProcessorCount * 2.</param>
         public ParallelTraversalStrategy(int? maxConcurrency = null)
         {
-            this.maxConcurrency = maxConcurrency ?? Environment.ProcessorCount * 2;
-            this.semaphore = new SemaphoreSlim(this.maxConcurrency);
+            _maxConcurrency = maxConcurrency ?? Environment.ProcessorCount * 2;
+            _semaphore = new SemaphoreSlim(_maxConcurrency);
         }
 
         /// <inheritdoc />
@@ -63,7 +63,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                     {
                         var fileTasks = files.Select(async file =>
                         {
-                            await semaphore.WaitAsync(cancellationToken);
+                            await _semaphore.WaitAsync(cancellationToken);
                             try
                             {
                                 stats.IncrementFiles();
@@ -79,7 +79,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                             }
                             finally
                             {
-                                semaphore.Release();
+                                _semaphore.Release();
                             }
                         });
                         
@@ -94,7 +94,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                         {
                             var dirTasks = directories.Select(async dir =>
                             {
-                                await semaphore.WaitAsync(cancellationToken);
+                                await _semaphore.WaitAsync(cancellationToken);
                                 try
                                 {
                                     var childContext = context.NextLevel(dir.Path);
@@ -104,7 +104,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                                 }
                                 finally
                                 {
-                                    semaphore.Release();
+                                    _semaphore.Release();
                                 }
                             });
                             
