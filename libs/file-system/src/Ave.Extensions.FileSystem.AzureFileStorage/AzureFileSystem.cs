@@ -9,6 +9,7 @@ using Azure;
 using Azure.Storage.Files.Shares;
 using Azure.Storage.Files.Shares.Models;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Security;
 using Ave.Extensions.FileSystem.Traversal;
@@ -172,8 +173,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
         }
 
-        /// <inheritdoc />
-        public async Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        private async Task<Result<FileSystemEntry, FileSystemError>> GetEntryInternalAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -238,6 +238,38 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
         }
 
+        /// <inheritdoc />
+        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+            CanonicalPath path,
+            IFileSystemEntryMapper<TEntry> mapper,
+            CancellationToken cancellationToken = default)
+        {
+            if (mapper == null)
+                throw new ArgumentNullException(nameof(mapper));
+            
+            // Get the base FileSystemEntry
+            var entryResult = await GetEntryInternalAsync(path, cancellationToken);
+            if (entryResult.IsFailure)
+                return Result<TEntry, FileSystemError>.Failure(entryResult.Error);
+            
+            // Map to TEntry
+            try
+            {
+                return await mapper.MapAsync(entryResult.Value, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<TEntry, FileSystemError>.Failure(
+                    new FileSystemError(
+                        $"Failed to map entry: {ex.Message}", 
+                        path.Value, 
+                        FileSystemErrorType.Unknown));
+            }
+        }
 
         /// <inheritdoc />
         public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync(

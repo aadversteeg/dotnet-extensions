@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.Traversal.Handlers;
@@ -189,7 +190,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var afterWrite = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath());
+            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath(), IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -214,7 +215,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var afterCreate = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath());
+            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath(), IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();

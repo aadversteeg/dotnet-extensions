@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using IntegrationTests.FileSystem.Local.TestHelpers;
@@ -481,7 +482,7 @@ namespace IntegrationTests.FileSystem.Local
             var fileInfo = new FileInfo(physicalFilePath);
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(canonicalFilePath);
+            var result = await _fileSystem.GetEntryAsync(canonicalFilePath, IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -509,7 +510,7 @@ namespace IntegrationTests.FileSystem.Local
             var dirInfo = new DirectoryInfo(physicalDirPath);
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(canonicalDirPath);
+            var result = await _fileSystem.GetEntryAsync(canonicalDirPath, IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -534,7 +535,7 @@ namespace IntegrationTests.FileSystem.Local
             File.Exists(physicalFilePath).Should().BeFalse();
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(canonicalFilePath);
+            var result = await _fileSystem.GetEntryAsync(canonicalFilePath, IdentityMapper.Instance);
 
             // Assert
             result.IsFailure.Should().BeTrue();

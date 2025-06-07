@@ -2,6 +2,7 @@ using Azure.Storage.Files.Shares;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using IntegrationTests.Extensions.FileSystem.AzureFileStorage.Configuration;
@@ -438,7 +439,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             await _fileSystem!.WriteAllTextAsync(canonicalPath.Value, content);
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(canonicalPath.Value);
+            var result = await _fileSystem.GetEntryAsync(canonicalPath.Value, IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();

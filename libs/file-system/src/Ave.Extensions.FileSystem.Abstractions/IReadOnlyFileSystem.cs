@@ -1,6 +1,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
@@ -49,12 +50,17 @@ namespace Ave.Extensions.FileSystem
         Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Gets metadata for a file system entry (file or directory).
+        /// Gets metadata for a file system entry and maps it to a custom type.
         /// </summary>
+        /// <typeparam name="TEntry">The type to map the entry to.</typeparam>
         /// <param name="path">The path to get metadata for.</param>
+        /// <param name="mapper">The mapper to transform FileSystemEntry to TEntry.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the file system entry or an error.</returns>
-        Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        /// <returns>A result containing the mapped entry or an error.</returns>
+        Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+            CanonicalPath path,
+            IFileSystemEntryMapper<TEntry> mapper,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Traverses the file system starting from the specified path.

@@ -1,6 +1,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
@@ -55,9 +56,12 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
-        public Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+            CanonicalPath path,
+            IFileSystemEntryMapper<TEntry> mapper,
+            CancellationToken cancellationToken = default)
         {
-            return _fileSystem.GetEntryAsync(path, cancellationToken);
+            return _fileSystem.GetEntryAsync(path, mapper, cancellationToken);
         }
 
         /// <inheritdoc />

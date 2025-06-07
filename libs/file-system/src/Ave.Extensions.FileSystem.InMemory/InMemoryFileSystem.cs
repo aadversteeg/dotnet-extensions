@@ -7,6 +7,7 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.Traversal.Strategies;
@@ -165,8 +166,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
         }
 
-        /// <inheritdoc />
-        public Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        private Task<Result<FileSystemEntry, FileSystemError>> GetEntryInternalAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -218,6 +218,39 @@ namespace Ave.Extensions.FileSystem.InMemory
                 _logger.LogError(ex, "Failed to get entry: {Path}", path);
                 return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
                     new FileSystemError($"Failed to get entry: {ex.Message}", path.Value)));
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+            CanonicalPath path,
+            IFileSystemEntryMapper<TEntry> mapper,
+            CancellationToken cancellationToken = default)
+        {
+            if (mapper == null)
+                throw new ArgumentNullException(nameof(mapper));
+            
+            // Get the base FileSystemEntry
+            var entryResult = await GetEntryInternalAsync(path, cancellationToken);
+            if (entryResult.IsFailure)
+                return Result<TEntry, FileSystemError>.Failure(entryResult.Error);
+            
+            // Map to TEntry
+            try
+            {
+                return await mapper.MapAsync(entryResult.Value, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<TEntry, FileSystemError>.Failure(
+                    new FileSystemError(
+                        $"Failed to map entry: {ex.Message}", 
+                        path.Value, 
+                        FileSystemErrorType.Unknown));
             }
         }
 
@@ -305,7 +338,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                 var stats = new TraversalStats();
                 
                 // Get the starting entry
-                var entryResult = await GetEntryAsync(path, cancellationToken);
+                var entryResult = await GetEntryInternalAsync(path, cancellationToken);
                 if (entryResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
 
