@@ -23,18 +23,26 @@ public class CountingHandler : ITraversalHandler
         return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
     }
 
-    public Task<Result<TraversalControl, FileSystemError>> HandleFileAsync(
-        FileSystemEntry file,
+    public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+        IDirectoryEntry directory,
+        TraversalContext context,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+    }
+
+    public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+        IFileEntry file,
         TraversalContext context,
         CancellationToken cancellationToken = default)
     {
         FileCount++;
-        TotalSize += file.Size ?? 0;
+        TotalSize += file.Info.Size;
         return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
     }
 
-    public Task<Result<TraversalControl, FileSystemError>> HandleDirectoryAsync(
-        FileSystemEntry directory,
+    public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+        IDirectoryEntry directory,
         TraversalContext context,
         CancellationToken cancellationToken = default)
     {

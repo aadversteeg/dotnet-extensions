@@ -55,18 +55,33 @@ namespace Ave.Extensions.FileSystem.Traversal.Internal
         }
 
         /// <summary>
+        /// Called when entering a directory before processing its contents.
+        /// </summary>
+        /// <param name="directory">The directory entry being entered.</param>
+        /// <param name="context">The current traversal context.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing traversal control instructions.</returns>
+        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+            IDirectoryEntry directory,
+            TraversalContext context,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        }
+
+        /// <summary>
         /// Handles a file entry during traversal.
         /// </summary>
         /// <param name="file">The file entry to handle.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> HandleFileAsync(
-            FileSystemEntry file,
+        public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+            IFileEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeFiles && IsMatch(file.Name))
+            if (_includeFiles && IsMatch(file.Info.Info.Name))
             {
                 _paths.Add(file.Path);
             }
@@ -80,12 +95,12 @@ namespace Ave.Extensions.FileSystem.Traversal.Internal
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> HandleDirectoryAsync(
-            FileSystemEntry directory,
+        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+            IDirectoryEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            if (_includeDirectories && context.CurrentDepth > 0 && IsMatch(directory.Name))
+            if (_includeDirectories && context.CurrentDepth > 0 && IsMatch(directory.Info.Info.Name))
             {
                 _paths.Add(directory.Path);
             }

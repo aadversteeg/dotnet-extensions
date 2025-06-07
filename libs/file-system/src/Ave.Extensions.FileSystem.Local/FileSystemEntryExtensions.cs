@@ -17,7 +17,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <returns>A new FileSystemEntry instance.</returns>
         /// <exception cref="ArgumentNullException">Thrown when fileInfo or pathMapper is null.</exception>
         /// <exception cref="ArgumentException">Thrown when the file path is invalid.</exception>
-        public static FileSystemEntry ToFileSystemEntry(this FileInfo fileInfo, IPathMapper pathMapper)
+        public static FileSystemEntry ToFileSystemEntry(this System.IO.FileInfo fileInfo, IPathMapper pathMapper)
         {
             if (fileInfo == null)
                 throw new ArgumentNullException(nameof(fileInfo));
@@ -50,7 +50,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <returns>A new FileSystemEntry instance.</returns>
         /// <exception cref="ArgumentNullException">Thrown when directoryInfo or pathMapper is null.</exception>
         /// <exception cref="ArgumentException">Thrown when the directory path is invalid.</exception>
-        public static FileSystemEntry ToFileSystemEntry(this DirectoryInfo directoryInfo, IPathMapper pathMapper)
+        public static FileSystemEntry ToFileSystemEntry(this System.IO.DirectoryInfo directoryInfo, IPathMapper pathMapper)
         {
             if (directoryInfo == null)
                 throw new ArgumentNullException(nameof(directoryInfo));

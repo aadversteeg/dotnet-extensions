@@ -137,7 +137,7 @@ namespace Ave.Extensions.FileSystem.Local
                 // Check if it's a file
                 if (File.Exists(systemPath))
                 {
-                    var fileInfo = new FileInfo(systemPath);
+                    var fileInfo = new System.IO.FileInfo(systemPath);
                     var entry = fileInfo.ToFileSystemEntry(_pathMapper);
                     return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                 }
@@ -145,7 +145,7 @@ namespace Ave.Extensions.FileSystem.Local
                 // Check if it's a directory
                 if (Directory.Exists(systemPath))
                 {
-                    var directoryInfo = new DirectoryInfo(systemPath);
+                    var directoryInfo = new System.IO.DirectoryInfo(systemPath);
                     var entry = directoryInfo.ToFileSystemEntry(_pathMapper);
                     return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                 }
@@ -164,17 +164,59 @@ namespace Ave.Extensions.FileSystem.Local
             if (mapper == null)
                 throw new ArgumentNullException(nameof(mapper));
             
-            // Get the base FileSystemEntry
-            var entryResult = await GetEntryInternalAsync(path, cancellationToken);
-            if (entryResult.IsFailure)
-                return Result<TEntry, FileSystemError>.Failure(entryResult.Error);
-            
-            // Map to TEntry using appropriate method based on entry type
             try
             {
-                return entryResult.Value.IsDirectory
-                    ? await mapper.MapDirectoryAsync(entryResult.Value, cancellationToken)
-                    : await mapper.MapFileAsync(entryResult.Value, cancellationToken);
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<TEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+
+                var systemPath = systemPathResult.Value;
+                
+                // Check if it's a file
+                if (File.Exists(systemPath))
+                {
+                    var fileInfo = new System.IO.FileInfo(systemPath);
+                    
+                    // Create EntryInfo
+                    var entryInfo = new Models.EntryInfo(
+                        fileInfo.Name,
+                        fileInfo.CreationTimeUtc,
+                        fileInfo.LastWriteTimeUtc,
+                        fileInfo.LastAccessTimeUtc,
+                        fileInfo.Attributes);
+                    
+                    // Create FileInfo
+                    var fileInfoModel = new Models.FileInfo(entryInfo, fileInfo.Length, fileInfo.Extension);
+                    
+                    // Create FileEntry
+                    var fileEntry = new Models.FileEntry(path, fileInfoModel);
+                    return await mapper.MapFileAsync(fileEntry, cancellationToken);
+                }
+                
+                // Check if it's a directory
+                if (Directory.Exists(systemPath))
+                {
+                    var directoryInfo = new System.IO.DirectoryInfo(systemPath);
+                    
+                    // Create EntryInfo
+                    var entryInfo = new Models.EntryInfo(
+                        directoryInfo.Name,
+                        directoryInfo.CreationTimeUtc,
+                        directoryInfo.LastWriteTimeUtc,
+                        directoryInfo.LastAccessTimeUtc,
+                        directoryInfo.Attributes);
+                    
+                    // Create DirectoryInfo
+                    var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                    
+                    // Create DirectoryEntry
+                    var directoryEntry = new Models.DirectoryEntry(path, directoryInfoModel);
+                    return await mapper.MapDirectoryAsync(directoryEntry, cancellationToken);
+                }
+                
+                return Result<TEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
             }
             catch (OperationCanceledException)
             {
@@ -183,10 +225,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Result<TEntry, FileSystemError>.Failure(
-                    new FileSystemError(
-                        $"Failed to map entry: {ex.Message}", 
-                        path.Value, 
-                        FileSystemErrorType.Unknown));
+                    FileSystemError.FromException(ex, path.Value));
             }
         }
 
@@ -352,8 +391,8 @@ namespace Ave.Extensions.FileSystem.Local
                 var context = TraversalContext.CreateInitial(path);
                 var stats = new TraversalStats();
                 
-                // Get the starting entry
-                var entryResult = await GetEntryInternalAsync(path, cancellationToken);
+                // Get the starting entry as IFileSystemEntry
+                var entryResult = await GetStartingEntryAsync(path, cancellationToken);
                 if (entryResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
 
@@ -410,12 +449,12 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <summary>
-        /// Gets the children of a directory for traversal.
+        /// Gets a single entry as IFileSystemEntry for traversal starting point.
         /// </summary>
-        /// <param name="path">The directory path.</param>
+        /// <param name="path">The path to get the entry for.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the children or an error.</returns>
-        private Task<Result<IEnumerable<FileSystemEntry>, FileSystemError>> GetChildrenAsync(
+        /// <returns>A result containing the entry or an error.</returns>
+        private Task<Result<IFileSystemEntry, FileSystemError>> GetStartingEntryAsync(
             CanonicalPath path, 
             CancellationToken cancellationToken)
         {
@@ -423,17 +462,82 @@ namespace Ave.Extensions.FileSystem.Local
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
+                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+
+                var systemPath = systemPathResult.Value;
+                
+                // Check if it's a file
+                if (File.Exists(systemPath))
+                {
+                    var fileInfo = new System.IO.FileInfo(systemPath);
+                    var entryInfo = new Models.EntryInfo(
+                        fileInfo.Name,
+                        fileInfo.CreationTimeUtc,
+                        fileInfo.LastWriteTimeUtc,
+                        fileInfo.LastAccessTimeUtc,
+                        fileInfo.Attributes);
+                    
+                    var fileInfoModel = new Models.FileInfo(entryInfo, fileInfo.Length, fileInfo.Extension);
+                    IFileSystemEntry entry = new Models.FileEntry(path, fileInfoModel);
+                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
+                }
+                
+                // Check if it's a directory
+                if (Directory.Exists(systemPath))
+                {
+                    var directoryInfo = new System.IO.DirectoryInfo(systemPath);
+                    var entryInfo = new Models.EntryInfo(
+                        directoryInfo.Name,
+                        directoryInfo.CreationTimeUtc,
+                        directoryInfo.LastWriteTimeUtc,
+                        directoryInfo.LastAccessTimeUtc,
+                        directoryInfo.Attributes);
+                    
+                    var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                    IFileSystemEntry entry = new Models.DirectoryEntry(path, directoryInfoModel);
+                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
+                }
+                
+                return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound)));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, path.Value)));
+            }
+        }
+
+        /// <summary>
+        /// Gets the children of a directory for traversal.
+        /// </summary>
+        /// <param name="path">The directory path.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the children or an error.</returns>
+        private Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildrenAsync(
+            CanonicalPath path, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
                         new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
 
                 var systemPath = systemPathResult.Value;
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (!Directory.Exists(systemPath))
-                    return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
+                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
                         new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
 
-                var entries = new List<FileSystemEntry>();
+                var entries = new List<IFileSystemEntry>();
 
                 // Get directories
                 var directories = Directory.GetDirectories(systemPath);
@@ -442,17 +546,16 @@ namespace Ave.Extensions.FileSystem.Local
                     var canonicalDirResult = MapPathToCanonical(dir);
                     if (canonicalDirResult.IsSuccess)
                     {
-                        var dirInfo = new DirectoryInfo(dir);
-                        var entry = new FileSystemEntry(
-                            canonicalDirResult.Value,
-                            true,
-                            null,
-                            null,
+                        var dirInfo = new System.IO.DirectoryInfo(dir);
+                        var entryInfo = new Models.EntryInfo(
+                            dirInfo.Name,
                             dirInfo.CreationTimeUtc,
                             dirInfo.LastWriteTimeUtc,
                             dirInfo.LastAccessTimeUtc,
                             dirInfo.Attributes);
-                        entries.Add(entry);
+                        
+                        var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                        entries.Add(new Models.DirectoryEntry(canonicalDirResult.Value, directoryInfoModel));
                     }
                 }
 
@@ -463,21 +566,20 @@ namespace Ave.Extensions.FileSystem.Local
                     var canonicalFileResult = MapPathToCanonical(file);
                     if (canonicalFileResult.IsSuccess)
                     {
-                        var fileInfo = new FileInfo(file);
-                        var entry = new FileSystemEntry(
-                            canonicalFileResult.Value,
-                            false,
-                            fileInfo.Length,
-                            Path.GetExtension(file),
+                        var fileInfo = new System.IO.FileInfo(file);
+                        var entryInfo = new Models.EntryInfo(
+                            fileInfo.Name,
                             fileInfo.CreationTimeUtc,
                             fileInfo.LastWriteTimeUtc,
                             fileInfo.LastAccessTimeUtc,
                             fileInfo.Attributes);
-                        entries.Add(entry);
+                        
+                        var fileInfoModel = new Models.FileInfo(entryInfo, fileInfo.Length, fileInfo.Extension);
+                        entries.Add(new Models.FileEntry(canonicalFileResult.Value, fileInfoModel));
                     }
                 }
 
-                return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Success(entries));
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(entries));
             }
             catch (OperationCanceledException)
             {
@@ -485,7 +587,7 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
                     FileSystemError.FromException(ex, path.Value)));
             }
         }

@@ -83,7 +83,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Message.Should().Contain("Failed to map entry");
+            result.Error.Message.Should().Contain("Mapper error");
         }
 
         [Fact(DisplayName = "LFSM-004: GetEntryAsync with null mapper throws ArgumentNullException")]
@@ -169,32 +169,32 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
         private class FileInfoDtoMapper : IFileSystemEntryMapper<FileInfoDto>
         {
             public Task<Result<FileInfoDto, FileSystemError>> MapFileAsync(
-                FileSystemEntry entry,
+                IFileEntry entry,
                 CancellationToken cancellationToken = default)
             {
                 var dto = new FileInfoDto
                 {
-                    Name = entry.Name,
+                    Name = entry.Info.Info.Name,
                     FullPath = entry.Path.Value,
-                    SizeInBytes = entry.Size,
-                    LastModified = entry.ModifiedUtc,
-                    IsDirectory = entry.IsDirectory
+                    SizeInBytes = entry.Info.Size,
+                    LastModified = entry.Info.Info.ModifiedUtc,
+                    IsDirectory = false
                 };
                 
                 return Task.FromResult(Result<FileInfoDto, FileSystemError>.Success(dto));
             }
 
             public Task<Result<FileInfoDto, FileSystemError>> MapDirectoryAsync(
-                FileSystemEntry entry,
+                IDirectoryEntry entry,
                 CancellationToken cancellationToken = default)
             {
                 var dto = new FileInfoDto
                 {
-                    Name = entry.Name,
+                    Name = entry.Info.Info.Name,
                     FullPath = entry.Path.Value,
-                    SizeInBytes = entry.Size,
-                    LastModified = entry.ModifiedUtc,
-                    IsDirectory = entry.IsDirectory
+                    SizeInBytes = null,
+                    LastModified = entry.Info.Info.ModifiedUtc,
+                    IsDirectory = true
                 };
                 
                 return Task.FromResult(Result<FileInfoDto, FileSystemError>.Success(dto));
@@ -204,14 +204,14 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
         private class ThrowingMapper : IFileSystemEntryMapper<FileSystemEntry>
         {
             public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
-                FileSystemEntry entry,
+                IFileEntry entry,
                 CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("Mapper error");
             }
 
             public Task<Result<FileSystemEntry, FileSystemError>> MapDirectoryAsync(
-                FileSystemEntry entry,
+                IDirectoryEntry entry,
                 CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("Mapper error");

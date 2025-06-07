@@ -230,17 +230,52 @@ namespace Ave.Extensions.FileSystem.InMemory
             if (mapper == null)
                 throw new ArgumentNullException(nameof(mapper));
             
-            // Get the base FileSystemEntry
-            var entryResult = await GetEntryInternalAsync(path, cancellationToken);
-            if (entryResult.IsFailure)
-                return Result<TEntry, FileSystemError>.Failure(entryResult.Error);
-            
-            // Map to TEntry using appropriate method based on entry type
             try
             {
-                return entryResult.Value.IsDirectory
-                    ? await mapper.MapDirectoryAsync(entryResult.Value, cancellationToken)
-                    : await mapper.MapFileAsync(entryResult.Value, cancellationToken);
+                _lock.EnterReadLock();
+                try
+                {
+                    // Check if it's a file
+                    if (_files.TryGetValue(path, out var fileNode))
+                    {
+                        var entryInfo = new Models.EntryInfo(
+                            path.GetName(),
+                            fileNode.CreatedUtc,
+                            fileNode.ModifiedUtc,
+                            fileNode.LastAccessUtc,
+                            fileNode.Attributes);
+                        
+                        var fileInfoModel = new Models.FileInfo(
+                            entryInfo, 
+                            fileNode.Content.Length, 
+                            System.IO.Path.GetExtension(path.GetName()));
+                        
+                        var fileEntry = new Models.FileEntry(path, fileInfoModel);
+                        return await mapper.MapFileAsync(fileEntry, cancellationToken);
+                    }
+                    
+                    // Check if it's a directory
+                    if (_directories.TryGetValue(path, out var dirNode))
+                    {
+                        var entryInfo = new Models.EntryInfo(
+                            path.GetName(),
+                            dirNode.CreatedUtc,
+                            dirNode.ModifiedUtc,
+                            dirNode.LastAccessUtc,
+                            dirNode.Attributes);
+                        
+                        var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                        var directoryEntry = new Models.DirectoryEntry(path, directoryInfoModel);
+                        return await mapper.MapDirectoryAsync(directoryEntry, cancellationToken);
+                    }
+                    
+                    return Result<TEntry, FileSystemError>.Failure(
+                        new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
             }
             catch (OperationCanceledException)
             {
@@ -250,7 +285,7 @@ namespace Ave.Extensions.FileSystem.InMemory
             {
                 return Result<TEntry, FileSystemError>.Failure(
                     new FileSystemError(
-                        $"Failed to map entry: {ex.Message}", 
+                        $"Failed to get entry: {ex.Message}", 
                         path.Value, 
                         FileSystemErrorType.Unknown));
             }
@@ -339,8 +374,8 @@ namespace Ave.Extensions.FileSystem.InMemory
                 var context = TraversalContext.CreateInitial(path);
                 var stats = new TraversalStats();
                 
-                // Get the starting entry
-                var entryResult = await GetEntryInternalAsync(path, cancellationToken);
+                // Get the starting entry as IFileSystemEntry
+                var entryResult = await GetStartingEntryAsync(path, cancellationToken);
                 if (entryResult.IsFailure)
                     return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
 
@@ -402,67 +437,56 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <summary>
-        /// Gets the children of a directory for traversal.
+        /// Gets a single entry as IFileSystemEntry for traversal starting point.
         /// </summary>
-        /// <param name="path">The directory path.</param>
+        /// <param name="path">The path to get the entry for.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the children or an error.</returns>
-        private Task<Result<IEnumerable<FileSystemEntry>, FileSystemError>> GetChildrenAsync(
+        /// <returns>A result containing the entry or an error.</returns>
+        private Task<Result<IFileSystemEntry, FileSystemError>> GetStartingEntryAsync(
             CanonicalPath path, 
             CancellationToken cancellationToken)
         {
             try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 _lock.EnterReadLock();
                 try
                 {
-                    if (!_directories.ContainsKey(path))
+                    // Check if it's a file
+                    if (_files.TryGetValue(path, out var fileNode))
                     {
-                        return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
-                            new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
+                        var entryInfo = new Models.EntryInfo(
+                            path.GetName(),
+                            fileNode.CreatedUtc,
+                            fileNode.ModifiedUtc,
+                            fileNode.LastAccessUtc,
+                            fileNode.Attributes);
+                        
+                        var fileInfoModel = new Models.FileInfo(
+                            entryInfo, 
+                            fileNode.Content.Length, 
+                            System.IO.Path.GetExtension(path.GetName()));
+                        
+                        IFileSystemEntry entry = new Models.FileEntry(path, fileInfoModel);
+                        return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
                     }
-
-                    var entries = new List<FileSystemEntry>();
-
-                    // Get all files that are direct children of this directory
-                    var childFiles = _files.Where(kvp => IsDirectChildOf(kvp.Key, path))
-                                           .Select(kvp => kvp.Value);
-
-                    foreach (var fileNode in childFiles)
+                    
+                    // Check if it's a directory
+                    if (_directories.TryGetValue(path, out var dirNode))
                     {
-                        var entry = new FileSystemEntry(
-                            path: fileNode.Path,
-                            isDirectory: false,
-                            size: fileNode.Content.Length,
-                            extension: System.IO.Path.GetExtension(fileNode.Path.GetName()),
-                            createdUtc: fileNode.CreatedUtc,
-                            modifiedUtc: fileNode.ModifiedUtc,
-                            lastAccessUtc: fileNode.LastAccessUtc,
-                            attributes: fileNode.Attributes);
-                        entries.Add(entry);
+                        var entryInfo = new Models.EntryInfo(
+                            path.GetName(),
+                            dirNode.CreatedUtc,
+                            dirNode.ModifiedUtc,
+                            dirNode.LastAccessUtc,
+                            dirNode.Attributes);
+                        
+                        var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                        IFileSystemEntry entry = new Models.DirectoryEntry(path, directoryInfoModel);
+                        return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
                     }
-
-                    // Get all directories that are direct children of this directory
-                    var childDirectories = _directories.Where(kvp => IsDirectChildOf(kvp.Key, path))
-                                                      .Select(kvp => kvp.Value);
-
-                    foreach (var dirNode in childDirectories)
-                    {
-                        var entry = new FileSystemEntry(
-                            path: dirNode.Path,
-                            isDirectory: true,
-                            size: null,
-                            extension: null,
-                            createdUtc: dirNode.CreatedUtc,
-                            modifiedUtc: dirNode.ModifiedUtc,
-                            lastAccessUtc: dirNode.LastAccessUtc,
-                            attributes: dirNode.Attributes);
-                        entries.Add(entry);
-                    }
-
-                    return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Success((IEnumerable<FileSystemEntry>)entries));
+                    
+                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                        new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound)));
                 }
                 finally
                 {
@@ -475,7 +499,88 @@ namespace Ave.Extensions.FileSystem.InMemory
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Failure(
+                return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value, FileSystemErrorType.Unknown)));
+            }
+        }
+
+        /// <summary>
+        /// Gets the children of a directory for traversal.
+        /// </summary>
+        /// <param name="path">The directory path.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the children or an error.</returns>
+        private Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildrenAsync(
+            CanonicalPath path, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                _lock.EnterReadLock();
+                try
+                {
+                    if (!_directories.ContainsKey(path))
+                    {
+                        return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
+                            new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
+                    }
+
+                    var entries = new List<IFileSystemEntry>();
+
+                    // Get all files that are direct children of this directory
+                    var childFiles = _files.Where(kvp => IsDirectChildOf(kvp.Key, path))
+                                           .Select(kvp => kvp.Value);
+
+                    foreach (var fileNode in childFiles)
+                    {
+                        var entryInfo = new Models.EntryInfo(
+                            fileNode.Path.GetName(),
+                            fileNode.CreatedUtc,
+                            fileNode.ModifiedUtc,
+                            fileNode.LastAccessUtc,
+                            fileNode.Attributes);
+                        
+                        var fileInfoModel = new Models.FileInfo(
+                            entryInfo, 
+                            fileNode.Content.Length, 
+                            System.IO.Path.GetExtension(fileNode.Path.GetName()));
+                        
+                        entries.Add(new Models.FileEntry(fileNode.Path, fileInfoModel));
+                    }
+
+                    // Get all directories that are direct children of this directory
+                    var childDirectories = _directories.Where(kvp => IsDirectChildOf(kvp.Key, path))
+                                                      .Select(kvp => kvp.Value);
+
+                    foreach (var dirNode in childDirectories)
+                    {
+                        var entryInfo = new Models.EntryInfo(
+                            dirNode.Path.GetName(),
+                            dirNode.CreatedUtc,
+                            dirNode.ModifiedUtc,
+                            dirNode.LastAccessUtc,
+                            dirNode.Attributes);
+                        
+                        var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                        entries.Add(new Models.DirectoryEntry(dirNode.Path, directoryInfoModel));
+                    }
+
+                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success((IEnumerable<IFileSystemEntry>)entries));
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
                     FileSystemError.FromException(ex, path.Value)));
             }
         }

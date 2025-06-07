@@ -24,12 +24,12 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
         Task<Result<Unit, FileSystemError>> TraverseAsync(
-            FileSystemEntry entry,
+            IFileSystemEntry entry,
             ITraversalHandler handler,
             TraversalOptions options,
             TraversalContext context,
             TraversalStats stats,
-            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<FileSystemEntry>, FileSystemError>>> getChildren,
+            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>>> getChildren,
             CancellationToken cancellationToken);
     }
 }

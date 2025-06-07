@@ -28,19 +28,29 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
 
         /// <inheritdoc />
         public override async Task<Result<Unit, FileSystemError>> TraverseAsync(
-            FileSystemEntry entry,
+            IFileSystemEntry entry,
             ITraversalHandler handler,
             TraversalOptions options,
             TraversalContext context,
             TraversalStats stats,
-            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<FileSystemEntry>, FileSystemError>>> getChildren,
+            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>>> getChildren,
             CancellationToken cancellationToken)
         {
-            if (entry.IsDirectory)
+            if (entry is IDirectoryEntry directoryEntry)
             {
                 stats.IncrementDirectories();
                 
-                var controlResult = await handler.HandleDirectoryAsync(entry, context, cancellationToken);
+                // First call OnDirectoryEnterAsync
+                var enterResult = await handler.OnDirectoryEnterAsync(directoryEntry, context, cancellationToken);
+                if (enterResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(enterResult.Error);
+
+                var enterControl = enterResult.Value;
+                if (enterControl.Action == TraversalAction.Stop)
+                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+
+                // Then call OnDirectoryAsync
+                var controlResult = await handler.OnDirectoryAsync(directoryEntry, context, cancellationToken);
                 if (controlResult.IsFailure)
                     return Result<Unit, FileSystemError>.Failure(controlResult.Error);
 
@@ -56,8 +66,8 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
 
                     var children = childrenResult.Value.ToList();
                     
-                    var files = children.Where(c => !c.IsDirectory).ToList();
-                    var directories = children.Where(c => c.IsDirectory).ToList();
+                    var files = children.OfType<IFileEntry>().ToList();
+                    var directories = children.OfType<IDirectoryEntry>().ToList();
                     
                     if (files.Any())
                     {
@@ -67,12 +77,11 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                             try
                             {
                                 stats.IncrementFiles();
-                                if (file.Size.HasValue)
-                                    stats.AddBytes(file.Size.Value);
+                                stats.AddBytes(file.Info.Size);
 
                                 if (ShouldProcessEntry(file, options))
                                 {
-                                    var fileControl = await handler.HandleFileAsync(file, context, cancellationToken);
+                                    var fileControl = await handler.OnFileAsync(file, context, cancellationToken);
                                     return fileControl.IsSuccess && fileControl.Value.Action != TraversalAction.Stop;
                                 }
                                 return true;
@@ -130,15 +139,14 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                     }
                 }
             }
-            else
+            else if (entry is IFileEntry fileEntry)
             {
                 stats.IncrementFiles();
-                if (entry.Size.HasValue)
-                    stats.AddBytes(entry.Size.Value);
+                stats.AddBytes(fileEntry.Info.Size);
 
                 if (ShouldProcessEntry(entry, options))
                 {
-                    var controlResult = await handler.HandleFileAsync(entry, context, cancellationToken);
+                    var controlResult = await handler.OnFileAsync(fileEntry, context, cancellationToken);
                     if (controlResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(controlResult.Error);
                 }

@@ -14,21 +14,21 @@ namespace Ave.Extensions.FileSystem.Mapping
         /// <summary>
         /// Maps a file entry to a custom type.
         /// </summary>
-        /// <param name="entry">The file system entry to map.</param>
+        /// <param name="entry">The file entry to map.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
         Task<Result<TEntry, FileSystemError>> MapFileAsync(
-            FileSystemEntry entry,
+            IFileEntry entry,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Maps a directory entry to a custom type.
         /// </summary>
-        /// <param name="entry">The file system entry to map.</param>
+        /// <param name="entry">The directory entry to map.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
         Task<Result<TEntry, FileSystemError>> MapDirectoryAsync(
-            FileSystemEntry entry,
+            IDirectoryEntry entry,
             CancellationToken cancellationToken = default);
     }
 }

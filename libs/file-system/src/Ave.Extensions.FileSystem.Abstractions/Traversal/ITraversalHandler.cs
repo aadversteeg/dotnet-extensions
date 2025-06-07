@@ -21,14 +21,26 @@ namespace Ave.Extensions.FileSystem.Traversal
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Called when entering a directory before processing its contents.
+        /// </summary>
+        /// <param name="directory">The directory entry being entered.</param>
+        /// <param name="context">The current traversal context.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing traversal control instructions or an error.</returns>
+        Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+            IDirectoryEntry directory,
+            TraversalContext context,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Handles a file entry during traversal.
         /// </summary>
         /// <param name="file">The file entry to handle.</param>
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
-        Task<Result<TraversalControl, FileSystemError>> HandleFileAsync(
-            FileSystemEntry file,
+        Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+            IFileEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default);
 
@@ -39,8 +51,8 @@ namespace Ave.Extensions.FileSystem.Traversal
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
-        Task<Result<TraversalControl, FileSystemError>> HandleDirectoryAsync(
-            FileSystemEntry directory,
+        Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+            IDirectoryEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default);
 

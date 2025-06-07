@@ -52,26 +52,50 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
         }
 
-        public Task<Result<TraversalControl, FileSystemError>> HandleFileAsync(
-            FileSystemEntry file,
+        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+            IDirectoryEntry directory,
             TraversalContext context,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
-            if (_includeFiles && _matcher.IsMatch(file.Name))
+            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        }
+
+        public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+            IFileEntry file,
+            TraversalContext context,
+            CancellationToken cancellationToken = default)
+        {
+            if (_includeFiles && _matcher.IsMatch(file.Info.Info.Name))
             {
-                _queue.Enqueue(file);
+                _queue.Enqueue(new FileSystemEntry(
+                    file.Path,
+                    false, // isDirectory
+                    file.Info.Size,
+                    file.Info.Extension,
+                    file.Info.Info.CreatedUtc,
+                    file.Info.Info.ModifiedUtc,
+                    file.Info.Info.LastAccessUtc,
+                    file.Info.Info.Attributes));
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }
 
-        public Task<Result<TraversalControl, FileSystemError>> HandleDirectoryAsync(
-            FileSystemEntry directory,
+        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+            IDirectoryEntry directory,
             TraversalContext context,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
-            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Name))
+            if (_includeDirectories && context.CurrentDepth > 0 && _matcher.IsMatch(directory.Info.Info.Name))
             {
-                _queue.Enqueue(directory);
+                _queue.Enqueue(new FileSystemEntry(
+                    directory.Path,
+                    true, // isDirectory
+                    null, // size
+                    null, // extension
+                    directory.Info.Info.CreatedUtc,
+                    directory.Info.Info.ModifiedUtc,
+                    directory.Info.Info.LastAccessUtc,
+                    directory.Info.Info.Attributes));
             }
             return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
         }

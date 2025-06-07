@@ -479,7 +479,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Get expected metadata using System.IO
-            var fileInfo = new FileInfo(physicalFilePath);
+            var fileInfo = new System.IO.FileInfo(physicalFilePath);
 
             // Act
             var result = await _fileSystem.GetEntryAsync(canonicalFilePath, IdentityMapper.Instance);
@@ -507,7 +507,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdDirectories.Add(physicalDirPath);
 
             // Get expected metadata using System.IO
-            var dirInfo = new DirectoryInfo(physicalDirPath);
+            var dirInfo = new System.IO.DirectoryInfo(physicalDirPath);
 
             // Act
             var result = await _fileSystem.GetEntryAsync(canonicalDirPath, IdentityMapper.Instance);
@@ -597,7 +597,7 @@ namespace IntegrationTests.FileSystem.Local
             
             // Verify with System.IO
             File.Exists(physicalFilePath).Should().BeTrue();
-            var fileInfo = new FileInfo(physicalFilePath);
+            var fileInfo = new System.IO.FileInfo(physicalFilePath);
             fileInfo.Length.Should().BeGreaterThan(1000000);
         }
 

@@ -48,12 +48,12 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Strategies
             var context = TraversalContext.CreateInitial("/empty".ToCanonicalPath());
             var stats = new TraversalStats();
 
-            Task<Result<IEnumerable<FileSystemEntry>, FileSystemError>> GetChildren(CanonicalPath path, CancellationToken ct)
+            Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildren(CanonicalPath path, CancellationToken ct)
             {
-                return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Success(Enumerable.Empty<FileSystemEntry>()));
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(Enumerable.Empty<IFileSystemEntry>()));
             }
 
-            var directory = new FileSystemEntry("/empty".ToCanonicalPath(), true, null, null, DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Directory);
+            var directory = new DirectoryEntry("/empty".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.DirectoryInfo(new EntryInfo("empty", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Directory)));
 
             // Act
             var result = await strategy.TraverseAsync(directory, handler, options, context, stats, GetChildren, CancellationToken.None);
@@ -93,12 +93,12 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Strategies
             var context = TraversalContext.CreateInitial("/test".ToCanonicalPath());
             var stats = new TraversalStats();
 
-            Task<Result<IEnumerable<FileSystemEntry>, FileSystemError>> GetChildren(CanonicalPath path, CancellationToken ct)
+            Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildren(CanonicalPath path, CancellationToken ct)
             {
-                return Task.FromResult(Result<IEnumerable<FileSystemEntry>, FileSystemError>.Success(Enumerable.Empty<FileSystemEntry>()));
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(Enumerable.Empty<IFileSystemEntry>()));
             }
 
-            var file = new FileSystemEntry("/test/file.txt".ToCanonicalPath(), false, 100, ".txt", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal);
+            var file = new FileEntry("/test/file.txt".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.FileInfo(new EntryInfo("file.txt", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Normal), 100, ".txt"));
 
             // Act
             var result = await strategy.TraverseAsync(file, handler, options, context, stats, GetChildren, CancellationToken.None);

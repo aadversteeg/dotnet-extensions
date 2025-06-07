@@ -18,18 +18,40 @@ namespace Ave.Extensions.FileSystem.Mapping
 
         /// <inheritdoc />
         public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
-            FileSystemEntry entry,
+            IFileEntry entry,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+            // Convert from IFileEntry back to FileSystemEntry
+            var result = new FileSystemEntry(
+                path: entry.Path,
+                isDirectory: false,
+                size: entry.Info.Size,
+                extension: entry.Info.Extension,
+                createdUtc: entry.Info.Info.CreatedUtc,
+                modifiedUtc: entry.Info.Info.ModifiedUtc,
+                lastAccessUtc: entry.Info.Info.LastAccessUtc,
+                attributes: entry.Info.Info.Attributes);
+                
+            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(result));
         }
 
         /// <inheritdoc />
         public Task<Result<FileSystemEntry, FileSystemError>> MapDirectoryAsync(
-            FileSystemEntry entry,
+            IDirectoryEntry entry,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+            // Convert from IDirectoryEntry back to FileSystemEntry
+            var result = new FileSystemEntry(
+                path: entry.Path,
+                isDirectory: true,
+                size: null,
+                extension: null,
+                createdUtc: entry.Info.Info.CreatedUtc,
+                modifiedUtc: entry.Info.Info.ModifiedUtc,
+                lastAccessUtc: entry.Info.Info.LastAccessUtc,
+                attributes: entry.Info.Info.Attributes);
+                
+            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(result));
         }
     }
 }

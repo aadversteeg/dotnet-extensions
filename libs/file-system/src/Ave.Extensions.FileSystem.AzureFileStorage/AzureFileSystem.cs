@@ -173,13 +173,20 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
         }
 
-        private async Task<Result<FileSystemEntry, FileSystemError>> GetEntryInternalAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        /// <inheritdoc />
+        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+            CanonicalPath path,
+            IFileSystemEntryMapper<TEntry> mapper,
+            CancellationToken cancellationToken = default)
         {
+            if (mapper == null)
+                throw new ArgumentNullException(nameof(mapper));
+            
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<FileSystemEntry, FileSystemError>.Failure(validationResult.Error);
+                    return Result<TEntry, FileSystemError>.Failure(validationResult.Error);
                 
                 var azurePath = GetAzurePath(path.Value);
                 
@@ -190,17 +197,20 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     var fileResponse = await fileClient.GetPropertiesAsync(cancellationToken);
                     var fileProperties = fileResponse.Value;
                     
-                    var entry = new FileSystemEntry(
-                        path: path,
-                        isDirectory: false,
-                        size: fileProperties.ContentLength,
-                        extension: Path.GetExtension(path.Value),
-                        createdUtc: fileProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
-                        modifiedUtc: fileProperties.LastModified.DateTime,
-                        lastAccessUtc: fileProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? fileProperties.LastModified.DateTime,
-                        attributes: ConvertSmbAttributes(fileProperties.SmbProperties.FileAttributes));
+                    // Create EntryInfo
+                    var entryInfo = new EntryInfo(
+                        Path.GetFileName(path.Value),
+                        fileProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                        fileProperties.LastModified.DateTime,
+                        fileProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? fileProperties.LastModified.DateTime,
+                        ConvertSmbAttributes(fileProperties.SmbProperties.FileAttributes));
                     
-                    return Result<FileSystemEntry, FileSystemError>.Success(entry);
+                    // Create FileInfo
+                    var fileInfo = new Models.FileInfo(entryInfo, fileProperties.ContentLength, Path.GetExtension(path.Value));
+                    
+                    // Create FileEntry
+                    var fileEntry = new Models.FileEntry(path, fileInfo);
+                    return await mapper.MapFileAsync(fileEntry, cancellationToken);
                 }
                 catch (RequestFailedException ex) when (ex.Status == 404)
                 {
@@ -211,53 +221,27 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         var dirResponse = await directoryClient.GetPropertiesAsync(cancellationToken);
                         var dirProperties = dirResponse.Value;
                         
-                        var entry = new FileSystemEntry(
-                            path: path,
-                            isDirectory: true,
-                            size: null,
-                            extension: null,
-                            createdUtc: dirProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
-                            modifiedUtc: dirProperties.LastModified.DateTime,
-                            lastAccessUtc: dirProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? dirProperties.LastModified.DateTime,
-                            attributes: ConvertSmbAttributes(dirProperties.SmbProperties.FileAttributes) | FileAttributes.Directory);
+                        // Create EntryInfo
+                        var entryInfo = new EntryInfo(
+                            Path.GetFileName(path.Value.TrimEnd('/')) ?? string.Empty,
+                            dirProperties.SmbProperties.FileCreatedOn?.DateTime ?? DateTime.UtcNow,
+                            dirProperties.LastModified.DateTime,
+                            dirProperties.SmbProperties.FileLastWrittenOn?.DateTime ?? dirProperties.LastModified.DateTime,
+                            ConvertSmbAttributes(dirProperties.SmbProperties.FileAttributes) | FileAttributes.Directory);
                         
-                        return Result<FileSystemEntry, FileSystemError>.Success(entry);
+                        // Create DirectoryInfo
+                        var directoryInfo = new Models.DirectoryInfo(entryInfo);
+                        
+                        // Create DirectoryEntry
+                        var directoryEntry = new Models.DirectoryEntry(path, directoryInfo);
+                        return await mapper.MapDirectoryAsync(directoryEntry, cancellationToken);
                     }
                     catch (RequestFailedException dirEx) when (dirEx.Status == 404)
                     {
-                        return Result<FileSystemEntry, FileSystemError>.Failure(
+                        return Result<TEntry, FileSystemError>.Failure(
                             new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get entry from Azure: {Path}", path.Value);
-                return Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value));
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
-            CanonicalPath path,
-            IFileSystemEntryMapper<TEntry> mapper,
-            CancellationToken cancellationToken = default)
-        {
-            if (mapper == null)
-                throw new ArgumentNullException(nameof(mapper));
-            
-            // Get the base FileSystemEntry
-            var entryResult = await GetEntryInternalAsync(path, cancellationToken);
-            if (entryResult.IsFailure)
-                return Result<TEntry, FileSystemError>.Failure(entryResult.Error);
-            
-            // Map to TEntry using appropriate method based on entry type
-            try
-            {
-                return entryResult.Value.IsDirectory
-                    ? await mapper.MapDirectoryAsync(entryResult.Value, cancellationToken)
-                    : await mapper.MapFileAsync(entryResult.Value, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -265,11 +249,9 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to get entry from Azure: {Path}", path.Value);
                 return Result<TEntry, FileSystemError>.Failure(
-                    new FileSystemError(
-                        $"Failed to map entry: {ex.Message}", 
-                        path.Value, 
-                        FileSystemErrorType.Unknown));
+                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value));
             }
         }
 
@@ -349,21 +331,29 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 var azurePath = GetAzurePath(directoryPath.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
 
-                // Process current directory
+                // Process current directory - notify enter
                 if (context.CurrentDepth > 0 || directoryPath.Value != context.RootPath.Value)
                 {
-                    var directoryEntry = await CreateDirectoryEntryAsync(directoryPath, directoryClient, cancellationToken);
+                    var directoryEntry = await CreateDirectoryEntryInternalAsync(directoryPath, directoryClient, cancellationToken);
                     if (directoryEntry.IsSuccess)
                     {
-                        var dirResult = await handler.HandleDirectoryAsync(directoryEntry.Value, context, cancellationToken);
+                        var enterResult = await handler.OnDirectoryEnterAsync(directoryEntry.Value, context, cancellationToken);
+                        if (enterResult.IsFailure)
+                            return Result<TraversalSummary, FileSystemError>.Failure(enterResult.Error);
+
+                        if (enterResult.Value.Action == TraversalAction.Stop)
+                            return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(0, 1, 0, TimeSpan.Zero, true));
+
+                        if (enterResult.Value.Action == TraversalAction.Skip)
+                            return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(0, 1, 0, TimeSpan.Zero, false));
+
+                        // Also process the directory itself
+                        var dirResult = await handler.OnDirectoryAsync(directoryEntry.Value, context, cancellationToken);
                         if (dirResult.IsFailure)
                             return Result<TraversalSummary, FileSystemError>.Failure(dirResult.Error);
 
                         if (dirResult.Value.Action == TraversalAction.Stop)
                             return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(0, 1, 0, TimeSpan.Zero, true));
-
-                        if (dirResult.Value.Action == TraversalAction.Skip)
-                            return Result<TraversalSummary, FileSystemError>.Success(new TraversalSummary(0, 1, 0, TimeSpan.Zero, false));
 
                         directoriesProcessed++;
                     }
@@ -379,10 +369,10 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     if (!item.IsDirectory)
                     {
                         // Handle file
-                        var fileEntry = await CreateFileEntryAsync(itemPath, item, cancellationToken);
+                        var fileEntry = await CreateFileEntryInternalAsync(itemPath, item, cancellationToken);
                         if (fileEntry.IsSuccess)
                         {
-                            var fileResult = await handler.HandleFileAsync(fileEntry.Value, context, cancellationToken);
+                            var fileResult = await handler.OnFileAsync(fileEntry.Value, context, cancellationToken);
                             if (fileResult.IsFailure)
                                 return Result<TraversalSummary, FileSystemError>.Failure(fileResult.Error);
 
@@ -393,17 +383,36 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                             }
 
                             filesProcessed++;
-                            totalBytesProcessed += fileEntry.Value.Size ?? 0;
+                            totalBytesProcessed += fileEntry.Value.Info.Size;
                         }
                     }
                     else
                     {
                         // Handle subdirectory
-                        var directoryEntry = await CreateDirectoryEntryAsync(itemPath, GetDirectoryClient(GetAzurePath(itemPath.Value)), cancellationToken);
+                        var directoryEntry = await CreateDirectoryEntryInternalAsync(itemPath, GetDirectoryClient(GetAzurePath(itemPath.Value)), cancellationToken);
                         if (directoryEntry.IsSuccess)
                         {
                             var nextContext = context.NextLevel(itemPath);
-                            var dirResult = await handler.HandleDirectoryAsync(directoryEntry.Value, nextContext, cancellationToken);
+                            
+                            // Notify enter
+                            var enterResult = await handler.OnDirectoryEnterAsync(directoryEntry.Value, nextContext, cancellationToken);
+                            if (enterResult.IsFailure)
+                                return Result<TraversalSummary, FileSystemError>.Failure(enterResult.Error);
+
+                            if (enterResult.Value.Action == TraversalAction.Stop)
+                            {
+                                var stoppedSummary = new TraversalSummary(filesProcessed, directoriesProcessed + 1, totalBytesProcessed, TimeSpan.Zero, true);
+                                return Result<TraversalSummary, FileSystemError>.Success(stoppedSummary);
+                            }
+
+                            if (enterResult.Value.Action == TraversalAction.Skip)
+                            {
+                                directoriesProcessed++;
+                                continue;
+                            }
+                            
+                            // Process directory
+                            var dirResult = await handler.OnDirectoryAsync(directoryEntry.Value, nextContext, cancellationToken);
                             if (dirResult.IsFailure)
                                 return Result<TraversalSummary, FileSystemError>.Failure(dirResult.Error);
 
@@ -453,7 +462,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
         }
 
-        private async Task<Result<FileSystemEntry, FileSystemError>> CreateFileEntryAsync(
+        private async Task<Result<IFileEntry, FileSystemError>> CreateFileEntryInternalAsync(
             CanonicalPath filePath, 
             ShareFileItem fileItem, 
             CancellationToken cancellationToken)
@@ -468,27 +477,31 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (string.IsNullOrEmpty(extension))
                     extension = null;
 
-                var entry = new FileSystemEntry(
-                    path: filePath,
-                    isDirectory: false,
-                    size: properties.Value.ContentLength,
-                    extension: extension,
-                    createdUtc: properties.Value.SmbProperties?.FileCreatedOn?.UtcDateTime ?? DateTime.MinValue,
-                    modifiedUtc: properties.Value.LastModified.UtcDateTime,
-                    lastAccessUtc: properties.Value.SmbProperties?.FileLastWrittenOn?.UtcDateTime ?? DateTime.MinValue,
-                    attributes: ConvertSmbAttributes(properties.Value.SmbProperties?.FileAttributes));
+                // Create EntryInfo
+                var entryInfo = new EntryInfo(
+                    fileItem.Name,
+                    properties.Value.SmbProperties?.FileCreatedOn?.UtcDateTime ?? DateTime.MinValue,
+                    properties.Value.LastModified.UtcDateTime,
+                    properties.Value.SmbProperties?.FileLastWrittenOn?.UtcDateTime ?? DateTime.MinValue,
+                    ConvertSmbAttributes(properties.Value.SmbProperties?.FileAttributes));
+                
+                // Create FileInfo
+                var fileInfo = new Models.FileInfo(entryInfo, properties.Value.ContentLength, extension);
+                
+                // Create FileEntry
+                var fileEntry = new Models.FileEntry(filePath, fileInfo);
 
-                return Result<FileSystemEntry, FileSystemError>.Success(entry);
+                return Result<IFileEntry, FileSystemError>.Success(fileEntry);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create file entry: {Path}", filePath.Value);
-                return Result<FileSystemEntry, FileSystemError>.Failure(
+                return Result<IFileEntry, FileSystemError>.Failure(
                     new FileSystemError($"Failed to get file properties: {ex.Message}", filePath.Value));
             }
         }
 
-        private async Task<Result<FileSystemEntry, FileSystemError>> CreateDirectoryEntryAsync(
+        private async Task<Result<IDirectoryEntry, FileSystemError>> CreateDirectoryEntryInternalAsync(
             CanonicalPath directoryPath, 
             ShareDirectoryClient directoryClient, 
             CancellationToken cancellationToken)
@@ -497,22 +510,26 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 var properties = await directoryClient.GetPropertiesAsync(cancellationToken);
 
-                var entry = new FileSystemEntry(
-                    path: directoryPath,
-                    isDirectory: true,
-                    size: null,
-                    extension: null,
-                    createdUtc: properties.Value.SmbProperties?.FileCreatedOn?.UtcDateTime ?? DateTime.MinValue,
-                    modifiedUtc: properties.Value.LastModified.UtcDateTime,
-                    lastAccessUtc: properties.Value.SmbProperties?.FileLastWrittenOn?.UtcDateTime ?? DateTime.MinValue,
-                    attributes: ConvertSmbAttributes(properties.Value.SmbProperties?.FileAttributes) | FileAttributes.Directory);
+                // Create EntryInfo
+                var entryInfo = new EntryInfo(
+                    Path.GetFileName(directoryPath.Value.TrimEnd('/')) ?? string.Empty,
+                    properties.Value.SmbProperties?.FileCreatedOn?.UtcDateTime ?? DateTime.MinValue,
+                    properties.Value.LastModified.UtcDateTime,
+                    properties.Value.SmbProperties?.FileLastWrittenOn?.UtcDateTime ?? DateTime.MinValue,
+                    ConvertSmbAttributes(properties.Value.SmbProperties?.FileAttributes) | FileAttributes.Directory);
+                
+                // Create DirectoryInfo
+                var directoryInfo = new Models.DirectoryInfo(entryInfo);
+                
+                // Create DirectoryEntry
+                var directoryEntry = new Models.DirectoryEntry(directoryPath, directoryInfo);
 
-                return Result<FileSystemEntry, FileSystemError>.Success(entry);
+                return Result<IDirectoryEntry, FileSystemError>.Success(directoryEntry);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create directory entry: {Path}", directoryPath.Value);
-                return Result<FileSystemEntry, FileSystemError>.Failure(
+                return Result<IDirectoryEntry, FileSystemError>.Failure(
                     new FileSystemError($"Failed to get directory properties: {ex.Message}", directoryPath.Value));
             }
         }
