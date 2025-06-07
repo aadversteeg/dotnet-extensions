@@ -12,12 +12,22 @@ namespace Ave.Extensions.FileSystem.Mapping
     public interface IFileSystemEntryMapper<TEntry>
     {
         /// <summary>
-        /// Maps a FileSystemEntry to a custom type.
+        /// Maps a file entry to a custom type.
         /// </summary>
         /// <param name="entry">The file system entry to map.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
-        Task<Result<TEntry, FileSystemError>> MapAsync(
+        Task<Result<TEntry, FileSystemError>> MapFileAsync(
+            FileSystemEntry entry,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Maps a directory entry to a custom type.
+        /// </summary>
+        /// <param name="entry">The file system entry to map.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the mapped entry or an error.</returns>
+        Task<Result<TEntry, FileSystemError>> MapDirectoryAsync(
             FileSystemEntry entry,
             CancellationToken cancellationToken = default);
     }

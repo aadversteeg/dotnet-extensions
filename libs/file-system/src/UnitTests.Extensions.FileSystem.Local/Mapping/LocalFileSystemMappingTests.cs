@@ -168,7 +168,23 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
 
         private class FileInfoDtoMapper : IFileSystemEntryMapper<FileInfoDto>
         {
-            public Task<Result<FileInfoDto, FileSystemError>> MapAsync(
+            public Task<Result<FileInfoDto, FileSystemError>> MapFileAsync(
+                FileSystemEntry entry,
+                CancellationToken cancellationToken = default)
+            {
+                var dto = new FileInfoDto
+                {
+                    Name = entry.Name,
+                    FullPath = entry.Path.Value,
+                    SizeInBytes = entry.Size,
+                    LastModified = entry.ModifiedUtc,
+                    IsDirectory = entry.IsDirectory
+                };
+                
+                return Task.FromResult(Result<FileInfoDto, FileSystemError>.Success(dto));
+            }
+
+            public Task<Result<FileInfoDto, FileSystemError>> MapDirectoryAsync(
                 FileSystemEntry entry,
                 CancellationToken cancellationToken = default)
             {
@@ -187,7 +203,14 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
 
         private class ThrowingMapper : IFileSystemEntryMapper<FileSystemEntry>
         {
-            public Task<Result<FileSystemEntry, FileSystemError>> MapAsync(
+            public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
+                FileSystemEntry entry,
+                CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("Mapper error");
+            }
+
+            public Task<Result<FileSystemEntry, FileSystemError>> MapDirectoryAsync(
                 FileSystemEntry entry,
                 CancellationToken cancellationToken = default)
             {

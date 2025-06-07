@@ -17,7 +17,15 @@ namespace Ave.Extensions.FileSystem.Mapping
         public static readonly IdentityMapper Instance = new IdentityMapper();
 
         /// <inheritdoc />
-        public Task<Result<FileSystemEntry, FileSystemError>> MapAsync(
+        public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
+            FileSystemEntry entry,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+        }
+
+        /// <inheritdoc />
+        public Task<Result<FileSystemEntry, FileSystemError>> MapDirectoryAsync(
             FileSystemEntry entry,
             CancellationToken cancellationToken = default)
         {

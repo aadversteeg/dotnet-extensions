@@ -235,10 +235,12 @@ namespace Ave.Extensions.FileSystem.InMemory
             if (entryResult.IsFailure)
                 return Result<TEntry, FileSystemError>.Failure(entryResult.Error);
             
-            // Map to TEntry
+            // Map to TEntry using appropriate method based on entry type
             try
             {
-                return await mapper.MapAsync(entryResult.Value, cancellationToken);
+                return entryResult.Value.IsDirectory
+                    ? await mapper.MapDirectoryAsync(entryResult.Value, cancellationToken)
+                    : await mapper.MapFileAsync(entryResult.Value, cancellationToken);
             }
             catch (OperationCanceledException)
             {
