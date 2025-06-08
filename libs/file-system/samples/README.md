@@ -1,26 +1,51 @@
-# FileSystem Sample Applications
+# FileSystem Samples
 
-This folder contains simple console applications that demonstrate the use of the FileSystem abstraction library with System.CommandLine for command-line parsing and dependency injection.
+This directory contains comprehensive sample applications demonstrating the use of the `Ave.Extensions.FileSystem` library. All samples have been refactored to use a common infrastructure for consistency and maintainability.
 
 ## Prerequisites
 
-- .NET 8.0 SDK
-- Build the main solution first to ensure all dependencies are available
+- .NET 8.0 SDK or later
+- Cross-platform support (Windows, Linux, macOS)
 
-## Building the Samples
+## Building and Testing
 
-From the samples directory:
+### Build Commands
 
-```bash
-cd samples
-dotnet build
+**Windows (PowerShell):**
+```powershell
+# Basic build
+.\build.ps1
+
+# Build with tests
+.\build.ps1 -Test
+
+# Build with benchmarks
+.\build.ps1 -Benchmark
+
+# Clean and rebuild
+.\build.ps1 -Clean -Restore -Test
 ```
 
-Or build individual samples:
-
+**Linux/macOS (Bash):**
 ```bash
-cd FileCounter
-dotnet build
+# Basic build
+./build.sh
+
+# Build with tests
+./build.sh Release true
+
+# Build with benchmarks
+./build.sh Release true true
+```
+
+**Manual commands:**
+```bash
+# Build all projects
+dotnet build FileSystemSamples.sln
+
+# Run tests
+dotnet test Common.Tests/Common.Tests.csproj
+dotnet test Integration.Tests/Integration.Tests.csproj
 ```
 
 ## Sample Applications

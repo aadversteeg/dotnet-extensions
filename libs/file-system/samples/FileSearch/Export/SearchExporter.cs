@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using FileSearch.Handlers;
 using FileSearch.Models;
 using FileSearch.Services;
+using FileSystemSamples.Common.Options;
 
 namespace FileSearch.Export;
 

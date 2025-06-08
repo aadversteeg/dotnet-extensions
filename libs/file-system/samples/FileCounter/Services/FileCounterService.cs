@@ -11,6 +11,7 @@ using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 using FileCounter.Export;
 using FileCounter.Handlers;
+using FileSystemSamples.Common.Progress;
 using Microsoft.Extensions.Logging;
 
 namespace FileCounter.Services
@@ -24,6 +25,7 @@ namespace FileCounter.Services
         private readonly HandlerFactory _handlerFactory;
         private readonly ILogger<FileCounterService> _logger;
         private readonly IPathMapper _pathMapper;
+        private readonly ILoggerFactory _loggerFactory;
 
         /// <summary>
         /// Initializes a new instance of the FileCounterService class.
@@ -32,16 +34,19 @@ namespace FileCounter.Services
         /// <param name="handlerFactory">Factory for creating counting handlers.</param>
         /// <param name="pathMapper">The path mapper for converting between system and canonical paths.</param>
         /// <param name="logger">Logger for diagnostic messages.</param>
+        /// <param name="loggerFactory">Logger factory for creating additional loggers.</param>
         public FileCounterService(
             IFileSystem fileSystem,
             HandlerFactory handlerFactory,
             IPathMapper pathMapper,
-            ILogger<FileCounterService> logger)
+            ILogger<FileCounterService> logger,
+            ILoggerFactory loggerFactory)
         {
             _fileSystem = fileSystem;
             _handlerFactory = handlerFactory;
             _pathMapper = pathMapper;
             _logger = logger;
+            _loggerFactory = loggerFactory;
         }
 
         /// <summary>
@@ -51,7 +56,7 @@ namespace FileCounter.Services
         /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
         /// <returns>A result containing the counting handler with results or an error.</returns>
         public async Task<Result<ICountingHandler, FileSystemError>> CountAsync(
-            CountingOptions options,
+            FileCounter.Models.FileCounterOptions options,
             CancellationToken cancellationToken = default)
         {
             try
@@ -99,6 +104,16 @@ namespace FileCounter.Services
 
                 // Create handler and mapper
                 var handler = _handlerFactory.CreateHandler(options.HandlerType, options);
+                
+                // Add progress reporter if verbose or if operation might be long
+                if (options.Verbose || ShouldShowProgress(options.Path))
+                {
+                    var progressReporter = new ConsoleProgressReporter(
+                        _loggerFactory.CreateLogger<ConsoleProgressReporter>(),
+                        options.Verbose);
+                    handler.ProgressReporter = progressReporter;
+                }
+                
                 var mapper = new IdentityMapper();
 
                 // Configure traversal options
@@ -152,7 +167,7 @@ namespace FileCounter.Services
         /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
         /// <returns>A result containing the exported content or an error.</returns>
         public async Task<Result<string, FileSystemError>> CountAndExportAsync(
-            CountingOptions options,
+            FileCounter.Models.FileCounterOptions options,
             CancellationToken cancellationToken = default)
         {
             var countResult = await CountAsync(options, cancellationToken);
@@ -178,92 +193,39 @@ namespace FileCounter.Services
             }
         }
 
-    }
-
-    /// <summary>
-    /// Options for configuring file counting operations.
-    /// </summary>
-    public record CountingOptions
-    {
         /// <summary>
-        /// Gets or sets the path to count files in.
+        /// Determines if progress reporting should be shown for the given path.
         /// </summary>
-        public required string Path { get; init; }
-
-        /// <summary>
-        /// Gets or sets the file extension filter (e.g., ".cs").
-        /// </summary>
-        public string? ExtensionFilter { get; init; }
+        /// <param name="path">The path being processed.</param>
+        /// <returns>True if progress should be shown, false otherwise.</returns>
+        private bool ShouldShowProgress(string path)
+        {
+            // Show progress for network paths or large directories
+            return path.StartsWith("\\\\") || IsLargeDirectory(path);
+        }
 
         /// <summary>
-        /// Gets or sets the minimum file size in bytes.
+        /// Determines if a directory is likely to be large based on simple heuristics.
         /// </summary>
-        public long MinSize { get; init; } = 0;
+        /// <param name="path">The directory path to check.</param>
+        /// <returns>True if the directory is likely to be large, false otherwise.</returns>
+        private bool IsLargeDirectory(string path)
+        {
+            try
+            {
+                if (!Directory.Exists(path))
+                    return false;
+                    
+                // Quick check: if we can enumerate more than 1000 entries, it's probably large
+                var entries = Directory.EnumerateFileSystemEntries(path);
+                return entries.Take(1001).Count() > 1000;
+            }
+            catch
+            {
+                // If we can't check, err on the side of showing progress
+                return true;
+            }
+        }
 
-        /// <summary>
-        /// Gets or sets the maximum file size in bytes.
-        /// </summary>
-        public long MaxSize { get; init; } = long.MaxValue;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to count recursively.
-        /// </summary>
-        public bool Recursive { get; init; } = true;
-
-        /// <summary>
-        /// Gets or sets the traversal strategy hint.
-        /// </summary>
-        public TraversalStrategyHint Strategy { get; init; } = TraversalStrategyHint.Auto;
-
-        /// <summary>
-        /// Gets or sets the type of handler to use.
-        /// </summary>
-        public HandlerType HandlerType { get; init; } = HandlerType.Simple;
-
-        /// <summary>
-        /// Gets or sets the export format.
-        /// </summary>
-        public ExportFormat ExportFormat { get; init; } = ExportFormat.Text;
-
-        /// <summary>
-        /// Gets or sets the output file path for exported results.
-        /// </summary>
-        public string? OutputPath { get; init; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to show verbose error information.
-        /// </summary>
-        public bool Verbose { get; init; }
-
-        /// <summary>
-        /// Gets or sets the maximum number of extensions to show in text format (0 = show all).
-        /// </summary>
-        public int MaxExtensions { get; init; } = 20;
-
-        /// <summary>
-        /// Gets or sets the maximum traversal depth (null = unlimited).
-        /// </summary>
-        public int? MaxDepth { get; init; }
-    }
-
-    /// <summary>
-    /// Types of counting handlers available.
-    /// </summary>
-    public enum HandlerType
-    {
-        /// <summary>
-        /// Basic counting with minimal memory footprint.
-        /// </summary>
-        Simple,
-        
-        /// <summary>
-        /// Extended counting with per-extension breakdown.
-        /// </summary>
-        Detailed,
-        
-        /// <summary>
-        /// Comprehensive statistics with performance metrics.
-        /// </summary>
-        Summary
     }
 }

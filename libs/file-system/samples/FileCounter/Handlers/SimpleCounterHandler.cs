@@ -10,6 +10,7 @@ using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
+using FileSystemSamples.Common.Progress;
 using Microsoft.Extensions.Logging;
 
 namespace FileCounter.Handlers
@@ -31,6 +32,7 @@ namespace FileCounter.Handlers
         private readonly Stopwatch _stopwatch;
         private CanonicalPath _startPath;
         private readonly ILogger _logger;
+        private DateTime _lastProgressUpdate = DateTime.MinValue;
 
         /// <summary>
         /// Initializes a new instance of the SimpleCounterHandler class.
@@ -78,6 +80,9 @@ namespace FileCounter.Handlers
         /// Gets the canonical path where traversal started.
         /// </summary>
         public CanonicalPath StartPath => _startPath;
+
+        /// <inheritdoc />
+        public IProgressReporter? ProgressReporter { get; set; }
 
         /// <inheritdoc />
         public virtual string GetSummary()
@@ -153,6 +158,9 @@ namespace FileCounter.Handlers
                     Interlocked.Add(ref _totalSize, size);
                 }
 
+                // Report progress
+                ReportProgressIfNeeded(file.Path.Value);
+
                 return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
             }
             catch (Exception ex)
@@ -184,7 +192,38 @@ namespace FileCounter.Handlers
         public virtual Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
         {
             _stopwatch.Stop();
+            
+            ProgressReporter?.ReportComplete(new CompletionInfo(
+                _fileCount,
+                _directoryCount,
+                _totalSize,
+                _stopwatch.Elapsed,
+                _errorCount,
+                cancellationToken.IsCancellationRequested
+            ));
+            
             return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+        }
+
+        /// <summary>
+        /// Reports progress if enough time has elapsed since the last update.
+        /// </summary>
+        /// <param name="currentPath">The current file or directory path being processed.</param>
+        private void ReportProgressIfNeeded(string? currentPath = null)
+        {
+            if (ProgressReporter == null || DateTime.UtcNow - _lastProgressUpdate < TimeSpan.FromMilliseconds(500))
+                return;
+                
+            _lastProgressUpdate = DateTime.UtcNow;
+            
+            ProgressReporter.Report(new ProgressInfo(
+                _fileCount,
+                _directoryCount,
+                _totalSize,
+                _stopwatch.Elapsed,
+                currentPath,
+                _errorCount
+            ));
         }
 
         /// <summary>

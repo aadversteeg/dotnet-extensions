@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using DirSize.Handlers;
 using DirSize.Models;
+using FileSystemSamples.Common.Options;
 
 namespace DirSize.Export;
 
@@ -10,7 +11,7 @@ public static class DirSizeExporter
 {
     public static async Task<string?> ExportAsync(
         ISizeHandler handler, 
-        SizeOptions options,
+        DirSizeOptions options,
         ExportFormat format, 
         string? outputPath = null)
     {

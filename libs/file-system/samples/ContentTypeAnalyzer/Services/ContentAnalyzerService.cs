@@ -34,7 +34,7 @@ namespace ContentTypeAnalyzer.Services
         }
 
         public async Task<Result<IContentTypeHandler, FileSystemError>> AnalyzeAsync(
-            AnalysisOptions options, 
+            ContentAnalyzerOptions options, 
             CancellationToken cancellationToken = default)
         {
             var absolutePath = Path.GetFullPath(options.Path);

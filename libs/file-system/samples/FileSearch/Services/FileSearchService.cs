@@ -41,7 +41,7 @@ public class FileSearchService
     }
 
     public async Task<Result<ISearchHandler, FileSystemError>> SearchAsync(
-        SearchOptions options,
+        FileSearchOptions options,
         CancellationToken cancellationToken = default)
     {
         try
@@ -105,7 +105,7 @@ public class FileSearchService
         }
     }
 
-    private SearchCriteria BuildSearchCriteria(SearchOptions options)
+    private SearchCriteria BuildSearchCriteria(FileSearchOptions options)
     {
         var largerThan = options.LargerThan != null 
             ? _sizeParser.Parse(options.LargerThan) 

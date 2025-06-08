@@ -13,6 +13,7 @@ using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.MimeDetective.Models;
 using Ave.Extensions.Functional;
 using ContentTypeAnalyzer.Models;
+using FileSystemSamples.Common.Options;
 using ContentTypeAnalyzer.Services;
 
 namespace ContentTypeAnalyzer.Handlers

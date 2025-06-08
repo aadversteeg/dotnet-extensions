@@ -10,7 +10,7 @@ public class JsonExporter : IExporter
     public string FileExtension => ".json";
     public string MimeType => "application/json";
 
-    public string Export(ISizeHandler handler, SizeOptions options)
+    public string Export(ISizeHandler handler, DirSizeOptions options)
     {
         var directories = handler.DirectorySizes
             .Where(d => d.Value.TotalSize >= (options.MinSizeBytes ?? 0))

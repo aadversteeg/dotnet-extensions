@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
+using FileSystemSamples.Common.Progress;
 
 namespace FileCounter.Handlers
 {
     /// <summary>
     /// Base interface for all counting handlers that track file system statistics.
     /// </summary>
-    public interface ICountingHandler : ITraversalHandler<FileSystemEntry>
+    public interface ICountingHandler : ITraversalHandler<FileSystemEntry>, IProgressAware
     {
         /// <summary>
         /// Gets the total number of files processed.

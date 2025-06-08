@@ -1,22 +1,19 @@
 using System;
 using System.CommandLine;
 using System.CommandLine.Builder;
-using System.CommandLine.Hosting;
-using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.Local;
-using Ave.Extensions.FileSystem.Traversal;
-using FileSearch.Export;
-using FileSearch.Handlers;
+using FileSystemSamples.Common.Options;
+using FileSystemSamples.Common.Services;
 using FileSearch.Models;
 using FileSearch.Services;
+using FileSearch.Export;
+using FileSearch.Handlers;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Abstractions;
+using Ave.Extensions.FileSystem.Mapping;
 
 namespace FileSearch;
 
@@ -26,11 +23,16 @@ class Program
     {
         var rootCommand = new RootCommand("Search for files with various criteria");
 
-        var pathOption = new Option<string>(
-            aliases: new[] { "--path", "-p" },
-            description: "Path to search in",
-            getDefaultValue: () => Directory.GetCurrentDirectory());
+        // Common options
+        var pathOption = CommonOptions.CreatePathOption();
+        var logLevelOption = CommonOptions.CreateLogLevelOption();
+        var verboseOption = CommonOptions.CreateVerboseOption();
+        var outputOption = CommonOptions.CreateOutputOption();
+        var formatOption = CommonOptions.CreateFormatOption();
+        var strategyOption = CommonOptions.CreateStrategyOption();
+        var maxDepthOption = CommonOptions.CreateMaxDepthOption();
 
+        // FileSearch specific options
         var patternOption = new Option<string>(
             aliases: new[] { "--pattern", "-n" },
             description: "File name pattern with wildcards (* and ?)",
@@ -58,60 +60,40 @@ class Program
 
         var largerThanOption = new Option<string?>(
             aliases: new[] { "--larger-than", "-l" },
-            description: "Files larger than size (e.g., 1MB)");
+            description: "Files larger than this size (e.g., 1MB, 500KB)");
 
         var smallerThanOption = new Option<string?>(
-            aliases: new[] { "--smaller-than", "-s" },
-            description: "Files smaller than size (e.g., 1MB)");
+            aliases: new[] { "--smaller-than" },
+            description: "Files smaller than this size (e.g., 1MB, 500KB)");
 
         var maxResultsOption = new Option<int>(
             aliases: new[] { "--max-results", "-m" },
-            description: "Maximum number of results",
+            description: "Maximum number of results to return",
             getDefaultValue: () => 100);
 
         var includeHiddenOption = new Option<bool>(
-            aliases: new[] { "--include-hidden", "-h" },
-            description: "Include hidden files",
+            aliases: new[] { "--include-hidden" },
+            description: "Include hidden files in search",
             getDefaultValue: () => false);
 
         var caseSensitiveOption = new Option<bool>(
-            aliases: new[] { "--case-sensitive", "-c" },
-            description: "Case-sensitive pattern matching",
+            aliases: new[] { "--case-sensitive" },
+            description: "Case sensitive pattern matching",
             getDefaultValue: () => false);
 
-        var maxDepthOption = new Option<int?>(
-            aliases: new[] { "--max-depth" },
-            description: "Maximum traversal depth (null = unlimited)");
-
-        var strategyOption = new Option<TraversalStrategyHint>(
-            aliases: new[] { "--strategy" },
-            description: "Traversal strategy: Auto, Search, FullScan, MemoryEfficient, Parallel",
-            getDefaultValue: () => TraversalStrategyHint.Search);
-
         var handlerOption = new Option<HandlerType>(
-            aliases: new[] { "--handler" },
+            aliases: new[] { "--handler", "-h" },
             description: "Handler type: Simple, Detailed, Metadata",
             getDefaultValue: () => HandlerType.Simple);
 
-        var exportOption = new Option<ExportFormat>(
-            aliases: new[] { "--format" },
-            description: "Output format: Text, Json, Csv, Xml, Markdown",
-            getDefaultValue: () => ExportFormat.Text);
-
-        var outputOption = new Option<string?>(
-            aliases: new[] { "--output", "-o" },
-            description: "Output file path (uses stdout if not specified)");
-
-        var verboseOption = new Option<bool>(
-            aliases: new[] { "--verbose", "-v" },
-            description: "Show detailed error information");
-
-        var logLevelOption = new Option<LogLevel>(
-            aliases: new[] { "--log-level", "--loglevel" },
-            description: "Logging level: Trace, Debug, Information, Warning, Error, Critical",
-            getDefaultValue: () => LogLevel.Warning);
-
+        // Add all options
         rootCommand.AddOption(pathOption);
+        rootCommand.AddOption(logLevelOption);
+        rootCommand.AddOption(verboseOption);
+        rootCommand.AddOption(outputOption);
+        rootCommand.AddOption(formatOption);
+        rootCommand.AddOption(strategyOption);
+        rootCommand.AddOption(maxDepthOption);
         rootCommand.AddOption(patternOption);
         rootCommand.AddOption(regexOption);
         rootCommand.AddOption(modifiedAfterOption);
@@ -123,46 +105,19 @@ class Program
         rootCommand.AddOption(maxResultsOption);
         rootCommand.AddOption(includeHiddenOption);
         rootCommand.AddOption(caseSensitiveOption);
-        rootCommand.AddOption(maxDepthOption);
-        rootCommand.AddOption(strategyOption);
         rootCommand.AddOption(handlerOption);
-        rootCommand.AddOption(exportOption);
-        rootCommand.AddOption(outputOption);
-        rootCommand.AddOption(verboseOption);
-        rootCommand.AddOption(logLevelOption);
 
-        rootCommand.SetHandler(async (InvocationContext context) =>
+        rootCommand.SetHandler(async (context) =>
         {
-            var logLevel = context.ParseResult.GetValueForOption(logLevelOption);
-            
-            var actualHostBuilder = Host.CreateDefaultBuilder()
-                .ConfigureLogging((hostContext, logging) =>
-                {
-                    logging.ClearProviders();
-                    logging.AddConsole(options =>
-                    {
-                        options.LogToStandardErrorThreshold = LogLevel.Trace;
-                    });
-                    logging.SetMinimumLevel(logLevel);
-                    logging.AddFilter("Microsoft", LogLevel.Warning);
-                })
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddFileSystem();
-                    services.AddSingleton<HandlerFactory>();
-                    services.AddScoped<FileSearchService>();
-                    services.AddSingleton<SizeParser>();
-                    services.AddSingleton<Services.PatternMatcher>();
-                });
-
-            var host = actualHostBuilder.Build();
-            var searchService = host.Services.GetRequiredService<FileSearchService>();
-            var sizeParser = host.Services.GetRequiredService<SizeParser>();
-            var logger = host.Services.GetRequiredService<ILogger<Program>>();
-
-            var searchOptions = new SearchOptions
+            var options = new FileSearchOptions
             {
                 Path = context.ParseResult.GetValueForOption(pathOption)!,
+                LogLevel = context.ParseResult.GetValueForOption(logLevelOption),
+                Verbose = context.ParseResult.GetValueForOption(verboseOption),
+                OutputPath = context.ParseResult.GetValueForOption(outputOption),
+                ExportFormat = context.ParseResult.GetValueForOption(formatOption),
+                Strategy = context.ParseResult.GetValueForOption(strategyOption),
+                MaxDepth = context.ParseResult.GetValueForOption(maxDepthOption),
                 Pattern = context.ParseResult.GetValueForOption(patternOption)!,
                 RegexPattern = context.ParseResult.GetValueForOption(regexOption),
                 ModifiedAfter = context.ParseResult.GetValueForOption(modifiedAfterOption),
@@ -174,49 +129,45 @@ class Program
                 MaxResults = context.ParseResult.GetValueForOption(maxResultsOption),
                 IncludeHidden = context.ParseResult.GetValueForOption(includeHiddenOption),
                 CaseSensitive = context.ParseResult.GetValueForOption(caseSensitiveOption),
-                MaxDepth = context.ParseResult.GetValueForOption(maxDepthOption),
-                Strategy = context.ParseResult.GetValueForOption(strategyOption),
-                HandlerType = context.ParseResult.GetValueForOption(handlerOption),
-                Format = context.ParseResult.GetValueForOption(exportOption),
-                OutputPath = context.ParseResult.GetValueForOption(outputOption),
-                Verbose = context.ParseResult.GetValueForOption(verboseOption)
+                HandlerType = context.ParseResult.GetValueForOption(handlerOption)
             };
+
+            // Use common host builder
+            var host = HostBuilderFactory.CreateHost(options);
+            
+            // Add FileSearch specific services
+            var serviceProvider = new ServiceCollection()
+                .AddSingleton(host.Services.GetRequiredService<IFileSystem>())
+                .AddSingleton(host.Services.GetRequiredService<IPathMapper>())
+                .AddSingleton(host.Services.GetRequiredService<ILogger<FileSearchService>>())
+                .AddSingleton<HandlerFactory>()
+                .AddScoped<FileSearchService>()
+                .AddSingleton<SizeParser>()
+                .AddSingleton<Services.PatternMatcher>()
+                .BuildServiceProvider();
+
+            var searchService = serviceProvider.GetRequiredService<FileSearchService>();
+            var sizeParser = serviceProvider.GetRequiredService<SizeParser>();
+            var logger = host.Services.GetRequiredService<ILogger<Program>>();
 
             try
             {
-                var result = await searchService.SearchAsync(searchOptions, context.GetCancellationToken());
-
+                var result = await searchService.SearchAsync(options, context.GetCancellationToken());
                 if (result.IsSuccess)
                 {
-                    var handler = result.Value;
-                    
-                    var exportResult = await SearchExporter.ExportAsync(
-                        handler, 
-                        searchOptions.Format, 
+                    var content = await SearchExporter.ExportAsync(
+                        result.Value,
+                        options.ExportFormat,
                         sizeParser,
-                        searchOptions.OutputPath);
+                        options.OutputPath);
 
-                    if (exportResult != null)
+                    if (options.OutputPath == null)
                     {
-                        Console.Write(exportResult);
+                        Console.WriteLine(content);
                     }
                     else
                     {
-                        Console.WriteLine($"Results exported to: {searchOptions.OutputPath}");
-                    }
-
-                    if (searchOptions.Verbose && handler.ErrorCount > 0)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine("Errors encountered:");
-                        foreach (var error in handler.Errors.Take(10))
-                        {
-                            Console.WriteLine($"  {error}");
-                        }
-                        if (handler.Errors.Count > 10)
-                        {
-                            Console.WriteLine($"  ... and {handler.Errors.Count - 10} more errors");
-                        }
+                        logger.LogInformation("Results exported to: {OutputPath}", options.OutputPath);
                     }
 
                     context.ExitCode = 0;
@@ -224,14 +175,17 @@ class Program
                 else
                 {
                     logger.LogError("Search failed: {Error}", result.Error.Message);
-                    Console.WriteLine($"Search failed: {result.Error.Message}");
                     context.ExitCode = 1;
                 }
             }
+            catch (OperationCanceledException)
+            {
+                logger.LogInformation("Search was cancelled");
+                context.ExitCode = 1;
+            }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unexpected error during search");
-                Console.WriteLine($"Unexpected error: {ex.Message}");
+                logger.LogError(ex, "Unexpected error occurred");
                 context.ExitCode = 1;
             }
         });

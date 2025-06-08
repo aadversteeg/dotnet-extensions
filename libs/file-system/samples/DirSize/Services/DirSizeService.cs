@@ -10,6 +10,7 @@ using Ave.Extensions.FileSystem.Traversal;
 using DirSize.Export;
 using DirSize.Handlers;
 using DirSize.Models;
+using FileSystemSamples.Common.Options;
 using Microsoft.Extensions.Logging;
 
 namespace DirSize.Services;
@@ -33,7 +34,7 @@ public class DirSizeService
         _logger = logger;
     }
 
-    public async Task<int> ExecuteAsync(SizeOptions options, CancellationToken cancellationToken = default)
+    public async Task<int> ExecuteAsync(DirSizeOptions options, CancellationToken cancellationToken = default)
     {
         try
         {

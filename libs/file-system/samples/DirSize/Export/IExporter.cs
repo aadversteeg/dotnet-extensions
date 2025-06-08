@@ -7,5 +7,5 @@ public interface IExporter
 {
     string FileExtension { get; }
     string MimeType { get; }
-    string Export(ISizeHandler handler, SizeOptions options);
+    string Export(ISizeHandler handler, DirSizeOptions options);
 }

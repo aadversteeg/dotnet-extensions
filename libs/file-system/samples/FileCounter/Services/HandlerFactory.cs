@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FileCounter.Handlers;
+using FileCounter.Models;
 using Microsoft.Extensions.Logging;
 
 namespace FileCounter.Services
@@ -28,7 +29,7 @@ namespace FileCounter.Services
         /// <param name="options">The counting options to configure the handler.</param>
         /// <returns>A configured counting handler instance.</returns>
         /// <exception cref="ArgumentException">Thrown when the handler type is not supported.</exception>
-        public ICountingHandler CreateHandler(HandlerType handlerType, CountingOptions options)
+        public ICountingHandler CreateHandler(HandlerType handlerType, FileCounterOptions options)
         {
             return handlerType switch
             {

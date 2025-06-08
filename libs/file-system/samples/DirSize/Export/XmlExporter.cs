@@ -11,7 +11,7 @@ public class XmlExporter : IExporter
     public string FileExtension => ".xml";
     public string MimeType => "application/xml";
 
-    public string Export(ISizeHandler handler, SizeOptions options)
+    public string Export(ISizeHandler handler, DirSizeOptions options)
     {
         var directories = handler.DirectorySizes
             .Where(d => d.Value.TotalSize >= (options.MinSizeBytes ?? 0))

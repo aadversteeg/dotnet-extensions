@@ -16,5 +16,6 @@
     <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
     <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
     <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.MimeDetective\Ave.Extensions.FileSystem.MimeDetective.csproj" />
+    <ProjectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 </Project>

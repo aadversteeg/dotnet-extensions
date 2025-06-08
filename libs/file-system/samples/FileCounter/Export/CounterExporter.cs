@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
 using FileCounter.Handlers;
+using FileSystemSamples.Common.Options;
 
 namespace FileCounter.Export
 {
@@ -55,37 +56,6 @@ namespace FileCounter.Export
 
             return content;
         }
-    }
-
-    /// <summary>
-    /// Supported export formats.
-    /// </summary>
-    public enum ExportFormat
-    {
-        /// <summary>
-        /// Human-readable text format.
-        /// </summary>
-        Text,
-        
-        /// <summary>
-        /// JSON format for structured data.
-        /// </summary>
-        Json,
-        
-        /// <summary>
-        /// CSV format for spreadsheet applications.
-        /// </summary>
-        Csv,
-        
-        /// <summary>
-        /// XML format for hierarchical data.
-        /// </summary>
-        Xml,
-        
-        /// <summary>
-        /// Markdown format for documentation and reports.
-        /// </summary>
-        Markdown
     }
 
     /// <summary>

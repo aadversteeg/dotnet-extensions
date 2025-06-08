@@ -6,7 +6,7 @@ namespace ContentTypeAnalyzer.Services
 {
     public class HandlerFactory
     {
-        public IContentTypeHandler CreateHandler(HandlerType type, AnalysisOptions options)
+        public IContentTypeHandler CreateHandler(HandlerType type, ContentAnalyzerOptions options)
         {
             return type switch
             {

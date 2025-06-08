@@ -10,7 +10,7 @@ public class CsvExporter : IExporter
     public string FileExtension => ".csv";
     public string MimeType => "text/csv";
 
-    public string Export(ISizeHandler handler, SizeOptions options)
+    public string Export(ISizeHandler handler, DirSizeOptions options)
     {
         var directories = handler.DirectorySizes
             .Where(d => d.Value.TotalSize >= (options.MinSizeBytes ?? 0))
