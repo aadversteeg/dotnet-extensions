@@ -1,8 +1,6 @@
 using System;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

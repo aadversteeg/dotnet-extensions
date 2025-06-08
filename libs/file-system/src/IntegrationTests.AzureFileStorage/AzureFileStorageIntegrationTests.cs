@@ -1,14 +1,15 @@
-using Azure.Storage.Files.Shares;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
+using Azure.Storage.Files.Shares;
 using FluentAssertions;
 using IntegrationTests.Extensions.FileSystem.AzureFileStorage.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Runtime.CompilerServices;
 
 namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
 {
@@ -35,14 +36,42 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
 
         public AzureFileStorageIntegrationTests()
         {
-            _testConfig = TestConfiguration.Load();
+
             _testDirectoryPath = $"/test/{DateTime.UtcNow:yyyyMMdd-HHmmssfff}";
             _createdFiles = new List<string>();
             _createdDirectories = new List<string>();
 
-            if (!_testConfig.IsConfigured() || _testConfig.SkipIntegrationTests)
+
+            // Add appsettings.json configuration, use full path in case working folder is different
+            string? basePath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            basePath ??= Directory.GetCurrentDirectory();
+
+            // Start with a more explicit configuration setup for WSL compatibility
+            var configBuilder = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(basePath, "appsettings.test.json"), optional: true)
+                .AddUserSecrets<TestConfiguration>(optional: true)
+                .AddEnvironmentVariables("AZURE_FILESTORAGE_");
+
+            var configuration = configBuilder.Build();
+            _testConfig = new TestConfiguration();
+            
+            // Use section-based binding to handle both flat colon-delimited keys (AzureFileStorage:AccountName) 
+            // and hierarchical JSON structure. This approach works correctly with both formats.
+            var azureSection = configuration.GetSection("AzureFileStorage");
+            _testConfig.AzureFileStorage = azureSection.Get<AzureFileStorageTestSettings>() ?? new AzureFileStorageTestSettings();
+            
+            // Bind remaining root-level properties
+            _testConfig.SkipIntegrationTests = configuration.GetValue<bool>("SkipIntegrationTests");
+
+            if (!_testConfig.IsConfigured())
             {
-                // FileSystem will be null, tests will be skipped
+                Console.Error.WriteLine("Azure File Storage integration tests are not configured.");
+                return;
+            }
+
+            if (_testConfig.SkipIntegrationTests)
+            {
+                Console.Error.WriteLine("Azure File Storage integration tests are skipped as configured.");
                 return;
             }
 
@@ -66,6 +95,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             services.AddSingleton<IReadOnlyFileSystem>(provider => provider.GetRequiredService<AzureFileSystem>());
 
             var serviceProvider = services.BuildServiceProvider();
+
             _fileSystem = serviceProvider.GetRequiredService<IFileSystem>();
             _readOnlyFileSystem = serviceProvider.GetRequiredService<IReadOnlyFileSystem>();
 
@@ -438,7 +468,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             await _fileSystem!.WriteAllTextAsync(canonicalPath.Value, content);
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(canonicalPath.Value);
+            var result = await _fileSystem.GetEntryAsync(canonicalPath.Value, IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -452,42 +482,6 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             entry.ModifiedUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(5));
         }
 
-        [Fact(DisplayName = "AFSIT-012: EnumerateFileSystemEntriesAsync works correctly")]
-        public async Task AFSIT012()
-        {
-            // Arrange
-            SkipIfNotConfigured();
-            var enumDir = $"{_testDirectoryPath}/enum-test";
-            var enumDirCanonical = CanonicalPath.Create(enumDir);
-            enumDirCanonical.IsSuccess.Should().BeTrue();
-            _createdDirectories.Add(enumDir);
-
-            var file1 = $"{enumDir}/file1.txt";
-            var subDir = $"{enumDir}/subdir";
-            var file1Canonical = CanonicalPath.Create(file1);
-            var subDirCanonical = CanonicalPath.Create(subDir);
-            file1Canonical.IsSuccess.Should().BeTrue();
-            subDirCanonical.IsSuccess.Should().BeTrue();
-            _createdFiles.Add(file1);
-            _createdDirectories.Add(subDir);
-
-            await _fileSystem!.CreateDirectoryAsync(enumDirCanonical.Value);
-            await _fileSystem.WriteAllTextAsync(file1Canonical.Value, "Content");
-            await _fileSystem.CreateDirectoryAsync(subDirCanonical.Value);
-
-            // Act
-            var entries = new List<FileSystemEntry>();
-            await foreach (var entryResult in _fileSystem.EnumerateFileSystemEntriesAsync(enumDirCanonical.Value))
-            {
-                entryResult.IsSuccess.Should().BeTrue();
-                entries.Add(entryResult.Value);
-            }
-
-            // Assert
-            entries.Should().HaveCountGreaterOrEqualTo(2);
-            entries.Should().Contain(e => e.Path.Value.EndsWith("file1.txt") && !e.IsDirectory);
-            entries.Should().Contain(e => e.Path.Value.EndsWith("subdir") && e.IsDirectory);
-        }
 
         [Fact(DisplayName = "AFSIT-013: DeleteFileAsync removes file")]
         public async Task AFSIT013()

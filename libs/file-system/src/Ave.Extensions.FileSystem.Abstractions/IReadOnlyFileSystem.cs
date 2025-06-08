@@ -1,8 +1,9 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem
@@ -12,6 +13,10 @@ namespace Ave.Extensions.FileSystem
     /// </summary>
     public interface IReadOnlyFileSystem
     {
+        /// <summary>
+        /// Gets information about the file system capabilities and characteristics.
+        /// </summary>
+        FileSystemInfo Info { get; }
         /// <summary>
         /// Determines whether the specified file exists.
         /// </summary>
@@ -45,52 +50,42 @@ namespace Ave.Extensions.FileSystem
         Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Gets metadata for a file system entry (file or directory).
+        /// Gets metadata for a file system entry and maps it to a custom type.
         /// </summary>
+        /// <typeparam name="TEntry">The type to map the entry to.</typeparam>
         /// <param name="path">The path to get metadata for.</param>
+        /// <param name="mapper">The mapper to transform FileSystemEntry to TEntry.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the file system entry or an error.</returns>
-        Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Gets a list of files in the specified directory.
-        /// </summary>
-        /// <param name="path">The directory path to enumerate.</param>
-        /// <param name="searchPattern">The search string to match against files.</param>
-        /// <param name="searchOption">Specifies whether to search subdirectories.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the file paths or an error.</returns>
-        Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Gets a list of directories in the specified directory.
-        /// </summary>
-        /// <param name="path">The directory path to enumerate.</param>
-        /// <param name="searchPattern">The search string to match against directories.</param>
-        /// <param name="searchOption">Specifies whether to search subdirectories.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result containing the directory paths or an error.</returns>
-        Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Enumerates file system entries asynchronously.
-        /// </summary>
-        /// <param name="path">The directory path to enumerate.</param>
-        /// <param name="searchPattern">The search pattern to match.</param>
-        /// <param name="options">Options for enumeration.</param>
-        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>An async enumerable of file system entries or errors.</returns>
-        IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
+        /// <returns>A result containing the mapped entry or an error.</returns>
+        Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
             CanonicalPath path,
-            string searchPattern = "*",
-            Models.EnumerationOptions? options = null,
+            IFileSystemEntryMapper<TEntry> mapper,
             CancellationToken cancellationToken = default);
-        
+
         /// <summary>
-        /// Creates a file system monitor configured to use this file system's path handling.
+        /// Traverses the file system starting from the specified path.
         /// </summary>
+        /// <typeparam name="TEntry">The type of entries to map and handle.</typeparam>
+        /// <param name="path">The starting path for traversal.</param>
+        /// <param name="handler">The handler to process each mapped entry.</param>
+        /// <param name="mapper">The mapper to transform file system entries to TEntry.</param>
+        /// <param name="options">Optional traversal options. If null, uses default options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A file system monitor instance.</returns>
-        Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default);
+        /// <returns>A result containing traversal summary or an error.</returns>
+        Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
+            CanonicalPath path,
+            ITraversalHandler<TEntry> handler,
+            IFileSystemEntryMapper<TEntry> mapper,
+            TraversalOptions? options = null,
+            CancellationToken cancellationToken = default);
+
+
+        /// <summary>
+        /// Creates a monitoring session for watching file system changes at the specified path.
+        /// </summary>
+        /// <param name="options">The monitoring options including path and filters.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the monitoring session or an error.</returns>
+        Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default);
     }
 }

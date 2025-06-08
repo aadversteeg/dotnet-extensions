@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace Ave.Extensions.FileSystem.Configuration
@@ -23,15 +22,7 @@ namespace Ave.Extensions.FileSystem.Configuration
         /// </summary>
         public bool UseCanonicalPaths { get; set; } = false;
         
-        /// <summary>
-        /// Custom path mapper type (optional)
-        /// </summary>
-        public Type? PathMapperType { get; set; }
         
-        /// <summary>
-        /// Gets or sets a value indicating whether to enable monitoring capabilities.
-        /// </summary>
-        public bool EnableMonitoring { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether to use async enumeration features.
@@ -43,15 +34,7 @@ namespace Ave.Extensions.FileSystem.Configuration
         /// </summary>
         public int DefaultBufferSize { get; set; } = 4096;
 
-        /// <summary>
-        /// Gets or sets a value indicating whether to register path utilities.
-        /// </summary>
-        public bool RegisterPathUtilities { get; set; } = true;
 
-        /// <summary>
-        /// Gets or sets a value indicating whether to register the file system visitor.
-        /// </summary>
-        public bool RegisterVisitor { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether to register the read-only wrapper.

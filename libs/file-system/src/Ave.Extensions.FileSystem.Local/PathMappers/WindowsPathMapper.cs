@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using Ave.Extensions.Functional;
 
@@ -49,12 +46,12 @@ namespace Ave.Extensions.FileSystem.Local.PathMappers
             if (string.IsNullOrWhiteSpace(systemPath))
                 return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathNullOrEmpty);
             
-            // Handle Windows absolute paths: C:\path -> /c/path
+            // Handle Windows absolute paths: C:\path -> /mnt/c/path
             if (systemPath.Length >= 2 && systemPath[1] == ':')
             {
                 var driveLetter = char.ToLowerInvariant(systemPath[0]);
                 var remainingPath = systemPath.Substring(2).Replace('\\', '/');
-                var driveCanonicalPath = $"/{driveLetter}{remainingPath}";
+                var driveCanonicalPath = $"/mnt/{driveLetter}{remainingPath}";
                 var driveResult = CanonicalPath.Create(driveCanonicalPath);
                 if (driveResult.IsFailure)
                     return Result<CanonicalPath, Error>.Failure(driveResult.Error);

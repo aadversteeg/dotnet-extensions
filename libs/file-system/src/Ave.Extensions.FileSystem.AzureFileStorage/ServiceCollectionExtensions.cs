@@ -1,10 +1,10 @@
 using System;
+using System.Linq;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.Configuration;
 using Ave.Extensions.FileSystem.Local;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Ave.Extensions.FileSystem.Security;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -95,6 +95,17 @@ namespace Microsoft.Extensions.DependencyInjection
                 options.UseCanonicalPaths = true;
                 options.EnablePathSecurity = true;
                 configureFileSystem?.Invoke(options);
+            });
+            
+            // Override path security to use allowed paths from Azure configuration
+            services.AddSingleton<IPathSecurity>(sp =>
+            {
+                var azureOptions = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AzureFileSystemOptions>>().Value;
+                var allowedCanonicalPaths = azureOptions.AllowedPaths
+                    .Select(p => CanonicalPath.Create(p))
+                    .Where(r => r.IsSuccess)
+                    .Select(r => r.Value);
+                return new PathSecurityService(allowedCanonicalPaths);
             });
             
             // Register Azure implementation

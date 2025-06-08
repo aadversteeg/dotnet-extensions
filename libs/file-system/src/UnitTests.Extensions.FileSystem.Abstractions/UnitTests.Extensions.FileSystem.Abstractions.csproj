@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Ave.Extensions.FileSystem.Abstractions/Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

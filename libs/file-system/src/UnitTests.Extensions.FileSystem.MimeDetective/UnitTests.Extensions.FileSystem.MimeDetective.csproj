@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>UnitTests.Extensions.FileSystem.MimeDetective</RootNamespace>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="AutoFixture" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Extensions.FileSystem.MimeDetective\Ave.Extensions.FileSystem.MimeDetective.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.FileSystem.InMemory\Ave.Extensions.FileSystem.InMemory.csproj" />
+  </ItemGroup>
+
+</Project>

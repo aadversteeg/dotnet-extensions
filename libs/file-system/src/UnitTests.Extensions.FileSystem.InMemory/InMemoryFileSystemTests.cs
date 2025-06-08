@@ -1,13 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.FileSystem.Traversal.Handlers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -190,7 +190,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var afterWrite = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath());
+            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath(), IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -215,7 +215,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var afterCreate = DateTime.UtcNow;
 
             // Act
-            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath());
+            var result = await _fileSystem.GetEntryAsync(path.ToCanonicalPath(), IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -335,40 +335,23 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             subdirExistsResult.Value.Should().BeFalse();
         }
 
-        [Fact(DisplayName = "IMFS-017: EnumerateFileSystemEntriesAsync yields correct entries")]
-        public async Task IMFS017()
-        {
-            // Arrange
-            var directory = "/test";
-            await _fileSystem.CreateDirectoryAsync(directory.ToCanonicalPath());
-            await _fileSystem.CreateDirectoryAsync("/test/subdir".ToCanonicalPath());
-            await _fileSystem.WriteAllTextAsync("/test/file1.txt".ToCanonicalPath(), "content1");
-            await _fileSystem.WriteAllTextAsync("/test/file2.txt".ToCanonicalPath(), "content2");
 
-            // Act
-            var entries = new List<FileSystemEntry>();
-            await foreach (var result in _fileSystem.EnumerateFileSystemEntriesAsync(directory.ToCanonicalPath()))
-            {
-                result.IsSuccess.Should().BeTrue();
-                entries.Add(result.Value);
-            }
-
-            // Assert
-            entries.Should().HaveCount(3); // 1 directory + 2 files
-            entries.Should().Contain(e => e.Name == "subdir" && e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file1.txt" && !e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file2.txt" && !e.IsDirectory);
-        }
-
-        [Fact(DisplayName = "IMFS-018: CreateMonitorAsync returns functional monitor")]
+        [Fact(DisplayName = "IMFS-018: CreateMonitoringSessionAsync returns valid session")]
         public async Task IMFS018()
         {
-            // Arrange & Act
-            var monitor = await _fileSystem.CreateMonitorAsync();
+            // Arrange
+            var options = MonitoringOptions.ForPath(CanonicalPath.Root);
+
+            // Act
+            var result = await _fileSystem.CreateMonitoringSessionAsync(options);
 
             // Assert
-            monitor.Should().NotBeNull();
-            monitor.Should().BeAssignableTo<IFileSystemMonitor>();
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value.Should().BeAssignableTo<IMonitoringSession>();
+            
+            // Clean up
+            result.Value.Dispose();
         }
 
         [Fact(DisplayName = "IMFS-019: Path normalization works correctly")]
@@ -420,6 +403,118 @@ namespace UnitTests.Extensions.FileSystem.InMemory
 
             var fileExists = await _fileSystem.FileExistsAsync(path.ToCanonicalPath());
             fileExists.Value.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "IMFS-034: Info property returns correct characteristics for InMemoryFileSystem")]
+        public void IMFS034()
+        {
+            // Act
+            var info = _fileSystem.Info;
+
+            // Assert
+            info.IsDurable.Should().BeFalse("in-memory file system does not persist data across application restarts");
+            info.SupportsMonitoring.Should().BeTrue("in-memory file system supports monitoring via internal event system");
+            info.IsReadOnly.Should().BeFalse("in-memory file system supports both read and write operations");
+        }
+
+        [Fact(DisplayName = "IMFS-035: TraverseAsync with empty file system returns empty results")]
+        public async Task IMFS035()
+        {
+            // Arrange
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
+            var options = new TraversalOptions();
+
+            // Act
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), handler, IdentityMapper.Instance, options);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.FilesProcessed.Should().Be(0);
+            result.Value.DirectoriesProcessed.Should().Be(1); // Root directory is counted
+            handler.CollectedPaths.Should().BeEmpty();
+        }
+
+        [Fact(DisplayName = "IMFS-036: TraverseAsync collects files and directories")]
+        public async Task IMFS036()
+        {
+            // Arrange
+            await _fileSystem.WriteAllTextAsync("/file1.txt".ToCanonicalPath(), "content1");
+            await _fileSystem.WriteAllTextAsync("/subdir/file2.txt".ToCanonicalPath(), "content2");
+            await _fileSystem.CreateDirectoryAsync("/emptydir".ToCanonicalPath());
+
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
+            var options = new TraversalOptions(recursive: true);
+
+            // Act
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), handler, IdentityMapper.Instance, options);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.FilesProcessed.Should().Be(2);
+            result.Value.DirectoriesProcessed.Should().Be(3); // root, subdir and emptydir
+            
+            handler.CollectedPaths.Should().Contain("/file1.txt".ToCanonicalPath());
+            handler.CollectedPaths.Should().Contain("/subdir/file2.txt".ToCanonicalPath());
+            handler.CollectedPaths.Should().Contain("/subdir".ToCanonicalPath());
+            handler.CollectedPaths.Should().Contain("/emptydir".ToCanonicalPath());
+        }
+
+        [Fact(DisplayName = "IMFS-037: TraverseAsync respects include filters")]
+        public async Task IMFS037()
+        {
+            // Arrange
+            await _fileSystem.WriteAllTextAsync("/file1.txt".ToCanonicalPath(), "content1");
+            await _fileSystem.CreateDirectoryAsync("/testdir".ToCanonicalPath());
+
+            var fileOnlyHandler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: false);
+            var dirOnlyHandler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: false, includeDirectories: true);
+
+            // Act
+            var fileResult = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), fileOnlyHandler, IdentityMapper.Instance, new TraversalOptions());
+            var dirResult = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), dirOnlyHandler, IdentityMapper.Instance, new TraversalOptions());
+
+            // Assert
+            fileResult.IsSuccess.Should().BeTrue();
+            fileOnlyHandler.CollectedPaths.Should().Contain("/file1.txt".ToCanonicalPath());
+            fileOnlyHandler.CollectedPaths.Should().NotContain("/testdir".ToCanonicalPath());
+
+            dirResult.IsSuccess.Should().BeTrue();
+            dirOnlyHandler.CollectedPaths.Should().Contain("/testdir".ToCanonicalPath());
+            dirOnlyHandler.CollectedPaths.Should().NotContain("/file1.txt".ToCanonicalPath());
+        }
+
+        [Fact(DisplayName = "IMFS-038: TraverseAsync respects search pattern")]
+        public async Task IMFS038()
+        {
+            // Arrange
+            await _fileSystem.WriteAllTextAsync("/file1.txt".ToCanonicalPath(), "content1");
+            await _fileSystem.WriteAllTextAsync("/file2.doc".ToCanonicalPath(), "content2");
+            await _fileSystem.WriteAllTextAsync("/readme".ToCanonicalPath(), "content3");
+
+            var handler = new PathCollectorHandler<FileSystemEntry>("*.txt", includeFiles: true, includeDirectories: false);
+
+            // Act
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/".ToCanonicalPath(), handler, IdentityMapper.Instance, new TraversalOptions());
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            handler.CollectedPaths.Should().Contain("/file1.txt".ToCanonicalPath());
+            handler.CollectedPaths.Should().NotContain("/file2.doc".ToCanonicalPath());
+            handler.CollectedPaths.Should().NotContain("/readme".ToCanonicalPath());
+        }
+
+        [Fact(DisplayName = "IMFS-039: TraverseAsync handles non-existent path")]
+        public async Task IMFS039()
+        {
+            // Arrange
+            var handler = new PathCollectorHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
+
+            // Act
+            var result = await _fileSystem.TraverseAsync<FileSystemEntry>("/nonexistent".ToCanonicalPath(), handler, IdentityMapper.Instance, new TraversalOptions());
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Type.Should().Be(FileSystemErrorType.PathNotFound);
         }
 
         public void Dispose()

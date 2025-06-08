@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using IntegrationTests.FileSystem.Local.TestHelpers;
@@ -23,8 +24,7 @@ namespace IntegrationTests.FileSystem.Local
     /// </summary>
     public class LocalFileSystemCrossplatformIntegrationTests : IAsyncLifetime, IDisposable
     {
-        private readonly LocalFileSystem _fileSystemWithMapper;
-        private readonly LocalFileSystem _fileSystemWithoutMapper;
+        private readonly LocalFileSystem _fileSystem;
         private readonly IPathMapper? _pathMapper;
         private readonly string _physicalTestDirectory;
         private readonly CanonicalPath _canonicalTestDirectory;
@@ -46,9 +46,8 @@ namespace IntegrationTests.FileSystem.Local
             // Convert to canonical path
             _canonicalTestDirectory = ConvertToCanonicalPath(_physicalTestDirectory);
             
-            // Create filesystem instances for testing
-            _fileSystemWithMapper = new LocalFileSystem(_pathMapper);
-            _fileSystemWithoutMapper = new LocalFileSystem();
+            // Create filesystem instance for testing
+            _fileSystem = new LocalFileSystem(_pathMapper);
         }
 
         public Task InitializeAsync()
@@ -95,7 +94,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Act - test through LocalFileSystem
-            var result = await _fileSystemWithMapper.FileExistsAsync(canonicalFilePath);
+            var result = await _fileSystem.FileExistsAsync(canonicalFilePath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -117,7 +116,7 @@ namespace IntegrationTests.FileSystem.Local
             File.Exists(physicalFilePath).Should().BeFalse();
 
             // Act
-            var result = await _fileSystemWithMapper.FileExistsAsync(canonicalFilePath);
+            var result = await _fileSystem.FileExistsAsync(canonicalFilePath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -136,7 +135,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdDirectories.Add(physicalDirPath);
 
             // Act
-            var result = await _fileSystemWithMapper.DirectoryExistsAsync(canonicalDirPath);
+            var result = await _fileSystem.DirectoryExistsAsync(canonicalDirPath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -158,7 +157,7 @@ namespace IntegrationTests.FileSystem.Local
             Directory.Exists(physicalDirPath).Should().BeFalse();
 
             // Act
-            var result = await _fileSystemWithMapper.DirectoryExistsAsync(canonicalDirPath);
+            var result = await _fileSystem.DirectoryExistsAsync(canonicalDirPath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -176,7 +175,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Act
-            var result = await _fileSystemWithMapper.WriteAllTextAsync(canonicalFilePath, content);
+            var result = await _fileSystem.WriteAllTextAsync(canonicalFilePath, content);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -200,7 +199,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Act
-            var result = await _fileSystemWithMapper.ReadAllTextAsync(canonicalFilePath);
+            var result = await _fileSystem.ReadAllTextAsync(canonicalFilePath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -219,7 +218,7 @@ namespace IntegrationTests.FileSystem.Local
             File.Exists(physicalFilePath).Should().BeFalse();
 
             // Act
-            var result = await _fileSystemWithMapper.ReadAllTextAsync(canonicalFilePath);
+            var result = await _fileSystem.ReadAllTextAsync(canonicalFilePath);
 
             // Assert
             result.IsFailure.Should().BeTrue();
@@ -243,7 +242,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Act
-            var result = await _fileSystemWithMapper.OpenReadAsync(canonicalFilePath);
+            var result = await _fileSystem.OpenReadAsync(canonicalFilePath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -265,7 +264,7 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Act
-            var result = await _fileSystemWithMapper.OpenWriteAsync(canonicalFilePath);
+            var result = await _fileSystem.OpenWriteAsync(canonicalFilePath);
             result.IsSuccess.Should().BeTrue();
 
             using (var stream = result.Value)
@@ -297,7 +296,7 @@ namespace IntegrationTests.FileSystem.Local
             Directory.Exists(physicalDirPath).Should().BeFalse();
 
             // Act
-            var result = await _fileSystemWithMapper.CreateDirectoryAsync(canonicalDirPath);
+            var result = await _fileSystem.CreateDirectoryAsync(canonicalDirPath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -328,10 +327,10 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.AddRange(new[] { file1Path, file2Path, file3Path });
 
             // Act - get all files
-            var allFilesResult = await _fileSystemWithMapper.GetFilesAsync(canonicalSubDir);
+            var allFilesResult = await _fileSystem.GetFilesAsync(canonicalSubDir);
             
             // Act - get only .txt files
-            var txtFilesResult = await _fileSystemWithMapper.GetFilesAsync(canonicalSubDir, "*.txt");
+            var txtFilesResult = await _fileSystem.GetFilesAsync(canonicalSubDir, "*.txt");
 
             // Assert
             allFilesResult.IsSuccess.Should().BeTrue();
@@ -368,10 +367,10 @@ namespace IntegrationTests.FileSystem.Local
             _createdDirectories.AddRange(new[] { subDir1, subDir2, subDir3 });
 
             // Act - get all directories
-            var allDirsResult = await _fileSystemWithMapper.GetDirectoriesAsync(canonicalBaseDir);
+            var allDirsResult = await _fileSystem.GetDirectoriesAsync(canonicalBaseDir);
             
             // Act - get directories matching pattern
-            var patternDirsResult = await _fileSystemWithMapper.GetDirectoriesAsync(canonicalBaseDir, "subdir*");
+            var patternDirsResult = await _fileSystem.GetDirectoriesAsync(canonicalBaseDir, "subdir*");
 
             // Assert
             allDirsResult.IsSuccess.Should().BeTrue();
@@ -400,7 +399,7 @@ namespace IntegrationTests.FileSystem.Local
             File.Exists(physicalFilePath).Should().BeTrue();
 
             // Act
-            var result = await _fileSystemWithMapper.DeleteFileAsync(canonicalFilePath);
+            var result = await _fileSystem.DeleteFileAsync(canonicalFilePath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -423,7 +422,7 @@ namespace IntegrationTests.FileSystem.Local
             Directory.Exists(physicalDirPath).Should().BeTrue();
 
             // Act
-            var result = await _fileSystemWithMapper.DeleteDirectoryAsync(canonicalDirPath);
+            var result = await _fileSystem.DeleteDirectoryAsync(canonicalDirPath);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -452,7 +451,7 @@ namespace IntegrationTests.FileSystem.Local
             File.Exists(nestedFile).Should().BeTrue();
 
             // Act
-            var result = await _fileSystemWithMapper.DeleteDirectoryAsync(canonicalBaseDir, recursive: true);
+            var result = await _fileSystem.DeleteDirectoryAsync(canonicalBaseDir, recursive: true);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -480,10 +479,10 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Get expected metadata using System.IO
-            var fileInfo = new FileInfo(physicalFilePath);
+            var fileInfo = new System.IO.FileInfo(physicalFilePath);
 
             // Act
-            var result = await _fileSystemWithMapper.GetEntryAsync(canonicalFilePath);
+            var result = await _fileSystem.GetEntryAsync(canonicalFilePath, IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -508,10 +507,10 @@ namespace IntegrationTests.FileSystem.Local
             _createdDirectories.Add(physicalDirPath);
 
             // Get expected metadata using System.IO
-            var dirInfo = new DirectoryInfo(physicalDirPath);
+            var dirInfo = new System.IO.DirectoryInfo(physicalDirPath);
 
             // Act
-            var result = await _fileSystemWithMapper.GetEntryAsync(canonicalDirPath);
+            var result = await _fileSystem.GetEntryAsync(canonicalDirPath, IdentityMapper.Instance);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -536,7 +535,7 @@ namespace IntegrationTests.FileSystem.Local
             File.Exists(physicalFilePath).Should().BeFalse();
 
             // Act
-            var result = await _fileSystemWithMapper.GetEntryAsync(canonicalFilePath);
+            var result = await _fileSystem.GetEntryAsync(canonicalFilePath, IdentityMapper.Instance);
 
             // Assert
             result.IsFailure.Should().BeTrue();
@@ -547,42 +546,6 @@ namespace IntegrationTests.FileSystem.Local
 
         #region Enumeration Operations
 
-        [Fact(DisplayName = "LFSIT-019: EnumerateFileSystemEntriesAsync returns all entries")]
-        public async Task LFSIT019()
-        {
-            // Arrange - create mixed structure using System.IO
-            var baseDirName = "enumeration-test";
-            var physicalBaseDir = Path.Combine(_physicalTestDirectory, baseDirName);
-            var canonicalBaseDir = GetCanonicalDirectoryPath(baseDirName);
-            
-            Directory.CreateDirectory(physicalBaseDir);
-            _createdDirectories.Add(physicalBaseDir);
-
-            var subDir = Path.Combine(physicalBaseDir, "subdir");
-            var file1 = Path.Combine(physicalBaseDir, "file1.txt");
-            var file2 = Path.Combine(physicalBaseDir, "file2.txt");
-            
-            Directory.CreateDirectory(subDir);
-            File.WriteAllText(file1, "Content 1");
-            File.WriteAllText(file2, "Content 2");
-            
-            _createdDirectories.Add(subDir);
-            _createdFiles.AddRange(new[] { file1, file2 });
-
-            // Act
-            var entries = new List<FileSystemEntry>();
-            await foreach (var result in _fileSystemWithMapper.EnumerateFileSystemEntriesAsync(canonicalBaseDir))
-            {
-                result.IsSuccess.Should().BeTrue();
-                entries.Add(result.Value);
-            }
-
-            // Assert
-            entries.Should().HaveCount(3); // 1 directory + 2 files
-            entries.Should().Contain(e => e.Name == "subdir" && e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file1.txt" && !e.IsDirectory);
-            entries.Should().Contain(e => e.Name == "file2.txt" && !e.IsDirectory);
-        }
 
         #endregion
 
@@ -599,8 +562,8 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Act
-            var writeResult = await _fileSystemWithMapper.WriteAllTextAsync(canonicalFilePath, unicodeContent);
-            var readResult = await _fileSystemWithMapper.ReadAllTextAsync(canonicalFilePath);
+            var writeResult = await _fileSystem.WriteAllTextAsync(canonicalFilePath, unicodeContent);
+            var readResult = await _fileSystem.ReadAllTextAsync(canonicalFilePath);
 
             // Assert
             writeResult.IsSuccess.Should().BeTrue();
@@ -623,8 +586,8 @@ namespace IntegrationTests.FileSystem.Local
             _createdFiles.Add(physicalFilePath);
 
             // Act
-            var writeResult = await _fileSystemWithMapper.WriteAllTextAsync(canonicalFilePath, largeContent);
-            var readResult = await _fileSystemWithMapper.ReadAllTextAsync(canonicalFilePath);
+            var writeResult = await _fileSystem.WriteAllTextAsync(canonicalFilePath, largeContent);
+            var readResult = await _fileSystem.ReadAllTextAsync(canonicalFilePath);
 
             // Assert
             writeResult.IsSuccess.Should().BeTrue();
@@ -634,7 +597,7 @@ namespace IntegrationTests.FileSystem.Local
             
             // Verify with System.IO
             File.Exists(physicalFilePath).Should().BeTrue();
-            var fileInfo = new FileInfo(physicalFilePath);
+            var fileInfo = new System.IO.FileInfo(physicalFilePath);
             fileInfo.Length.Should().BeGreaterThan(1000000);
         }
 
@@ -651,7 +614,7 @@ namespace IntegrationTests.FileSystem.Local
 
             // Act & Assert
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => 
-                await _fileSystemWithMapper.WriteAllTextAsync(canonicalFilePath, content, cts.Token));
+                await _fileSystem.WriteAllTextAsync(canonicalFilePath, content, cts.Token));
         }
 
         #endregion

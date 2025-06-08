@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Sample application dependencies -->
+    <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageVersion Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22272.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    
+    <!-- Testing dependencies -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
+    <PackageVersion Include="FluentAssertions" Version="7.0.0" />
+    <PackageVersion Include="AutoFixture" Version="4.18.1" />
+    <PackageVersion Include="Moq" Version="4.20.70" />
+    
+    <!-- Benchmarking dependencies -->
+    <PackageVersion Include="BenchmarkDotNet" Version="0.13.12" />
+  </ItemGroup>
+</Project>

@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.FileSystem.Abstractions;
+using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.FileSystem.Traversal.Strategies;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem.Local
@@ -14,16 +17,23 @@ namespace Ave.Extensions.FileSystem.Local
     /// </summary>
     public class LocalFileSystem : IFileSystem
     {
-        private readonly IPathMapper? _pathMapper;
+        private readonly IPathMapper _pathMapper;
         
         /// <summary>
         /// Initializes a new instance of the LocalFileSystem class.
         /// </summary>
-        /// <param name="pathMapper">Optional path mapper for canonical path support.</param>
-        public LocalFileSystem(IPathMapper? pathMapper = null)
+        /// <param name="pathMapper">Path mapper for canonical path support.</param>
+        public LocalFileSystem(IPathMapper pathMapper)
         {
-            _pathMapper = pathMapper;
+            _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
         }
+
+        /// <inheritdoc />
+        public FileSystemInfo Info { get; } = new FileSystemInfo(
+            isDurable: true,           // Local file system persists data
+            supportsMonitoring: true,  // Supports FileSystemWatcher
+            isReadOnly: false          // Supports read and write operations
+        );
 
         /// <inheritdoc />
         public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
@@ -112,8 +122,7 @@ namespace Ave.Extensions.FileSystem.Local
             }, path.Value);
         }
 
-        /// <inheritdoc />
-        public Task<Result<FileSystemEntry, FileSystemError>> GetEntryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        private Task<Result<FileSystemEntry, FileSystemError>> GetEntryInternalAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
@@ -129,22 +138,99 @@ namespace Ave.Extensions.FileSystem.Local
                 // Check if it's a file
                 if (File.Exists(systemPath))
                 {
-                    var fileInfo = new FileInfo(systemPath);
-                    var entry = FileSystemEntry.FromFileInfo(fileInfo, _pathMapper);
+                    var fileInfo = new System.IO.FileInfo(systemPath);
+                    var entry = fileInfo.ToFileSystemEntry(_pathMapper);
                     return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                 }
                 
                 // Check if it's a directory
                 if (Directory.Exists(systemPath))
                 {
-                    var directoryInfo = new DirectoryInfo(systemPath);
-                    var entry = FileSystemEntry.FromDirectoryInfo(directoryInfo, _pathMapper);
+                    var directoryInfo = new System.IO.DirectoryInfo(systemPath);
+                    var entry = directoryInfo.ToFileSystemEntry(_pathMapper);
                     return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
                 }
                 
                 return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
                     new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound)));
             }, path.Value);
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+            CanonicalPath path,
+            IFileSystemEntryMapper<TEntry> mapper,
+            CancellationToken cancellationToken = default)
+        {
+            if (mapper == null)
+                throw new ArgumentNullException(nameof(mapper));
+            
+            try
+            {
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<TEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+
+                var systemPath = systemPathResult.Value;
+                
+                // Check if it's a file
+                if (File.Exists(systemPath))
+                {
+                    var fileInfo = new System.IO.FileInfo(systemPath);
+                    
+                    // Create EntryInfo
+                    var entryInfo = new Models.EntryInfo(
+                        fileInfo.Name,
+                        fileInfo.CreationTimeUtc,
+                        fileInfo.LastWriteTimeUtc,
+                        fileInfo.LastAccessTimeUtc,
+                        fileInfo.Attributes);
+                    
+                    // Create FileInfo
+                    var fileInfoModel = new Models.FileInfo(entryInfo, fileInfo.Length, fileInfo.Extension);
+                    
+                    // Create FileEntry
+                    var fileEntry = new Models.FileEntry(path, fileInfoModel);
+                    
+                    // Create file reader for this specific file
+                    var fileReader = new LocalFileReader(this, path);
+                    return await mapper.MapFileAsync(fileEntry, fileReader, cancellationToken);
+                }
+                
+                // Check if it's a directory
+                if (Directory.Exists(systemPath))
+                {
+                    var directoryInfo = new System.IO.DirectoryInfo(systemPath);
+                    
+                    // Create EntryInfo
+                    var entryInfo = new Models.EntryInfo(
+                        directoryInfo.Name,
+                        directoryInfo.CreationTimeUtc,
+                        directoryInfo.LastWriteTimeUtc,
+                        directoryInfo.LastAccessTimeUtc,
+                        directoryInfo.Attributes);
+                    
+                    // Create DirectoryInfo
+                    var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                    
+                    // Create DirectoryEntry
+                    var directoryEntry = new Models.DirectoryEntry(path, directoryInfoModel);
+                    return await mapper.MapDirectoryAsync(directoryEntry, cancellationToken);
+                }
+                
+                return Result<TEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<TEntry, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, path.Value));
+            }
         }
 
         /// <inheritdoc />
@@ -185,29 +271,6 @@ namespace Ave.Extensions.FileSystem.Local
             }, path.Value);
         }
 
-        /// <inheritdoc />
-        public async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateFileSystemEntriesAsync(
-            CanonicalPath path,
-            string searchPattern = "*",
-            Models.EnumerationOptions? options = null,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            var systemPathResult = GetSystemPath(path);
-            if (systemPathResult.IsFailure)
-            {
-                yield return Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
-                yield break;
-            }
-
-            options ??= Models.EnumerationOptions.Default;
-
-            var systemPath = systemPathResult.Value;
-            await foreach (var entry in EnumerateEntries(systemPath, searchPattern, options, 0, cancellationToken, path))
-            {
-                yield return entry;
-            }
-        }
 
         /// <inheritdoc />
         public Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
@@ -314,11 +377,288 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<IFileSystemMonitor> CreateMonitorAsync(CancellationToken cancellationToken = default)
+        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
+            CanonicalPath path,
+            ITraversalHandler<TEntry> handler,
+            IFileSystemEntryMapper<TEntry> mapper,
+            TraversalOptions? options = null,
+            CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var monitor = new FileSystemMonitor();
-            return Task.FromResult<IFileSystemMonitor>(monitor);
+            return await ExecuteAsync(async () =>
+            {
+                options ??= new TraversalOptions();
+                
+                // Notify handler of traversal start
+                var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
+                if (startResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(startResult.Error);
+
+                var context = TraversalContext.CreateInitial(path);
+                var stats = new TraversalStats();
+                
+                // Get the starting entry as IFileSystemEntry
+                var entryResult = await GetStartingEntryAsync(path, cancellationToken);
+                if (entryResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
+
+                // Select strategy based on hint and provide file reader factory
+                var strategy = CreateLocalStrategy(options.StrategyHint);
+                
+                // Perform traversal
+                var traversalResult = await strategy.TraverseAsync(
+                    entryResult.Value, 
+                    handler,
+                    mapper,
+                    options, 
+                    context, 
+                    stats,
+                    GetChildrenAsync,
+                    cancellationToken);
+
+                if (traversalResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(traversalResult.Error);
+
+                var summary = new TraversalSummary(
+                    stats.FilesProcessed,
+                    stats.DirectoriesProcessed,
+                    stats.TotalBytesProcessed,
+                    DateTime.UtcNow - context.StartTimeUtc,
+                    cancellationToken.IsCancellationRequested);
+
+                // Notify handler of completion
+                var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
+                if (completeResult.IsFailure)
+                    return Result<TraversalSummary, FileSystemError>.Failure(completeResult.Error);
+
+                return Result<TraversalSummary, FileSystemError>.Success(summary);
+            }, path.Value);
+        }
+
+        /// <summary>
+        /// Creates a traversal strategy based on the provided hint.
+        /// </summary>
+        /// <param name="hint">The strategy hint.</param>
+        /// <returns>An appropriate traversal strategy.</returns>
+        private ITraversalStrategy CreateStrategy(TraversalStrategyHint hint)
+        {
+            switch (hint)
+            {
+                case TraversalStrategyHint.Parallel:
+                    return new ParallelTraversalStrategy();
+                case TraversalStrategyHint.MemoryEfficient:
+                    return new SequentialTraversalStrategy();
+                case TraversalStrategyHint.Search:
+                    return new SequentialTraversalStrategy();
+                default:
+                    return new SequentialTraversalStrategy();
+            }
+        }
+
+        private ITraversalStrategy CreateLocalStrategy(TraversalStrategyHint hint)
+        {
+            switch (hint)
+            {
+                case TraversalStrategyHint.Parallel:
+                    return new LocalParallelTraversalStrategy(this);
+                case TraversalStrategyHint.MemoryEfficient:
+                    return new LocalSequentialTraversalStrategy(this);
+                case TraversalStrategyHint.Search:
+                    return new LocalSequentialTraversalStrategy(this);
+                default:
+                    return new LocalSequentialTraversalStrategy(this);
+            }
+        }
+
+        /// <summary>
+        /// Gets a single entry as IFileSystemEntry for traversal starting point.
+        /// </summary>
+        /// <param name="path">The path to get the entry for.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the entry or an error.</returns>
+        private Task<Result<IFileSystemEntry, FileSystemError>> GetStartingEntryAsync(
+            CanonicalPath path, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+
+                var systemPath = systemPathResult.Value;
+                
+                // Check if it's a file
+                if (File.Exists(systemPath))
+                {
+                    var fileInfo = new System.IO.FileInfo(systemPath);
+                    var entryInfo = new Models.EntryInfo(
+                        fileInfo.Name,
+                        fileInfo.CreationTimeUtc,
+                        fileInfo.LastWriteTimeUtc,
+                        fileInfo.LastAccessTimeUtc,
+                        fileInfo.Attributes);
+                    
+                    var fileInfoModel = new Models.FileInfo(entryInfo, fileInfo.Length, fileInfo.Extension);
+                    IFileSystemEntry entry = new Models.FileEntry(path, fileInfoModel);
+                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
+                }
+                
+                // Check if it's a directory
+                if (Directory.Exists(systemPath))
+                {
+                    var directoryInfo = new System.IO.DirectoryInfo(systemPath);
+                    var entryInfo = new Models.EntryInfo(
+                        directoryInfo.Name,
+                        directoryInfo.CreationTimeUtc,
+                        directoryInfo.LastWriteTimeUtc,
+                        directoryInfo.LastAccessTimeUtc,
+                        directoryInfo.Attributes);
+                    
+                    var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                    IFileSystemEntry entry = new Models.DirectoryEntry(path, directoryInfoModel);
+                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
+                }
+                
+                return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound)));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, path.Value)));
+            }
+        }
+
+        /// <summary>
+        /// Gets the children of a directory for traversal.
+        /// </summary>
+        /// <param name="path">The directory path.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the children or an error.</returns>
+        private Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildrenAsync(
+            CanonicalPath path, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var systemPathResult = GetSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+
+                var systemPath = systemPathResult.Value;
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (!Directory.Exists(systemPath))
+                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
+                        new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
+
+                var entries = new List<IFileSystemEntry>();
+
+                // Get directories
+                var directories = Directory.GetDirectories(systemPath);
+                foreach (var dir in directories)
+                {
+                    var canonicalDirResult = MapPathToCanonical(dir);
+                    if (canonicalDirResult.IsSuccess)
+                    {
+                        var dirInfo = new System.IO.DirectoryInfo(dir);
+                        var entryInfo = new Models.EntryInfo(
+                            dirInfo.Name,
+                            dirInfo.CreationTimeUtc,
+                            dirInfo.LastWriteTimeUtc,
+                            dirInfo.LastAccessTimeUtc,
+                            dirInfo.Attributes);
+                        
+                        var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
+                        entries.Add(new Models.DirectoryEntry(canonicalDirResult.Value, directoryInfoModel));
+                    }
+                }
+
+                // Get files
+                var files = Directory.GetFiles(systemPath);
+                foreach (var file in files)
+                {
+                    var canonicalFileResult = MapPathToCanonical(file);
+                    if (canonicalFileResult.IsSuccess)
+                    {
+                        var fileInfo = new System.IO.FileInfo(file);
+                        var entryInfo = new Models.EntryInfo(
+                            fileInfo.Name,
+                            fileInfo.CreationTimeUtc,
+                            fileInfo.LastWriteTimeUtc,
+                            fileInfo.LastAccessTimeUtc,
+                            fileInfo.Attributes);
+                        
+                        var fileInfoModel = new Models.FileInfo(entryInfo, fileInfo.Length, fileInfo.Extension);
+                        entries.Add(new Models.FileEntry(canonicalFileResult.Value, fileInfoModel));
+                    }
+                }
+
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(entries));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, path.Value)));
+            }
+        }
+
+        /// <inheritdoc />
+        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                if (options == null)
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError("Monitoring options cannot be null", null, FileSystemErrorType.Unknown)));
+                }
+
+                if (_pathMapper == null)
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError("Path mapper is required for monitoring operations", options.Path.Value, FileSystemErrorType.Unknown)));
+                }
+
+                // Convert canonical path to system path for monitoring
+                var systemPathResult = GetSystemPath(options.Path);
+                if (systemPathResult.IsFailure)
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, options.Path.Value, FileSystemErrorType.InvalidPath)));
+                }
+
+                var systemPath = systemPathResult.Value;
+                if (!Directory.Exists(systemPath))
+                {
+                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                        new FileSystemError($"Directory not found: {options.Path.Value}", options.Path.Value, FileSystemErrorType.DirectoryNotFound)));
+                }
+
+                var session = new MonitoringSession(options, _pathMapper);
+                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Success(session));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, options?.Path.Value)));
+            }
         }
 
         private async Task<Result<T, FileSystemError>> ExecuteAsync<T>(Func<Task<Result<T, FileSystemError>>> operation, string? path = null)
@@ -337,77 +677,6 @@ namespace Ave.Extensions.FileSystem.Local
             }
         }
 
-        private async IAsyncEnumerable<Result<FileSystemEntry, FileSystemError>> EnumerateEntries(
-            string path,
-            string searchPattern,
-            Models.EnumerationOptions options,
-            int currentDepth,
-            [EnumeratorCancellation] CancellationToken cancellationToken,
-            CanonicalPath originalPath)
-        {
-            if (options.MaxDepth.HasValue && currentDepth > options.MaxDepth.Value)
-                yield break;
-
-            DirectoryInfo directoryInfo;
-            directoryInfo = new DirectoryInfo(path);
-            if (!directoryInfo.Exists)
-            {
-                yield return Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Directory not found: {path}", path, FileSystemErrorType.DirectoryNotFound));
-                yield break;
-            }
-
-            // Enumerate files
-            FileInfo[] files;
-            files = directoryInfo.GetFiles(searchPattern);
-
-            foreach (var file in files)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Apply filters
-                if (!options.IncludeHidden && file.Attributes.HasFlag(FileAttributes.Hidden))
-                    continue;
-                if (!options.IncludeSystem && file.Attributes.HasFlag(FileAttributes.System))
-                    continue;
-
-                if (options.ShouldIncludeFile != null && !options.ShouldIncludeFile(file.FullName))
-                    continue;
-
-                var entry = FileSystemEntry.FromFileInfo(file, _pathMapper);
-                yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-            }
-
-            // Enumerate directories
-            DirectoryInfo[] directories;
-            directories = directoryInfo.GetDirectories();
-
-            foreach (var directory in directories)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Apply filters
-                if (!options.IncludeHidden && directory.Attributes.HasFlag(FileAttributes.Hidden))
-                    continue;
-                if (!options.IncludeSystem && directory.Attributes.HasFlag(FileAttributes.System))
-                    continue;
-
-                if (options.ShouldIncludeDirectory != null && !options.ShouldIncludeDirectory(directory.FullName))
-                    continue;
-
-                var entry = FileSystemEntry.FromDirectoryInfo(directory, _pathMapper);
-                yield return Result<FileSystemEntry, FileSystemError>.Success(entry);
-
-                // Recurse into subdirectory only if RecurseSubdirectories is enabled
-                if (options.RecurseSubdirectories)
-                {
-                    await foreach (var subEntry in EnumerateEntries(directory.FullName, searchPattern, options, currentDepth + 1, cancellationToken, originalPath))
-                    {
-                        yield return subEntry;
-                    }
-                }
-            }
-        }
 
         /// <summary>
         /// Gets the system path from a canonical path, applying mapping if available.
@@ -490,6 +759,86 @@ namespace Ave.Extensions.FileSystem.Local
             }
             
             return Path.GetFullPath(path);
+        }
+    }
+
+    /// <summary>
+    /// File reader implementation for local file system.
+    /// </summary>
+    internal sealed class LocalFileReader : IFileReader
+    {
+        private readonly LocalFileSystem _fileSystem;
+        private readonly CanonicalPath _filePath;
+
+        public LocalFileReader(LocalFileSystem fileSystem, CanonicalPath filePath)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _filePath = filePath;
+        }
+
+        public async Task<Result<byte[], FileSystemError>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var openResult = await _fileSystem.OpenReadAsync(_filePath, cancellationToken);
+                if (openResult.IsFailure)
+                    return Result<byte[], FileSystemError>.Failure(openResult.Error);
+
+                using var stream = openResult.Value;
+                var buffer = new byte[Math.Min(maxBytes, (int)stream.Length)];
+                var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                
+                if (bytesRead < buffer.Length)
+                {
+                    Array.Resize(ref buffer, bytesRead);
+                }
+                
+                return Result<byte[], FileSystemError>.Success(buffer);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<byte[], FileSystemError>.Failure(FileSystemError.FromException(ex, _filePath.Value));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Local file system specific sequential traversal strategy.
+    /// </summary>
+    internal sealed class LocalSequentialTraversalStrategy : SequentialTraversalStrategy
+    {
+        private readonly LocalFileSystem _fileSystem;
+
+        public LocalSequentialTraversalStrategy(LocalFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new LocalFileReader(_fileSystem, fileEntry.Path);
+        }
+    }
+
+    /// <summary>
+    /// Local file system specific parallel traversal strategy.
+    /// </summary>
+    internal sealed class LocalParallelTraversalStrategy : ParallelTraversalStrategy
+    {
+        private readonly LocalFileSystem _fileSystem;
+
+        public LocalParallelTraversalStrategy(LocalFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        }
+
+        protected override IFileReader CreateFileReader(IFileEntry fileEntry)
+        {
+            return new LocalFileReader(_fileSystem, fileEntry.Path);
         }
     }
 }

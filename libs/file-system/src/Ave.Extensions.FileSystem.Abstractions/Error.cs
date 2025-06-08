@@ -34,10 +34,5 @@ namespace Ave.Extensions.FileSystem
         /// <returns>The error message.</returns>
         public override string ToString() => Message;
 
-        /// <summary>
-        /// Implicitly converts an Error to a string.
-        /// </summary>
-        /// <param name="error">The error.</param>
-        public static implicit operator string(Error error) => error.Message;
     }
 }

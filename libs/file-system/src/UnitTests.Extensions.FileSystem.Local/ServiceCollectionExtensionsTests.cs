@@ -2,7 +2,6 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
-using UnitTests.Extensions.FileSystem.Local.TestHelpers;
 
 namespace UnitTests.Extensions.FileSystem.Local
 {
@@ -23,23 +22,23 @@ namespace UnitTests.Extensions.FileSystem.Local
             fileSystem.Should().NotBeNull();
             fileSystem.Should().BeOfType<LocalFileSystem>();
         }
-        
-        [Fact(DisplayName = "SCE-002: AddFileSystemMonitoring registers IFileSystemMonitor")]
+
+        [Fact(DisplayName = "SCE-002: AddFileSystem registers platform-appropriate IPathMapper")]
         public void SCE002()
         {
             // Arrange
             var services = new ServiceCollection();
             
             // Act
-            services.AddFileSystemMonitoring();
+            services.AddFileSystem();
             var serviceProvider = services.BuildServiceProvider();
-            var monitor = serviceProvider.GetService<IFileSystemMonitor>();
-            var fileSystem = serviceProvider.GetService<IFileSystem>();
+            var pathMapper = serviceProvider.GetService<IPathMapper>();
             
             // Assert
-            monitor.Should().NotBeNull();
-            fileSystem.Should().NotBeNull();
-            fileSystem.Should().BeOfType<LocalFileSystem>();
+            pathMapper.Should().NotBeNull();
+            // Verify that a platform-specific path mapper was registered
+            pathMapper.Should().BeAssignableTo<IPathMapper>();
         }
+        
     }
 }

@@ -2,9 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Ave.Extensions.FileSystem.Configuration;
 using Ave.Extensions.FileSystem.Local.PathMappers;
-using Ave.Extensions.FileSystem.Security;
 
 namespace Ave.Extensions.FileSystem.Local
 {
@@ -44,52 +42,24 @@ namespace Ave.Extensions.FileSystem.Local
             // Register shared utilities first
             services.AddFileSystemUtilities(configure);
 
-            // Register path mapper based on platform or configuration (local filesystem specific)
-            if (options.UseCanonicalPaths)
+            // Register path mapper - always required for LocalFileSystem
+            // Platform-specific path mapper is automatically determined
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (options.PathMapperType != null)
-                {
-                    services.TryAddSingleton(typeof(IPathMapper), options.PathMapperType);
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    services.TryAddSingleton<IPathMapper, WindowsPathMapper>();
-                }
-                else
-                {
-                    services.TryAddSingleton<IPathMapper, UnixPathMapper>();
-                }
+                services.TryAddSingleton<IPathMapper, WindowsPathMapper>();
+            }
+            else
+            {
+                services.TryAddSingleton<IPathMapper, UnixPathMapper>();
             }
 
             // Register local file system implementation
             services.TryAddScoped<IFileSystem, LocalFileSystem>();
 
-            // Register monitoring if enabled (local filesystem specific)
-            if (options.EnableMonitoring)
-            {
-                services.TryAddSingleton<IFileSystemMonitor, FileSystemMonitor>();
-            }
 
             return services;
         }
         
-        /// <summary>
-        /// Adds file system monitoring capabilities to the specified <see cref="IServiceCollection" />.
-        /// </summary>
-        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <returns>The same service collection so that multiple calls can be chained.</returns>
-        public static IServiceCollection AddFileSystemMonitoring(this IServiceCollection services)
-        {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            // Ensure the file system is registered
-            services.AddFileSystem(options => options.EnableMonitoring = true);
-            
-            return services;
-        }
 
     }
 }
