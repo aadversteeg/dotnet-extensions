@@ -1,30 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageId>Ave.Extensions.FileSystem.AzureStorage</PackageId>
-    <Version>0.1.0-preview.1</Version>
-    <Authors>Ave</Authors>
-    <Description>Azure Storage implementation for Ave.Extensions.FileSystem</Description>
-    <PackageTags>filesystem;azure;storage;file-share</PackageTags>
-    <RepositoryUrl>https://github.com/aadversteeg/ave.extensions.filesystem</RepositoryUrl>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    
+    <!-- Package specific metadata -->
+    <Description>Azure Storage implementation for Ave.Extensions.FileSystem using Azure File Shares.</Description>
+    <PackageTags>filesystem;azure;storage;file-share;cloud</PackageTags>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.22.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Azure.Storage.Files.Shares" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <!-- Required for C# 11 features in .NET Standard 2.1 -->
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-  </ItemGroup>
-  
-  <!-- Override SourceLink to specify version explicitly since we're not using central package management -->
-  <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>

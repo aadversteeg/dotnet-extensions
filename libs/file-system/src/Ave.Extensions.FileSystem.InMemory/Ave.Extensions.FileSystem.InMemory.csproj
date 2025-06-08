@@ -2,15 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageId>Ave.Extensions.FileSystem.InMemory</PackageId>
-    <Version>0.1.0-preview.1</Version>
-    <Authors>Ave</Authors>
-    <Description>In-memory implementation for Ave.Extensions.FileSystem for testing and development</Description>
-    <PackageTags>filesystem;inmemory;testing;development</PackageTags>
-    <RepositoryUrl>https://github.com/aadversteeg/ave.extensions.filesystem</RepositoryUrl>
+    
+    <!-- Package specific metadata -->
+    <Description>In-memory implementation for Ave.Extensions.FileSystem for testing and development.</Description>
+    <PackageTags>filesystem;inmemory;testing;development;mock</PackageTags>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

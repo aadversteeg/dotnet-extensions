@@ -26,7 +26,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Configuration
         /// <summary>
         /// Azure File Share name
         /// </summary>
-        public required string ShareName { get; set; }
+        public string ShareName { get; set; } = string.Empty;
         
         /// <summary>
         /// Optional base directory within the share
