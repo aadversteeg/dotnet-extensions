@@ -4,33 +4,34 @@ using System.CommandLine.Builder;
 using System.CommandLine.Hosting;
 using System.CommandLine.Parsing;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
-using Ave.Extensions.FileSystem.Mapping;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
-using Ave.Extensions.Functional;
+using FileCounter.Export;
+using FileCounter.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 
 namespace FileCounter
 {
+    /// <summary>
+    /// FileCounter - A cross-platform console application for counting files and directories.
+    /// Demonstrates usage of Ave.Extensions.FileSystem with various filtering and export options.
+    /// </summary>
     class Program
     {
         static async Task<int> Main(string[] args)
         {
-            var rootCommand = new RootCommand("Count files and directories with filtering options");
+            var rootCommand = new RootCommand("Count files and directories with filtering and export options");
 
-            // Options
+            // Path option
             var pathOption = new Option<string>(
                 aliases: new[] { "--path", "-p" },
                 description: "Path to count files in",
                 getDefaultValue: () => Directory.GetCurrentDirectory());
 
+            // Filter options
             var extensionOption = new Option<string?>(
                 aliases: new[] { "--extension", "-e" },
                 description: "Filter by file extension (e.g., .cs, .txt)");
@@ -45,257 +46,193 @@ namespace FileCounter
                 description: "Maximum file size in bytes",
                 getDefaultValue: () => long.MaxValue);
 
+            // Traversal options
             var recursiveOption = new Option<bool>(
                 aliases: new[] { "--recursive", "-r" },
                 description: "Count recursively",
                 getDefaultValue: () => true);
 
+            var strategyOption = new Option<TraversalStrategyHint>(
+                aliases: new[] { "--strategy", "-s" },
+                description: "Traversal strategy: Auto, Search, FullScan, MemoryEfficient, Parallel",
+                getDefaultValue: () => TraversalStrategyHint.Auto);
+
+            // Handler options
+            var handlerOption = new Option<HandlerType>(
+                aliases: new[] { "--handler", "-h" },
+                description: "Handler type: Simple, Detailed, Summary",
+                getDefaultValue: () => HandlerType.Simple);
+
+            // Export options
+            var exportOption = new Option<ExportFormat>(
+                aliases: new[] { "--format" },
+                description: "Output format: Text, Json, Csv, Xml, Markdown",
+                getDefaultValue: () => ExportFormat.Text);
+
+            var outputOption = new Option<string?>(
+                aliases: new[] { "--output", "-o" },
+                description: "Output file path (uses stdout if not specified)");
+
+            var verboseOption = new Option<bool>(
+                aliases: new[] { "--verbose", "-v" },
+                description: "Show detailed error information",
+                getDefaultValue: () => false);
+
+            var maxExtensionsOption = new Option<int>(
+                aliases: new[] { "--max-extensions" },
+                description: "Maximum number of extensions to show in text format (0 = show all)",
+                getDefaultValue: () => 20);
+
+            var logLevelOption = new Option<LogLevel>(
+                aliases: new[] { "--log-level", "--loglevel" },
+                description: "Logging level: Trace, Debug, Information, Warning, Error, Critical",
+                getDefaultValue: () => LogLevel.Warning);
+
+            var maxDepthOption = new Option<int?>(
+                aliases: new[] { "--max-depth" },
+                description: "Maximum traversal depth (null = unlimited)",
+                getDefaultValue: () => null);
+
+            // Add options to command
             rootCommand.AddOption(pathOption);
             rootCommand.AddOption(extensionOption);
             rootCommand.AddOption(minSizeOption);
             rootCommand.AddOption(maxSizeOption);
             rootCommand.AddOption(recursiveOption);
+            rootCommand.AddOption(strategyOption);
+            rootCommand.AddOption(handlerOption);
+            rootCommand.AddOption(exportOption);
+            rootCommand.AddOption(outputOption);
+            rootCommand.AddOption(verboseOption);
+            rootCommand.AddOption(maxExtensionsOption);
+            rootCommand.AddOption(logLevelOption);
+            rootCommand.AddOption(maxDepthOption);
 
-            // Configure host
+            // Configure host  
             var builder = Host.CreateDefaultBuilder(args)
                 .ConfigureLogging((context, logging) =>
                 {
                     logging.ClearProviders();
                     logging.AddConsole(options =>
                     {
-                        // Configure console logger to use stderr
+                        // Send log messages to stderr to keep stdout clean for results
                         options.LogToStandardErrorThreshold = LogLevel.Trace;
                     });
-                    logging.SetMinimumLevel(LogLevel.Information);
+                    // Set default to Warning, will be updated in handler
+                    logging.SetMinimumLevel(LogLevel.Warning);
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    // Register services
-                    services.AddSingleton<IPathMapper, WindowsPathMapper>();
-                    services.AddSingleton<IFileSystem>(sp => 
-                        new LocalFileSystem(sp.GetRequiredService<IPathMapper>()));
-                    services.AddScoped<FileCounterHandler>();
+                    // Register file system services
+                    services.AddFileSystem();
+                    
+                    // Register application services
+                    services.AddSingleton<HandlerFactory>();
+                    services.AddScoped<FileCounterService>();
                 });
 
-            // Set handler
+            // Set command handler
             rootCommand.SetHandler(async (context) =>
             {
-                var host = context.GetHost();
-                var handler = host.Services.GetRequiredService<FileCounterHandler>();
+                // Get log level from command line first
+                var logLevel = context.ParseResult.GetValueForOption(logLevelOption);
                 
-                var path = context.ParseResult.GetValueForOption(pathOption)!;
-                var extension = context.ParseResult.GetValueForOption(extensionOption);
-                var minSize = context.ParseResult.GetValueForOption(minSizeOption);
-                var maxSize = context.ParseResult.GetValueForOption(maxSizeOption);
-                var recursive = context.ParseResult.GetValueForOption(recursiveOption);
+                // Rebuild host with correct log level
+                var hostBuilder = Host.CreateDefaultBuilder()
+                    .ConfigureLogging((hostContext, logging) =>
+                    {
+                        logging.ClearProviders();
+                        logging.AddConsole(options =>
+                        {
+                            options.LogToStandardErrorThreshold = LogLevel.Trace;
+                        });
+                        logging.SetMinimumLevel(logLevel);
+                        logging.AddFilter("Microsoft", LogLevel.Warning); // Keep Microsoft logs quieter
+                    })
+                    .ConfigureServices((hostContext, services) =>
+                    {
+                        services.AddFileSystem();
+                        services.AddSingleton<HandlerFactory>();
+                        services.AddScoped<FileCounterService>();
+                    });
 
-                await handler.ExecuteAsync(path, extension, minSize, maxSize, recursive);
+                var host = hostBuilder.Build();
+                var service = host.Services.GetRequiredService<FileCounterService>();
+                var logger = host.Services.GetRequiredService<ILogger<Program>>();
+
+                try
+                {
+                    // Extract options from command line
+                    var options = new CountingOptions
+                    {
+                        Path = context.ParseResult.GetValueForOption(pathOption)!,
+                        ExtensionFilter = context.ParseResult.GetValueForOption(extensionOption),
+                        MinSize = context.ParseResult.GetValueForOption(minSizeOption),
+                        MaxSize = context.ParseResult.GetValueForOption(maxSizeOption),
+                        Recursive = context.ParseResult.GetValueForOption(recursiveOption),
+                        Strategy = context.ParseResult.GetValueForOption(strategyOption),
+                        HandlerType = context.ParseResult.GetValueForOption(handlerOption),
+                        ExportFormat = context.ParseResult.GetValueForOption(exportOption),
+                        OutputPath = context.ParseResult.GetValueForOption(outputOption),
+                        Verbose = context.ParseResult.GetValueForOption(verboseOption),
+                        MaxExtensions = context.ParseResult.GetValueForOption(maxExtensionsOption),
+                        MaxDepth = context.ParseResult.GetValueForOption(maxDepthOption)
+                    };
+
+                    // Validate path exists
+                    if (!Directory.Exists(options.Path) && !File.Exists(options.Path))
+                    {
+                        logger.LogError("Path does not exist: {Path}", options.Path);
+                        context.ExitCode = 1;
+                        return;
+                    }
+
+                    // Execute counting operation
+                    var result = await service.CountAndExportAsync(options, context.GetCancellationToken());
+
+                    if (result.IsSuccess)
+                    {
+                        // Output results to stdout (only if not written to file)
+                        if (options.OutputPath == null)
+                        {
+                            Console.WriteLine(result.Value);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Results exported to: {OutputPath}", options.OutputPath);
+                        }
+
+                        context.ExitCode = 0;
+                    }
+                    else
+                    {
+                        logger.LogError("Operation failed: {Error}", result.Error.Message);
+                        context.ExitCode = 1;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    logger.LogInformation("Operation was cancelled");
+                    context.ExitCode = 1;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Unexpected error occurred");
+                    context.ExitCode = 1;
+                }
             });
 
+            // Build and run parser
             var parser = new CommandLineBuilder(rootCommand)
-                .UseHost(builder.Build)
                 .UseDefaults()
+                .UseExceptionHandler((ex, context) =>
+                {
+                    Console.Error.WriteLine($"Unhandled exception: {ex.Message}");
+                    context.ExitCode = 1;
+                })
                 .Build();
 
             return await parser.InvokeAsync(args);
-        }
-    }
-
-    public class FileCounterHandler
-    {
-        private readonly IFileSystem _fileSystem;
-        private readonly ILogger<FileCounterHandler> _logger;
-
-        public FileCounterHandler(IFileSystem fileSystem, ILogger<FileCounterHandler> logger)
-        {
-            _fileSystem = fileSystem;
-            _logger = logger;
-        }
-
-        public async Task ExecuteAsync(string path, string? extension, long minSize, long maxSize, bool recursive)
-        {
-            try
-            {
-                _logger.LogInformation("Starting file count in: {Path}", path);
-
-                // Create canonical path
-                var canonicalResult = CanonicalPath.Create(path.Replace('\\', '/').StartsWith('/') ? path.Replace('\\', '/') : "/" + path.Replace('\\', '/'));
-                if (canonicalResult.IsFailure)
-                {
-                    _logger.LogError("Invalid path: {Error}", canonicalResult.Error.Message);
-                    return;
-                }
-
-                // Create counter handler
-                var counter = new CounterHandler(extension, minSize, maxSize);
-                var mapper = new DefaultMapper();
-
-                // Configure traversal options
-                var options = new TraversalOptions
-                {
-                    MaxDepth = recursive ? int.MaxValue : 1,
-                    FollowSymlinks = false,
-                    StrategyHint = TraversalStrategyHint.Sequential
-                };
-
-                // Perform traversal
-                var result = await _fileSystem.TraverseAsync(
-                    canonicalResult.Value,
-                    counter,
-                    mapper,
-                    options);
-
-                if (result.IsSuccess)
-                {
-                    // Output results to stdout
-                    Console.WriteLine($"Files:       {counter.FileCount:N0}");
-                    Console.WriteLine($"Directories: {counter.DirectoryCount:N0}");
-                    Console.WriteLine($"Total Size:  {FormatSize(counter.TotalSize)}");
-                    
-                    if (extension != null)
-                    {
-                        Console.WriteLine($"Matching:    {counter.MatchingCount:N0} files with extension {extension}");
-                    }
-                }
-                else
-                {
-                    _logger.LogError("Traversal failed: {Error}", result.Error.Message);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error during file counting");
-            }
-        }
-
-        private static string FormatSize(long bytes)
-        {
-            string[] sizes = { "B", "KB", "MB", "GB", "TB" };
-            double len = bytes;
-            int order = 0;
-            while (len >= 1024 && order < sizes.Length - 1)
-            {
-                order++;
-                len = len / 1024;
-            }
-            return $"{len:0.##} {sizes[order]}";
-        }
-    }
-
-    // Custom traversal handler for counting
-    public class CounterHandler : ITraversalHandler<FileSystemEntry>
-    {
-        private readonly string? _extension;
-        private readonly long _minSize;
-        private readonly long _maxSize;
-
-        public int FileCount { get; private set; }
-        public int DirectoryCount { get; private set; }
-        public long TotalSize { get; private set; }
-        public int MatchingCount { get; private set; }
-
-        public CounterHandler(string? extension, long minSize, long maxSize)
-        {
-            _extension = extension;
-            _minSize = minSize;
-            _maxSize = maxSize;
-        }
-
-        public Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(CanonicalPath rootPath, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
-        }
-
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
-        }
-
-        public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(FileSystemEntry file, TraversalContext context, CancellationToken cancellationToken = default)
-        {
-            if (file is FileEntry fileEntry)
-            {
-                var size = fileEntry.Info.Size;
-                
-                // Check size constraints
-                if (size >= _minSize && size <= _maxSize)
-                {
-                    FileCount++;
-                    TotalSize += size;
-
-                    // Check extension if specified
-                    if (_extension != null && fileEntry.Info.Extension.Equals(_extension, StringComparison.OrdinalIgnoreCase))
-                    {
-                        MatchingCount++;
-                    }
-                    else if (_extension == null)
-                    {
-                        MatchingCount++;
-                    }
-                }
-            }
-
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
-        }
-
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
-        {
-            if (context.CurrentDepth > 0) // Don't count the root directory
-            {
-                DirectoryCount++;
-            }
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
-        }
-
-        public Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
-        }
-    }
-
-    // Simple mapper that returns FileSystemEntry as-is
-    public class DefaultMapper : IFileSystemEntryMapper<FileSystemEntry>
-    {
-        public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(FileEntry file, IFileReader fileReader, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(file));
-        }
-
-        public Task<Result<FileSystemEntry, FileSystemError>> MapDirectoryAsync(DirectoryEntry directory, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(directory));
-        }
-    }
-
-    // Windows path mapper implementation
-    public class WindowsPathMapper : IPathMapper
-    {
-        public Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
-        {
-            // Convert canonical path to Windows path
-            var windowsPath = canonicalPath.Value.Replace('/', '\\');
-            
-            // Remove leading backslash if it's not a UNC path
-            if (windowsPath.StartsWith("\\") && !windowsPath.StartsWith("\\\\"))
-            {
-                windowsPath = windowsPath.Substring(1);
-            }
-            
-            return Result<string, Error>.Success(windowsPath);
-        }
-
-        public Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
-        {
-            // Convert Windows path to canonical path
-            var canonical = systemPath.Replace('\\', '/');
-            
-            // Ensure it starts with /
-            if (!canonical.StartsWith('/'))
-            {
-                canonical = "/" + canonical;
-            }
-            
-            return CanonicalPath.Create(canonical);
         }
     }
 }
