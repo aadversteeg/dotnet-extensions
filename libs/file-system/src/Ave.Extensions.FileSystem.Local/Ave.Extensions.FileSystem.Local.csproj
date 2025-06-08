@@ -9,9 +9,6 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="D:\ai\mcp\src\extensions.filesystem\README.md" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
