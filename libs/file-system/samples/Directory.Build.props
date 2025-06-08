@@ -1,0 +1,15 @@
+<Project>
+  <!-- Import the parent Directory.Build.props -->
+  <Import Project="../Directory.Build.props" />
+  
+  <!-- Override properties for sample applications -->
+  <PropertyGroup>
+    <!-- Sample apps don't need documentation generation -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  
+  <!-- Remove Source Link for sample applications (not needed for executables) -->
+  <ItemGroup>
+    <PackageReference Remove="Microsoft.SourceLink.GitHub" />
+  </ItemGroup>
+</Project>
