@@ -72,6 +72,29 @@ namespace Ave.Extensions.FileSystem
         /// <param name="overwrite">Whether to overwrite if destination exists.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
+        /// <remarks>
+        /// This operation is atomic where supported by the underlying file system.
+        /// On the same volume, this is typically a metadata-only operation.
+        /// File attributes and timestamps are preserved.
+        /// Cross-volume moves may be implemented as copy+delete operations.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var result = await fileSystem.MoveFileAsync(
+        ///     CanonicalPath.Create("/source/file.txt").Value,
+        ///     CanonicalPath.Create("/dest/file.txt").Value,
+        ///     overwrite: true);
+        /// 
+        /// if (result.IsSuccess)
+        /// {
+        ///     Console.WriteLine("File moved successfully");
+        /// }
+        /// else
+        /// {
+        ///     Console.WriteLine($"Move failed: {result.Error.Message}");
+        /// }
+        /// </code>
+        /// </example>
         Task<Result<Unit, FileSystemError>> MoveFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
@@ -85,6 +108,19 @@ namespace Ave.Extensions.FileSystem
         /// <param name="destination">The destination directory path.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
+        /// <remarks>
+        /// This operation moves the entire directory tree recursively.
+        /// If destination exists, operation fails unless it's empty.
+        /// On same volume, this is an atomic metadata operation.
+        /// Cross-volume moves require copying all contents and deleting source.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var result = await fileSystem.MoveDirectoryAsync(
+        ///     CanonicalPath.Create("/old/location").Value,
+        ///     CanonicalPath.Create("/new/location").Value);
+        /// </code>
+        /// </example>
         Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
@@ -98,6 +134,20 @@ namespace Ave.Extensions.FileSystem
         /// <param name="overwrite">Whether to overwrite if destination exists.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
+        /// <remarks>
+        /// This operation creates a complete copy of the source file.
+        /// File attributes, timestamps, and permissions are preserved where possible.
+        /// Large files are copied efficiently without loading entire content into memory.
+        /// Operation can be cancelled for long-running copies.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var result = await fileSystem.CopyFileAsync(
+        ///     CanonicalPath.Create("/source/document.pdf").Value,
+        ///     CanonicalPath.Create("/backup/document.pdf").Value,
+        ///     overwrite: true);
+        /// </code>
+        /// </example>
         Task<Result<Unit, FileSystemError>> CopyFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
@@ -111,6 +161,19 @@ namespace Ave.Extensions.FileSystem
         /// <param name="destination">The destination directory path.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
+        /// <remarks>
+        /// This operation recursively copies all files and subdirectories.
+        /// Directory structure is preserved including empty directories.
+        /// File attributes and timestamps are preserved where possible.
+        /// If destination exists, operation fails to prevent data loss.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var result = await fileSystem.CopyDirectoryAsync(
+        ///     CanonicalPath.Create("/projects/current").Value,
+        ///     CanonicalPath.Create("/backups/project-backup").Value);
+        /// </code>
+        /// </example>
         Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
@@ -125,6 +188,20 @@ namespace Ave.Extensions.FileSystem
         /// <param name="overwrite">Whether to overwrite if destination exists (for files only).</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
+        /// <remarks>
+        /// This is a convenience method that automatically determines if source is a file or directory.
+        /// For files, delegates to MoveFileAsync with overwrite parameter.
+        /// For directories, delegates to MoveDirectoryAsync (overwrite not applicable).
+        /// Provides a unified interface for move operations.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// // Works for both files and directories
+        /// var result = await fileSystem.MoveAsync(
+        ///     CanonicalPath.Create("/source/item").Value,
+        ///     CanonicalPath.Create("/dest/item").Value);
+        /// </code>
+        /// </example>
         Task<Result<Unit, FileSystemError>> MoveAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
@@ -140,6 +217,20 @@ namespace Ave.Extensions.FileSystem
         /// <param name="overwrite">Whether to overwrite if destination exists (for files only).</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
+        /// <remarks>
+        /// This is a convenience method that automatically determines if source is a file or directory.
+        /// For files, delegates to CopyFileAsync with overwrite parameter.
+        /// For directories, delegates to CopyDirectoryAsync (overwrite not applicable).
+        /// Provides a unified interface for copy operations.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// // Works for both files and directories
+        /// var result = await fileSystem.CopyAsync(
+        ///     CanonicalPath.Create("/source/item").Value,
+        ///     CanonicalPath.Create("/backup/item").Value);
+        /// </code>
+        /// </example>
         Task<Result<Unit, FileSystemError>> CopyAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
