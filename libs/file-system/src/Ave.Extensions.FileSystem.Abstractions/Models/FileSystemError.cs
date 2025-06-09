@@ -153,6 +153,11 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// Insufficient space for the copy operation.
         /// </summary>
-        InsufficientSpace
+        InsufficientSpace,
+
+        /// <summary>
+        /// Operation partially failed with some items processed successfully.
+        /// </summary>
+        PartialFailure
     }
 }
