@@ -8,6 +8,8 @@ using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
+using System.Runtime.InteropServices;
+using Ave.Extensions.FileSystem.Local.PathMappers;
 using UnitTests.Extensions.FileSystem.Local.TestHelpers;
 using Xunit;
 
@@ -24,7 +26,9 @@ namespace UnitTests.Extensions.FileSystem.Local
             _testDirectory = Path.Combine(Path.GetTempPath(), $"FSTests_{Guid.NewGuid()}");
             Directory.CreateDirectory(_testDirectory);
             
-            _pathMapper = new TestPathMapper();
+            _pathMapper = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+                ? (IPathMapper)new WindowsPathMapper() 
+                : new UnixPathMapper();
             _fileSystem = new LocalFileSystem(_pathMapper);
         }
         
@@ -40,8 +44,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             Directory.CreateDirectory(Path.Combine(sourceDir, "subdir"));
             File.WriteAllText(Path.Combine(sourceDir, "subdir", "file2.txt"), "content2");
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.MoveDirectoryAsync(sourcePath, destPath);
@@ -64,8 +68,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             Directory.CreateDirectory(sourceDir);
             Directory.CreateDirectory(destDir);
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.MoveDirectoryAsync(sourcePath, destPath);
@@ -84,8 +88,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             Directory.CreateDirectory(sourceDir);
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.MoveDirectoryAsync(sourcePath, destPath);
@@ -107,8 +111,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             Directory.CreateDirectory(Path.Combine(sourceDir, "subdir"));
             File.WriteAllText(Path.Combine(sourceDir, "subdir", "file2.txt"), "content2");
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.CopyDirectoryAsync(sourcePath, destPath);
@@ -138,8 +142,8 @@ namespace UnitTests.Extensions.FileSystem.Local
                 File.WriteAllText(Path.Combine(sourceDir, $"file{i}.txt"), data);
             }
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             using var cts = new CancellationTokenSource();
             cts.CancelAfter(50); // Cancel after 50ms
@@ -166,8 +170,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             var sourceDir = Path.Combine(_testDirectory, "nonexistent");
             var destDir = Path.Combine(_testDirectory, "dest");
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.MoveDirectoryAsync(sourcePath, destPath);
@@ -184,8 +188,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             var sourceDir = Path.Combine(_testDirectory, "nonexistent");
             var destDir = Path.Combine(_testDirectory, "dest");
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.CopyDirectoryAsync(sourcePath, destPath);
@@ -202,7 +206,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             var sourceDir = Path.Combine(_testDirectory, "source");
             Directory.CreateDirectory(sourceDir);
             
-            var path = CanonicalPath.Create(sourceDir).Value;
+            var path = _pathMapper.MapToCanonicalPath(sourceDir).Value;
             
             // Act
             var result = await _fileSystem.MoveDirectoryAsync(path, path);

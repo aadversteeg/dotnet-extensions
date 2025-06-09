@@ -103,20 +103,10 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
             TraversalSummary summary,
             CancellationToken cancellationToken = default)
         {
-            // Delete directories in reverse order (deepest first)
-            for (int i = _directoriesToDelete.Count - 1; i >= 0; i--)
-            {
-                try
-                {
-                    // In Azure, directories are virtual, so we just track the deletion
-                    _directoriesDeleted++;
-                }
-                catch (Exception ex)
-                {
-                    var error = FileSystemError.FromException(ex, _directoriesToDelete[i].Value);
-                    _errors.Add(error);
-                }
-            }
+            // In Azure File Storage, directories are virtual and are automatically 
+            // removed when they become empty (all files deleted)
+            // We just need to count them as "deleted" for reporting purposes
+            _directoriesDeleted = _directoriesToDelete.Count;
             
             if (_errors.Count > 0)
             {

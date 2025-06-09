@@ -1351,9 +1351,26 @@ namespace Ave.Extensions.FileSystem.Local
 
                 if (preserveAttributes)
                 {
-                    // Preserve attributes (excluding readonly during the operation)
-                    var attributesToPreserve = sourceInfo.Attributes & ~FileAttributes.ReadOnly;
-                    destInfo.Attributes = attributesToPreserve;
+                    // Preserve all source attributes
+                    // We need to be careful with ReadOnly as it can interfere with file operations
+                    var sourceAttributes = sourceInfo.Attributes;
+                    var hasReadOnly = (sourceAttributes & FileAttributes.ReadOnly) != 0;
+                    
+                    // First, set all attributes except ReadOnly
+                    if (hasReadOnly)
+                    {
+                        destInfo.Attributes = sourceAttributes & ~FileAttributes.ReadOnly;
+                    }
+                    else
+                    {
+                        destInfo.Attributes = sourceAttributes;
+                    }
+                    
+                    // Finally, if the source had ReadOnly, apply it
+                    if (hasReadOnly)
+                    {
+                        destInfo.Attributes |= FileAttributes.ReadOnly;
+                    }
                 }
             }
             catch

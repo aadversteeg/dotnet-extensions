@@ -16,6 +16,7 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="AutoFixture" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Xunit.SkippableFact" />
   </ItemGroup>
 
   <ItemGroup>

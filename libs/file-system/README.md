@@ -10,6 +10,7 @@ Cross-platform filesystem operations for .NET applications with advanced path ma
 - **Functional error handling** - Uses `Result<T, Error>` pattern instead of exceptions
 - **Async enumeration** - Stream large directory listings efficiently
 - **File system monitoring** - Real-time change notifications with reactive streams
+- **High-performance move and copy operations** - Native platform optimizations with progress reporting
 - **Dependency injection ready** - Full integration with Microsoft.Extensions.DependencyInjection
 - **NetStandard 2.1 compatible** - Works with .NET Core 3.0+ and .NET 5+
 
@@ -65,6 +66,191 @@ public class MyService
         }
     }
 }
+```
+
+## Move and Copy Operations
+
+The library provides high-performance move and copy operations with native platform optimizations, progress reporting, and comprehensive error handling.
+
+### File Operations
+
+```csharp
+// Copy a file
+var copyResult = await fileSystem.CopyFileAsync(
+    source: "/data/original.txt",
+    destination: "/backup/copy.txt",
+    overwrite: true
+);
+
+if (copyResult.IsSuccess)
+{
+    Console.WriteLine("File copied successfully");
+}
+
+// Move a file
+var moveResult = await fileSystem.MoveFileAsync(
+    source: "/temp/upload.dat",
+    destination: "/processed/upload.dat",
+    overwrite: false
+);
+```
+
+### Directory Operations
+
+```csharp
+// Copy entire directory structure
+var copyDirResult = await fileSystem.CopyDirectoryAsync(
+    source: "/source/project",
+    destination: "/backup/project"
+);
+
+// Move directory
+var moveDirResult = await fileSystem.MoveDirectoryAsync(
+    source: "/temp/staging",
+    destination: "/production/live"
+);
+```
+
+### Progress Reporting
+
+Monitor progress for large file operations:
+
+```csharp
+using Ave.Extensions.FileSystem;
+
+// Create progress reporter
+var progress = new Progress<ICopyProgress>(p => 
+{
+    Console.WriteLine($"Progress: {p.BytesTransferred:N0} / {p.TotalBytes:N0} bytes " +
+                     $"({p.PercentComplete:F1}%) - {p.TransferRate:N0} bytes/sec");
+});
+
+// Copy with progress reporting
+var result = await fileSystem.CopyFileAsync(
+    source: "/data/large-file.zip",
+    destination: "/backup/large-file.zip",
+    progress: progress
+);
+```
+
+### Advanced Copy/Move Features
+
+#### Cross-Volume Operations
+
+The library automatically detects and handles cross-volume moves efficiently:
+
+```csharp
+// Cross-volume move (automatically uses copy + delete)
+var result = await fileSystem.MoveFileAsync(
+    source: "/mnt/c/data/file.txt",     // C: drive
+    destination: "/mnt/d/backup/file.txt" // D: drive
+);
+```
+
+#### Cancellation Support
+
+All operations support cancellation tokens:
+
+```csharp
+using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+
+try
+{
+    var result = await fileSystem.CopyDirectoryAsync(
+        source: "/large/dataset",
+        destination: "/backup/dataset",
+        cancellationToken: cts.Token
+    );
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Operation was cancelled");
+}
+```
+
+#### File Attribute Preservation
+
+File attributes, timestamps, and metadata are preserved when supported by the platform:
+
+```csharp
+// Attributes are automatically preserved
+var result = await fileSystem.CopyFileAsync(
+    source: "/data/important.doc",
+    destination: "/backup/important.doc"
+);
+
+// The copied file will maintain:
+// - Creation time
+// - Last modified time
+// - File attributes (ReadOnly, Hidden, etc.)
+// - Extended attributes (when supported)
+```
+
+### Error Handling
+
+All operations return `Result<T, FileSystemError>` for functional error handling:
+
+```csharp
+var result = await fileSystem.CopyFileAsync(source, destination);
+
+if (result.IsFailure)
+{
+    switch (result.Error.Type)
+    {
+        case FileSystemErrorType.FileNotFound:
+            Console.WriteLine($"Source file not found: {result.Error.Path}");
+            break;
+        case FileSystemErrorType.InsufficientSpace:
+            Console.WriteLine("Not enough disk space for copy operation");
+            break;
+        case FileSystemErrorType.AccessDenied:
+            Console.WriteLine("Permission denied");
+            break;
+        case FileSystemErrorType.FileAlreadyExists:
+            Console.WriteLine("Destination already exists (use overwrite: true)");
+            break;
+        default:
+            Console.WriteLine($"Copy failed: {result.Error.Message}");
+            break;
+    }
+}
+```
+
+### Platform-Specific Optimizations
+
+#### Local File System
+- **Windows**: Uses native `MoveFileEx` API for atomic moves within same volume
+- **Linux/macOS**: Uses `rename()` system call for atomic moves within same filesystem
+- **Cross-volume**: Automatically falls back to copy + delete with transactional cleanup
+
+#### Azure File Storage
+- **Server-side copy**: Uses Azure's native copy operations for efficient transfers
+- **Parallel uploads**: Large files are transferred using optimized chunking
+- **Eventual consistency**: Handles Azure's consistency model for directory operations
+
+#### In-Memory File System
+- **Zero-copy moves**: Memory-based moves are instantaneous within same volume
+- **Copy-on-write**: Efficient copying using reference counting where possible
+
+### Extension Methods
+
+Convenient extension methods are available in the `Ave.Extensions.FileSystem` namespace:
+
+```csharp
+using Ave.Extensions.FileSystem;
+
+// Generic move/copy operations (auto-detects file vs directory)
+var result = await fileSystem.MoveAsync(source, destination, overwrite: true);
+var result = await fileSystem.CopyAsync(source, destination, overwrite: false);
+
+// Bulk operations with LINQ
+var files = new[] { "/temp/file1.txt", "/temp/file2.txt", "/temp/file3.txt" };
+var results = await files.ToAsyncEnumerable()
+    .SelectAwait(async file => await fileSystem.MoveFileAsync(
+        file, 
+        file.Replace("/temp/", "/processed/")
+    ))
+    .ToListAsync();
 ```
 
 ### Canonical Path Mapping

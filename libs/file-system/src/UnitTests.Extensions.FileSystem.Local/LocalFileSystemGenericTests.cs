@@ -6,6 +6,8 @@ using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
+using System.Runtime.InteropServices;
+using Ave.Extensions.FileSystem.Local.PathMappers;
 using UnitTests.Extensions.FileSystem.Local.TestHelpers;
 using Xunit;
 
@@ -22,7 +24,9 @@ namespace UnitTests.Extensions.FileSystem.Local
             _testDirectory = Path.Combine(Path.GetTempPath(), $"FSTests_{Guid.NewGuid()}");
             Directory.CreateDirectory(_testDirectory);
             
-            _pathMapper = new TestPathMapper();
+            _pathMapper = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+                ? (IPathMapper)new WindowsPathMapper() 
+                : new UnixPathMapper();
             _fileSystem = new LocalFileSystem(_pathMapper);
         }
         
@@ -34,8 +38,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             var destFile = Path.Combine(_testDirectory, "dest.txt");
             File.WriteAllText(sourceFile, "content");
             
-            var sourcePath = CanonicalPath.Create(sourceFile).Value;
-            var destPath = CanonicalPath.Create(destFile).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceFile).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destFile).Value;
             
             // Act
             var result = await _fileSystem.MoveAsync(sourcePath, destPath);
@@ -55,8 +59,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             Directory.CreateDirectory(sourceDir);
             File.WriteAllText(Path.Combine(sourceDir, "file.txt"), "content");
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.MoveAsync(sourcePath, destPath);
@@ -77,8 +81,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             File.WriteAllText(sourceFile, "source content");
             File.WriteAllText(destFile, "dest content");
             
-            var sourcePath = CanonicalPath.Create(sourceFile).Value;
-            var destPath = CanonicalPath.Create(destFile).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceFile).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destFile).Value;
             
             // Act - without overwrite
             var result1 = await _fileSystem.MoveAsync(sourcePath, destPath, overwrite: false);
@@ -104,8 +108,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             var destFile = Path.Combine(_testDirectory, "dest.txt");
             File.WriteAllText(sourceFile, "content");
             
-            var sourcePath = CanonicalPath.Create(sourceFile).Value;
-            var destPath = CanonicalPath.Create(destFile).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceFile).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destFile).Value;
             
             // Act
             var result = await _fileSystem.CopyAsync(sourcePath, destPath);
@@ -126,8 +130,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             Directory.CreateDirectory(sourceDir);
             File.WriteAllText(Path.Combine(sourceDir, "file.txt"), "content");
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.CopyAsync(sourcePath, destPath);
@@ -143,8 +147,8 @@ namespace UnitTests.Extensions.FileSystem.Local
         public async Task GEN006()
         {
             // Arrange
-            var sourcePath = CanonicalPath.Create(Path.Combine(_testDirectory, "nonexistent")).Value;
-            var destPath = CanonicalPath.Create(Path.Combine(_testDirectory, "dest")).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(Path.Combine(_testDirectory, "nonexistent")).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(Path.Combine(_testDirectory, "dest")).Value;
             
             // Act
             var moveResult = await _fileSystem.MoveAsync(sourcePath, destPath);
@@ -166,8 +170,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             Directory.CreateDirectory(sourceDir);
             Directory.CreateDirectory(destDir);
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.MoveAsync(sourcePath, destPath, overwrite: true);
@@ -186,8 +190,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             Directory.CreateDirectory(sourceDir);
             Directory.CreateDirectory(destDir);
             
-            var sourcePath = CanonicalPath.Create(sourceDir).Value;
-            var destPath = CanonicalPath.Create(destDir).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceDir).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destDir).Value;
             
             // Act
             var result = await _fileSystem.CopyAsync(sourcePath, destPath, overwrite: true);
@@ -206,8 +210,8 @@ namespace UnitTests.Extensions.FileSystem.Local
             File.WriteAllText(sourceFile, "source content");
             File.WriteAllText(destFile, "dest content");
             
-            var sourcePath = CanonicalPath.Create(sourceFile).Value;
-            var destPath = CanonicalPath.Create(destFile).Value;
+            var sourcePath = _pathMapper.MapToCanonicalPath(sourceFile).Value;
+            var destPath = _pathMapper.MapToCanonicalPath(destFile).Value;
             
             // Act - without overwrite
             var result1 = await _fileSystem.CopyAsync(sourcePath, destPath, overwrite: false);
