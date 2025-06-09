@@ -768,7 +768,121 @@ namespace Ave.Extensions.FileSystem.Local
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 2");
+            try
+            {
+                // Validate paths are different
+                var validationResult = ValidateSourceDestinationDifferent(source, destination);
+                if (validationResult.IsFailure)
+                    return Task.FromResult(validationResult);
+
+                // Get system paths
+                var sourcePathResult = GetSystemPath(source);
+                if (sourcePathResult.IsFailure)
+                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath)));
+                        
+                var destPathResult = GetSystemPath(destination);
+                if (destPathResult.IsFailure)
+                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath)));
+                
+                var sourcePath = sourcePathResult.Value;
+                var destPath = destPathResult.Value;
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Check if source exists
+                if (!File.Exists(sourcePath))
+                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source file not found", source.Value, FileSystemErrorType.FileNotFound)));
+                
+                // Check if destination exists and overwrite is false
+                if (!overwrite && File.Exists(destPath))
+                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination file already exists", destination.Value, FileSystemErrorType.FileAlreadyExists)));
+                
+                // Ensure destination directory exists
+                var ensureDirResult = EnsureParentDirectoryExists(destPath);
+                if (ensureDirResult.IsFailure)
+                    return Task.FromResult(ensureDirResult);
+                
+                // Get source file info for attribute preservation
+                var sourceInfo = new System.IO.FileInfo(sourcePath);
+                var sourceAttributes = sourceInfo.Attributes;
+                var sourceCreationTime = sourceInfo.CreationTimeUtc;
+                var sourceLastWriteTime = sourceInfo.LastWriteTimeUtc;
+                var sourceLastAccessTime = sourceInfo.LastAccessTimeUtc;
+                
+                // Clear readonly attribute if set (to allow move)
+                if ((sourceAttributes & FileAttributes.ReadOnly) != 0)
+                {
+                    sourceInfo.Attributes = sourceAttributes & ~FileAttributes.ReadOnly;
+                }
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Perform the move operation
+                // For older frameworks, manually handle overwrite
+                if (overwrite && File.Exists(destPath))
+                {
+                    File.Delete(destPath);
+                }
+                File.Move(sourcePath, destPath);
+                
+                // Preserve attributes on the destination
+                // Note: Timestamps are automatically preserved by File.Move on most systems
+                // but we ensure it here for consistency
+                try
+                {
+                    var destInfo = new System.IO.FileInfo(destPath);
+                    destInfo.CreationTimeUtc = sourceCreationTime;
+                    destInfo.LastWriteTimeUtc = sourceLastWriteTime;
+                    destInfo.LastAccessTimeUtc = sourceLastAccessTime;
+                    destInfo.Attributes = sourceAttributes;
+                }
+                catch
+                {
+                    // Best effort - don't fail if attribute preservation fails
+                }
+                
+                return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied)));
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.DirectoryNotFound)));
+            }
+            catch (IOException ex) when (ex.HResult == -2147024891) // ERROR_ACCESS_DENIED on Windows
+            {
+                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied)));
+            }
+            catch (IOException ex)
+            {
+                // Check if this is a cross-volume move error
+                if (ex.Message.Contains("different volume") || ex.Message.Contains("Invalid cross-device"))
+                {
+                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Cannot move file across volumes", source.Value, FileSystemErrorType.CrossVolumeMove)));
+                }
+                
+                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.IOException)));
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value)));
+            }
         }
 
         /// <inheritdoc />
@@ -781,13 +895,135 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> CopyFileAsync(
+        public async Task<Result<Unit, FileSystemError>> CopyFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 2");
+            try
+            {
+                // Validate paths are different
+                var validationResult = ValidateSourceDestinationDifferent(source, destination);
+                if (validationResult.IsFailure)
+                    return validationResult;
+
+                // Get system paths
+                var sourcePathResult = GetSystemPath(source);
+                if (sourcePathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                        
+                var destPathResult = GetSystemPath(destination);
+                if (destPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath));
+                
+                var sourcePath = sourcePathResult.Value;
+                var destPath = destPathResult.Value;
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Check if source exists
+                if (!File.Exists(sourcePath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source file not found", source.Value, FileSystemErrorType.FileNotFound));
+                
+                // Check if destination exists and overwrite is false
+                if (!overwrite && File.Exists(destPath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination file already exists", destination.Value, FileSystemErrorType.FileAlreadyExists));
+                
+                // Ensure destination directory exists
+                var ensureDirResult = EnsureParentDirectoryExists(destPath);
+                if (ensureDirResult.IsFailure)
+                    return ensureDirResult;
+                
+                // For async copy, we'll use FileStream for better cancellation support
+                const int bufferSize = 81920; // 80KB buffer
+                
+                using (var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync: true))
+                using (var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true))
+                {
+                    await sourceStream.CopyToAsync(destStream, bufferSize, cancellationToken);
+                    await destStream.FlushAsync(cancellationToken);
+                }
+                
+                // Preserve attributes and timestamps
+                PreserveFileAttributes(sourcePath, destPath, preserveTimestamps: true, preserveAttributes: true);
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }
+            catch (OperationCanceledException)
+            {
+                // Clean up partial copy
+                try
+                {
+                    var destPathResult = GetSystemPath(destination);
+                    if (destPathResult.IsSuccess && File.Exists(destPathResult.Value))
+                    {
+                        File.Delete(destPathResult.Value);
+                    }
+                }
+                catch
+                {
+                    // Best effort cleanup
+                }
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied));
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.DirectoryNotFound));
+            }
+            catch (IOException ex) when (ex.HResult == -2147024784) // ERROR_DISK_FULL
+            {
+                // Clean up partial copy
+                try
+                {
+                    var destPathResult = GetSystemPath(destination);
+                    if (destPathResult.IsSuccess && File.Exists(destPathResult.Value))
+                    {
+                        File.Delete(destPathResult.Value);
+                    }
+                }
+                catch
+                {
+                    // Best effort cleanup
+                }
+                
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("Insufficient disk space", destination.Value, FileSystemErrorType.InsufficientSpace));
+            }
+            catch (IOException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.IOException));
+            }
+            catch (Exception ex)
+            {
+                // Clean up partial copy on unexpected error
+                try
+                {
+                    var destPathResult = GetSystemPath(destination);
+                    if (destPathResult.IsSuccess && File.Exists(destPathResult.Value))
+                    {
+                        File.Delete(destPathResult.Value);
+                    }
+                }
+                catch
+                {
+                    // Best effort cleanup
+                }
+                
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
         }
 
         /// <inheritdoc />
@@ -818,6 +1054,79 @@ namespace Ave.Extensions.FileSystem.Local
         {
             throw new NotImplementedException("Will be implemented in Phase 3");
         }
+
+        #region Move/Copy Helper Methods
+
+        /// <summary>
+        /// Preserves file attributes from source to destination.
+        /// </summary>
+        private void PreserveFileAttributes(string sourcePath, string destinationPath, bool preserveTimestamps, bool preserveAttributes)
+        {
+            try
+            {
+                var sourceInfo = new System.IO.FileInfo(sourcePath);
+                var destInfo = new System.IO.FileInfo(destinationPath);
+
+                if (preserveTimestamps)
+                {
+                    // Preserve timestamps
+                    destInfo.CreationTimeUtc = sourceInfo.CreationTimeUtc;
+                    destInfo.LastWriteTimeUtc = sourceInfo.LastWriteTimeUtc;
+                    destInfo.LastAccessTimeUtc = sourceInfo.LastAccessTimeUtc;
+                }
+
+                if (preserveAttributes)
+                {
+                    // Preserve attributes (excluding readonly during the operation)
+                    var attributesToPreserve = sourceInfo.Attributes & ~FileAttributes.ReadOnly;
+                    destInfo.Attributes = attributesToPreserve;
+                }
+            }
+            catch
+            {
+                // Best effort - don't fail the operation if attribute preservation fails
+                // This is consistent with standard file system behavior
+            }
+        }
+
+        /// <summary>
+        /// Ensures the parent directory of a path exists.
+        /// </summary>
+        private Result<Unit, FileSystemError> EnsureParentDirectoryExists(string systemPath)
+        {
+            try
+            {
+                var parentDir = Path.GetDirectoryName(systemPath);
+                if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
+                {
+                    Directory.CreateDirectory(parentDir);
+                }
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, systemPath));
+            }
+        }
+
+        /// <summary>
+        /// Validates that source and destination paths are different.
+        /// </summary>
+        private Result<Unit, FileSystemError> ValidateSourceDestinationDifferent(CanonicalPath source, CanonicalPath destination)
+        {
+            if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(
+                        "Source and destination paths are the same",
+                        source.Value,
+                        FileSystemErrorType.InvalidPath));
+            }
+            return Result<Unit, FileSystemError>.Success(Unit.Value);
+        }
+
+        #endregion
     }
 
     /// <summary>
