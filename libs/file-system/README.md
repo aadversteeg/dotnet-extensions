@@ -19,21 +19,23 @@ Cross-platform filesystem operations for .NET applications with advanced path ma
 |---------|-------------|
 | `Ave.Extensions.FileSystem.Abstractions` | Interfaces and abstractions for file system operations |
 | `Ave.Extensions.FileSystem` | Core implementation with path mapping and security features |
-| `Ave.Extensions.FileSystem.DependencyInjection` | Dependency injection extensions and configuration |
+| `Ave.Extensions.FileSystem.Local` | Local file system implementation using System.IO |
+| `Ave.Extensions.FileSystem.InMemory` | In-memory file system implementation for testing |
+| `Ave.Extensions.FileSystem.AzureFileStorage` | Azure File Storage implementation |
+| `Ave.Extensions.FileSystem.MimeDetective` | MIME type detection extensions |
 
 ## Getting Started
 
 Install the packages from NuGet:
 
 ```shell
-dotnet add package Ave.Extensions.FileSystem
-dotnet add package Ave.Extensions.FileSystem.DependencyInjection
+dotnet add package Ave.Extensions.FileSystem.Local
 ```
 
 ### Basic Usage
 
 ```csharp
-using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Local;
 using Microsoft.Extensions.DependencyInjection;
 
 // Setup with DI

@@ -3,6 +3,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Security;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace IntegrationTests.FileSystem.Local
@@ -68,6 +69,33 @@ namespace IntegrationTests.FileSystem.Local
             // Assert
             invalidPathResult.IsFailure.Should().BeTrue();
             whitespacePathResult.IsFailure.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "PSIT-004: PathSecurity via DI registration should respect AllowedPaths configuration")]
+        public void PSIT004()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddFileSystemUtilities(options =>
+            {
+                options.EnablePathSecurity = true;
+                options.AllowedPaths.Add("/tmp/allowed");
+            });
+
+            using var serviceProvider = services.BuildServiceProvider();
+            var pathSecurity = serviceProvider.GetRequiredService<IPathSecurity>();
+
+            var allowedPath = CanonicalPath.Create("/tmp/allowed/file.txt").Value;
+            var forbiddenPath = CanonicalPath.Create("/tmp/forbidden/file.txt").Value;
+
+            // Act
+            var allowedResult = pathSecurity.ValidatePathAccess(allowedPath);
+            var forbiddenResult = pathSecurity.ValidatePathAccess(forbiddenPath);
+
+            // Assert
+            allowedResult.IsSuccess.Should().BeTrue("access to allowed path should succeed");
+            forbiddenResult.IsFailure.Should().BeTrue("access to forbidden path should fail");
+            forbiddenResult.Error.Type.Should().Be(FileSystemErrorType.AccessDenied);
         }
     }
 }

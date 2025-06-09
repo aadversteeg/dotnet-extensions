@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Ave.Extensions.FileSystem.Security;
@@ -32,7 +33,14 @@ namespace Ave.Extensions.FileSystem
             // Register security if enabled
             if (options.EnablePathSecurity)
             {
-                services.TryAddSingleton<IPathSecurity>(sp => new PathSecurityService());
+                services.TryAddSingleton<IPathSecurity>(sp =>
+                {
+                    var allowedCanonicalPaths = options.AllowedPaths
+                        .Select(p => CanonicalPath.Create(p))
+                        .Where(r => r.IsSuccess)
+                        .Select(r => r.Value);
+                    return new PathSecurityService(allowedCanonicalPaths);
+                });
             }
 
 
