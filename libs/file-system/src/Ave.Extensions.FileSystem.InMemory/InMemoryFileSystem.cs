@@ -1022,6 +1022,64 @@ namespace Ave.Extensions.FileSystem.InMemory
             GC.SuppressFinalize(this);
         }
 
+        /// <inheritdoc />
+        public Task<Result<Unit, FileSystemError>> MoveFileAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("Will be implemented in Phase 2");
+        }
+
+        /// <inheritdoc />
+        public Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
+            CanonicalPath source, 
+            CanonicalPath destination,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("Will be implemented in Phase 3");
+        }
+
+        /// <inheritdoc />
+        public Task<Result<Unit, FileSystemError>> CopyFileAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("Will be implemented in Phase 2");
+        }
+
+        /// <inheritdoc />
+        public Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
+            CanonicalPath source, 
+            CanonicalPath destination,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("Will be implemented in Phase 3");
+        }
+
+        /// <inheritdoc />
+        public Task<Result<Unit, FileSystemError>> MoveAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("Will be implemented in Phase 3");
+        }
+
+        /// <inheritdoc />
+        public Task<Result<Unit, FileSystemError>> CopyAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException("Will be implemented in Phase 3");
+        }
+
         /// <summary>
         /// Releases the managed and unmanaged resources used by the InMemoryFileSystem.
         /// </summary>

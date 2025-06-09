@@ -63,5 +63,87 @@ namespace Ave.Extensions.FileSystem
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
         Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Moves a file from source to destination.
+        /// </summary>
+        /// <param name="source">The source file path.</param>
+        /// <param name="destination">The destination file path.</param>
+        /// <param name="overwrite">Whether to overwrite if destination exists.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result indicating success or failure.</returns>
+        Task<Result<Unit, FileSystemError>> MoveFileAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Moves a directory from source to destination.
+        /// </summary>
+        /// <param name="source">The source directory path.</param>
+        /// <param name="destination">The destination directory path.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result indicating success or failure.</returns>
+        Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
+            CanonicalPath source, 
+            CanonicalPath destination,
+            CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Copies a file from source to destination.
+        /// </summary>
+        /// <param name="source">The source file path.</param>
+        /// <param name="destination">The destination file path.</param>
+        /// <param name="overwrite">Whether to overwrite if destination exists.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result indicating success or failure.</returns>
+        Task<Result<Unit, FileSystemError>> CopyFileAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Copies a directory recursively from source to destination.
+        /// </summary>
+        /// <param name="source">The source directory path.</param>
+        /// <param name="destination">The destination directory path.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result indicating success or failure.</returns>
+        Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
+            CanonicalPath source, 
+            CanonicalPath destination,
+            CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Moves a file or directory from source to destination.
+        /// Automatically detects whether source is a file or directory.
+        /// </summary>
+        /// <param name="source">The source path.</param>
+        /// <param name="destination">The destination path.</param>
+        /// <param name="overwrite">Whether to overwrite if destination exists (for files only).</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result indicating success or failure.</returns>
+        Task<Result<Unit, FileSystemError>> MoveAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Copies a file or directory from source to destination.
+        /// Automatically detects whether source is a file or directory.
+        /// </summary>
+        /// <param name="source">The source path.</param>
+        /// <param name="destination">The destination path.</param>
+        /// <param name="overwrite">Whether to overwrite if destination exists (for files only).</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result indicating success or failure.</returns>
+        Task<Result<Unit, FileSystemError>> CopyAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default);
     }
 }
