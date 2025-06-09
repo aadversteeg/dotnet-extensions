@@ -340,6 +340,7 @@ namespace IntegrationTests.FileSystem.AzureFileStorage
         public async Task AFSMC005_DirectoryMoveOperations()
         {
             // Arrange
+            SkipIfNotConfigured();
             var sourceDir = $"{_testDirectoryPath}/source";
             var destDir = $"{_testDirectoryPath}/dest";
             
