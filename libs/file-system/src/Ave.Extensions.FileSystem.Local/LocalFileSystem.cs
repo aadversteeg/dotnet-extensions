@@ -886,12 +886,129 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
+        public async Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            try
+            {
+                // Validate paths are different
+                var validationResult = ValidateSourceDestinationDifferent(source, destination);
+                if (validationResult.IsFailure)
+                    return validationResult;
+
+                // Get system paths
+                var sourcePathResult = GetSystemPath(source);
+                if (sourcePathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                        
+                var destPathResult = GetSystemPath(destination);
+                if (destPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath));
+                
+                var sourcePath = sourcePathResult.Value;
+                var destPath = destPathResult.Value;
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Check if source exists
+                if (!Directory.Exists(sourcePath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+                
+                // Check if destination already exists
+                if (Directory.Exists(destPath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                
+                // Check if destination is a subdirectory of source
+                if (IsSubdirectoryOf(sourcePath, destPath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Cannot move directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                
+                // Get source directory info for attribute preservation
+                var sourceDirInfo = new System.IO.DirectoryInfo(sourcePath);
+                var sourceAttributes = sourceDirInfo.Attributes;
+                var sourceCreationTime = sourceDirInfo.CreationTimeUtc;
+                var sourceLastWriteTime = sourceDirInfo.LastWriteTimeUtc;
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Try to move the directory
+                try
+                {
+                    Directory.Move(sourcePath, destPath);
+                    
+                    // Preserve attributes
+                    try
+                    {
+                        var destDirInfo = new System.IO.DirectoryInfo(destPath);
+                        destDirInfo.Attributes = sourceAttributes;
+                        destDirInfo.CreationTimeUtc = sourceCreationTime;
+                        destDirInfo.LastWriteTimeUtc = sourceLastWriteTime;
+                    }
+                    catch
+                    {
+                        // Best effort
+                    }
+                    
+                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                }
+                catch (IOException ex) when (ex.Message.Contains("different volume") || ex.Message.Contains("Invalid cross-device"))
+                {
+                    // Cross-volume move: need to copy and delete
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    // Copy the directory
+                    var copyResult = await CopyDirectoryRecursiveAsync(sourcePath, destPath, cancellationToken);
+                    if (copyResult.IsFailure)
+                        return copyResult;
+                    
+                    // Delete the source directory
+                    try
+                    {
+                        Directory.Delete(sourcePath, recursive: true);
+                        return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        // Try to clean up the copy since delete failed
+                        try
+                        {
+                            Directory.Delete(destPath, recursive: true);
+                        }
+                        catch
+                        {
+                            // Best effort
+                        }
+                        
+                        return Result<Unit, FileSystemError>.Failure(
+                            FileSystemError.FromException(deleteEx, source.Value));
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied));
+            }
+            catch (IOException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.IOException));
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
         }
 
         /// <inheritdoc />
@@ -1027,32 +1144,189 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
+        public async Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            try
+            {
+                // Validate paths are different
+                var validationResult = ValidateSourceDestinationDifferent(source, destination);
+                if (validationResult.IsFailure)
+                    return validationResult;
+
+                // Get system paths
+                var sourcePathResult = GetSystemPath(source);
+                if (sourcePathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                        
+                var destPathResult = GetSystemPath(destination);
+                if (destPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath));
+                
+                var sourcePath = sourcePathResult.Value;
+                var destPath = destPathResult.Value;
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Check if source exists
+                if (!Directory.Exists(sourcePath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+                
+                // Check if destination already exists
+                if (Directory.Exists(destPath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                
+                // Check if destination is a subdirectory of source
+                if (IsSubdirectoryOf(sourcePath, destPath))
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Cannot copy directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                
+                // Perform the recursive copy
+                return await CopyDirectoryRecursiveAsync(sourcePath, destPath, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Clean up partial copy
+                try
+                {
+                    var destPathResult = GetSystemPath(destination);
+                    if (destPathResult.IsSuccess && Directory.Exists(destPathResult.Value))
+                    {
+                        Directory.Delete(destPathResult.Value, recursive: true);
+                    }
+                }
+                catch
+                {
+                    // Best effort cleanup
+                }
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied));
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> MoveAsync(
+        public async Task<Result<Unit, FileSystemError>> MoveAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            try
+            {
+                // Get system path to check if source is file or directory
+                var sourcePathResult = GetSystemPath(source);
+                if (sourcePathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                
+                var sourcePath = sourcePathResult.Value;
+                
+                // Check what type of entry we're dealing with
+                if (File.Exists(sourcePath))
+                {
+                    // It's a file
+                    return await MoveFileAsync(source, destination, overwrite, cancellationToken);
+                }
+                else if (Directory.Exists(sourcePath))
+                {
+                    // It's a directory - overwrite parameter doesn't apply to directories
+                    if (overwrite)
+                    {
+                        // Check if destination exists and is a directory
+                        var destPathResult = GetSystemPath(destination);
+                        if (destPathResult.IsSuccess && Directory.Exists(destPathResult.Value))
+                        {
+                            return Result<Unit, FileSystemError>.Failure(
+                                new FileSystemError(
+                                    "Cannot overwrite an existing directory", 
+                                    destination.Value, 
+                                    FileSystemErrorType.DirectoryAlreadyExists));
+                        }
+                    }
+                    return await MoveDirectoryAsync(source, destination, cancellationToken);
+                }
+                else
+                {
+                    // Source doesn't exist
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> CopyAsync(
+        public async Task<Result<Unit, FileSystemError>> CopyAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            try
+            {
+                // Get system path to check if source is file or directory
+                var sourcePathResult = GetSystemPath(source);
+                if (sourcePathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                
+                var sourcePath = sourcePathResult.Value;
+                
+                // Check what type of entry we're dealing with
+                if (File.Exists(sourcePath))
+                {
+                    // It's a file
+                    return await CopyFileAsync(source, destination, overwrite, cancellationToken);
+                }
+                else if (Directory.Exists(sourcePath))
+                {
+                    // It's a directory - overwrite parameter doesn't apply to directories
+                    if (overwrite)
+                    {
+                        // Check if destination exists and is a directory
+                        var destPathResult = GetSystemPath(destination);
+                        if (destPathResult.IsSuccess && Directory.Exists(destPathResult.Value))
+                        {
+                            return Result<Unit, FileSystemError>.Failure(
+                                new FileSystemError(
+                                    "Cannot overwrite an existing directory", 
+                                    destination.Value, 
+                                    FileSystemErrorType.DirectoryAlreadyExists));
+                        }
+                    }
+                    return await CopyDirectoryAsync(source, destination, cancellationToken);
+                }
+                else
+                {
+                    // Source doesn't exist
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
         }
 
         #region Move/Copy Helper Methods
@@ -1125,6 +1399,82 @@ namespace Ave.Extensions.FileSystem.Local
             }
             return Result<Unit, FileSystemError>.Success(Unit.Value);
         }
+
+        #region Directory Operation Helpers
+
+        /// <summary>
+        /// Checks if two directories are the same or if one is a subdirectory of the other.
+        /// </summary>
+        private bool IsSubdirectoryOf(string parentPath, string childPath)
+        {
+            var parent = new System.IO.DirectoryInfo(parentPath).FullName.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var child = new System.IO.DirectoryInfo(childPath).FullName.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            
+            return child.StartsWith(parent + Path.DirectorySeparatorChar.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                   child.Equals(parent, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Copies a directory and all its contents recursively.
+        /// </summary>
+        private async Task<Result<Unit, FileSystemError>> CopyDirectoryRecursiveAsync(
+            string sourceDirPath, 
+            string destDirPath,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                // Create the destination directory
+                Directory.CreateDirectory(destDirPath);
+                
+                // Copy all files in the directory
+                var sourceDir = new System.IO.DirectoryInfo(sourceDirPath);
+                foreach (var file in sourceDir.GetFiles())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    var destFilePath = Path.Combine(destDirPath, file.Name);
+                    file.CopyTo(destFilePath, overwrite: false);
+                    
+                    // Preserve attributes
+                    PreserveFileAttributes(file.FullName, destFilePath, preserveTimestamps: true, preserveAttributes: true);
+                }
+                
+                // Copy all subdirectories recursively
+                foreach (var subDir in sourceDir.GetDirectories())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    var destSubDirPath = Path.Combine(destDirPath, subDir.Name);
+                    var result = await CopyDirectoryRecursiveAsync(subDir.FullName, destSubDirPath, cancellationToken);
+                    if (result.IsFailure)
+                        return result;
+                }
+                
+                // Preserve directory attributes
+                try
+                {
+                    var sourceDirInfo = new System.IO.DirectoryInfo(sourceDirPath);
+                    var destDirInfo = new System.IO.DirectoryInfo(destDirPath);
+                    destDirInfo.Attributes = sourceDirInfo.Attributes;
+                    destDirInfo.CreationTimeUtc = sourceDirInfo.CreationTimeUtc;
+                    destDirInfo.LastWriteTimeUtc = sourceDirInfo.LastWriteTimeUtc;
+                }
+                catch
+                {
+                    // Best effort
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, sourceDirPath));
+            }
+        }
+
+        #endregion
 
         #endregion
     }
