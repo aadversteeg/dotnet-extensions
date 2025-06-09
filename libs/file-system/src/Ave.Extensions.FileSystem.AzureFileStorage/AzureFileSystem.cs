@@ -22,7 +22,7 @@ using Microsoft.Extensions.Options;
 
 namespace Ave.Extensions.FileSystem.AzureFileStorage
 {
-    /// <summary>y
+    /// <summary>
     /// Azure File Share implementation of IFileSystem.
     /// </summary>
     public class AzureFileSystem : IFileSystem, IReadOnlyFileSystem
@@ -31,20 +31,24 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         private readonly AzureFileSystemOptions _options;
         private readonly ShareClient _shareClient;
         private readonly IPathSecurity? _pathSecurity;
+        private readonly IPathMapper _pathMapper;
         
         /// <summary>
         /// Initializes a new instance of the AzureFileSystem class.
         /// </summary>
         /// <param name="logger">Logger instance.</param>
         /// <param name="options">Azure file system options.</param>
+        /// <param name="pathMapper">Path mapper for canonical path support.</param>
         /// <param name="pathSecurity">Optional path security validator.</param>
         public AzureFileSystem(
             ILogger<AzureFileSystem> logger,
             IOptions<AzureFileSystemOptions> options,
+            IPathMapper pathMapper,
             IPathSecurity? pathSecurity = null)
         {
             _logger = logger;
             _options = options.Value;
+            _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
             _pathSecurity = pathSecurity;
             
             var serviceClient = new ShareServiceClient(_options.GetConnectionString());
@@ -72,7 +76,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                     return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.ExistsAsync(cancellationToken);
@@ -99,7 +108,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                     return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 var response = await directoryClient.ExistsAsync(cancellationToken);
@@ -126,7 +140,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<string, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<string, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.DownloadAsync(cancellationToken: cancellationToken);
@@ -157,7 +176,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Stream, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Stream, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.DownloadAsync(cancellationToken: cancellationToken);
@@ -191,7 +215,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                     return Result<TEntry, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<TEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 
                 // Try as file first
                 try
@@ -366,7 +395,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<IFileSystemEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 
                 // Try as file first
                 try
@@ -446,7 +480,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
 
                 var entries = new List<IFileSystemEntry>();
@@ -584,7 +623,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 _logger.LogDebug("CreateDirectoryAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
                 
                 var result = await CreateDirectoryRecursiveAsync(azurePath, cancellationToken);
@@ -607,7 +651,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 _logger.LogDebug("WriteAllTextAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
                 var fileClient = GetFileClient(azurePath);
                 
@@ -655,7 +704,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 
                 // Azure File Share doesn't support direct write streams
                 // Return a memory stream that can be uploaded when disposed
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Stream, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 // Ensure parent directory exists
@@ -704,7 +758,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 await fileClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
@@ -727,7 +786,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 if (recursive)
@@ -804,9 +868,14 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             return Result<Unit, FileSystemError>.Success(Unit.Value);
         }
         
-        private string GetAzurePath(string path)
+        /// <summary>
+        /// Converts a system path to an Azure-compatible path format.
+        /// </summary>
+        /// <param name="systemPath">The system path to convert.</param>
+        /// <returns>Azure-compatible path format.</returns>
+        private string GetAzurePath(string systemPath)
         {
-            var normalized = path.Replace('\\', '/').TrimStart('/');
+            var normalized = systemPath.Replace('\\', '/').TrimStart('/');
             
             if (!string.IsNullOrEmpty(_options.BaseDirectory))
             {
@@ -1540,7 +1609,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 // Try to get properties first

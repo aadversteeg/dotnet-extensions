@@ -93,9 +93,15 @@ namespace IntegrationTests.FileSystem.AzureFileStorage
                 Timeout = TimeSpan.FromSeconds(_testConfig.AzureFileStorage.TimeoutSeconds)
             };
 
-            services.AddSingleton(Options.Create(options));
-            services.AddSingleton<AzureFileSystem>();
-            services.AddSingleton<IFileSystem>(provider => provider.GetRequiredService<AzureFileSystem>());
+            services.AddAzureFileSystem(o =>
+            {
+                o.AccountName = options.AccountName;
+                o.AccountKey = options.AccountKey;
+                o.ShareName = options.ShareName;
+                o.BaseDirectory = options.BaseDirectory;
+                o.CreateShareIfNotExists = options.CreateShareIfNotExists;
+                o.Timeout = options.Timeout;
+            });
 
             var serviceProvider = services.BuildServiceProvider();
             _fileSystem = serviceProvider.GetRequiredService<IFileSystem>();

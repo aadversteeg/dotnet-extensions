@@ -247,8 +247,11 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 var systemPath = systemPathResult.Value;
                 var files = Directory.GetFiles(systemPath, searchPattern, searchOption);
-                var mappedFiles = MapPathsToCanonical(files);
-                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedFiles));
+                var mappedFilesResult = MapPathsToCanonical(files);
+                if (mappedFilesResult.IsFailure)
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(mappedFilesResult.Error));
+                
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedFilesResult.Value));
             }, path.Value);
         }
 
@@ -266,8 +269,11 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 var systemPath = systemPathResult.Value;
                 var directories = Directory.GetDirectories(systemPath, searchPattern, searchOption);
-                var mappedDirectories = MapPathsToCanonical(directories);
-                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedDirectories));
+                var mappedDirectoriesResult = MapPathsToCanonical(directories);
+                if (mappedDirectoriesResult.IsFailure)
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(mappedDirectoriesResult.Error));
+                
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedDirectoriesResult.Value));
             }, path.Value);
         }
 
@@ -626,11 +632,6 @@ namespace Ave.Extensions.FileSystem.Local
                         new FileSystemError("Monitoring options cannot be null", null, FileSystemErrorType.Unknown)));
                 }
 
-                if (_pathMapper == null)
-                {
-                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
-                        new FileSystemError("Path mapper is required for monitoring operations", options.Path.Value, FileSystemErrorType.Unknown)));
-                }
 
                 // Convert canonical path to system path for monitoring
                 var systemPathResult = GetSystemPath(options.Path);
@@ -679,27 +680,21 @@ namespace Ave.Extensions.FileSystem.Local
 
 
         /// <summary>
-        /// Gets the system path from a canonical path, applying mapping if available.
+        /// Gets the system path from a canonical path using the path mapper.
         /// </summary>
         /// <param name="canonicalPath">The canonical path to map.</param>
         /// <returns>A result containing the system path or an error.</returns>
         private Result<string, Error> GetSystemPath(CanonicalPath canonicalPath)
         {
-            if (_pathMapper != null)
-            {
-                return _pathMapper.MapToSystemPath(canonicalPath);
-            }
-            
-            // Return canonical path value if no mapper is available
-            return Result<string, Error>.Success(canonicalPath.Value);
+            return _pathMapper.MapToSystemPath(canonicalPath);
         }
         
         /// <summary>
         /// Maps an array of system paths back to canonical format.
         /// </summary>
         /// <param name="systemPaths">Array of system paths.</param>
-        /// <returns>List of canonical paths.</returns>
-        private IReadOnlyList<CanonicalPath> MapPathsToCanonical(string[] systemPaths)
+        /// <returns>Result containing list of canonical paths or an error.</returns>
+        private Result<IReadOnlyList<CanonicalPath>, FileSystemError> MapPathsToCanonical(string[] systemPaths)
         {
             var canonicalPaths = new List<CanonicalPath>();
             
@@ -712,38 +707,23 @@ namespace Ave.Extensions.FileSystem.Local
                 }
                 else
                 {
-                    // Fallback: try to create canonical path from system path
-                    var fallbackResult = CanonicalPath.Create(systemPath.Replace('\\', '/'));
-                    if (fallbackResult.IsSuccess)
-                    {
-                        canonicalPaths.Add(fallbackResult.Value);
-                    }
+                    // Path mapping failure is an error - don't skip silently
+                    return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
+                        new FileSystemError($"Failed to map system path to canonical: {result.Error.Message}", systemPath, FileSystemErrorType.InvalidPath));
                 }
             }
             
-            return canonicalPaths;
+            return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(canonicalPaths);
         }
         
         /// <summary>
-        /// Maps a system path back to canonical format.
+        /// Maps a system path back to canonical format using the path mapper.
         /// </summary>
         /// <param name="systemPath">The system path to map.</param>
         /// <returns>Result containing the canonical path or an error.</returns>
         private Result<CanonicalPath, Error> MapPathToCanonical(string systemPath)
         {
-            if (_pathMapper != null)
-            {
-                return _pathMapper.MapToCanonicalPath(systemPath);
-            }
-            
-            // Fallback: try to create canonical path from system path
-            var normalizedPath = systemPath.Replace('\\', '/');
-            if (!normalizedPath.StartsWith('/'))
-            {
-                normalizedPath = "/" + normalizedPath;
-            }
-            
-            return CanonicalPath.Create(normalizedPath);
+            return _pathMapper.MapToCanonicalPath(systemPath);
         }
 
         /// <summary>
