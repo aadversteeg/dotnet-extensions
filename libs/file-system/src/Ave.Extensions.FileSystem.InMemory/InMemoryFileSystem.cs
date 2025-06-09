@@ -1029,7 +1029,60 @@ namespace Ave.Extensions.FileSystem.InMemory
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 2");
+            return Task.FromResult(ExecuteWithLock(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", 
+                            source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Check if source exists
+                if (!_files.TryGetValue(source, out var fileNode))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source file not found", 
+                            source.Value, FileSystemErrorType.FileNotFound));
+                }
+                
+                // Check if destination exists and overwrite is false
+                if (!overwrite && _files.ContainsKey(destination))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination file already exists", 
+                            destination.Value, FileSystemErrorType.FileAlreadyExists));
+                }
+                
+                // Ensure parent directory exists
+                var parentResult = destination.GetParent();
+                if (parentResult.IsSuccess && !_directories.ContainsKey(parentResult.Value))
+                {
+                    CreateDirectoryRecursive(parentResult.Value);
+                }
+                
+                // Move the file (create new node with new path)
+                var movedNode = new FileNode(destination, fileNode.Content, fileNode.CreatedUtc)
+                {
+                    ModifiedUtc = fileNode.ModifiedUtc,
+                    LastAccessUtc = DateTime.UtcNow,
+                    Attributes = fileNode.Attributes
+                };
+                
+                _files[destination] = movedNode;
+                _files.TryRemove(source, out _);
+                
+                // Update parent directory modified time
+                if (parentResult.IsSuccess && _directories.TryGetValue(parentResult.Value, out var parent))
+                {
+                    parent.ModifiedUtc = DateTime.UtcNow;
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }));
         }
 
         /// <inheritdoc />
@@ -1038,7 +1091,99 @@ namespace Ave.Extensions.FileSystem.InMemory
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            return Task.FromResult(ExecuteWithLock(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", 
+                            source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Check if source exists
+                if (!_directories.ContainsKey(source))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source directory not found", 
+                            source.Value, FileSystemErrorType.DirectoryNotFound));
+                }
+                
+                // Check if destination already exists
+                if (_directories.ContainsKey(destination))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination directory already exists", 
+                            destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                }
+                
+                // Check if destination is a subdirectory of source
+                if (IsSubdirectoryOf(source.Value, destination.Value))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Cannot move directory to a subdirectory of itself", 
+                            source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Ensure parent directory exists
+                var parentResult = destination.GetParent();
+                if (parentResult.IsSuccess && !_directories.ContainsKey(parentResult.Value))
+                {
+                    CreateDirectoryRecursive(parentResult.Value);
+                }
+                
+                // Get all entries to move
+                var sourcePrefix = source.Value.TrimEnd('/') + "/";
+                var destPrefix = destination.Value.TrimEnd('/') + "/";
+                
+                // Move directories
+                var directoriesToMove = _directories.Keys
+                    .Where(d => d.Equals(source) || d.Value.StartsWith(sourcePrefix))
+                    .ToList();
+                
+                foreach (var dir in directoriesToMove)
+                {
+                    var dirNode = _directories[dir];
+                    _directories.TryRemove(dir, out _);
+                    
+                    var newPath = dir.Equals(source) 
+                        ? destination 
+                        : CanonicalPath.Create(destPrefix + dir.Value.Substring(sourcePrefix.Length)).Value;
+                    
+                    var movedDirNode = new DirectoryNode(newPath, dirNode.CreatedUtc)
+                    {
+                        ModifiedUtc = dirNode.ModifiedUtc,
+                        LastAccessUtc = dirNode.LastAccessUtc,
+                        Attributes = dirNode.Attributes
+                    };
+                    _directories[newPath] = movedDirNode;
+                }
+                
+                // Move files
+                var filesToMove = _files.Keys
+                    .Where(f => f.Value.StartsWith(sourcePrefix))
+                    .ToList();
+                
+                foreach (var file in filesToMove)
+                {
+                    var fileNode = _files[file];
+                    var newPath = CanonicalPath.Create(destPrefix + file.Value.Substring(sourcePrefix.Length)).Value;
+                    
+                    var movedFileNode = new FileNode(newPath, fileNode.Content, fileNode.CreatedUtc)
+                    {
+                        ModifiedUtc = fileNode.ModifiedUtc,
+                        LastAccessUtc = fileNode.LastAccessUtc,
+                        Attributes = fileNode.Attributes
+                    };
+                    
+                    _files[newPath] = movedFileNode;
+                    _files.TryRemove(file, out _);
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }));
         }
 
         /// <inheritdoc />
@@ -1048,7 +1193,63 @@ namespace Ave.Extensions.FileSystem.InMemory
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 2");
+            return Task.FromResult(ExecuteWithLock(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", 
+                            source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Check if source exists
+                if (!_files.TryGetValue(source, out var sourceNode))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source file not found", 
+                            source.Value, FileSystemErrorType.FileNotFound));
+                }
+                
+                // Check if destination exists and overwrite is false
+                if (!overwrite && _files.ContainsKey(destination))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination file already exists", 
+                            destination.Value, FileSystemErrorType.FileAlreadyExists));
+                }
+                
+                // Ensure parent directory exists
+                var parentResult = destination.GetParent();
+                if (parentResult.IsSuccess && !_directories.ContainsKey(parentResult.Value))
+                {
+                    CreateDirectoryRecursive(parentResult.Value);
+                }
+                
+                // Deep copy the file data
+                var copiedNode = new FileNode(
+                    destination,
+                    sourceNode.Content.ToArray(), // Deep copy
+                    DateTime.UtcNow)
+                {
+                    Attributes = sourceNode.Attributes
+                };
+                
+                _files[destination] = copiedNode;
+                
+                // Update source access time
+                sourceNode.LastAccessUtc = DateTime.UtcNow;
+                
+                // Update parent directory modified time
+                if (parentResult.IsSuccess && _directories.TryGetValue(parentResult.Value, out var parent))
+                {
+                    parent.ModifiedUtc = DateTime.UtcNow;
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }));
         }
 
         /// <inheritdoc />
@@ -1057,27 +1258,216 @@ namespace Ave.Extensions.FileSystem.InMemory
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            return Task.FromResult(ExecuteWithLock(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", 
+                            source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Check if source exists
+                if (!_directories.ContainsKey(source))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source directory not found", 
+                            source.Value, FileSystemErrorType.DirectoryNotFound));
+                }
+                
+                // Check if destination already exists
+                if (_directories.ContainsKey(destination))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination directory already exists", 
+                            destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                }
+                
+                // Check if destination is a subdirectory of source
+                if (IsSubdirectoryOf(source.Value, destination.Value))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Cannot copy directory to a subdirectory of itself", 
+                            source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Ensure parent directory exists
+                var parentResult = destination.GetParent();
+                if (parentResult.IsSuccess && !_directories.ContainsKey(parentResult.Value))
+                {
+                    CreateDirectoryRecursive(parentResult.Value);
+                }
+                
+                // Get all entries to copy
+                var sourcePrefix = source.Value.TrimEnd('/') + "/";
+                var destPrefix = destination.Value.TrimEnd('/') + "/";
+                
+                // Copy directories
+                var directoriesToCopy = _directories
+                    .Where(kvp => kvp.Key.Equals(source) || kvp.Key.Value.StartsWith(sourcePrefix))
+                    .ToList();
+                
+                foreach (var kvp in directoriesToCopy)
+                {
+                    var newPath = kvp.Key.Equals(source) 
+                        ? destination 
+                        : CanonicalPath.Create(destPrefix + kvp.Key.Value.Substring(sourcePrefix.Length)).Value;
+                    
+                    var copiedDirNode = new DirectoryNode(newPath, DateTime.UtcNow)
+                    {
+                        Attributes = kvp.Value.Attributes
+                    };
+                    _directories[newPath] = copiedDirNode;
+                }
+                
+                // Copy files with deep copy
+                var filesToCopy = _files
+                    .Where(kvp => kvp.Key.Value.StartsWith(sourcePrefix))
+                    .ToList();
+                
+                foreach (var kvp in filesToCopy)
+                {
+                    var newPath = CanonicalPath.Create(destPrefix + kvp.Key.Value.Substring(sourcePrefix.Length)).Value;
+                    
+                    // Deep copy file data
+                    var copiedFileNode = new FileNode(
+                        newPath,
+                        kvp.Value.Content.ToArray(), // Deep copy
+                        DateTime.UtcNow)
+                    {
+                        Attributes = kvp.Value.Attributes
+                    };
+                    
+                    _files[newPath] = copiedFileNode;
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }));
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> MoveAsync(
+        public async Task<Result<Unit, FileSystemError>> MoveAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            // Check if source is a file or directory
+            var fileExists = await FileExistsAsync(source, cancellationToken);
+            if (fileExists.IsSuccess && fileExists.Value)
+            {
+                return await MoveFileAsync(source, destination, overwrite, cancellationToken);
+            }
+            
+            var dirExists = await DirectoryExistsAsync(source, cancellationToken);
+            if (dirExists.IsSuccess && dirExists.Value)
+            {
+                // For directories, overwrite parameter doesn't apply
+                if (overwrite)
+                {
+                    // Check if destination exists and is a directory
+                    var destDirExists = await DirectoryExistsAsync(destination, cancellationToken);
+                    if (destDirExists.IsSuccess && destDirExists.Value)
+                    {
+                        return Result<Unit, FileSystemError>.Failure(
+                            new FileSystemError(
+                                "Cannot overwrite an existing directory", 
+                                destination.Value, 
+                                FileSystemErrorType.DirectoryAlreadyExists));
+                    }
+                }
+                return await MoveDirectoryAsync(source, destination, cancellationToken);
+            }
+            
+            return Result<Unit, FileSystemError>.Failure(
+                new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> CopyAsync(
+        public async Task<Result<Unit, FileSystemError>> CopyAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException("Will be implemented in Phase 3");
+            // Check if source is a file or directory
+            var fileExists = await FileExistsAsync(source, cancellationToken);
+            if (fileExists.IsSuccess && fileExists.Value)
+            {
+                return await CopyFileAsync(source, destination, overwrite, cancellationToken);
+            }
+            
+            var dirExists = await DirectoryExistsAsync(source, cancellationToken);
+            if (dirExists.IsSuccess && dirExists.Value)
+            {
+                // For directories, overwrite parameter doesn't apply
+                if (overwrite)
+                {
+                    // Check if destination exists and is a directory
+                    var destDirExists = await DirectoryExistsAsync(destination, cancellationToken);
+                    if (destDirExists.IsSuccess && destDirExists.Value)
+                    {
+                        return Result<Unit, FileSystemError>.Failure(
+                            new FileSystemError(
+                                "Cannot overwrite an existing directory", 
+                                destination.Value, 
+                                FileSystemErrorType.DirectoryAlreadyExists));
+                    }
+                }
+                return await CopyDirectoryAsync(source, destination, cancellationToken);
+            }
+            
+            return Result<Unit, FileSystemError>.Failure(
+                new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+        }
+
+        private bool IsSubdirectoryOf(string parentPath, string childPath)
+        {
+            var parent = parentPath.TrimEnd('/');
+            var child = childPath.TrimEnd('/');
+            
+            return child.StartsWith(parent + "/", StringComparison.OrdinalIgnoreCase) ||
+                   child.Equals(parent, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void CreateDirectoryRecursive(CanonicalPath path)
+        {
+            if (_directories.ContainsKey(path))
+                return;
+            
+            var parentResult = path.GetParent();
+            if (parentResult.IsSuccess && !_directories.ContainsKey(parentResult.Value))
+            {
+                CreateDirectoryRecursive(parentResult.Value);
+            }
+            
+            var now = DateTime.UtcNow;
+            _directories.TryAdd(path, new DirectoryNode(path, now));
+        }
+
+        private Result<T, FileSystemError> ExecuteWithLock<T>(Func<Result<T, FileSystemError>> action)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                return action();
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<T, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex));
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
         }
 
         /// <summary>
