@@ -128,6 +128,36 @@ namespace Ave.Extensions.FileSystem.Models
         /// <summary>
         /// The operation is not supported by the file system.
         /// </summary>
-        NotSupported
+        NotSupported,
+
+        /// <summary>
+        /// The destination file already exists and overwrite was not specified.
+        /// </summary>
+        FileAlreadyExists,
+
+        /// <summary>
+        /// The destination directory already exists.
+        /// </summary>
+        DirectoryAlreadyExists,
+
+        /// <summary>
+        /// Cannot overwrite a non-empty directory.
+        /// </summary>
+        DirectoryNotEmpty,
+
+        /// <summary>
+        /// Move operation across different volumes is not supported.
+        /// </summary>
+        CrossVolumeMove,
+
+        /// <summary>
+        /// Insufficient space for the copy operation.
+        /// </summary>
+        InsufficientSpace,
+
+        /// <summary>
+        /// Operation partially failed with some items processed successfully.
+        /// </summary>
+        PartialFailure
     }
 }

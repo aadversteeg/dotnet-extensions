@@ -199,7 +199,12 @@ namespace Ave.Extensions.FileSystem.Local
 
                 var canonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
                 if (canonicalPathResult.IsFailure)
-                    return; // Skip invalid paths
+                {
+                    // Path mapping failure is a critical error in monitoring
+                    _changesSubject.OnError(new InvalidOperationException(
+                        $"Failed to map system path to canonical path during monitoring: {canonicalPathResult.Error.Message}"));
+                    return;
+                }
                 var eventArgs = new FileSystemChangedEvent(canonicalPathResult.Value, changeType);
                 
                 if (ShouldIncludeChange(eventArgs))
@@ -221,22 +226,30 @@ namespace Ave.Extensions.FileSystem.Local
                 var oldCanonicalPathResult = _pathMapper.MapToCanonicalPath(e.OldFullPath);
                 var newCanonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
                 
-                if (oldCanonicalPathResult.IsSuccess)
+                if (oldCanonicalPathResult.IsFailure)
                 {
-                    var deleteEvent = new FileSystemChangedEvent(oldCanonicalPathResult.Value, FileSystemChangeType.Deleted);
-                    if (ShouldIncludeChange(deleteEvent))
-                    {
-                        _changesSubject.OnNext(deleteEvent);
-                    }
+                    _changesSubject.OnError(new InvalidOperationException(
+                        $"Failed to map old path during rename monitoring: {oldCanonicalPathResult.Error.Message}"));
+                    return;
                 }
                 
-                if (newCanonicalPathResult.IsSuccess)
+                if (newCanonicalPathResult.IsFailure)
                 {
-                    var createEvent = new FileSystemChangedEvent(newCanonicalPathResult.Value, FileSystemChangeType.Created);
-                    if (ShouldIncludeChange(createEvent))
-                    {
-                        _changesSubject.OnNext(createEvent);
-                    }
+                    _changesSubject.OnError(new InvalidOperationException(
+                        $"Failed to map new path during rename monitoring: {newCanonicalPathResult.Error.Message}"));
+                    return;
+                }
+                
+                var deleteEvent = new FileSystemChangedEvent(oldCanonicalPathResult.Value, FileSystemChangeType.Deleted);
+                if (ShouldIncludeChange(deleteEvent))
+                {
+                    _changesSubject.OnNext(deleteEvent);
+                }
+                
+                var createEvent = new FileSystemChangedEvent(newCanonicalPathResult.Value, FileSystemChangeType.Created);
+                if (ShouldIncludeChange(createEvent))
+                {
+                    _changesSubject.OnNext(createEvent);
                 }
             }
             catch (Exception ex)
@@ -257,7 +270,11 @@ namespace Ave.Extensions.FileSystem.Local
                 // Convert canonical path to system path for file system operations
                 var systemPathResult = _pathMapper.MapToSystemPath(changeArgs.Path);
                 if (systemPathResult.IsFailure)
-                    return true; // Include by default if path mapping fails
+                {
+                    // Path mapping failure should not be silently ignored
+                    throw new InvalidOperationException(
+                        $"Failed to map canonical path to system path during filtering: {systemPathResult.Error.Message}");
+                }
 
                 var systemPath = systemPathResult.Value;
 

@@ -10,6 +10,7 @@ using Azure.Storage.Files.Shares;
 using Azure.Storage.Files.Shares.Models;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
+using Ave.Extensions.FileSystem.AzureFileStorage.Handlers;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Security;
@@ -21,7 +22,7 @@ using Microsoft.Extensions.Options;
 
 namespace Ave.Extensions.FileSystem.AzureFileStorage
 {
-    /// <summary>y
+    /// <summary>
     /// Azure File Share implementation of IFileSystem.
     /// </summary>
     public class AzureFileSystem : IFileSystem, IReadOnlyFileSystem
@@ -30,20 +31,24 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         private readonly AzureFileSystemOptions _options;
         private readonly ShareClient _shareClient;
         private readonly IPathSecurity? _pathSecurity;
+        private readonly IPathMapper _pathMapper;
         
         /// <summary>
         /// Initializes a new instance of the AzureFileSystem class.
         /// </summary>
         /// <param name="logger">Logger instance.</param>
         /// <param name="options">Azure file system options.</param>
+        /// <param name="pathMapper">Path mapper for canonical path support.</param>
         /// <param name="pathSecurity">Optional path security validator.</param>
         public AzureFileSystem(
             ILogger<AzureFileSystem> logger,
             IOptions<AzureFileSystemOptions> options,
+            IPathMapper pathMapper,
             IPathSecurity? pathSecurity = null)
         {
             _logger = logger;
             _options = options.Value;
+            _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
             _pathSecurity = pathSecurity;
             
             var serviceClient = new ShareServiceClient(_options.GetConnectionString());
@@ -71,7 +76,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                     return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.ExistsAsync(cancellationToken);
@@ -98,7 +108,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                     return Result<bool, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 var response = await directoryClient.ExistsAsync(cancellationToken);
@@ -125,7 +140,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<string, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<string, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.DownloadAsync(cancellationToken: cancellationToken);
@@ -156,7 +176,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Stream, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Stream, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.DownloadAsync(cancellationToken: cancellationToken);
@@ -190,7 +215,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                     return Result<TEntry, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<TEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 
                 // Try as file first
                 try
@@ -365,7 +395,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             try
             {
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<IFileSystemEntry, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 
                 // Try as file first
                 try
@@ -445,7 +480,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
 
                 var entries = new List<IFileSystemEntry>();
@@ -583,7 +623,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 _logger.LogDebug("CreateDirectoryAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
                 
                 var result = await CreateDirectoryRecursiveAsync(azurePath, cancellationToken);
@@ -606,7 +651,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 _logger.LogDebug("WriteAllTextAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
                 var fileClient = GetFileClient(azurePath);
                 
@@ -654,7 +704,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 
                 // Azure File Share doesn't support direct write streams
                 // Return a memory stream that can be uploaded when disposed
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Stream, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 // Ensure parent directory exists
@@ -703,7 +758,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 await fileClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
@@ -726,7 +786,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (validationResult.IsFailure)
                         return Result<Unit, FileSystemError>.Failure(validationResult.Error);
                 
-                var azurePath = GetAzurePath(path.Value);
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 if (recursive)
@@ -803,9 +868,14 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             return Result<Unit, FileSystemError>.Success(Unit.Value);
         }
         
-        private string GetAzurePath(string path)
+        /// <summary>
+        /// Converts a system path to an Azure-compatible path format.
+        /// </summary>
+        /// <param name="systemPath">The system path to convert.</param>
+        /// <returns>Azure-compatible path format.</returns>
+        private string GetAzurePath(string systemPath)
         {
-            var normalized = path.Replace('\\', '/').TrimStart('/');
+            var normalized = systemPath.Replace('\\', '/').TrimStart('/');
             
             if (!string.IsNullOrEmpty(_options.BaseDirectory))
             {
@@ -890,6 +960,703 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             
             return attributes;
         }
+
+        #region Move/Copy Helper Methods
+
+        /// <summary>
+        /// Gets a ShareFileClient for the specified path.
+        /// </summary>
+        private ShareFileClient GetShareFileClient(CanonicalPath path)
+        {
+            var azurePath = GetAzurePath(path.Value);
+            return GetFileClient(azurePath);
+        }
+
+        /// <summary>
+        /// Gets a ShareDirectoryClient for the parent directory of a file.
+        /// </summary>
+        private ShareDirectoryClient GetParentDirectoryClient(CanonicalPath filePath)
+        {
+            var parentResult = filePath.GetParent();
+            if (parentResult.IsFailure)
+                throw new ArgumentException("File must have a parent directory", nameof(filePath));
+            
+            var azurePath = GetAzurePath(parentResult.Value.Value);
+            return GetDirectoryClient(azurePath);
+        }
+
+        /// <summary>
+        /// Ensures the parent directory exists for a file path.
+        /// </summary>
+        private async Task<Result<Unit, FileSystemError>> EnsureParentDirectoryExistsAsync(
+            CanonicalPath filePath,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var parentResult = filePath.GetParent();
+                if (parentResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                
+                var azurePath = GetAzurePath(parentResult.Value.Value);
+                var result = await CreateDirectoryRecursiveAsync(azurePath, cancellationToken);
+                return result;
+            }
+            catch (RequestFailedException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError($"Failed to create parent directory: {ex.Message}", 
+                        filePath.Value, 
+                        MapAzureErrorToFileSystemError(ex)));
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, filePath.Value));
+            }
+        }
+
+        /// <summary>
+        /// Maps Azure error codes to FileSystemErrorType.
+        /// </summary>
+        private FileSystemErrorType MapAzureErrorToFileSystemError(RequestFailedException ex)
+        {
+            var errorCode = ex.ErrorCode;
+            
+            if (errorCode == "ShareNotFound")
+                return FileSystemErrorType.DirectoryNotFound;
+            if (errorCode == "ShareAlreadyExists")
+                return FileSystemErrorType.DirectoryAlreadyExists;
+            if (errorCode == "ResourceNotFound")
+                return FileSystemErrorType.FileNotFound;
+            if (errorCode == "ResourceAlreadyExists")
+                return FileSystemErrorType.FileAlreadyExists;
+            if (errorCode == "ParentNotFound")
+                return FileSystemErrorType.DirectoryNotFound;
+            if (errorCode == "AuthenticationFailed")
+                return FileSystemErrorType.AccessDenied;
+            if (errorCode == "InsufficientAccountPermissions")
+                return FileSystemErrorType.AccessDenied;
+            if (errorCode == "ShareQuotaExceeded" || errorCode == "InsufficientSpace")
+                return FileSystemErrorType.InsufficientSpace;
+            if (errorCode == "ShareSnapshotInProgress")
+                return FileSystemErrorType.IOException;
+            
+            return FileSystemErrorType.IOException;
+        }
+
+        /// <summary>
+        /// Waits for an Azure copy operation to complete.
+        /// </summary>
+        private async Task<Result<Unit, FileSystemError>> WaitForCopyToCompleteAsync(
+            ShareFileClient fileClient,
+            string copyId,
+            CancellationToken cancellationToken)
+        {
+            var startTime = DateTime.UtcNow;
+            var timeout = TimeSpan.FromMinutes(5); // Reasonable timeout for file copy
+            
+            while (DateTime.UtcNow - startTime < timeout)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                var properties = await fileClient.GetPropertiesAsync(cancellationToken: cancellationToken);
+                
+                var copyStatus = properties.Value.CopyStatus;
+                if (copyStatus == CopyStatus.Success)
+                {
+                    // Copy completed successfully
+                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                }
+                
+                switch (copyStatus)
+                {
+                    case CopyStatus.Success:
+                        return Result<Unit, FileSystemError>.Success(Unit.Value);
+                        
+                    case CopyStatus.Failed:
+                        return Result<Unit, FileSystemError>.Failure(
+                            new FileSystemError(
+                                $"Copy operation failed: {properties.Value.CopyStatusDescription}", 
+                                fileClient.Path, 
+                                FileSystemErrorType.IOException));
+                        
+                    case CopyStatus.Aborted:
+                        return Result<Unit, FileSystemError>.Failure(
+                            new FileSystemError(
+                                "Copy operation was aborted", 
+                                fileClient.Path, 
+                                FileSystemErrorType.IOException));
+                        
+                    case CopyStatus.Pending:
+                        // Still copying, wait a bit
+                        await Task.Delay(500, cancellationToken);
+                        break;
+                }
+            }
+            
+            // Timeout
+            return Result<Unit, FileSystemError>.Failure(
+                new FileSystemError(
+                    "Copy operation timed out", 
+                    fileClient.Path, 
+                    FileSystemErrorType.IOException));
+        }
+
+        #endregion
+
+        /// <inheritdoc />
+        public async Task<Result<Unit, FileSystemError>> MoveFileAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Validate path security
+                var sourceValidation = ValidatePathSecurity(source);
+                if (sourceValidation.IsFailure)
+                    return sourceValidation;
+                
+                var destValidation = ValidatePathSecurity(destination);
+                if (destValidation.IsFailure)
+                    return destValidation;
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Azure Files doesn't support direct move, so we copy then delete
+                var copyResult = await CopyFileAsync(source, destination, overwrite, cancellationToken);
+                if (copyResult.IsFailure)
+                    return copyResult;
+                
+                // Delete the source file after successful copy
+                var sourceFileClient = GetShareFileClient(source);
+                
+                try
+                {
+                    await sourceFileClient.DeleteAsync(cancellationToken: cancellationToken);
+                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                }
+                catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
+                {
+                    // Source already deleted (rare race condition), consider it success
+                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                }
+                catch (RequestFailedException ex)
+                {
+                    // Failed to delete source after copy - try to clean up destination
+                    try
+                    {
+                        var destFileClient = GetShareFileClient(destination);
+                        await destFileClient.DeleteAsync(cancellationToken: cancellationToken);
+                    }
+                    catch
+                    {
+                        // Best effort cleanup
+                    }
+                    
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(
+                            $"Failed to delete source file after copy: {ex.Message}", 
+                            source.Value, 
+                            MapAzureErrorToFileSystemError(ex)));
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
+            CanonicalPath source, 
+            CanonicalPath destination,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Validate path security
+                var sourceValidation = ValidatePathSecurity(source);
+                if (sourceValidation.IsFailure)
+                    return sourceValidation;
+                
+                var destValidation = ValidatePathSecurity(destination);
+                if (destValidation.IsFailure)
+                    return destValidation;
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Check if destination is a subdirectory of source
+                if (IsSubdirectoryOf(source, destination))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Cannot move directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // In Azure Files, directories are virtual, so we check by trying to list contents
+                var checkResult = await CheckDirectoryExistsAsync(source, cancellationToken);
+                if (checkResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(checkResult.Error);
+                
+                if (!checkResult.Value)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+                
+                // Check if destination already exists
+                var destExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
+                if (destExistsResult.IsSuccess && destExistsResult.Value)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                
+                // Azure doesn't support direct move, so copy then delete
+                var copyResult = await CopyDirectoryAsync(source, destination, cancellationToken);
+                if (copyResult.IsFailure)
+                    return copyResult;
+                
+                // Delete source directory after successful copy
+                var deleteHandler = new AzureDeleteHandler(this);
+                var mapper = IdentityMapper.Instance;
+                var deleteResult = await TraverseAsync(source, deleteHandler, mapper, cancellationToken: cancellationToken);
+                
+                if (deleteResult.IsFailure)
+                {
+                    // Try to clean up the copy since delete failed
+                    var cleanupHandler = new AzureDeleteHandler(this);
+                    await TraverseAsync(destination, cleanupHandler, mapper, cancellationToken: cancellationToken);
+                    
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError($"Failed to delete source directory after copy: {deleteResult.Error.Message}", 
+                            source.Value, deleteResult.Error.Type));
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<Unit, FileSystemError>> CopyFileAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Validate path security
+                var sourceValidation = ValidatePathSecurity(source);
+                if (sourceValidation.IsFailure)
+                    return sourceValidation;
+                
+                var destValidation = ValidatePathSecurity(destination);
+                if (destValidation.IsFailure)
+                    return destValidation;
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                var sourceFileClient = GetShareFileClient(source);
+                var destFileClient = GetShareFileClient(destination);
+                
+                // Check if source exists
+                var sourceExistsResult = await sourceFileClient.ExistsAsync(cancellationToken);
+                if (!sourceExistsResult.Value)
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source file not found", source.Value, FileSystemErrorType.FileNotFound));
+                }
+                
+                // Check if destination exists and overwrite is false
+                if (!overwrite)
+                {
+                    var destExistsResult = await destFileClient.ExistsAsync(cancellationToken);
+                    if (destExistsResult.Value)
+                    {
+                        return Result<Unit, FileSystemError>.Failure(
+                            new FileSystemError("Destination file already exists", destination.Value, FileSystemErrorType.FileAlreadyExists));
+                    }
+                }
+                
+                // Ensure destination directory exists
+                var ensureDirResult = await EnsureParentDirectoryExistsAsync(destination, cancellationToken);
+                if (ensureDirResult.IsFailure)
+                    return ensureDirResult;
+                
+                // Get source file properties to determine size
+                var propertiesResponse = await sourceFileClient.GetPropertiesAsync(cancellationToken: cancellationToken);
+                var fileSize = propertiesResponse.Value.ContentLength;
+                
+                // Create destination file with the same size
+                await destFileClient.CreateAsync(fileSize, cancellationToken: cancellationToken);
+                
+                // Start the copy operation
+                // Azure Files supports server-side copy which is efficient
+                var copyOperation = await destFileClient.StartCopyAsync(sourceFileClient.Uri, cancellationToken: cancellationToken);
+                
+                // Wait for copy to complete
+                var waitResult = await WaitForCopyToCompleteAsync(destFileClient, copyOperation.Value.CopyId, cancellationToken);
+                if (waitResult.IsFailure)
+                {
+                    // Clean up failed copy
+                    try
+                    {
+                        await destFileClient.DeleteAsync(cancellationToken: cancellationToken);
+                    }
+                    catch
+                    {
+                        // Best effort cleanup
+                    }
+                    return waitResult;
+                }
+                
+                // Copy metadata and properties (best effort)
+                try
+                {
+                    var sourceProperties = await sourceFileClient.GetPropertiesAsync(cancellationToken: cancellationToken);
+                    
+                    // Set metadata on destination if available
+                    if (sourceProperties.Value.Metadata != null && sourceProperties.Value.Metadata.Count > 0)
+                    {
+                        try
+                        {
+                            await destFileClient.SetMetadataAsync(sourceProperties.Value.Metadata, cancellationToken);
+                        }
+                        catch
+                        {
+                            // Best effort - metadata copy failed but don't fail the entire operation
+                        }
+                    }
+                }
+                catch
+                {
+                    // Best effort - don't fail the copy if metadata preservation fails
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }
+            catch (RequestFailedException ex) when (ex.ErrorCode == "ShareNotFound" || 
+                                                    ex.ErrorCode == "ParentNotFound")
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("Share or directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+            }
+            catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("File not found", source.Value, FileSystemErrorType.FileNotFound));
+            }
+            catch (RequestFailedException ex) when (ex.ErrorCode == "ShareQuotaExceeded")
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("Insufficient space in share", destination.Value, FileSystemErrorType.InsufficientSpace));
+            }
+            catch (RequestFailedException ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError($"Azure operation failed: {ex.Message}", source.Value, MapAzureErrorToFileSystemError(ex)));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
+            CanonicalPath source, 
+            CanonicalPath destination,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Validate path security
+                var sourceValidation = ValidatePathSecurity(source);
+                if (sourceValidation.IsFailure)
+                    return sourceValidation;
+                
+                var destValidation = ValidatePathSecurity(destination);
+                if (destValidation.IsFailure)
+                    return destValidation;
+                
+                // Validate paths are different
+                if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Check if destination is a subdirectory of source
+                if (IsSubdirectoryOf(source, destination))
+                {
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Cannot copy directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                }
+                
+                // Check if source exists
+                var checkResult = await CheckDirectoryExistsAsync(source, cancellationToken);
+                if (checkResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(checkResult.Error);
+                
+                if (!checkResult.Value)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+                
+                // Check if destination already exists
+                var destExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
+                if (destExistsResult.IsSuccess && destExistsResult.Value)
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                
+                // Use traversal with copy handler
+                var copyHandler = new AzureCopyHandler(this, source, destination);
+                var mapper = IdentityMapper.Instance;
+                var traverseResult = await TraverseAsync(source, copyHandler, mapper, cancellationToken: cancellationToken);
+                
+                if (traverseResult.IsFailure)
+                    return Result<Unit, FileSystemError>.Failure(traverseResult.Error);
+                
+                // Check if there were any errors during copy
+                if (copyHandler.Errors.Count > 0)
+                {
+                    var errorMessage = $"Directory copy completed with {copyHandler.Errors.Count} errors";
+                    return Result<Unit, FileSystemError>.Failure(
+                        new FileSystemError(errorMessage, source.Value, FileSystemErrorType.PartialFailure));
+                }
+                
+                return Result<Unit, FileSystemError>.Success(Unit.Value);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<Unit, FileSystemError>> MoveAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Validate path security
+                var sourceValidation = ValidatePathSecurity(source);
+                if (sourceValidation.IsFailure)
+                    return sourceValidation;
+                
+                var destValidation = ValidatePathSecurity(destination);
+                if (destValidation.IsFailure)
+                    return destValidation;
+                
+                // Try as file first
+                var fileClient = GetShareFileClient(source);
+                var fileExistsResponse = await fileClient.ExistsAsync(cancellationToken);
+                
+                if (fileExistsResponse.Value)
+                {
+                    // It's a file
+                    return await MoveFileAsync(source, destination, overwrite, cancellationToken);
+                }
+                
+                // Check if it's a directory
+                var dirExistsResult = await CheckDirectoryExistsAsync(source, cancellationToken);
+                if (dirExistsResult.IsSuccess && dirExistsResult.Value)
+                {
+                    // It's a directory - overwrite parameter doesn't apply
+                    if (overwrite)
+                    {
+                        var destDirExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
+                        if (destDirExistsResult.IsSuccess && destDirExistsResult.Value)
+                        {
+                            return Result<Unit, FileSystemError>.Failure(
+                                new FileSystemError(
+                                    "Cannot overwrite an existing directory", 
+                                    destination.Value, 
+                                    FileSystemErrorType.DirectoryAlreadyExists));
+                        }
+                    }
+                    return await MoveDirectoryAsync(source, destination, cancellationToken);
+                }
+                
+                // Path not found
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+            }
+            catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<Unit, FileSystemError>> CopyAsync(
+            CanonicalPath source, 
+            CanonicalPath destination, 
+            bool overwrite = false,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Validate path security
+                var sourceValidation = ValidatePathSecurity(source);
+                if (sourceValidation.IsFailure)
+                    return sourceValidation;
+                
+                var destValidation = ValidatePathSecurity(destination);
+                if (destValidation.IsFailure)
+                    return destValidation;
+                
+                // Try as file first
+                var fileClient = GetShareFileClient(source);
+                var fileExistsResponse = await fileClient.ExistsAsync(cancellationToken);
+                
+                if (fileExistsResponse.Value)
+                {
+                    // It's a file
+                    return await CopyFileAsync(source, destination, overwrite, cancellationToken);
+                }
+                
+                // Check if it's a directory
+                var dirExistsResult = await CheckDirectoryExistsAsync(source, cancellationToken);
+                if (dirExistsResult.IsSuccess && dirExistsResult.Value)
+                {
+                    // It's a directory - overwrite parameter doesn't apply
+                    if (overwrite)
+                    {
+                        var destDirExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
+                        if (destDirExistsResult.IsSuccess && destDirExistsResult.Value)
+                        {
+                            return Result<Unit, FileSystemError>.Failure(
+                                new FileSystemError(
+                                    "Cannot overwrite an existing directory", 
+                                    destination.Value, 
+                                    FileSystemErrorType.DirectoryAlreadyExists));
+                        }
+                    }
+                    return await CopyDirectoryAsync(source, destination, cancellationToken);
+                }
+                
+                // Path not found
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+            }
+            catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+            }
+            catch (Exception ex)
+            {
+                return Result<Unit, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, source.Value));
+            }
+        }
+
+        #region Directory Helper Methods
+
+        /// <summary>
+        /// Checks if a directory exists by attempting to list its contents.
+        /// </summary>
+        private async Task<Result<bool, FileSystemError>> CheckDirectoryExistsAsync(
+            CanonicalPath path,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var systemPathResult = _pathMapper.MapToSystemPath(path);
+                if (systemPathResult.IsFailure)
+                    return Result<bool, FileSystemError>.Failure(
+                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                
+                var azurePath = GetAzurePath(systemPathResult.Value);
+                var directoryClient = GetDirectoryClient(azurePath);
+                
+                // Try to get properties first
+                try
+                {
+                    await directoryClient.GetPropertiesAsync(cancellationToken: cancellationToken);
+                    return Result<bool, FileSystemError>.Success(true);
+                }
+                catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
+                {
+                    // Directory might still exist as a virtual directory with files
+                }
+                
+                // Check if there are any files or subdirectories in this path
+                await foreach (var item in directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken))
+                {
+                    // If we find any item, the directory exists
+                    return Result<bool, FileSystemError>.Success(true);
+                }
+                
+                return Result<bool, FileSystemError>.Success(false);
+            }
+            catch (Exception ex)
+            {
+                return Result<bool, FileSystemError>.Failure(
+                    FileSystemError.FromException(ex, path.Value));
+            }
+        }
+
+        /// <summary>
+        /// Checks if one path is a subdirectory of another.
+        /// </summary>
+        private bool IsSubdirectoryOf(CanonicalPath parent, CanonicalPath child)
+        {
+            var parentValue = parent.Value.TrimEnd('/') + "/";
+            var childValue = child.Value.TrimEnd('/') + "/";
+            
+            return childValue.StartsWith(parentValue, StringComparison.OrdinalIgnoreCase) &&
+                   !childValue.Equals(parentValue, StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion
         
     }
 
