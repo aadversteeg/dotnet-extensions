@@ -18,7 +18,7 @@ namespace Ave.Extensions.FileSystem.Security
         /// <param name="allowedPaths">Collection of allowed canonical paths.</param>
         public PathSecurityService(IEnumerable<CanonicalPath>? allowedPaths = null)
         {
-            _allowedPaths = allowedPaths?.ToList() ?? new List<CanonicalPath>();
+            _allowedPaths = allowedPaths?.ToList() ?? [];
         }
         
         /// <inheritdoc />

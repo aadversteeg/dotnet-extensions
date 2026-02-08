@@ -119,17 +119,5 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
             result.Error.Message.Should().Contain("subdirectory of itself");
         }
-        
-        [Fact(DisplayName = "AZFS-014: CopyDirectoryAsync should handle empty source directory path")]
-        public void AZFS014()
-        {
-            // This test would validate error handling for edge cases
-            // In integration tests, we would:
-            // 1. Create an empty directory
-            // 2. Attempt to copy it
-            // 3. Verify it succeeds with no files copied
-            
-            Assert.True(true); // Placeholder test
-        }
     }
 }

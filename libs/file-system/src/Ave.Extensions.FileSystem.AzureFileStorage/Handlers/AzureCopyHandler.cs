@@ -30,7 +30,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
             _sourceRoot = sourceRoot;
             _destinationRoot = destinationRoot;
-            _errors = new List<FileSystemError>();
+            _errors = [];
         }
         
         public List<FileSystemError> Errors => _errors;

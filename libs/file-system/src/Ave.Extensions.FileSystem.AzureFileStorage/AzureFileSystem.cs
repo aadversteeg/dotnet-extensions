@@ -488,7 +488,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
 
-                var entries = new List<IFileSystemEntry>();
+                List<IFileSystemEntry> entries = [];
 
                 await foreach (var item in directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken))
                 {

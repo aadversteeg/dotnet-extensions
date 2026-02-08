@@ -26,7 +26,7 @@ namespace Ave.Extensions.FileSystem
         /// <summary>
         /// Gets the root canonical path ("/").
         /// </summary>
-        public static CanonicalPath Root { get; } = new CanonicalPath("/", Array.Empty<string>());
+        public static CanonicalPath Root { get; } = new CanonicalPath("/", []);
 
         /// <summary>
         /// Initializes a new instance of the CanonicalPath record.
@@ -68,8 +68,8 @@ namespace Ave.Extensions.FileSystem
             }
 
             // Extract segments (empty for root path)
-            var segments = path == "/" 
-                ? Array.Empty<string>() 
+            var segments = path == "/"
+                ? []
                 : path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             return Result<CanonicalPath, Error>.Success(new CanonicalPath(path, segments));

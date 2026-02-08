@@ -110,10 +110,11 @@ namespace Ave.Extensions.FileSystem.InMemory
             // Check if the event is within the monitored path
             var eventPath = evt.Path;
             var watchPath = _options.Path;
-            
-            bool isInPath = eventPath.Equals(watchPath) || 
-                           (_options.IncludeSubdirectories && eventPath.IsChildOf(watchPath));
-            
+            var comparer = _fileSystem.PathComparer;
+
+            bool isInPath = comparer.Equals(eventPath, watchPath) ||
+                           (_options.IncludeSubdirectories && comparer.IsChildOf(eventPath, watchPath));
+
             if (!isInPath)
                 return false;
             

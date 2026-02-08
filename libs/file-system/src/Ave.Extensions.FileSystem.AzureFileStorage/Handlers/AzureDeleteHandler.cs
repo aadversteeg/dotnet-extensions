@@ -23,8 +23,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
         public AzureDeleteHandler(AzureFileSystem fileSystem)
         {
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-            _errors = new List<FileSystemError>();
-            _directoriesToDelete = new List<CanonicalPath>();
+            _errors = [];
+            _directoriesToDelete = [];
         }
         
         public List<FileSystemError> Errors => _errors;

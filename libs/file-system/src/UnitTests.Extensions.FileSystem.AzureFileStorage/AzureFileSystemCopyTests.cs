@@ -55,31 +55,6 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Should().NotBeNull();
         }
         
-        [Fact(DisplayName = "AZFS-005: CopyFileAsync should fail when destination exists and overwrite is false")]
-        public void AZFS005()
-        {
-            // This test would validate the business logic without requiring Azure SDK mocking
-            // In integration tests, we would:
-            // 1. Create a source file
-            // 2. Create a destination file
-            // 3. Attempt copy without overwrite
-            // 4. Verify it fails with FileAlreadyExists error
-            
-            Assert.True(true); // Placeholder test
-        }
-        
-        [Fact(DisplayName = "AZFS-006: CopyFileAsync should handle Azure quota exceeded")]
-        public void AZFS006()
-        {
-            // This test would validate error mapping without requiring Azure SDK mocking
-            // In integration tests, we would:
-            // 1. Mock the source file to exist
-            // 2. Mock the CreateAsync call to throw RequestFailedException with ShareQuotaExceeded
-            // 3. Verify the error is mapped to InsufficientSpace
-            
-            Assert.True(true); // Placeholder test
-        }
-        
         [Fact(DisplayName = "AZFS-007: CopyFileAsync should validate paths are different")]
         public async Task AZFS007()
         {
@@ -95,18 +70,5 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Message.Should().Contain("Source and destination paths are the same");
         }
         
-        [Fact(DisplayName = "AZFS-008: CopyFileAsync should clean up on copy failure")]
-        public void AZFS008()
-        {
-            // This test would verify that if the copy operation fails partway through,
-            // any partially created destination file is cleaned up
-            // In integration tests, we would:
-            // 1. Mock source to exist
-            // 2. Mock destination creation to succeed
-            // 3. Mock copy operation to fail
-            // 4. Verify that destination file is deleted during cleanup
-            
-            Assert.True(true); // Placeholder test
-        }
     }
 }

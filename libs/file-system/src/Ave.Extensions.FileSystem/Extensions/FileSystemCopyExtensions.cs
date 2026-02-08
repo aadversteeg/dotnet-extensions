@@ -161,7 +161,7 @@ namespace Ave.Extensions.FileSystem.Extensions
             _sourceRoot = sourceRoot;
             _destRoot = destRoot;
             _options = options;
-            _filesToCopy = new List<(CanonicalPath, CanonicalPath, long)>();
+            _filesToCopy = [];
             _progressReporter = options.Progress != null 
                 ? new ProgressReporter(options.Progress, TimeSpan.FromMilliseconds(100))
                 : null;

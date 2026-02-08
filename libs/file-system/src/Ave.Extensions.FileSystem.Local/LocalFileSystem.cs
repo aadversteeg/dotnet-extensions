@@ -445,35 +445,19 @@ namespace Ave.Extensions.FileSystem.Local
         /// </summary>
         /// <param name="hint">The strategy hint.</param>
         /// <returns>An appropriate traversal strategy.</returns>
-        private ITraversalStrategy CreateStrategy(TraversalStrategyHint hint)
-        {
-            switch (hint)
+        private ITraversalStrategy CreateStrategy(TraversalStrategyHint hint) =>
+            hint switch
             {
-                case TraversalStrategyHint.Parallel:
-                    return new ParallelTraversalStrategy();
-                case TraversalStrategyHint.MemoryEfficient:
-                    return new SequentialTraversalStrategy();
-                case TraversalStrategyHint.Search:
-                    return new SequentialTraversalStrategy();
-                default:
-                    return new SequentialTraversalStrategy();
-            }
-        }
+                TraversalStrategyHint.Parallel => new ParallelTraversalStrategy(),
+                _ => new SequentialTraversalStrategy()
+            };
 
-        private ITraversalStrategy CreateLocalStrategy(TraversalStrategyHint hint)
-        {
-            switch (hint)
+        private ITraversalStrategy CreateLocalStrategy(TraversalStrategyHint hint) =>
+            hint switch
             {
-                case TraversalStrategyHint.Parallel:
-                    return new LocalParallelTraversalStrategy(this);
-                case TraversalStrategyHint.MemoryEfficient:
-                    return new LocalSequentialTraversalStrategy(this);
-                case TraversalStrategyHint.Search:
-                    return new LocalSequentialTraversalStrategy(this);
-                default:
-                    return new LocalSequentialTraversalStrategy(this);
-            }
-        }
+                TraversalStrategyHint.Parallel => new LocalParallelTraversalStrategy(this),
+                _ => new LocalSequentialTraversalStrategy(this)
+            };
 
         /// <summary>
         /// Gets a single entry as IFileSystemEntry for traversal starting point.
@@ -564,7 +548,7 @@ namespace Ave.Extensions.FileSystem.Local
                     return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
                         new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
 
-                var entries = new List<IFileSystemEntry>();
+                List<IFileSystemEntry> entries = [];
 
                 // Get directories
                 var directories = Directory.GetDirectories(systemPath);
@@ -696,8 +680,8 @@ namespace Ave.Extensions.FileSystem.Local
         /// <returns>Result containing list of canonical paths or an error.</returns>
         private Result<IReadOnlyList<CanonicalPath>, FileSystemError> MapPathsToCanonical(string[] systemPaths)
         {
-            var canonicalPaths = new List<CanonicalPath>();
-            
+            List<CanonicalPath> canonicalPaths = [];
+
             foreach (var systemPath in systemPaths)
             {
                 var result = MapPathToCanonical(systemPath);
@@ -849,12 +833,12 @@ namespace Ave.Extensions.FileSystem.Local
             catch (IOException ex)
             {
                 // Check if this is a cross-volume move error
-                if (ex.Message.Contains("different volume") || ex.Message.Contains("Invalid cross-device"))
+                if (IsCrossDeviceMoveException(ex))
                 {
                     return Task.FromResult(Result<Unit, FileSystemError>.Failure(
                         new FileSystemError("Cannot move file across volumes", source.Value, FileSystemErrorType.CrossVolumeMove)));
                 }
-                
+
                 return Task.FromResult(Result<Unit, FileSystemError>.Failure(
                     new FileSystemError(ex.Message, source.Value, FileSystemErrorType.IOException)));
             }
@@ -937,7 +921,7 @@ namespace Ave.Extensions.FileSystem.Local
                     
                     return Result<Unit, FileSystemError>.Success(Unit.Value);
                 }
-                catch (IOException ex) when (ex.Message.Contains("different volume") || ex.Message.Contains("Invalid cross-device"))
+                catch (IOException ex) when (IsCrossDeviceMoveException(ex))
                 {
                     // Cross-volume move: need to copy and delete
                     cancellationToken.ThrowIfCancellationRequested();
@@ -1398,6 +1382,32 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         #region Directory Operation Helpers
+
+        /// <summary>
+        /// Determines if an IOException indicates a cross-volume/cross-device move attempt.
+        /// </summary>
+        /// <param name="ex">The IOException to check.</param>
+        /// <returns>True if the exception indicates a cross-device move error.</returns>
+        private static bool IsCrossDeviceMoveException(IOException ex)
+        {
+            // Unix EXDEV (cross-device link) error codes
+            // Linux: errno 18 (EXDEV) maps to HResult 0x80131620 or includes "cross-device"
+            // macOS: Similar behavior
+            // Windows: Different volume errors vary by operation
+
+            // Check HResult for known cross-device error codes
+            const int EXDEV_HRESULT = unchecked((int)0x80131620); // Common .NET mapping for EXDEV
+            const int ERROR_NOT_SAME_DEVICE = unchecked((int)0x80070011); // Windows: 0x11 = ERROR_NOT_SAME_DEVICE
+
+            if (ex.HResult == EXDEV_HRESULT || ex.HResult == ERROR_NOT_SAME_DEVICE)
+                return true;
+
+            // Fallback to message checking for edge cases and localization variations
+            var message = ex.Message;
+            return message.Contains("cross-device", StringComparison.OrdinalIgnoreCase) ||
+                   message.Contains("different volume", StringComparison.OrdinalIgnoreCase) ||
+                   message.Contains("not same device", StringComparison.OrdinalIgnoreCase);
+        }
 
         /// <summary>
         /// Checks if two directories are the same or if one is a subdirectory of the other.

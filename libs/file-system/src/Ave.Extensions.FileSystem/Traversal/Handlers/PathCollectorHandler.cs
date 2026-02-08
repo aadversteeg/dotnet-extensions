@@ -13,7 +13,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
     public sealed class PathCollectorHandler<TEntry> : ITraversalHandler<TEntry>
         where TEntry : IFileSystemEntry
     {
-        private readonly List<CanonicalPath> _paths = new List<CanonicalPath>();
+        private readonly List<CanonicalPath> _paths = [];
         private readonly bool _includeFiles;
         private readonly bool _includeDirectories;
         private readonly PatternMatcher _matcher;

@@ -28,22 +28,39 @@ namespace Ave.Extensions.FileSystem.InMemory
         private readonly ReaderWriterLockSlim _lock;
         private readonly object _monitorLock = new object();
         private readonly Subject<FileSystemChangedEvent> _fileSystemEventsSubject;
+        private readonly CanonicalPathComparer _pathComparer;
 
         /// <summary>
-        /// Initializes a new instance of the InMemoryFileSystem class.
+        /// Initializes a new instance of the InMemoryFileSystem class with platform-default case sensitivity.
         /// </summary>
         /// <param name="logger">Logger instance. Can be null.</param>
         public InMemoryFileSystem(ILogger<InMemoryFileSystem>? logger = null)
+            : this(CanonicalPathComparer.PlatformDefault, logger)
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the InMemoryFileSystem class with specified case sensitivity.
+        /// </summary>
+        /// <param name="pathComparer">The path comparer to use for case sensitivity. Use <see cref="CanonicalPathComparer.CaseSensitive"/> for Linux/macOS behavior, <see cref="CanonicalPathComparer.CaseInsensitive"/> for Windows behavior.</param>
+        /// <param name="logger">Logger instance. Can be null.</param>
+        public InMemoryFileSystem(CanonicalPathComparer pathComparer, ILogger<InMemoryFileSystem>? logger = null)
+        {
+            _pathComparer = pathComparer ?? CanonicalPathComparer.PlatformDefault;
             _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<InMemoryFileSystem>.Instance;
-            _files = new ConcurrentDictionary<CanonicalPath, FileNode>();
-            _directories = new ConcurrentDictionary<CanonicalPath, DirectoryNode>();
+            _files = new ConcurrentDictionary<CanonicalPath, FileNode>(_pathComparer);
+            _directories = new ConcurrentDictionary<CanonicalPath, DirectoryNode>(_pathComparer);
             _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
             _fileSystemEventsSubject = new Subject<FileSystemChangedEvent>();
-            
+
             // Ensure root directory exists
             _directories.TryAdd(CanonicalPath.Root, new DirectoryNode(CanonicalPath.Root, DateTime.UtcNow));
         }
+
+        /// <summary>
+        /// Gets the path comparer used by this file system for case sensitivity.
+        /// </summary>
+        public CanonicalPathComparer PathComparer => _pathComparer;
 
         /// <inheritdoc />
         public FileSystemInfo Info { get; } = new FileSystemInfo(
@@ -309,7 +326,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                             new FileSystemError($"Directory not found: {path}", path.Value, FileSystemErrorType.DirectoryNotFound)));
                     }
 
-                    var files = new List<CanonicalPath>();
+                    List<CanonicalPath> files = [];
                     CollectFiles(path, searchPattern, searchOption, files);
                     
                     return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success((IReadOnlyList<CanonicalPath>)files));
@@ -341,7 +358,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                             new FileSystemError($"Directory not found: {path}", path.Value, FileSystemErrorType.DirectoryNotFound)));
                     }
 
-                    var directories = new List<CanonicalPath>();
+                    List<CanonicalPath> directories = [];
                     CollectDirectories(path, searchPattern, searchOption, directories);
                     
                     return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success((IReadOnlyList<CanonicalPath>)directories));
@@ -533,7 +550,7 @@ namespace Ave.Extensions.FileSystem.InMemory
                             new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
                     }
 
-                    var entries = new List<IFileSystemEntry>();
+                    List<IFileSystemEntry> entries = [];
 
                     // Get all files that are direct children of this directory
                     var childFiles = _files.Where(kvp => IsDirectChildOf(kvp.Key, path))
@@ -810,9 +827,9 @@ namespace Ave.Extensions.FileSystem.InMemory
                     if (!recursive)
                     {
                         // Check if directory is empty
-                        var hasFiles = _files.Keys.Any(f => f.IsChildOf(path));
-                        var hasDirectories = _directories.Keys.Any(d => !d.Equals(path) && d.IsChildOf(path));
-                        
+                        var hasFiles = _files.Keys.Any(f => IsChildOf(f, path));
+                        var hasDirectories = _directories.Keys.Any(d => !_pathComparer.Equals(d, path) && IsChildOf(d, path));
+
                         if (hasFiles || hasDirectories)
                         {
                             return Task.FromResult(Result<Unit, FileSystemError>.Failure(
@@ -822,16 +839,16 @@ namespace Ave.Extensions.FileSystem.InMemory
                     else
                     {
                         // Delete all files in directory recursively
-                        var filesToDelete = _files.Keys.Where(f => f.IsChildOf(path)).ToList();
+                        var filesToDelete = _files.Keys.Where(f => IsChildOf(f, path)).ToList();
                         foreach (var file in filesToDelete)
                         {
                             _files.TryRemove(file, out _);
                             NotifyFileSystemChange(file, FileSystemChangeType.Deleted);
                         }
-                        
+
                         // Delete all subdirectories recursively
                         var directoriesToDelete = _directories.Keys
-                            .Where(d => !d.Equals(path) && d.IsChildOf(path))
+                            .Where(d => !_pathComparer.Equals(d, path) && IsChildOf(d, path))
                             .OrderByDescending(d => d.Value.Length) // Delete deepest first
                             .ToList();
                         
@@ -987,16 +1004,16 @@ namespace Ave.Extensions.FileSystem.InMemory
 
 
 
-        private static bool IsChildOf(CanonicalPath childPath, CanonicalPath parentPath)
+        private bool IsChildOf(CanonicalPath childPath, CanonicalPath parentPath)
         {
-            return childPath.IsChildOf(parentPath);
+            return _pathComparer.IsChildOf(childPath, parentPath);
         }
 
-        private static bool IsDirectChildOf(CanonicalPath childPath, CanonicalPath parentPath)
+        private bool IsDirectChildOf(CanonicalPath childPath, CanonicalPath parentPath)
         {
-            if (!childPath.IsChildOf(parentPath))
+            if (!_pathComparer.IsChildOf(childPath, parentPath))
                 return false;
-            
+
             // Check if the child is exactly one level deeper than the parent
             return childPath.Segments.Length == parentPath.Segments.Length + 1;
         }

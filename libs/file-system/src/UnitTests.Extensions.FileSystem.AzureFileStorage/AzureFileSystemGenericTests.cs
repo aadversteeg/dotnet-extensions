@@ -73,33 +73,6 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             // The actual error will be Azure-related, not path validation
         }
         
-        [Fact(DisplayName = "AZFS-017: MoveAsync should reject overwrite for directories")]
-        public void AZFS017()
-        {
-            // This test would validate that directories cannot be overwritten
-            // In a real scenario with Azure connection:
-            // 1. Create source directory
-            // 2. Create destination directory
-            // 3. Attempt move with overwrite=true
-            // 4. Verify it fails with DirectoryAlreadyExists
-            
-            // For now, this is a placeholder since we need Azure connection
-            Assert.True(true); // Placeholder test
-        }
-        
-        [Fact(DisplayName = "AZFS-018: CopyAsync should handle mixed file and directory scenarios")]
-        public void AZFS018()
-        {
-            // This test would validate error handling when paths exist but are wrong type
-            // In integration tests, we would:
-            // 1. Create a file at source path
-            // 2. Create a directory at destination path  
-            // 3. Attempt copy
-            // 4. Verify appropriate error handling
-            
-            Assert.True(true); // Placeholder test
-        }
-        
         [Fact(DisplayName = "AZFS-019: MoveAsync should fail when source doesn't exist")]
         public async Task AZFS019()
         {
@@ -113,20 +86,6 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             // Assert
             result.IsFailure.Should().BeTrue();
             // The error should indicate path not found once we get past Azure connection issues
-        }
-        
-        [Fact(DisplayName = "AZFS-020: CopyAsync should preserve overwrite parameter for files")]
-        public void AZFS020()
-        {
-            // This test would validate that the overwrite parameter is correctly passed
-            // to the underlying file/directory operations
-            // In integration tests, we would:
-            // 1. Create source file
-            // 2. Create destination file
-            // 3. Test both overwrite=true and overwrite=false scenarios
-            // 4. Verify behavior matches expected file operation behavior
-            
-            Assert.True(true); // Placeholder test
         }
         
         [Fact(DisplayName = "AZFS-021: Generic operations should handle path security validation")]

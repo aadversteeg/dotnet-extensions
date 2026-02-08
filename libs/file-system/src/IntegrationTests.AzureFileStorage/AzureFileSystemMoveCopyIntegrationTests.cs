@@ -208,7 +208,7 @@ namespace IntegrationTests.FileSystem.AzureFileStorage
             // Verify content
             using var readStream = (await FileSystem.OpenReadAsync(destPath)).Value;
             var destContent = new byte[content.Length];
-            await readStream.ReadAsync(destContent, 0, destContent.Length);
+            await readStream.ReadExactlyAsync(destContent, 0, destContent.Length);
             destContent.Length.Should().Be(content.Length);
         }
         
