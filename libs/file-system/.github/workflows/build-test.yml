@@ -13,6 +13,8 @@ jobs:
     strategy:
       matrix:
         dotnet-version: ['8.0.x']
+    env:
+      AZURE_CONFIGURED: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
 
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +34,7 @@ jobs:
         run: dotnet test src/extensions-filesystem.sln --no-build --configuration Release --verbosity normal --filter "FullyQualifiedName!~IntegrationTests.Extensions.FileSystem.AzureFileStorage"
 
       - name: Test (Azure Integration)
-        if: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME != '' }}
+        if: env.AZURE_CONFIGURED != ''
         env:
           AZURE_FILESTORAGE_AzureFileStorage__AccountName: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
           AZURE_FILESTORAGE_AzureFileStorage__AccountKey: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
