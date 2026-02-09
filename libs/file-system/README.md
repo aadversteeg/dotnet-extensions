@@ -380,8 +380,8 @@ cd tst/Platform && dotnet test
 
 1. Create a new tag with the version number:
    ```
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag 1.0.0
+   git push origin 1.0.0
    ```
 
 2. The GitHub Actions workflow will automatically:
