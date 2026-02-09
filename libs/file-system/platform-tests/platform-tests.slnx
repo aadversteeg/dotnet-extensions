@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../src/Ave.Extensions.FileSystem.Abstractions/Ave.Extensions.FileSystem.Abstractions.csproj" />
+  <Project Path="../src/Ave.Extensions.FileSystem.InMemory/Ave.Extensions.FileSystem.InMemory.csproj" />
+  <Project Path="../src/Ave.Extensions.FileSystem.Local/Ave.Extensions.FileSystem.Local.csproj" />
+  <Project Path="../src/Ave.Extensions.FileSystem/Ave.Extensions.FileSystem.csproj" />
+  <Project Path="PlatformTests.Local/PlatformTests.Local.csproj" />
+</Solution>
