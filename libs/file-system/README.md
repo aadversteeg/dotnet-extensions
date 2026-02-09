@@ -340,13 +340,40 @@ On Unix systems (Linux/macOS), canonical paths are used directly:
 ### Building
 
 ```shell
-dotnet build
+cd src && dotnet build
 ```
 
 ### Running Tests
 
 ```shell
-dotnet test
+cd src && dotnet test
+```
+
+### Running Benchmarks
+
+The repository includes performance benchmarks using BenchmarkDotNet:
+
+```shell
+cd tst/Benchmarks && dotnet run -c Release
+```
+
+Available benchmark classes:
+- `LocalFileSystemBenchmarks` - Local file system operation performance
+- `MemoryUsageBenchmarks` - Memory allocation analysis
+- `StreamingVsCollectingBenchmarks` - Streaming vs collecting approach comparison
+- `TraversalStrategyBenchmarks` - Directory traversal strategy comparison
+
+Run a specific benchmark:
+```shell
+cd tst/Benchmarks && dotnet run -c Release -- --filter "*LocalFileSystem*"
+```
+
+### Running Platform Tests
+
+Platform-specific tests verify cross-platform behavior:
+
+```shell
+cd tst/Platform && dotnet test
 ```
 
 ### Publishing a New Version

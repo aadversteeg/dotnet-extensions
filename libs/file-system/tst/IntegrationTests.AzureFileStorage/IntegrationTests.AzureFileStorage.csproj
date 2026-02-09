@@ -39,9 +39,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.AzureFileStorage\Ave.Extensions.FileSystem.AzureFileStorage.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
+    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.AzureFileStorage\Ave.Extensions.FileSystem.AzureFileStorage.csproj" />
+    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
   </ItemGroup>
 
   <ItemGroup>

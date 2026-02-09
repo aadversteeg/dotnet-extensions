@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ave.Extensions.FileSystem.L
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests.Extensions.FileSystem.Local", "UnitTests.Extensions.FileSystem.Local\UnitTests.Extensions.FileSystem.Local.csproj", "{E9230E26-3A07-48A9-B8D6-73BE6D41FD57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests.Local", "IntegrationTests.Local\IntegrationTests.Local.csproj", "{A1B2C3D4-E5F6-4789-AB12-3456789ABCDE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests.Local", "..\tst\IntegrationTests.Local\IntegrationTests.Local.csproj", "{A1B2C3D4-E5F6-4789-AB12-3456789ABCDE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ave.Extensions.FileSystem.AzureFileStorage", "Ave.Extensions.FileSystem.AzureFileStorage\Ave.Extensions.FileSystem.AzureFileStorage.csproj", "{F7A8B6C2-1D4E-4F5A-9C8B-2E3F5A7D9B1C}"
 EndProject
@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests.Extensions.FileSy
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests.Extensions.FileSystem.Abstractions", "UnitTests.Extensions.FileSystem.Abstractions\UnitTests.Extensions.FileSystem.Abstractions.csproj", "{E8291A48-D06F-4B08-A0A6-1E717089E83B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests.AzureFileStorage", "IntegrationTests.AzureFileStorage\IntegrationTests.AzureFileStorage.csproj", "{D9E8F7A6-B5C4-9876-DEF0-123456789ABC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests.AzureFileStorage", "..\tst\IntegrationTests.AzureFileStorage\IntegrationTests.AzureFileStorage.csproj", "{D9E8F7A6-B5C4-9876-DEF0-123456789ABC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ave.Extensions.FileSystem.MimeDetective", "Ave.Extensions.FileSystem.MimeDetective\Ave.Extensions.FileSystem.MimeDetective.csproj", "{A1B2C3D4-5678-90AB-CDEF-123456789ABC}"
 EndProject

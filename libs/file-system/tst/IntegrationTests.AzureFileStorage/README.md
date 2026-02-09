@@ -42,15 +42,16 @@ See [USER_SECRETS_SETUP.md](USER_SECRETS_SETUP.md) for detailed setup instructio
 
 1. Navigate to this project directory:
    ```bash
-   cd src/IntegrationTests.Extensions.FileSystem.AzureFileStorage
+   cd tst/IntegrationTests.AzureFileStorage
    ```
 
 2. Set your Azure credentials:
    ```bash
    dotnet user-secrets set "AzureFileStorage:AccountName" "your_storage_account_name"
    dotnet user-secrets set "AzureFileStorage:AccountKey" "your_storage_account_key"
-   dotnet user-secrets set "AzureFileStorage:ShareName" "integration-tests"
    ```
+
+   Note: `ShareName` defaults to `integration-tests` in `appsettings.test.json`.
 
 3. Run the tests:
    ```bash
@@ -61,10 +62,16 @@ See [USER_SECRETS_SETUP.md](USER_SECRETS_SETUP.md) for detailed setup instructio
 
 ### Test Categories
 
+#### Core Operations (AFSIT)
 - **AFSIT-001 to AFSIT-007**: Basic file and directory operations
-- **AFSIT-008 to AFSIT-012**: Listing and enumeration operations
+- **AFSIT-008 to AFSIT-011**: Listing and enumeration operations
 - **AFSIT-013 to AFSIT-014**: Delete operations
 - **AFSIT-015 to AFSIT-017**: Special content handling (large files, Unicode, empty files)
+
+#### Move/Copy Operations (AFSMC)
+- **AFSMC-001 to AFSMC-002**: File copy and move operations
+- **AFSMC-003 to AFSMC-005**: Directory copy and move operations
+- **AFSMC-006 to AFSMC-007**: Cancellation and overwrite scenarios
 
 ### Test Features
 
