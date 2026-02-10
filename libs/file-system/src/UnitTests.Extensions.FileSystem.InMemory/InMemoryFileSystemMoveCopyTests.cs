@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.InMemory;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using Xunit;
@@ -62,7 +62,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.File);
         }
         
         [Fact(DisplayName = "IMFS-003: MoveFileAsync should fail when destination exists and overwrite is false")]
@@ -80,7 +80,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileAlreadyExists);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.FileAlreadyExists);
             
             // Verify files unchanged
             var sourceContent = await _fileSystem.ReadAllTextAsync(source);
@@ -242,7 +242,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.DirectoryAlreadyExists);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.DirectoryAlreadyExists);
         }
         
         [Fact(DisplayName = "IMFS-010: MoveDirectoryAsync should fail when moving to subdirectory")]
@@ -259,7 +259,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
         }
         
         #endregion

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.Functional;
@@ -227,7 +228,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 var fileInfo = new FileInfo(tempFile);
-                var expectedError = new Error("INVALID_PATH", "Invalid path provided");
+                var expectedError = new Error(FileSystemErrorCodes.IO.InvalidPath, "Invalid path provided");
                 
                 var mockPathMapper = new Mock<IPathMapper>();
                 mockPathMapper.Setup(pm => pm.MapToCanonicalPath(fileInfo.FullName))
@@ -255,7 +256,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             try
             {
                 var directoryInfo = new DirectoryInfo(tempDir);
-                var expectedError = new Error("INVALID_PATH", "Invalid path provided");
+                var expectedError = new Error(FileSystemErrorCodes.IO.InvalidPath, "Invalid path provided");
                 
                 var mockPathMapper = new Mock<IPathMapper>();
                 mockPathMapper.Setup(pm => pm.MapToCanonicalPath(directoryInfo.FullName))

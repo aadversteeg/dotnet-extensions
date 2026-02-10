@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
@@ -105,13 +106,13 @@ namespace FileCounter.Handlers
         }
 
         /// <inheritdoc />
-        public override Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(CanonicalPath rootPath, CancellationToken cancellationToken = default)
+        public override Task<Result<Unit, Error>> OnTraversalStartAsync(CanonicalPath rootPath, CancellationToken cancellationToken = default)
         {
             return base.OnTraversalStartAsync(rootPath, cancellationToken);
         }
 
         /// <inheritdoc />
-        public override Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
+        public override Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
         {
             // Track maximum depth
             if (context.CurrentDepth > _maxDepth)
@@ -123,7 +124,7 @@ namespace FileCounter.Handlers
         }
 
         /// <inheritdoc />
-        public override Task<Result<TraversalControl, FileSystemError>> OnFileAsync(FileSystemEntry file, TraversalContext context, CancellationToken cancellationToken = default)
+        public override Task<Result<TraversalControl, Error>> OnFileAsync(FileSystemEntry file, TraversalContext context, CancellationToken cancellationToken = default)
         {
             if (!file.IsDirectory)
             {
@@ -159,7 +160,7 @@ namespace FileCounter.Handlers
         }
 
         /// <inheritdoc />
-        public override Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
+        public override Task<Result<Unit, Error>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
         {
             return base.OnTraversalCompleteAsync(summary, cancellationToken);
         }

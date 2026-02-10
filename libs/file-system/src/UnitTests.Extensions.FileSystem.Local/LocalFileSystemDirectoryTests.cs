@@ -3,9 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using System.Runtime.InteropServices;
@@ -76,7 +76,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.DirectoryAlreadyExists);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.DirectoryAlreadyExists);
         }
         
         [Fact(DisplayName = "DIR-003: MoveDirectoryAsync should fail when moving to subdirectory")]
@@ -96,7 +96,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
         }
         
         [Fact(DisplayName = "DIR-004: CopyDirectoryAsync should copy directory with all contents")]
@@ -178,7 +178,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.DirectoryNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Directory);
         }
 
         [Fact(DisplayName = "DIR-007: CopyDirectoryAsync should fail when source does not exist")]
@@ -196,7 +196,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.DirectoryNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Directory);
         }
 
         [Fact(DisplayName = "DIR-008: MoveDirectoryAsync should handle same source and destination")]
@@ -213,7 +213,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
         }
         
         public void Dispose()

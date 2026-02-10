@@ -12,6 +12,7 @@ using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.AzureFileStorage.Handlers;
 using Ave.Extensions.FileSystem.Mapping;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Security;
 using Ave.Extensions.FileSystem.Traversal;
@@ -68,82 +69,82 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         );
         
         /// <inheritdoc />
-        public async Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<bool, Error>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                    return Result<bool, FileSystemError>.Failure(validationResult.Error);
+                    return Result<bool, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<bool, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<bool, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.ExistsAsync(cancellationToken);
-                return Result<bool, FileSystemError>.Success(response.Value);
+                return Result<bool, Error>.Success(response.Value);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return Result<bool, FileSystemError>.Success(false);
+                return Result<bool, Error>.Success(false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to check file existence in Azure: {Path}", path.Value);
-                return Result<bool, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to check file existence: {ex.Message}", path.Value));
+                return Result<bool, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to check file existence: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<bool, Error>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                    return Result<bool, FileSystemError>.Failure(validationResult.Error);
+                    return Result<bool, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<bool, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<bool, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
                 
                 var response = await directoryClient.ExistsAsync(cancellationToken);
-                return Result<bool, FileSystemError>.Success(response.Value);
+                return Result<bool, Error>.Success(response.Value);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return Result<bool, FileSystemError>.Success(false);
+                return Result<bool, Error>.Success(false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to check directory existence in Azure: {Path}", path.Value);
-                return Result<bool, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to check directory existence: {ex.Message}", path.Value));
+                return Result<bool, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to check directory existence: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<string, Error>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<string, FileSystemError>.Failure(validationResult.Error);
+                        return Result<string, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<string, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<string, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
@@ -152,56 +153,56 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 using var reader = new StreamReader(response.Value.Content);
                 var content = await reader.ReadToEndAsync();
                 
-                return Result<string, FileSystemError>.Success(content);
+                return Result<string, Error>.Success(content);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return Result<string, FileSystemError>.Failure(
-                    new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound));
+                return Result<string, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.File, $"File not found: {path.Value}").With("path", path.Value));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to read file from Azure: {Path}", path.Value);
-                return Result<string, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to read file: {ex.Message}", path.Value));
+                return Result<string, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to read file: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<Stream, Error>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<Stream, FileSystemError>.Failure(validationResult.Error);
+                        return Result<Stream, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Stream, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 var response = await fileClient.DownloadAsync(cancellationToken: cancellationToken);
-                return Result<Stream, FileSystemError>.Success(response.Value.Content);
+                return Result<Stream, Error>.Success(response.Value.Content);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"File not found: {path.Value}", path.Value, FileSystemErrorType.FileNotFound));
+                return Result<Stream, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.File, $"File not found: {path.Value}").With("path", path.Value));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to open file from Azure: {Path}", path.Value);
-                return Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to open file: {ex.Message}", path.Value));
+                return Result<Stream, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to open file: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+        public async Task<Result<TEntry, Error>> GetEntryAsync<TEntry>(
             CanonicalPath path,
             IFileSystemEntryMapper<TEntry> mapper,
             CancellationToken cancellationToken = default)
@@ -213,12 +214,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                    return Result<TEntry, FileSystemError>.Failure(validationResult.Error);
+                    return Result<TEntry, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<TEntry, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<TEntry, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 
@@ -273,8 +274,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     }
                     catch (RequestFailedException dirEx) when (dirEx.Status == 404)
                     {
-                        return Result<TEntry, FileSystemError>.Failure(
-                            new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
+                        return Result<TEntry, Error>.Failure(
+                            new Error(FileSystemErrorCodes.NotFound.Path, $"Path not found: {path.Value}").With("path", path.Value));
                     }
                 }
             }
@@ -285,13 +286,13 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get entry from Azure: {Path}", path.Value);
-                return Result<TEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value));
+                return Result<TEntry, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to get entry: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
+        public async Task<Result<TraversalSummary, Error>> TraverseAsync<TEntry>(
             CanonicalPath path,
             ITraversalHandler<TEntry> handler,
             IFileSystemEntryMapper<TEntry> mapper,
@@ -302,14 +303,14 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(validationResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(validationResult.Error);
 
                 options ??= new TraversalOptions();
                 
                 // Notify handler of traversal start
                 var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
                 if (startResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(startResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(startResult.Error);
 
                 var context = TraversalContext.CreateInitial(path);
                 var stats = new TraversalStats();
@@ -317,7 +318,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Get the starting entry as IFileSystemEntry
                 var entryResult = await GetStartingEntryAsync(path, cancellationToken);
                 if (entryResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(entryResult.Error);
 
                 // Select strategy based on hint
                 var strategy = CreateAzureStrategy(options.StrategyHint);
@@ -334,7 +335,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     cancellationToken);
 
                 if (traversalResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(traversalResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(traversalResult.Error);
 
                 var summary = new TraversalSummary(
                     stats.FilesProcessed,
@@ -346,14 +347,14 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Notify handler of completion
                 var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
                 if (completeResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(completeResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(completeResult.Error);
 
-                return Result<TraversalSummary, FileSystemError>.Success(summary);
+                return Result<TraversalSummary, Error>.Success(summary);
             }
             catch (RequestFailedException ex) when (ex.Status == 404)
             {
-                return Result<TraversalSummary, FileSystemError>.Failure(
-                    new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound));
+                return Result<TraversalSummary, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Directory, $"Directory not found: {path.Value}").With("path", path.Value));
             }
             catch (OperationCanceledException)
             {
@@ -362,8 +363,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to traverse Azure directory: {Path}", path.Value);
-                return Result<TraversalSummary, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value));
+                return Result<TraversalSummary, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value));
             }
         }
 
@@ -389,7 +390,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         /// <param name="path">The path to get the entry for.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the entry or an error.</returns>
-        private async Task<Result<IFileSystemEntry, FileSystemError>> GetStartingEntryAsync(
+        private async Task<Result<IFileSystemEntry, Error>> GetStartingEntryAsync(
             CanonicalPath path, 
             CancellationToken cancellationToken)
         {
@@ -397,8 +398,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<IFileSystemEntry, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<IFileSystemEntry, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 
@@ -422,7 +423,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     
                     // Create FileEntry
                     IFileSystemEntry entry = new Models.FileEntry(path, fileInfo);
-                    return Result<IFileSystemEntry, FileSystemError>.Success(entry);
+                    return Result<IFileSystemEntry, Error>.Success(entry);
                 }
                 catch (RequestFailedException ex) when (ex.Status == 404)
                 {
@@ -446,12 +447,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         
                         // Create DirectoryEntry
                         IFileSystemEntry entry = new Models.DirectoryEntry(path, directoryInfo);
-                        return Result<IFileSystemEntry, FileSystemError>.Success(entry);
+                        return Result<IFileSystemEntry, Error>.Success(entry);
                     }
                     catch (RequestFailedException dirEx) when (dirEx.Status == 404)
                     {
-                        return Result<IFileSystemEntry, FileSystemError>.Failure(
-                            new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
+                        return Result<IFileSystemEntry, Error>.Failure(
+                            new Error(FileSystemErrorCodes.NotFound.Path, $"Path not found: {path.Value}").With("path", path.Value));
                     }
                 }
             }
@@ -461,8 +462,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
-                return Result<IFileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get entry: {ex.Message}", path.Value, FileSystemErrorType.Unknown));
+                return Result<IFileSystemEntry, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to get entry: {ex.Message}").With("path", path.Value));
             }
         }
 
@@ -472,7 +473,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         /// <param name="path">The directory path.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the children or an error.</returns>
-        private async Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildrenAsync(
+        private async Task<Result<IEnumerable<IFileSystemEntry>, Error>> GetChildrenAsync(
             CanonicalPath path, 
             CancellationToken cancellationToken)
         {
@@ -482,8 +483,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<IEnumerable<IFileSystemEntry>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
@@ -515,7 +516,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     }
                 }
 
-                return Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(entries);
+                return Result<IEnumerable<IFileSystemEntry>, Error>.Success(entries);
             }
             catch (OperationCanceledException)
             {
@@ -523,12 +524,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
-                return Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value));
+                return Result<IEnumerable<IFileSystemEntry>, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value));
             }
         }
 
-        private async Task<Result<IFileEntry, FileSystemError>> CreateFileEntryInternalAsync(
+        private async Task<Result<IFileEntry, Error>> CreateFileEntryInternalAsync(
             CanonicalPath filePath, 
             ShareFileItem fileItem, 
             CancellationToken cancellationToken)
@@ -559,17 +560,17 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Create FileEntry
                 var fileEntry = new Models.FileEntry(filePath, fileInfo);
 
-                return Result<IFileEntry, FileSystemError>.Success(fileEntry);
+                return Result<IFileEntry, Error>.Success(fileEntry);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create file entry: {Path}", filePath.Value);
-                return Result<IFileEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get file properties: {ex.Message}", filePath.Value));
+                return Result<IFileEntry, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to get file properties: {ex.Message}").With("path", filePath.Value));
             }
         }
 
-        private async Task<Result<IDirectoryEntry, FileSystemError>> CreateDirectoryEntryInternalAsync(
+        private async Task<Result<IDirectoryEntry, Error>> CreateDirectoryEntryInternalAsync(
             CanonicalPath directoryPath, 
             ShareDirectoryClient directoryClient, 
             CancellationToken cancellationToken)
@@ -592,41 +593,44 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Create DirectoryEntry
                 var directoryEntry = new Models.DirectoryEntry(directoryPath, directoryInfo);
 
-                return Result<IDirectoryEntry, FileSystemError>.Success(directoryEntry);
+                return Result<IDirectoryEntry, Error>.Success(directoryEntry);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create directory entry: {Path}", directoryPath.Value);
-                return Result<IDirectoryEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to get directory properties: {ex.Message}", directoryPath.Value));
+                return Result<IDirectoryEntry, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to get directory properties: {ex.Message}").With("path", directoryPath.Value));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
+        public Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             // Azure File Share doesn't support real-time monitoring
-            var error = new FileSystemError(
-                "File system monitoring is not supported for Azure File Share", 
-                options?.Path.Value, 
-                FileSystemErrorType.NotSupported);
-            
-            return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(error));
+            var error = new Error(
+                FileSystemErrorCodes.NotSupported,
+                "File system monitoring is not supported for Azure File Share");
+            if (options?.Path.Value != null)
+            {
+                error = error.With("path", options.Path.Value);
+            }
+
+            return Task.FromResult(Result<IMonitoringSession, Error>.Failure(error));
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, Error>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<Unit, FileSystemError>.Failure(validationResult.Error);
+                        return Result<Unit, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 _logger.LogDebug("CreateDirectoryAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
@@ -637,24 +641,24 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create directory in Azure: {Path}", path.Value);
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to create directory: {ex.Message}", path.Value));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to create directory: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, Error>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<Unit, FileSystemError>.Failure(validationResult.Error);
+                        return Result<Unit, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 _logger.LogDebug("WriteAllTextAsync: {CanonicalPath} -> Azure path: {AzurePath}", path.Value, azurePath);
@@ -683,31 +687,31 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     await fileClient.UploadAsync(stream, cancellationToken: cancellationToken);
                 }
                 
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to write file to Azure: {Path}", path.Value);
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to write file: {ex.Message}", path.Value));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to write file: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<Stream, Error>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<Stream, FileSystemError>.Failure(validationResult.Error);
+                        return Result<Stream, Error>.Failure(validationResult.Error);
                 
                 // Azure File Share doesn't support direct write streams
                 // Return a memory stream that can be uploaded when disposed
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Stream, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
@@ -718,22 +722,22 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 {
                     var parentDirResult = await CreateDirectoryRecursiveAsync(parentDir, cancellationToken);
                     if (parentDirResult.IsFailure)
-                        return Result<Stream, FileSystemError>.Failure(parentDirResult.Error);
+                        return Result<Stream, Error>.Failure(parentDirResult.Error);
                 }
                 
                 var writeStream = new WriteStream(fileClient, _logger);
-                return Result<Stream, FileSystemError>.Success(writeStream);
+                return Result<Stream, Error>.Success(writeStream);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to open write stream for Azure: {Path}", path.Value);
-                return Result<Stream, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to open write stream: {ex.Message}", path.Value));
+                return Result<Stream, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to open write stream: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Stream, FileSystemError>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
+        public async Task<Result<Stream, Error>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
         {
             // Map file mode and access to appropriate Azure operations
             if (access == FileAccess.Read)
@@ -745,51 +749,51 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 return await OpenWriteAsync(path, cancellationToken);
             }
             
-            return Result<Stream, FileSystemError>.Failure(
-                new FileSystemError($"Unsupported file access mode: {access}", path.Value, FileSystemErrorType.NotSupported));
+            return Result<Stream, Error>.Failure(
+                new Error(FileSystemErrorCodes.NotSupported, $"Unsupported file access mode: {access}").With("path", path.Value));
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, Error>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<Unit, FileSystemError>.Failure(validationResult.Error);
+                        return Result<Unit, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var fileClient = GetFileClient(azurePath);
                 
                 await fileClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to delete file from Azure: {Path}", path.Value);
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to delete file: {ex.Message}", path.Value));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to delete file: {ex.Message}").With("path", path.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
+        public async Task<Result<Unit, Error>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
         {
             try
             {
                 var validationResult = ValidatePathSecurity(path);
                 if (validationResult.IsFailure)
-                        return Result<Unit, FileSystemError>.Failure(validationResult.Error);
+                        return Result<Unit, Error>.Failure(validationResult.Error);
                 
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
@@ -815,23 +819,23 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 }
                 
                 await directoryClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to delete directory from Azure: {Path}", path.Value);
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to delete directory: {ex.Message}", path.Value));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to delete directory: {ex.Message}").With("path", path.Value));
             }
         }
 
         // Helper methods
-        private async Task<Result<Unit, FileSystemError>> CreateDirectoryRecursiveAsync(string azurePath, CancellationToken cancellationToken = default)
+        private async Task<Result<Unit, Error>> CreateDirectoryRecursiveAsync(string azurePath, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (string.IsNullOrEmpty(azurePath))
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
 
                 var pathParts = azurePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 var currentPath = "";
@@ -848,24 +852,24 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     }
                 }
 
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create directory recursively in Azure: {Path}", azurePath);
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to create directory recursively: {ex.Message}", azurePath));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Failed to create directory recursively: {ex.Message}").With("path", azurePath));
             }
         }
         
-        private Result<Unit, FileSystemError> ValidatePathSecurity(CanonicalPath path)
+        private Result<Unit, Error> ValidatePathSecurity(CanonicalPath path)
         {
             if (_pathSecurity != null)
             {
                 return _pathSecurity.ValidatePathAccess(path);
             }
             
-            return Result<Unit, FileSystemError>.Success(Unit.Value);
+            return Result<Unit, Error>.Success(Unit.Value);
         }
         
         /// <summary>
@@ -988,7 +992,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         /// <summary>
         /// Ensures the parent directory exists for a file path.
         /// </summary>
-        private async Task<Result<Unit, FileSystemError>> EnsureParentDirectoryExistsAsync(
+        private async Task<Result<Unit, Error>> EnsureParentDirectoryExistsAsync(
             CanonicalPath filePath,
             CancellationToken cancellationToken)
         {
@@ -996,7 +1000,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 var parentResult = filePath.GetParent();
                 if (parentResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
                 
                 var azurePath = GetAzurePath(parentResult.Value.Value);
                 var result = await CreateDirectoryRecursiveAsync(azurePath, cancellationToken);
@@ -1004,51 +1008,50 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (RequestFailedException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Failed to create parent directory: {ex.Message}", 
-                        filePath.Value, 
-                        MapAzureErrorToFileSystemError(ex)));
+                return Result<Unit, Error>.Failure(
+                    new Error(MapAzureErrorToErrorCode(ex), $"Failed to create parent directory: {ex.Message}")
+                        .With("path", filePath.Value));
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, filePath.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, filePath.Value));
             }
         }
 
         /// <summary>
-        /// Maps Azure error codes to FileSystemErrorType.
+        /// Maps Azure error codes to ErrorCode.
         /// </summary>
-        private FileSystemErrorType MapAzureErrorToFileSystemError(RequestFailedException ex)
+        private ErrorCode MapAzureErrorToErrorCode(RequestFailedException ex)
         {
             var errorCode = ex.ErrorCode;
-            
+
             if (errorCode == "ShareNotFound")
-                return FileSystemErrorType.DirectoryNotFound;
+                return FileSystemErrorCodes.NotFound.Directory;
             if (errorCode == "ShareAlreadyExists")
-                return FileSystemErrorType.DirectoryAlreadyExists;
+                return FileSystemErrorCodes.IO.DirectoryAlreadyExists;
             if (errorCode == "ResourceNotFound")
-                return FileSystemErrorType.FileNotFound;
+                return FileSystemErrorCodes.NotFound.File;
             if (errorCode == "ResourceAlreadyExists")
-                return FileSystemErrorType.FileAlreadyExists;
+                return FileSystemErrorCodes.IO.FileAlreadyExists;
             if (errorCode == "ParentNotFound")
-                return FileSystemErrorType.DirectoryNotFound;
+                return FileSystemErrorCodes.NotFound.Directory;
             if (errorCode == "AuthenticationFailed")
-                return FileSystemErrorType.AccessDenied;
+                return FileSystemErrorCodes.IO.AccessDenied;
             if (errorCode == "InsufficientAccountPermissions")
-                return FileSystemErrorType.AccessDenied;
+                return FileSystemErrorCodes.IO.AccessDenied;
             if (errorCode == "ShareQuotaExceeded" || errorCode == "InsufficientSpace")
-                return FileSystemErrorType.InsufficientSpace;
+                return FileSystemErrorCodes.IO.InsufficientSpace;
             if (errorCode == "ShareSnapshotInProgress")
-                return FileSystemErrorType.IOException;
-            
-            return FileSystemErrorType.IOException;
+                return FileSystemErrorCodes.IO.General;
+
+            return FileSystemErrorCodes.IO.General;
         }
 
         /// <summary>
         /// Waits for an Azure copy operation to complete.
         /// </summary>
-        private async Task<Result<Unit, FileSystemError>> WaitForCopyToCompleteAsync(
+        private async Task<Result<Unit, Error>> WaitForCopyToCompleteAsync(
             ShareFileClient fileClient,
             string copyId,
             CancellationToken cancellationToken)
@@ -1066,27 +1069,27 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (copyStatus == CopyStatus.Success)
                 {
                     // Copy completed successfully
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
                 }
                 
                 switch (copyStatus)
                 {
                     case CopyStatus.Success:
-                        return Result<Unit, FileSystemError>.Success(Unit.Value);
+                        return Result<Unit, Error>.Success(Unit.Value);
                         
                     case CopyStatus.Failed:
-                        return Result<Unit, FileSystemError>.Failure(
-                            new FileSystemError(
-                                $"Copy operation failed: {properties.Value.CopyStatusDescription}", 
-                                fileClient.Path, 
-                                FileSystemErrorType.IOException));
-                        
+                        return Result<Unit, Error>.Failure(
+                            new Error(
+                                FileSystemErrorCodes.IO.General,
+                                $"Copy operation failed: {properties.Value.CopyStatusDescription}")
+                                .With("path", fileClient.Path));
+
                     case CopyStatus.Aborted:
-                        return Result<Unit, FileSystemError>.Failure(
-                            new FileSystemError(
-                                "Copy operation was aborted", 
-                                fileClient.Path, 
-                                FileSystemErrorType.IOException));
+                        return Result<Unit, Error>.Failure(
+                            new Error(
+                                FileSystemErrorCodes.IO.General,
+                                "Copy operation was aborted")
+                                .With("path", fileClient.Path));
                         
                     case CopyStatus.Pending:
                         // Still copying, wait a bit
@@ -1096,17 +1099,17 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             
             // Timeout
-            return Result<Unit, FileSystemError>.Failure(
-                new FileSystemError(
-                    "Copy operation timed out", 
-                    fileClient.Path, 
-                    FileSystemErrorType.IOException));
+            return Result<Unit, Error>.Failure(
+                new Error(
+                    FileSystemErrorCodes.IO.General,
+                    "Copy operation timed out")
+                    .With("path", fileClient.Path));
         }
 
         #endregion
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> MoveFileAsync(
+        public async Task<Result<Unit, Error>> MoveFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -1126,10 +1129,10 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Validate paths are different
                 if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
                 {
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Source and destination paths are the same").With("path", source.Value));
                 }
-                
+
                 // Azure Files doesn't support direct move, so we copy then delete
                 var copyResult = await CopyFileAsync(source, destination, overwrite, cancellationToken);
                 if (copyResult.IsFailure)
@@ -1141,12 +1144,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 try
                 {
                     await sourceFileClient.DeleteAsync(cancellationToken: cancellationToken);
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
                 }
                 catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
                 {
                     // Source already deleted (rare race condition), consider it success
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
                 }
                 catch (RequestFailedException ex)
                 {
@@ -1161,11 +1164,11 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         // Best effort cleanup
                     }
                     
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(
-                            $"Failed to delete source file after copy: {ex.Message}", 
-                            source.Value, 
-                            MapAzureErrorToFileSystemError(ex)));
+                    return Result<Unit, Error>.Failure(
+                        new Error(
+                            MapAzureErrorToErrorCode(ex),
+                            $"Failed to delete source file after copy: {ex.Message}")
+                            .With("path", source.Value));
                 }
             }
             catch (OperationCanceledException)
@@ -1174,13 +1177,13 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
+        public async Task<Result<Unit, Error>> MoveDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
@@ -1199,32 +1202,32 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Validate paths are different
                 if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
                 {
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Source and destination paths are the same").With("path", source.Value));
                 }
-                
+
                 // Check if destination is a subdirectory of source
                 if (IsSubdirectoryOf(source, destination))
                 {
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Cannot move directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Cannot move directory to a subdirectory of itself").With("path", source.Value));
                 }
-                
+
                 // In Azure Files, directories are virtual, so we check by trying to list contents
                 var checkResult = await CheckDirectoryExistsAsync(source, cancellationToken);
                 if (checkResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(checkResult.Error);
+                    return Result<Unit, Error>.Failure(checkResult.Error);
                 
                 if (!checkResult.Value)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
-                
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Directory, "Source directory not found").With("path", source.Value));
+
                 // Check if destination already exists
                 var destExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
                 if (destExistsResult.IsSuccess && destExistsResult.Value)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
-                
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.DirectoryAlreadyExists, "Destination directory already exists").With("path", destination.Value));
+
                 // Azure doesn't support direct move, so copy then delete
                 var copyResult = await CopyDirectoryAsync(source, destination, cancellationToken);
                 if (copyResult.IsFailure)
@@ -1241,12 +1244,12 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     var cleanupHandler = new AzureDeleteHandler(this);
                     await TraverseAsync(destination, cleanupHandler, mapper, cancellationToken: cancellationToken);
                     
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError($"Failed to delete source directory after copy: {deleteResult.Error.Message}", 
-                            source.Value, deleteResult.Error.Type));
+                    return Result<Unit, Error>.Failure(
+                        deleteResult.Error.Wrap(deleteResult.Error.Code, $"Failed to delete source directory after copy: {deleteResult.Error.Message}")
+                            .With("path", source.Value));
                 }
                 
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (OperationCanceledException)
             {
@@ -1254,13 +1257,13 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CopyFileAsync(
+        public async Task<Result<Unit, Error>> CopyFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -1280,10 +1283,10 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Validate paths are different
                 if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
                 {
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Source and destination paths are the same").With("path", source.Value));
                 }
-                
+
                 var sourceFileClient = GetShareFileClient(source);
                 var destFileClient = GetShareFileClient(destination);
                 
@@ -1291,18 +1294,18 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 var sourceExistsResult = await sourceFileClient.ExistsAsync(cancellationToken);
                 if (!sourceExistsResult.Value)
                 {
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source file not found", source.Value, FileSystemErrorType.FileNotFound));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.File, "Source file not found").With("path", source.Value));
                 }
-                
+
                 // Check if destination exists and overwrite is false
                 if (!overwrite)
                 {
                     var destExistsResult = await destFileClient.ExistsAsync(cancellationToken);
                     if (destExistsResult.Value)
                     {
-                        return Result<Unit, FileSystemError>.Failure(
-                            new FileSystemError("Destination file already exists", destination.Value, FileSystemErrorType.FileAlreadyExists));
+                        return Result<Unit, Error>.Failure(
+                            new Error(FileSystemErrorCodes.IO.FileAlreadyExists, "Destination file already exists").With("path", destination.Value));
                     }
                 }
                 
@@ -1361,28 +1364,28 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     // Best effort - don't fail the copy if metadata preservation fails
                 }
                 
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
-            catch (RequestFailedException ex) when (ex.ErrorCode == "ShareNotFound" || 
+            catch (RequestFailedException ex) when (ex.ErrorCode == "ShareNotFound" ||
                                                     ex.ErrorCode == "ParentNotFound")
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Share or directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Directory, "Share or directory not found").With("path", source.Value));
             }
             catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("File not found", source.Value, FileSystemErrorType.FileNotFound));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.File, "File not found").With("path", source.Value));
             }
             catch (RequestFailedException ex) when (ex.ErrorCode == "ShareQuotaExceeded")
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Insufficient space in share", destination.Value, FileSystemErrorType.InsufficientSpace));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.InsufficientSpace, "Insufficient space in share").With("path", destination.Value));
             }
             catch (RequestFailedException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError($"Azure operation failed: {ex.Message}", source.Value, MapAzureErrorToFileSystemError(ex)));
+                return Result<Unit, Error>.Failure(
+                    new Error(MapAzureErrorToErrorCode(ex), $"Azure operation failed: {ex.Message}").With("path", source.Value));
             }
             catch (OperationCanceledException)
             {
@@ -1390,13 +1393,13 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
+        public async Task<Result<Unit, Error>> CopyDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
@@ -1415,31 +1418,31 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 // Validate paths are different
                 if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
                 {
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source and destination paths are the same", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Source and destination paths are the same").With("path", source.Value));
                 }
-                
+
                 // Check if destination is a subdirectory of source
                 if (IsSubdirectoryOf(source, destination))
                 {
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Cannot copy directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Cannot copy directory to a subdirectory of itself").With("path", source.Value));
                 }
-                
+
                 // Check if source exists
                 var checkResult = await CheckDirectoryExistsAsync(source, cancellationToken);
                 if (checkResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(checkResult.Error);
-                
+                    return Result<Unit, Error>.Failure(checkResult.Error);
+
                 if (!checkResult.Value)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
-                
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Directory, "Source directory not found").With("path", source.Value));
+
                 // Check if destination already exists
                 var destExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
                 if (destExistsResult.IsSuccess && destExistsResult.Value)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.DirectoryAlreadyExists, "Destination directory already exists").With("path", destination.Value));
                 
                 // Use traversal with copy handler
                 var copyHandler = new AzureCopyHandler(this, source, destination);
@@ -1447,17 +1450,17 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 var traverseResult = await TraverseAsync(source, copyHandler, mapper, cancellationToken: cancellationToken);
                 
                 if (traverseResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(traverseResult.Error);
+                    return Result<Unit, Error>.Failure(traverseResult.Error);
                 
                 // Check if there were any errors during copy
                 if (copyHandler.Errors.Count > 0)
                 {
                     var errorMessage = $"Directory copy completed with {copyHandler.Errors.Count} errors";
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(errorMessage, source.Value, FileSystemErrorType.PartialFailure));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.PartialFailure, errorMessage).With("path", source.Value));
                 }
                 
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (OperationCanceledException)
             {
@@ -1465,13 +1468,13 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> MoveAsync(
+        public async Task<Result<Unit, Error>> MoveAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -1508,34 +1511,34 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         var destDirExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
                         if (destDirExistsResult.IsSuccess && destDirExistsResult.Value)
                         {
-                            return Result<Unit, FileSystemError>.Failure(
-                                new FileSystemError(
-                                    "Cannot overwrite an existing directory", 
-                                    destination.Value, 
-                                    FileSystemErrorType.DirectoryAlreadyExists));
+                            return Result<Unit, Error>.Failure(
+                                new Error(
+                                    FileSystemErrorCodes.IO.DirectoryAlreadyExists,
+                                    "Cannot overwrite an existing directory")
+                                    .With("path", destination.Value));
                         }
                     }
                     return await MoveDirectoryAsync(source, destination, cancellationToken);
                 }
-                
+
                 // Path not found
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Path, "Source path not found").With("path", source.Value));
             }
             catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Path, "Source path not found").With("path", source.Value));
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CopyAsync(
+        public async Task<Result<Unit, Error>> CopyAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -1572,29 +1575,29 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                         var destDirExistsResult = await CheckDirectoryExistsAsync(destination, cancellationToken);
                         if (destDirExistsResult.IsSuccess && destDirExistsResult.Value)
                         {
-                            return Result<Unit, FileSystemError>.Failure(
-                                new FileSystemError(
-                                    "Cannot overwrite an existing directory", 
-                                    destination.Value, 
-                                    FileSystemErrorType.DirectoryAlreadyExists));
+                            return Result<Unit, Error>.Failure(
+                                new Error(
+                                    FileSystemErrorCodes.IO.DirectoryAlreadyExists,
+                                    "Cannot overwrite an existing directory")
+                                    .With("path", destination.Value));
                         }
                     }
                     return await CopyDirectoryAsync(source, destination, cancellationToken);
                 }
-                
+
                 // Path not found
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Path, "Source path not found").With("path", source.Value));
             }
             catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Path, "Source path not found").With("path", source.Value));
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
@@ -1603,7 +1606,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         /// <summary>
         /// Checks if a directory exists by attempting to list its contents.
         /// </summary>
-        private async Task<Result<bool, FileSystemError>> CheckDirectoryExistsAsync(
+        private async Task<Result<bool, Error>> CheckDirectoryExistsAsync(
             CanonicalPath path,
             CancellationToken cancellationToken)
         {
@@ -1611,8 +1614,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             {
                 var systemPathResult = _pathMapper.MapToSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<bool, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<bool, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
                 
                 var azurePath = GetAzurePath(systemPathResult.Value);
                 var directoryClient = GetDirectoryClient(azurePath);
@@ -1621,7 +1624,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 try
                 {
                     await directoryClient.GetPropertiesAsync(cancellationToken: cancellationToken);
-                    return Result<bool, FileSystemError>.Success(true);
+                    return Result<bool, Error>.Success(true);
                 }
                 catch (RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
                 {
@@ -1632,15 +1635,15 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 await foreach (var item in directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken))
                 {
                     // If we find any item, the directory exists
-                    return Result<bool, FileSystemError>.Success(true);
+                    return Result<bool, Error>.Success(true);
                 }
                 
-                return Result<bool, FileSystemError>.Success(false);
+                return Result<bool, Error>.Success(false);
             }
             catch (Exception ex)
             {
-                return Result<bool, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value));
+                return Result<bool, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value));
             }
         }
 
@@ -1711,13 +1714,13 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             _filePath = filePath;
         }
 
-        public async Task<Result<byte[], FileSystemError>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
+        public async Task<Result<byte[], Error>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
         {
             try
             {
                 var openResult = await _fileSystem.OpenReadAsync(_filePath, cancellationToken);
                 if (openResult.IsFailure)
-                    return Result<byte[], FileSystemError>.Failure(openResult.Error);
+                    return Result<byte[], Error>.Failure(openResult.Error);
 
                 using var stream = openResult.Value;
                 var buffer = new byte[Math.Min(maxBytes, (int)stream.Length)];
@@ -1728,7 +1731,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     Array.Resize(ref buffer, bytesRead);
                 }
                 
-                return Result<byte[], FileSystemError>.Success(buffer);
+                return Result<byte[], Error>.Success(buffer);
             }
             catch (OperationCanceledException)
             {
@@ -1736,8 +1739,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             }
             catch (Exception ex)
             {
-                return Result<byte[], FileSystemError>.Failure(
-                    new FileSystemError($"Failed to read file: {ex.Message}", _filePath.Value, FileSystemErrorType.IOException));
+                return Result<byte[], Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.General, $"Failed to read file: {ex.Message}").With("path", _filePath.Value));
             }
         }
     }

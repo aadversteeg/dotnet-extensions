@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
@@ -36,7 +37,7 @@ namespace Ave.Extensions.FileSystem.Local
         );
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, Error>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -44,12 +45,12 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<bool, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 var systemPath = systemPathResult.Value;
                 var exists = File.Exists(systemPath);
-                return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
+                return Task.FromResult(Result<bool, Error>.Success(exists));
             }
             catch (OperationCanceledException)
             {
@@ -57,13 +58,13 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value)));
+                return Task.FromResult(Result<bool, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value)));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, Error>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -71,12 +72,12 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<bool, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 var systemPath = systemPathResult.Value;
                 var exists = Directory.Exists(systemPath);
-                return Task.FromResult(Result<bool, FileSystemError>.Success(exists));
+                return Task.FromResult(Result<bool, Error>.Success(exists));
             }
             catch (OperationCanceledException)
             {
@@ -84,52 +85,52 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<bool, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value)));
+                return Task.FromResult(Result<bool, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value)));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<string, Error>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(async () =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<string, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<string, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
 
                 var systemPath = systemPathResult.Value;
                 var content = await File.ReadAllTextAsync(systemPath, cancellationToken);
-                return Result<string, FileSystemError>.Success(content);
+                return Result<string, Error>.Success(content);
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, Error>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Stream, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 var systemPath = systemPathResult.Value;
                 var stream = File.OpenRead(systemPath);
-                return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
+                return Task.FromResult(Result<Stream, Error>.Success(stream));
             }, path.Value);
         }
 
-        private Task<Result<FileSystemEntry, FileSystemError>> GetEntryInternalAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        private Task<Result<FileSystemEntry, Error>> GetEntryInternalAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<FileSystemEntry, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
@@ -140,7 +141,7 @@ namespace Ave.Extensions.FileSystem.Local
                 {
                     var fileInfo = new System.IO.FileInfo(systemPath);
                     var entry = fileInfo.ToFileSystemEntry(_pathMapper);
-                    return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+                    return Task.FromResult(Result<FileSystemEntry, Error>.Success(entry));
                 }
                 
                 // Check if it's a directory
@@ -148,16 +149,16 @@ namespace Ave.Extensions.FileSystem.Local
                 {
                     var directoryInfo = new System.IO.DirectoryInfo(systemPath);
                     var entry = directoryInfo.ToFileSystemEntry(_pathMapper);
-                    return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(entry));
+                    return Task.FromResult(Result<FileSystemEntry, Error>.Success(entry));
                 }
                 
-                return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound)));
+                return Task.FromResult(Result<FileSystemEntry, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Path, $"Path not found: {path.Value}").With("path", path.Value)));
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+        public async Task<Result<TEntry, Error>> GetEntryAsync<TEntry>(
             CanonicalPath path,
             IFileSystemEntryMapper<TEntry> mapper,
             CancellationToken cancellationToken = default)
@@ -169,8 +170,8 @@ namespace Ave.Extensions.FileSystem.Local
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<TEntry, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<TEntry, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
 
                 var systemPath = systemPathResult.Value;
                 
@@ -219,8 +220,8 @@ namespace Ave.Extensions.FileSystem.Local
                     return await mapper.MapDirectoryAsync(directoryEntry, cancellationToken);
                 }
                 
-                return Result<TEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound));
+                return Result<TEntry, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Path, $"Path not found: {path.Value}").With("path", path.Value));
             }
             catch (OperationCanceledException)
             {
@@ -228,20 +229,20 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Result<TEntry, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value));
+                return Result<TEntry, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, Error>> GetFilesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
@@ -249,21 +250,21 @@ namespace Ave.Extensions.FileSystem.Local
                 var files = Directory.GetFiles(systemPath, searchPattern, searchOption);
                 var mappedFilesResult = MapPathsToCanonical(files);
                 if (mappedFilesResult.IsFailure)
-                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(mappedFilesResult.Error));
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(mappedFilesResult.Error));
                 
-                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedFilesResult.Value));
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Success(mappedFilesResult.Value));
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
+        public Task<Result<IReadOnlyList<CanonicalPath>, Error>> GetDirectoriesAsync(CanonicalPath path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 
@@ -271,119 +272,119 @@ namespace Ave.Extensions.FileSystem.Local
                 var directories = Directory.GetDirectories(systemPath, searchPattern, searchOption);
                 var mappedDirectoriesResult = MapPathsToCanonical(directories);
                 if (mappedDirectoriesResult.IsFailure)
-                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(mappedDirectoriesResult.Error));
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(mappedDirectoriesResult.Error));
                 
-                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(mappedDirectoriesResult.Value));
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Success(mappedDirectoriesResult.Value));
             }, path.Value);
         }
 
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, Error>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 var systemPath = systemPathResult.Value;
                 Directory.CreateDirectory(systemPath);
-                return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+                return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, Error>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(async () =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
 
                 if (contents == null)
                     contents = string.Empty;
 
                 var systemPath = systemPathResult.Value;
                 await File.WriteAllTextAsync(systemPath, contents, cancellationToken);
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, Error>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Stream, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 var systemPath = systemPathResult.Value;
                 var stream = File.OpenWrite(systemPath);
-                return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
+                return Task.FromResult(Result<Stream, Error>.Success(stream));
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, Error>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<Stream, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Stream, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 var systemPath = systemPathResult.Value;
                 var stream = new FileStream(systemPath, mode, access, share);
-                return Task.FromResult(Result<Stream, FileSystemError>.Success(stream));
+                return Task.FromResult(Result<Stream, Error>.Success(stream));
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, Error>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 var systemPath = systemPathResult.Value;
                 File.Delete(systemPath);
-                return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+                return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, Error>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
         {
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 var systemPath = systemPathResult.Value;
                 Directory.Delete(systemPath, recursive);
-                return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+                return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
             }, path.Value);
         }
 
         /// <inheritdoc />
-        public async Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
+        public async Task<Result<TraversalSummary, Error>> TraverseAsync<TEntry>(
             CanonicalPath path,
             ITraversalHandler<TEntry> handler,
             IFileSystemEntryMapper<TEntry> mapper,
@@ -397,7 +398,7 @@ namespace Ave.Extensions.FileSystem.Local
                 // Notify handler of traversal start
                 var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
                 if (startResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(startResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(startResult.Error);
 
                 var context = TraversalContext.CreateInitial(path);
                 var stats = new TraversalStats();
@@ -405,7 +406,7 @@ namespace Ave.Extensions.FileSystem.Local
                 // Get the starting entry as IFileSystemEntry
                 var entryResult = await GetStartingEntryAsync(path, cancellationToken);
                 if (entryResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(entryResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(entryResult.Error);
 
                 // Select strategy based on hint and provide file reader factory
                 var strategy = CreateLocalStrategy(options.StrategyHint);
@@ -422,7 +423,7 @@ namespace Ave.Extensions.FileSystem.Local
                     cancellationToken);
 
                 if (traversalResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(traversalResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(traversalResult.Error);
 
                 var summary = new TraversalSummary(
                     stats.FilesProcessed,
@@ -434,9 +435,9 @@ namespace Ave.Extensions.FileSystem.Local
                 // Notify handler of completion
                 var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
                 if (completeResult.IsFailure)
-                    return Result<TraversalSummary, FileSystemError>.Failure(completeResult.Error);
+                    return Result<TraversalSummary, Error>.Failure(completeResult.Error);
 
-                return Result<TraversalSummary, FileSystemError>.Success(summary);
+                return Result<TraversalSummary, Error>.Success(summary);
             }, path.Value);
         }
 
@@ -465,7 +466,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <param name="path">The path to get the entry for.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the entry or an error.</returns>
-        private Task<Result<IFileSystemEntry, FileSystemError>> GetStartingEntryAsync(
+        private Task<Result<IFileSystemEntry, Error>> GetStartingEntryAsync(
             CanonicalPath path, 
             CancellationToken cancellationToken)
         {
@@ -473,8 +474,8 @@ namespace Ave.Extensions.FileSystem.Local
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<IFileSystemEntry, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 var systemPath = systemPathResult.Value;
                 
@@ -491,7 +492,7 @@ namespace Ave.Extensions.FileSystem.Local
                     
                     var fileInfoModel = new Models.FileInfo(entryInfo, fileInfo.Length, fileInfo.Extension);
                     IFileSystemEntry entry = new Models.FileEntry(path, fileInfoModel);
-                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
+                    return Task.FromResult(Result<IFileSystemEntry, Error>.Success(entry));
                 }
                 
                 // Check if it's a directory
@@ -507,11 +508,11 @@ namespace Ave.Extensions.FileSystem.Local
                     
                     var directoryInfoModel = new Models.DirectoryInfo(entryInfo);
                     IFileSystemEntry entry = new Models.DirectoryEntry(path, directoryInfoModel);
-                    return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Success(entry));
+                    return Task.FromResult(Result<IFileSystemEntry, Error>.Success(entry));
                 }
                 
-                return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
-                    new FileSystemError($"Path not found: {path.Value}", path.Value, FileSystemErrorType.PathNotFound)));
+                return Task.FromResult(Result<IFileSystemEntry, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Path, $"Path not found: {path.Value}").With("path", path.Value)));
             }
             catch (OperationCanceledException)
             {
@@ -519,8 +520,8 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<IFileSystemEntry, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value)));
+                return Task.FromResult(Result<IFileSystemEntry, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value)));
             }
         }
 
@@ -530,7 +531,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <param name="path">The directory path.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the children or an error.</returns>
-        private Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildrenAsync(
+        private Task<Result<IEnumerable<IFileSystemEntry>, Error>> GetChildrenAsync(
             CanonicalPath path, 
             CancellationToken cancellationToken)
         {
@@ -538,15 +539,15 @@ namespace Ave.Extensions.FileSystem.Local
             {
                 var systemPathResult = GetSystemPath(path);
                 if (systemPathResult.IsFailure)
-                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value)));
 
                 var systemPath = systemPathResult.Value;
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (!Directory.Exists(systemPath))
-                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
-                        new FileSystemError($"Directory not found: {path.Value}", path.Value, FileSystemErrorType.DirectoryNotFound)));
+                    return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Directory, $"Directory not found: {path.Value}").With("path", path.Value)));
 
                 List<IFileSystemEntry> entries = [];
 
@@ -590,7 +591,7 @@ namespace Ave.Extensions.FileSystem.Local
                     }
                 }
 
-                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(entries));
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, Error>.Success(entries));
             }
             catch (OperationCanceledException)
             {
@@ -598,13 +599,13 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, path.Value)));
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, Error>.Failure(
+                    FileSystemErrors.FromException(ex, path.Value)));
             }
         }
 
         /// <inheritdoc />
-        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
+        public Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -612,8 +613,8 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 if (options == null)
                 {
-                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
-                        new FileSystemError("Monitoring options cannot be null", null, FileSystemErrorType.Unknown)));
+                    return Task.FromResult(Result<IMonitoringSession, Error>.Failure(
+                        new Error(FileSystemErrorCodes.Unknown, "Monitoring options cannot be null")));
                 }
 
 
@@ -621,19 +622,19 @@ namespace Ave.Extensions.FileSystem.Local
                 var systemPathResult = GetSystemPath(options.Path);
                 if (systemPathResult.IsFailure)
                 {
-                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
-                        new FileSystemError(systemPathResult.Error.Message, options.Path.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<IMonitoringSession, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", options.Path.Value)));
                 }
 
                 var systemPath = systemPathResult.Value;
                 if (!Directory.Exists(systemPath))
                 {
-                    return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
-                        new FileSystemError($"Directory not found: {options.Path.Value}", options.Path.Value, FileSystemErrorType.DirectoryNotFound)));
+                    return Task.FromResult(Result<IMonitoringSession, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Directory, $"Directory not found: {options.Path.Value}").With("path", options.Path.Value)));
                 }
 
                 var session = new MonitoringSession(options, _pathMapper);
-                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Success(session));
+                return Task.FromResult(Result<IMonitoringSession, Error>.Success(session));
             }
             catch (OperationCanceledException)
             {
@@ -641,12 +642,12 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<IMonitoringSession, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, options?.Path.Value)));
+                return Task.FromResult(Result<IMonitoringSession, Error>.Failure(
+                    FileSystemErrors.FromException(ex, options?.Path.Value)));
             }
         }
 
-        private async Task<Result<T, FileSystemError>> ExecuteAsync<T>(Func<Task<Result<T, FileSystemError>>> operation, string? path = null)
+        private async Task<Result<T, Error>> ExecuteAsync<T>(Func<Task<Result<T, Error>>> operation, string? path = null)
         {
             try
             {
@@ -658,7 +659,7 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Result<T, FileSystemError>.Failure(FileSystemError.FromException(ex, path));
+                return Result<T, Error>.Failure(FileSystemErrors.FromException(ex, path));
             }
         }
 
@@ -678,7 +679,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// </summary>
         /// <param name="systemPaths">Array of system paths.</param>
         /// <returns>Result containing list of canonical paths or an error.</returns>
-        private Result<IReadOnlyList<CanonicalPath>, FileSystemError> MapPathsToCanonical(string[] systemPaths)
+        private Result<IReadOnlyList<CanonicalPath>, Error> MapPathsToCanonical(string[] systemPaths)
         {
             List<CanonicalPath> canonicalPaths = [];
 
@@ -692,12 +693,12 @@ namespace Ave.Extensions.FileSystem.Local
                 else
                 {
                     // Path mapping failure is an error - don't skip silently
-                    return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Failure(
-                        new FileSystemError($"Failed to map system path to canonical: {result.Error.Message}", systemPath, FileSystemErrorType.InvalidPath));
+                    return Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, $"Failed to map system path to canonical: {result.Error.Message}").With("path", systemPath));
                 }
             }
             
-            return Result<IReadOnlyList<CanonicalPath>, FileSystemError>.Success(canonicalPaths);
+            return Result<IReadOnlyList<CanonicalPath>, Error>.Success(canonicalPaths);
         }
         
         /// <summary>
@@ -726,7 +727,7 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
-        public Task<Result<Unit, FileSystemError>> MoveFileAsync(
+        public Task<Result<Unit, Error>> MoveFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -742,13 +743,13 @@ namespace Ave.Extensions.FileSystem.Local
                 // Get system paths
                 var sourcePathResult = GetSystemPath(source);
                 if (sourcePathResult.IsFailure)
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, sourcePathResult.Error.Message).With("path", source.Value)));
                         
                 var destPathResult = GetSystemPath(destination);
                 if (destPathResult.IsFailure)
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, destPathResult.Error.Message).With("path", destination.Value)));
                 
                 var sourcePath = sourcePathResult.Value;
                 var destPath = destPathResult.Value;
@@ -757,13 +758,13 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 // Check if source exists
                 if (!File.Exists(sourcePath))
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source file not found", source.Value, FileSystemErrorType.FileNotFound)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.File, "Source file not found").With("path", source.Value)));
                 
                 // Check if destination exists and overwrite is false
                 if (!overwrite && File.Exists(destPath))
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Destination file already exists", destination.Value, FileSystemErrorType.FileAlreadyExists)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.FileAlreadyExists, "Destination file already exists").With("path", destination.Value)));
                 
                 // Ensure destination directory exists
                 var ensureDirResult = EnsureParentDirectoryExists(destPath);
@@ -809,7 +810,7 @@ namespace Ave.Extensions.FileSystem.Local
                     // Best effort - don't fail if attribute preservation fails
                 }
                 
-                return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+                return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
             }
             catch (OperationCanceledException)
             {
@@ -817,40 +818,40 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied)));
+                return Task.FromResult(Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value)));
             }
             catch (DirectoryNotFoundException ex)
             {
-                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.DirectoryNotFound)));
+                return Task.FromResult(Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Directory, ex.Message).With("path", source.Value)));
             }
             catch (IOException ex) when (ex.HResult == -2147024891) // ERROR_ACCESS_DENIED on Windows
             {
-                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied)));
+                return Task.FromResult(Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value)));
             }
             catch (IOException ex)
             {
                 // Check if this is a cross-volume move error
                 if (IsCrossDeviceMoveException(ex))
                 {
-                    return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Cannot move file across volumes", source.Value, FileSystemErrorType.CrossVolumeMove)));
+                    return Task.FromResult(Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.CrossVolumeMove, "Cannot move file across volumes").With("path", source.Value)));
                 }
 
-                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.IOException)));
+                return Task.FromResult(Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.General, ex.Message).With("path", source.Value)));
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value)));
+                return Task.FromResult(Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value)));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
+        public async Task<Result<Unit, Error>> MoveDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
@@ -865,13 +866,13 @@ namespace Ave.Extensions.FileSystem.Local
                 // Get system paths
                 var sourcePathResult = GetSystemPath(source);
                 if (sourcePathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, sourcePathResult.Error.Message).With("path", source.Value));
                         
                 var destPathResult = GetSystemPath(destination);
                 if (destPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, destPathResult.Error.Message).With("path", destination.Value));
                 
                 var sourcePath = sourcePathResult.Value;
                 var destPath = destPathResult.Value;
@@ -880,18 +881,18 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 // Check if source exists
                 if (!Directory.Exists(sourcePath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Directory, "Source directory not found").With("path", source.Value));
                 
                 // Check if destination already exists
                 if (Directory.Exists(destPath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.DirectoryAlreadyExists, "Destination directory already exists").With("path", destination.Value));
                 
                 // Check if destination is a subdirectory of source
                 if (IsSubdirectoryOf(sourcePath, destPath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Cannot move directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Cannot move directory to a subdirectory of itself").With("path", source.Value));
                 
                 // Get source directory info for attribute preservation
                 var sourceDirInfo = new System.IO.DirectoryInfo(sourcePath);
@@ -919,7 +920,7 @@ namespace Ave.Extensions.FileSystem.Local
                         // Best effort
                     }
                     
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
                 }
                 catch (IOException ex) when (IsCrossDeviceMoveException(ex))
                 {
@@ -935,7 +936,7 @@ namespace Ave.Extensions.FileSystem.Local
                     try
                     {
                         Directory.Delete(sourcePath, recursive: true);
-                        return Result<Unit, FileSystemError>.Success(Unit.Value);
+                        return Result<Unit, Error>.Success(Unit.Value);
                     }
                     catch (Exception deleteEx)
                     {
@@ -949,8 +950,8 @@ namespace Ave.Extensions.FileSystem.Local
                             // Best effort
                         }
                         
-                        return Result<Unit, FileSystemError>.Failure(
-                            FileSystemError.FromException(deleteEx, source.Value));
+                        return Result<Unit, Error>.Failure(
+                            FileSystemErrors.FromException(deleteEx, source.Value));
                     }
                 }
             }
@@ -960,23 +961,23 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value));
             }
             catch (IOException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.IOException));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.General, ex.Message).With("path", source.Value));
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CopyFileAsync(
+        public async Task<Result<Unit, Error>> CopyFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -992,13 +993,13 @@ namespace Ave.Extensions.FileSystem.Local
                 // Get system paths
                 var sourcePathResult = GetSystemPath(source);
                 if (sourcePathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, sourcePathResult.Error.Message).With("path", source.Value));
                         
                 var destPathResult = GetSystemPath(destination);
                 if (destPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, destPathResult.Error.Message).With("path", destination.Value));
                 
                 var sourcePath = sourcePathResult.Value;
                 var destPath = destPathResult.Value;
@@ -1007,13 +1008,13 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 // Check if source exists
                 if (!File.Exists(sourcePath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source file not found", source.Value, FileSystemErrorType.FileNotFound));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.File, "Source file not found").With("path", source.Value));
                 
                 // Check if destination exists and overwrite is false
                 if (!overwrite && File.Exists(destPath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Destination file already exists", destination.Value, FileSystemErrorType.FileAlreadyExists));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.FileAlreadyExists, "Destination file already exists").With("path", destination.Value));
                 
                 // Ensure destination directory exists
                 var ensureDirResult = EnsureParentDirectoryExists(destPath);
@@ -1033,7 +1034,7 @@ namespace Ave.Extensions.FileSystem.Local
                 // Preserve attributes and timestamps
                 PreserveFileAttributes(sourcePath, destPath, preserveTimestamps: true, preserveAttributes: true);
                 
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (OperationCanceledException)
             {
@@ -1054,13 +1055,13 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value));
             }
             catch (DirectoryNotFoundException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.DirectoryNotFound));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.NotFound.Directory, ex.Message).With("path", source.Value));
             }
             catch (IOException ex) when (ex.HResult == -2147024784) // ERROR_DISK_FULL
             {
@@ -1078,13 +1079,13 @@ namespace Ave.Extensions.FileSystem.Local
                     // Best effort cleanup
                 }
                 
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError("Insufficient disk space", destination.Value, FileSystemErrorType.InsufficientSpace));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.InsufficientSpace, "Insufficient disk space").With("path", destination.Value));
             }
             catch (IOException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.IOException));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.General, ex.Message).With("path", source.Value));
             }
             catch (Exception ex)
             {
@@ -1102,13 +1103,13 @@ namespace Ave.Extensions.FileSystem.Local
                     // Best effort cleanup
                 }
                 
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
+        public async Task<Result<Unit, Error>> CopyDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
@@ -1123,13 +1124,13 @@ namespace Ave.Extensions.FileSystem.Local
                 // Get system paths
                 var sourcePathResult = GetSystemPath(source);
                 if (sourcePathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, sourcePathResult.Error.Message).With("path", source.Value));
                         
                 var destPathResult = GetSystemPath(destination);
                 if (destPathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(destPathResult.Error.Message, destination.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, destPathResult.Error.Message).With("path", destination.Value));
                 
                 var sourcePath = sourcePathResult.Value;
                 var destPath = destPathResult.Value;
@@ -1138,18 +1139,18 @@ namespace Ave.Extensions.FileSystem.Local
                 
                 // Check if source exists
                 if (!Directory.Exists(sourcePath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source directory not found", source.Value, FileSystemErrorType.DirectoryNotFound));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Directory, "Source directory not found").With("path", source.Value));
                 
                 // Check if destination already exists
                 if (Directory.Exists(destPath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Destination directory already exists", destination.Value, FileSystemErrorType.DirectoryAlreadyExists));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.DirectoryAlreadyExists, "Destination directory already exists").With("path", destination.Value));
                 
                 // Check if destination is a subdirectory of source
                 if (IsSubdirectoryOf(sourcePath, destPath))
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Cannot copy directory to a subdirectory of itself", source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, "Cannot copy directory to a subdirectory of itself").With("path", source.Value));
                 
                 // Perform the recursive copy
                 return await CopyDirectoryRecursiveAsync(sourcePath, destPath, cancellationToken);
@@ -1173,18 +1174,18 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(ex.Message, source.Value, FileSystemErrorType.AccessDenied));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value));
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> MoveAsync(
+        public async Task<Result<Unit, Error>> MoveAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -1195,8 +1196,8 @@ namespace Ave.Extensions.FileSystem.Local
                 // Get system path to check if source is file or directory
                 var sourcePathResult = GetSystemPath(source);
                 if (sourcePathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, sourcePathResult.Error.Message).With("path", source.Value));
                 
                 var sourcePath = sourcePathResult.Value;
                 
@@ -1215,11 +1216,8 @@ namespace Ave.Extensions.FileSystem.Local
                         var destPathResult = GetSystemPath(destination);
                         if (destPathResult.IsSuccess && Directory.Exists(destPathResult.Value))
                         {
-                            return Result<Unit, FileSystemError>.Failure(
-                                new FileSystemError(
-                                    "Cannot overwrite an existing directory", 
-                                    destination.Value, 
-                                    FileSystemErrorType.DirectoryAlreadyExists));
+                            return Result<Unit, Error>.Failure(
+                                new Error(FileSystemErrorCodes.IO.DirectoryAlreadyExists, "Cannot overwrite an existing directory").With("path", destination.Value));
                         }
                     }
                     return await MoveDirectoryAsync(source, destination, cancellationToken);
@@ -1227,21 +1225,21 @@ namespace Ave.Extensions.FileSystem.Local
                 else
                 {
                     // Source doesn't exist
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Path, "Source path not found").With("path", source.Value));
                 }
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<Unit, FileSystemError>> CopyAsync(
-            CanonicalPath source, 
-            CanonicalPath destination, 
+        public async Task<Result<Unit, Error>> CopyAsync(
+            CanonicalPath source,
+            CanonicalPath destination,
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
@@ -1250,11 +1248,11 @@ namespace Ave.Extensions.FileSystem.Local
                 // Get system path to check if source is file or directory
                 var sourcePathResult = GetSystemPath(source);
                 if (sourcePathResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError(sourcePathResult.Error.Message, source.Value, FileSystemErrorType.InvalidPath));
-                
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, sourcePathResult.Error.Message).With("path", source.Value));
+
                 var sourcePath = sourcePathResult.Value;
-                
+
                 // Check what type of entry we're dealing with
                 if (File.Exists(sourcePath))
                 {
@@ -1270,11 +1268,8 @@ namespace Ave.Extensions.FileSystem.Local
                         var destPathResult = GetSystemPath(destination);
                         if (destPathResult.IsSuccess && Directory.Exists(destPathResult.Value))
                         {
-                            return Result<Unit, FileSystemError>.Failure(
-                                new FileSystemError(
-                                    "Cannot overwrite an existing directory", 
-                                    destination.Value, 
-                                    FileSystemErrorType.DirectoryAlreadyExists));
+                            return Result<Unit, Error>.Failure(
+                                new Error(FileSystemErrorCodes.IO.DirectoryAlreadyExists, "Cannot overwrite an existing directory").With("path", destination.Value));
                         }
                     }
                     return await CopyDirectoryAsync(source, destination, cancellationToken);
@@ -1282,14 +1277,14 @@ namespace Ave.Extensions.FileSystem.Local
                 else
                 {
                     // Source doesn't exist
-                    return Result<Unit, FileSystemError>.Failure(
-                        new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+                    return Result<Unit, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Path, "Source path not found").With("path", source.Value));
                 }
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, source.Value));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, source.Value));
             }
         }
 
@@ -1347,7 +1342,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <summary>
         /// Ensures the parent directory of a path exists.
         /// </summary>
-        private Result<Unit, FileSystemError> EnsureParentDirectoryExists(string systemPath)
+        private Result<Unit, Error> EnsureParentDirectoryExists(string systemPath)
         {
             try
             {
@@ -1356,29 +1351,26 @@ namespace Ave.Extensions.FileSystem.Local
                 {
                     Directory.CreateDirectory(parentDir);
                 }
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, systemPath));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, systemPath));
             }
         }
 
         /// <summary>
         /// Validates that source and destination paths are different.
         /// </summary>
-        private Result<Unit, FileSystemError> ValidateSourceDestinationDifferent(CanonicalPath source, CanonicalPath destination)
+        private Result<Unit, Error> ValidateSourceDestinationDifferent(CanonicalPath source, CanonicalPath destination)
         {
             if (source.Value.Equals(destination.Value, StringComparison.OrdinalIgnoreCase))
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(
-                        "Source and destination paths are the same",
-                        source.Value,
-                        FileSystemErrorType.InvalidPath));
+                return Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.InvalidPath, "Source and destination paths are the same").With("path", source.Value));
             }
-            return Result<Unit, FileSystemError>.Success(Unit.Value);
+            return Result<Unit, Error>.Success(Unit.Value);
         }
 
         #region Directory Operation Helpers
@@ -1424,7 +1416,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <summary>
         /// Copies a directory and all its contents recursively.
         /// </summary>
-        private async Task<Result<Unit, FileSystemError>> CopyDirectoryRecursiveAsync(
+        private async Task<Result<Unit, Error>> CopyDirectoryRecursiveAsync(
             string sourceDirPath, 
             string destDirPath,
             CancellationToken cancellationToken)
@@ -1472,12 +1464,12 @@ namespace Ave.Extensions.FileSystem.Local
                     // Best effort
                 }
                 
-                return Result<Unit, FileSystemError>.Success(Unit.Value);
+                return Result<Unit, Error>.Success(Unit.Value);
             }
             catch (Exception ex)
             {
-                return Result<Unit, FileSystemError>.Failure(
-                    FileSystemError.FromException(ex, sourceDirPath));
+                return Result<Unit, Error>.Failure(
+                    FileSystemErrors.FromException(ex, sourceDirPath));
             }
         }
 
@@ -1500,13 +1492,13 @@ namespace Ave.Extensions.FileSystem.Local
             _filePath = filePath;
         }
 
-        public async Task<Result<byte[], FileSystemError>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
+        public async Task<Result<byte[], Error>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
         {
             try
             {
                 var openResult = await _fileSystem.OpenReadAsync(_filePath, cancellationToken);
                 if (openResult.IsFailure)
-                    return Result<byte[], FileSystemError>.Failure(openResult.Error);
+                    return Result<byte[], Error>.Failure(openResult.Error);
 
                 using var stream = openResult.Value;
                 var buffer = new byte[Math.Min(maxBytes, (int)stream.Length)];
@@ -1517,7 +1509,7 @@ namespace Ave.Extensions.FileSystem.Local
                     Array.Resize(ref buffer, bytesRead);
                 }
                 
-                return Result<byte[], FileSystemError>.Success(buffer);
+                return Result<byte[], Error>.Success(buffer);
             }
             catch (OperationCanceledException)
             {
@@ -1525,7 +1517,7 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Result<byte[], FileSystemError>.Failure(FileSystemError.FromException(ex, _filePath.Value));
+                return Result<byte[], Error>.Failure(FileSystemErrors.FromException(ex, _filePath.Value));
             }
         }
     }

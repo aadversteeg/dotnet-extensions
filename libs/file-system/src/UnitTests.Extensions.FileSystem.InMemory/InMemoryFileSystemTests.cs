@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
 using Ave.Extensions.FileSystem.Mapping;
@@ -134,7 +135,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.File);
         }
 
         [Fact(DisplayName = "IMFS-008: OpenReadAsync returns valid stream")]
@@ -514,7 +515,7 @@ namespace UnitTests.Extensions.FileSystem.InMemory
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.PathNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Path);
         }
 
         public void Dispose()

@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Abstractions;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
@@ -18,7 +19,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
         private readonly AzureFileSystem _fileSystem;
         private readonly CanonicalPath _sourceRoot;
         private readonly CanonicalPath _destinationRoot;
-        private readonly List<FileSystemError> _errors;
+        private readonly List<Error> _errors;
         private int _filesProcessed;
         private int _directoriesProcessed;
         
@@ -33,11 +34,11 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
             _errors = [];
         }
         
-        public List<FileSystemError> Errors => _errors;
+        public List<Error> Errors => _errors;
         public int FilesProcessed => _filesProcessed;
         public int DirectoriesProcessed => _directoriesProcessed;
         
-        public Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(
+        public Task<Result<Unit, Error>> OnTraversalStartAsync(
             CanonicalPath rootPath,
             CancellationToken cancellationToken = default)
         {
@@ -45,7 +46,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
             return _fileSystem.CreateDirectoryAsync(_destinationRoot, cancellationToken);
         }
         
-        public async Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+        public async Task<Result<TraversalControl, Error>> OnFileAsync(
             FileSystemEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default)
@@ -73,17 +74,17 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
                     // Continue processing other files
                 }
                 
-                return Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue);
+                return Result<TraversalControl, Error>.Success(TraversalControl.Continue);
             }
             catch (Exception ex)
             {
-                var error = FileSystemError.FromException(ex, file.Path.Value);
+                var error = FileSystemErrors.FromException(ex, file.Path.Value);
                 _errors.Add(error);
-                return Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue);
+                return Result<TraversalControl, Error>.Success(TraversalControl.Continue);
             }
         }
         
-        public async Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+        public async Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(
             FileSystemEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
@@ -98,32 +99,32 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
                 {
                     _directoriesProcessed++;
                 }
-                else if (createResult.Error.Type != FileSystemErrorType.DirectoryAlreadyExists)
+                else if (!createResult.Error.Is(FileSystemErrorCodes.IO.DirectoryAlreadyExists))
                 {
                     _errors.Add(createResult.Error);
                 }
             }
             
-            return Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue);
+            return Result<TraversalControl, Error>.Success(TraversalControl.Continue);
         }
         
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryAsync(
             FileSystemEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
         
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryLeaveAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryLeaveAsync(
             FileSystemEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
         
-        public Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(
+        public Task<Result<Unit, Error>> OnTraversalCompleteAsync(
             TraversalSummary summary,
             CancellationToken cancellationToken = default)
         {
@@ -131,11 +132,11 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage.Handlers
             {
                 var errorMessage = $"Directory copy completed with {_errors.Count} errors. " +
                                  $"Files processed: {_filesProcessed}, Directories: {_directoriesProcessed}";
-                return Task.FromResult(Result<Unit, FileSystemError>.Failure(
-                    new FileSystemError(errorMessage, _sourceRoot.Value, FileSystemErrorType.PartialFailure)));
+                return Task.FromResult(Result<Unit, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.PartialFailure, errorMessage).With("path", _sourceRoot.Value)));
             }
             
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
         
         private string GetRelativePath(CanonicalPath basePath, CanonicalPath fullPath)

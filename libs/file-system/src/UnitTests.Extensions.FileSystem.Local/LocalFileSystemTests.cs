@@ -1,7 +1,8 @@
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Mapping;
+using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using FluentAssertions;
 using Moq;
@@ -27,7 +28,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             canonicalPathResult.IsFailure.Should().BeTrue();
-            canonicalPathResult.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathNullOrEmpty);
+            canonicalPathResult.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathNullOrEmpty);
         }
 
         [Fact(DisplayName = "LFS-002: Info property returns correct characteristics for LocalFileSystem")]
@@ -53,17 +54,19 @@ namespace UnitTests.Extensions.FileSystem.Local
             var mockPathMapper = new Mock<IPathMapper>();
             var fileSystem = new Ave.Extensions.FileSystem.Local.LocalFileSystem(mockPathMapper.Object);
             var mockHandler = new Mock<ITraversalHandler<FileSystemEntry>>();
+            mockHandler.Setup(h => h.OnTraversalStartAsync(It.IsAny<CanonicalPath>(), It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync(Ave.Extensions.Functional.Result<Ave.Extensions.Functional.Unit, Error>.Success(Ave.Extensions.Functional.Unit.Value));
 
-            // Act & Assert - null handler should be handled by implementation
+            // Act & Assert - no path mapper setup means path mapping fails
             var result = await fileSystem.TraverseAsync<FileSystemEntry>(
                 "/nonexistent".ToCanonicalPath(),
                 mockHandler.Object,
                 IdentityMapper.Instance,
                 null);
 
-            // The result should indicate directory not found or similar error since /nonexistent won't exist
+            // The result should indicate an invalid path error since the path mapper has no setup
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().BeOneOf(FileSystemErrorType.DirectoryNotFound, FileSystemErrorType.PathNotFound, FileSystemErrorType.Unknown);
+            result.Error.Code.Should().BeOneOf(FileSystemErrorCodes.IO.InvalidPath, FileSystemErrorCodes.NotFound.Path, FileSystemErrorCodes.Unknown);
         }
 
         [Fact(DisplayName = "LFS-004: TraverseAsync uses default options when null")]
@@ -76,6 +79,8 @@ namespace UnitTests.Extensions.FileSystem.Local
 
             var fileSystem = new Ave.Extensions.FileSystem.Local.LocalFileSystem(mockPathMapper.Object);
             var mockHandler = new Mock<ITraversalHandler<FileSystemEntry>>();
+            mockHandler.Setup(h => h.OnTraversalStartAsync(It.IsAny<CanonicalPath>(), It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync(Ave.Extensions.Functional.Result<Ave.Extensions.Functional.Unit, Error>.Success(Ave.Extensions.Functional.Unit.Value));
 
             // Act - passing null options should use defaults
             var result = await fileSystem.TraverseAsync<FileSystemEntry>(
@@ -87,7 +92,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             // Assert - should handle null options gracefully (error will be due to path not existing)
             result.IsFailure.Should().BeTrue();
             // The error should not be due to null options but due to path not existing
-            result.Error.Type.Should().BeOneOf(FileSystemErrorType.DirectoryNotFound, FileSystemErrorType.PathNotFound, FileSystemErrorType.Unknown);
+            result.Error.Code.Should().BeOneOf(FileSystemErrorCodes.NotFound.Directory, FileSystemErrorCodes.NotFound.Path, FileSystemErrorCodes.Unknown);
         }
     }
 }

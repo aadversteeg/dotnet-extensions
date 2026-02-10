@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Local;
@@ -169,7 +170,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
 
         private class FileInfoDtoMapper : IFileSystemEntryMapper<FileInfoDto>
         {
-            public Task<Result<FileInfoDto, FileSystemError>> MapFileAsync(
+            public Task<Result<FileInfoDto, Error>> MapFileAsync(
                 IFileEntry entry,
                 IFileReader fileReader,
                 CancellationToken cancellationToken = default)
@@ -183,10 +184,10 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
                     IsDirectory = false
                 };
                 
-                return Task.FromResult(Result<FileInfoDto, FileSystemError>.Success(dto));
+                return Task.FromResult(Result<FileInfoDto, Error>.Success(dto));
             }
 
-            public Task<Result<FileInfoDto, FileSystemError>> MapDirectoryAsync(
+            public Task<Result<FileInfoDto, Error>> MapDirectoryAsync(
                 IDirectoryEntry entry,
                 CancellationToken cancellationToken = default)
             {
@@ -199,13 +200,13 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
                     IsDirectory = true
                 };
                 
-                return Task.FromResult(Result<FileInfoDto, FileSystemError>.Success(dto));
+                return Task.FromResult(Result<FileInfoDto, Error>.Success(dto));
             }
         }
 
         private class ThrowingMapper : IFileSystemEntryMapper<FileSystemEntry>
         {
-            public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
+            public Task<Result<FileSystemEntry, Error>> MapFileAsync(
                 IFileEntry entry,
                 IFileReader fileReader,
                 CancellationToken cancellationToken = default)
@@ -213,7 +214,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
                 throw new InvalidOperationException("Mapper error");
             }
 
-            public Task<Result<FileSystemEntry, FileSystemError>> MapDirectoryAsync(
+            public Task<Result<FileSystemEntry, Error>> MapDirectoryAsync(
                 IDirectoryEntry entry,
                 CancellationToken cancellationToken = default)
             {

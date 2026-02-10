@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local.PathMappers;
 using Ave.Extensions.Functional;
@@ -154,7 +155,7 @@ namespace IntegrationTests.FileSystem.Local
             catch
             {
                 // If conversion to CanonicalPath fails, that's expected for invalid paths
-                systemResult = Result<string, Error>.Failure(new Error("InvalidPath", "Invalid path"));
+                systemResult = Result<string, Error>.Failure(new Error(FileSystemErrorCodes.IO.InvalidPath, "Invalid path"));
             }
             
             canonicalResult = mapper.MapToCanonicalPath(path!);

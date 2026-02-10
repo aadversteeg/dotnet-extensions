@@ -3,10 +3,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using UnitTests.Extensions.FileSystem.Local.TestHelpers;
@@ -119,7 +119,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
         }
 
         [Fact(DisplayName = "COPY-005: CopyFileAsync should fail when source does not exist")]
@@ -137,7 +137,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.File);
         }
 
         [Fact(DisplayName = "COPY-006: CopyFileAsync should fail when destination exists and overwrite is false")]
@@ -158,7 +158,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileAlreadyExists);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.FileAlreadyExists);
             File.ReadAllText(destFile).Should().Be("dest content"); // Dest unchanged
         }
 

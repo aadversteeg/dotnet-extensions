@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
@@ -32,7 +33,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             // Assert
             result.IsFailure.Should().BeTrue();
             result.Error.Message.Should().Be("Monitoring options cannot be null");
-            result.Error.Type.Should().Be(FileSystemErrorType.Unknown);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.Unknown);
         }
 
         [Fact(DisplayName = "CMSA-002: CreateMonitoringSessionAsync returns error for non-existent directory")]
@@ -48,7 +49,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             // Assert
             result.IsFailure.Should().BeTrue();
             result.Error.Message.Should().Contain("Directory not found");
-            result.Error.Type.Should().Be(FileSystemErrorType.DirectoryNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Directory);
         }
 
         [Fact(DisplayName = "CMSA-003: CreateMonitoringSessionAsync returns valid session for valid directory")]

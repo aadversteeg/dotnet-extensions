@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
@@ -22,7 +23,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task RFSW001()
         {
             // Arrange
-            var expectedResult = Result<bool, FileSystemError>.Success(true);
+            var expectedResult = Result<bool, Error>.Success(true);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.FileExistsAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
@@ -42,7 +43,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task RFSW002()
         {
             // Arrange
-            var expectedResult = Result<bool, FileSystemError>.Success(true);
+            var expectedResult = Result<bool, Error>.Success(true);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.DirectoryExistsAsync("/test".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
@@ -63,7 +64,7 @@ namespace UnitTests.Extensions.FileSystem
         {
             // Arrange
             const string expectedContent = "file content";
-            var expectedResult = Result<string, FileSystemError>.Success(expectedContent);
+            var expectedResult = Result<string, Error>.Success(expectedContent);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.ReadAllTextAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
@@ -134,7 +135,7 @@ namespace UnitTests.Extensions.FileSystem
                 modifiedUtc: DateTime.UtcNow,
                 lastAccessUtc: DateTime.UtcNow,
                 attributes: FileAttributes.Normal);
-            var expectedResult = Result<FileSystemEntry, FileSystemError>.Success(entry);
+            var expectedResult = Result<FileSystemEntry, Error>.Success(entry);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
@@ -163,7 +164,7 @@ namespace UnitTests.Extensions.FileSystem
                 modifiedUtc: DateTime.UtcNow,
                 lastAccessUtc: DateTime.UtcNow,
                 attributes: FileAttributes.Directory);
-            var expectedResult = Result<FileSystemEntry, FileSystemError>.Success(entry);
+            var expectedResult = Result<FileSystemEntry, Error>.Success(entry);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/dir".ToCanonicalPath(), It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
@@ -184,7 +185,7 @@ namespace UnitTests.Extensions.FileSystem
         {
             // Arrange
             var stream = new MemoryStream();
-            var expectedResult = Result<Stream, FileSystemError>.Success(stream);
+            var expectedResult = Result<Stream, Error>.Success(stream);
             var mockFileSystem = new Mock<IFileSystem>();
             mockFileSystem.Setup(fs => fs.OpenReadAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
@@ -265,7 +266,7 @@ namespace UnitTests.Extensions.FileSystem
         {
             // Arrange
             var mockSession = new Mock<IMonitoringSession>();
-            var expectedResult = Result<IMonitoringSession, FileSystemError>.Success(mockSession.Object);
+            var expectedResult = Result<IMonitoringSession, Error>.Success(mockSession.Object);
             var options = MonitoringOptions.ForPath("/test".ToCanonicalPath());
             
             var mockFileSystem = new Mock<IFileSystem>();

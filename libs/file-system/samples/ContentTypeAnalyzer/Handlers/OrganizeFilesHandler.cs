@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.MimeDetective.Models;
 using Ave.Extensions.Functional;
@@ -30,17 +30,17 @@ namespace ContentTypeAnalyzer.Handlers
         public Dictionary<FileCategory, List<FileSystemEntryWithContentType>> FilesByCategory => _filesByCategory;
         public List<FileMove> ProposedMoves => _proposedMoves;
 
-        public Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(CanonicalPath rootPath, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, Error>> OnTraversalStartAsync(CanonicalPath rootPath, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
 
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(FileSystemEntryWithContentType directory, TraversalContext context, CancellationToken cancellationToken = default)
+        public Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(FileSystemEntryWithContentType directory, TraversalContext context, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
-        public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(FileSystemEntryWithContentType file, TraversalContext context, CancellationToken cancellationToken = default)
+        public Task<Result<TraversalControl, Error>> OnFileAsync(FileSystemEntryWithContentType file, TraversalContext context, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -72,17 +72,17 @@ namespace ContentTypeAnalyzer.Handlers
                 Interlocked.Increment(ref _errorCount);
             }
 
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(FileSystemEntryWithContentType directory, TraversalContext context, CancellationToken cancellationToken = default)
+        public Task<Result<TraversalControl, Error>> OnDirectoryAsync(FileSystemEntryWithContentType directory, TraversalContext context, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
-        public Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
+        public Task<Result<Unit, Error>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
 
         public void GenerateOrganizationPlan(string outputRoot)

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
@@ -14,7 +15,7 @@ namespace DirSize.Handlers;
 
 public class DetailedSizeHandler : SimpleSizeHandler
 {
-    public override Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+    public override Task<Result<TraversalControl, Error>> OnFileAsync(
         FileSystemEntry file, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)
@@ -39,7 +40,7 @@ public class DetailedSizeHandler : SimpleSizeHandler
         return result;
     }
 
-    public override Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+    public override Task<Result<TraversalControl, Error>> OnDirectoryAsync(
         FileSystemEntry directory, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)

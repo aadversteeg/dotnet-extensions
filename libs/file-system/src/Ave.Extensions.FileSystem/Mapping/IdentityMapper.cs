@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
@@ -18,7 +19,7 @@ namespace Ave.Extensions.FileSystem.Mapping
         public static readonly IdentityMapper Instance = new IdentityMapper();
 
         /// <inheritdoc />
-        public Task<Result<FileSystemEntry, FileSystemError>> MapFileAsync(
+        public Task<Result<FileSystemEntry, Error>> MapFileAsync(
             IFileEntry entry,
             IFileReader fileReader,
             CancellationToken cancellationToken = default)
@@ -34,11 +35,11 @@ namespace Ave.Extensions.FileSystem.Mapping
                 lastAccessUtc: entry.Info.Info.LastAccessUtc,
                 attributes: entry.Info.Info.Attributes);
                 
-            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(result));
+            return Task.FromResult(Result<FileSystemEntry, Error>.Success(result));
         }
 
         /// <inheritdoc />
-        public Task<Result<FileSystemEntry, FileSystemError>> MapDirectoryAsync(
+        public Task<Result<FileSystemEntry, Error>> MapDirectoryAsync(
             IDirectoryEntry entry,
             CancellationToken cancellationToken = default)
         {
@@ -53,7 +54,7 @@ namespace Ave.Extensions.FileSystem.Mapping
                 lastAccessUtc: entry.Info.Info.LastAccessUtc,
                 attributes: entry.Info.Info.Attributes);
                 
-            return Task.FromResult(Result<FileSystemEntry, FileSystemError>.Success(result));
+            return Task.FromResult(Result<FileSystemEntry, Error>.Success(result));
         }
     }
 }

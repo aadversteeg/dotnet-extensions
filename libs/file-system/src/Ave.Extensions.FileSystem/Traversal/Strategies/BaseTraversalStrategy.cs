@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
@@ -27,14 +28,14 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
         /// <param name="getChildren">Function to get children of a directory.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        public abstract Task<Result<Unit, FileSystemError>> TraverseAsync<TEntry>(
+        public abstract Task<Result<Unit, Error>> TraverseAsync<TEntry>(
             IFileSystemEntry entry,
             ITraversalHandler<TEntry> handler,
             IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions options,
             TraversalContext context,
             TraversalStats stats,
-            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>>> getChildren,
+            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, Error>>> getChildren,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -81,7 +82,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
         /// <param name="mapper">The mapper to use.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
-        protected async Task<Result<TEntry, FileSystemError>> MapEntryAsync<TEntry>(
+        protected async Task<Result<TEntry, Error>> MapEntryAsync<TEntry>(
             IFileSystemEntry entry,
             IFileSystemEntryMapper<TEntry> mapper,
             CancellationToken cancellationToken)
@@ -92,12 +93,12 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                 {
                     IFileEntry fileEntry => await mapper.MapFileAsync(fileEntry, CreateFileReader(fileEntry), cancellationToken),
                     IDirectoryEntry directoryEntry => await mapper.MapDirectoryAsync(directoryEntry, cancellationToken),
-                    _ => Result<TEntry, FileSystemError>.Failure(new FileSystemError($"Unknown entry type: {entry.GetType().Name}"))
+                    _ => Result<TEntry, Error>.Failure(new Error(FileSystemErrorCodes.Unknown, $"Unknown entry type: {entry.GetType().Name}"))
                 };
             }
             catch (Exception ex)
             {
-                return Result<TEntry, FileSystemError>.Failure(FileSystemError.FromException(ex, entry.Path.Value));
+                return Result<TEntry, Error>.Failure(FileSystemErrors.FromException(ex, entry.Path.Value));
             }
         }
 

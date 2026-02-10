@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Progress;
@@ -16,7 +17,7 @@ namespace Ave.Extensions.FileSystem.Extensions
         /// <summary>
         /// Moves a file or directory with options.
         /// </summary>
-        public static async Task<Result<Unit, FileSystemError>> MoveAsync(
+        public static async Task<Result<Unit, Error>> MoveAsync(
             this IFileSystem fileSystem,
             CanonicalPath source,
             CanonicalPath destination,
@@ -51,7 +52,7 @@ namespace Ave.Extensions.FileSystem.Extensions
         /// <summary>
         /// Moves a file with progress reporting.
         /// </summary>
-        public static async Task<Result<Unit, FileSystemError>> MoveFileWithProgressAsync(
+        public static async Task<Result<Unit, Error>> MoveFileWithProgressAsync(
             this IFileSystem fileSystem,
             CanonicalPath source,
             CanonicalPath destination,

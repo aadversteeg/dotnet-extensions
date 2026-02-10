@@ -3,7 +3,6 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
-using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

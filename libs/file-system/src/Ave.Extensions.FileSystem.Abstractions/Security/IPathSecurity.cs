@@ -1,5 +1,5 @@
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
-using Ave.Extensions.FileSystem.Models;
 
 namespace Ave.Extensions.FileSystem.Security
 {
@@ -13,7 +13,7 @@ namespace Ave.Extensions.FileSystem.Security
         /// </summary>
         /// <param name="path">The path to validate.</param>
         /// <returns>Success if the path is allowed, failure otherwise.</returns>
-        Result<Unit, FileSystemError> ValidatePathAccess(CanonicalPath path);
+        Result<Unit, Error> ValidatePathAccess(CanonicalPath path);
         
         
     }

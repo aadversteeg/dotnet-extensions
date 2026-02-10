@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Extensions;
 using Ave.Extensions.FileSystem.InMemory;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Progress;
 using Ave.Extensions.Functional;
 using FluentAssertions;
@@ -249,7 +249,7 @@ namespace UnitTests.Extensions.FileSystem
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.PathNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Path);
         }
         
         [Fact(DisplayName = "EXT-010: Extension methods should handle null fileSystem")]

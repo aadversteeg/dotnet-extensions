@@ -8,7 +8,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
-using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -192,8 +192,7 @@ namespace IntegrationTests.FileSystem.AzureFileStorage
             if (result.IsFailure)
             {
                 _output.WriteLine($"Copy failed: {result.Error.Message}");
-                _output.WriteLine($"Error type: {result.Error.Type}");
-                _output.WriteLine($"Error path: {result.Error.Path}");
+                _output.WriteLine($"Error code: {result.Error.Code}");
             }
             result.IsSuccess.Should().BeTrue($"Copy should succeed, but failed with: {(result.IsFailure ? result.Error.Message : "unknown")}");;
             
@@ -317,16 +316,16 @@ namespace IntegrationTests.FileSystem.AzureFileStorage
                 if (writeResult.IsFailure)
                 {
                     _output.WriteLine($"Failed to create source file '{name}': {writeResult.Error.Message}");
-                    _output.WriteLine($"Write error type: {writeResult.Error.Type}");
+                    _output.WriteLine($"Write error code: {writeResult.Error.Code}");
                     continue; // Skip this file if creation fails
                 }
-                
+
                 var result = await FileSystem.CopyFileAsync(sourcePath, destPath);
-                
+
                 if (result.IsFailure)
                 {
                     _output.WriteLine($"Copy failed for '{name}': {result.Error.Message}");
-                    _output.WriteLine($"Error type: {result.Error.Type}");
+                    _output.WriteLine($"Error code: {result.Error.Code}");
                 }
                 
                 result.IsSuccess.Should().BeTrue($"should handle: {name}");
@@ -362,7 +361,7 @@ namespace IntegrationTests.FileSystem.AzureFileStorage
             if (result.IsFailure)
             {
                 _output.WriteLine($"Move failed: {result.Error.Message}");
-                _output.WriteLine($"Error type: {result.Error.Type}");
+                _output.WriteLine($"Error code: {result.Error.Code}");
             }
             result.IsSuccess.Should().BeTrue($"Move should succeed, but failed with: {(result.IsFailure ? result.Error.Message : "unknown")}");
             
@@ -468,7 +467,7 @@ namespace IntegrationTests.FileSystem.AzureFileStorage
             
             // Assert
             noOverwriteResult.IsFailure.Should().BeTrue();
-            noOverwriteResult.Error.Type.Should().Be(FileSystemErrorType.FileAlreadyExists);
+            noOverwriteResult.Error.Code.Should().Be(FileSystemErrorCodes.IO.FileAlreadyExists);
             
             var destContent = await FileSystem.ReadAllTextAsync(destPath);
             destContent.Value.Should().Be("Original dest content", "failed copy should not modify destination");

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
@@ -26,14 +27,14 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
         /// <param name="getChildren">Function to get children of a directory.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        public override async Task<Result<Unit, FileSystemError>> TraverseAsync<TEntry>(
+        public override async Task<Result<Unit, Error>> TraverseAsync<TEntry>(
             IFileSystemEntry entry,
             ITraversalHandler<TEntry> handler,
             IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions options,
             TraversalContext context,
             TraversalStats stats,
-            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>>> getChildren,
+            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, Error>>> getChildren,
             CancellationToken cancellationToken)
         {
             if (entry is IDirectoryEntry directoryEntry)
@@ -43,34 +44,34 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                 // Map the directory entry first
                 var mappedDirectoryResult = await MapEntryAsync(directoryEntry, mapper, cancellationToken);
                 if (mappedDirectoryResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(mappedDirectoryResult.Error);
+                    return Result<Unit, Error>.Failure(mappedDirectoryResult.Error);
 
                 var mappedDirectory = mappedDirectoryResult.Value;
                 
                 // First call OnDirectoryEnterAsync with mapped entry
                 var enterResult = await handler.OnDirectoryEnterAsync(mappedDirectory, context, cancellationToken);
                 if (enterResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(enterResult.Error);
+                    return Result<Unit, Error>.Failure(enterResult.Error);
 
                 var enterControl = enterResult.Value;
                 if (enterControl.Action == TraversalAction.Stop)
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
 
                 // Then call OnDirectoryAsync with mapped entry
                 var controlResult = await handler.OnDirectoryAsync(mappedDirectory, context, cancellationToken);
                 if (controlResult.IsFailure)
-                    return Result<Unit, FileSystemError>.Failure(controlResult.Error);
+                    return Result<Unit, Error>.Failure(controlResult.Error);
 
                 var control = controlResult.Value;
                 
                 if (control.Action == TraversalAction.Stop)
-                    return Result<Unit, FileSystemError>.Success(Unit.Value);
+                    return Result<Unit, Error>.Success(Unit.Value);
 
                 if (ShouldTraverseDirectory(context, options, control))
                 {
                     var childrenResult = await getChildren(entry.Path, cancellationToken);
                     if (childrenResult.IsFailure)
-                        return Result<Unit, FileSystemError>.Failure(childrenResult.Error);
+                        return Result<Unit, Error>.Failure(childrenResult.Error);
 
                     foreach (var child in childrenResult.Value)
                     {
@@ -96,20 +97,20 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
                     // Map the file entry first
                     var mappedFileResult = await MapEntryAsync(fileEntry, mapper, cancellationToken);
                     if (mappedFileResult.IsFailure)
-                        return Result<Unit, FileSystemError>.Failure(mappedFileResult.Error);
+                        return Result<Unit, Error>.Failure(mappedFileResult.Error);
 
                     var mappedFile = mappedFileResult.Value;
                     
                     var controlResult = await handler.OnFileAsync(mappedFile, context, cancellationToken);
                     if (controlResult.IsFailure)
-                        return Result<Unit, FileSystemError>.Failure(controlResult.Error);
+                        return Result<Unit, Error>.Failure(controlResult.Error);
 
                     if (controlResult.Value.Action == TraversalAction.Stop)
-                        return Result<Unit, FileSystemError>.Success(Unit.Value);
+                        return Result<Unit, Error>.Success(Unit.Value);
                 }
             }
 
-            return Result<Unit, FileSystemError>.Success(Unit.Value);
+            return Result<Unit, Error>.Success(Unit.Value);
         }
     }
 }

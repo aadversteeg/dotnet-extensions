@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
@@ -21,7 +22,7 @@ namespace Ave.Extensions.FileSystem.Extensions
         /// <summary>
         /// Copies a file or directory with options.
         /// </summary>
-        public static async Task<Result<Unit, FileSystemError>> CopyAsync(
+        public static async Task<Result<Unit, Error>> CopyAsync(
             this IFileSystem fileSystem,
             CanonicalPath source,
             CanonicalPath destination,
@@ -58,14 +59,14 @@ namespace Ave.Extensions.FileSystem.Extensions
                     cancellationToken);
             }
             
-            return Result<Unit, FileSystemError>.Failure(
-                new FileSystemError("Source path not found", source.Value, FileSystemErrorType.PathNotFound));
+            return Result<Unit, Error>.Failure(
+                new Error(FileSystemErrorCodes.NotFound.Path, "Source path not found").With("path", source.Value));
         }
         
         /// <summary>
         /// Copies a file with progress reporting.
         /// </summary>
-        private static async Task<Result<Unit, FileSystemError>> CopyFileWithProgressAsync(
+        private static async Task<Result<Unit, Error>> CopyFileWithProgressAsync(
             IFileSystem fileSystem,
             CanonicalPath source,
             CanonicalPath destination,
@@ -101,7 +102,7 @@ namespace Ave.Extensions.FileSystem.Extensions
         /// <summary>
         /// Copies a directory with progress reporting.
         /// </summary>
-        private static async Task<Result<Unit, FileSystemError>> CopyDirectoryWithProgressAsync(
+        private static async Task<Result<Unit, Error>> CopyDirectoryWithProgressAsync(
             IFileSystem fileSystem,
             CanonicalPath source,
             CanonicalPath destination,
@@ -129,7 +130,7 @@ namespace Ave.Extensions.FileSystem.Extensions
                 cancellationToken: cancellationToken);
             
             if (traverseResult.IsFailure)
-                return Result<Unit, FileSystemError>.Failure(traverseResult.Error);
+                return Result<Unit, Error>.Failure(traverseResult.Error);
             
             // Execute the copy operations
             return await handler.ExecuteCopyOperationsAsync(cancellationToken);
@@ -167,14 +168,14 @@ namespace Ave.Extensions.FileSystem.Extensions
                 : null;
         }
         
-        public Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(
+        public Task<Result<Unit, Error>> OnTraversalStartAsync(
             CanonicalPath rootPath, 
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
         
-        public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+        public Task<Result<TraversalControl, Error>> OnFileAsync(
             FileSystemEntry file, 
             TraversalContext context, 
             CancellationToken cancellationToken = default)
@@ -186,10 +187,10 @@ namespace Ave.Extensions.FileSystem.Extensions
             _filesToCopy.Add((file.Path, destPath, size));
             _totalBytes += size;
             
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
         
-        public async Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+        public async Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(
             FileSystemEntry directory, 
             TraversalContext context, 
             CancellationToken cancellationToken = default)
@@ -201,44 +202,44 @@ namespace Ave.Extensions.FileSystem.Extensions
                 
                 // Create directory
                 var createResult = await _fileSystem.CreateDirectoryAsync(destPath, cancellationToken);
-                if (createResult.IsFailure && createResult.Error.Type != FileSystemErrorType.DirectoryAlreadyExists)
+                if (createResult.IsFailure && !createResult.Error.Is(FileSystemErrorCodes.IO.DirectoryAlreadyExists))
                 {
-                    return Result<TraversalControl, FileSystemError>.Failure(createResult.Error);
+                    return Result<TraversalControl, Error>.Failure(createResult.Error);
                 }
             }
             
-            return Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue);
+            return Result<TraversalControl, Error>.Success(TraversalControl.Continue);
         }
         
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryAsync(
             FileSystemEntry directory, 
             TraversalContext context, 
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
         
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryLeaveAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryLeaveAsync(
             FileSystemEntry directory, 
             TraversalContext context, 
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
         
-        public Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(
+        public Task<Result<Unit, Error>> OnTraversalCompleteAsync(
             TraversalSummary summary, 
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
         
-        public async Task<Result<Unit, FileSystemError>> ExecuteCopyOperationsAsync(
+        public async Task<Result<Unit, Error>> ExecuteCopyOperationsAsync(
             CancellationToken cancellationToken)
         {
             // Create destination root
             var createResult = await _fileSystem.CreateDirectoryAsync(_destRoot, cancellationToken);
-            if (createResult.IsFailure && createResult.Error.Type != FileSystemErrorType.DirectoryAlreadyExists)
+            if (createResult.IsFailure && !createResult.Error.Is(FileSystemErrorCodes.IO.DirectoryAlreadyExists))
                 return createResult;
             
             // Copy all files with progress
@@ -276,7 +277,7 @@ namespace Ave.Extensions.FileSystem.Extensions
                 _filesToCopy.Count,
                 _filesToCopy.Count), force: true);
             
-            return Result<Unit, FileSystemError>.Success(Unit.Value);
+            return Result<Unit, Error>.Success(Unit.Value);
         }
         
         private string GetRelativePath(CanonicalPath basePath, CanonicalPath fullPath)

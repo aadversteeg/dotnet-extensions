@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
@@ -105,7 +106,7 @@ namespace FileCounter.Handlers
         }
 
         /// <inheritdoc />
-        public override Task<Result<TraversalControl, FileSystemError>> OnFileAsync(FileSystemEntry file, TraversalContext context, CancellationToken cancellationToken = default)
+        public override Task<Result<TraversalControl, Error>> OnFileAsync(FileSystemEntry file, TraversalContext context, CancellationToken cancellationToken = default)
         {
             if (!file.IsDirectory)
             {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
@@ -44,7 +45,7 @@ namespace UnitTests.Extensions.FileSystem
         public async Task FSE002()
         {
             // Arrange
-            var expectedResult = Result<bool, FileSystemError>.Success(true);
+            var expectedResult = Result<bool, Error>.Success(true);
             var mockFileSystem = new Mock<Ave.Extensions.FileSystem.IFileSystem>();
             mockFileSystem.Setup(fs => fs.FileExistsAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
@@ -114,7 +115,7 @@ namespace UnitTests.Extensions.FileSystem
                     It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result<TraversalSummary, FileSystemError>.Success(expectedSummary));
+                .ReturnsAsync(Result<TraversalSummary, Error>.Success(expectedSummary));
 
             // Act
             await mockFileSystem.Object.GetFilesAsync(
@@ -160,7 +161,7 @@ namespace UnitTests.Extensions.FileSystem
         {
             // Arrange
             var mockFileSystem = new Mock<IReadOnlyFileSystem>();
-            var expectedError = new FileSystemError("Test error", "/test", FileSystemErrorType.AccessDenied);
+            var expectedError = new Error(FileSystemErrorCodes.IO.AccessDenied, "Test error").With("path", "/test");
             
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     It.IsAny<CanonicalPath>(),
@@ -168,7 +169,7 @@ namespace UnitTests.Extensions.FileSystem
                     It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result<TraversalSummary, FileSystemError>.Failure(expectedError));
+                .ReturnsAsync(Result<TraversalSummary, Error>.Failure(expectedError));
 
             // Act
             var result = await mockFileSystem.Object.GetFilesAsync("/test".ToCanonicalPath());
@@ -183,7 +184,7 @@ namespace UnitTests.Extensions.FileSystem
         {
             // Arrange
             var mockFileSystem = new Mock<IReadOnlyFileSystem>();
-            var expectedError = new FileSystemError("Test error", "/test", FileSystemErrorType.AccessDenied);
+            var expectedError = new Error(FileSystemErrorCodes.IO.AccessDenied, "Test error").With("path", "/test");
             
             mockFileSystem.Setup(fs => fs.TraverseAsync(
                     It.IsAny<CanonicalPath>(),
@@ -191,7 +192,7 @@ namespace UnitTests.Extensions.FileSystem
                     It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(),
                     It.IsAny<TraversalOptions>(),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result<TraversalSummary, FileSystemError>.Failure(expectedError));
+                .ReturnsAsync(Result<TraversalSummary, Error>.Failure(expectedError));
 
             // Act
             var result = await mockFileSystem.Object.GetDirectoriesAsync("/test".ToCanonicalPath());

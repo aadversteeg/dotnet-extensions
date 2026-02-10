@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.MimeDetective.Models;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 
@@ -37,11 +37,11 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Traversal
         /// <param name="rootPath">The root path being traversed.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        public Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(
+        public Task<Result<Unit, Error>> OnTraversalStartAsync(
             CanonicalPath rootPath,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
 
         /// <summary>
@@ -50,11 +50,11 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Traversal
         /// <param name="summary">The traversal summary.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        public Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(
+        public Task<Result<Unit, Error>> OnTraversalCompleteAsync(
             TraversalSummary summary,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
 
         /// <summary>
@@ -64,12 +64,12 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Traversal
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(
             FileSystemEntryWithContentType directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Traversal
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+        public Task<Result<TraversalControl, Error>> OnFileAsync(
             FileSystemEntryWithContentType file,
             TraversalContext context,
             CancellationToken cancellationToken = default)
@@ -89,7 +89,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Traversal
                 _matches.Add(file);
             }
 
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
         /// <summary>
@@ -99,13 +99,13 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Traversal
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions or an error.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryAsync(
             FileSystemEntryWithContentType directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
             // Skip directories for content type filtering
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
     }
 }

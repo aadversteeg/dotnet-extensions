@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.MimeDetective.Configuration;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.MimeDetective.Models;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
@@ -42,7 +43,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Mapping
         /// <param name="fileReader">A file reader for accessing file content.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
-        public async Task<Result<FileSystemEntryWithContentType, FileSystemError>> MapFileAsync(
+        public async Task<Result<FileSystemEntryWithContentType, Error>> MapFileAsync(
             IFileEntry entry,
             IFileReader fileReader,
             CancellationToken cancellationToken = default)
@@ -106,12 +107,12 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Mapping
                     Array.Empty<string>(), // Alternative extensions - can be added later
                     confidence);
 
-                return Result<FileSystemEntryWithContentType, FileSystemError>.Success(extendedEntry);
+                return Result<FileSystemEntryWithContentType, Error>.Success(extendedEntry);
             }
             catch (Exception ex)
             {
-                return Result<FileSystemEntryWithContentType, FileSystemError>.Failure(
-                    new FileSystemError($"Content type detection failed: {ex.Message}", null, FileSystemErrorType.Unknown, ex));
+                return Result<FileSystemEntryWithContentType, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, $"Content type detection failed: {ex.Message}"));
             }
         }
 
@@ -121,7 +122,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Mapping
         /// <param name="entry">The directory entry to map.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
-        public Task<Result<FileSystemEntryWithContentType, FileSystemError>> MapDirectoryAsync(
+        public Task<Result<FileSystemEntryWithContentType, Error>> MapDirectoryAsync(
             IDirectoryEntry entry,
             CancellationToken cancellationToken = default)
         {
@@ -140,7 +141,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Mapping
                 Array.Empty<string>(), // No alternative extensions
                 0.0); // No confidence
 
-            return Task.FromResult(Result<FileSystemEntryWithContentType, FileSystemError>.Success(result));
+            return Task.FromResult(Result<FileSystemEntryWithContentType, Error>.Success(result));
         }
 
         /// <summary>

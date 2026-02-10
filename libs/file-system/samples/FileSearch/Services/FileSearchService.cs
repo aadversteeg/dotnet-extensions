@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Mapping;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 using FileSearch.Handlers;
@@ -40,7 +40,7 @@ public class FileSearchService
         _logger = logger;
     }
 
-    public async Task<Result<ISearchHandler, FileSystemError>> SearchAsync(
+    public async Task<Result<ISearchHandler, Error>> SearchAsync(
         FileSearchOptions options,
         CancellationToken cancellationToken = default)
     {
@@ -57,8 +57,8 @@ public class FileSearchService
             if (canonicalResult.IsFailure)
             {
                 _logger.LogError("Invalid path: {Error}", canonicalResult.Error.Message);
-                return Result<ISearchHandler, FileSystemError>.Failure(
-                    new FileSystemError("InvalidPath", canonicalResult.Error.Message));
+                return Result<ISearchHandler, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.InvalidPath, canonicalResult.Error.Message));
             }
             
             _logger.LogInformation("Canonical path resolved to: {CanonicalPath}", canonicalResult.Value.Value);
@@ -84,24 +84,24 @@ public class FileSearchService
                 {
                     _logger.LogWarning("Search completed with {ErrorCount} errors", handler.ErrorCount);
                 }
-                return Result<ISearchHandler, FileSystemError>.Success(handler);
+                return Result<ISearchHandler, Error>.Success(handler);
             }
-            else if (result.Error.Type == FileSystemErrorType.AccessDenied && handler.FoundFiles.Count > 0)
+            else if (result.Error.Is(FileSystemErrorCodes.IO.AccessDenied) && handler.FoundFiles.Count > 0)
             {
                 _logger.LogWarning("Search completed with access denied, partial results available");
-                return Result<ISearchHandler, FileSystemError>.Success(handler);
+                return Result<ISearchHandler, Error>.Success(handler);
             }
             else
             {
                 _logger.LogError("Search failed: {Error}", result.Error.Message);
-                return Result<ISearchHandler, FileSystemError>.Failure(result.Error);
+                return Result<ISearchHandler, Error>.Failure(result.Error);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during file search");
-            return Result<ISearchHandler, FileSystemError>.Failure(
-                new FileSystemError("UnexpectedError", ex.Message));
+            return Result<ISearchHandler, Error>.Failure(
+                new Error(FileSystemErrorCodes.Unknown, ex.Message));
         }
     }
 

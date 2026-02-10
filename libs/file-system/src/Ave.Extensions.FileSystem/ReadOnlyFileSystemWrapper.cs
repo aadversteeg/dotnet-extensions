@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
@@ -34,31 +35,31 @@ namespace Ave.Extensions.FileSystem
         );
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, Error>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.FileExistsAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<bool, Error>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.DirectoryExistsAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<string, Error>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.ReadAllTextAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
+        public Task<Result<Stream, Error>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
             return _fileSystem.OpenReadAsync(path, cancellationToken);
         }
 
         /// <inheritdoc />
-        public async Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+        public async Task<Result<TEntry, Error>> GetEntryAsync<TEntry>(
             CanonicalPath path,
             IFileSystemEntryMapper<TEntry> mapper,
             CancellationToken cancellationToken = default)
@@ -69,7 +70,7 @@ namespace Ave.Extensions.FileSystem
         }
 
         /// <inheritdoc />
-        public Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
+        public Task<Result<TraversalSummary, Error>> TraverseAsync<TEntry>(
             CanonicalPath path, 
             ITraversalHandler<TEntry> handler, 
             IFileSystemEntryMapper<TEntry> mapper,
@@ -83,7 +84,7 @@ namespace Ave.Extensions.FileSystem
 
         
         /// <inheritdoc />
-        public Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
+        public Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             // Always delegate to the wrapped file system
             return _fileSystem.CreateMonitoringSessionAsync(options, cancellationToken);
@@ -105,7 +106,7 @@ namespace Ave.Extensions.FileSystem
             _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         }
 
-        public async Task<Result<TEntry, FileSystemError>> MapFileAsync(
+        public async Task<Result<TEntry, Error>> MapFileAsync(
             IFileEntry entry,
             IFileReader fileReader,
             CancellationToken cancellationToken = default)
@@ -115,7 +116,7 @@ namespace Ave.Extensions.FileSystem
             return await _mapper.MapFileAsync(entry, readOnlyFileReader, cancellationToken);
         }
 
-        public Task<Result<TEntry, FileSystemError>> MapDirectoryAsync(
+        public Task<Result<TEntry, Error>> MapDirectoryAsync(
             IDirectoryEntry entry,
             CancellationToken cancellationToken = default)
         {
@@ -137,13 +138,13 @@ namespace Ave.Extensions.FileSystem
             _filePath = filePath;
         }
 
-        public async Task<Result<byte[], FileSystemError>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
+        public async Task<Result<byte[], Error>> ReadBytesAsync(int maxBytes, CancellationToken cancellationToken = default)
         {
             try
             {
                 var openResult = await _fileSystem.OpenReadAsync(_filePath, cancellationToken);
                 if (openResult.IsFailure)
-                    return Result<byte[], FileSystemError>.Failure(openResult.Error);
+                    return Result<byte[], Error>.Failure(openResult.Error);
 
                 using var stream = openResult.Value;
                 var buffer = new byte[Math.Min(maxBytes, (int)stream.Length)];
@@ -154,7 +155,7 @@ namespace Ave.Extensions.FileSystem
                     Array.Resize(ref buffer, bytesRead);
                 }
                 
-                return Result<byte[], FileSystemError>.Success(buffer);
+                return Result<byte[], Error>.Success(buffer);
             }
             catch (OperationCanceledException)
             {
@@ -162,8 +163,8 @@ namespace Ave.Extensions.FileSystem
             }
             catch (Exception ex)
             {
-                return Result<byte[], FileSystemError>.Failure(
-                    new FileSystemError($"Failed to read file: {ex.Message}", _filePath.Value, FileSystemErrorType.IOException));
+                return Result<byte[], Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.General, $"Failed to read file: {ex.Message}").With("path", _filePath.Value));
             }
         }
     }

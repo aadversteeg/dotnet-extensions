@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Mapping;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.Functional;
 using FileCounter.Export;
@@ -55,7 +55,7 @@ namespace FileCounter.Services
         /// <param name="options">The counting options.</param>
         /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
         /// <returns>A result containing the counting handler with results or an error.</returns>
-        public async Task<Result<ICountingHandler, FileSystemError>> CountAsync(
+        public async Task<Result<ICountingHandler, Error>> CountAsync(
             FileCounter.Models.FileCounterOptions options,
             CancellationToken cancellationToken = default)
         {
@@ -96,8 +96,8 @@ namespace FileCounter.Services
                 if (canonicalResult.IsFailure)
                 {
                     _logger.LogError("Invalid path: {Error}", canonicalResult.Error.Message);
-                    return Result<ICountingHandler, FileSystemError>.Failure(
-                        new FileSystemError("InvalidPath", canonicalResult.Error.Message));
+                    return Result<ICountingHandler, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, canonicalResult.Error.Message));
                 }
 
                 _logger.LogInformation("Canonical path resolved to: {CanonicalPath}", canonicalResult.Value.Value);
@@ -137,26 +137,26 @@ namespace FileCounter.Services
                         ? $"File counting completed with {handler.ErrorCount} errors (access denied, etc.)"
                         : "File counting completed successfully";
                     _logger.LogInformation(message);
-                    return Result<ICountingHandler, FileSystemError>.Success(handler);
+                    return Result<ICountingHandler, Error>.Success(handler);
                 }
                 else
                 {
                     // Check if this is an access denied error and we still got some results
-                    if (result.Error.Type == FileSystemErrorType.AccessDenied && (handler.FileCount > 0 || handler.DirectoryCount > 0))
+                    if (result.Error.Is(FileSystemErrorCodes.IO.AccessDenied) && (handler.FileCount > 0 || handler.DirectoryCount > 0))
                     {
                         _logger.LogWarning("Traversal completed with access denied error, but partial results available: {Error}", result.Error.Message);
-                        return Result<ICountingHandler, FileSystemError>.Success(handler);
+                        return Result<ICountingHandler, Error>.Success(handler);
                     }
                     
                     _logger.LogError("Traversal failed: {Error}", result.Error.Message);
-                    return Result<ICountingHandler, FileSystemError>.Failure(result.Error);
+                    return Result<ICountingHandler, Error>.Failure(result.Error);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during file counting");
-                return Result<ICountingHandler, FileSystemError>.Failure(
-                    new FileSystemError("UnexpectedError", ex.Message));
+                return Result<ICountingHandler, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, ex.Message));
             }
         }
 
@@ -166,14 +166,14 @@ namespace FileCounter.Services
         /// <param name="options">The counting options.</param>
         /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
         /// <returns>A result containing the exported content or an error.</returns>
-        public async Task<Result<string, FileSystemError>> CountAndExportAsync(
+        public async Task<Result<string, Error>> CountAndExportAsync(
             FileCounter.Models.FileCounterOptions options,
             CancellationToken cancellationToken = default)
         {
             var countResult = await CountAsync(options, cancellationToken);
             if (countResult.IsFailure)
             {
-                return Result<string, FileSystemError>.Failure(countResult.Error);
+                return Result<string, Error>.Failure(countResult.Error);
             }
 
             try
@@ -183,13 +183,13 @@ namespace FileCounter.Services
                     options.ExportFormat,
                     options.OutputPath);
 
-                return Result<string, FileSystemError>.Success(content ?? "Results exported to file");
+                return Result<string, Error>.Success(content ?? "Results exported to file");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during export");
-                return Result<string, FileSystemError>.Failure(
-                    new FileSystemError("ExportError", ex.Message));
+                return Result<string, Error>.Failure(
+                    new Error(FileSystemErrorCodes.Unknown, ex.Message));
             }
         }
 

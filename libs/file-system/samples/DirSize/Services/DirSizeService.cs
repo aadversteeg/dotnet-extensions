@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Mapping;
-using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Traversal;
 using DirSize.Export;
 using DirSize.Handlers;
@@ -109,7 +109,7 @@ public class DirSizeService
             else
             {
                 // Check if this is an access denied error and we still got some results
-                if (result.Error.Type == FileSystemErrorType.AccessDenied && (handler.TotalFiles > 0 || handler.TotalDirectories > 0))
+                if (result.Error.Is(FileSystemErrorCodes.IO.AccessDenied) && (handler.TotalFiles > 0 || handler.TotalDirectories > 0))
                 {
                     _logger.LogWarning("Traversal completed with access denied error, but partial results available: {Error}", result.Error.Message);
                     

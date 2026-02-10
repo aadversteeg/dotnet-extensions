@@ -8,8 +8,8 @@ using Ave.Extensions.FileSystem.MimeDetective.Configuration;
 using Ave.Extensions.FileSystem.MimeDetective.Models;
 using Ave.Extensions.FileSystem.MimeDetective.Services;
 using Ave.Extensions.FileSystem.MimeDetective.Traversal;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem.MimeDetective.Extensions
@@ -27,7 +27,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Extensions
         /// <param name="options">Optional content type detection options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file entry with content type information or an error.</returns>
-        public static Task<Result<FileSystemEntryWithContentType, FileSystemError>> GetFileWithContentTypeAsync(
+        public static Task<Result<FileSystemEntryWithContentType, Error>> GetFileWithContentTypeAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,
             ContentTypeMapperOptions? options = null,
@@ -48,7 +48,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Extensions
         /// <param name="options">Optional content type detection options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the list of files with the specified content type or an error.</returns>
-        public static async Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, FileSystemError>>
+        public static async Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, Error>>
             GetFilesByContentTypeAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,
@@ -77,7 +77,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Extensions
         /// <param name="options">Optional content type detection options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the list of files in the specified category or an error.</returns>
-        public static async Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, FileSystemError>>
+        public static async Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, Error>>
             GetFilesByCategoryAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,
@@ -105,7 +105,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Extensions
         /// <param name="options">Optional content type detection options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the list of image files or an error.</returns>
-        public static Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, FileSystemError>>
+        public static Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, Error>>
             GetImageFilesAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,
@@ -125,7 +125,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Extensions
         /// <param name="options">Optional content type detection options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the list of document files or an error.</returns>
-        public static Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, FileSystemError>>
+        public static Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, Error>>
             GetDocumentFilesAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,
@@ -145,7 +145,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Extensions
         /// <param name="options">Optional content type detection options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the list of archive files or an error.</returns>
-        public static Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, FileSystemError>>
+        public static Task<Result<IReadOnlyList<FileSystemEntryWithContentType>, Error>>
             GetArchiveFilesAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,

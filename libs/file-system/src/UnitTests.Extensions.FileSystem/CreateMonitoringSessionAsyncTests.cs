@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
@@ -18,7 +19,7 @@ namespace UnitTests.Extensions.FileSystem
         {
             // Arrange
             var mockSession = new Mock<IMonitoringSession>();
-            var expectedResult = Result<IMonitoringSession, FileSystemError>.Success(mockSession.Object);
+            var expectedResult = Result<IMonitoringSession, Error>.Success(mockSession.Object);
             var options = MonitoringOptions.ForPath("/test".ToCanonicalPath());
             
             var mockFileSystem = new Mock<IFileSystem>();
@@ -40,8 +41,8 @@ namespace UnitTests.Extensions.FileSystem
         public async Task CMSA002()
         {
             // Arrange
-            var expectedError = new FileSystemError("Test error", "/test", FileSystemErrorType.DirectoryNotFound);
-            var expectedResult = Result<IMonitoringSession, FileSystemError>.Failure(expectedError);
+            var expectedError = new Error(FileSystemErrorCodes.NotFound.Directory, "Test error").With("path", "/test");
+            var expectedResult = Result<IMonitoringSession, Error>.Failure(expectedError);
             var options = MonitoringOptions.ForPath("/test".ToCanonicalPath());
             
             var mockFileSystem = new Mock<IFileSystem>();

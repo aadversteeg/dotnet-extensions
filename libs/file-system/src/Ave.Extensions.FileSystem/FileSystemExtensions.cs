@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
@@ -49,7 +50,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="recursive">Whether to search subdirectories recursively.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file paths or an error.</returns>
-        public static async Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetFilesAsync(
+        public static async Task<Result<IReadOnlyList<CanonicalPath>, Error>> GetFilesAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,
             string searchPattern = "*",
@@ -76,7 +77,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="recursive">Whether to search subdirectories recursively.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the directory paths or an error.</returns>
-        public static async Task<Result<IReadOnlyList<CanonicalPath>, FileSystemError>> GetDirectoriesAsync(
+        public static async Task<Result<IReadOnlyList<CanonicalPath>, Error>> GetDirectoriesAsync(
             this IReadOnlyFileSystem fileSystem,
             CanonicalPath path,
             string searchPattern = "*",

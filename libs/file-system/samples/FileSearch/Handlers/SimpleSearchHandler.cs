@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
@@ -41,16 +42,16 @@ public class SimpleSearchHandler : ISearchHandler
         _logger = logger;
     }
 
-    public virtual Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(
+    public virtual Task<Result<Unit, Error>> OnTraversalStartAsync(
         CanonicalPath rootPath, 
         CancellationToken cancellationToken = default)
     {
         _stopwatch.Start();
         _logger.LogInformation("Starting search traversal from: {RootPath}", rootPath.Value);
-        return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+        return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
     }
 
-    public virtual Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+    public virtual Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(
         FileSystemEntry directory, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)
@@ -59,13 +60,13 @@ public class SimpleSearchHandler : ISearchHandler
 
         if (!_criteria.IncludeHidden && IsHidden(directory))
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Skip));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Skip));
         }
 
-        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
     }
 
-    public virtual Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+    public virtual Task<Result<TraversalControl, Error>> OnFileAsync(
         FileSystemEntry file,
         TraversalContext context,
         CancellationToken cancellationToken)
@@ -75,7 +76,7 @@ public class SimpleSearchHandler : ISearchHandler
         if (_foundFiles.Count >= _criteria.MaxResults)
         {
             _stoppedEarly = true;
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Stop));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Stop));
         }
 
         if (MatchesFile(file))
@@ -89,35 +90,35 @@ public class SimpleSearchHandler : ISearchHandler
             }
         }
 
-        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
     }
 
-    public virtual Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+    public virtual Task<Result<TraversalControl, Error>> OnDirectoryAsync(
         FileSystemEntry directory, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
     }
 
-    public virtual Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(
+    public virtual Task<Result<Unit, Error>> OnTraversalCompleteAsync(
         TraversalSummary summary, 
         CancellationToken cancellationToken = default)
     {
         _stopwatch.Stop();
         _logger.LogInformation("Search traversal completed in {ElapsedTime}", _stopwatch.Elapsed);
-        return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+        return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
     }
 
-    public virtual Task<Result<TraversalControl, FileSystemError>> OnErrorAsync(
-        FileSystemError error, 
-        CanonicalPath path, 
+    public virtual Task<Result<TraversalControl, Error>> OnErrorAsync(
+        Error error,
+        CanonicalPath path,
         TraversalContext context, 
         CancellationToken cancellationToken = default)
     {
         _errors.Add($"{path.Value}: {error.Message}");
         _logger.LogDebug("Traversal error at {Path}: {Error}", path.Value, error.Message);
-        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
     }
 
     protected virtual bool MatchesFile(FileSystemEntry file)

@@ -10,7 +10,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
 using Ave.Extensions.FileSystem.Mapping;
-using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.ErrorPaths;
 using FluentAssertions;
 using IntegrationTests.FileSystem.Local.TestHelpers;
 using Xunit;
@@ -222,7 +222,7 @@ namespace IntegrationTests.FileSystem.Local
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.File);
         }
 
         #endregion
@@ -539,7 +539,7 @@ namespace IntegrationTests.FileSystem.Local
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.PathNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Path);
         }
 
         #endregion

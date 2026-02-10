@@ -1,4 +1,5 @@
 using System;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem
@@ -49,22 +50,22 @@ namespace Ave.Extensions.FileSystem
         {
             if (string.IsNullOrEmpty(path))
             {
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathNullOrEmpty);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathNullOrEmpty);
             }
 
             if (!path.StartsWith('/'))
             {
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathMustStartWithSlash);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathMustStartWithSlash);
             }
 
             if (path.Contains('\\'))
             {
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathContainsBackslashes);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathContainsBackslashes);
             }
 
             if (path.Contains("//"))
             {
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathContainsConsecutiveSlashes);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathContainsConsecutiveSlashes);
             }
 
             // Extract segments (empty for root path)
@@ -93,12 +94,12 @@ namespace Ave.Extensions.FileSystem
                 var segment = segments[i];
                 if (string.IsNullOrEmpty(segment))
                 {
-                    return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.SegmentNullOrEmpty(i));
+                    return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentNullOrEmpty(i));
                 }
 
                 if (segment.Contains('/') || segment.Contains('\\'))
                 {
-                    return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.SegmentContainsPathSeparators(i));
+                    return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentContainsPathSeparators(i));
                 }
             }
 
@@ -113,7 +114,7 @@ namespace Ave.Extensions.FileSystem
         public Result<CanonicalPath, Error> GetParent()
         {
             if (Segments.Length == 0) // Root path
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.RootHasNoParent);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.RootHasNoParent);
 
             if (Segments.Length == 1) // Direct child of root
                 return Result<CanonicalPath, Error>.Success(Root);
@@ -141,10 +142,10 @@ namespace Ave.Extensions.FileSystem
         public Result<CanonicalPath, Error> Append(string segment)
         {
             if (string.IsNullOrEmpty(segment))
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.AppendSegmentNullOrEmpty);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.AppendSegmentNullOrEmpty);
 
             if (segment.Contains('/') || segment.Contains('\\'))
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.AppendSegmentContainsPathSeparators);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.AppendSegmentContainsPathSeparators);
 
             var newSegments = new string[Segments.Length + 1];
             Array.Copy(Segments, 0, newSegments, 0, Segments.Length);
@@ -162,10 +163,10 @@ namespace Ave.Extensions.FileSystem
         public Result<CanonicalPath, Error> Append(string[] segments)
         {
             if (segments == null)
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.AppendSegmentsNull);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.AppendSegmentsNull);
 
             if (segments.Length == 0)
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.AppendSegmentsEmpty);
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.AppendSegmentsEmpty);
 
             // Validate all segments first
             for (int i = 0; i < segments.Length; i++)
@@ -173,12 +174,12 @@ namespace Ave.Extensions.FileSystem
                 var segment = segments[i];
                 if (string.IsNullOrEmpty(segment))
                 {
-                    return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.SegmentNullOrEmpty(i));
+                    return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentNullOrEmpty(i));
                 }
 
                 if (segment.Contains('/') || segment.Contains('\\'))
                 {
-                    return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.SegmentContainsPathSeparators(i));
+                    return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentContainsPathSeparators(i));
                 }
             }
 

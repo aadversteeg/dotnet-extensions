@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Mapping;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
@@ -26,14 +27,14 @@ namespace Ave.Extensions.FileSystem.Traversal.Strategies
         /// <param name="getChildren">Function to get children of a directory.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        Task<Result<Unit, FileSystemError>> TraverseAsync<TEntry>(
+        Task<Result<Unit, Error>> TraverseAsync<TEntry>(
             IFileSystemEntry entry,
             ITraversalHandler<TEntry> handler,
             IFileSystemEntryMapper<TEntry> mapper,
             TraversalOptions options,
             TraversalContext context,
             TraversalStats stats,
-            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>>> getChildren,
+            Func<CanonicalPath, CancellationToken, Task<Result<IEnumerable<IFileSystemEntry>, Error>>> getChildren,
             CancellationToken cancellationToken);
     }
 }

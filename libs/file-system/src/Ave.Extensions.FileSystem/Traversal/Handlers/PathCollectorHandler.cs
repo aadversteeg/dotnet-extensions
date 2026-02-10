@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 
@@ -42,11 +43,11 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <param name="rootPath">The root path where traversal will begin.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success.</returns>
-        public Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(
+        public Task<Result<Unit, Error>> OnTraversalStartAsync(
             CanonicalPath rootPath, 
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
 
         /// <summary>
@@ -56,12 +57,12 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(
             TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
         /// <summary>
@@ -71,7 +72,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+        public Task<Result<TraversalControl, Error>> OnFileAsync(
             TEntry file,
             TraversalContext context,
             CancellationToken cancellationToken = default)
@@ -80,7 +81,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             {
                 _paths.Add(file.Path);
             }
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
         /// <summary>
@@ -90,7 +91,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <param name="context">The current traversal context.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal control instructions.</returns>
-        public Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+        public Task<Result<TraversalControl, Error>> OnDirectoryAsync(
             TEntry directory,
             TraversalContext context,
             CancellationToken cancellationToken = default)
@@ -99,7 +100,7 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             {
                 _paths.Add(directory.Path);
             }
-            return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+            return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
         }
 
         /// <summary>
@@ -108,11 +109,11 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
         /// <param name="summary">The summary of the traversal operation.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success.</returns>
-        public Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(
+        public Task<Result<Unit, Error>> OnTraversalCompleteAsync(
             TraversalSummary summary,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
     }
 }

@@ -1,3 +1,4 @@
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem

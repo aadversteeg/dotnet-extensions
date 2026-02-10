@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
@@ -34,27 +35,27 @@ public class SimpleSizeHandler : ISizeHandler
     public IReadOnlyList<string> Errors => _errors.ToList();
     public TimeSpan ElapsedTime => _stopwatch.Elapsed;
 
-    public virtual Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(
+    public virtual Task<Result<Unit, Error>> OnTraversalStartAsync(
         CanonicalPath rootPath, 
         CancellationToken cancellationToken = default)
     {
         _stopwatch.Start();
         _directoryStack.Push(rootPath.Value);
         _directorySizes[rootPath.Value] = new DirectoryData();
-        return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+        return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
     }
 
-    public virtual Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+    public virtual Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(
         FileSystemEntry directory, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)
     {
         _directoryStack.Push(directory.Path.Value);
         _directorySizes[directory.Path.Value] = new DirectoryData();
-        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
     }
 
-    public virtual Task<Result<TraversalControl, FileSystemError>> OnFileAsync(
+    public virtual Task<Result<TraversalControl, Error>> OnFileAsync(
         FileSystemEntry file, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)
@@ -83,10 +84,10 @@ public class SimpleSizeHandler : ISizeHandler
             _errors.Add($"Error processing file {file.Path.Value}: {ex.Message}");
         }
         
-        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
     }
 
-    public virtual Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(
+    public virtual Task<Result<TraversalControl, Error>> OnDirectoryAsync(
         FileSystemEntry directory, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)
@@ -109,15 +110,15 @@ public class SimpleSizeHandler : ISizeHandler
             _errors.Add($"Error processing directory {directory.Path.Value}: {ex.Message}");
         }
         
-        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
     }
 
-    public virtual Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(
+    public virtual Task<Result<Unit, Error>> OnTraversalCompleteAsync(
         TraversalSummary summary, 
         CancellationToken cancellationToken = default)
     {
         _stopwatch.Stop();
-        return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+        return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
     }
 
     public virtual string GetSummary()

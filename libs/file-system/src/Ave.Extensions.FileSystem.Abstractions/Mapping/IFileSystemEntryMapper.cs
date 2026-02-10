@@ -1,3 +1,4 @@
+using Ave.Extensions.ErrorPaths;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Abstractions;
@@ -19,7 +20,7 @@ namespace Ave.Extensions.FileSystem.Mapping
         /// <param name="fileReader">A file reader for accessing file content.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
-        Task<Result<TEntry, FileSystemError>> MapFileAsync(
+        Task<Result<TEntry, Error>> MapFileAsync(
             IFileEntry entry,
             IFileReader fileReader,
             CancellationToken cancellationToken = default);
@@ -30,7 +31,7 @@ namespace Ave.Extensions.FileSystem.Mapping
         /// <param name="entry">The directory entry to map.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
-        Task<Result<TEntry, FileSystemError>> MapDirectoryAsync(
+        Task<Result<TEntry, Error>> MapDirectoryAsync(
             IDirectoryEntry entry,
             CancellationToken cancellationToken = default);
     }

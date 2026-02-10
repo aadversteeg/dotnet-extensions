@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
@@ -109,30 +110,30 @@ namespace FileCounter.Handlers
         }
 
         /// <inheritdoc />
-        public virtual Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(CanonicalPath rootPath, CancellationToken cancellationToken = default)
+        public virtual Task<Result<Unit, Error>> OnTraversalStartAsync(CanonicalPath rootPath, CancellationToken cancellationToken = default)
         {
             _startPath = rootPath;
             _stopwatch.Start();
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
 
         /// <inheritdoc />
-        public virtual Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
+        public virtual Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogDebug("Entering directory: {DirectoryPath} (depth: {CurrentDepth})", directory.Path, context.CurrentDepth);
-                return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
             }
             catch (Exception ex)
             {
                 LogError($"Error entering directory {directory.Path}: {ex.Message}");
-                return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
             }
         }
 
         /// <inheritdoc />
-        public virtual Task<Result<TraversalControl, FileSystemError>> OnFileAsync(FileSystemEntry file, TraversalContext context, CancellationToken cancellationToken = default)
+        public virtual Task<Result<TraversalControl, Error>> OnFileAsync(FileSystemEntry file, TraversalContext context, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -145,13 +146,13 @@ namespace FileCounter.Handlers
                     // Apply size filters
                     if (size < _minSize || size > _maxSize)
                     {
-                        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
                     }
 
                     // Apply extension filter
                     if (_extensionFilter != null && !string.Equals(file.Extension, _extensionFilter, StringComparison.OrdinalIgnoreCase))
                     {
-                        return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                        return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
                     }
 
                     Interlocked.Increment(ref _fileCount);
@@ -161,17 +162,17 @@ namespace FileCounter.Handlers
                 // Report progress
                 ReportProgressIfNeeded(file.Path.Value);
 
-                return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
             }
             catch (Exception ex)
             {
                 LogError($"Error processing file {file.Path}: {ex.Message}");
-                return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
             }
         }
 
         /// <inheritdoc />
-        public virtual Task<Result<TraversalControl, FileSystemError>> OnDirectoryAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
+        public virtual Task<Result<TraversalControl, Error>> OnDirectoryAsync(FileSystemEntry directory, TraversalContext context, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -179,17 +180,17 @@ namespace FileCounter.Handlers
                 {
                     Interlocked.Increment(ref _directoryCount);
                 }
-                return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
             }
             catch (Exception ex)
             {
                 LogError($"Error processing directory {directory.Path}: {ex.Message}");
-                return Task.FromResult(Result<TraversalControl, FileSystemError>.Success(TraversalControl.Continue));
+                return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
             }
         }
 
         /// <inheritdoc />
-        public virtual Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
+        public virtual Task<Result<Unit, Error>> OnTraversalCompleteAsync(TraversalSummary summary, CancellationToken cancellationToken = default)
         {
             _stopwatch.Stop();
             
@@ -202,7 +203,7 @@ namespace FileCounter.Handlers
                 cancellationToken.IsCancellationRequested
             ));
             
-            return Task.FromResult(Result<Unit, FileSystemError>.Success(Unit.Value));
+            return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
 
         /// <summary>

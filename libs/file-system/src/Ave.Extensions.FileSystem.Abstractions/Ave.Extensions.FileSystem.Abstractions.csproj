@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Ave.Extensions.ErrorPaths" />
     <PackageReference Include="Ave.Extensions.Functional" />
     <PackageReference Include="System.Reactive" />
   </ItemGroup>

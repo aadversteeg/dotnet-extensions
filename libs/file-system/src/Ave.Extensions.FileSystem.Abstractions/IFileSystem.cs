@@ -1,7 +1,8 @@
+using Ave.Extensions.ErrorPaths;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Ave.Extensions.FileSystem.Models;
+
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem
@@ -17,7 +18,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The directory path to create.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        Task<Result<Unit, FileSystemError>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        Task<Result<Unit, Error>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Writes all text to a file, creating the file if it doesn't exist.
@@ -26,7 +27,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="contents">The text to write to the file.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        Task<Result<Unit, FileSystemError>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default);
+        Task<Result<Unit, Error>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Opens a file for writing.
@@ -34,7 +35,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to open.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the write stream or an error.</returns>
-        Task<Result<Stream, FileSystemError>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        Task<Result<Stream, Error>> OpenWriteAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Opens a file with specified mode, access, and share settings.
@@ -45,7 +46,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="share">The file share.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file stream or an error.</returns>
-        Task<Result<Stream, FileSystemError>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default);
+        Task<Result<Stream, Error>> OpenAsync(CanonicalPath path, FileMode mode, FileAccess access, FileShare share, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Deletes a file at the specified path.
@@ -53,7 +54,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to delete.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        Task<Result<Unit, FileSystemError>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        Task<Result<Unit, Error>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Deletes a directory at the specified path.
@@ -62,7 +63,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="recursive">Whether to recursively delete all contents.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating success or failure.</returns>
-        Task<Result<Unit, FileSystemError>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default);
+        Task<Result<Unit, Error>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Moves a file from source to destination.
@@ -95,7 +96,7 @@ namespace Ave.Extensions.FileSystem
         /// }
         /// </code>
         /// </example>
-        Task<Result<Unit, FileSystemError>> MoveFileAsync(
+        Task<Result<Unit, Error>> MoveFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -121,7 +122,7 @@ namespace Ave.Extensions.FileSystem
         ///     CanonicalPath.Create("/new/location").Value);
         /// </code>
         /// </example>
-        Task<Result<Unit, FileSystemError>> MoveDirectoryAsync(
+        Task<Result<Unit, Error>> MoveDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default);
@@ -148,7 +149,7 @@ namespace Ave.Extensions.FileSystem
         ///     overwrite: true);
         /// </code>
         /// </example>
-        Task<Result<Unit, FileSystemError>> CopyFileAsync(
+        Task<Result<Unit, Error>> CopyFileAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -174,7 +175,7 @@ namespace Ave.Extensions.FileSystem
         ///     CanonicalPath.Create("/backups/project-backup").Value);
         /// </code>
         /// </example>
-        Task<Result<Unit, FileSystemError>> CopyDirectoryAsync(
+        Task<Result<Unit, Error>> CopyDirectoryAsync(
             CanonicalPath source, 
             CanonicalPath destination,
             CancellationToken cancellationToken = default);
@@ -202,7 +203,7 @@ namespace Ave.Extensions.FileSystem
         ///     CanonicalPath.Create("/dest/item").Value);
         /// </code>
         /// </example>
-        Task<Result<Unit, FileSystemError>> MoveAsync(
+        Task<Result<Unit, Error>> MoveAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,
@@ -231,7 +232,7 @@ namespace Ave.Extensions.FileSystem
         ///     CanonicalPath.Create("/backup/item").Value);
         /// </code>
         /// </example>
-        Task<Result<Unit, FileSystemError>> CopyAsync(
+        Task<Result<Unit, Error>> CopyAsync(
             CanonicalPath source, 
             CanonicalPath destination, 
             bool overwrite = false,

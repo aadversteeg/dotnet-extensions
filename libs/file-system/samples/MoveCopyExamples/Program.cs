@@ -189,7 +189,7 @@ namespace MoveCopyExamples
                 var copyResult = await fileSystem.CopyFileAsync(file1, file2, overwrite: false);
                 if (copyResult.IsFailure)
                 {
-                    Console.WriteLine($"Expected error - {copyResult.Error.Type}: {copyResult.Error.Message}");
+                    Console.WriteLine($"Expected error - {copyResult.Error.Code}: {copyResult.Error.Message}");
                 }
                 
                 // Example 2: Source not found
@@ -197,7 +197,7 @@ namespace MoveCopyExamples
                 var moveResult = await fileSystem.MoveFileAsync(nonExistent, file1);
                 if (moveResult.IsFailure)
                 {
-                    Console.WriteLine($"Expected error - {moveResult.Error.Type}: {moveResult.Error.Message}");
+                    Console.WriteLine($"Expected error - {moveResult.Error.Code}: {moveResult.Error.Message}");
                 }
                 
                 // Example 3: Directory already exists
@@ -209,7 +209,7 @@ namespace MoveCopyExamples
                 var dirCopyResult = await fileSystem.CopyDirectoryAsync(dir1, dir2);
                 if (dirCopyResult.IsFailure)
                 {
-                    Console.WriteLine($"Expected error - {dirCopyResult.Error.Type}: {dirCopyResult.Error.Message}");
+                    Console.WriteLine($"Expected error - {dirCopyResult.Error.Code}: {dirCopyResult.Error.Message}");
                 }
             }
             finally

@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using System.Runtime.InteropServices;
@@ -89,7 +89,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result1.IsFailure.Should().BeTrue();
-            result1.Error.Type.Should().Be(FileSystemErrorType.FileAlreadyExists);
+            result1.Error.Code.Should().Be(FileSystemErrorCodes.IO.FileAlreadyExists);
             
             // Act - with overwrite
             var result2 = await _fileSystem.MoveAsync(sourcePath, destPath, overwrite: true);
@@ -156,9 +156,9 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             moveResult.IsFailure.Should().BeTrue();
-            moveResult.Error.Type.Should().Be(FileSystemErrorType.PathNotFound);
+            moveResult.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Path);
             copyResult.IsFailure.Should().BeTrue();
-            copyResult.Error.Type.Should().Be(FileSystemErrorType.PathNotFound);
+            copyResult.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Path);
         }
 
         [Fact(DisplayName = "GEN-007: MoveAsync should reject overwrite for directories")]
@@ -178,7 +178,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.DirectoryAlreadyExists);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.DirectoryAlreadyExists);
         }
 
         [Fact(DisplayName = "GEN-008: CopyAsync should reject overwrite for directories")]
@@ -198,7 +198,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.DirectoryAlreadyExists);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.DirectoryAlreadyExists);
         }
 
         [Fact(DisplayName = "GEN-009: CopyAsync should respect overwrite for files")]
@@ -218,7 +218,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result1.IsFailure.Should().BeTrue();
-            result1.Error.Type.Should().Be(FileSystemErrorType.FileAlreadyExists);
+            result1.Error.Code.Should().Be(FileSystemErrorCodes.IO.FileAlreadyExists);
             
             // Act - with overwrite
             var result2 = await _fileSystem.CopyAsync(sourcePath, destPath, overwrite: true);

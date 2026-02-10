@@ -1,6 +1,6 @@
 using System.Linq;
 using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Security;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,7 +40,7 @@ namespace IntegrationTests.FileSystem.Local
             else
             {
                 result.IsFailure.Should().BeTrue();
-                result.Error.Type.Should().Be(FileSystemErrorType.AccessDenied);
+                result.Error.Code.Should().Be(FileSystemErrorCodes.IO.AccessDenied);
             }
         }
 
@@ -95,7 +95,7 @@ namespace IntegrationTests.FileSystem.Local
             // Assert
             allowedResult.IsSuccess.Should().BeTrue("access to allowed path should succeed");
             forbiddenResult.IsFailure.Should().BeTrue("access to forbidden path should fail");
-            forbiddenResult.Error.Type.Should().Be(FileSystemErrorType.AccessDenied);
+            forbiddenResult.Error.Code.Should().Be(FileSystemErrorCodes.IO.AccessDenied);
         }
     }
 }

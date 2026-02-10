@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
-using Ave.Extensions.FileSystem.Models;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -49,7 +49,7 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
             result.Error.Message.Should().Contain("Source and destination paths are the same");
         }
         
@@ -65,7 +65,7 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
             result.Error.Message.Should().Contain("subdirectory of itself");
         }
         
@@ -116,7 +116,7 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
             result.Error.Message.Should().Contain("subdirectory of itself");
         }
     }

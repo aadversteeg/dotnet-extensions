@@ -1,3 +1,4 @@
+using Ave.Extensions.ErrorPaths;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to check.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating whether the file exists or an error occurred.</returns>
-        Task<Result<bool, FileSystemError>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        Task<Result<bool, Error>> FileExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Determines whether the specified directory exists.
@@ -31,7 +32,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The directory path to check.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result indicating whether the directory exists or an error occurred.</returns>
-        Task<Result<bool, FileSystemError>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        Task<Result<bool, Error>> DirectoryExistsAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads all text from a file.
@@ -39,7 +40,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to read from.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file content or an error.</returns>
-        Task<Result<string, FileSystemError>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        Task<Result<string, Error>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Opens a file for reading.
@@ -47,7 +48,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="path">The file path to open.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the file stream or an error.</returns>
-        Task<Result<Stream, FileSystemError>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default);
+        Task<Result<Stream, Error>> OpenReadAsync(CanonicalPath path, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets metadata for a file system entry and maps it to a custom type.
@@ -57,7 +58,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="mapper">The mapper to transform FileSystemEntry to TEntry.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the mapped entry or an error.</returns>
-        Task<Result<TEntry, FileSystemError>> GetEntryAsync<TEntry>(
+        Task<Result<TEntry, Error>> GetEntryAsync<TEntry>(
             CanonicalPath path,
             IFileSystemEntryMapper<TEntry> mapper,
             CancellationToken cancellationToken = default);
@@ -72,7 +73,7 @@ namespace Ave.Extensions.FileSystem
         /// <param name="options">Optional traversal options. If null, uses default options.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing traversal summary or an error.</returns>
-        Task<Result<TraversalSummary, FileSystemError>> TraverseAsync<TEntry>(
+        Task<Result<TraversalSummary, Error>> TraverseAsync<TEntry>(
             CanonicalPath path,
             ITraversalHandler<TEntry> handler,
             IFileSystemEntryMapper<TEntry> mapper,
@@ -86,6 +87,6 @@ namespace Ave.Extensions.FileSystem
         /// <param name="options">The monitoring options including path and filters.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A result containing the monitoring session or an error.</returns>
-        Task<Result<IMonitoringSession, FileSystemError>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default);
+        Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default);
     }
 }

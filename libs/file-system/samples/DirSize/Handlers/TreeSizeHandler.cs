@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Models;
@@ -19,7 +20,7 @@ public class TreeSizeHandler : SimpleSizeHandler
     
     public TreeNode? RootNode { get; private set; }
 
-    public override Task<Result<Unit, FileSystemError>> OnTraversalStartAsync(
+    public override Task<Result<Unit, Error>> OnTraversalStartAsync(
         CanonicalPath rootPath, 
         CancellationToken cancellationToken = default)
     {
@@ -35,7 +36,7 @@ public class TreeSizeHandler : SimpleSizeHandler
         return result;
     }
 
-    public override Task<Result<TraversalControl, FileSystemError>> OnDirectoryEnterAsync(
+    public override Task<Result<TraversalControl, Error>> OnDirectoryEnterAsync(
         FileSystemEntry directory, 
         TraversalContext context, 
         CancellationToken cancellationToken = default)
@@ -64,7 +65,7 @@ public class TreeSizeHandler : SimpleSizeHandler
         return result;
     }
 
-    public override Task<Result<Unit, FileSystemError>> OnTraversalCompleteAsync(
+    public override Task<Result<Unit, Error>> OnTraversalCompleteAsync(
         TraversalSummary summary, 
         CancellationToken cancellationToken = default)
     {

@@ -1,4 +1,5 @@
 using System;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.Functional;
 using FluentAssertions;
@@ -39,7 +40,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathNullOrEmpty);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathNullOrEmpty);
         }
 
         [Fact(DisplayName = "CP-004: Create from empty path returns failure")]
@@ -50,7 +51,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathNullOrEmpty);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathNullOrEmpty);
         }
 
         [Fact(DisplayName = "CP-005: Create from path not starting with slash returns failure")]
@@ -61,7 +62,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathMustStartWithSlash);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathMustStartWithSlash);
         }
 
         [Fact(DisplayName = "CP-006: Create from path containing backslashes returns failure")]
@@ -72,7 +73,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathContainsBackslashes);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathContainsBackslashes);
         }
 
         [Fact(DisplayName = "CP-007: Create from path with consecutive slashes returns failure")]
@@ -83,7 +84,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.PathContainsConsecutiveSlashes);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathContainsConsecutiveSlashes);
         }
 
         [Fact(DisplayName = "CP-008: Create from empty segments array returns root")]
@@ -117,7 +118,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.SegmentNullOrEmpty);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.SegmentNullOrEmpty);
             result.Error.Message.Should().Contain("index 1");
         }
 
@@ -129,7 +130,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.SegmentNullOrEmpty);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.SegmentNullOrEmpty);
             result.Error.Message.Should().Contain("index 1");
         }
 
@@ -141,7 +142,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.SegmentContainsPathSeparators);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.SegmentContainsPathSeparators);
             result.Error.Message.Should().Contain("index 1");
         }
 
@@ -161,7 +162,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.RootHasNoParent);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.RootHasNoParent);
         }
 
         [Fact(DisplayName = "CP-015: GetParent of direct child returns root")]
@@ -242,7 +243,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.AppendSegmentNullOrEmpty);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.AppendSegmentNullOrEmpty);
         }
 
         [Fact(DisplayName = "CP-021: Append empty segment returns failure")]
@@ -256,7 +257,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.AppendSegmentNullOrEmpty);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.AppendSegmentNullOrEmpty);
         }
 
         [Fact(DisplayName = "CP-022: Append segment with slash returns failure")]
@@ -270,7 +271,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.AppendSegmentContainsPathSeparators);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.AppendSegmentContainsPathSeparators);
         }
 
         [Fact(DisplayName = "CP-023: Append segments array returns success")]
@@ -299,7 +300,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.AppendSegmentsNull);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.AppendSegmentsNull);
         }
 
         [Fact(DisplayName = "CP-025: Append empty segments array returns failure")]
@@ -313,7 +314,7 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(ErrorCodes.CanonicalPath.AppendSegmentsEmpty);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.AppendSegmentsEmpty);
         }
 
         [Fact(DisplayName = "CP-026: IsChildOf returns true for valid child")]

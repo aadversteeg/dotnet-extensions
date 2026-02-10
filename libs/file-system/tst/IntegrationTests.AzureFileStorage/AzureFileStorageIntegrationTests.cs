@@ -2,7 +2,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
 using Ave.Extensions.FileSystem.Mapping;
-using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.ErrorPaths;
 using Azure.Storage.Files.Shares;
 using FluentAssertions;
 using IntegrationTests.Extensions.FileSystem.AzureFileStorage.Configuration;
@@ -328,7 +328,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
 
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.File);
         }
 
         [Fact(DisplayName = "AFSIT-007: CreateDirectoryAsync creates nested directory structure")]

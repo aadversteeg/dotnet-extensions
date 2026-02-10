@@ -12,7 +12,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.Local;
 using Ave.Extensions.FileSystem.Local.PathMappers;
-using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using Xunit;
@@ -605,7 +605,7 @@ namespace IntegrationTests.FileSystem.Local
             
             // Assert
             noOverwriteResult.IsFailure.Should().BeTrue();
-            noOverwriteResult.Error.Type.Should().Be(FileSystemErrorType.FileAlreadyExists);
+            noOverwriteResult.Error.Code.Should().Be(FileSystemErrorCodes.IO.FileAlreadyExists);
             
             var destContent = await File.ReadAllTextAsync(dest);
             destContent.Should().Be("Original dest content", "failed copy should not modify destination");

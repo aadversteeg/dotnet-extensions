@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.InMemory;
 using Ave.Extensions.FileSystem.Models;
@@ -49,9 +50,9 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Strategies
             var context = TraversalContext.CreateInitial("/empty".ToCanonicalPath());
             var stats = new TraversalStats();
 
-            Task<Result<IEnumerable<IFileSystemEntry>, FileSystemError>> GetChildren(CanonicalPath path, CancellationToken ct)
+            Task<Result<IEnumerable<IFileSystemEntry>, Error>> GetChildren(CanonicalPath path, CancellationToken ct)
             {
-                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, FileSystemError>.Success(Enumerable.Empty<IFileSystemEntry>()));
+                return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, Error>.Success(Enumerable.Empty<IFileSystemEntry>()));
             }
 
             var directory = new DirectoryEntry("/empty".ToCanonicalPath(), new Ave.Extensions.FileSystem.Models.DirectoryInfo(new EntryInfo("empty", DateTime.UtcNow, DateTime.UtcNow, DateTime.UtcNow, FileAttributes.Directory)));

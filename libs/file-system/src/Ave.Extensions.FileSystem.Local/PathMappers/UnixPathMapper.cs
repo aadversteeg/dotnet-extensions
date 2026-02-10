@@ -1,3 +1,4 @@
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.FileSystem.Local.PathMappers
@@ -13,14 +14,14 @@ namespace Ave.Extensions.FileSystem.Local.PathMappers
             // On Unix systems, canonical paths are already system paths
             return Result<string, Error>.Success(canonicalPath.Value);
         }
-        
+
         /// <inheritdoc />
         public Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
         {
             // On Unix systems, system paths are already canonical
             if (string.IsNullOrWhiteSpace(systemPath))
-                return Result<CanonicalPath, Error>.Failure(Errors.CanonicalPath.PathNullOrEmpty);
-                
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathNullOrEmpty);
+
             var result = CanonicalPath.Create(systemPath);
             if (result.IsFailure)
                 return Result<CanonicalPath, Error>.Failure(result.Error);

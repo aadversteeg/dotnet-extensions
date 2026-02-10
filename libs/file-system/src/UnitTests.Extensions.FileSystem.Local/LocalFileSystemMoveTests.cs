@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Local;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.Functional;
 using FluentAssertions;
 using System.Runtime.InteropServices;
@@ -68,7 +68,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileNotFound);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.File);
         }
         
         [Fact(DisplayName = "MOVE-003: MoveFileAsync should fail when destination exists and overwrite is false")]
@@ -89,7 +89,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.FileAlreadyExists);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.FileAlreadyExists);
             File.Exists(sourceFile).Should().BeTrue(); // Source should still exist
             File.ReadAllText(destFile).Should().Be("dest content"); // Dest unchanged
         }
@@ -158,7 +158,7 @@ namespace UnitTests.Extensions.FileSystem.Local
             
             // Assert
             result.IsFailure.Should().BeTrue();
-            result.Error.Type.Should().Be(FileSystemErrorType.InvalidPath);
+            result.Error.Code.Should().Be(FileSystemErrorCodes.IO.InvalidPath);
         }
 
         [Fact(DisplayName = "MOVE-007: MoveFileAsync should create destination directory")]

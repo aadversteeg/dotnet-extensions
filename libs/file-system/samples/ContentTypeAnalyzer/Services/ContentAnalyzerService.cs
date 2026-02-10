@@ -1,8 +1,8 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
-using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.MimeDetective.Configuration;
 using Ave.Extensions.FileSystem.MimeDetective.Mapping;
 using Ave.Extensions.FileSystem.Traversal;
@@ -33,7 +33,7 @@ namespace ContentTypeAnalyzer.Services
             _logger = logger;
         }
 
-        public async Task<Result<IContentTypeHandler, FileSystemError>> AnalyzeAsync(
+        public async Task<Result<IContentTypeHandler, Error>> AnalyzeAsync(
             ContentAnalyzerOptions options, 
             CancellationToken cancellationToken = default)
         {
@@ -43,8 +43,8 @@ namespace ContentTypeAnalyzer.Services
             var canonicalResult = _pathMapper.MapToCanonicalPath(absolutePath);
             if (canonicalResult.IsFailure)
             {
-                return Result<IContentTypeHandler, FileSystemError>.Failure(
-                    new FileSystemError("InvalidPath", canonicalResult.Error.Message));
+                return Result<IContentTypeHandler, Error>.Failure(
+                    new Error(FileSystemErrorCodes.IO.InvalidPath, canonicalResult.Error.Message));
             }
 
             _logger.LogInformation("Canonical path: {Path}", canonicalResult.Value.Value);
@@ -79,17 +79,17 @@ namespace ContentTypeAnalyzer.Services
                 {
                     _logger.LogWarning("Analysis completed with {ErrorCount} errors", handler.ErrorCount);
                 }
-                return Result<IContentTypeHandler, FileSystemError>.Success(handler);
+                return Result<IContentTypeHandler, Error>.Success(handler);
             }
-            else if (result.Error.Type == FileSystemErrorType.AccessDenied && handler.AnalyzedFiles > 0)
+            else if (result.Error.Is(FileSystemErrorCodes.IO.AccessDenied) && handler.AnalyzedFiles > 0)
             {
                 _logger.LogWarning("Analysis completed with access denied, partial results available");
-                return Result<IContentTypeHandler, FileSystemError>.Success(handler);
+                return Result<IContentTypeHandler, Error>.Success(handler);
             }
             else
             {
                 _logger.LogError("Analysis failed: {Error}", result.Error.Message);
-                return Result<IContentTypeHandler, FileSystemError>.Failure(result.Error);
+                return Result<IContentTypeHandler, Error>.Failure(result.Error);
             }
         }
     }
