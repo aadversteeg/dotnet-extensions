@@ -82,6 +82,16 @@ namespace Ave.Extensions.FileSystem
             /// Error code when segments array is empty for append operation.
             /// </summary>
             public static readonly ErrorCode AppendSegmentsEmpty = _ / "AppendSegmentsEmpty";
+
+            /// <summary>
+            /// Error code when relative path is null or empty.
+            /// </summary>
+            public static readonly ErrorCode RelativePathNullOrEmpty = _ / "RelativePathNullOrEmpty";
+
+            /// <summary>
+            /// Error code when relative path navigates above the root.
+            /// </summary>
+            public static readonly ErrorCode RelativePathEscapesRoot = _ / "RelativePathEscapesRoot";
         }
 
         /// <summary>

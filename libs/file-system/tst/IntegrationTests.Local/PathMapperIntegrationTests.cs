@@ -165,6 +165,58 @@ namespace IntegrationTests.FileSystem.Local
             canonicalResult.IsFailure.Should().BeTrue();
         }
 
-        // Note: IsValidPathFormat method removed as it's not part of the IPathMapper interface
+        [Theory(DisplayName = "PMIT-006: WindowsPathMapper with relative path should resolve against base canonical path")]
+        [InlineData("docs", "/mnt/c/users", "/mnt/c/users/docs")]
+        [InlineData("src/main.cs", "/mnt/c/projects", "/mnt/c/projects/src/main.cs")]
+        [InlineData(".", "/mnt/c/users", "/mnt/c/users")]
+        public void PMIT006(string relativePath, string basePath, string expected)
+        {
+            // Arrange
+            var mapper = new WindowsPathMapper();
+            var baseCanonical = basePath.ToCanonicalPath();
+
+            // Act
+            var result = mapper.MapToCanonicalPath(relativePath, baseCanonical);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be(expected);
+        }
+
+        [Theory(DisplayName = "PMIT-007: UnixPathMapper with relative path should resolve against base canonical path")]
+        [InlineData("docs", "/home/user", "/home/user/docs")]
+        [InlineData("src/main.cs", "/home", "/home/src/main.cs")]
+        [InlineData(".", "/home/user", "/home/user")]
+        public void PMIT007(string relativePath, string basePath, string expected)
+        {
+            // Arrange
+            var mapper = new UnixPathMapper();
+            var baseCanonical = basePath.ToCanonicalPath();
+
+            // Act
+            var result = mapper.MapToCanonicalPath(relativePath, baseCanonical);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be(expected);
+        }
+
+        [Theory(DisplayName = "PMIT-008: MapToCanonicalPath with .. segments should navigate up correctly")]
+        [InlineData("../sibling", "/home/user", "/home/sibling")]
+        [InlineData("../../file.txt", "/a/b/c", "/a/file.txt")]
+        [InlineData("../other/sub/file.txt", "/mnt/c/projects/current", "/mnt/c/projects/other/sub/file.txt")]
+        public void PMIT008(string relativePath, string basePath, string expected)
+        {
+            // Arrange
+            var mapper = new UnixPathMapper();
+            var baseCanonical = basePath.ToCanonicalPath();
+
+            // Act
+            var result = mapper.MapToCanonicalPath(relativePath, baseCanonical);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be(expected);
+        }
     }
 }

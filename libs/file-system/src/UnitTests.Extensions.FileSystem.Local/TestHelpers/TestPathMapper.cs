@@ -5,16 +5,16 @@ using Ave.Extensions.Functional;
 
 namespace UnitTests.Extensions.FileSystem.Local.TestHelpers
 {
-    public class TestPathMapper : IPathMapper
+    public class TestPathMapper : PathMapperBase
     {
-        public Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
+        public override Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
         {
             // For testing, just return the canonical path value
             // In real implementation, this would handle OS-specific conversions
             return Result<string, Error>.Success(canonicalPath.Value);
         }
         
-        public Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
+        public override Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
         {
             return CanonicalPath.Create(systemPath);
         }

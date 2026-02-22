@@ -326,6 +326,66 @@ On Unix systems (Linux/macOS), canonical paths are used directly:
 | `/home/user/file.txt` | `/home/user/file.txt` |
 | `/var/log/app.log` | `/var/log/app.log` |
 
+### Relative Path Resolution
+
+When integrating with external systems — such as RPC clients, CLI tools, or remote file browsers — paths are often relative to a working directory rather than absolute system paths. For example, an RPC client might send `.` to list the current directory, or `../sibling/file.txt` to reference a file relative to its current location. These relative paths cannot be mapped directly to canonical paths because `CanonicalPath.Create()` requires absolute paths starting with `/`.
+
+The library provides two tools to handle this:
+
+**`SystemPath` — Detect whether a path is absolute or relative**
+
+A platform-independent helper that recognizes both Windows and Unix absolute path patterns regardless of the current OS:
+
+```csharp
+using Ave.Extensions.FileSystem;
+
+SystemPath.IsAbsolute("/home/user");      // true  (Unix)
+SystemPath.IsAbsolute(@"C:\Users");       // true  (Windows drive)
+SystemPath.IsAbsolute(@"\\server\share"); // true  (UNC)
+SystemPath.IsAbsolute("src/file.txt");    // false (relative)
+SystemPath.IsAbsolute("./file.txt");      // false (dot-relative)
+SystemPath.IsAbsolute("../file.txt");     // false (parent-relative)
+
+SystemPath.IsRelative("src/file.txt");    // true
+SystemPath.IsRelative("/home/user");      // false
+```
+
+**`IPathMapper.MapToCanonicalPath(relativePath, basePath)` — Resolve relative paths**
+
+Resolves a relative path against a base canonical path, handling `.`, `..`, and both `/` and `\` separators:
+
+```csharp
+var workingDirectory = CanonicalPath.Create("/home/user/projects").Value;
+
+// Simple navigation
+pathMapper.MapToCanonicalPath("src/main.cs", workingDirectory);
+// => /home/user/projects/src/main.cs
+
+// Current directory
+pathMapper.MapToCanonicalPath(".", workingDirectory);
+// => /home/user/projects
+
+// Parent navigation
+pathMapper.MapToCanonicalPath("../other/file.txt", workingDirectory);
+// => /home/user/other/file.txt
+
+// Escaping root returns an error
+pathMapper.MapToCanonicalPath("../../../../..", workingDirectory);
+// => Failure (RelativePathEscapesRoot)
+```
+
+A typical pattern for handling mixed input paths:
+
+```csharp
+Result<CanonicalPath, Error> ResolvePath(string inputPath, CanonicalPath workingDirectory)
+{
+    if (SystemPath.IsAbsolute(inputPath))
+        return _pathMapper.MapToCanonicalPath(inputPath);
+
+    return _pathMapper.MapToCanonicalPath(inputPath, workingDirectory);
+}
+```
+
 ### Security Pattern Examples
 
 | Pattern | Matches | Description |

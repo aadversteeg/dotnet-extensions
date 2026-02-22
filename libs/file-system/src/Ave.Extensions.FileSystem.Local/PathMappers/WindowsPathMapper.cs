@@ -7,13 +7,13 @@ namespace Ave.Extensions.FileSystem.Local.PathMappers
     /// <summary>
     /// Windows-specific path mapper that handles drive letters and UNC paths.
     /// </summary>
-    public class WindowsPathMapper : IPathMapper
+    public class WindowsPathMapper : PathMapperBase
     {
         private static readonly Regex DriveLetterRegex = new(@"^/([a-zA-Z])(/.*)?$");
         private static readonly Regex WslPathRegex = new(@"^/mnt/([a-zA-Z])(/.*)?$");
 
         /// <inheritdoc />
-        public Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
+        public override Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
         {
             var pathValue = canonicalPath.Value;
 
@@ -42,7 +42,7 @@ namespace Ave.Extensions.FileSystem.Local.PathMappers
         }
 
         /// <inheritdoc />
-        public Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
+        public override Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
         {
             if (string.IsNullOrWhiteSpace(systemPath))
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathNullOrEmpty);

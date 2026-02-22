@@ -21,5 +21,13 @@ namespace Ave.Extensions.FileSystem
         /// <param name="systemPath">The system-specific path to map.</param>
         /// <returns>A result containing the canonical path or an error.</returns>
         Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath);
+
+        /// <summary>
+        /// Resolves a relative path against a base canonical path to produce a new canonical path.
+        /// </summary>
+        /// <param name="relativePath">The relative path to resolve (may contain ., .., and path separators).</param>
+        /// <param name="basePath">The base canonical path to resolve against.</param>
+        /// <returns>A result containing the resolved canonical path or an error.</returns>
+        Result<CanonicalPath, Error> MapToCanonicalPath(string relativePath, CanonicalPath basePath);
     }
 }

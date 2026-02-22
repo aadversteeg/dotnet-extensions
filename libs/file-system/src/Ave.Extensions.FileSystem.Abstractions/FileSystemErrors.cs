@@ -81,6 +81,21 @@ namespace Ave.Extensions.FileSystem
             /// Error when segments array is empty for append operation.
             /// </summary>
             public static readonly Error AppendSegmentsEmpty = new Error(FileSystemErrorCodes.CanonicalPath.AppendSegmentsEmpty, "Segments array cannot be empty");
+
+            /// <summary>
+            /// Error when relative path is null or empty.
+            /// </summary>
+            public static readonly Error RelativePathNullOrEmpty = new Error(FileSystemErrorCodes.CanonicalPath.RelativePathNullOrEmpty, "Relative path cannot be null or empty");
+
+            /// <summary>
+            /// Error when relative path navigates above the root.
+            /// </summary>
+            /// <param name="relativePath">The relative path that escapes root.</param>
+            /// <returns>An error indicating the relative path navigates above the root.</returns>
+            public static Error RelativePathEscapesRoot(string relativePath) => new Error(
+                FileSystemErrorCodes.CanonicalPath.RelativePathEscapesRoot,
+                "Relative path navigates above the root")
+                .With("relativePath", relativePath);
         }
 
         /// <summary>

@@ -129,7 +129,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
         }
 
         // Test helpers
-        private class TestPathMapper : IPathMapper
+        private class TestPathMapper : PathMapperBase
         {
             private readonly string _baseDirectory;
 
@@ -138,7 +138,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
                 _baseDirectory = baseDirectory;
             }
 
-            public Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
+            public override Result<string, Error> MapToSystemPath(CanonicalPath canonicalPath)
             {
                 // Map canonical paths like "/test.txt" to the test directory
                 var relativePath = canonicalPath.Value.TrimStart('/');
@@ -146,7 +146,7 @@ namespace UnitTests.Extensions.FileSystem.Local.Mapping
                 return Result<string, Error>.Success(systemPath);
             }
 
-            public Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
+            public override Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
             {
                 // Map system paths back to canonical paths
                 if (systemPath.StartsWith(_baseDirectory))
