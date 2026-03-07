@@ -10,6 +10,8 @@ using Ave.Extensions.FileSystem.Models;
 using Ave.Extensions.FileSystem.Traversal;
 using Ave.Extensions.FileSystem.Traversal.Strategies;
 using Ave.Extensions.Functional;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ave.Extensions.FileSystem.Local
 {
@@ -19,14 +21,26 @@ namespace Ave.Extensions.FileSystem.Local
     public class LocalFileSystem : IFileSystem
     {
         private readonly IPathMapper _pathMapper;
-        
+        private readonly ILogger<LocalFileSystem> _logger;
+
         /// <summary>
         /// Initializes a new instance of the LocalFileSystem class.
         /// </summary>
         /// <param name="pathMapper">Path mapper for canonical path support.</param>
         public LocalFileSystem(IPathMapper pathMapper)
+            : this(pathMapper, NullLogger<LocalFileSystem>.Instance)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the LocalFileSystem class.
+        /// </summary>
+        /// <param name="pathMapper">Path mapper for canonical path support.</param>
+        /// <param name="logger">Logger instance.</param>
+        public LocalFileSystem(IPathMapper pathMapper, ILogger<LocalFileSystem> logger)
         {
             _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <inheritdoc />
@@ -93,6 +107,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <inheritdoc />
         public Task<Result<string, Error>> ReadAllTextAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("ReadAllText: {Path}", path.Value);
             return ExecuteAsync(async () =>
             {
                 var systemPathResult = GetSystemPath(path);
@@ -282,6 +297,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <inheritdoc />
         public Task<Result<Unit, Error>> CreateDirectoryAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("CreateDirectory: {Path}", path.Value);
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
@@ -299,6 +315,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <inheritdoc />
         public Task<Result<Unit, Error>> WriteAllTextAsync(CanonicalPath path, string contents, CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("WriteAllText: {Path}", path.Value);
             return ExecuteAsync(async () =>
             {
                 var systemPathResult = GetSystemPath(path);
@@ -352,6 +369,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <inheritdoc />
         public Task<Result<Unit, Error>> DeleteFileAsync(CanonicalPath path, CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("DeleteFile: {Path}", path.Value);
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
@@ -369,6 +387,7 @@ namespace Ave.Extensions.FileSystem.Local
         /// <inheritdoc />
         public Task<Result<Unit, Error>> DeleteDirectoryAsync(CanonicalPath path, bool recursive = false, CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("DeleteDirectory: {Path} (recursive={Recursive})", path.Value, recursive);
             return ExecuteAsync(() =>
             {
                 var systemPathResult = GetSystemPath(path);
@@ -633,7 +652,8 @@ namespace Ave.Extensions.FileSystem.Local
                         new Error(FileSystemErrorCodes.NotFound.Directory, $"Directory not found: {options.Path.Value}").With("path", options.Path.Value)));
                 }
 
-                var session = new MonitoringSession(options, _pathMapper);
+                var session = new MonitoringSession(options, _pathMapper, _logger);
+                _logger.LogInformation("Monitoring session started: {Path} (includeSubdirs={IncludeSubdirs})", options.Path.Value, options.IncludeSubdirectories);
                 return Task.FromResult(Result<IMonitoringSession, Error>.Success(session));
             }
             catch (OperationCanceledException)
@@ -659,6 +679,7 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "File system operation failed: {Path}", path ?? "unknown");
                 return Result<T, Error>.Failure(FileSystemErrors.FromException(ex, path));
             }
         }
@@ -728,11 +749,12 @@ namespace Ave.Extensions.FileSystem.Local
 
         /// <inheritdoc />
         public Task<Result<Unit, Error>> MoveFileAsync(
-            CanonicalPath source, 
-            CanonicalPath destination, 
+            CanonicalPath source,
+            CanonicalPath destination,
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("MoveFile: {Source} -> {Destination} (overwrite={Overwrite})", source.Value, destination.Value, overwrite);
             try
             {
                 // Validate paths are different
@@ -852,10 +874,11 @@ namespace Ave.Extensions.FileSystem.Local
 
         /// <inheritdoc />
         public async Task<Result<Unit, Error>> MoveDirectoryAsync(
-            CanonicalPath source, 
+            CanonicalPath source,
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("MoveDirectory: {Source} -> {Destination}", source.Value, destination.Value);
             try
             {
                 // Validate paths are different
@@ -978,11 +1001,12 @@ namespace Ave.Extensions.FileSystem.Local
 
         /// <inheritdoc />
         public async Task<Result<Unit, Error>> CopyFileAsync(
-            CanonicalPath source, 
-            CanonicalPath destination, 
+            CanonicalPath source,
+            CanonicalPath destination,
             bool overwrite = false,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("CopyFile: {Source} -> {Destination} (overwrite={Overwrite})", source.Value, destination.Value, overwrite);
             try
             {
                 // Validate paths are different
@@ -1110,10 +1134,11 @@ namespace Ave.Extensions.FileSystem.Local
 
         /// <inheritdoc />
         public async Task<Result<Unit, Error>> CopyDirectoryAsync(
-            CanonicalPath source, 
+            CanonicalPath source,
             CanonicalPath destination,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("CopyDirectory: {Source} -> {Destination}", source.Value, destination.Value);
             try
             {
                 // Validate paths are different

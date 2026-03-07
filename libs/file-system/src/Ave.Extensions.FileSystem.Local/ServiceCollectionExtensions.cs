@@ -54,7 +54,11 @@ namespace Ave.Extensions.FileSystem.Local
             }
 
             // Register local file system implementation
-            services.TryAddScoped<IFileSystem, LocalFileSystem>();
+            services.TryAddScoped<IFileSystem>(sp =>
+                new LocalFileSystem(
+                    sp.GetRequiredService<IPathMapper>(),
+                    sp.GetService<Microsoft.Extensions.Logging.ILogger<LocalFileSystem>>()
+                        ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<LocalFileSystem>.Instance));
 
 
             return services;

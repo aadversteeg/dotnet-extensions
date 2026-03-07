@@ -5,6 +5,8 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Ave.Extensions.FileSystem.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ave.Extensions.FileSystem.Local
 {
@@ -15,6 +17,7 @@ namespace Ave.Extensions.FileSystem.Local
     {
         private readonly MonitoringOptions _options;
         private readonly IPathMapper _pathMapper;
+        private readonly ILogger _logger;
         private readonly Subject<FileSystemChangedEvent> _changesSubject;
         private readonly object _lock = new object();
         private FileSystemWatcher? _watcher;
@@ -26,12 +29,14 @@ namespace Ave.Extensions.FileSystem.Local
         /// </summary>
         /// <param name="options">The monitoring options.</param>
         /// <param name="pathMapper">Path mapper for canonical path support.</param>
-        public MonitoringSession(MonitoringOptions options, IPathMapper pathMapper)
+        /// <param name="logger">Logger instance.</param>
+        public MonitoringSession(MonitoringOptions options, IPathMapper pathMapper, ILogger? logger = null)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _pathMapper = pathMapper ?? throw new ArgumentNullException(nameof(pathMapper));
+            _logger = logger ?? NullLogger.Instance;
             _changesSubject = new Subject<FileSystemChangedEvent>();
-            
+
             StartMonitoring();
         }
 
@@ -62,7 +67,7 @@ namespace Ave.Extensions.FileSystem.Local
                     return Task.CompletedTask;
 
                 _isActive = false;
-                
+
                 if (_watcher != null)
                 {
                     try
@@ -76,6 +81,8 @@ namespace Ave.Extensions.FileSystem.Local
                         // Ignore disposal errors
                     }
                 }
+
+                _logger.LogInformation("Monitoring session stopped: {Path}", _options.Path.Value);
             }
 
             return Task.CompletedTask;
@@ -260,6 +267,7 @@ namespace Ave.Extensions.FileSystem.Local
 
         private void OnError(object sender, ErrorEventArgs e)
         {
+            _logger.LogWarning(e.GetException(), "File system watcher error: {Path}", _options.Path.Value);
             _changesSubject.OnError(e.GetException());
         }
 
