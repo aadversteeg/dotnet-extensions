@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Ave.Extensions.FileSystem.Models
@@ -19,6 +20,7 @@ namespace Ave.Extensions.FileSystem.Models
         /// <param name="modifiedUtc">The last modification time in UTC.</param>
         /// <param name="lastAccessUtc">The last access time in UTC.</param>
         /// <param name="attributes">The file system attributes.</param>
+        /// <param name="metadata">Optional application-defined key-value metadata for this entry.</param>
         public FileSystemEntry(
             CanonicalPath path,
             bool isDirectory,
@@ -27,7 +29,8 @@ namespace Ave.Extensions.FileSystem.Models
             DateTime createdUtc,
             DateTime modifiedUtc,
             DateTime lastAccessUtc,
-            FileAttributes attributes)
+            FileAttributes attributes,
+            IReadOnlyDictionary<string, string>? metadata = null)
         {
             Path = path;
             IsDirectory = isDirectory;
@@ -37,6 +40,7 @@ namespace Ave.Extensions.FileSystem.Models
             ModifiedUtc = modifiedUtc;
             LastAccessUtc = lastAccessUtc;
             Attributes = attributes;
+            Metadata = metadata;
         }
 
         /// <summary>
@@ -98,6 +102,11 @@ namespace Ave.Extensions.FileSystem.Models
         /// Gets whether the entry is read-only.
         /// </summary>
         public bool IsReadOnly => Attributes.HasFlag(FileAttributes.ReadOnly);
+
+        /// <summary>
+        /// Gets optional application-defined key-value metadata for this entry.
+        /// </summary>
+        public IReadOnlyDictionary<string, string>? Metadata { get; }
 
     }
 }
