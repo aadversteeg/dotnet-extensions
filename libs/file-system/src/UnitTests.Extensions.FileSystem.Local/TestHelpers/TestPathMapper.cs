@@ -13,7 +13,7 @@ namespace UnitTests.Extensions.FileSystem.Local.TestHelpers
             // In real implementation, this would handle OS-specific conversions
             return Result<string, Error>.Success(canonicalPath.Value);
         }
-        
+
         public override Result<CanonicalPath, Error> MapToCanonicalPath(string systemPath)
         {
             return CanonicalPath.Create(systemPath);

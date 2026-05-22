@@ -45,10 +45,10 @@ namespace IntegrationTests.FileSystem.Local
             string canonicalPath;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // Convert C:\temp\... to /mnt/c/temp/...
+                // Convert C:\temp\... to /c/temp/... (Git Bash style)
                 var drive = _tempDirectory[0].ToString().ToLowerInvariant();
                 var pathWithoutDrive = _tempDirectory.Substring(2).Replace('\\', '/');
-                canonicalPath = $"/mnt/{drive}{pathWithoutDrive}/{fileName}";
+                canonicalPath = $"/{drive}{pathWithoutDrive}/{fileName}";
             }
             else
             {

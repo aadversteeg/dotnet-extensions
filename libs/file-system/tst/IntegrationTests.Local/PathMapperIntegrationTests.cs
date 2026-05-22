@@ -16,9 +16,11 @@ namespace IntegrationTests.FileSystem.Local
     {
         [Theory(DisplayName = "PMIT-001: WindowsPathMapper MapToSystemPath should convert correctly")]
         [InlineData("/c/test/file.txt", @"C:\test\file.txt")]
+        [InlineData("/d/data/logs", @"D:\data\logs")]
+        [InlineData("/c/Users/test", @"C:\Users\test")]
+        [InlineData("/c/", @"C:\")]
         [InlineData("/mnt/d/data/logs", @"D:\data\logs")]
         [InlineData("/mnt/c/Users/test", @"C:\Users\test")]
-        [InlineData("/c/", @"C:\")]
         public void PMIT001(string canonicalPath, string expectedSystemPath)
         {
             // Arrange
@@ -33,9 +35,9 @@ namespace IntegrationTests.FileSystem.Local
         }
 
         [Theory(DisplayName = "PMIT-002: WindowsPathMapper MapToCanonicalPath should convert correctly")]
-        [InlineData(@"C:\test\file.txt", "/mnt/c/test/file.txt")]
-        [InlineData(@"D:\data\logs", "/mnt/d/data/logs")]
-        [InlineData(@"C:\", "/mnt/c/")]
+        [InlineData(@"C:\test\file.txt", "/c/test/file.txt")]
+        [InlineData(@"D:\data\logs", "/d/data/logs")]
+        [InlineData(@"C:\", "/c/")]
         public void PMIT002(string systemPath, string expectedCanonicalPath)
         {
             // Arrange
@@ -80,10 +82,10 @@ namespace IntegrationTests.FileSystem.Local
                 var mapper = new WindowsPathMapper();
                 var testCases = new[]
                 {
-                    ("/mnt/c/test/file.txt", "/mnt/c/test/file.txt"),      // Canonical -> Canonical
-                    (@"C:\test\file.txt", "/mnt/c/test/file.txt"),         // System -> Canonical  
-                    ("/mnt/d/data/logs", "/mnt/d/data/logs"),              // Canonical -> Canonical
-                    (@"D:\data\logs", "/mnt/d/data/logs")                  // System -> Canonical
+                    ("/c/test/file.txt", "/c/test/file.txt"),              // Canonical -> Canonical
+                    (@"C:\test\file.txt", "/c/test/file.txt"),             // System -> Canonical
+                    ("/d/data/logs", "/d/data/logs"),                      // Canonical -> Canonical
+                    (@"D:\data\logs", "/d/data/logs")                      // System -> Canonical
                 };
                 
                 foreach (var (inputPath, expectedCanonical) in testCases)
@@ -166,9 +168,9 @@ namespace IntegrationTests.FileSystem.Local
         }
 
         [Theory(DisplayName = "PMIT-006: WindowsPathMapper with relative path should resolve against base canonical path")]
-        [InlineData("docs", "/mnt/c/users", "/mnt/c/users/docs")]
-        [InlineData("src/main.cs", "/mnt/c/projects", "/mnt/c/projects/src/main.cs")]
-        [InlineData(".", "/mnt/c/users", "/mnt/c/users")]
+        [InlineData("docs", "/c/users", "/c/users/docs")]
+        [InlineData("src/main.cs", "/c/projects", "/c/projects/src/main.cs")]
+        [InlineData(".", "/c/users", "/c/users")]
         public void PMIT006(string relativePath, string basePath, string expected)
         {
             // Arrange
@@ -204,7 +206,7 @@ namespace IntegrationTests.FileSystem.Local
         [Theory(DisplayName = "PMIT-008: MapToCanonicalPath with .. segments should navigate up correctly")]
         [InlineData("../sibling", "/home/user", "/home/sibling")]
         [InlineData("../../file.txt", "/a/b/c", "/a/file.txt")]
-        [InlineData("../other/sub/file.txt", "/mnt/c/projects/current", "/mnt/c/projects/other/sub/file.txt")]
+        [InlineData("../other/sub/file.txt", "/c/projects/current", "/c/projects/other/sub/file.txt")]
         public void PMIT008(string relativePath, string basePath, string expected)
         {
             // Arrange

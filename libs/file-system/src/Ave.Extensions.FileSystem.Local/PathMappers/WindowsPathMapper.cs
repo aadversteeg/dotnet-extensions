@@ -17,23 +17,26 @@ namespace Ave.Extensions.FileSystem.Local.PathMappers
         {
             var pathValue = canonicalPath.Value;
 
-            // Handle drive letter format: /d/path -> D:\path
-            var driveMatch = DriveLetterRegex.Match(pathValue);
-            if (driveMatch.Success)
-            {
-                var driveLetter = driveMatch.Groups[1].Value.ToUpperInvariant();
-                var remainingPath = driveMatch.Groups[2].Value ?? "";
-                var systemPath = $"{driveLetter}:{remainingPath.Replace('/', '\\')}";
-                return Result<string, Error>.Success(systemPath);
-            }
-
-            // Handle WSL format: /mnt/c/path -> C:\path
+            // Handle legacy WSL format first: /mnt/c/path -> C:\path
+            // Must be checked before drive letter regex since /mnt/... also matches /m/...
             var wslMatch = WslPathRegex.Match(pathValue);
             if (wslMatch.Success)
             {
                 var driveLetter = wslMatch.Groups[1].Value.ToUpperInvariant();
                 var remainingPath = wslMatch.Groups[2].Value ?? "";
-                var systemPath = $"{driveLetter}:{remainingPath.Replace('/', '\\')}";
+                var windowsPath = remainingPath.Length > 0 ? remainingPath.Replace('/', '\\') : "\\";
+                var systemPath = $"{driveLetter}:{windowsPath}";
+                return Result<string, Error>.Success(systemPath);
+            }
+
+            // Handle Git Bash style drive letter format: /c/path -> C:\path
+            var driveMatch = DriveLetterRegex.Match(pathValue);
+            if (driveMatch.Success)
+            {
+                var driveLetter = driveMatch.Groups[1].Value.ToUpperInvariant();
+                var remainingPath = driveMatch.Groups[2].Value ?? "";
+                var windowsPath = remainingPath.Length > 0 ? remainingPath.Replace('/', '\\') : "\\";
+                var systemPath = $"{driveLetter}:{windowsPath}";
                 return Result<string, Error>.Success(systemPath);
             }
 
@@ -47,12 +50,12 @@ namespace Ave.Extensions.FileSystem.Local.PathMappers
             if (string.IsNullOrWhiteSpace(systemPath))
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathNullOrEmpty);
 
-            // Handle Windows absolute paths: C:\path -> /mnt/c/path
+            // Handle Windows absolute paths: C:\path -> /c/path (Git Bash style)
             if (systemPath.Length >= 2 && systemPath[1] == ':')
             {
                 var driveLetter = char.ToLowerInvariant(systemPath[0]);
                 var remainingPath = systemPath.Substring(2).Replace('\\', '/');
-                var driveCanonicalPath = $"/mnt/{driveLetter}{remainingPath}";
+                var driveCanonicalPath = $"/{driveLetter}{remainingPath}";
                 var driveResult = CanonicalPath.Create(driveCanonicalPath);
                 if (driveResult.IsFailure)
                     return Result<CanonicalPath, Error>.Failure(driveResult.Error);
