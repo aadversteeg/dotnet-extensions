@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Ave.Extensions.ErrorPaths;
 using System.IO;
 using System.Threading;
@@ -80,6 +81,16 @@ namespace Ave.Extensions.FileSystem
             TraversalOptions? options = null,
             CancellationToken cancellationToken = default);
 
+
+        /// <summary>
+        /// Lists all files in the specified directory.
+        /// </summary>
+        /// <param name="directory">The directory path to list files from.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A result containing the list of file paths or an error.</returns>
+        Task<Result<IReadOnlyList<CanonicalPath>, Error>> ListFilesAsync(
+            CanonicalPath directory,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a monitoring session for watching file system changes at the specified path.

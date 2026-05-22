@@ -604,6 +604,18 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         }
 
         /// <inheritdoc />
+        public Task<Result<IReadOnlyList<CanonicalPath>, Error>> ListFilesAsync(
+            CanonicalPath directory,
+            CancellationToken cancellationToken = default)
+        {
+            // Azure File Share listing not implemented yet
+            var error = new Error(
+                FileSystemErrorCodes.NotSupported,
+                "ListFilesAsync is not yet supported for Azure File Share");
+            return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(error));
+        }
+
+        /// <inheritdoc />
         public Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             // Azure File Share doesn't support real-time monitoring

@@ -624,6 +624,47 @@ namespace Ave.Extensions.FileSystem.Local
         }
 
         /// <inheritdoc />
+        public Task<Result<IReadOnlyList<CanonicalPath>, Error>> ListFilesAsync(
+            CanonicalPath directory,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var mapResult = _pathMapper.MapToSystemPath(directory);
+                if (mapResult.IsFailure)
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(mapResult.Error));
+
+                var systemPath = mapResult.Value;
+                if (!Directory.Exists(systemPath))
+                {
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.NotFound.Directory, $"Directory not found: {directory.Value}")
+                            .With("path", directory.Value)));
+                }
+
+                var files = Directory.GetFiles(systemPath);
+                var result = new List<CanonicalPath>(files.Length);
+
+                foreach (var file in files)
+                {
+                    var canonicalResult = _pathMapper.MapToCanonicalPath(file);
+                    if (canonicalResult.IsFailure)
+                        return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(canonicalResult.Error));
+                    result.Add(canonicalResult.Value);
+                }
+
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Success((IReadOnlyList<CanonicalPath>)result));
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                    FileSystemErrors.FromException(ex, directory.Value)));
+            }
+        }
+
+        /// <inheritdoc />
         public Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             try

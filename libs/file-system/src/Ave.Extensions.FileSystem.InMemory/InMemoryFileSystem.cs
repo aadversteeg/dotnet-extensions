@@ -607,6 +607,50 @@ namespace Ave.Extensions.FileSystem.InMemory
         }
 
         /// <inheritdoc />
+        public Task<Result<IReadOnlyList<CanonicalPath>, Error>> ListFilesAsync(
+            CanonicalPath directory,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                _lock.EnterReadLock();
+                try
+                {
+                    // Check if directory exists
+                    if (!_directories.ContainsKey(directory))
+                    {
+                        return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                            new Error(FileSystemErrorCodes.NotFound.Directory, $"Directory not found: {directory.Value}")
+                                .With("path", directory.Value)));
+                    }
+
+                    var files = new List<CanonicalPath>();
+                    foreach (var filePath in _files.Keys)
+                    {
+                        var parentResult = filePath.GetParent();
+                        if (parentResult.IsSuccess && parentResult.Value.Equals(directory))
+                        {
+                            files.Add(filePath);
+                        }
+                    }
+
+                    return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Success((IReadOnlyList<CanonicalPath>)files));
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                    FileSystemErrors.FromException(ex, directory.Value)));
+            }
+        }
+
+        /// <inheritdoc />
         public Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
             try

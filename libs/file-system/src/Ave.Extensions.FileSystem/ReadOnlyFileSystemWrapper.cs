@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -83,6 +84,14 @@ namespace Ave.Extensions.FileSystem
         }
 
         
+        /// <inheritdoc />
+        public Task<Result<IReadOnlyList<CanonicalPath>, Error>> ListFilesAsync(
+            CanonicalPath directory,
+            CancellationToken cancellationToken = default)
+        {
+            return _fileSystem.ListFilesAsync(directory, cancellationToken);
+        }
+
         /// <inheritdoc />
         public Task<Result<IMonitoringSession, Error>> CreateMonitoringSessionAsync(MonitoringOptions options, CancellationToken cancellationToken = default)
         {
