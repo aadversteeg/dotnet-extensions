@@ -92,6 +92,11 @@ namespace Ave.Extensions.FileSystem
             /// Error code when relative path navigates above the root.
             /// </summary>
             public static readonly ErrorCode RelativePathEscapesRoot = _ / "RelativePathEscapesRoot";
+
+            /// <summary>
+            /// Error code when Resolve is called with a non-absolute base path.
+            /// </summary>
+            public static readonly ErrorCode ResolveRequiresAbsoluteBase = _ / "ResolveRequiresAbsoluteBase";
         }
 
         /// <summary>

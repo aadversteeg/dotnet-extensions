@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -6,6 +8,7 @@ namespace Ave.Extensions.FileSystem
 {
     /// <summary>
     /// Represents a canonical file system path that is always validated and stored efficiently.
+    /// Supports both absolute paths (starting with '/') and relative paths.
     /// </summary>
     public readonly record struct CanonicalPath : IEquatable<CanonicalPath>
     {
@@ -23,6 +26,16 @@ namespace Ave.Extensions.FileSystem
         /// Gets a cached hash code for efficient comparisons.
         /// </summary>
         private readonly int _hashCode;
+
+        /// <summary>
+        /// Gets whether this is an absolute path (starts with '/').
+        /// </summary>
+        public bool IsAbsolute => Value.StartsWith('/');
+
+        /// <summary>
+        /// Gets whether this is a relative path (does not start with '/').
+        /// </summary>
+        public bool IsRelative => !IsAbsolute;
 
         /// <summary>
         /// Gets the root canonical path ("/").
@@ -43,19 +56,15 @@ namespace Ave.Extensions.FileSystem
 
         /// <summary>
         /// Creates a new CanonicalPath from the provided path string.
+        /// Supports both absolute paths (starting with '/') and relative paths.
         /// </summary>
-        /// <param name="path">The path to validate. Must start with '/' and contain only forward slashes.</param>
+        /// <param name="path">The path to validate. Must contain only forward slashes.</param>
         /// <returns>A Result containing the CanonicalPath or an error.</returns>
         public static Result<CanonicalPath, Error> Create(string path)
         {
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrWhiteSpace(path))
             {
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathNullOrEmpty);
-            }
-
-            if (!path.StartsWith('/'))
-            {
-                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathMustStartWithSlash);
             }
 
             if (path.Contains('\\'))
@@ -113,16 +122,27 @@ namespace Ave.Extensions.FileSystem
         /// <returns>A Result containing the parent path or an error if this is the root path.</returns>
         public Result<CanonicalPath, Error> GetParent()
         {
-            if (Segments.Length == 0) // Root path
+            if (Segments.Length == 0) // Root path or empty relative
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.RootHasNoParent);
 
-            if (Segments.Length == 1) // Direct child of root
+            if (IsAbsolute && Segments.Length == 1) // Direct child of root
                 return Result<CanonicalPath, Error>.Success(Root);
 
             var parentSegments = new string[Segments.Length - 1];
             Array.Copy(Segments, 0, parentSegments, 0, parentSegments.Length);
-            var parentPath = "/" + string.Join("/", parentSegments);
-            return Result<CanonicalPath, Error>.Success(new CanonicalPath(parentPath, parentSegments));
+
+            if (IsAbsolute)
+            {
+                var parentPath = "/" + string.Join("/", parentSegments);
+                return Result<CanonicalPath, Error>.Success(new CanonicalPath(parentPath, parentSegments));
+            }
+
+            // Relative path
+            if (parentSegments.Length == 0)
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.RootHasNoParent);
+
+            var relativeParentPath = string.Join("/", parentSegments);
+            return Result<CanonicalPath, Error>.Success(new CanonicalPath(relativeParentPath, parentSegments));
         }
 
         /// <summary>
@@ -132,6 +152,105 @@ namespace Ave.Extensions.FileSystem
         public string GetName()
         {
             return Segments.Length == 0 ? "/" : Segments[^1];
+        }
+
+        /// <summary>
+        /// Resolves this relative path against a base path to produce an absolute path.
+        /// Handles "." (current) and ".." (parent) segments.
+        /// </summary>
+        /// <param name="basePath">The absolute base path to resolve against.</param>
+        /// <returns>A Result containing the resolved absolute path or an error.</returns>
+        public Result<CanonicalPath, Error> Resolve(CanonicalPath basePath)
+        {
+            if (!basePath.IsAbsolute)
+                return Result<CanonicalPath, Error>.Failure(
+                    FileSystemErrors.CanonicalPath.ResolveRequiresAbsoluteBase);
+
+            if (IsAbsolute)
+                return Result<CanonicalPath, Error>.Success(this);
+
+            var resolvedSegments = new List<string>(basePath.Segments);
+
+            foreach (var segment in Segments)
+            {
+                if (segment == ".")
+                    continue;
+
+                if (segment == "..")
+                {
+                    if (resolvedSegments.Count == 0)
+                        return Result<CanonicalPath, Error>.Failure(
+                            FileSystemErrors.CanonicalPath.RelativePathEscapesRoot(Value));
+                    resolvedSegments.RemoveAt(resolvedSegments.Count - 1);
+                }
+                else
+                {
+                    resolvedSegments.Add(segment);
+                }
+            }
+
+            return Create(resolvedSegments.ToArray());
+        }
+
+        /// <summary>
+        /// Gets the file extension including the dot (e.g., ".md"). Empty string if no extension.
+        /// </summary>
+        /// <returns>The file extension including the dot, or empty string if none.</returns>
+        public string GetExtension()
+        {
+            var name = GetName();
+            if (name == "/")
+                return string.Empty;
+
+            var dotIndex = name.LastIndexOf('.');
+            if (dotIndex <= 0) // No dot, or dot is first character (hidden file like .gitignore)
+                return string.Empty;
+
+            return name.Substring(dotIndex);
+        }
+
+        /// <summary>
+        /// Gets the file name without extension (e.g., "readme" from "readme.md").
+        /// </summary>
+        /// <returns>The file name without extension.</returns>
+        public string GetNameWithoutExtension()
+        {
+            var name = GetName();
+            if (name == "/")
+                return "/";
+
+            var dotIndex = name.LastIndexOf('.');
+            if (dotIndex <= 0)
+                return name;
+
+            return name.Substring(0, dotIndex);
+        }
+
+        /// <summary>
+        /// Returns a new path with the extension changed. Pass empty string to remove extension.
+        /// </summary>
+        /// <param name="newExtension">The new extension (including the dot, e.g., ".txt"). Pass empty string to remove.</param>
+        /// <returns>A Result containing the new path or an error.</returns>
+        public Result<CanonicalPath, Error> ChangeExtension(string newExtension)
+        {
+            if (Segments.Length == 0)
+                return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.RootHasNoParent);
+
+            var nameWithoutExt = GetNameWithoutExtension();
+            var newName = nameWithoutExt + newExtension;
+
+            if (Segments.Length == 1)
+            {
+                if (IsAbsolute)
+                    return Create("/" + newName);
+                return Create(newName);
+            }
+
+            var parentResult = GetParent();
+            if (parentResult.IsFailure)
+                return parentResult;
+
+            return parentResult.Value.Append(newName);
         }
 
         /// <summary>
@@ -151,7 +270,8 @@ namespace Ave.Extensions.FileSystem
             Array.Copy(Segments, 0, newSegments, 0, Segments.Length);
             newSegments[^1] = segment;
 
-            var combinedPath = "/" + string.Join("/", newSegments);
+            var prefix = IsAbsolute ? "/" : "";
+            var combinedPath = prefix + string.Join("/", newSegments);
             return Result<CanonicalPath, Error>.Success(new CanonicalPath(combinedPath, newSegments));
         }
 
@@ -187,7 +307,8 @@ namespace Ave.Extensions.FileSystem
             Array.Copy(Segments, 0, newSegments, 0, Segments.Length);
             Array.Copy(segments, 0, newSegments, Segments.Length, segments.Length);
 
-            var combinedPath = "/" + string.Join("/", newSegments);
+            var prefix = IsAbsolute ? "/" : "";
+            var combinedPath = prefix + string.Join("/", newSegments);
             return Result<CanonicalPath, Error>.Success(new CanonicalPath(combinedPath, newSegments));
         }
 
@@ -306,6 +427,40 @@ namespace Ave.Extensions.FileSystem
         /// </summary>
         /// <returns>The path string.</returns>
         public override string ToString() => Value;
+
+        /// <summary>
+        /// Replaces characters that are invalid in file names with the specified replacement character.
+        /// </summary>
+        /// <param name="name">The file name to sanitize.</param>
+        /// <param name="replacement">The character to substitute for invalid characters. Defaults to '_'.</param>
+        /// <returns>A sanitized file name with all invalid characters replaced.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="name"/> is null.</exception>
+        public static string SanitizeFileName(string name, char replacement = '_')
+        {
+            if (name is null)
+                throw new ArgumentNullException(nameof(name));
+
+            if (name.Length == 0)
+                return string.Empty;
+
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var span = name.AsSpan();
+            char[]? buffer = null;
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (Array.IndexOf(invalidChars, span[i]) >= 0)
+                {
+                    if (buffer is null)
+                    {
+                        buffer = name.ToCharArray();
+                    }
+                    buffer[i] = replacement;
+                }
+            }
+
+            return buffer is null ? name : new string(buffer);
+        }
 
     }
 }

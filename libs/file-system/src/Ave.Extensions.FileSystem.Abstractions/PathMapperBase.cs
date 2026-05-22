@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -24,30 +22,13 @@ namespace Ave.Extensions.FileSystem
                 return Result<CanonicalPath, Error>.Failure(
                     FileSystemErrors.CanonicalPath.RelativePathNullOrEmpty);
 
-            var relativeSegments = relativePath.Split(
-                new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            // Normalize backslashes to forward slashes before creating a canonical path
+            var normalized = relativePath.Replace('\\', '/');
+            var createResult = CanonicalPath.Create(normalized);
+            if (createResult.IsFailure)
+                return createResult;
 
-            var resolvedSegments = new List<string>(basePath.Segments);
-
-            foreach (var segment in relativeSegments)
-            {
-                if (segment == ".")
-                    continue;
-
-                if (segment == "..")
-                {
-                    if (resolvedSegments.Count == 0)
-                        return Result<CanonicalPath, Error>.Failure(
-                            FileSystemErrors.CanonicalPath.RelativePathEscapesRoot(relativePath));
-                    resolvedSegments.RemoveAt(resolvedSegments.Count - 1);
-                }
-                else
-                {
-                    resolvedSegments.Add(segment);
-                }
-            }
-
-            return CanonicalPath.Create(resolvedSegments.ToArray());
+            return createResult.Value.Resolve(basePath);
         }
     }
 }

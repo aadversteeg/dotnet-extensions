@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem;
 using Ave.Extensions.Functional;
@@ -54,15 +55,18 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
             result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathNullOrEmpty);
         }
 
-        [Fact(DisplayName = "CP-005: Create from path not starting with slash returns failure")]
+        [Fact(DisplayName = "CP-005: Create from relative path returns success")]
         public void CP005()
         {
             // Act
             var result = CanonicalPath.Create("users/documents");
 
             // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathMustStartWithSlash);
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("users/documents");
+            result.Value.Segments.Should().Equal("users", "documents");
+            result.Value.IsRelative.Should().BeTrue();
+            result.Value.IsAbsolute.Should().BeFalse();
         }
 
         [Fact(DisplayName = "CP-006: Create from path containing backslashes returns failure")]
@@ -536,6 +540,426 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
 
             // Assert
             result.Should().Be("/users/documents");
+        }
+
+        [Fact(DisplayName = "CP-043: IsAbsolute returns true for absolute path")]
+        public void CP043()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/users/documents").Value;
+
+            // Act & Assert
+            path.IsAbsolute.Should().BeTrue();
+            path.IsRelative.Should().BeFalse();
+        }
+
+        [Fact(DisplayName = "CP-044: IsRelative returns true for relative path")]
+        public void CP044()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("inbox").Value;
+
+            // Act & Assert
+            path.IsRelative.Should().BeTrue();
+            path.IsAbsolute.Should().BeFalse();
+        }
+
+        [Fact(DisplayName = "CP-045: Create from dotted relative path returns success")]
+        public void CP045()
+        {
+            // Act
+            var result = CanonicalPath.Create("./src");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("./src");
+            result.Value.IsRelative.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "CP-046: Create from parent-relative path returns success")]
+        public void CP046()
+        {
+            // Act
+            var result = CanonicalPath.Create("../sibling");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Segments.Should().Equal("..", "sibling");
+        }
+
+        [Fact(DisplayName = "CP-047: Create from relative path with dotfile returns success")]
+        public void CP047()
+        {
+            // Act
+            var result = CanonicalPath.Create(".flora/STATE.md");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Segments.Should().Equal(".flora", "STATE.md");
+        }
+
+        [Fact(DisplayName = "CP-048: Resolve relative path against absolute base")]
+        public void CP048()
+        {
+            // Arrange
+            var relative = CanonicalPath.Create("inbox").Value;
+            var basePath = CanonicalPath.Create("/c/project/tasks").Value;
+
+            // Act
+            var result = relative.Resolve(basePath);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("/c/project/tasks/inbox");
+            result.Value.IsAbsolute.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "CP-049: Resolve with dot segments normalizes correctly")]
+        public void CP049()
+        {
+            // Arrange
+            var relative = CanonicalPath.Create("./src/../lib").Value;
+            var basePath = CanonicalPath.Create("/c/project").Value;
+
+            // Act
+            var result = relative.Resolve(basePath);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("/c/project/lib");
+        }
+
+        [Fact(DisplayName = "CP-050: Resolve with parent beyond root returns failure")]
+        public void CP050()
+        {
+            // Arrange
+            var relative = CanonicalPath.Create("../../..").Value;
+            var basePath = CanonicalPath.Create("/c/project").Value;
+
+            // Act
+            var result = relative.Resolve(basePath);
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.RelativePathEscapesRoot);
+        }
+
+        [Fact(DisplayName = "CP-051: Resolve absolute path against base returns itself")]
+        public void CP051()
+        {
+            // Arrange
+            var absolute = CanonicalPath.Create("/c/other/path").Value;
+            var basePath = CanonicalPath.Create("/c/project").Value;
+
+            // Act
+            var result = absolute.Resolve(basePath);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().Be(absolute);
+        }
+
+        [Fact(DisplayName = "CP-052: Resolve with non-absolute base returns failure")]
+        public void CP052()
+        {
+            // Arrange
+            var relative = CanonicalPath.Create("inbox").Value;
+            var relativeBase = CanonicalPath.Create("some/path").Value;
+
+            // Act
+            var result = relative.Resolve(relativeBase);
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.ResolveRequiresAbsoluteBase);
+        }
+
+        [Fact(DisplayName = "CP-053: GetExtension returns dot extension for file")]
+        public void CP053()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/readme.md").Value;
+
+            // Act & Assert
+            path.GetExtension().Should().Be(".md");
+        }
+
+        [Fact(DisplayName = "CP-054: GetExtension returns empty for no extension")]
+        public void CP054()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/Makefile").Value;
+
+            // Act & Assert
+            path.GetExtension().Should().BeEmpty();
+        }
+
+        [Fact(DisplayName = "CP-055: GetExtension returns empty for hidden file without extension")]
+        public void CP055()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/.gitignore").Value;
+
+            // Act & Assert
+            path.GetExtension().Should().BeEmpty();
+        }
+
+        [Fact(DisplayName = "CP-056: GetExtension returns last extension for multiple dots")]
+        public void CP056()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/archive.tar.gz").Value;
+
+            // Act & Assert
+            path.GetExtension().Should().Be(".gz");
+        }
+
+        [Fact(DisplayName = "CP-057: GetExtension returns empty for root")]
+        public void CP057()
+        {
+            // Act & Assert
+            CanonicalPath.Root.GetExtension().Should().BeEmpty();
+        }
+
+        [Fact(DisplayName = "CP-058: GetNameWithoutExtension returns name without extension")]
+        public void CP058()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/readme.md").Value;
+
+            // Act & Assert
+            path.GetNameWithoutExtension().Should().Be("readme");
+        }
+
+        [Fact(DisplayName = "CP-059: GetNameWithoutExtension returns full name for no extension")]
+        public void CP059()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/Makefile").Value;
+
+            // Act & Assert
+            path.GetNameWithoutExtension().Should().Be("Makefile");
+        }
+
+        [Fact(DisplayName = "CP-060: GetNameWithoutExtension returns hidden file name")]
+        public void CP060()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/.gitignore").Value;
+
+            // Act & Assert
+            path.GetNameWithoutExtension().Should().Be(".gitignore");
+        }
+
+        [Fact(DisplayName = "CP-061: ChangeExtension changes file extension")]
+        public void CP061()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/readme.md").Value;
+
+            // Act
+            var result = path.ChangeExtension(".txt");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("/project/readme.txt");
+        }
+
+        [Fact(DisplayName = "CP-062: ChangeExtension removes extension with empty string")]
+        public void CP062()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("/project/readme.md").Value;
+
+            // Act
+            var result = path.ChangeExtension("");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("/project/readme");
+        }
+
+        [Fact(DisplayName = "CP-063: ChangeExtension on root returns failure")]
+        public void CP063()
+        {
+            // Act
+            var result = CanonicalPath.Root.ChangeExtension(".txt");
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "CP-064: Append on relative path preserves relative")]
+        public void CP064()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("tasks").Value;
+
+            // Act
+            var result = path.Append("inbox");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("tasks/inbox");
+            result.Value.IsRelative.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "CP-065: GetParent on relative multi-segment path returns relative parent")]
+        public void CP065()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("tasks/inbox/file.md").Value;
+
+            // Act
+            var result = path.GetParent();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("tasks/inbox");
+            result.Value.IsRelative.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "CP-066: GetParent on single-segment relative path returns failure")]
+        public void CP066()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("inbox").Value;
+
+            // Act
+            var result = path.GetParent();
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "CP-067: ChangeExtension on relative path preserves relative")]
+        public void CP067()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("readme.md").Value;
+
+            // Act
+            var result = path.ChangeExtension(".txt");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("readme.txt");
+            result.Value.IsRelative.Should().BeTrue();
+        }
+
+        [Fact(DisplayName = "CP-068: Create from whitespace-only path returns failure")]
+        public void CP068()
+        {
+            // Act
+            var result = CanonicalPath.Create("   ");
+
+            // Assert
+            result.IsFailure.Should().BeTrue();
+            result.Error.Code.Should().Be(FileSystemErrorCodes.CanonicalPath.PathNullOrEmpty);
+        }
+
+        [Fact(DisplayName = "CP-069: GetExtension on relative path works")]
+        public void CP069()
+        {
+            // Arrange
+            var path = CanonicalPath.Create("docs/readme.md").Value;
+
+            // Act & Assert
+            path.GetExtension().Should().Be(".md");
+        }
+
+        [Fact(DisplayName = "CP-070: Resolve nested relative path")]
+        public void CP070()
+        {
+            // Arrange
+            var relative = CanonicalPath.Create(".flora/STATE.md").Value;
+            var basePath = CanonicalPath.Create("/c/project").Value;
+
+            // Act
+            var result = relative.Resolve(basePath);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Value.Should().Be("/c/project/.flora/STATE.md");
+        }
+
+        [Fact(DisplayName = "CP-071: SanitizeFileName replaces invalid characters with default replacement")]
+        public void CP071()
+        {
+            // Act
+            var result = CanonicalPath.SanitizeFileName("my:file*name");
+
+            // Assert
+            result.Should().Be("my_file_name");
+        }
+
+        [Fact(DisplayName = "CP-072: SanitizeFileName returns empty string for empty input")]
+        public void CP072()
+        {
+            // Act
+            var result = CanonicalPath.SanitizeFileName("");
+
+            // Assert
+            result.Should().BeEmpty();
+        }
+
+        [Fact(DisplayName = "CP-073: SanitizeFileName replaces all characters when all are invalid")]
+        public void CP073()
+        {
+            // Arrange - build a string of only invalid chars
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var input = new string(invalidChars);
+
+            // Act
+            var result = CanonicalPath.SanitizeFileName(input);
+
+            // Assert
+            result.Should().HaveLength(invalidChars.Length);
+            result.Should().MatchRegex("^_+$");
+        }
+
+        [Fact(DisplayName = "CP-074: SanitizeFileName returns original string when no invalid characters")]
+        public void CP074()
+        {
+            // Act
+            var result = CanonicalPath.SanitizeFileName("valid-file_name.txt");
+
+            // Assert
+            result.Should().Be("valid-file_name.txt");
+        }
+
+        [Fact(DisplayName = "CP-075: SanitizeFileName uses custom replacement character")]
+        public void CP075()
+        {
+            // Act
+            var result = CanonicalPath.SanitizeFileName("my:file*name", '-');
+
+            // Assert
+            result.Should().Be("my-file-name");
+        }
+
+        [Fact(DisplayName = "CP-076: SanitizeFileName throws ArgumentNullException for null input")]
+        public void CP076()
+        {
+            // Act
+            var act = () => CanonicalPath.SanitizeFileName(null!);
+
+            // Assert
+            act.Should().Throw<ArgumentNullException>().WithParameterName("name");
+        }
+
+        [Fact(DisplayName = "CP-077: SanitizeFileName handles platform-specific invalid chars")]
+        public void CP077()
+        {
+            // Arrange - use chars from Path.GetInvalidFileNameChars() to be platform-aware
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var input = $"file{invalidChars[0]}name";
+
+            // Act
+            var result = CanonicalPath.SanitizeFileName(input);
+
+            // Assert
+            result.Should().Be("file_name");
         }
     }
 }

@@ -96,6 +96,13 @@ namespace Ave.Extensions.FileSystem
                 FileSystemErrorCodes.CanonicalPath.RelativePathEscapesRoot,
                 "Relative path navigates above the root")
                 .With("relativePath", relativePath);
+
+            /// <summary>
+            /// Error when Resolve is called with a non-absolute base path.
+            /// </summary>
+            public static readonly Error ResolveRequiresAbsoluteBase = new Error(
+                FileSystemErrorCodes.CanonicalPath.ResolveRequiresAbsoluteBase,
+                "Resolve requires an absolute base path");
         }
 
         /// <summary>
