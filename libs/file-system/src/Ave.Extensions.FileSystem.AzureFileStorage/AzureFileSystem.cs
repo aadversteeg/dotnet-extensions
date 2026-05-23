@@ -604,15 +604,41 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         }
 
         /// <inheritdoc />
-        public Task<Result<IReadOnlyList<CanonicalPath>, Error>> ListFilesAsync(
+        public async Task<Result<IReadOnlyList<CanonicalPath>, Error>> ListFilesAsync(
             CanonicalPath directory,
             CancellationToken cancellationToken = default)
         {
-            // Azure File Share listing not implemented yet
-            var error = new Error(
-                FileSystemErrorCodes.NotSupported,
-                "ListFilesAsync is not yet supported for Azure File Share");
-            return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(error));
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var systemPathResult = _pathMapper.MapToSystemPath(directory);
+                if (systemPathResult.IsFailure)
+                    return Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message)
+                            .With("path", directory.Value));
+
+                var azurePath = GetAzurePath(systemPathResult.Value);
+                var directoryClient = GetDirectoryClient(azurePath);
+
+                var files = new List<CanonicalPath>();
+                await foreach (var item in directoryClient.GetFilesAndDirectoriesAsync(cancellationToken: cancellationToken))
+                {
+                    if (!item.IsDirectory)
+                        files.Add(CombinePath(directory.Value, item.Name));
+                }
+
+                return Result<IReadOnlyList<CanonicalPath>, Error>.Success(files);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
+                    FileSystemErrors.FromException(ex, directory.Value));
+            }
         }
 
         /// <inheritdoc />
