@@ -13,6 +13,8 @@
     <PackageVersion Include="Ave.Extensions.Functional" Version="0.0.5-preview.1" />
     <PackageVersion Include="System.Reactive" Version="6.0.0" />
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <!-- netstandard2.1 only; Channel<T> ships in-box from net5.0 onwards -->
+    <PackageVersion Include="System.Threading.Channels" Version="6.0.0" />
     <!-- MIME Detection dependencies -->
     <PackageVersion Include="Mime-Detective" Version="22.7.15" />
     <!-- Azure Storage dependencies -->

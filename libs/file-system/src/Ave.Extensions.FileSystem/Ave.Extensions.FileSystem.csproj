@@ -18,4 +18,13 @@
     <PackageReference Include="System.Reactive" />
   </ItemGroup>
 
+  <!-- System.Threading.Channels is in-box from net5.0 onwards; netstandard2.1 needs the package. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="System.Threading.Channels" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Extensions.FileSystem" />
+  </ItemGroup>
+
 </Project>

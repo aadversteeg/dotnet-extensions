@@ -413,52 +413,78 @@ namespace Ave.Extensions.FileSystem.Local
             return await ExecuteAsync(async () =>
             {
                 options ??= new TraversalOptions();
-                
-                // Notify handler of traversal start
-                var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
-                if (startResult.IsFailure)
-                    return Result<TraversalSummary, Error>.Failure(startResult.Error);
 
                 var context = TraversalContext.CreateInitial(path);
                 var stats = new TraversalStats();
-                
-                // Get the starting entry as IFileSystemEntry
-                var entryResult = await GetStartingEntryAsync(path, cancellationToken);
-                if (entryResult.IsFailure)
-                    return Result<TraversalSummary, Error>.Failure(entryResult.Error);
+                var completionNotified = false;
 
-                // Select strategy based on hint and provide file reader factory
-                var strategy = CreateLocalStrategy(options.StrategyHint);
-                
-                // Perform traversal
-                var traversalResult = await strategy.TraverseAsync(
-                    entryResult.Value, 
-                    handler,
-                    mapper,
-                    options, 
-                    context, 
-                    stats,
-                    GetChildrenAsync,
-                    cancellationToken);
+                try
+                {
+                    // Notify handler of traversal start
+                    var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
+                    if (startResult.IsFailure)
+                        return Result<TraversalSummary, Error>.Failure(startResult.Error);
 
-                if (traversalResult.IsFailure)
-                    return Result<TraversalSummary, Error>.Failure(traversalResult.Error);
+                    // Get the starting entry as IFileSystemEntry
+                    var entryResult = await GetStartingEntryAsync(path, cancellationToken);
+                    if (entryResult.IsFailure)
+                        return Result<TraversalSummary, Error>.Failure(entryResult.Error);
 
-                var summary = new TraversalSummary(
-                    stats.FilesProcessed,
-                    stats.DirectoriesProcessed,
-                    stats.TotalBytesProcessed,
-                    DateTime.UtcNow - context.StartTimeUtc,
-                    cancellationToken.IsCancellationRequested);
+                    // Select strategy based on hint and provide file reader factory
+                    var strategy = CreateLocalStrategy(options.StrategyHint);
 
-                // Notify handler of completion
-                var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
-                if (completeResult.IsFailure)
-                    return Result<TraversalSummary, Error>.Failure(completeResult.Error);
+                    // Perform traversal
+                    var traversalResult = await strategy.TraverseAsync(
+                        entryResult.Value,
+                        handler,
+                        mapper,
+                        options,
+                        context,
+                        stats,
+                        GetChildrenAsync,
+                        cancellationToken);
 
-                return Result<TraversalSummary, Error>.Success(summary);
+                    if (traversalResult.IsFailure)
+                        return Result<TraversalSummary, Error>.Failure(traversalResult.Error);
+
+                    var summary = CreateSummary(context, stats, cancellationToken);
+
+                    // Notify handler of completion
+                    completionNotified = true;
+                    var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
+                    if (completeResult.IsFailure)
+                        return Result<TraversalSummary, Error>.Failure(completeResult.Error);
+
+                    return Result<TraversalSummary, Error>.Success(summary);
+                }
+                finally
+                {
+                    // Completion is a lifecycle contract, not a success callback. Streaming handlers
+                    // hold their consumer open until it fires, so every exit - a failed start, a
+                    // missing starting entry, a failed traversal, a thrown exception, cancellation -
+                    // has to run it or the consumer waits forever. CancellationToken.None because a
+                    // cancelled traversal is exactly the case that must still release the consumer.
+                    if (!completionNotified)
+                    {
+                        completionNotified = true;
+                        await handler.OnTraversalCompleteAsync(
+                            CreateSummary(context, stats, cancellationToken),
+                            CancellationToken.None);
+                    }
+                }
             }, path.Value);
         }
+
+        private static TraversalSummary CreateSummary(
+            TraversalContext context,
+            TraversalStats stats,
+            CancellationToken cancellationToken) =>
+            new TraversalSummary(
+                stats.FilesProcessed,
+                stats.DirectoriesProcessed,
+                stats.TotalBytesProcessed,
+                DateTime.UtcNow - context.StartTimeUtc,
+                cancellationToken.IsCancellationRequested);
 
         /// <summary>
         /// Creates a traversal strategy based on the provided hint.

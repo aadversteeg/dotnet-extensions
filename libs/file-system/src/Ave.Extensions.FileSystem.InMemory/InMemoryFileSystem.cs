@@ -382,6 +382,10 @@ namespace Ave.Extensions.FileSystem.InMemory
             TraversalOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            var context = TraversalContext.CreateInitial(path);
+            var stats = new TraversalStats();
+            var completionNotified = false;
+
             try
             {
                 options ??= new TraversalOptions();
@@ -390,9 +394,6 @@ namespace Ave.Extensions.FileSystem.InMemory
                 var startResult = await handler.OnTraversalStartAsync(path, cancellationToken);
                 if (startResult.IsFailure)
                     return Result<TraversalSummary, Error>.Failure(startResult.Error);
-
-                var context = TraversalContext.CreateInitial(path);
-                var stats = new TraversalStats();
 
                 // Get the starting entry as IFileSystemEntry
                 var entryResult = await GetStartingEntryAsync(path, cancellationToken);
@@ -416,14 +417,10 @@ namespace Ave.Extensions.FileSystem.InMemory
                 if (traversalResult.IsFailure)
                     return Result<TraversalSummary, Error>.Failure(traversalResult.Error);
 
-                var summary = new TraversalSummary(
-                    stats.FilesProcessed,
-                    stats.DirectoriesProcessed,
-                    stats.TotalBytesProcessed,
-                    DateTime.UtcNow - context.StartTimeUtc,
-                    cancellationToken.IsCancellationRequested);
+                var summary = CreateSummary(context, stats, cancellationToken);
 
                 // Notify handler of completion
+                completionNotified = true;
                 var completeResult = await handler.OnTraversalCompleteAsync(summary, cancellationToken);
                 if (completeResult.IsFailure)
                     return Result<TraversalSummary, Error>.Failure(completeResult.Error);
@@ -439,7 +436,33 @@ namespace Ave.Extensions.FileSystem.InMemory
                 return Result<TraversalSummary, Error>.Failure(
                     FileSystemErrors.FromException(ex, path.Value));
             }
+            finally
+            {
+                // Completion is a lifecycle contract, not a success callback. Streaming handlers
+                // hold their consumer open until it fires, so every exit - a failed start, a
+                // missing starting entry, a failed traversal, a thrown exception, cancellation -
+                // has to run it or the consumer waits forever. CancellationToken.None because a
+                // cancelled traversal is exactly the case that must still release the consumer.
+                if (!completionNotified)
+                {
+                    completionNotified = true;
+                    await handler.OnTraversalCompleteAsync(
+                        CreateSummary(context, stats, cancellationToken),
+                        CancellationToken.None);
+                }
+            }
         }
+
+        private static TraversalSummary CreateSummary(
+            TraversalContext context,
+            TraversalStats stats,
+            CancellationToken cancellationToken) =>
+            new TraversalSummary(
+                stats.FilesProcessed,
+                stats.DirectoriesProcessed,
+                stats.TotalBytesProcessed,
+                DateTime.UtcNow - context.StartTimeUtc,
+                cancellationToken.IsCancellationRequested);
 
         /// <summary>
         /// Creates a traversal strategy based on the provided hint.

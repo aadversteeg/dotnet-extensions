@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.FileSystem.Models;
@@ -15,34 +15,38 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
     /// <typeparam name="TEntry">The type of entries this handler processes.</typeparam>
     internal sealed class StreamingEntryHandler<TEntry> : ITraversalHandler<TEntry>
     {
-        private readonly ConcurrentQueue<TEntry> _queue;
+        private readonly Channel<TEntry> _channel;
         private readonly bool _includeFiles;
         private readonly bool _includeDirectories;
         private readonly PatternMatcher _matcher;
-        private volatile bool _isCompleted;
-        private readonly TaskCompletionSource<bool> _completionSource;
 
         public StreamingEntryHandler(string searchPattern, bool includeFiles, bool includeDirectories)
         {
             _includeFiles = includeFiles;
             _includeDirectories = includeDirectories;
             _matcher = new PatternMatcher(searchPattern);
-            _queue = new ConcurrentQueue<TEntry>();
-            _completionSource = new TaskCompletionSource<bool>();
+
+            // Unbounded so a producing traversal never blocks on a slow consumer, which is what the
+            // previous ConcurrentQueue gave us. Multiple writers because the parallel traversal
+            // strategy calls the handler from several tasks at once; a single reader because the
+            // enumerator returned by GetEntriesAsync is the only consumer.
+            _channel = Channel.CreateUnbounded<TEntry>(new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = false
+            });
         }
 
         public async IAsyncEnumerable<TEntry> GetEntriesAsync(
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            while (!_isCompleted || !_queue.IsEmpty)
+            // Waits for the producer instead of polling it: no Task.Delay timer-resolution floor
+            // (~15.6ms per empty poll on Windows) and no busy loop when the traversal is slow.
+            while (await _channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                if (_queue.TryDequeue(out var entry))
+                while (_channel.Reader.TryRead(out var entry))
                 {
                     yield return entry;
-                }
-                else if (!_isCompleted)
-                {
-                    await Task.Delay(1, cancellationToken);
                 }
             }
         }
@@ -74,13 +78,13 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
                 {
                     if (_matcher.IsMatch(entryWithPath.Path.GetName()))
                     {
-                        _queue.Enqueue(file);
+                        _channel.Writer.TryWrite(file);
                     }
                 }
                 else
                 {
                     // If the entry doesn't have path info, just include it
-                    _queue.Enqueue(file);
+                    _channel.Writer.TryWrite(file);
                 }
             }
             return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
@@ -97,13 +101,13 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
                 {
                     if (_matcher.IsMatch(entryWithPath.Path.GetName()))
                     {
-                        _queue.Enqueue(directory);
+                        _channel.Writer.TryWrite(directory);
                     }
                 }
                 else
                 {
                     // If the entry doesn't have path info, just include it
-                    _queue.Enqueue(directory);
+                    _channel.Writer.TryWrite(directory);
                 }
             }
             return Task.FromResult(Result<TraversalControl, Error>.Success(TraversalControl.Continue));
@@ -113,8 +117,10 @@ namespace Ave.Extensions.FileSystem.Traversal.Handlers
             TraversalSummary summary,
             CancellationToken cancellationToken)
         {
-            _isCompleted = true;
-            _completionSource.SetResult(true);
+            // TryComplete rather than Complete: completion is guaranteed by a finally in the file
+            // system's TraverseAsync, so a handler may legitimately be told twice. The second call
+            // must be a no-op, not an InvalidOperationException.
+            _channel.Writer.TryComplete();
             return Task.FromResult(Result<Unit, Error>.Success(Unit.Value));
         }
     }
