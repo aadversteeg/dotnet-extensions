@@ -18,9 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
+    <PackageReference Include="Ave.Extensions.FileSystem.Abstractions" />
+    <PackageReference Include="Ave.Extensions.FileSystem" />
+    <PackageReference Include="Ave.Extensions.FileSystem.Local" />
   </ItemGroup>
 
 </Project>

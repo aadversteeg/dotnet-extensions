@@ -3,11 +3,21 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
-  <!-- Packages from other families of this repository, at their published version -->
+  <!--
+    Our own packages. Only used when UseRepoProjectReferences=false (release); otherwise
+    Directory.Build.targets turns these references into ProjectReferences.
+    Version = the LOWEST version any package of this repo needs. A project that needs a newer one sets
+    VersionOverride on its PackageReference. The file-system versions are placeholders until the first
+    release from this repo (see docs/RELEASING.md, "First release wave").
+  -->
   <ItemGroup>
     <PackageVersion Include="Ave.Extensions.Functional.Core" Version="0.0.5-preview.1" />
     <PackageVersion Include="Ave.Extensions.Functional" Version="0.0.5-preview.1" />
     <PackageVersion Include="Ave.Extensions.ErrorPaths" Version="0.0.2-preview.1" />
+    <PackageVersion Include="Ave.Extensions.FluentContracts" Version="0.0.1-preview.2" />
+    <PackageVersion Include="Ave.Extensions.FileSystem.Abstractions" Version="0.6.0-preview.1" />
+    <PackageVersion Include="Ave.Extensions.FileSystem" Version="0.6.0-preview.1" />
+    <PackageVersion Include="Ave.Extensions.FileSystem.Local" Version="0.6.0-preview.1" />
   </ItemGroup>
 
   <ItemGroup>

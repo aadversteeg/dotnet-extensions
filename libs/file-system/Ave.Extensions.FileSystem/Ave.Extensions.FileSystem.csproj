@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <PackageReference Include="Ave.Extensions.FileSystem.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Functional.Core\Ave.Extensions.Functional.Core.csproj" />
+    <PackageReference Include="Ave.Extensions.Functional.Core" VersionOverride="0.1.0-preview.3" />
   </ItemGroup>
 
 </Project>

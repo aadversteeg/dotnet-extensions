@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.ErrorPaths\Ave.Extensions.ErrorPaths.csproj" />
+    <PackageReference Include="Ave.Extensions.ErrorPaths" VersionOverride="0.0.3-preview.1" />
   </ItemGroup>
 
 </Project>

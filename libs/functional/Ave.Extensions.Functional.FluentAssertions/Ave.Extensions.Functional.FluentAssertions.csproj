@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Functional\Ave.Extensions.Functional.csproj" />
+    <PackageReference Include="Ave.Extensions.Functional" VersionOverride="0.1.0-preview.3" />
   </ItemGroup>
 
 </Project>

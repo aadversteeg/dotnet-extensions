@@ -1,0 +1,30 @@
+<Project>
+  <!--
+    Reference switch for our own packages.
+
+    A project references another package of this repo the way a consumer would:
+      <PackageReference Include="Ave.Extensions.X" />
+    with the minimum version in Directory.Packages.props (VersionOverride where a project needs a newer one).
+
+    UseRepoProjectReferences=true (default, local and CI head builds): every such PackageReference for which
+    libs/*/<PackageId>/<PackageId>.csproj exists is replaced by a ProjectReference to that project, so the
+    whole repo builds and tests against its own head.
+
+    UseRepoProjectReferences=false (release): the PackageReference stays, so the packed nuspec carries the
+    published minimum and a global -p:Version cannot leak into another package.
+  -->
+  <ItemGroup Condition="'$(UseRepoProjectReferences)' == 'true'">
+    <_AveRepoProject Include="$(MSBuildThisFileDirectory)libs/*/Ave.Extensions.*/Ave.Extensions.*.csproj" ProjectPath="%(FullPath)" />
+    <_AveRepoPackage Include="@(_AveRepoProject->'%(Filename)')" />
+    <_AveRepoPackageNotReferenced Include="@(_AveRepoPackage)" Exclude="@(PackageReference)" />
+    <_AveRepoPackageReferenced Include="@(_AveRepoPackage)" Exclude="@(_AveRepoPackageNotReferenced)" />
+
+    <PackageReference Remove="@(_AveRepoPackageReferenced)" />
+    <ProjectReference Include="@(_AveRepoPackageReferenced->'%(ProjectPath)')" />
+
+    <_AveRepoProject Remove="@(_AveRepoProject)" />
+    <_AveRepoPackage Remove="@(_AveRepoPackage)" />
+    <_AveRepoPackageNotReferenced Remove="@(_AveRepoPackageNotReferenced)" />
+    <_AveRepoPackageReferenced Remove="@(_AveRepoPackageReferenced)" />
+  </ItemGroup>
+</Project>
