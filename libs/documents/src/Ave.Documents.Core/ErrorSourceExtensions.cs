@@ -11,7 +11,7 @@ public static class ErrorSourceExtensions
 {
     /// <summary>
     /// Adds the source file and line to an error's metadata. For several errors combined into one
-    /// (<see cref="DocumentErrorCodes.Multiple"/>) the location is added to every part, so each part can still
+    /// (<see cref="ErrorCodes.Aggregate"/>) the location is added to every part, so each part can still
     /// be reported on its own.
     /// </summary>
     /// <param name="error">The error.</param>
@@ -19,7 +19,7 @@ public static class ErrorSourceExtensions
     /// <returns>The error with <see cref="ErrorMetadataKeys.SourceFile"/> and
     /// <see cref="ErrorMetadataKeys.SourceLine"/> set.</returns>
     public static Error WithSource(this Error error, SourceLocation location) =>
-        error.Code == DocumentErrorCodes.Multiple
-            ? ResultCollections.Combine([.. ResultCollections.Parts(error).Select(part => part.WithSource(location))])
+        error.Code == ErrorCodes.Aggregate
+            ? Errors.Aggregate([.. error.Parts().Select(part => part.WithSource(location))])
             : error.With(ErrorMetadataKeys.SourceFile, location.File).With(ErrorMetadataKeys.SourceLine, location.Line);
 }

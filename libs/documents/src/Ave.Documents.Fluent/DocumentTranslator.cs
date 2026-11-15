@@ -21,7 +21,7 @@ public static class DocumentTranslator
     /// <summary>
     /// Validates and translates the document. Node ids are assigned in pre-order, starting with 0 for the root box,
     /// then the header and footer areas after the body, so the same document always gets the same ids. ALL problems
-    /// in the document are reported together (as a <see cref="DocumentErrorCodes.Multiple"/> error when there are
+    /// in the document are reported together (as a <see cref="ErrorCodes.Aggregate"/> error when there are
     /// several), each with the source location of the element that caused it.
     /// </summary>
     /// <param name="document">The document.</param>
@@ -71,7 +71,7 @@ public static class DocumentTranslator
     /// <c>break-before: page</c> on the next element of the list (CSS Fragmentation 3 §3.1). Ids continue from
     /// <paramref name="firstId"/>, each element taking as many as it has nodes.
     /// </summary>
-    internal static Result<ImmutableArray<Node>, Error> Children(ValueList<Element> elements, NodeId firstId, Inherited inherited)
+    internal static Result<ValueList<Node>, Error> Children(ValueList<Element> elements, NodeId firstId, Inherited inherited)
     {
         var pending = new List<(Element Element, bool PageBreakBefore, NodeId Id)>();
         PageBreakElement? pageBreak = null;
@@ -90,7 +90,9 @@ public static class DocumentTranslator
         }
 
         ImmutableArray<Error> problems = pageBreak is null ? [] : [InputChecks.TrailingPageBreak(pageBreak.Source)];
-        var nodes = pending.TraverseAll(item => Translate(item.Element, item.Id, item.PageBreakBefore, inherited));
+        var nodes = pending
+            .TraverseAll(item => Translate(item.Element, item.Id, item.PageBreakBefore, inherited))
+            .OnSuccessMap(translated => translated.ToValueList());
         return WithProblems(problems, nodes);
     }
 
@@ -128,8 +130,8 @@ public static class DocumentTranslator
             return result;
         }
 
-        IReadOnlyList<Error> all = result.IsFailure ? [.. problems, .. ResultCollections.Parts(result.Error)] : problems;
-        return Result<T, Error>.Failure(ResultCollections.Combine(all));
+        IReadOnlyList<Error> all = result.IsFailure ? [.. problems, .. result.Error.Parts()] : problems;
+        return Result<T, Error>.Failure(Errors.Aggregate(all));
     }
 
     private static Result<Node, Error> Translate(Element element, NodeId id, bool pageBreakBefore, Inherited inherited) => element switch
@@ -170,7 +172,7 @@ public static class DocumentTranslator
             .ToImmutableArray();
         if (!problems.IsEmpty)
         {
-            return Result<Node, Error>.Failure(ResultCollections.Combine(problems));
+            return Result<Node, Error>.Failure(Errors.Aggregate(problems));
         }
 
         var own = (inherited with { Text = WithRoleDefaults(inherited.Text, paragraph.Role) }).With(text);

@@ -7,6 +7,7 @@ using Ave.Documents.Images;
 using Ave.Documents.PageModel;
 using Ave.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Render.Pdf;

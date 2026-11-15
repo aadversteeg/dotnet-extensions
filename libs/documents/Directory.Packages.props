@@ -5,10 +5,10 @@
 
   <ItemGroup>
     <!-- Errors as values (runtime dependencies of the libraries). -->
-    <PackageVersion Include="Ave.Extensions.Functional" Version="0.1.0-preview.2" />
-    <PackageVersion Include="Ave.Extensions.Functional.Core" Version="0.1.0-preview.2" />
-    <PackageVersion Include="Ave.Extensions.ErrorPaths" Version="0.0.2-preview.1" />
-    <PackageVersion Include="Ave.Extensions.ErrorPaths.Functional" Version="0.0.2-preview.1" />
+    <PackageVersion Include="Ave.Extensions.Functional" Version="0.1.0-preview.3" />
+    <PackageVersion Include="Ave.Extensions.Functional.Core" Version="0.1.0-preview.3" />
+    <PackageVersion Include="Ave.Extensions.ErrorPaths" Version="0.0.3-preview.1" />
+    <PackageVersion Include="Ave.Extensions.ErrorPaths.Functional" Version="0.0.3-preview.1" />
 
     <!-- Tests only. FluentAssertions stays on 7.x: version 8 changed its licence. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />

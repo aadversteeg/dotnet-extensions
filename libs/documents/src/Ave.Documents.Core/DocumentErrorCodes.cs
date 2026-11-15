@@ -17,12 +17,6 @@ public static class DocumentErrorCodes
     /// <summary>The root of every engine error: <c>Documents</c>.</summary>
     public static readonly ErrorCode _ = new("Documents");
 
-    /// <summary>
-    /// Several independent errors reported together (<c>Documents.Multiple</c>), for example every invalid value
-    /// in a document. The individual errors are in metadata <see cref="ErrorMetadataKeys.Errors"/>.
-    /// </summary>
-    public static readonly ErrorCode Multiple = _ / "Multiple";
-
     /// <summary>Errors in the input a front-end received from its caller.</summary>
     public static class Input
     {

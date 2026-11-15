@@ -19,12 +19,12 @@ public class ErrorSourceExtensionsTests
     [Fact]
     public void WithSource_on_combined_errors_adds_the_location_to_every_part()
     {
-        var combined = ResultCollections.Combine(
+        var combined = Errors.Aggregate(
             [new Error(DocumentErrorCodes.Font.GlyphMissing, "a"), new Error(DocumentErrorCodes.Font.GlyphMissing, "b")]);
 
         var located = combined.WithSource(Location);
 
-        ResultCollections.Parts(located).Should().AllSatisfy(part => part.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(42));
+        located.Parts().Should().AllSatisfy(part => part.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(42));
     }
 
     [Fact]

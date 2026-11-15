@@ -38,7 +38,7 @@ public class ShaperTests
     {
         var error = Shaper.Shape("a漢b漢", TestFonts.Regular, 10).Error;
 
-        var parts = ResultCollections.Parts(error);
+        var parts = error.Parts();
         parts.Should().HaveCount(2);
         parts.Should().AllSatisfy(part =>
         {

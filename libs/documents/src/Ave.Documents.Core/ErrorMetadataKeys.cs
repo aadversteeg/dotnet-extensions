@@ -35,8 +35,4 @@ public static class ErrorMetadataKeys
 
     /// <summary>The property or parameter the value was given for (string).</summary>
     public const string Property = "Property";
-
-    /// <summary>The individual errors of a <see cref="DocumentErrorCodes.Multiple"/> error
-    /// (<c>IReadOnlyList&lt;Error&gt;</c>).</summary>
-    public const string Errors = "Errors";
 }

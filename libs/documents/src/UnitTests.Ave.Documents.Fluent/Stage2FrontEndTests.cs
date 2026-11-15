@@ -147,7 +147,7 @@ public class Stage2FrontEndTests
         var line = CurrentLine() + 1;
         var error = Fail(Doc(Table(Columns(Fill(0), (-1).Pt()), [TableRow([Cell("a"), Cell("b")])])));
 
-        var parts = ResultCollectionsParts(error);
+        var parts = error.Parts();
         parts.Should().HaveCount(2).And.AllSatisfy(part => ShouldPointAt(part, DocumentErrorCodes.Input.Invalid.Columns, line));
     }
 
@@ -175,7 +175,7 @@ public class Stage2FrontEndTests
     {
         var error = Fail(Doc(Table(Columns(Fill(1)), [TableRow([Cell("a")]).MarginTop(2.Pt())]).Padding(3.Pt())));
 
-        ResultCollectionsParts(error).Select(part => part.Code).Should().Equal(DocumentErrorCodes.Input.Invalid.NotApplicable, DocumentErrorCodes.Input.Invalid.NotApplicable);
+        error.Parts().Select(part => part.Code).Should().Equal(DocumentErrorCodes.Input.Invalid.NotApplicable, DocumentErrorCodes.Input.Invalid.NotApplicable);
     }
 
     [Fact]
@@ -238,8 +238,6 @@ public class Stage2FrontEndTests
         Build().Body[0].Should().Be(Build().Body[0] with { });
         ((ImageElement)Build().Body[0]).File.Should().Be(((ImageElement)Build().Body[0]).File);
     }
-
-    private static IReadOnlyList<Error> ResultCollectionsParts(Error error) => ResultCollections.Parts(error);
 
     private static void ShouldPointAt(Error error, ErrorCode code, int line)
     {

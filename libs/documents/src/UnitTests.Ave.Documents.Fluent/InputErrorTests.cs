@@ -45,7 +45,7 @@ public class InputErrorTests
         var line = CurrentLine() + 1;
         var block = Block([Paragraph("x")]).Margin(Length.FromPoints(double.NaN));
 
-        ShouldPointAt(ResultCollectionsFirst(Fail(Document([block]).FontFamily("Lato"))), DocumentErrorCodes.Input.Invalid.Length, line);
+        ShouldPointAt(FirstPart(Fail(Document([block]).FontFamily("Lato"))), DocumentErrorCodes.Input.Invalid.Length, line);
     }
 
     [Fact]
@@ -135,8 +135,8 @@ public class InputErrorTests
 
         var error = Fail(Document([badHeading, Paragraph([badSpan])]).FontFamily("Lato"));
 
-        error.Code.Should().Be(DocumentErrorCodes.Multiple);
-        var parts = global::Ave.Documents.Core.ResultCollections.Parts(error);
+        error.Code.Should().Be(ErrorCodes.Aggregate);
+        var parts = error.Parts();
         parts.Select(part => part.Metadata![ErrorMetadataKeys.SourceLine]).Should().Equal(first, second);
         parts.Select(part => part.Code).Should().Equal(DocumentErrorCodes.Input.Invalid.HeadingLevel, DocumentErrorCodes.Input.Invalid.FontSize);
     }
@@ -171,7 +171,7 @@ public class InputErrorTests
         ShouldPointAt(Fail(Document([paragraph]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.FontSize, line);
     }
 
-    private static Error ResultCollectionsFirst(Error error) => global::Ave.Documents.Core.ResultCollections.Parts(error)[0];
+    private static Error FirstPart(Error error) => error.Parts()[0];
 
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 

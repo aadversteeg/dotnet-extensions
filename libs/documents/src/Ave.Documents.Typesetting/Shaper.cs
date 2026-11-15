@@ -10,6 +10,7 @@ using Ave.Documents.Fonts.OpenType;
 using Ave.Documents.Typesetting.Shaping;
 using Ave.Documents.Typesetting.Unicode;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Typesetting;
@@ -56,13 +57,13 @@ public static class Shaper
     /// <param name="font">The font.</param>
     /// <param name="fontSize">The font size in points.</param>
     /// <returns>The glyphs in text order, or a <see cref="DocumentErrorCodes.Font.GlyphMissing"/> error (several
-    /// combined into <see cref="DocumentErrorCodes.Multiple"/>), or <see cref="DocumentErrorCodes.Input.Invalid.Text"/>
+    /// combined into <see cref="ErrorCodes.Aggregate"/>), or <see cref="DocumentErrorCodes.Input.Invalid.Text"/>
     /// for text that is not valid UTF-16.</returns>
     public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, double fontSize) =>
         Characters(text).OnSuccessBind(characters =>
             characters.Select((character, index) => (character, index))
                 .TraverseAll(item => InitialGlyph(item.character, item.index, font))
-                .OnSuccessMap(glyphs => ShapeScriptRuns(characters, glyphs, font, fontSize)));
+                .OnSuccessMap(glyphs => ShapeScriptRuns(characters, [.. glyphs], font, fontSize)));
 
     /// <summary>
     /// Splits text into Unicode scalar values, joining surrogate pairs. An unpaired surrogate is not a

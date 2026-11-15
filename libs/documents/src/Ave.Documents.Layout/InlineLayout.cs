@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
@@ -79,11 +80,11 @@ public static class InlineLayout
     /// Resolves every run to its text, collapses white space over the whole paragraph, then finds each run's font
     /// and shapes it. Errors from all runs are reported together, each with the location of the run that caused it.
     /// </summary>
-    private static Result<ImmutableArray<LineBoxes.ShapedRun>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
+    private static Result<IReadOnlyList<LineBoxes.ShapedRun>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
     {
         if (box.Children.Any(child => child is not (TextRun or CounterRun)))
         {
-            return Result<ImmutableArray<LineBoxes.ShapedRun>, Error>.Failure(
+            return Result<IReadOnlyList<LineBoxes.ShapedRun>, Error>.Failure(
                 LayoutErrors.InvalidContent(box, "inline layout needs text-run children; boxes belong in a flow box."));
         }
 
@@ -110,7 +111,7 @@ public static class InlineLayout
     /// <summary>Breaks the paragraph into lines for the content width and stacks them from
     /// <paramref name="firstLine"/> until the next one does not fit. None when not even that first line fits.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        ImmutableArray<LineBoxes.ShapedRun> runs, TextAlign align, int firstLine, double contentWidth, double contentHeight)
+        IReadOnlyList<LineBoxes.ShapedRun> runs, TextAlign align, int firstLine, double contentWidth, double contentHeight)
     {
         var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], contentWidth);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();

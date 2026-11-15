@@ -4,6 +4,7 @@ using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Fluent;
@@ -140,7 +141,7 @@ internal static class TableTranslator
     }
 
     /// <summary>Translates the groups, handing out ids in pre-order.</summary>
-    private static Result<ImmutableArray<Node>, Error> Parts(
+    private static Result<ValueList<Node>, Error> Parts(
         ImmutableArray<Group> groups, NodeId firstId, DocumentTranslator.Inherited inherited, BoxFormat cellDefaults, bool isLayoutOnly)
     {
         var next = firstId.Value;
@@ -151,7 +152,9 @@ internal static class TableTranslator
             next += GroupNodeCount(group);
         }
 
-        return placed.TraverseAll(item => GroupNode(item.Group, item.Id, inherited, cellDefaults, isLayoutOnly));
+        return placed
+            .TraverseAll(item => GroupNode(item.Group, item.Id, inherited, cellDefaults, isLayoutOnly))
+            .OnSuccessMap(nodes => nodes.ToValueList());
     }
 
     /// <summary>A row group box. An explicit group carries its own text, border, background and keep rule; it has no
@@ -173,7 +176,9 @@ internal static class TableTranslator
             next += RowNodeCount(row);
         }
 
-        var children = rows.TraverseAll(item => RowNode(item.Row, item.Id, own, cellDefaults, isLayoutOnly));
+        var children = rows
+            .TraverseAll(item => RowNode(item.Row, item.Id, own, cellDefaults, isLayoutOnly))
+            .OnSuccessMap(nodes => nodes.ToValueList());
         var role = isLayoutOnly ? SemanticRole.Generic : group.IsHeader ? SemanticRole.TableHead : SemanticRole.TableBody;
         var layout = group.IsHeader ? LayoutAlgorithmId.TableHeaderGroup : LayoutAlgorithmId.TableRowGroup;
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes =>
@@ -196,7 +201,9 @@ internal static class TableTranslator
         }
 
         var role = isLayoutOnly ? SemanticRole.Generic : row.IsHeader ? SemanticRole.TableHeaderCell : SemanticRole.TableCell;
-        var children = cells.TraverseAll(item => CellNode(item.Cell, item.Id, own, cellDefaults, role));
+        var children = cells
+            .TraverseAll(item => CellNode(item.Cell, item.Id, own, cellDefaults, role))
+            .OnSuccessMap(nodes => nodes.ToValueList());
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes => (Node)new Box(
             id, isLayoutOnly ? SemanticRole.Generic : SemanticRole.TableRow, LayoutAlgorithmId.TableRow, DocumentTranslator.BoxStyleOf(box, false, own.Align), nodes, row.Source));
     }
