@@ -1,0 +1,53 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Packages from other families of this repository, at their published version -->
+  <ItemGroup>
+    <PackageVersion Include="Ave.Extensions.Functional.Core" Version="0.0.5-preview.1" />
+    <PackageVersion Include="Ave.Extensions.Functional" Version="0.0.5-preview.1" />
+    <PackageVersion Include="Ave.Extensions.ErrorPaths" Version="0.0.2-preview.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Microsoft -->
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.404" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="6.0.0" />
+
+    <!-- System -->
+    <!-- System.Text.Json: netstandard2.0 only (ErrorPaths.Serialization); in-box on net10.0 -->
+    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+    <PackageVersion Include="System.Reactive" Version="6.0.0" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <!-- netstandard2.1 only; Channel<T> ships in-box from net5.0 onwards -->
+    <PackageVersion Include="System.Threading.Channels" Version="6.0.0" />
+
+    <!-- Third party -->
+    <PackageVersion Include="Azure.Storage.Files.Shares" Version="12.22.0" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.0" />
+    <PackageVersion Include="Mime-Detective" Version="22.7.15" />
+
+    <!-- Testing -->
+    <PackageVersion Include="AutoFixture" Version="4.18.1" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="xunit" Version="2.7.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.7" />
+    <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
+
+    <!-- Benchmarks -->
+    <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
+    <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.13.5" />
+  </ItemGroup>
+</Project>

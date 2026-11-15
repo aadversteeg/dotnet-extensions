@@ -1,6 +1,6 @@
 <Project>
-  <!-- Import the parent Directory.Build.props -->
-  <Import Project="../Directory.Build.props" />
+  <!-- Import the repository Directory.Build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
   
   <!-- Override properties for sample applications -->
   <PropertyGroup>
