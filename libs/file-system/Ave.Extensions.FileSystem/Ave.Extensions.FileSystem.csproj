@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- netstandard2.1 until the netstandard2.0 port of file-system is done -->
-    <TargetFrameworks>netstandard2.1;net10.0</TargetFrameworks>
     
     <!-- Package specific metadata -->
     <Description>Cross-platform file system operations for Windows and Linux.</Description>
@@ -19,8 +17,9 @@
     <PackageReference Include="System.Reactive" />
   </ItemGroup>
 
-  <!-- System.Threading.Channels is in-box from net5.0 onwards; netstandard2.1 needs the package. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+  <!-- System.Threading.Channels and IAsyncEnumerable are in-box on net10.0; netstandard2.0 needs the packages. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
     <PackageReference Include="System.Threading.Channels" />
   </ItemGroup>
 

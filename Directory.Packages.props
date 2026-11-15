@@ -34,12 +34,16 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="6.0.0" />
 
+    <!-- netstandard2.0 only (IAsyncDisposable); in-box on net10.0. 6.0.0 = the version
+         Microsoft.Extensions.DependencyInjection.Abstractions 6.0.0 already brings -->
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
+
     <!-- System -->
     <!-- System.Text.Json: netstandard2.0 only (ErrorPaths.Serialization); in-box on net10.0 -->
     <PackageVersion Include="System.Text.Json" Version="8.0.5" />
     <PackageVersion Include="System.Reactive" Version="6.0.0" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-    <!-- netstandard2.1 only; Channel<T> ships in-box from net5.0 onwards -->
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <!-- netstandard2.0 only; Channel<T> ships in-box from net5.0 onwards -->
     <PackageVersion Include="System.Threading.Channels" Version="6.0.0" />
 
     <!-- Third party -->
