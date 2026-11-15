@@ -9,4 +9,8 @@
     <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Typesetting" />
+  </ItemGroup>
+
 </Project>

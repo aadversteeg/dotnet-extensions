@@ -21,6 +21,13 @@ Projects that may be studied under the project rules (krilla, MIT/Apache-2.0; Pd
 Apache-2.0): none of their source was used for stage 0. PdfPig is used as a test-only dependency to read the
 generated PDFs back (see below).
 
+## Unicode data
+
+`assets/unicode/18.0.0/` contains files of the Unicode Character Database 18.0.0 (© Unicode, Inc.), licensed under
+the Unicode License v3 (`assets/unicode/18.0.0/LICENSE.txt`). The table in
+`src/Ave.Documents.Typesetting/Unicode/UnicodePropertyRanges.g.cs` is generated from them. The line breaking
+algorithm is written from UAX #14, revision 57.
+
 ## Fonts
 
 `assets/fonts/lato/` contains Lato 2.015 Regular and Bold by Łukasz Dziedzic (tyPoland), licensed under the

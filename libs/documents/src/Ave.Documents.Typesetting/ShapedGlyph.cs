@@ -12,6 +12,7 @@ namespace Ave.Documents.Typesetting;
 /// to build the ToUnicode map, so text can be copied and searched.</param>
 public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text)
 {
-    /// <summary>True for the glyph of a collapsed space U+0020, the only break opportunity in stage 0.</summary>
+    /// <summary>True for the glyph of a collapsed space U+0020: removed at the start and end of a line
+    /// (CSS Text 3 §4.1.2).</summary>
     public bool IsSpace => Text == " ";
 }
