@@ -30,5 +30,13 @@ public static class PdfErrorCodes
         /// <summary>An XMP value with a character XML 1.0 does not allow (§2.2, production [2] Char). Metadata:
         /// Property (prefixed name), Offset.</summary>
         public static readonly ErrorCode InvalidText = _ / "InvalidText";
+
+        /// <summary>A file identifier that is empty or unset (an empty byte string cannot identify a file; veraPDF
+        /// rule 6.1.3-1 needs a non-empty /ID).</summary>
+        public static readonly ErrorCode InvalidFileIdentifier = _ / "InvalidFileIdentifier";
+
+        /// <summary>An XMP property whose name is not an XML name (XML Namespaces 1.0, NCName), so the packet cannot
+        /// be written. Metadata: Property.</summary>
+        public static readonly ErrorCode InvalidPropertyName = _ / "InvalidPropertyName";
     }
 }

@@ -32,7 +32,7 @@ public static class PdfWriter
     /// 1 to N or a number is not finite.</returns>
     public static Result<ImmutableArray<byte>, Error> Write(PdfFile file)
     {
-        var problem = CheckNumbering(file.Objects) ?? CheckObjects(file.Objects);
+        var problem = CheckIdentifier(file.FileIdentifier) ?? CheckNumbering(file.Objects) ?? CheckObjects(file.Objects);
         if (problem is { } error)
         {
             return Result<ImmutableArray<byte>, Error>.Failure(error);
@@ -55,6 +55,14 @@ public static class PdfWriter
         WriteAscii(output, Trailer(file, offsets.Count + 1, identifier, crossReferenceOffset));
         return Result<ImmutableArray<byte>, Error>.Success([.. output.WrittenSpan]);
     }
+
+    /// <summary>A given file identifier is a byte string with content: the trailer's /ID holds it twice (§14.4), and
+    /// PDF/A refuses an empty one (veraPDF rule 6.1.3-1). An unset (default) array is refused too instead of failing
+    /// when it is read.</summary>
+    private static Error? CheckIdentifier(ImmutableArray<byte>? identifier) =>
+        identifier is { } bytes && (bytes.IsDefault || bytes.IsEmpty)
+            ? new Error(PdfErrorCodes.Write.InvalidFileIdentifier, "The file identifier is empty; give one of at least one byte, or none to derive it from the content.")
+            : null;
 
     /// <summary>§7.5.4: object numbers must be 1..N; the table then needs one section without gaps.</summary>
     private static Error? CheckNumbering(ImmutableArray<IndirectObject> objects)

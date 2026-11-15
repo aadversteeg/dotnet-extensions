@@ -1,0 +1,197 @@
+using System.Collections.Immutable;
+using Ave.Documents.Core;
+using Ave.Documents.PageModel;
+using Ave.Documents.Pdf;
+using Ave.Documents.Render.Pdf;
+using Ave.Documents.TestSupport;
+using Ave.Documents.Typesetting;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
+
+namespace UnitTests.Ave.Documents.Render.Pdf;
+
+/// <summary>
+/// The back-end's contract is total: <see cref="PdfRenderer.Render"/> validates the whole page model and the options
+/// first and answers every value it cannot write with an error, never an exception and never an allocation that one
+/// number can make unbounded. Each case is a hand-made page model a producer other than this engine's layout could
+/// hand it: structure that does not nest as tagged PDF's table structure requires, one node with two roles, values
+/// outside an enum, missing values, a file identifier that is empty or unset, and a cell span of millions.
+/// </summary>
+public class PageModelContractTests
+{
+    private static readonly DateTimeOffset Date = new(2026, 11, 15, 9, 22, 0, TimeSpan.FromHours(1));
+
+    private static readonly SourceLocation Here = new("PageModelContractTests.cs", 1);
+
+    private static readonly DocumentMetadata Accessible = new("Title", null) { Language = "en" };
+
+    private static PdfRenderOptions With(PdfProfile profile) => new(Date) { Profile = profile };
+
+    private static GlyphRun Run(string text)
+    {
+        var glyphs = Shaper.Shape(text, TestFonts.Regular, 10).Value;
+        return new GlyphRun(TestFonts.Regular, 10, Color.Black, new Point(10, 50), [.. glyphs.Select((glyph, index) => new PositionedGlyph(glyph.Glyph, index * 5.0, glyph.Text))]);
+    }
+
+    private static StructureStart Start(int node, SemanticRole role) => new(new NodeId(node), role, Here);
+
+    private static StructureEnd End(int node) => new(new NodeId(node));
+
+    private static PageDocument Tagged(params DrawItem[] content) =>
+        new(Accessible, [new Page(new Size(200, 100), [Start(0, SemanticRole.Document), .. content, End(0)])]);
+
+    public static TheoryData<string> Profiles => ["plain", "3b", "3a", "ua1"];
+
+    private static PdfProfile ProfileNamed(string name) => name switch
+    {
+        "plain" => PdfProfile.Plain,
+        "3b" => PdfProfile.PdfA3b,
+        "3a" => PdfProfile.PdfA3a,
+        _ => PdfProfile.PdfUa1,
+    };
+
+    private static Error Refused(PageDocument document, PdfRenderOptions options)
+    {
+        Result<ImmutableArray<byte>, Error>? result = null;
+        var render = () => result = PdfRenderer.Render(document, options);
+
+        render.Should().NotThrow();
+        result!.Value.IsFailure.Should().BeTrue("the page model or the options break the contract");
+        return result.Value.Error;
+    }
+
+    private static Error Refused(PageDocument document, string profile = "plain") => Refused(document, With(ProfileNamed(profile)));
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_table_cell_outside_a_table_row_is_refused(string profile) =>
+        Refused(Tagged(Start(1, SemanticRole.Table), Start(2, SemanticRole.TableCell), Run("x"), End(2), End(1)), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_table_row_inside_a_paragraph_is_refused(string profile) =>
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), Start(2, SemanticRole.TableRow), Start(3, SemanticRole.TableCell), Run("x"), End(3), End(2), End(1)), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Fact]
+    public void A_paragraph_directly_in_a_table_row_is_refused() =>
+        Refused(Tagged(Start(1, SemanticRole.Table), Start(2, SemanticRole.TableRow), Start(3, SemanticRole.Paragraph), Run("x"), End(3), End(2), End(1))).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Fact]
+    public void The_table_structure_the_layout_makes_is_accepted()
+    {
+        var document = Tagged(
+            Start(1, SemanticRole.Table),
+            Start(2, SemanticRole.TableHead), Start(3, SemanticRole.TableRow), Start(4, SemanticRole.TableHeaderCell), Run("h"), End(4), End(3), End(2),
+            Start(5, SemanticRole.TableBody), Start(6, SemanticRole.TableRow), Start(7, SemanticRole.TableCell), Start(8, SemanticRole.Paragraph), Run("d"), End(8), End(7), End(6), End(5),
+            End(1));
+
+        PdfRenderer.Render(document, With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void One_node_with_two_roles_is_refused(string profile)
+    {
+        // Node 1 is a paragraph on page 1 and a heading on page 2.
+        var document = new PageDocument(Accessible,
+        [
+            new Page(new Size(200, 100), [Start(0, SemanticRole.Document), Start(1, SemanticRole.Paragraph), Run("a"), End(1), End(0)]),
+            new Page(new Size(200, 100), [Start(0, SemanticRole.Document), Start(1, SemanticRole.Heading(1)), Run("b"), End(1), End(0)]),
+        ]);
+
+        Refused(document, profile).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void An_artifact_kind_outside_the_enum_is_refused(string profile) =>
+        Refused(Tagged(new ArtifactStart((ArtifactKind)99), Run("x"), new ArtifactEnd()), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_missing_glyph_font_or_role_is_refused(string profile)
+    {
+        var run = Run("x");
+
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), run with { Glyphs = [null!] }, End(1)), profile).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), run with { Font = null! }, End(1)), profile).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+        Refused(Tagged(Start(1, null!), run, End(1)), profile).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void Missing_metadata_is_refused(string profile) =>
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1)) with { Metadata = null! }, profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_glyph_without_text_is_refused(string profile)
+    {
+        // A ToUnicode map gives every shown glyph a text; a glyph that stands for nothing cannot be mapped.
+        var run = Run("x");
+
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), run with { Glyphs = [run.Glyphs[0] with { Text = string.Empty }] }, End(1)), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_font_size_that_is_not_a_positive_finite_number_is_refused(string profile) =>
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x") with { FontSize = double.NaN }, End(1)), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void An_attachment_without_a_file_name_or_with_an_undefined_relationship_is_refused(string profile)
+    {
+        var attachment = new Attachment("data.xml", [.. "<a/>"u8], "application/xml", Here) { Relationship = AttachmentRelationship.Data };
+        var page = Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1));
+
+        Refused(page with { Metadata = Accessible with { Attachments = [attachment with { FileName = " " }] } }, profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+        Refused(page with { Metadata = Accessible with { Attachments = [attachment with { Relationship = (AttachmentRelationship)42 }] } }, profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+        Refused(page with { Metadata = Accessible with { Attachments = [null!] } }, profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+    }
+
+    [Theory]
+    [InlineData(5_000_000, 1)]
+    [InlineData(1, int.MaxValue)]
+    [InlineData(int.MaxValue, int.MaxValue)]
+    public void A_cell_span_beyond_the_table_model_s_limits_is_refused_quickly(int columns, int rows)
+    {
+        // Under PDF/UA the regularity check fills a grid with the spans; one huge number made it allocate without bound.
+        var document = Tagged(
+            Start(1, SemanticRole.Table), Start(2, SemanticRole.TableRow),
+            Start(3, SemanticRole.TableCell) with { Span = new CellSpan(columns, rows) }, Run("x"), End(3),
+            End(2), End(1));
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        Refused(document, With(PdfProfile.PdfUa1)).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+        (GC.GetAllocatedBytesForCurrentThread() - before).Should().BeLessThan(64L * 1024 * 1024, "refusing a span takes no grid of its size");
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void An_empty_or_unset_file_identifier_is_refused(string profile)
+    {
+        var document = Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1));
+
+        Refused(document, With(ProfileNamed(profile)) with { FileIdentifier = ImmutableArray<byte>.Empty }).Code
+            .Should().Be(PdfErrorCodes.Write.InvalidFileIdentifier);
+        Refused(document, With(ProfileNamed(profile)) with { FileIdentifier = default(ImmutableArray<byte>) }).Code
+            .Should().Be(PdfErrorCodes.Write.InvalidFileIdentifier);
+    }
+
+    [Fact]
+    public void A_profile_with_an_undefined_PDF_A_level_is_refused() =>
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1)), With(PdfProfile.Plain with { PdfA3 = (PdfA3Level)9 })).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidOptions);
+}

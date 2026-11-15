@@ -10,8 +10,8 @@ namespace Ave.Documents.Render.Pdf;
 /// </summary>
 /// <param name="CreationDate">Written as the document's creation and modification date (ISO 32000-1 §14.3.3), in the
 /// document information and in the XMP metadata.</param>
-/// <param name="FileIdentifier">The file identifier (§14.4), at least 16 bytes; null to derive it from a hash
-/// of the file's content.</param>
+/// <param name="FileIdentifier">The file identifier (§14.4), not empty; null to derive 16 bytes from a hash of the
+/// file's content.</param>
 public sealed record PdfRenderOptions(DateTimeOffset CreationDate, ImmutableArray<byte>? FileIdentifier = null)
 {
     /// <summary>The standards the file is written to; <see cref="PdfProfile.Plain"/> unless set.</summary>

@@ -23,7 +23,7 @@ public static class PdfRenderer
     /// byte-identical output.
     /// </summary>
     /// <remarks>
-    /// The steps: refuse a page model that breaks the back-end's contract (<see cref="PageModelRules"/>); refuse what
+    /// The steps: refuse options it cannot write with and a page model that breaks the back-end's contract (<see cref="PageModelRules"/>); refuse what
     /// the profile forbids (<see cref="ConformanceRules"/>); read every page's markers into
     /// events (<see cref="PageEvents"/>); for a tagged profile, build the structure tree from them
     /// (<see cref="StructureTree"/>) and refuse a structure the profile forbids (an irregular table); then write every
@@ -34,11 +34,21 @@ public static class PdfRenderer
     /// <returns>The PDF bytes, a <see cref="PdfRenderErrorCodes.Conformance"/> error for input the profile forbids,
     /// or a <see cref="PdfErrorCodes.Write"/> error.</returns>
     public static Result<ImmutableArray<byte>, Error> Render(PageDocument document, PdfRenderOptions options) =>
-        PageModelRules.Check(document)
+        CheckOptions(options)
+            .OnSuccessBind(_ => PageModelRules.Check(document))
             .OnSuccessBind(validDocument => ConformanceRules.Check(validDocument, options.Profile))
             .OnSuccessBind(ReadEvents)
             .OnSuccessCombine(pages => Structure(pages, options.Profile))
             .OnSuccessBind((pages, tree) => Write(document, options, pages, tree));
+
+    /// <summary>Options the back-end can write with: a profile, and a PDF/A level that is a value of its enum.</summary>
+    private static Result<PdfRenderOptions, Error> CheckOptions(PdfRenderOptions options) =>
+        options?.Profile is not { } profile
+            ? Result<PdfRenderOptions, Error>.Failure(new Error(PdfRenderErrorCodes.Write.InvalidOptions, "The render options have no profile.").With(ErrorMetadataKeys.Value, "null"))
+            : profile.PdfA3 is { } level && !System.Enum.IsDefined(level)
+                ? Result<PdfRenderOptions, Error>.Failure(new Error(PdfRenderErrorCodes.Write.InvalidOptions, $"The profile has the PDF/A level {(int)level}, which is not a level.")
+                    .With(ErrorMetadataKeys.Value, ((int)level).ToString(System.Globalization.CultureInfo.InvariantCulture)))
+                : Result<PdfRenderOptions, Error>.Success(options);
 
     /// <summary>Every page's markers read into events (<see cref="PageEvents"/>), which also checks that they nest.</summary>
     private static Result<ImmutableArray<ImmutableArray<PageEvent>>, Error> ReadEvents(PageDocument document) =>

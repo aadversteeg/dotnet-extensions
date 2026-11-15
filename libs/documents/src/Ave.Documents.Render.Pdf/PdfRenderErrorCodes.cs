@@ -23,6 +23,10 @@ public static class PdfRenderErrorCodes
         /// <summary>A font whose licence bits (OpenType OS/2 fsType) forbid embedding. Metadata: FontName.</summary>
         public static readonly ErrorCode FontEmbeddingNotPermitted = _ / "FontEmbeddingNotPermitted";
 
+        /// <summary>Render options the back-end cannot write with: no profile, or a PDF/A level outside the enum.
+        /// Metadata: Value.</summary>
+        public static readonly ErrorCode InvalidOptions = _ / "InvalidOptions";
+
         /// <summary>Structure markers in the page model that do not nest: an end without its start, a start
         /// without its end on the same page, or a node that appears under two different parents. Metadata: Node,
         /// Value (the page number).</summary>

@@ -72,6 +72,30 @@ public class ConformanceBuildingBlockTests
         result.Error.Metadata![ErrorMetadataKeys.Offset].Should().Be(1);
     }
 
+    /// <summary>An element name must be an XML name; the writer used to throw an ArgumentException for one with a
+    /// space. A field inside a structure follows the same rule, and a missing namespace or value is refused too.</summary>
+    [Theory]
+    [InlineData("bad name")]
+    [InlineData("1st")]
+    [InlineData("a:b")]
+    [InlineData("")]
+    public void An_XMP_property_name_that_is_not_an_XML_name_is_an_error_value_not_an_exception(string name)
+    {
+        var top = new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, name, new XmpText("x"))]);
+        var field = new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, "s", new XmpStructure([new XmpProperty(XmpNamespace.DublinCore, name, new XmpText("x"))]))]);
+
+        top.Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
+        field.Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
+    }
+
+    [Fact]
+    public void An_XMP_property_without_a_namespace_or_value_is_an_error_value_not_an_exception()
+    {
+        new XmpPacket([new XmpProperty(null!, "title", new XmpText("x"))]).Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
+        new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, "title", null!)]).Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
+        new XmpPacket([null!]).Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
+    }
+
     [Theory]
     [InlineData(0, "2026-11-15T09:22:00Z")]
     [InlineData(1, "2026-11-15T09:22:00+01:00")]

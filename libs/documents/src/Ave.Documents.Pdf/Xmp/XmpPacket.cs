@@ -30,11 +30,16 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     /// rdf:about=""</c> per namespace, and the read-only trailer <c>end="w"</c>. No padding is added: the engine writes
     /// new files and never edits metadata in place.
     /// </summary>
-    /// <returns>The packet bytes; <c>Documents.Pdf.Write.InvalidText</c> for every value with a character XML 1.0 does
-    /// not allow (§2.2, production [2] Char), which no XML writer can write.</returns>
+    /// <returns>The packet bytes; <c>Documents.Pdf.Write.InvalidPropertyName</c> for every property or field whose name,
+    /// namespace or value is missing or whose name or prefix is not an XML name (an NCName, which an element name must
+    /// be); <c>Documents.Pdf.Write.InvalidText</c> for every value with a character XML 1.0 does not allow (§2.2,
+    /// production [2] Char). No XML writer can write either.</returns>
     public Result<ImmutableArray<byte>, Error> Write()
     {
-        var problems = Properties.SelectMany(property => Problems(property, Prefixed(property))).ToImmutableArray();
+        var nameProblems = Properties.SelectMany(NameProblems).ToImmutableArray();
+        var problems = nameProblems.IsEmpty
+            ? Properties.SelectMany(property => Problems(property, Prefixed(property))).ToImmutableArray()
+            : nameProblems;
         return problems.IsEmpty
             ? Result<ImmutableArray<byte>, Error>.Success(Serialize())
             : Result<ImmutableArray<byte>, Error>.Failure(Errors.Aggregate(problems));
@@ -71,6 +76,33 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
         return [.. output.ToArray()];
     }
 
+    /// <summary>A property and, through arrays and structures, every field it holds: a namespace with an NCName prefix,
+    /// an NCName name, and a value of a known kind.</summary>
+    private static IEnumerable<Error> NameProblems(XmpProperty? property) =>
+        property is null
+            ? [InvalidName("a missing property")]
+            : property.Namespace is null || !IsNcName(property.Namespace.Prefix) || string.IsNullOrEmpty(property.Namespace.Uri)
+                ? [InvalidName($"the property {property.Name} without a namespace that has an XML prefix and a URI")]
+                : !IsNcName(property.Name)
+                    ? [InvalidName($"the property name '{property.Namespace.Prefix}:{property.Name}', which is not an XML name")]
+                    : ValueNameProblems(property.Value, Prefixed(property));
+
+    private static IEnumerable<Error> ValueNameProblems(XmpValue? value, string name) => value switch
+    {
+        XmpText or XmpLanguageAlternative => [],
+        XmpOrderedArray array => array.Items.SelectMany(item => ValueNameProblems(item, name)),
+        XmpUnorderedArray array => array.Items.SelectMany(item => ValueNameProblems(item, name)),
+        XmpStructure structure => structure.Fields.SelectMany(NameProblems),
+        null => [InvalidName($"the property {name} without a value")],
+        _ => [InvalidName($"the property {name}, whose value is a {value.GetType().Name}, which XMP does not know")],
+    };
+
+    private static bool IsNcName(string? name) =>
+        !string.IsNullOrEmpty(name) && XmlConvert.IsStartNCNameChar(name[0]) && name.All(XmlConvert.IsNCNameChar);
+
+    private static Error InvalidName(string what) =>
+        new Error(PdfErrorCodes.Write.InvalidPropertyName, $"The XMP packet cannot hold {what}.").With(ErrorMetadataKeys.Property, what);
+
     /// <summary>The forbidden characters in a property's text, per text value: arrays and structures are searched
     /// through. <paramref name="name"/> is the prefixed name of the top-level property, for the message.</summary>
     private static IEnumerable<Error> Problems(XmpProperty property, string name) => Texts(property.Value)
@@ -87,7 +119,7 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
         XmpOrderedArray array => array.Items.SelectMany(Texts),
         XmpUnorderedArray array => array.Items.SelectMany(Texts),
         XmpStructure structure => structure.Fields.SelectMany(field => Texts(field.Value)),
-        _ => throw new InvalidOperationException($"Unknown XMP value {value.GetType().Name}."),
+        _ => [],
     };
 
     private static string Prefixed(XmpProperty property) => $"{property.Namespace.Prefix}:{property.Name}";
@@ -163,6 +195,7 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
 
                 break;
             default:
+                // Unreachable: Write refuses a value of any other kind before it serializes (NameProblems).
                 throw new InvalidOperationException($"Unknown XMP value {value.GetType().Name}.");
         }
     }

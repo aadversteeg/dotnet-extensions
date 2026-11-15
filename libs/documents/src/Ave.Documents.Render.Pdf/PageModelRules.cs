@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using Ave.Documents.Core;
@@ -10,23 +12,27 @@ namespace Ave.Documents.Render.Pdf;
 
 /// <summary>
 /// The contract a page model must meet before the back-end writes it, whatever the profile. The back-end is a public
-/// library and other producers than this engine's layout may hand it a page model, so it checks what it is given and
-/// answers with an error value instead of throwing, or writing a file no reader can open. What a profile requires on
-/// top is checked by <see cref="ConformanceRules"/>; how the structure markers nest, by the tagging code.
+/// library and other producers than this engine's layout may hand it a page model, so it checks everything it is
+/// given and answers with an error value: no input value may make it throw, or allocate without a bound, or write a
+/// file no reader can open. What a profile requires on top is checked by <see cref="ConformanceRules"/>.
 /// </summary>
 internal static class PageModelRules
 {
     /// <summary>
     /// Checks the page model and reports every breach together (<c>Documents.Pdf.Write.InvalidPageModel</c>):
     /// <list type="bullet">
-    /// <item>at least one page: the page tree of a PDF holds the pages of the document (ISO 32000-1 §7.7.3.2), and a
-    /// file without one cannot be read back;</item>
-    /// <item>no missing page or item;</item>
+    /// <item>metadata and at least one page: a PDF without a page has nothing to show and is not useful to write;</item>
+    /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
-    /// glyphs;</item>
-    /// <item>a table cell spans at least one column and one row;</item>
-    /// <item>no two attachments with one file name: the embedded-files name tree has one entry per name (ISO 32000-1
-    /// §7.9.6).</item>
+    /// glyphs, and stands for some text, which its ToUnicode entry needs; every font size is a positive finite number;</item>
+    /// <item>every artifact kind and attachment relationship is a value of its enum;</item>
+    /// <item>a table cell spans at least one column and one row, and no more than the table model allows
+    /// (<see cref="TableSlots.MaxColumnSpan"/>, <see cref="TableSlots.MaxRowSpan"/>), so no grid is ever sized by one
+    /// number;</item>
+    /// <item>the structure nests as tagged PDF's table elements do (<see cref="StructureNesting"/>), and one node keeps
+    /// one role on every page;</item>
+    /// <item>every attachment has a file name, a media type and content, and no two share a file name: the embedded-files
+    /// name tree has one entry per name.</item>
     /// </list>
     /// </summary>
     /// <param name="document">The page document.</param>
@@ -41,54 +47,176 @@ internal static class PageModelRules
 
     private static IEnumerable<Error> Problems(PageDocument document)
     {
-        if (document.Pages.Count == 0)
+        if (document.Metadata is null)
         {
-            yield return Invalid("The document has no pages; a PDF needs at least one (ISO 32000-1 §7.7.3.2).", "0 pages");
+            yield return Invalid("The page document has no metadata.", "metadata");
         }
 
+        if (document.Pages.Count == 0)
+        {
+            yield return Invalid("The document has no pages; a PDF needs at least one.", "0 pages");
+        }
+
+        var roles = new Dictionary<NodeId, SemanticRole>();
         for (var index = 0; index < document.Pages.Count; index++)
         {
-            foreach (var problem in PageProblems(document.Pages[index], index + 1))
+            var page = document.Pages[index];
+            var problems = page is null
+                ? [Invalid($"Page {index + 1} is missing.", Number(index + 1))]
+                : ItemProblems(page, index + 1).Concat(StructureNesting.Problems(page, index + 1)).Concat(RoleProblems(page, index + 1, roles));
+            foreach (var problem in problems)
             {
                 yield return problem;
             }
         }
 
-        foreach (var duplicate in document.Metadata.Attachments.GroupBy(attachment => attachment.FileName).Where(group => group.Count() > 1))
+        foreach (var problem in AttachmentProblems(document.Metadata?.Attachments ?? []))
         {
-            yield return Invalid($"Two attachments have the file name '{duplicate.Key}'; a name can be embedded once (ISO 32000-1 §7.9.6).", duplicate.Key)
-                .WithSource(duplicate.Last().Source);
+            yield return problem;
         }
     }
 
-    private static IEnumerable<Error> PageProblems(Page? page, int number)
+    private static IEnumerable<Error> ItemProblems(Page page, int number) =>
+        page.Items.Select((item, index) => ItemProblem(item, index, number)).OfType<Error>();
+
+    private static Error? ItemProblem(DrawItem? item, int index, int number) => item switch
     {
-        if (page is null)
+        null => Invalid($"Item {index + 1} of page {number} is missing.", Number(number)),
+        GlyphRun { Font: null } => Invalid($"A glyph run on page {number} has no font.", Number(number)),
+        GlyphRun run when !(double.IsFinite(run.FontSize) && run.FontSize > 0) =>
+            Invalid($"A glyph run on page {number} has the font size {run.FontSize}; it must be a positive number.", run.FontSize.ToString(CultureInfo.InvariantCulture)),
+        GlyphRun run when run.Glyphs.Any(glyph => glyph is null) => Invalid($"A glyph run on page {number} has a missing glyph.", Number(number)),
+        GlyphRun run when run.Glyphs.FirstOrDefault(glyph => glyph.Glyph.Value >= run.Font.GlyphCount) is { } glyph =>
+            Invalid($"Page {number} draws glyph {glyph.Glyph.Value} of font '{run.Font.Names.PostScriptName}', which has {run.Font.GlyphCount} glyphs.", glyph.Glyph.Value.ToString(CultureInfo.InvariantCulture)),
+        GlyphRun run when run.Glyphs.Any(glyph => string.IsNullOrEmpty(glyph.Text)) =>
+            Invalid($"A glyph on page {number} stands for no text; every shown glyph needs one for its ToUnicode entry.", Number(number)),
+        DrawImage { Image: null } => Invalid($"An image on page {number} has no image data.", Number(number)),
+        StructureStart { Role: null } start => Invalid($"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
+        StructureStart start when start.Span.Columns < 1 || start.Span.Rows < 1 || start.Span.Columns > TableSlots.MaxColumnSpan || start.Span.Rows > TableSlots.MaxRowSpan =>
+            Invalid($"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
+        ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
+            Invalid($"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
+        _ => null,
+    };
+
+    /// <summary>A node is the same node on every page: the structure tree has one element for it, with one type.</summary>
+    private static IEnumerable<Error> RoleProblems(Page page, int number, Dictionary<NodeId, SemanticRole> roles)
+    {
+        foreach (var start in page.Items.OfType<StructureStart>().Where(start => start.Role is not null))
         {
-            yield return Invalid($"Page {number} is missing.", Number(number));
-            yield break;
+            if (roles.TryGetValue(start.Node, out var role) && role != start.Role)
+            {
+                yield return Invalid($"Node {start.Node} has the role {role} and, on page {number}, {start.Role}; a node has one role.", start.Node.ToString()).WithSource(start.Source);
+            }
+
+            roles.TryAdd(start.Node, start.Role);
+        }
+    }
+
+    private static IEnumerable<Error> AttachmentProblems(ValueList<Attachment> attachments)
+    {
+        foreach (var attachment in attachments)
+        {
+            if (attachment is null)
+            {
+                yield return Invalid("An attachment is missing.", "attachment");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(attachment.FileName))
+            {
+                yield return Invalid("An attachment has no file name; the file specification needs one (veraPDF rule 7.11-1: \"non-empty F and UF keys\").", attachment.FileName ?? "null").WithSource(attachment.Source);
+            }
+
+            if (string.IsNullOrWhiteSpace(attachment.MediaType))
+            {
+                yield return Invalid($"Attachment '{attachment.FileName}' has no media type.", attachment.MediaType ?? "null").WithSource(attachment.Source);
+            }
+
+            if (attachment.Relationship is { } relationship && !Enum.IsDefined(relationship))
+            {
+                yield return Invalid($"Attachment '{attachment.FileName}' has the relationship {(int)relationship}, which is not a relationship.", ((int)relationship).ToString(CultureInfo.InvariantCulture)).WithSource(attachment.Source);
+            }
         }
 
-        for (var index = 0; index < page.Items.Count; index++)
+        foreach (var duplicate in attachments.Where(attachment => attachment?.FileName is not null).GroupBy(attachment => attachment.FileName).Where(group => group.Count() > 1))
         {
-            Error? problem = page.Items[index] switch
-            {
-                null => Invalid($"Item {index + 1} of page {number} is missing.", Number(number)),
-                GlyphRun run when run.Glyphs.FirstOrDefault(glyph => glyph.Glyph.Value >= run.Font.GlyphCount) is { } glyph =>
-                    Invalid($"Page {number} draws glyph {glyph.Glyph.Value} of font '{run.Font.Names.PostScriptName}', which has {run.Font.GlyphCount} glyphs.", glyph.Glyph.Value.ToString(CultureInfo.InvariantCulture)),
-                StructureStart start when start.Span.Columns < 1 || start.Span.Rows < 1 =>
-                    Invalid($"Node {start.Node} on page {number} spans {start.Span}; a cell spans at least one column and one row.", start.Span.ToString()).WithSource(start.Source),
-                _ => null,
-            };
-            if (problem is { } found)
-            {
-                yield return found;
-            }
+            yield return Invalid($"Two attachments have the file name '{duplicate.Key}'; a name can be embedded once.", duplicate.Key)
+                .WithSource(duplicate.Last().Source);
         }
     }
 
     private static string Number(int number) => number.ToString(CultureInfo.InvariantCulture);
 
-    private static Error Invalid(string message, string value) =>
+    /// <summary>A breach of the page-model contract.</summary>
+    /// <param name="message">What is wrong, in words about the page model.</param>
+    /// <param name="value">The offending value.</param>
+    /// <returns>The error.</returns>
+    internal static Error Invalid(string message, string value) =>
         new Error(PdfRenderErrorCodes.Write.InvalidPageModel, message).With(ErrorMetadataKeys.Value, value);
+}
+
+/// <summary>
+/// How tagged PDF's table structure nests (ISO 32000-1 §14.8.4.3.4, table elements): a row (TR) is a child of a table or
+/// of one of its row groups (THead, TBody, TFoot); a header or data cell (TH, TD) is a child of a row; a row group is a
+/// child of a table. Seen from the parent, a table holds only rows and row groups, a row group only rows, a row only
+/// cells. veraPDF checks the same for PDF/UA-1 (rules 7.2-3 to 7.2-10, 7.2-36 to 7.2-38). Parent here means the nearest
+/// enclosing node that has a structure type; a decorative node (an artifact) is not one.
+/// </summary>
+internal static class StructureNesting
+{
+    private static readonly ImmutableHashSet<string> RowParents = ["Table", "THead", "TBody", "TFoot"];
+
+    private static readonly ImmutableDictionary<string, ImmutableHashSet<string>> AllowedParents = new Dictionary<string, ImmutableHashSet<string>>
+    {
+        ["TR"] = RowParents,
+        ["TH"] = ["TR"],
+        ["TD"] = ["TR"],
+        ["THead"] = ["Table"],
+        ["TBody"] = ["Table"],
+        ["TFoot"] = ["Table"],
+    }.ToImmutableDictionary();
+
+    private static readonly ImmutableDictionary<string, ImmutableHashSet<string>> AllowedChildren = new Dictionary<string, ImmutableHashSet<string>>
+    {
+        ["Table"] = ["TR", "THead", "TBody", "TFoot"],
+        ["THead"] = ["TR"],
+        ["TBody"] = ["TR"],
+        ["TFoot"] = ["TR"],
+        ["TR"] = ["TH", "TD"],
+    }.ToImmutableDictionary();
+
+    /// <summary>Every structure start on the page whose parent or own type breaks the table rules.</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="number">Its page number.</param>
+    /// <returns>The breaches.</returns>
+    public static IEnumerable<Error> Problems(Page page, int number)
+    {
+        var open = new Stack<string?>();
+        foreach (var item in page.Items)
+        {
+            if (item is StructureStart start)
+            {
+                var type = start.Role?.StandardStructureType;
+                var parent = open.FirstOrDefault(candidate => candidate is not null);
+                if (type is not null && Breach(type, parent) is { } reason)
+                {
+                    yield return PageModelRules.Invalid($"Node {start.Node} on page {number} is a {type} {reason}.", type).WithSource(start.Source);
+                }
+
+                open.Push(type);
+            }
+            else if (item is StructureEnd && open.Count > 0)
+            {
+                open.Pop();
+            }
+        }
+    }
+
+    private static string? Breach(string type, string? parent) =>
+        AllowedParents.TryGetValue(type, out var parents) && (parent is null || !parents.Contains(parent))
+            ? $"inside {parent ?? "nothing"}; it belongs in {string.Join(" or ", parents.Order(StringComparer.Ordinal))}"
+            : parent is not null && AllowedChildren.TryGetValue(parent, out var children) && !children.Contains(type)
+                ? $"inside a {parent}, which holds only {string.Join(", ", children.Order(StringComparer.Ordinal))}"
+                : null;
 }
