@@ -119,13 +119,15 @@ Result<TrueTypeFont, string> ReadFont(string directory) =>
 ### Building
 
 ```shell
-dotnet build
+cd libs/functional
+dotnet build extensions.slnx
 ```
 
 ### Running Tests
 
 ```shell
-dotnet test
+cd libs/functional
+dotnet test extensions.slnx
 ```
 
 ## License

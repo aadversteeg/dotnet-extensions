@@ -400,13 +400,15 @@ Result<CanonicalPath, Error> ResolvePath(string inputPath, CanonicalPath working
 ### Building
 
 ```shell
-cd src && dotnet build
+cd libs/file-system
+dotnet build extensions.slnx
 ```
 
 ### Running Tests
 
 ```shell
-cd src && dotnet test
+cd libs/file-system
+dotnet test extensions.slnx
 ```
 
 ### Running Benchmarks
@@ -438,17 +440,8 @@ cd libs/file-system/integration-tests/PlatformTests.Local && dotnet test
 
 ### Publishing a New Version
 
-1. Create a new tag with the version number:
-   ```
-   git tag 1.0.0
-   git push origin 1.0.0
-   ```
-
-2. The GitHub Actions workflow will automatically:
-   - Build and test the code
-   - Generate NuGet packages
-   - Create a GitHub Release
-   - Publish packages to NuGet.org (when configured)
+Each package is released on its own. See
+[docs/RELEASING.md](https://github.com/aadversteeg/dotnet-extensions/blob/main/docs/RELEASING.md).
 
 ## License
 
