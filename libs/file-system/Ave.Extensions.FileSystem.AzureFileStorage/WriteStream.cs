@@ -9,7 +9,11 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
     /// <summary>
     /// A write-only stream that uploads to Azure File Share when disposed.
     /// </summary>
+#if NETSTANDARD2_0
+    internal class WriteStream : MemoryStream, IAsyncDisposable
+#else
     internal class WriteStream : MemoryStream
+#endif
     {
         private readonly ShareFileClient _fileClient;
         private readonly ILogger _logger;
@@ -43,7 +47,25 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             base.Dispose(disposing);
         }
 
+#if NETSTANDARD2_0
+        // netstandard2.0's Stream has no DisposeAsync to override. Implementing IAsyncDisposable explicitly
+        // keeps the write asynchronous for every caller that disposes through IAsyncDisposable. A call to
+        // Stream.DisposeAsync on a runtime that loads this asset (.NET Core 3.0 up to .NET 9) still reaches
+        // Stream's own DisposeAsync, which calls the synchronous Dispose.
+        async ValueTask IAsyncDisposable.DisposeAsync()
+        {
+            await UploadContentOnDisposeAsync();
+            Dispose();
+        }
+#else
         public override async ValueTask DisposeAsync()
+        {
+            await UploadContentOnDisposeAsync();
+            await base.DisposeAsync();
+        }
+#endif
+
+        private async Task UploadContentOnDisposeAsync()
         {
             if (!_disposed)
             {
@@ -60,8 +82,6 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                     _disposed = true;
                 }
             }
-
-            await base.DisposeAsync();
         }
 
         private async Task UploadContent()

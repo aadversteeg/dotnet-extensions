@@ -116,7 +116,7 @@ namespace Ave.Extensions.FileSystem.Local
                         new Error(FileSystemErrorCodes.IO.InvalidPath, systemPathResult.Error.Message).With("path", path.Value));
 
                 var systemPath = systemPathResult.Value;
-                var content = await File.ReadAllTextAsync(systemPath, cancellationToken);
+                var content = await TextFile.ReadAllTextAsync(systemPath, cancellationToken);
                 return Result<string, Error>.Success(content);
             }, path.Value);
         }
@@ -327,7 +327,7 @@ namespace Ave.Extensions.FileSystem.Local
                     contents = string.Empty;
 
                 var systemPath = systemPathResult.Value;
-                await File.WriteAllTextAsync(systemPath, contents, cancellationToken);
+                await TextFile.WriteAllTextAsync(systemPath, contents, cancellationToken);
                 return Result<Unit, Error>.Success(Unit.Value);
             }, path.Value);
         }
@@ -1488,9 +1488,9 @@ namespace Ave.Extensions.FileSystem.Local
 
             // Fallback to message checking for edge cases and localization variations
             var message = ex.Message;
-            return message.Contains("cross-device", StringComparison.OrdinalIgnoreCase) ||
-                   message.Contains("different volume", StringComparison.OrdinalIgnoreCase) ||
-                   message.Contains("not same device", StringComparison.OrdinalIgnoreCase);
+            return message.IndexOf("cross-device", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("different volume", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   message.IndexOf("not same device", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
