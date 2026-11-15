@@ -60,8 +60,10 @@ internal static class TableBreaks
     {
         for (var row = segment.FirstRow; row <= segment.LastRow; row++)
         {
+            // A break between rows ends the page at the line above `row`: down to its centre (slice) or with the
+            // whole line (clone, InsideBelow of the row above).
             var top = segment.RowTop(row);
-            if (row > segment.FirstRow && Fitting.Fits(top, height))
+            if (row > segment.FirstRow && Fitting.Fits(top + InsideBelow(table, row - 1), height))
             {
                 yield return new Breakpoint(BreakKind.BetweenRows, row, BreakAppeal.ViolatesAvoid, content, segment);
             }

@@ -53,6 +53,28 @@ public sealed record BoxStyle
     /// <summary>How many columns and rows a table cell covers (HTML <c>colspan</c> / <c>rowspan</c>, CSS 2.1 §17.2.1);
     /// <see cref="CellSpan.Single"/> for every other box.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;
+
+    /// <summary>How a table's grid lines are drawn where the table breaks between two rows, named after CSS
+    /// <c>box-decoration-break</c> (CSS Fragmentation 3 §5.4); <see cref="BoxDecorationBreak.Slice"/>, the CSS initial
+    /// value, unless set. Used by the tracks algorithm for a table; every other box is sliced.</summary>
+    public BoxDecorationBreak DecorationBreak { get; init; }
+}
+
+/// <summary>
+/// The values of <see cref="BoxStyle.DecorationBreak"/>, named after <c>box-decoration-break</c> (CSS Fragmentation 3
+/// §5.4), for the grid line of a table at a break between two rows.
+/// </summary>
+public enum BoxDecorationBreak
+{
+    /// <summary>The line is cut along its centre: its upper half ends the page and its lower half starts the next, as
+    /// Chromium prints collapsed table borders. A row fits when it fits down to the centre of the line below it.</summary>
+    Slice,
+
+    /// <summary>Each fragment of the table is closed by a whole line: the page ends with the whole line and the next
+    /// page starts with it again, as word processors print tables. For collapsed table borders this is the engine's
+    /// rule, modelled on <c>clone</c> (which gives each fragment its own complete border); no specification defines it.
+    /// A row fits when it fits with the whole line below it.</summary>
+    Clone,
 }
 
 /// <summary>The values of <c>break-before</c> and <c>break-after</c> (CSS Fragmentation 3 §3.1) that this version

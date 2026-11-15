@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
+using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -27,14 +28,24 @@ namespace Ave.Documents.Layout;
 /// spanning cell) and a break at <c>break-before</c>/<c>break-after: avoid</c>. The page breaks at the latest
 /// breakpoint of the highest appeal, as Chromium chooses and as in <see cref="FlowLayout"/> (CSS Fragmentation 3 §4.5
 /// leaves the choice among the allowed breakpoints to the user agent).</para>
-/// <para><b>The grid line at a break between rows</b> is split along its centre: its upper half ends this page's
-/// fragment and its lower half starts the next one. In the collapsing border model half of a line lies in the cells on
-/// each side of it (CSS 2.1 §17.6.2), and a box cut by a break gets no border at the cut (CSS Fragmentation 3 §5.4,
+/// <para><b>The grid line at a break between rows</b> is resolved once, from the rows on both sides, and drawn as the
+/// table's <see cref="BoxStyle.DecorationBreak"/> says:</para>
+/// <list type="bullet">
+/// <item><see cref="BoxDecorationBreak.Slice"/>: split along its centre, its upper half ends this page's fragment and its
+/// lower half starts the next one. In the collapsing border model half of a line lies in the cells on each side of it
+/// (CSS 2.1 §17.6.2), and a box cut by a break gets no border at the cut (CSS Fragmentation 3 §5.4,
 /// <c>box-decoration-break: slice</c>), so each page keeps the half that belongs to its own rows — Chromium draws a
-/// broken table the same way. A row therefore fits when it fits down to the centre of the line below it; only the
-/// last row of the table also needs the half of the table's bottom border that lies inside the table. A break inside a
-/// row is a breakpoint only when it cuts content: a row whose cells all end on this page is never split into a full
-/// row and an empty one.</para>
+/// broken table the same way. A row fits when it fits down to the centre of the line below it.</item>
+/// <item><see cref="BoxDecorationBreak.Clone"/>: the whole line ends this page and the whole line starts the next
+/// (above its first body row; with repeated header rows the header comes first, under the table's top line). This is
+/// the engine's own rule for collapsed borders, modelled on <c>clone</c> and on how word processors print tables. A
+/// row fits when it fits with the whole line below it, and the next page spends the whole line before its first
+/// row.</item>
+/// </list>
+/// <para>Only the last row of the table needs the half of the table's bottom border that lies inside the table. A break
+/// inside a row is a breakpoint only when it cuts content: a row whose cells all end on this page is never split into a
+/// full row and an empty one. LIMIT: at a break inside a row no line is drawn at the cut, whatever the table's
+/// decoration break.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every
 /// later fragment. They never break. A break right after the header rows, with no body row on the page, is not a
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
@@ -145,7 +156,7 @@ internal static class TablePage
         // halves of one line, and a row group's own top border takes part only above the group's first row.
         var continuesAfterBreak = !isFirst && !includeHeader && !resume.RowIsSplit;
         var firstLine = continuesAfterBreak
-            ? new LineAt(firstRow - 1, firstRow, new CollapsedBorders.LineContext(false, false, resumeCut), 0, LinePart.LowerHalf)
+            ? ContinuationLine(table, firstRow.Value, new CollapsedBorders.LineContext(false, false, resumeCut))
             : new LineAt(null, firstRow, topContext, table.HorizontalWidth(null, firstRow, topContext) / 2);
         var content = Empty(firstLine.Y) with { Lines = [firstLine] };
         if (includeHeader)
@@ -240,14 +251,27 @@ internal static class TablePage
     internal static CollapsedBorders.LineContext EdgeContext(TableGrid grid, int row) =>
         row == grid.Rows.Length - 1 ? new CollapsedBorders.LineContext(true, false, new HashSet<int>()) : CollapsedBorders.LineContext.Interior;
 
-    /// <summary>The line that ends a page at a break between rows: its upper half (see remarks).</summary>
-    internal static LineAt? BottomLine(TableGeometry table, int? above, int? below, double y) =>
-        above is null ? null : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, LinePart.UpperHalf);
+    /// <summary>True when the table repeats whole grid lines at a break (see remarks).</summary>
+    internal static bool IsCloned(TableGeometry table) => table.Box.Style.DecorationBreak == BoxDecorationBreak.Clone;
 
-    /// <summary>What a row needs below its bottom edge on this page: for the table's last row, the half of the table's
-    /// bottom border inside the table; for any other row nothing, because a break below it splits the line there.</summary>
+    /// <summary>The line that ends a page at a break between rows: its upper half, or the whole line (see remarks).</summary>
+    internal static LineAt? BottomLine(TableGeometry table, int? above, int? below, double y) =>
+        above is null ? null : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, IsCloned(table) ? LinePart.Whole : LinePart.UpperHalf);
+
+    /// <summary>The line that starts a page after a break between rows, resolved from the row before the break and the
+    /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down.</summary>
+    private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context) =>
+        IsCloned(table)
+            ? new LineAt(firstRow - 1, firstRow, context, table.HorizontalWidth(firstRow - 1, firstRow, context) / 2)
+            : new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
+
+    /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,
+    /// the half of the table's bottom border inside the table; for any other row, with clone the half of the line below
+    /// it that lies under its centre, and with slice nothing, because the line is split at its centre.</summary>
     internal static double InsideBelow(TableGeometry table, int row) =>
-        row == table.Grid.Rows.Length - 1 ? table.HorizontalWidth(row, null, EdgeContext(table.Grid, row)) / 2 : 0;
+        row == table.Grid.Rows.Length - 1 ? table.HorizontalWidth(row, null, EdgeContext(table.Grid, row)) / 2
+        : IsCloned(table) ? table.HorizontalWidth(row, row + 1, CollapsedBorders.LineContext.Interior) / 2
+        : 0;
 
     internal static Content Empty(double top) => new([], [], [], top, false);
 

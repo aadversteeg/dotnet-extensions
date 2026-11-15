@@ -83,6 +83,7 @@ public static class DocumentModelText
             style.BreakBefore != initial.BreakBefore ? $"break-before={style.BreakBefore.ToString().ToLowerInvariant()}" : null,
             style.BreakAfter != initial.BreakAfter ? $"break-after={style.BreakAfter.ToString().ToLowerInvariant()}" : null,
             style.BreakInside != initial.BreakInside ? $"break-inside={style.BreakInside.ToString().ToLowerInvariant()}" : null,
+            style.DecorationBreak != initial.DecorationBreak ? $"box-decoration-break={style.DecorationBreak.ToString().ToLowerInvariant()}" : null,
             style.TextAlign != initial.TextAlign ? $"text-align={style.TextAlign.ToString().ToLowerInvariant()}" : null,
             style.VerticalAlign != initial.VerticalAlign ? $"vertical-align={style.VerticalAlign.ToString().ToLowerInvariant()}" : null,
             style.Columns.Count > 0 ? $"columns={string.Join(",", style.Columns)}" : null,

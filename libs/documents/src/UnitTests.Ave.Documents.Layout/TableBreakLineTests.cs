@@ -20,7 +20,7 @@ public class TableBreakLineTests
 
     /// <summary>A two-column table of 30 one-line rows, every line <paramref name="lineWidth"/> wide, after an empty
     /// block whose margin moves the table <paramref name="offset"/> down.</summary>
-    private static StyledDocument Rows(double lineWidth, double offset, double pageHeight, int count = 30, double fontSize = 10)
+    private static StyledDocument Rows(double lineWidth, double offset, double pageHeight, int count = 30, double fontSize = 10, BoxDecorationBreak mode = BoxDecorationBreak.Slice)
     {
         var t = new TableModels();
         var cell = Lined(lineWidth);
@@ -29,7 +29,7 @@ public class TableBreakLineTests
             Models.At(0));
         var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
         var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body([.. Enumerable.Range(0, count).Select(i => t.Row(Cell($"row{i:00}"), Cell("value")))]));
-        return TableModels.Page(280, pageHeight, spacer, table);
+        return TableModels.Page(280, pageHeight, spacer, table with { Style = table.Style with { DecorationBreak = mode } });
     }
 
     private static IEnumerable<(BoxFragment Box, Point At)> Boxes(Fragment fragment, Point at, SemanticRole role) =>
@@ -54,17 +54,20 @@ public class TableBreakLineTests
     }
 
     [Theory]
-    [InlineData(4.0)]
-    [InlineData(1.0)]
-    [InlineData(0.5)]
-    public void No_start_offset_leaves_a_row_without_content_or_a_line_outside_the_table(double lineWidth)
+    [InlineData(4.0, BoxDecorationBreak.Slice)]
+    [InlineData(1.0, BoxDecorationBreak.Slice)]
+    [InlineData(0.5, BoxDecorationBreak.Slice)]
+    [InlineData(4.0, BoxDecorationBreak.Clone)]
+    [InlineData(1.0, BoxDecorationBreak.Clone)]
+    [InlineData(0.5, BoxDecorationBreak.Clone)]
+    public void No_start_offset_leaves_a_row_without_content_or_a_line_outside_the_table(double lineWidth, BoxDecorationBreak mode)
     {
         const double PageHeight = 150;
         for (var offset = 0.0; offset < 40; offset += 0.25)
         {
-            var pages = Paginate(Rows(lineWidth, offset, PageHeight));
+            var pages = Paginate(Rows(lineWidth, offset, PageHeight, mode: mode));
 
-            var because = $"line width {lineWidth}, offset {offset}";
+            var because = $"{mode}, line width {lineWidth}, offset {offset}";
             var rows = new List<string>();
             foreach (var page in pages)
             {
@@ -113,6 +116,58 @@ public class TableBreakLineTests
         firstRule.Fragment.Size.Height.Should().BeApproximately(Line / 2, Epsilon, "the lower half of the line starts page 2");
         var firstRowTop = (Func<BoxFragment, double>)(table => Boxes(table, new Point(0, 0), SemanticRole.TableRow).First().At.Y);
         (firstRowTop(tables[0]) - firstRowTop(tables[1])).Should().BeApproximately(Line / 2, Epsilon);
+    }
+
+    [Theory]
+    [InlineData(0.0, 7)]
+    [InlineData(0.75, 7)]
+    [InlineData(1.5, 8)]
+    [InlineData(2.25, 8)]
+    public void With_clone_a_row_fits_only_with_the_whole_line_below_it_and_each_page_has_whole_lines(double extra, int rowsOnPageOne)
+    {
+        // The same 3pt grid as the Chromium cases. With clone the page area must hold row 8 AND the whole line below it:
+        // the line's centre plus half its width. Page 1 then ends with the whole 3pt line, page 2 starts with the whole
+        // line again, and page 2's first row sits as low as row 1 on page 1 (half a line below the table's top).
+        const double Line = 3, Pitch = 14.4 + Line;
+        var area = Line / 2 + 8 * Pitch + extra;
+
+        var pages = Paginate(Rows(Line, 0, area, count: 20, fontSize: 12, mode: BoxDecorationBreak.Clone));
+
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        Boxes(tables[0], new Point(0, 0), SemanticRole.TableRow).Should().HaveCount(rowsOnPageOne);
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        var lastRule = Wide(tables[0]).MaxBy(child => child.Offset.Y)!;
+        lastRule.Fragment.Size.Height.Should().BeApproximately(Line, Epsilon, "the whole line ends page 1");
+        (lastRule.Offset.Y + Line).Should().BeApproximately(tables[0].Size.Height, Epsilon);
+        tables[0].Size.Height.Should().BeLessThanOrEqualTo(area + Epsilon);
+        var firstRule = Wide(tables[1]).MinBy(child => child.Offset.Y)!;
+        firstRule.Offset.Y.Should().BeApproximately(0, Epsilon);
+        firstRule.Fragment.Size.Height.Should().BeApproximately(Line, Epsilon, "the whole line starts page 2");
+        var firstRowTop = (Func<BoxFragment, double>)(table => Boxes(table, new Point(0, 0), SemanticRole.TableRow).First().At.Y);
+        firstRowTop(tables[1]).Should().BeApproximately(firstRowTop(tables[0]), Epsilon);
+    }
+
+    [Fact]
+    public void With_clone_the_line_at_a_break_is_resolved_from_both_rows_on_both_pages()
+    {
+        var t = new TableModels();
+        var grey = new BorderSide(1.Pt(), new Color(0x80, 0x80, 0x80));
+        var black = new BorderSide(6.Pt(), Color.Black);
+        var cell = BoxStyle.Initial with { Border = Border.All(grey) };
+        var row = BoxStyle.Initial with { Border = Border.All(BorderSide.None) with { Bottom = black } };
+        Box Cell(string text) => new(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, cell,
+            [new Box(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(t.Next(), text, Models.Text(12), Models.At(0))], Models.At(0))],
+            Models.At(0));
+        var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body([.. Enumerable.Range(0, 20).Select(i => t.Row(row, Cell($"row{i:00}"), Cell("value")))]));
+
+        var pages = Paginate(TableModels.Page(280, 150, table with { Style = table.Style with { DecorationBreak = BoxDecorationBreak.Clone } }));
+
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        ((RuleFragment)Wide(tables[0]).MaxBy(child => child.Offset.Y)!.Fragment).Color.Should().Be(Color.Black);
+        ((RuleFragment)Wide(tables[0]).MaxBy(child => child.Offset.Y)!.Fragment).Size.Height.Should().BeApproximately(6, Epsilon);
+        ((RuleFragment)Wide(tables[1]).MinBy(child => child.Offset.Y)!.Fragment).Color.Should().Be(Color.Black);
+        ((RuleFragment)Wide(tables[1]).MinBy(child => child.Offset.Y)!.Fragment).Size.Height.Should().BeApproximately(6, Epsilon);
     }
 
     /// <summary>
