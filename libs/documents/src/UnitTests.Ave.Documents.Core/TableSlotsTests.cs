@@ -104,4 +104,25 @@ public class TableSlotsTests
         grid.Problems.Should().ContainSingle().Which.Kind.Should().Be(TableSlots.ProblemKind.SpanTooLarge);
         grid.ColumnCount.Should().Be(TableSlots.MaxColumnSpan);
     }
+
+    [Theory]
+    [InlineData(1, 1, true)]
+    [InlineData(1000, 65534, true)]
+    [InlineData(0, 1, false)]
+    [InlineData(1, 0, false)]
+    [InlineData(-3, 1, false)]
+    [InlineData(1001, 1, false)]
+    [InlineData(1, 65535, false)]
+    public void The_span_rule_is_one_to_the_table_model_s_limits(int columns, int rows, bool valid)
+    {
+        TableSlots.IsValidSpan(new CellSpan(columns, rows)).Should().Be(valid);
+    }
+
+    [Fact]
+    public void A_span_below_one_is_its_own_problem()
+    {
+        var grid = TableSlots.Fill(Groups([[new CellSpan(0, 1)]]), columnCount: 1);
+
+        grid.Problems.Should().ContainSingle().Which.Kind.Should().Be(TableSlots.ProblemKind.SpanBelowOne);
+    }
 }

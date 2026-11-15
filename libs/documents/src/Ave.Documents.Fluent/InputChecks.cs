@@ -177,12 +177,6 @@ internal static class InputChecks
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.Columns, $"The row has {items} items but {columns} column sizes.", columns.ToString(System.Globalization.CultureInfo.InvariantCulture), "columns", source)];
 
-    /// <summary>Cell spans are at least one column and one row.</summary>
-    public static IEnumerable<Error> Span(CellSpan span, SourceLocation source) =>
-        span.Columns >= 1 && span.Rows >= 1
-            ? []
-            : [Problem(DocumentErrorCodes.Input.Invalid.Table, "A cell spans at least one column and one row.", span.ToString(), "span", source)];
-
     /// <summary>A table's structure as the front-end sees it: header rows only at the start, not in a row group.</summary>
     public static Error MisplacedHeaderRow(SourceLocation source) =>
         Problem(DocumentErrorCodes.Input.Invalid.Table, "Header rows must come first in a table, outside any row group.", "HeaderRow", "rows", source);
@@ -238,6 +232,7 @@ internal static class InputChecks
                 TableSlots.ProblemKind.SpanPastGroup => "The cell's row span runs past the last row of its row group.",
                 TableSlots.ProblemKind.Overlap => "The cell overlaps a cell that spans rows from above.",
                 TableSlots.ProblemKind.SpanTooLarge => $"The cell spans more than {TableSlots.MaxColumnSpan} columns or {TableSlots.MaxRowSpan} rows, the largest spans a table allows.",
+                TableSlots.ProblemKind.SpanBelowOne => "A cell spans at least one column and one row.",
                 _ => "A table row needs at least one cell.",
             };
             return Problem(DocumentErrorCodes.Input.Invalid.Table, message, problem.Kind.ToString(), problem.Cell < 0 ? "cells" : "span", source);
@@ -326,13 +321,19 @@ internal static class InputChecks
     }
 
     /// <summary>An image is either described or decorative, not both: the two contradict each other whatever the
-    /// profile. Whether a description is required, and that a blank one counts as none, is a profile's rule
-    /// (PDF/UA-1, checked by the PDF back-end on the page model).</summary>
+    /// profile; and a description is not blank, which says nothing to a reader in any profile. Whether a description is
+    /// required at all is a profile's rule (PDF/UA-1, checked by the PDF back-end on the page model).</summary>
     public static IEnumerable<Error> ImageDescription(ImageElement image)
     {
         if (image.AlternativeText is not null && image.IsDecorative)
         {
             yield return Problem(DocumentErrorCodes.Input.Invalid.ImageDescription, "An image is either described (Alt) or decorative, not both.", image.AlternativeText, "alt", image.Source);
+        }
+
+        // A blank description says nothing to a reader, whatever the profile: describe the image or mark it decorative.
+        if (image.AlternativeText is { } text && string.IsNullOrWhiteSpace(text))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.ImageDescription, "The alternative text is blank; describe the image, or mark it Decorative().", text, "alt", image.Source);
         }
     }
 

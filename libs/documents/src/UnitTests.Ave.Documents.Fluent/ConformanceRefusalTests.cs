@@ -240,12 +240,14 @@ public class ConformanceRefusalTests
     }
 
     [Fact]
-    public void PDF_UA_refuses_a_blank_description_at_the_image_s_line_as_it_refuses_none()
+    public void A_blank_description_is_an_input_error_at_the_image_s_line_in_every_profile()
     {
+        // It says nothing to a reader: outside PDF/UA it was written as /Alt ( ).
         var line = CurrentLine() + 1;
         var blank = Image(Logo).Alt(" ");
 
-        ShouldPointAt(Refused(Accessible([blank]), PdfProfile.PdfUa1), PdfRenderErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText, line);
+        ShouldPointAt(Refused(Accessible([blank]), PdfProfile.PdfUa1), DocumentErrorCodes.Input.Invalid.ImageDescription, line);
+        ShouldPointAt(Refused(Accessible([blank]), PdfProfile.Plain), DocumentErrorCodes.Input.Invalid.ImageDescription, line);
     }
 
     [Fact]

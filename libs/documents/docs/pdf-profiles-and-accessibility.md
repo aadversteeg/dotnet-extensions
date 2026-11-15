@@ -60,7 +60,7 @@ All problems are reported at once. Plain PDF refuses none of them.
 Some values are checked in every profile, because they would be wrong in any PDF: a language that is not a language
 tag such as `nl-NL` (`Documents.Input.Invalid.Language`); an attachment without a file name, with a media type that
 is not `type/subtype`, or with the same name as another (`Documents.Input.Invalid.Attachment`); an image that has
-both alternative text and `.Decorative()`, or empty alternative text (`Documents.Input.Invalid.ImageDescription`).
+both alternative text and `.Decorative()`, or blank alternative text (`Documents.Input.Invalid.ImageDescription`).
 
 ### Writing good alternative text
 

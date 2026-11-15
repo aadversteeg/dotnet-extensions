@@ -94,7 +94,7 @@ internal static class PageModelRules
             Invalid($"A glyph on page {number} has no text; every shown glyph needs one for its ToUnicode entry (empty for a glyph that continues the text of the glyph before it).", Number(number)),
         DrawImage { Image: null } => Invalid($"An image on page {number} has no image data.", Number(number)),
         StructureStart { Role: null } start => Invalid($"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
-        StructureStart start when start.Span.Columns < 1 || start.Span.Rows < 1 || start.Span.Columns > TableSlots.MaxColumnSpan || start.Span.Rows > TableSlots.MaxRowSpan =>
+        StructureStart start when !TableSlots.IsValidSpan(start.Span) =>
             Invalid($"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
             Invalid($"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),

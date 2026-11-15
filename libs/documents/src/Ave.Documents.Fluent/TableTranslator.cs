@@ -220,7 +220,6 @@ internal static class TableTranslator
         var text = Cascade.Text(cell.Format, cell.Style);
         var problems = DocumentTranslator.BoxProblems(box, cell.Source)
             .Concat(InputChecks.Text(text, cell.Source))
-            .Concat(InputChecks.Span(cell.Span, cell.Source))
             .Concat(InputChecks.NotApplicable(box.Margin, "margin", "cell", cell.Source))
             .Concat(InputChecks.PageBreakIn(cell.Content, "table cell"))
             .ToImmutableArray();

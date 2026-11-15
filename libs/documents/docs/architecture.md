@@ -116,15 +116,17 @@ together, at the author's line where there is one.
 | --- | --- | --- |
 | front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| PDF back-end contract (`Render.Pdf/PageModelRules.cs`) | a page model from any producer: at least one page, nothing missing, glyphs of their font, spans of at least one cell, unique attachment names | `Documents.Pdf.Write.InvalidPageModel` |
-| profile rules (`Render.Pdf/ConformanceRules.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables | `Documents.Pdf.Conformance.*` |
+| PDF back-end contract (`Render.Pdf/PageModelRules.cs`, `PdfRenderer.cs` for the options) | a page model from any producer: metadata and at least one page, nothing missing, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, one role per node, attachments with a name, a media type and a unique name; render options with a profile and a non-empty file identifier | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
+| profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables, the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
 The slot-filling rule of a table (which slot each cell takes, and when a span runs past its group or overlaps
 another) is `Core/TableSlots.cs`. The front-end's table check, the layout's grid and the PDF/UA regularity check all
-use it, so the three cannot disagree. Unique attachment names are the one rule checked twice, on purpose: the
-front-end reports it at the author's line, and the back-end must refuse it as well, because it accepts page models
-that did not come from the front-end, and a duplicate name would silently drop a file from the embedded-files name
-tree.
+use it, so the three cannot disagree; the span rule (`TableSlots.IsValidSpan`), the language form
+(`Core/LanguageTags.cs`) and the characters text may hold (`Core/TextCharacters.cs`) are single rules in the same way.
+Some rules are checked twice, on purpose, by calling the same rule: the front-end reports them at the author's line,
+and the back-end refuses them as well, because it accepts page models that did not come from the front-end. These are
+the span rule, unique and non-blank attachment names (a duplicate would silently drop a file from the embedded-files
+name tree), and the language form (for the tagged profiles).
 
 ## Conformance in one paragraph
 

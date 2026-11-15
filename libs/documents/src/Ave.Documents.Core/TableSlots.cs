@@ -32,6 +32,9 @@ public static class TableSlots
         /// <summary>A span larger than the HTML table model allows (<see cref="MaxColumnSpan"/>,
         /// <see cref="MaxRowSpan"/>).</summary>
         SpanTooLarge,
+
+        /// <summary>A span of less than one column or one row.</summary>
+        SpanBelowOne,
     }
 
     /// <summary>
@@ -43,6 +46,13 @@ public static class TableSlots
 
     /// <summary>The largest row span: HTML's limit for <c>rowspan</c> ("less than or equal to 65534", same section).</summary>
     public const int MaxRowSpan = 65534;
+
+    /// <summary>The rule for a span, in one place for every layer: at least one column and one row, at most
+    /// <see cref="MaxColumnSpan"/> columns and <see cref="MaxRowSpan"/> rows.</summary>
+    /// <param name="span">The span.</param>
+    /// <returns>True when the span keeps the rule.</returns>
+    public static bool IsValidSpan(CellSpan span) =>
+        span.Columns is >= 1 and <= MaxColumnSpan && span.Rows is >= 1 and <= MaxRowSpan;
 
     /// <summary>One problem: its kind, and the row and the cell (index within its row; −1 for the row itself).</summary>
     /// <param name="Kind">What is wrong.</param>
@@ -109,11 +119,11 @@ public static class TableSlots
                     var span = group[index][cell];
                     var columns = System.Math.Clamp(span.Columns, 1, MaxColumnSpan);
                     var rows = System.Math.Clamp(span.Rows, 1, MaxRowSpan);
-                    if (span.Columns > MaxColumnSpan || span.Rows > MaxRowSpan)
+                    if (!IsValidSpan(span))
                     {
                         // The one problem of this cell: whether the cut span still runs past the columns or the
                         // group follows from the author's number, not from where the cell is.
-                        problems.Add(new Problem(ProblemKind.SpanTooLarge, row, cell));
+                        problems.Add(new Problem(span.Columns < 1 || span.Rows < 1 ? ProblemKind.SpanBelowOne : ProblemKind.SpanTooLarge, row, cell));
                     }
                     else
                     {
