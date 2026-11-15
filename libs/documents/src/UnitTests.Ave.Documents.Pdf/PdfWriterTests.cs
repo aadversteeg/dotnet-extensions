@@ -116,4 +116,22 @@ public class PdfWriterTests
     public void Content_stream_with_a_non_finite_operand_is_an_error() =>
         ContentStream.Serialize([ContentOperators.MoveTextTo(double.NaN, 0)]).Error.Code
             .Should().Be(PdfErrorCodes.Write.InvalidNumber);
+
+    [Fact]
+    public void Without_a_given_identifier_the_ID_is_the_first_16_bytes_of_SHA_256_of_the_file_body()
+    {
+        // The file identifier (ISO 32000-1 §14.4) defaults to a hash of the content, so the same content gives the same
+        // identifier and other content another. The body is everything before the cross-reference table.
+        var bytes = PdfWriter.Write(MinimalFile()).Value;
+        var text = Latin1(bytes);
+        var crossReference = int.Parse(Regex.Match(text, @"startxref\s+(\d+)").Groups[1].Value, CultureInfo.InvariantCulture);
+        var body = bytes.AsSpan(0, crossReference);
+        var expected = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(body).AsSpan(0, 16));
+
+        var id = Regex.Match(text, @"/ID \[<([0-9A-Fa-f]+)> <([0-9A-Fa-f]+)>\]");
+
+        id.Success.Should().BeTrue();
+        id.Groups[1].Value.Should().BeEquivalentTo(expected);
+        id.Groups[2].Value.Should().BeEquivalentTo(expected);
+    }
 }

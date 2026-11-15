@@ -23,7 +23,7 @@ public class SampleTests
     private static Stages Run(Document document)
     {
         var model = DocumentTranslator.ToModel(document).Value;
-        var fragments = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), model).Value;
+        var fragments = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model).Value;
         var pages = PagePainter.Paint(model.Metadata, fragments);
         return new Stages(model, fragments, pages, PdfRenderer.Render(pages, Options).Value);
     }
@@ -97,6 +97,20 @@ public class SampleTests
         var stages = Run(sample == "letter" ? SampleDocuments.Letter() : SampleDocuments.LongText());
 
         PdfReadBack.Differences(stages.Pages, stages.Pdf).Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("sample-a-letter")]
+    [InlineData("timesheet-normal.nl")]
+    [InlineData("timesheet-long.en")]
+    public void Every_rectangle_and_image_reads_back_in_its_place_size_and_colour(string name)
+    {
+        // Backgrounds, grid lines and the logo, read back by PdfPig: a moved rectangle, swapped colour channels or an
+        // image drawn at the wrong size fail here, which no text check and no validator notices.
+        var stages = Run(SampleFiles.Documents.Single(sample => sample.Name == name).Document);
+
+        stages.Pages.Pages.SelectMany(page => page.Items).OfType<global::Ave.Documents.PageModel.FillRectangle>().Should().NotBeEmpty();
+        PdfReadBack.AreaDifferences(stages.Pages, stages.Pdf).Should().BeEmpty();
     }
 
     [Theory]

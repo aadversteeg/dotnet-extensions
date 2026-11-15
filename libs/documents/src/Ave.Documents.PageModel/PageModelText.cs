@@ -58,7 +58,9 @@ public static class PageModelText
     private static string GlyphRunLine(GlyphRun run)
     {
         var text = string.Concat(run.Glyphs.Select(glyph => glyph.Text));
-        var glyphs = string.Join(" ", run.Glyphs.Select(glyph => $"{glyph.Glyph}@{InvariantNumber.Format(glyph.X)}"));
+        // A glyph's vertical offset (a mark raised onto its base) is written after its x when it is not 0.
+        var glyphs = string.Join(" ", run.Glyphs.Select(glyph =>
+            $"{glyph.Glyph}@{InvariantNumber.Format(glyph.X)}" + (glyph.Y == 0 ? string.Empty : $",{InvariantNumber.Format(glyph.Y)}")));
         return $"glyphs {run.Font} {InvariantNumber.Format(run.FontSize)}pt {run.Color} at {run.Origin} "
             + $"{QuotedText.Quote(text)} {glyphs}";
     }

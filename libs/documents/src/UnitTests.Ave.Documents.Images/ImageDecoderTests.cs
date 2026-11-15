@@ -191,6 +191,20 @@ public class ImageDecoderTests
     }
 
     [Fact]
+    public void A_wrong_CRC_is_invalid_even_when_the_data_is_intact()
+    {
+        // PNG §5.3: the CRC covers type and data; a mismatch means a damaged chunk. Here only the IHDR's stored CRC
+        // (bytes 29–32) is wrong, so nothing but the CRC check can notice.
+        var bytes = Asset("rgb8.png");
+        bytes[29] ^= 0x01;
+
+        var error = ImageDecoder.Decode(bytes).Error;
+
+        error.Code.Should().Be(ImageErrorCodes.Invalid);
+        error.Message.Should().Contain("CRC");
+    }
+
+    [Fact]
     public void A_truncated_file_is_invalid()
     {
         ImageDecoder.Decode(Asset("rgb8.png").AsMemory(0, 40)).Error.Code.Should().Be(ImageErrorCodes.Invalid);

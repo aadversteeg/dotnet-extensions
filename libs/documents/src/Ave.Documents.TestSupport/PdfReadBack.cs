@@ -81,4 +81,83 @@ public static class PdfReadBack
             }
         }
     }
+
+    /// <summary>A filled rectangle or an image as PdfPig reads it, in PDF coordinates (origin bottom-left, y up).</summary>
+    /// <param name="Kind">"fill" or "image".</param>
+    /// <param name="Left">The left edge.</param>
+    /// <param name="Bottom">The bottom edge.</param>
+    /// <param name="Width">The width.</param>
+    /// <param name="Height">The height.</param>
+    /// <param name="Rgb">For a fill, its colour as 8-bit red, green and blue; empty for an image.</param>
+    public sealed record ReadArea(string Kind, double Left, double Bottom, double Width, double Height, string Rgb)
+    {
+        /// <summary>True when the two are the same kind, colour and place, within <see cref="PositionTolerance"/>.</summary>
+        /// <param name="other">The other area.</param>
+        /// <returns>Whether they match.</returns>
+        public bool Matches(ReadArea other) =>
+            Kind == other.Kind && Rgb == other.Rgb
+            && Math.Abs(Left - other.Left) <= PositionTolerance && Math.Abs(Bottom - other.Bottom) <= PositionTolerance
+            && Math.Abs(Width - other.Width) <= PositionTolerance && Math.Abs(Height - other.Height) <= PositionTolerance;
+    }
+
+    /// <summary>
+    /// Compares the filled rectangles and the images of the PDF with its page model: the same number on every page, in
+    /// painting order, each in the same place and size and — for a fill — the same colour, read back as RGB. Swapped
+    /// colour channels, a rectangle moved or flipped, an image drawn at the wrong size all show up here. Returns one
+    /// line per difference.
+    /// </summary>
+    /// <param name="model">The page model.</param>
+    /// <param name="pdf">The PDF written from it.</param>
+    /// <returns>The differences.</returns>
+    public static IReadOnlyList<string> AreaDifferences(PageDocument model, ImmutableArray<byte> pdf)
+    {
+        using var document = PdfDocument.Open(pdf.ToArray());
+        var pages = document.GetPages().ToList();
+        if (pages.Count != model.Pages.Count)
+        {
+            return [$"The PDF has {pages.Count} pages, the page model {model.Pages.Count}."];
+        }
+
+        var differences = new List<string>();
+        for (var index = 0; index < pages.Count; index++)
+        {
+            var page = model.Pages[index];
+            var expectedFills = page.Items.OfType<FillRectangle>().Select(fill => Expected("fill", fill.Area, page, Rgb(fill.Color.Red, fill.Color.Green, fill.Color.Blue))).ToList();
+            var expectedImages = page.Items.OfType<DrawImage>().Select(image => Expected("image", image.Area, page, string.Empty)).ToList();
+            var readFills = pages[index].Paths.Where(path => path.IsFilled && path.GetBoundingRectangle() is not null)
+                .Select(path => Read("fill", path.GetBoundingRectangle()!.Value, RgbOf(path.FillColor))).ToList();
+            var readImages = pages[index].GetImages().Select(image => Read("image", image.BoundingBox, string.Empty)).ToList();
+            foreach (var (kind, expected, read) in new[] { ("fill", expectedFills, readFills), ("image", expectedImages, readImages) })
+            {
+                if (expected.Count != read.Count)
+                {
+                    differences.Add($"Page {index + 1}: {read.Count} {kind}s read back, {expected.Count} in the page model.");
+                    continue;
+                }
+
+                differences.AddRange(expected.Zip(read).Where(pair => !pair.First.Matches(pair.Second)).Select(pair => $"Page {index + 1}: expected {pair.First}, read {pair.Second}."));
+            }
+        }
+
+        return differences;
+    }
+
+    private static ReadArea Expected(string kind, Ave.Documents.Core.Rect area, Page page, string rgb) =>
+        new(kind, area.Origin.X, page.Size.Height - area.Origin.Y - area.Size.Height, area.Size.Width, area.Size.Height, rgb);
+
+    private static ReadArea Read(string kind, UglyToad.PdfPig.Core.PdfRectangle box, string rgb) =>
+        new(kind, box.Left, box.Bottom, box.Width, box.Height, rgb);
+
+    private static string RgbOf(UglyToad.PdfPig.Graphics.Colors.IColor? color)
+    {
+        if (color is null)
+        {
+            return "none";
+        }
+
+        var (red, green, blue) = color.ToRGBValues();
+        return Rgb((byte)Math.Round(red * 255), (byte)Math.Round(green * 255), (byte)Math.Round(blue * 255));
+    }
+
+    private static string Rgb(byte red, byte green, byte blue) => $"#{red:X2}{green:X2}{blue:X2}";
 }

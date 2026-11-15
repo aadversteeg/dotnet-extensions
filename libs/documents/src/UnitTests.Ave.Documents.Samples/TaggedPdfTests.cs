@@ -65,6 +65,13 @@ public class TaggedPdfTests
         document.DepthFirst().Count(element => element.Type == "P").Should().BeGreaterThan(5);
     }
 
+    [Theory]
+    [InlineData("timesheet-normal.nl")]
+    [InlineData("timesheet-long.en")]
+    [InlineData("sample-a-letter")]
+    public void The_parent_tree_sends_every_marked_content_to_the_element_that_owns_it(string name) =>
+        PdfStructureReadBack.ParentTreeDifferences(SampleFiles.Pdf(SampleFiles.Documents.Single(sample => sample.Name == name).Document)).Should().BeEmpty();
+
     [Fact]
     public void The_attachment_reads_back_byte_for_byte()
     {

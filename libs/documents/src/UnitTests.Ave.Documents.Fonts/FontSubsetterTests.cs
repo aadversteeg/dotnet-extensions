@@ -105,7 +105,15 @@ public class FontSubsetterTests
     [Fact]
     public void Head_switches_to_long_loca_offsets()
     {
-        BinaryPrimitives.ReadInt16BigEndian(Directory(Subset(A)).Tables["head"].Span[50..]).Should().Be(1);
+        // Theano Didot has short 'loca' offsets (head.indexToLocFormat 0, fontTools 4.68.0); Lato's are long already,
+        // so only a short-offset font shows that the subsetter writes the format it uses.
+        var theano = TestFonts.TheanoDidot;
+        BinaryPrimitives.ReadInt16BigEndian(TableDirectory.Parse(theano.FileData).Value.Tables["head"].Span[50..]).Should().Be(0);
+
+        var subset = FontSubsetter.Subset(theano, [new GlyphId(36)]).Value;
+
+        BinaryPrimitives.ReadInt16BigEndian(Directory(subset).Tables["head"].Span[50..]).Should().Be(1);
+        Directory(subset).Tables["loca"].Length.Should().Be((theano.GlyphCount + 1) * 4, "one 4-byte offset per glyph and one at the end");
     }
 
     [Fact]

@@ -75,8 +75,86 @@ public static class PdfStructureReadBack
         return text.ToString();
     }
 
+    /// <summary>
+    /// Checks the parent tree (ISO 32000-1 §14.7.4.4) against the structure: for every page, the array the page's
+    /// <c>/StructParents</c> key selects must name, at each marked-content identifier, the element whose kids hold that
+    /// identifier on that page. A reversed or shifted parent tree passes veraPDF and every text check, but sends a
+    /// screen reader from the content to the wrong element.
+    /// </summary>
+    /// <param name="pdf">The PDF bytes.</param>
+    /// <returns>One line per difference; empty when the parent tree matches the structure.</returns>
+    public static IReadOnlyList<string> ParentTreeDifferences(ImmutableArray<byte> pdf)
+    {
+        using var document = PdfDocument.Open(pdf.ToArray());
+        return new Reader(document).ParentTreeDifferences();
+    }
+
     private sealed class Reader(PdfDocument document)
     {
+        public IReadOnlyList<string> ParentTreeDifferences()
+        {
+            var catalog = _structure.Catalog.CatalogDictionary;
+            if (!catalog.TryGet(NameToken.Create("StructTreeRoot"), out var root))
+            {
+                return ["The file has no structure tree."];
+            }
+
+            // What the structure says: (page, MCID) → the element that owns it.
+            var owners = new Dictionary<(int Page, int Mcid), IndirectReference>();
+            void Walk(IndirectReference reference)
+            {
+                var element = (DictionaryToken)_structure.GetObject(reference).Data;
+                var page = element.TryGet(NameToken.Create("Pg"), out var pg) ? PageIndex(pg) : -1;
+                if (!element.TryGet(NameToken.Create("K"), out var k))
+                {
+                    return;
+                }
+
+                foreach (var kid in Resolve(k) is ArrayToken array ? array.Data : [k])
+                {
+                    switch (kid)
+                    {
+                        case NumericToken mcid:
+                            owners[(page, mcid.Int)] = reference;
+                            break;
+                        case IndirectReferenceToken child when Resolve(child) is DictionaryToken childElement && childElement.ContainsKey(NameToken.Create("S")):
+                            Walk(child.Data);
+                            break;
+                        case DictionaryToken marked when marked.TryGet(NameToken.Create("MCID"), out var mcid):
+                            owners[(PageIndex(marked.Data["Pg"]), ((NumericToken)Resolve(mcid)).Int)] = reference;
+                            break;
+                    }
+                }
+            }
+
+            var rootKids = Dictionary(root).Data["K"];
+            foreach (var kid in Resolve(rootKids) is ArrayToken kids ? kids.Data : [rootKids])
+            {
+                Walk(((IndirectReferenceToken)kid).Data);
+            }
+
+            // What the parent tree says.
+            var nums = ((ArrayToken)Resolve(Dictionary(Dictionary(root).Data["ParentTree"]).Data["Nums"])).Data;
+            var arrays = Enumerable.Range(0, nums.Count / 2).ToDictionary(index => ((NumericToken)nums[2 * index]).Int, index => (ArrayToken)Resolve(nums[2 * index + 1]));
+            var differences = new List<string>();
+            for (var page = 0; page < _pages.Length; page++)
+            {
+                var pageObject = (DictionaryToken)_structure.GetObject(_pages[page]).Data;
+                var key = ((NumericToken)pageObject.Data["StructParents"]).Int;
+                var entries = arrays[key].Data;
+                foreach (var ((ownerPage, mcid), owner) in owners.Where(pair => pair.Key.Page == page))
+                {
+                    var listed = mcid < entries.Count ? ((IndirectReferenceToken)entries[mcid]).Data : default;
+                    if (!listed.Equals(owner))
+                    {
+                        differences.Add($"Page {page + 1} MCID {mcid}: the structure says object {owner.ObjectNumber}, the parent tree {listed.ObjectNumber}.");
+                    }
+                }
+            }
+
+            return differences;
+        }
+
         private readonly Structure _structure = document.Structure;
         private readonly Dictionary<(int Page, int Mcid), string> _content = Content(document);
         private readonly ImmutableArray<IndirectReference> _pages = PageReferences(document);
