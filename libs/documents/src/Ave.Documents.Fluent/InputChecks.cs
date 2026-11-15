@@ -236,6 +236,7 @@ internal static class InputChecks
                 TableSlots.ProblemKind.PastLastColumn => $"The cell does not fit in the table's {columnCount} columns: the row has more cells than columns, or the cell spans past the last column.",
                 TableSlots.ProblemKind.SpanPastGroup => "The cell's row span runs past the last row of its row group.",
                 TableSlots.ProblemKind.Overlap => "The cell overlaps a cell that spans rows from above.",
+                TableSlots.ProblemKind.SpanTooLarge => $"The cell spans more than {TableSlots.MaxColumnSpan} columns or {TableSlots.MaxRowSpan} rows, the largest spans a table allows.",
                 _ => "A table row needs at least one cell.",
             };
             return Problem(DocumentErrorCodes.Input.Invalid.Table, message, problem.Kind.ToString(), problem.Cell < 0 ? "cells" : "span", source);

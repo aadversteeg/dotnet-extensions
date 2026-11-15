@@ -27,7 +27,21 @@ public static class TableSlots
 
         /// <summary>A row without any cell.</summary>
         EmptyRow,
+
+        /// <summary>A span larger than the HTML table model allows (<see cref="MaxColumnSpan"/>,
+        /// <see cref="MaxRowSpan"/>).</summary>
+        SpanTooLarge,
     }
+
+    /// <summary>
+    /// The largest column span: HTML's limit for <c>colspan</c> ("greater than zero and less than or equal to 1000",
+    /// HTML Living Standard §4.9.11, the <c>td</c> element's attributes). It bounds how far one cell can widen a grid
+    /// whose column count is not given.
+    /// </summary>
+    public const int MaxColumnSpan = 1000;
+
+    /// <summary>The largest row span: HTML's limit for <c>rowspan</c> ("less than or equal to 65534", same section).</summary>
+    public const int MaxRowSpan = 65534;
 
     /// <summary>One problem: its kind, and the row and the cell (index within its row; −1 for the row itself).</summary>
     /// <param name="Kind">What is wrong.</param>
@@ -88,27 +102,41 @@ public static class TableSlots
                         column++;
                     }
 
+                    // All span arithmetic in long: a span is the author's number and may be anything up to
+                    // int.MaxValue. A span above HTML's limits is cut to them, so no single number decides how many
+                    // slots are made.
                     var span = group[index][cell];
-                    if ((long)column + span.Columns > limit)
+                    var columns = System.Math.Clamp(span.Columns, 1, MaxColumnSpan);
+                    var rows = System.Math.Clamp(span.Rows, 1, MaxRowSpan);
+                    if (span.Columns > MaxColumnSpan || span.Rows > MaxRowSpan)
                     {
-                        problems.Add(new Problem(ProblemKind.PastLastColumn, row, cell));
+                        // The one problem of this cell: whether the cut span still runs past the columns or the
+                        // group follows from the author's number, not from where the cell is.
+                        problems.Add(new Problem(ProblemKind.SpanTooLarge, row, cell));
                     }
-
-                    if (row + span.Rows - 1 > lastRowOfGroup)
+                    else
                     {
-                        problems.Add(new Problem(ProblemKind.SpanPastGroup, row, cell));
+                        if ((long)column + columns > limit)
+                        {
+                            problems.Add(new Problem(ProblemKind.PastLastColumn, row, cell));
+                        }
+
+                        if ((long)row + rows - 1 > lastRowOfGroup)
+                        {
+                            problems.Add(new Problem(ProblemKind.SpanPastGroup, row, cell));
+                        }
                     }
 
                     var placed = new CellSpan(
-                        System.Math.Max(1, (int)System.Math.Min(span.Columns, (long)limit - column)),
-                        System.Math.Max(1, System.Math.Min(span.Rows, lastRowOfGroup - row + 1)));
+                        System.Math.Max(1, (int)System.Math.Min(columns, (long)limit - column)),
+                        System.Math.Min(rows, lastRowOfGroup - row + 1));
                     if (column < limit && Cover(slots, row, column, placed, cells.Count))
                     {
                         problems.Add(new Problem(ProblemKind.Overlap, row, cell));
                     }
 
                     cells.Add(new Placement(row, column, placed));
-                    column += System.Math.Max(1, span.Columns);
+                    column = (int)System.Math.Min((long)column + columns, limit);
                 }
             }
 

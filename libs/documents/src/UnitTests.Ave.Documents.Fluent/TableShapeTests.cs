@@ -38,6 +38,31 @@ public class TableShapeTests
     }
 
     [Fact]
+    public void A_column_span_of_int_max_is_an_input_error_not_an_exception()
+    {
+        var line = CurrentLine() + 1;
+        var huge = Cell("b").ColumnSpan(int.MaxValue);
+
+        var error = Problems([Table(Columns(Fill(1), Fill(1), Fill(1)), [TableRow([Cell("a"), huge, Cell("c")])])]);
+
+        // Two problems: the span itself, and "c", which no longer fits in the row.
+        error.Parts().Should().HaveCount(2).And.OnlyContain(part => part.Code == DocumentErrorCodes.Input.Invalid.Table);
+        ShouldPointAt(error.Parts().First(), DocumentErrorCodes.Input.Invalid.Table, line);
+    }
+
+    [Fact]
+    public void A_row_span_of_int_max_in_a_later_row_is_an_input_error()
+    {
+        // row + span − 1 overflowed and the span was accepted (and written as /RowSpan 2147483647).
+        var line = CurrentLine() + 1;
+        var huge = Cell("c").RowSpan(int.MaxValue);
+
+        var error = Problems([Table(Columns(Fill(1)), [TableRow([Cell("a")]), TableRow([Cell("b")]), TableRow([huge])])]);
+
+        ShouldPointAt(error, DocumentErrorCodes.Input.Invalid.Table, line);
+    }
+
+    [Fact]
     public void A_row_span_past_its_row_group_is_an_input_error_at_the_cell()
     {
         var line = CurrentLine() + 1;

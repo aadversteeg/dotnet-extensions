@@ -58,4 +58,50 @@ public class TableSlotsTests
         grid.Problems.Should().ContainSingle().Which.Should().Be(new TableSlots.Problem(TableSlots.ProblemKind.Overlap, 1, 0));
         grid.Slots[1].Should().Equal([2, 1], "the cell that covered the slot first keeps it");
     }
+
+    [Theory]
+    [InlineData(int.MaxValue, 1)]
+    [InlineData(1, int.MaxValue)]
+    [InlineData(int.MaxValue, int.MaxValue)]
+    public void A_span_of_any_size_is_a_problem_value_and_never_overflows(int columns, int rows)
+    {
+        // Row 0 of three rows: a, the huge cell, c, in a 3-column table. The span arithmetic is done in long, so the
+        // cell after it is still placed (at the end of the grid) and nothing indexes outside a row. The huge cell
+        // itself has the one problem SpanTooLarge; a row span cut to its group still covers the rows below it.
+        var grid = TableSlots.Fill(Groups([[One, new CellSpan(columns, rows), One], [One, One, One], [One, One, One]]), columnCount: 3);
+
+        grid.Problems.Where(problem => problem.Row == 0 && problem.Cell == 1).Should().ContainSingle()
+            .Which.Kind.Should().Be(TableSlots.ProblemKind.SpanTooLarge);
+        grid.Slots.Should().OnlyContain(row => row.Length == 3);
+        grid.Cells.Should().OnlyContain(cell => cell.Column <= 3 && cell.Span.Columns <= 3 && cell.Span.Rows <= 3);
+    }
+
+    [Fact]
+    public void A_row_span_past_the_group_is_found_however_large_it_is()
+    {
+        // row + rows − 1 overflowed int and the span counted as fitting.
+        var grid = TableSlots.Fill(Groups([[One], [One], [new CellSpan(1, int.MaxValue)]]), columnCount: 1);
+
+        grid.Problems.Should().ContainSingle().Which.Should().Be(new TableSlots.Problem(TableSlots.ProblemKind.SpanTooLarge, 2, 0));
+        grid.Cells[2].Span.Should().Be(new CellSpan(1, 1), "cut back to its group's last row");
+    }
+
+    [Fact]
+    public void A_row_span_past_the_group_within_the_html_limit_is_found_in_long_arithmetic()
+    {
+        var grid = TableSlots.Fill(Groups([[One], [One], [new CellSpan(1, TableSlots.MaxRowSpan)]]), columnCount: 1);
+
+        grid.Problems.Should().ContainSingle().Which.Should().Be(new TableSlots.Problem(TableSlots.ProblemKind.SpanPastGroup, 2, 0));
+    }
+
+    [Fact]
+    public void Without_a_column_count_a_span_above_the_html_limit_is_a_problem_and_takes_no_memory()
+    {
+        // HTML caps colspan at 1000 and rowspan at 65534; without a column count, those are the bound on how far one
+        // cell can widen the grid. Five million columns would be 5 million slots per row.
+        var grid = TableSlots.Fill(Groups([[new CellSpan(5_000_000, 1)], [One]]));
+
+        grid.Problems.Should().ContainSingle().Which.Kind.Should().Be(TableSlots.ProblemKind.SpanTooLarge);
+        grid.ColumnCount.Should().Be(TableSlots.MaxColumnSpan);
+    }
 }

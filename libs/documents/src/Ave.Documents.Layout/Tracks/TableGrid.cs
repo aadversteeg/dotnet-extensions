@@ -134,6 +134,7 @@ internal sealed record TableGrid(
             {
                 TableSlots.ProblemKind.PastLastColumn => $"the cell (span {box.Style.Span}) does not fit in the table's {columnCount} columns.",
                 TableSlots.ProblemKind.SpanPastGroup => $"the cell's row span of {box.Style.Span.Rows} runs past the end of its row group.",
+                TableSlots.ProblemKind.SpanTooLarge => $"the cell's span {box.Style.Span} is larger than {TableSlots.MaxColumnSpan} columns or {TableSlots.MaxRowSpan} rows.",
                 _ => "the cell overlaps a cell that spans rows from above.",
             });
         }
