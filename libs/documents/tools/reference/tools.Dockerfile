@@ -3,8 +3,10 @@
 # tools than the ones its numbers were made with:
 #
 # - the base image by digest (Debian 13 "trixie", slim);
-# - the package archive by date: snapshot.debian.org keeps every state of the Debian archive for good, so the archive
-#   of 2026-11-01 00:00 UTC resolves the same packages, dependencies included, on every machine and every day;
+# - the package archive by date: snapshot.debian.org keeps "all past and current packages the Debian archive
+#   provides" in states about six hours apart, so the state of 2026-11-01 00:00 UTC resolves the same packages,
+#   dependencies included, on every machine and every day (a package the service removes, which it does rarely, for
+#   licence reasons, makes the build fail instead of changing a tool);
 # - each tool by its exact Debian version, so an install fails instead of taking another version.
 #
 # Built locally, never published: tools/verify-samples.ps1, tools/reference/chromium/measure.mjs and the reference

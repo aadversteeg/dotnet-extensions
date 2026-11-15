@@ -828,3 +828,20 @@ verbatim; each says which.
 | `src/UnitTests.Ave.Documents.Samples/TextReadBackTests.cs:14` | clauses and quotations confirmed in the check: ISO 32000-1, §14.9.4, §9.10.3 |
 | `src/UnitTests.Ave.Documents.Typesetting/ForcedLineBreakTests.cs:6` | clauses and quotations confirmed in the check: CSS Text 3, UAX #14, §4.1.2 |
 | `src/UnitTests.Ave.Documents.Typesetting/Reference/IgnorableShapingReferenceTests.cs:6` | clauses and quotations confirmed in the check: HarfBuzz |
+
+## Second check, 2026-11-16
+
+The citations written after the first check, in the fix round's later commits, checked by the internet-scout agent
+against the public texts on 2026-11-16. Each row: the reference, where it is, the verdict, and what changed.
+
+| Reference | Place | Verdict | Change |
+| --- | --- | --- | --- |
+| T.81 §B.2.3, Table B.3: Ls = 6 + 2 × Ns, Ns 1–4 | `src/Ave.Documents.Images/Jpeg/JpegReader.cs` | RIGHT (W3C copy of T.81, p. 38) | none |
+| T.81 §F.1.2.3, byte stuffing | `JpegReader.cs`, `UnitTests.Ave.Documents.Images/ImageStructureTests.cs` | RIGHT | none |
+| T.81 §B.2.1, Figure B.2: ends with EOI; a frame holds one or more scans | `JpegReader.cs`, `ImageStructureTests.cs` | RIGHT (EOI sentence: non-hierarchical format, the only one read) | none |
+| OpenType 'maxp': glyph ids 0 to numGlyphs − 1 | `UnitTests.Ave.Documents.Render.Pdf/PageModelContractTests.cs` | NOT-SUPPORTED by 'maxp' alone; 'glyf' says ids are "sequential integers beginning at zero" | now cites 'glyf' with 'maxp' |
+| HarfBuzz skipping iterator skips default-ignorables in GPOS matching | `UnitTests.Ave.Documents.Typesetting/PositioningRuleTests.cs` | RIGHT (`hb-ot-layout-gsubgpos.hh`, `may_skip`); mark-to-base search skips them too (`OT/Layout/GPOS/MarkBasePosFormat1.hh`) | none |
+| UAX #14: U+000B, U+000C, U+2028, U+2029 class BK; U+0085 class NL | `docs/architecture.md`, `ForcedLineBreakTests.cs` | RIGHT (LineBreak-18.0.0.txt, §5.1) | none |
+| CSS Text 3 §5.5: BK and NL characters are forced line breaks | `docs/architecture.md` | section RIGHT; "lets them" understated it ("must be treated as forced line breaks"); §4 conflicts for Cc characters | quoted, and the conflict with §4 named |
+| CSS Text 3 §4: carriage return "treated identically to spaces" | `src/Ave.Documents.Typesetting/WhiteSpaceCollapsing.cs` | RIGHT (§4 introduction) | none |
+| snapshot.debian.org keeps every state "for good" | `tools/reference/tools.Dockerfile` | WRONG: "all past and current packages", states about six hours apart, removals possible | reworded with the service's own words |

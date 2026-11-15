@@ -167,7 +167,10 @@ Each is documented next to its code as well.
   `white-space: normal` exists: a tab collapses to a space like every other white space, so there are no tab stops.
   A forced line break inside a paragraph is `LineBreak()` (U+2028; a line feed or carriage return in the text
   collapses to a space). U+000B, U+000C, U+0085 and U+2029 in the text are mandatory breaks too (UAX #14 classes BK
-  and NL) and are not collapsible, so they also end the line, as CSS Text 3 lets them (§5.5). A
+  and NL) and are not collapsible, so they also end the line: CSS Text 3 §5.5 says any character of classes BK and NL
+  "must be treated as forced line breaks". (Its §4 asks for control characters other than tab, line feed and carriage
+  return to be shown as visible glyphs; for U+000B, U+000C and U+0085 the two rules conflict, and the engine follows
+  §5.5.) A
   soft hyphen (U+00AD) shows a hyphen only where the line breaks. Default-ignorable characters, such as U+2060 WORD
   JOINER and the zero-width space, take no space and need no glyph. A character the font has no glyph for is the
   error `GlyphMissing`; there is no fallback font and no substitute character: U+2011 NON-BREAKING HYPHEN, which Lato

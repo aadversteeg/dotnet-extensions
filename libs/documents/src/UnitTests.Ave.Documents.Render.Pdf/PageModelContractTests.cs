@@ -201,7 +201,8 @@ public class PageModelContractTests
     [MemberData(nameof(Profiles))]
     public void A_glyph_id_must_be_below_the_font_s_glyph_count(string profile)
     {
-        // Glyph ids run from 0 to numGlyphs - 1 (OpenType 'maxp'), so the glyph count itself is one past the last.
+        // Glyph ids are "sequential integers beginning at zero" and numGlyphs in 'maxp' is their number (OpenType
+        // 'glyf'), so the glyph count itself is one past the last id.
         var run = Run("x");
         var last = run with { Glyphs = [run.Glyphs[0] with { Glyph = new GlyphId((ushort)(TestFonts.Regular.GlyphCount - 1)) }] };
         var past = run with { Glyphs = [run.Glyphs[0] with { Glyph = new GlyphId((ushort)TestFonts.Regular.GlyphCount) }] };
