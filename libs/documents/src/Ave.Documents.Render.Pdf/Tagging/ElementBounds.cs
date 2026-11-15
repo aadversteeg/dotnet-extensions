@@ -12,19 +12,20 @@ namespace Ave.Documents.Render.Pdf.Tagging;
 /// "(Optional for Annot; required for any figure or table appearing in its entirety on a single page; not
 /// inheritable)" —
 /// "the element's bounding box (the rectangle that completely encloses its visible content)", in default user space.
-/// The illustration types are Figure, Formula and Form (§14.8.4.5, Table 340).
+/// Of the illustration types (Figure, Formula and Form, §14.8.4.5, Table 340) the semantic roles give only Figure.
 /// </summary>
 internal static class ElementBounds
 {
-    /// <summary>The structure types that carry a box: the illustrations and the table.</summary>
-    private static readonly FrozenSet<string> BoxedTypes = FrozenSet.Create("Figure", "Formula", "Form", "Table");
+    /// <summary>The structure types that carry a box: the figure and the table, the types the roles of
+    /// <see cref="SemanticRole"/> map to that Table 344 names.</summary>
+    private static readonly FrozenSet<string> BoxedTypes = FrozenSet.Create("Figure", "Table");
 
     /// <summary>
     /// Per element (by index), its box when it is an illustration or a table whose visible content is all on one page;
     /// null otherwise — for other types, for an element with content on two pages, and for one with no visible content.
     /// Visible content is everything drawn between the element's markers on the page, including layout artifacts such
-    /// as a table's grid lines and backgrounds: they are not the element's logical content, but they are what a reader
-    /// sees of it.
+    /// as a table's grid lines, cell backgrounds and the element's own background and border (the painter draws those
+    /// inside the element's markers): they are not the element's logical content, but they are what a reader sees of it.
     /// </summary>
     /// <param name="tree">The structure tree built from the pages' events.</param>
     /// <param name="events">The events of every page.</param>

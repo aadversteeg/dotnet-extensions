@@ -51,6 +51,27 @@ public class BorderTests
     }
 
     [Fact]
+    public void A_box_s_own_background_and_border_are_drawn_inside_its_structure_markers()
+    {
+        // They are a layout artifact, but they are visible content of the box: a figure's or a table's /BBox encloses
+        // what is drawn between its markers (ISO 32000-1 §14.8.5.4.3), so they are drawn after the start marker, still
+        // before the box's children, which keeps the painting order.
+        var style = BoxStyle.Initial with { Background = Color.White, Border = Border.All(new BorderSide(1.Pt(), Red)) };
+        var pages = Paginate(Paragraph(1, "One", style));
+
+        var items = PagePainter.Paint(new DocumentMetadata(null, null), pages).Pages[0].Items.ToList();
+
+        var start = items.IndexOf(items.OfType<StructureStart>().Single(marker => marker.Node == new NodeId(1)));
+        var end = items.IndexOf(items.OfType<StructureEnd>().Single(marker => marker.Node == new NodeId(1)));
+        var fills = items.Select((item, index) => (item, index)).Where(entry => entry.item is FillRectangle).Select(entry => entry.index).ToArray();
+        var glyphs = items.IndexOf(items.OfType<GlyphRun>().First());
+
+        fills.Should().HaveCount(5).And.OnlyContain(index => index > start && index < glyphs);
+        end.Should().BeGreaterThan(glyphs);
+        items[start + 1].Should().BeOfType<ArtifactStart>().Which.Kind.Should().Be(ArtifactKind.Layout);
+    }
+
+    [Fact]
     public void A_broken_box_paints_its_top_border_on_the_first_fragment_and_its_bottom_border_on_the_last()
     {
         // box-decoration-break: slice (CSS Fragmentation 3 §5.4). 10 one-word lines in a 20 pt wide box.

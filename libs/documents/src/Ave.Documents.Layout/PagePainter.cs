@@ -74,10 +74,13 @@ public static class PagePainter
             return Artifact(box.IsRepeated ? ArtifactKind.Repeated : ArtifactKind.Layout, Box(box, origin, inArtifact: true));
         }
 
+        // The box's own background and border go inside its markers, before its children: they are a layout
+        // artifact, not the box's logical content, but they are part of what a reader sees of it, so a figure's or a
+        // table's /BBox (ElementBounds) encloses them. The painting order is the same either way.
         return
         [
-            .. Decoration([.. Background(box, origin), .. Border(box, origin)], inArtifact: false),
             new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span },
+            .. Decoration([.. Background(box, origin), .. Border(box, origin)], inArtifact: false),
             .. Children(box.Children, origin, inArtifact: false),
             new StructureEnd(box.Box.Id),
         ];
