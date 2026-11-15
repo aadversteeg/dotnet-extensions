@@ -58,7 +58,7 @@ internal static class Cascade
                 Side(mine.BorderRight, mine.Border, style.BorderRight, style.Border) ?? Side(fallback.BorderRight, fallback.Border, null, null) ?? BorderSide.None,
                 Side(mine.BorderBottom, mine.Border, style.BorderBottom, style.Border) ?? Side(fallback.BorderBottom, fallback.Border, null, null) ?? BorderSide.None,
                 Side(mine.BorderLeft, mine.Border, style.BorderLeft, style.Border) ?? Side(fallback.BorderLeft, fallback.Border, null, null) ?? BorderSide.None),
-            mine.Background ?? style.Background ?? fallback.Background,
+            mine.Background ?? style.Background,
             mine.KeepTogether ?? style.KeepTogether ?? false,
             mine.KeepWithNext ?? style.KeepWithNext ?? false,
             mine.KeepWithPrevious ?? style.KeepWithPrevious ?? false);

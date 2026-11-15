@@ -69,9 +69,9 @@ public class OpenTypeShapingTests
         var kerning = new LegacyKerning([new KerningSubtable(new Dictionary<(ushort, ushort), short> { [(1, 2)] = -50 }.ToFrozenDictionary(), false)]);
         ImmutableArray<GlyphItem> glyphs =
         [
-            new(new GlyphId(1), 0, "A", GlyphClass.Base, XAdvance: 600),
-            new(new GlyphId(9), 1, "́", GlyphClass.Mark, XAdvance: 0),
-            new(new GlyphId(2), 2, "V", GlyphClass.Base, XAdvance: 600),
+            new(new GlyphId(1), "A", GlyphClass.Base, XAdvance: 600),
+            new(new GlyphId(9), "́", GlyphClass.Mark, XAdvance: 0),
+            new(new GlyphId(2), "V", GlyphClass.Base, XAdvance: 600),
         ];
 
         var kerned = GlyphPositioning.ApplyLegacyKerning(glyphs, kerning);

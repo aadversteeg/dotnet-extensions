@@ -27,7 +27,8 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, box.Layout.ToString())
             .WithSource(box.Source);
 
-    /// <summary>The header and footer of a page leave no height for the body: reported at the larger area.</summary>
+    /// <summary>The header and footer of a page leave no height for the body: reported at the header when the page
+    /// has one, otherwise at the footer.</summary>
     public static Error NoBodyArea(PageTemplate template, int pageNumber)
     {
         var area = template.Header?.Content ?? template.Footer!.Content;

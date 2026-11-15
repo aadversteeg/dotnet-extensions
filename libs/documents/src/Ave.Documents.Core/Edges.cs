@@ -29,8 +29,9 @@ public readonly record struct Edges(Length Top, Length Right, Length Bottom, Len
     /// <summary>Top plus bottom.</summary>
     public Length Vertical => Top + Bottom;
 
-    /// <summary>The four sides in the order top, right, bottom, left.</summary>
-    public Length[] Sides => [Top, Right, Bottom, Left];
+    /// <summary>The four sides in the order top, right, bottom, left (a new array: a method, not a property).</summary>
+    /// <returns>The sides.</returns>
+    public Length[] Sides() => [Top, Right, Bottom, Left];
 
     /// <summary>Formats as <c>top,right,bottom,left</c> in points.</summary>
     /// <returns>The text form.</returns>

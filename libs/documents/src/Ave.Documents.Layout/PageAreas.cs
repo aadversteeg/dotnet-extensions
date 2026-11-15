@@ -57,6 +57,8 @@ internal static class PageAreas
                     return Result<Area, Error>.Failure(LayoutErrors.DoesNotFit(content));
                 }
 
+                // The content was laid out in the area's height after its top margin, so it fits there; what can still
+                // pass a fixed height is the bottom margin below it.
                 var fragment = placement.Value.Fragment;
                 var used = margin.Top.Points + fragment.Fragment.Size.Height + margin.Bottom.Points;
                 return area.Height is { } fixedHeight && !Fitting.Fits(used, fixedHeight.Points)

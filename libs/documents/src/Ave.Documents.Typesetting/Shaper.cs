@@ -91,7 +91,7 @@ public static class Shaper
     }
 
     /// <summary>
-    /// The glyph 'cmap' gives a character, before any substitution; its cluster is the character's index. A
+    /// The glyph 'cmap' gives a character, before any substitution. A
     /// default-ignorable character needs no glyph: it is invisible whatever the font has for it (HarfBuzz hides
     /// them the same way, hb-ot-shape <c>hb_ot_hide_default_ignorables</c>), so it is never missing.
     /// </summary>
@@ -101,12 +101,12 @@ public static class Shaper
         var traits = UnicodeProperties.Of(character.Value).Traits;
         if ((traits & CharacterTraits.DefaultIgnorable) != 0)
         {
-            return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), index, character.ToString(), GlyphClass.Base) { IsDefaultIgnorable = true });
+            return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), character.ToString(), GlyphClass.Base) { IsDefaultIgnorable = true });
         }
 
         var isNonspacingMark = (traits & CharacterTraits.NonspacingMark) != 0;
         return font.GlyphFor(character).Match(
-            glyph => Result<GlyphItem, Error>.Success(new GlyphItem(glyph, index, character.ToString(), filter.ClassOf(glyph, isNonspacingMark))),
+            glyph => Result<GlyphItem, Error>.Success(new GlyphItem(glyph, character.ToString(), filter.ClassOf(glyph, isNonspacingMark))),
             () => Result<GlyphItem, Error>.Failure(GlyphMissing(character, font)));
     }
 

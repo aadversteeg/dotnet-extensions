@@ -53,9 +53,6 @@ internal sealed record ObjectPlan(int FontCount, ImmutableArray<bool> ImageHasMa
 
     private int AfterStructure => AfterOutputIntent + (IsTagged ? 2 + StructureElementCount : 0);
 
-    /// <summary>The total number of objects; they are numbered 1 to Count.</summary>
-    public int Count => AfterStructure + AttachmentCount * ObjectsPerAttachment - 1;
-
     /// <summary>The numbers of the objects of the font at <paramref name="index"/> (0-based).</summary>
     public FontObjectNumbers Font(int index)
     {

@@ -89,7 +89,7 @@ internal static class InputChecks
 
     /// <summary>Checks four sides: finite (else Input.Invalid.Length) and not negative (else <paramref name="negativeCode"/>).</summary>
     private static IEnumerable<Error> Lengths(Edges edges, string property, SourceLocation source, ErrorCode negativeCode) =>
-        edges.Sides.Zip(Sides).SelectMany(side => side.First switch
+        edges.Sides().Zip(Sides).SelectMany(side => side.First switch
         {
             { IsFinite: false } => [Problem(DocumentErrorCodes.Input.Invalid.Length, $"{property}-{side.Second} must be a number.", side.First.ToString(), $"{property}-{side.Second}", source)],
             { Points: < 0 } => [Problem(negativeCode, $"{property}-{side.Second} may not be negative.", side.First.ToString(), $"{property}-{side.Second}", source)],

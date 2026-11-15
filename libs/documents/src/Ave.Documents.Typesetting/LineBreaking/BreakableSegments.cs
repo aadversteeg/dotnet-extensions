@@ -24,9 +24,6 @@ internal static class BreakableSegments
         /// a soft hyphen needs room for it at a line end (<see cref="ShapedGlyph.BreakHyphen"/>); otherwise 0.</summary>
         public double HyphenWidth => Glyphs.IsEmpty ? 0 : Glyphs[^1].Glyph.BreakHyphen?.Advance ?? 0;
 
-        /// <summary>The width of all glyphs.</summary>
-        public double Width => Glyphs.Sum(glyph => glyph.Glyph.Advance);
-
         /// <summary>
         /// The width without the spaces at its end: those spaces "hang" when the line ends after this segment
         /// and are removed (CSS Text 3 §4.1.2), so they do not count when testing whether the segment fits.

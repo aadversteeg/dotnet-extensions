@@ -7,7 +7,6 @@ namespace Ave.Documents.Typesetting.Shaping;
 /// nothing is changed in place.
 /// </summary>
 /// <param name="Glyph">The glyph id.</param>
-/// <param name="Cluster">The index of the first character (Unicode scalar value) of the run that this glyph shows.</param>
 /// <param name="Text">The characters this glyph shows: one character, several for a ligature, or empty for the
 /// later glyphs of a one-to-many substitution.</param>
 /// <param name="Class">The glyph's class, for the lookup flags and for finding mark bases.</param>
@@ -18,7 +17,6 @@ namespace Ave.Documents.Typesetting.Shaping;
 /// offsets when positioning ends (<see cref="GlyphPositioning"/>).</param>
 internal sealed record GlyphItem(
     GlyphId Glyph,
-    int Cluster,
     string Text,
     GlyphClass Class,
     int XAdvance = 0,

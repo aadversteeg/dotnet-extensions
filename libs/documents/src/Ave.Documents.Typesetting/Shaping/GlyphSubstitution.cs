@@ -97,7 +97,7 @@ internal static class GlyphSubstitution
     /// <summary>
     /// Type 4: "replace multiple glyphs with one glyph". The components must follow the first glyph in order;
     /// glyphs the lookup skips may sit between them and are kept, after the ligature, in their order. The
-    /// ligature shows the text of all its components and takes the first one's cluster.
+    /// ligature shows the text of all its components.
     /// </summary>
     private static Substitution? Ligate(ImmutableArray<GlyphItem> glyphs, int index, Ligature ligature, LookupFlags flags, GlyphFilter filter)
     {
