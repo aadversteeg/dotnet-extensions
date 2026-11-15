@@ -7,8 +7,8 @@ using static Ave.Documents.Fluent.Elements;
 namespace Ave.Documents.Samples;
 
 /// <summary>
-/// The stage-0 sample documents, written through the code front-end. Components are plain methods that
-/// return elements; data comes in as plain C# values.
+/// The sample documents, written through the code front-end. Components are plain methods that return elements;
+/// data comes in as plain C# values; formatting is set with modifiers and reusable styles.
 /// </summary>
 public static class SampleDocuments
 {
@@ -17,20 +17,23 @@ public static class SampleDocuments
     private static readonly Color Grey = new(0x59, 0x59, 0x59);
 
     private static readonly PageSetup Page = PageSetup.A4 with { Margins = Edges.All(2.Cm()) };
-    /// <summary>Paragraph spacing: a margin above and below. Between two paragraphs the two collapse into one
-    /// 6 pt gap (CSS 2.1 §8.3.1); next to a heading the larger margin wins.</summary>
-    private static readonly Style ParagraphSpacing = Style.Empty.MarginTop(6.Pt()).MarginBottom(6.Pt());
+
+    /// <summary>Body paragraphs: justified, with a margin above and below. Between two paragraphs the two margins
+    /// collapse into one 6 pt gap (CSS 2.1 §8.3.1); next to a heading the larger margin wins.</summary>
+    private static readonly Style BodyParagraph = Style.Empty.MarginTop(6.Pt()).MarginBottom(6.Pt()).TextAlign(TextAlign.Justify);
 
     /// <summary>
-    /// Sample A: a two-page letter with a heading, paragraphs in regular and bold, and a coloured block.
-    /// The second page starts with an explicit page break.
+    /// Sample A: a two-page letter with a heading, justified paragraphs in regular and bold, kerning and ligatures,
+    /// a right-aligned date, a centred heading and a coloured block. The second page starts with an explicit page
+    /// break.
     /// </summary>
     /// <param name="closing">The closing line; a parameter so tests can change one leaf of the tree.</param>
     public static Document Letter(string closing = "Kind regards,") =>
         Document(
             [
                 Paragraph("Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town")
-                    .MarginBottom(24.Pt()).FontSize(9.Pt()).Color(Grey),
+                    .MarginBottom(6.Pt()).FontSize(9.Pt()).Color(Grey),
+                Paragraph("Example Town, 15 November 2026").TextAlign(TextAlign.Right).MarginBottom(18.Pt()).FontSize(9.Pt()).Color(Grey),
                 Heading(1, "Quotation for document rendering").MarginTop(6.Pt()).MarginBottom(12.Pt()).Color(Navy),
                 Para("Dear reader,"),
                 Para([
@@ -39,13 +42,21 @@ public static class SampleDocuments
                     Text(", laid out by the engine's own layout algorithms, and written to PDF by its own PDF writer. "
                         + "No native library and no external tool took part in making it."),
                 ]),
-                Para("Every paragraph you see is broken into lines at spaces with the greedy method that browsers use: "
-                    + "each line takes as many words as fit, and the next word starts a new line. The widths come straight "
-                    + "from the font's horizontal metrics, and the text stays selectable and searchable because the PDF "
-                    + "carries a map from every glyph back to its characters."),
+                Para("Every paragraph you see is broken into lines where the Unicode line breaking algorithm allows it, "
+                    + "with the greedy method that browsers use: each line takes as many words as fit, and the next word starts "
+                    + "a new line. The lines are then justified by widening the spaces between words, and the text stays "
+                    + "selectable and searchable because the PDF carries a map from every glyph back to its characters."),
+                Para([
+                    Text("Kerning and ligatures come from the font's own OpenType tables. In "),
+                    Bold("AVATAR"),
+                    Text(", WAVE and Tyrannosaurus the letters move closer together; in office, fifty, affine and flag the "),
+                    Bold("fi"),
+                    Text(", ff and fl become single ligature glyphs, which still copy as two or three letters."),
+                ]),
                 Summary(
                 [
                     ("Layers", "code front-end, document model, layout, page model, PDF writer"),
+                    ("Text", "Unicode line breaking, OpenType kerning, ligatures and marks"),
                     ("Fonts", "TrueType, only the used glyphs embedded, explicit input only"),
                     ("Output", "the same bytes for the same input, every time"),
                 ]),
@@ -55,7 +66,7 @@ public static class SampleDocuments
                     Text(" and padding on all four sides. Blocks can hold paragraphs and other blocks."),
                 ]),
                 PageBreak(),
-                Heading(2, "Terms").MarginTop(18.Pt()).MarginBottom(10.Pt()).Color(Navy),
+                Heading(2, "Terms").TextAlign(TextAlign.Center).MarginTop(18.Pt()).MarginBottom(10.Pt()).Color(Navy),
                 Para("This second page starts with an explicit page break. A page break is not an element of its own in "
                     + "the document model: it sets break-before: page on the element that follows it, as in CSS."),
                 Para([Bold("Validity. "), Text("This quotation is an example and is valid for no time at all.")]),
@@ -79,9 +90,9 @@ public static class SampleDocuments
             title: "A long text")
             .FontFamily("Lato").FontSize(11.Pt());
 
-    private static ParagraphElement Para(string text) => Paragraph(text).With(ParagraphSpacing);
+    private static ParagraphElement Para(string text) => Paragraph(text).With(BodyParagraph);
 
-    private static ParagraphElement Para(ValueList<Span> spans) => Paragraph(spans).With(ParagraphSpacing);
+    private static ParagraphElement Para(ValueList<Span> spans) => Paragraph(spans).With(BodyParagraph);
 
     /// <summary>A component: a pale-blue block with one bold label and a description per line.</summary>
     private static BlockElement Summary(ImmutableArray<(string Label, string Description)> rows) =>
