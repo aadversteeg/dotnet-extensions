@@ -46,7 +46,7 @@ public static class SampleDocuments
                 Summary(
                 [
                     ("Layers", "code front-end, document model, layout, page model, PDF writer"),
-                    ("Fonts", "TrueType, embedded whole, explicit input only"),
+                    ("Fonts", "TrueType, only the used glyphs embedded, explicit input only"),
                     ("Output", "the same bytes for the same input, every time"),
                 ]),
                 Para([

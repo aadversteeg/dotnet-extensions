@@ -16,8 +16,9 @@ namespace Ave.Documents.Render.Pdf;
 /// two-byte glyph ids, which reaches every glyph of the font, not just 256 of them as a simple font would.
 /// </summary>
 /// <remarks>
-/// Stage 0 embeds the WHOLE font file. Subsetting (embedding only the used glyphs) is stage 1; it changes the
-/// FontFile2 data and the font name (a six-letter subset tag, §9.6.4), not the structure built here.
+/// Only the used glyphs are embedded (<see cref="FontSubsetter"/>, glyph ids kept), and the font is named with its
+/// six-letter subset tag, <c>EOODIA+Lato-Regular</c> (§9.6.4: "the PostScript name of the font … shall begin with a
+/// tag followed by a plus sign").
 /// </remarks>
 internal static class FontEmbedding
 {
@@ -45,15 +46,16 @@ internal static class FontEmbedding
                     .With(ErrorMetadataKeys.FontName, font.Names.PostScriptName));
         }
 
-        var name = new PdfName(font.Names.PostScriptName);
-        return Result<ImmutableArray<IndirectObject>, Error>.Success(
-        [
-            new IndirectValue(numbers.Type0, Type0Font(name, numbers)),
-            new IndirectValue(numbers.CidFont, CidFont(name, used, numbers)),
-            new IndirectValue(numbers.Descriptor, Descriptor(name, font, numbers)),
-            new IndirectStream(numbers.FontFile, FontFile(font)),
-            new IndirectStream(numbers.ToUnicode, new PdfStream(PdfDictionary.Of(), ToUnicodeCMap.Build(used.GlyphTexts), StreamEncoding.Flate)),
-        ]);
+        return FontSubsetter.Subset(font, used.GlyphTexts.Keys.Select(glyph => new GlyphId(glyph))).OnSuccessMap(subset =>
+        {
+            var name = new PdfName(subset.PdfName(font));
+            return ImmutableArray.Create<IndirectObject>(
+                new IndirectValue(numbers.Type0, Type0Font(name, numbers)),
+                new IndirectValue(numbers.CidFont, CidFont(name, used, numbers)),
+                new IndirectValue(numbers.Descriptor, Descriptor(name, font, numbers)),
+                new IndirectStream(numbers.FontFile, FontFile(subset)),
+                new IndirectStream(numbers.ToUnicode, new PdfStream(PdfDictionary.Of(), ToUnicodeCMap.Build(used.GlyphTexts), StreamEncoding.Flate)));
+        });
     }
 
     /// <summary>
@@ -140,8 +142,8 @@ internal static class FontEmbedding
 
     /// <summary>§9.9, Tables 126 and 127: a FontFile2 stream holds a TrueType font program; /Length1 is its
     /// length before compression.</summary>
-    private static PdfStream FontFile(TrueTypeFont font) =>
-        new(PdfDictionary.Of(("Length1", new PdfInteger(font.FileData.Length))), [.. font.FileData.Span], StreamEncoding.Flate);
+    private static PdfStream FontFile(FontSubset subset) =>
+        new(PdfDictionary.Of(("Length1", new PdfInteger(subset.FontFile.Length))), subset.FontFile, StreamEncoding.Flate);
 
     /// <summary>Converts font design units to glyph space units (1000 per em).</summary>
     public static double GlyphSpace(TrueTypeFont font, double designUnits) =>

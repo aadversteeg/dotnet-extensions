@@ -33,9 +33,9 @@ page 1 size=595.276x841.89
           text #15 Lato-Bold 11pt at (0, 0) size=37.417x13.2 ascent=10.857 "Layers: "
           text #16 Lato-Regular 11pt at (37.417, 0) size=314.198x13.2 ascent=10.857 "code front-end, document model, layout, page model, PDF writer"
       box #17 paragraph at (11.339, 30.539) size=459.213x13.2
-        line at (0, 0) size=259.55x13.2
+        line at (0, 0) size=329.026x13.2
           text #18 Lato-Bold 11pt at (0, 0) size=33.182x13.2 ascent=10.857 "Fonts: "
-          text #19 Lato-Regular 11pt at (33.182, 0) size=226.369x13.2 ascent=10.857 "TrueType, embedded whole, explicit input only"
+          text #19 Lato-Regular 11pt at (33.182, 0) size=295.845x13.2 ascent=10.857 "TrueType, only the used glyphs embedded, explicit input only"
       box #20 paragraph at (11.339, 46.739) size=459.213x13.2
         line at (0, 0) size=262.075x13.2
           text #21 Lato-Bold 11pt at (0, 0) size=41.234x13.2 ascent=10.857 "Output: "

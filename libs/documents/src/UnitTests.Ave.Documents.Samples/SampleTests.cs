@@ -75,6 +75,14 @@ public class SampleTests
     }
 
     [Fact]
+    public void Subsetting_keeps_both_samples_far_below_100_kilobytes()
+    {
+        // Stage 0 embedded the whole fonts: 715,081 and 720,324 bytes (stage-0 report).
+        Run(SampleDocuments.Letter()).Pdf.Length.Should().BeLessThan(100_000);
+        Run(SampleDocuments.LongText()).Pdf.Length.Should().BeLessThan(100_000);
+    }
+
+    [Fact]
     public void Two_runs_give_byte_identical_pdfs()
     {
         Run(SampleDocuments.Letter()).Pdf.SequenceEqual(Run(SampleDocuments.Letter()).Pdf).Should().BeTrue();

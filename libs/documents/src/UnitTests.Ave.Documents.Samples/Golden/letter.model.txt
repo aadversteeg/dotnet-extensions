@@ -19,7 +19,7 @@ box #0 flow generic @SampleDocuments.cs:30
       text #16 "code front-end, document model, layout, page model, PDF writer" Lato 11pt w400 #000000 @SampleDocuments.cs:89
     box #17 inline paragraph margin=3,0,3,0 @SampleDocuments.cs:89
       text #18 "Fonts: " Lato 11pt w700 #000000 @SampleDocuments.cs:89
-      text #19 "TrueType, embedded whole, explicit input only" Lato 11pt w400 #000000 @SampleDocuments.cs:89
+      text #19 "TrueType, only the used glyphs embedded, explicit input only" Lato 11pt w400 #000000 @SampleDocuments.cs:89
     box #20 inline paragraph margin=3,0,3,0 @SampleDocuments.cs:89
       text #21 "Output: " Lato 11pt w700 #000000 @SampleDocuments.cs:89
       text #22 "the same bytes for the same input, every time" Lato 11pt w400 #000000 @SampleDocuments.cs:89

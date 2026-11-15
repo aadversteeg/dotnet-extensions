@@ -73,10 +73,10 @@ public class PdfRendererTests
 
         Regex.Matches(text, "/Subtype /Type0").Should().HaveCount(2, "two fonts, although Lato Regular is used on both pages");
         Regex.Matches(text, "/Subtype /CIDFontType2").Should().HaveCount(2);
-        text.Should().Contain("/BaseFont /Lato-Regular /Encoding /Identity-H");
+        text.Should().MatchRegex(@"/BaseFont /[A-Z]{6}\+Lato-Regular /Encoding /Identity-H", "a subset font name starts with a six-letter tag (§9.6.4)");
         text.Should().Contain("/CIDToGIDMap /Identity");
-        Regex.Matches(text, @"/Length1 \d+").Select(match => match.Value)
-            .Should().Equal($"/Length1 {TestFonts.Regular.FileData.Length}", $"/Length1 {TestFonts.Bold.FileData.Length}");
+        Regex.Matches(text, @"/Length1 (\d+)").Select(match => int.Parse(match.Groups[1].Value))
+            .Should().HaveCount(2).And.OnlyContain(length => length < TestFonts.Regular.FileData.Length / 10, "only the used glyphs are embedded");
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class PdfRendererTests
         var text = Latin1(PdfRenderer.Render(TwoPages(), Options).Value);
 
         // Lato Regular, 2000 units per em: space (glyph 2) 512 → 256; H (15) 1527 → 763.5; comma (311) 454 → 227.
-        var regularWidths = Regex.Match(text, @"/BaseFont /Lato-Regular /CIDSystemInfo .*? /W \[(.*?)\] /CIDToGIDMap").Groups[1].Value;
+        var regularWidths = Regex.Match(text, @"/BaseFont /[A-Z]{6}\+Lato-Regular /CIDSystemInfo .*? /W \[(.*?)\] /CIDToGIDMap").Groups[1].Value;
         regularWidths.Should().StartWith("2 [256] 15 [763.5] ");
         regularWidths.Should().Contain(" 311 [227] ");
     }
