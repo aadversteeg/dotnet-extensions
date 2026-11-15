@@ -29,6 +29,59 @@
   </ItemGroup>
 
   <!--
+    Test switch: run the net10.0 test projects against the netstandard2.0 asset (-p:UseNs20=true).
+
+    Applies to UnitTests.*, IntegrationTests.* and PlatformTests.* projects, unless the project sets
+    <Ns20AssetUnderTest>false</Ns20AssetUnderTest> because the library it tests has no netstandard2.0 asset.
+
+    Every project reference (direct or transitive) that targets netstandard2.0 gets
+    SetTargetFramework=TargetFramework=netstandard2.0, so the test builds and runs against that asset.
+    NuGet restore does not see SetTargetFramework: it restores the net10.0 dependencies of the referenced
+    projects. Packages that only the netstandard2.0 asset needs, and that are not part of the net10.0 shared
+    framework, are therefore added to the test project here.
+
+    eng/Ns20AssetCheck.cs is compiled into the test project: test NS20-001 fails unless every Ave.Extensions
+    library the test assembly loads is the netstandard2.0 asset.
+  -->
+  <PropertyGroup>
+    <_AveIsTestProject Condition="$(MSBuildProjectName.StartsWith('UnitTests.')) or $(MSBuildProjectName.StartsWith('IntegrationTests.')) or $(MSBuildProjectName.StartsWith('PlatformTests.'))">true</_AveIsTestProject>
+    <_AveTestOnNs20 Condition="'$(UseNs20)' == 'true' and '$(_AveIsTestProject)' == 'true' and '$(Ns20AssetUnderTest)' != 'false'">true</_AveTestOnNs20>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_AveTestOnNs20)' == 'true'">
+    <!-- Referenced by the netstandard2.0 assets of the file-system family (IAsyncDisposable) -->
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <Compile Include="$(MSBuildThisFileDirectory)eng/Ns20AssetCheck.cs" Link="Ns20AssetCheck.cs" />
+  </ItemGroup>
+
+  <Target Name="_AveUseNetStandard20Assets"
+          BeforeTargets="_GetProjectReferenceTargetFrameworkProperties"
+          Condition="'$(_AveTestOnNs20)' == 'true' and '@(_MSBuildProjectReferenceExistent)' != ''">
+    <MSBuild Projects="@(_MSBuildProjectReferenceExistent)"
+             Targets="GetTargetFrameworks"
+             BuildInParallel="$(BuildInParallel)"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;SelfContained"
+             SkipNonexistentTargets="true">
+      <Output TaskParameter="TargetOutputs" ItemName="_AveReferenceTargetFrameworks" />
+    </MSBuild>
+
+    <ItemGroup>
+      <_AveNs20Reference Include="@(_AveReferenceTargetFrameworks)"
+                         Condition="$([System.String]::Copy(';%(_AveReferenceTargetFrameworks.TargetFrameworks);').Contains(';netstandard2.0;'))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_AveNs20ReferencePaths>;@(_AveNs20Reference->'%(FullPath)');</_AveNs20ReferencePaths>
+    </PropertyGroup>
+    <ItemGroup>
+      <_MSBuildProjectReferenceExistent Condition="$(_AveNs20ReferencePaths.Contains(';%(_MSBuildProjectReferenceExistent.FullPath);'))">
+        <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
+      </_MSBuildProjectReferenceExistent>
+      <_AveReferenceTargetFrameworks Remove="@(_AveReferenceTargetFrameworks)" />
+      <_AveNs20Reference Remove="@(_AveNs20Reference)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
     Release tag name of a package: <tag name>/<version>, e.g. functional-core/0.1.0-preview.4.
     Rule: the package id without "Ave.Extensions.", lower case, words split by hyphens
     (Ave.Extensions.ErrorPaths.AspNetCore -> error-paths-asp-net-core).
