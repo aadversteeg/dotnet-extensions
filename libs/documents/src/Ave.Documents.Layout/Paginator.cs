@@ -126,7 +126,7 @@ public static class Paginator
             // children's (CSS 2.1 §8.3.1). Its top margin belongs to its first fragment only (slice, CSS
             // Fragmentation 3 §5.4); on later pages the root continues at the top of the body area.
             var top = token is null ? document.Root.Style.Margin.Top.Points : 0;
-            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: true, token, isNewFormattingContext: true);
+            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: true, token, isPageRoot: true);
             if (outcome.IsFailure)
             {
                 return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);

@@ -99,14 +99,23 @@ public static class FlowLayout
     /// <summary>
     /// Stacks the children in a content area of the given size (the loop described on <see cref="Layout"/>), and
     /// makes sure the result fits it. The margin after the last child is the one thing the loop places without a
-    /// fit test: when padding or a border keeps it inside the box (§8.3.1), it adds to the box's height, and there is
-    /// no breakpoint between the child and its margin (CSS Fragmentation 3 §4.1: a class C break needs a gap between
-    /// a child's margin edge and its container's content edge). So when the complete content is taller than the area
-    /// because of that margin, the break must come earlier: the children are laid out again with the margin's room
-    /// kept free, as <see cref="SlicedBox"/> does for the bottom padding. When no earlier break exists, the box does not
-    /// fit here and moves on — except at the start of an empty page, where moving on gains nothing: there the margin
-    /// is truncated at the page end, like the margins adjoining a break (§5.2). None when not even the first content
-    /// fits.
+    /// fit test. When it stays inside the box (§8.3.1: padding, a border or a new formatting context keeps it from
+    /// collapsing through the bottom), it adds to the box's height, and what happens when it passes the end of the
+    /// content area depends on what follows it inside the box:
+    /// <list type="bullet">
+    /// <item>Bottom padding or a border: they must end on this page with the box, and there is no breakpoint between
+    /// the child and its margin (CSS Fragmentation 3 §4.1: a class C break needs a gap between a child's margin edge and
+    /// its container's content edge). So the break must come earlier: the children are laid out again with the
+    /// margin's room kept free, as <see cref="SlicedBox"/> does for the bottom padding. When no earlier break exists,
+    /// the box does not fit here and moves on — except at the start of an empty page, where moving on gains nothing:
+    /// there the margin is truncated at the page end.</item>
+    /// <item>Nothing, in the root of the page body or of a page area (<see cref="ConstraintSpace.IsPageRoot"/>) without
+    /// bottom padding or border: the margin is the last thing on the page, so it adjoins the end of the page as a
+    /// margin adjoins a break, and it is truncated there as §5.2 truncates the margins adjoining an unforced break. It
+    /// never moves content to another page. A table cell is not such a box: its row's grid line and the
+    /// rest of the table follow it, so it is treated like a box with a bottom inset.</item>
+    /// </list>
+    /// None when not even the first content fits.
     /// </summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackChildren(
         LayoutEnvironment environment,
@@ -124,19 +133,26 @@ public static class FlowLayout
             return first.OnSuccessMap(stacked => stacked.OnSomeMap(result => result.Content));
         }
 
+        var complete = first.Value.Value;
+        if (space.IsPageRoot && !SlicedBox.HasBottomInset(box.Style))
+        {
+            return Truncated(complete, contentHeight);
+        }
+
         // The second layout looks for an earlier break only; it may not force anything onto the page, so it is told
         // that the page already has content.
-        var complete = first.Value.Value;
         var earlier = Stack(environment, box, space with { IsAtPageStart = false }, incoming, resume, children, contentWidth, contentHeight - complete.TrailingMargin);
         if (earlier.IsFailure || earlier.Value.HasValue)
         {
             return earlier.OnSuccessMap(stacked => stacked.OnSomeMap(result => result.Content));
         }
 
-        return space.IsAtPageStart
-            ? SlicedBox.Placed(complete.Content.Children, Math.Max(complete.Content.Height - complete.TrailingMargin, contentHeight), null)
-            : SlicedBox.NothingFits;
+        return space.IsAtPageStart ? Truncated(complete, contentHeight) : SlicedBox.NothingFits;
     }
+
+    /// <summary>The complete content with its trailing margin cut off at the end of the content area (§5.2).</summary>
+    private static Result<Maybe<SlicedBox.Content>, Error> Truncated(Stacked complete, double contentHeight) =>
+        SlicedBox.Placed(complete.Content.Children, Math.Max(complete.Content.Height - complete.TrailingMargin, contentHeight), null);
 
     /// <summary>The loop described on <see cref="Layout"/>: stacks the children in a content area of the given
     /// size. None when not even the first content fits.</summary>

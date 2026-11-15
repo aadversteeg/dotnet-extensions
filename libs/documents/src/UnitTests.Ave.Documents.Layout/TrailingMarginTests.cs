@@ -87,6 +87,57 @@ public class TrailingMarginTests
     }
 
     [Fact]
+    public void The_last_block_of_the_document_stays_on_its_page_when_only_its_bottom_margin_passes_the_page_end()
+    {
+        // Five one-line paragraphs (12pt text, 14.4pt lines) with a 12pt bottom margin: the text ends at
+        // 4 × 26.4 + 14.4 = 120. Nothing of the root follows the last margin (no bottom padding or border), so the
+        // margin adjoins the page end and is truncated there: from a 120pt page area on, one page. Below 120 the fifth
+        // line does not fit and the page breaks before it.
+        ValueList<Node> paragraphs = [.. Enumerable.Range(1, 5).Select(i => (Node)Paragraph(i, $"line {i}", MarginBottom(12), size: 12))];
+        for (var area = 118.0; area <= 136; area += 0.5)
+        {
+            var pages = Paginate(OnPage(area, [.. paragraphs]));
+
+            pages.Should().HaveCount(area >= 120 ? 1 : 2, $"page area {area}");
+            EveryBoxEndsInsideThePageArea(pages, area, $"page area {area}");
+        }
+    }
+
+    [Fact]
+    public void A_page_area_truncates_the_last_margin_of_its_content_at_its_end()
+    {
+        // A page area is the root of its own formatting context too, and nothing follows its content: a fixed 14.4pt
+        // footer holds one 12pt line whose 12pt bottom margin is cut at the end of the area, on every page.
+        var footer = new PageArea(Flow(60, [Paragraph(61, "footer", MarginBottom(12), size: 12)]), 14.4.Pt());
+        ValueList<Node> paragraphs = [.. Enumerable.Range(1, 12).Select(i => (Node)Paragraph(i, $"line {i}", MarginBottom(12), size: 12))];
+        var document = OnPage(150, [.. paragraphs]) with
+        {
+            Page = new PageStyle(300.Pt(), 170.Pt(), Edges.All(10.Pt())) { Template = new PageTemplate(null, footer) },
+        };
+
+        var pages = Paginate(document);
+
+        pages.Should().HaveCountGreaterThan(1);
+        pages.Should().OnlyContain(page => page.Footer != null);
+    }
+
+    /// <summary>
+    /// The case the page-root rule must not reach: a padded root still breaks earlier, because its bottom padding must
+    /// end on the page with it.
+    /// </summary>
+    [Fact]
+    public void A_padded_root_still_breaks_before_its_last_child_when_the_margin_does_not_fit()
+    {
+        ValueList<Node> paragraphs = [.. Enumerable.Range(1, 5).Select(i => (Node)Paragraph(i, $"line {i}", MarginBottom(12), size: 12))];
+        var document = OnPage(130, [.. paragraphs]) with { Root = Flow(0, [.. paragraphs], BoxStyle.Initial with { Padding = new Edges(0.Pt(), 0.Pt(), 2.Pt(), 0.Pt()) }) };
+
+        var pages = Paginate(document);
+
+        pages.Should().HaveCount(2, "120 of text + 12 of margin + 2 of padding pass the 130pt area, and the margin cannot be cut there");
+        EveryBoxEndsInsideThePageArea(pages, 130, "padded root");
+    }
+
+    [Fact]
     public void At_the_start_of_a_page_a_margin_that_cannot_fit_anywhere_is_truncated_at_the_page_end()
     {
         // Nothing else can go first on an empty page, so breaking earlier gains nothing: the margin that would pass

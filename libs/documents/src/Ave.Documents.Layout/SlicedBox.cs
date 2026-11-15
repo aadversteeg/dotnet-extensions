@@ -46,6 +46,16 @@ internal static class SlicedBox
     /// <returns>The inset, in points.</returns>
     public static double HorizontalInsets(BoxStyle style) => style.Padding.Horizontal.Points + style.Border.Widths.Horizontal.Points;
 
+    /// <summary>The vertical space the bottom padding and border take on the box's last fragment.</summary>
+    /// <param name="style">The box's style.</param>
+    /// <returns>The inset, in points.</returns>
+    public static double BottomInset(BoxStyle style) => style.Padding.Bottom.Points + style.Border.Widths.Bottom.Points;
+
+    /// <summary>Whether anything of the box itself (bottom padding or border) comes after its content.</summary>
+    /// <param name="style">The box's style.</param>
+    /// <returns>True when the bottom inset is not zero.</returns>
+    public static bool HasBottomInset(BoxStyle style) => BottomInset(style) > 0;
+
     /// <summary>
     /// Lays out a box: its content inside the border and padding, sliced at the page end.
     /// </summary>
@@ -75,7 +85,7 @@ internal static class SlicedBox
     {
         var (padding, border) = (box.Style.Padding, box.Style.Border.Widths);
         var topInset = incoming is null ? border.Top.Points + padding.Top.Points : 0;
-        var bottomInset = padding.Bottom.Points + border.Bottom.Points;
+        var bottomInset = BottomInset(box.Style);
         if (!Fitting.Fits(topInset, space.AvailableHeight))
         {
             return LayoutResult.NothingFits(box, space);

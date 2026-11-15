@@ -15,4 +15,8 @@ namespace Ave.Documents.Layout;
 /// <param name="IsNewFormattingContext">True when the box is the root of a new block formatting context (CSS 2.1
 /// §9.4.1), as the document's root box is. Its margins then do not collapse with its children's (§8.3.1: "Margins
 /// of the root element's box do not collapse"). Every box inside the flow gets false.</param>
-public sealed record ConstraintSpace(double AvailableWidth, double AvailableHeight, bool IsAtPageStart, bool IsNewFormattingContext = false);
+/// <param name="IsPageRoot">True for the root box of the page body and of a page area. Nothing of the page follows
+/// such a box, so the end of its space is the end of the page. A table cell is a new formatting context but not a page
+/// root: its row's grid line and the rest of the table follow it.</param>
+public sealed record ConstraintSpace(
+    double AvailableWidth, double AvailableHeight, bool IsAtPageStart, bool IsNewFormattingContext = false, bool IsPageRoot = false);
