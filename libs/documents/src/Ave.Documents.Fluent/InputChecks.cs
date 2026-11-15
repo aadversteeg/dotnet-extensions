@@ -231,11 +231,13 @@ internal static class InputChecks
         }
     }
 
-    /// <summary>RFC 3066 §2.1: <c>1*8ALPHA *( "-" 1*8(ALPHA / DIGIT) )</c>.</summary>
-    private static readonly Regex LanguageTag = new("^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$", RegexOptions.CultureInvariant);
+    /// <summary>RFC 3066 §2.1: <c>1*8ALPHA *( "-" 1*8(ALPHA / DIGIT) )</c>, matched against the whole string: <c>\z</c>,
+    /// not <c>$</c>, which also matches before a final line feed.</summary>
+    private static readonly Regex LanguageTag = new(@"^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*\z", RegexOptions.CultureInvariant);
 
-    /// <summary>RFC 6838 §4.2: <c>type-name "/" subtype-name</c>, each a restricted name of 1–127 characters.</summary>
-    private static readonly Regex MediaType = new("^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$", RegexOptions.CultureInvariant);
+    /// <summary>RFC 6838 §4.2: <c>type-name "/" subtype-name</c>, each a restricted name of 1–127 characters, matched
+    /// against the whole string (<c>\z</c>).</summary>
+    private static readonly Regex MediaType = new(@"^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}\z", RegexOptions.CultureInvariant);
 
     private static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
         new Error(code, $"{message} ({source})")
