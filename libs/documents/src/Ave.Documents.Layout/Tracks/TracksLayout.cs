@@ -10,7 +10,7 @@ using Ave.Extensions.Functional;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// The Tracks algorithm: columns and rows of cells (research §6.2, the "Tracks" skeleton). It lays out CSS tables
+/// The Tracks algorithm: columns and rows of cells. It lays out CSS tables
 /// (CSS 2.1 §17) and the plain row of blocks side by side that the code front-end calls <c>Row(…)</c>, which is a
 /// one-row table without borders: one algorithm, two front-end elements.
 /// </summary>

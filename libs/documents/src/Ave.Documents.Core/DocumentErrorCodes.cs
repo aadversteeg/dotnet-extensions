@@ -81,7 +81,7 @@ public static class DocumentErrorCodes
             public static readonly ErrorCode ImageSize = _ / "ImageSize";
 
             /// <summary>A language that is not a language tag of the form BCP 47 describes (letters, then subtags
-            /// of letters and digits joined by hyphens, for example <c>nl-NL</c>; ISO 32000-1 §14.9.2.1).
+            /// of letters and digits joined by hyphens, for example <c>nl-NL</c>; ISO 32000-1 §14.9.2.2, "a Language-Tag as defined in RFC 3066").
             /// Metadata: Value.</summary>
             public static readonly ErrorCode Language = _ / "Language";
 
