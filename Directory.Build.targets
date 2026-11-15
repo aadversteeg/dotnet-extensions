@@ -99,4 +99,26 @@
       <_AveReleaseTag Include="$(_AveReleaseTagName)" PackageId="$(PackageId)" ProjectPath="$(MSBuildProjectFullPath)" />
     </ItemGroup>
   </Target>
+
+  <!--
+    The package a test project tests, for the release of that package (eng/release-tags.proj, target ResolveRelease).
+    Rule: UnitTests.Extensions.X tests Ave.Extensions.X. Other test projects set <TestedPackageId>.
+
+    A release runs the tests in release mode (UseRepoProjectReferences=false), so they test the package under test
+    against the published minimum versions of the packages below it. A test project sets
+    <TestInHeadMode>true</TestInHeadMode> when that cannot work: it needs another package of this repository that
+    itself depends on the package under test, and in release mode that package brings the published version of the
+    package under test next to the one being built (CS1704). The release runs such a project in head mode.
+  -->
+  <Target Name="GetTestedPackage" Returns="@(_AveTestedPackage)" Condition="'$(_AveIsTestProject)' == 'true'">
+    <PropertyGroup>
+      <_AveTestedPackageId>$(TestedPackageId)</_AveTestedPackageId>
+      <_AveTestedPackageId Condition="'$(_AveTestedPackageId)' == '' and $(MSBuildProjectName.StartsWith('UnitTests.Extensions.'))">Ave.Extensions.$(MSBuildProjectName.Substring(21))</_AveTestedPackageId>
+      <_AveTestInHeadMode>false</_AveTestInHeadMode>
+      <_AveTestInHeadMode Condition="'$(TestInHeadMode)' == 'true'">true</_AveTestInHeadMode>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AveTestedPackage Include="$(MSBuildProjectFullPath)" PackageId="$(_AveTestedPackageId)" TestInHeadMode="$(_AveTestInHeadMode)" />
+    </ItemGroup>
+  </Target>
 </Project>

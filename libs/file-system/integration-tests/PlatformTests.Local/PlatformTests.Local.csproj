@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <TestedPackageId>Ave.Extensions.FileSystem.Local</TestedPackageId>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -18,8 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
-    <ProjectReference Include="..\..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
     <ProjectReference Include="..\..\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
     <ProjectReference Include="..\..\Ave.Extensions.FileSystem.InMemory\Ave.Extensions.FileSystem.InMemory.csproj" />
   </ItemGroup>

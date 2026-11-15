@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.ErrorPaths\Ave.Extensions.ErrorPaths.csproj" />
     <ProjectReference Include="..\Ave.Extensions.ErrorPaths.FluentAssertions\Ave.Extensions.ErrorPaths.FluentAssertions.csproj" />
   </ItemGroup>
 

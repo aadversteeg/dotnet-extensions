@@ -23,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Functional.Core\Ave.Extensions.Functional.Core.csproj" />
     <ProjectReference Include="..\Ave.Extensions.Functional.FluentAssertions\Ave.Extensions.Functional.FluentAssertions.csproj" />
   </ItemGroup>
 

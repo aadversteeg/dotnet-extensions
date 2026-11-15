@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.FileSystem.MimeDetective\Ave.Extensions.FileSystem.MimeDetective.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.InMemory\Ave.Extensions.FileSystem.InMemory.csproj" />
   </ItemGroup>
 
 </Project>

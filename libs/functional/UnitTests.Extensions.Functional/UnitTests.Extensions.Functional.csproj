@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Release runs these tests in head mode: they use Ave.Extensions.Functional.FluentAssertions, which depends on
+         Ave.Extensions.Functional; in release mode it would bring the published Ave.Extensions.Functional next to
+         the one under test (CS1704). See docs/RELEASING.md. -->
+    <TestInHeadMode>true</TestInHeadMode>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <!-- Suppress XML documentation warnings for test projects -->
@@ -24,7 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Functional.Core\Ave.Extensions.Functional.Core.csproj" />
     <ProjectReference Include="..\Ave.Extensions.Functional.FluentAssertions\Ave.Extensions.Functional.FluentAssertions.csproj" />
     <ProjectReference Include="..\Ave.Extensions.Functional\Ave.Extensions.Functional.csproj" />
   </ItemGroup>

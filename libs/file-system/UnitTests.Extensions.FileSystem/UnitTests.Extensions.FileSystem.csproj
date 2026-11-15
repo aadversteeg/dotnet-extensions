@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Release runs these tests in head mode: they use Ave.Extensions.FileSystem.InMemory, which depends on
+         Ave.Extensions.FileSystem; in release mode it would bring the published Ave.Extensions.FileSystem next to
+         the one under test (CS1704). See docs/RELEASING.md. -->
+    <TestInHeadMode>true</TestInHeadMode>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -12,7 +16,6 @@
 
   <ItemGroup>
     <PackageReference Include="AutoFixture" />
-    <PackageReference Include="Ave.Extensions.Functional" />
     <PackageReference Include="coverlet.collector" >
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -31,7 +34,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
     <ProjectReference Include="..\Ave.Extensions.FileSystem.InMemory\Ave.Extensions.FileSystem.InMemory.csproj" />
   </ItemGroup>
 
