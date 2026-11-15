@@ -61,7 +61,8 @@ public class LayoutRuleTests
     [Fact]
     public void A_cell_spanning_auto_columns_widens_each_by_an_equal_share()
     {
-        // CSS 2.1 §17.5.2.2 leaves the distribution open; the engine widens the spanned flexible columns equally.
+        // CSS 2.1 §17.5.2.2 (a non-normative algorithm): "If possible, widen all spanned columns by approximately the same
+        // amount"; the engine widens the spanned flexible columns equally.
         var columns = new ValueList<TrackSize>([TrackSize.Auto.Instance, TrackSize.Auto.Instance]);
         var ranges = TrackSizing.ColumnRanges(columns,
         [

@@ -40,7 +40,8 @@ public static class ContentOperators
 
     /// <summary>
     /// <c>cm</c>: concatenate a matrix to the current transformation matrix (§8.4.4, Table 57; §8.3.4). With
-    /// <c>w 0 0 h x y</c> the unit square of image space lands on the rectangle (x, y, w, h) (§8.9.4).
+    /// <c>w 0 0 h x y</c> an image, which fills the unit square of user space (§8.9.4), lands on the rectangle
+    /// (x, y, w, h).
     /// </summary>
     /// <param name="a">Horizontal scale.</param>
     /// <param name="b">Shear (rotation) component.</param>

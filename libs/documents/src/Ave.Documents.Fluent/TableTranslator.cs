@@ -18,8 +18,7 @@ namespace Ave.Documents.Fluent;
 internal static class TableTranslator
 {
     /// <summary>One row group as the front-end forms it: the header rows, an explicit <see cref="RowGroupElement"/>, or
-    /// the body rows between two explicit groups (an anonymous group, as CSS 2.1 §17.2.1 makes for rows outside a
-    /// group).</summary>
+    /// the body rows between two explicit groups (a group the front-end forms itself, so that every row has one).</summary>
     private sealed record Group(bool IsHeader, RowGroupElement? Explicit, ImmutableArray<TableRowElement> Rows);
 
     /// <summary>How many nodes a table becomes: itself, its groups, rows, cells and the cells' content.</summary>

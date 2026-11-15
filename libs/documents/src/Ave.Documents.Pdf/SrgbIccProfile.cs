@@ -146,8 +146,9 @@ public static class SrgbIccProfile
     /// <summary>
     /// curveType (ICC.1:2001-04 §6.5.3, Table 37): signature <c>curv</c>, 4 reserved bytes, the entry count, then the
     /// entries: "the 16-bit unsigned integers in the range 0 to 65535 linearly map to curve values in the interval [0.0,
-    /// 1.0]", sampled evenly over the input 0–1 (1024 entries, as in both reference profiles). The curve is the sRGB decoding function (IEC 61966-2-1
-    /// §5.2): a linear part below 0.04045, a 2.4 power above it.
+    /// 1.0]", sampled evenly over the input 0–1 (1024 entries, as in both reference profiles). The curve is the sRGB decoding function of IEC 61966-2-1
+    /// (a non-public standard; the values are those of every public description of sRGB): a linear part below 0.04045, a
+    /// 2.4 power above it.
     /// </summary>
     private static byte[] CurveType()
     {
@@ -163,7 +164,8 @@ public static class SrgbIccProfile
         return data;
     }
 
-    /// <summary>IEC 61966-2-1 §5.2: from an sRGB component value to a linear light value, both in 0–1.</summary>
+    /// <summary>The sRGB decoding function (IEC 61966-2-1): from an sRGB component value to a linear light value, both in
+    /// 0–1.</summary>
     private static double SrgbToLinear(double value) =>
         value <= 0.04045 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
 

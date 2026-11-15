@@ -76,7 +76,7 @@ internal static class JpegReader
 
     /// <summary>
     /// True when a scan header (SOS, FF DA) follows the frame header, after any table and miscellaneous segments: a
-    /// frame is "a frame header followed by one or more scans" (T.81 §B.2.1, Figure B.2), and without a scan there is
+    /// frame "shall begin with a frame header and shall contain one or more scans" (T.81 §B.2.1, Figure B.2), and without a scan there is
     /// no image data to embed.
     /// </summary>
     private static bool HasScan(ReadOnlySpan<byte> span, int offset)

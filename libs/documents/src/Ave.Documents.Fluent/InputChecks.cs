@@ -39,7 +39,7 @@ internal static class InputChecks
     }
 
     /// <summary>
-    /// Margins and padding. Padding may not be negative (CSS Box Model 3 §4.2: "Negative values for padding
+    /// Margins and padding. Padding may not be negative (CSS Box Model 3 §4.1: "Negative values for padding
     /// properties are invalid"). Negative margins are valid CSS but not implemented yet, so they are reported as
     /// unsupported rather than drawn wrongly.
     /// </summary>
@@ -142,7 +142,8 @@ internal static class InputChecks
 
     /// <summary>
     /// Column definitions: at least one; fixed widths finite and not negative; fill weights finite and positive
-    /// (CSS Grid 1 §7.2.4: "Negative values are invalid" for <c>fr</c>; zero would make a column that never grows).
+    /// (CSS Grid 1 §7.2.1: <c>&lt;flex [0,∞]&gt;</c>, "A non-negative dimension with the unit fr"; zero would make a column
+    /// that never grows, so the front-end asks for a positive weight).
     /// </summary>
     public static IEnumerable<Error> Columns(ValueList<DocumentModel.TrackSize> columns, SourceLocation source)
     {
@@ -250,8 +251,8 @@ internal static class InputChecks
             .Select(size => Problem(DocumentErrorCodes.Input.Invalid.ImageSize, $"An image {size.Name} must be a positive length.", size.Value.ToString()!, size.Name, source));
 
     /// <summary>
-    /// A language tag of the form <see cref="LanguageTags"/> describes. The empty string, which a PDF reads as
-    /// "language unknown", is not offered to authors.
+    /// A language tag of the form <see cref="LanguageTags"/> describes. The empty string, by which a PDF says that the
+    /// language is unknown (ISO 32000-1 §14.9.2.2), is not offered to authors.
     /// </summary>
     public static IEnumerable<Error> Language(string? language, SourceLocation source) =>
         language is null || LanguageTags.IsWellFormed(language)

@@ -7,8 +7,8 @@ namespace Ave.Documents.Pdf;
 /// it pass. A value: compare, store and combine profiles freely.
 /// </summary>
 /// <remarks>
-/// <para>The profiles that make sense: <see cref="Plain"/>; <see cref="PdfA3b"/> (ISO 19005-3 level B, "visual
-/// appearance preserved"); <see cref="PdfA3a"/> (level A: level B plus the logical structure of §6.7 — tagging — and
+/// <para>The profiles that make sense: <see cref="Plain"/>; <see cref="PdfA3b"/> (ISO 19005-3 level B, the
+/// requirements on the visual appearance of the document); <see cref="PdfA3a"/> (level A: level B plus the logical structure of §6.7 — tagging — and
 /// the Unicode mapping of §6.2.11.7, the clauses level B leaves out, ISO 19005-3 clause 5); <see cref="PdfUa1"/> (ISO 14289-1); and PDF/A-3 plus PDF/UA-1 with
 /// <see cref="AndPdfUa1"/>, which is what a long-lived accessible business document wants.</para>
 /// <para>PDF/A-3 here means a PDF 1.7 file (ISO 32000-1), the base ISO 19005-3 builds on; every rule cited is from
@@ -65,7 +65,7 @@ public sealed record PdfProfile
 /// level A includes everything it adds).</summary>
 public enum PdfA3Level
 {
-    /// <summary>Level B, "basic": the visual appearance is preserved.</summary>
+    /// <summary>Level B: the visual appearance is preserved.</summary>
     B,
 
     /// <summary>Level A, "accessible": level B plus tagged PDF with a logical structure and Unicode text.</summary>

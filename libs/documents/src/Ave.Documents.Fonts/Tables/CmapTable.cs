@@ -9,7 +9,8 @@ namespace Ave.Documents.Fonts.Tables;
 /// The character-to-glyph map (OpenType spec, "cmap — Character to glyph index mapping table"). Reads one
 /// Unicode subtable, in format 4 (Basic Multilingual Plane) or format 12 (all of Unicode), and expands it into
 /// a dictionary from code point to glyph id. Code points that map to glyph 0 (.notdef) are left out: glyph 0
-/// means "no glyph for this character".
+/// means the font has no glyph for the character ("character codes that do not correspond to any glyph in the font
+/// should be mapped to glyph index 0").
 /// </summary>
 internal static class CmapTable
 {

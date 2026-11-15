@@ -5,8 +5,8 @@ using System.Text;
 namespace Ave.Documents.Fonts.Tables;
 
 /// <summary>
-/// Reads the big-endian values OpenType files are made of ("OpenType font files use big-endian byte order",
-/// OpenType spec, "Data types").
+/// Reads the big-endian values OpenType files are made of ("All OpenType fonts use big-endian (network) byte
+/// order", OpenType spec, "Data Types").
 /// </summary>
 /// <remarks>
 /// These readers do not check bounds themselves. Every table parser first checks that the table is long enough

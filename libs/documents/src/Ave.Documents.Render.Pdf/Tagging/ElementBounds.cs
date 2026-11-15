@@ -9,9 +9,10 @@ namespace Ave.Documents.Render.Pdf.Tagging;
 
 /// <summary>
 /// The bounding boxes of the structure elements that need one. ISO 32000-1 §14.8.5.4.3, Table 344, <c>BBox</c>:
-/// "(Illustrations and tables only; required for any figure or table appearing in its entirety on a single page)" —
+/// "(Optional for Annot; required for any figure or table appearing in its entirety on a single page; not
+/// inheritable)" —
 /// "the element's bounding box (the rectangle that completely encloses its visible content)", in default user space.
-/// The illustration types are Figure, Formula and Form (§14.8.4.5).
+/// The illustration types are Figure, Formula and Form (§14.8.4.5, Table 340).
 /// </summary>
 internal static class ElementBounds
 {

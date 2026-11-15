@@ -25,7 +25,7 @@ namespace Ave.Documents.Layout;
 /// <para>Adjoining is transitive, so each function below folds a whole chain of adjoining margins into one value.</para>
 /// <para>LIMITS of this version, each an explicit rule rather than an omission: margins are never negative (the
 /// front-ends refuse them, error <c>Documents.Input.Unsupported.NegativeMargin</c>), so "the maximum of the
-/// adjoining margins" is the whole rule and the negative-margin arithmetic of §8.3.1 is not needed. Borders are
+/// collapsing margins' widths" (§8.3.1) is the whole rule and the negative-margin arithmetic of §8.3.1 is not needed. Borders are
 /// checked like padding (a border of zero width is no border). The model has no <c>min-height</c>, no floats and
 /// therefore no clearance, so the conditions of §8.3.1 that mention them always hold; when one of those properties
 /// arrives, its condition belongs in <see cref="TopAdjoinsChildren"/>, <see cref="BottomAdjoinsChildren"/> and

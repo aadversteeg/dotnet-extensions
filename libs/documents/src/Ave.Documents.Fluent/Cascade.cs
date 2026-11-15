@@ -5,7 +5,8 @@ namespace Ave.Documents.Fluent;
 
 /// <summary>
 /// Combines an element's own modifier values with its shared style into the values the element specifies
-/// (CSS Cascade 4 §6: a later, more specific origin wins). The order is fixed, never the order of the calls:
+/// (modelled on CSS Cascade 4: an inline style outranks a style sheet rule, §6.1, and what neither sets is
+/// inherited, §7.2). The order is fixed, never the order of the calls:
 /// <list type="number">
 /// <item>the element's own <c>Format</c> (like an inline style),</item>
 /// <item>its shared <c>Style</c> (like a class rule),</item>

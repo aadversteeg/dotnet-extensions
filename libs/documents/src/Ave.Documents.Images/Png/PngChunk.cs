@@ -67,7 +67,8 @@ internal sealed record PngChunk(string Type, ReadOnlyMemory<byte> Data, long Off
         }
     }
 
-    /// <summary>§5.3: "restricted to consist of uppercase and lowercase ISO 646 letters (A-Z and a-z)".</summary>
+    /// <summary>§5.3: "Each byte of a chunk type is restricted to the decimal values 65 to 90 and 97 to 122", the ISO 646
+    /// letters A–Z and a–z.</summary>
     private static bool IsValidType(ReadOnlySpan<byte> type)
     {
         foreach (var value in type)

@@ -67,7 +67,7 @@ public class PngRuleTests
     [Fact]
     public void A_palette_index_equal_to_the_number_of_entries_is_invalid()
     {
-        // PNG §11.2.3: the palette index "shall not exceed the number of palette entries"; indices count from 0, so with
+        // PNG §11.2.3: "any out-of-range pixel value found in the image data is an error"; indices count from 0, so with
         // two entries index 2 names no entry.
         var file = Png(Header(1, 1, 8, 3), Chunk("PLTE", [1, 2, 3, 4, 5, 6]), Data(0, 2));
 

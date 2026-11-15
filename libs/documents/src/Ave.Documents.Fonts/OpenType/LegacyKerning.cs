@@ -44,8 +44,9 @@ internal sealed record LegacyKerning(ValueList<KerningSubtable> Subtables)
     }
 
     /// <summary>
-    /// Reads a version-0 (OpenType) 'kern' table: "version 0, nTables", then per subtable "version, length,
-    /// coverage" and, for format 0 (coverage high byte), "nPairs, searchRange, entrySelector, rangeShift" and the
+    /// Reads a version-0 (OpenType) 'kern' table: the fields <c>version</c> (0) and <c>nTables</c>, then per subtable
+    /// <c>version</c>, <c>length</c>, <c>coverage</c> and, for format 0 (coverage high byte), <c>nPairs</c>,
+    /// <c>searchRange</c>, <c>entrySelector</c>, <c>rangeShift</c> and the
     /// pairs (left, right, value FWORD). The Apple variant (version 1.0, 32-bit) is not an OpenType table and is
     /// read as "no kerning"; other subtable formats are skipped. Subtables follow each other by their length field,
     /// summed in 64 bits; any problem the reader records — a read past the end, the work budget used up by subtables

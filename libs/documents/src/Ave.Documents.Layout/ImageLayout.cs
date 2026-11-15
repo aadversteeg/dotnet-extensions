@@ -51,7 +51,7 @@ public static class ImageLayout
     /// <item>width and height both set: the largest size with the image's aspect ratio that fits inside both. This
     /// DIFFERS from CSS, which would stretch the image to exactly that box; keeping the ratio is this engine's rule
     /// (like <c>object-fit: contain</c>, with the box shrunk to the image);</item>
-    /// <item>only the width set: "used height … = (used width) / (intrinsic ratio)" (§10.6.2), and the other way
+    /// <item>only the width set: "the used value of 'height' is: (used width) / (intrinsic ratio)" (§10.6.2), and the other way
     /// round for only the height (§10.3.2);</item>
     /// <item>neither: the natural size, scaled down to the available width when it is wider (as with
     /// <c>max-width: 100%</c>), so a large image never runs off the page.</item>

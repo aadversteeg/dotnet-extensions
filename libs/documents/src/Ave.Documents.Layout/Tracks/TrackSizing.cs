@@ -23,7 +23,7 @@ namespace Ave.Documents.Layout;
 /// between minimum and maximum follows CSS Tables 3 (in proportion to max − min), which Chromium also does.</item>
 /// <item><b>Fill</b>: CSS Grid's flexible length (<c>fr</c>, CSS Grid 1 §7.2.4: a share "of the leftover space"),
 /// with the minimum Grid gives <c>1fr</c> (<c>minmax(auto, 1fr)</c>: never narrower than its min-content) and the
-/// "find the size of an fr" loop of §11.7.1, which drops a fill column whose minimum is larger than its share and
+/// "Find the Size of an fr" loop of §11.7.1, which drops a fill column whose minimum is larger than its share and
 /// shares the rest again.</item>
 /// </list>
 /// <para>The order is Grid's (§11.4–§11.7): fixed and min-content widths first; then auto columns grow towards their
@@ -107,10 +107,10 @@ internal static class TrackSizing
     }
 
     /// <summary>
-    /// CSS Grid 1 §11.7.1, "find the size of an fr": the leftover space (available minus every other column) divided
+    /// CSS Grid 1 §11.7.1, "Find the Size of an fr": the leftover space (available minus every other column) divided
     /// by the sum of the weights — at least 1, as the section says for weights that add up to less — is the size of
-    /// one fr. A fill column whose minimum is larger than its weight × fr is "treated as inflexible": it keeps its
-    /// minimum and the loop runs again without it.
+    /// one fr. A fill column whose minimum is larger than its weight × fr keeps its minimum, and the loop runs again
+    /// without it ("restart this algorithm treating all such tracks as inflexible").
     /// </summary>
     private static void ShareAmongFillColumns(ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double[] widths, double available)
     {

@@ -6,7 +6,7 @@ namespace Ave.Documents.Pdf.Xmp;
 /// (Factur-X, later) defines its own namespace the same way.
 /// </summary>
 /// <param name="Prefix">The prefix, for example <c>dc</c>. PDF/A requires the documented prefixes for its own schemas
-/// (veraPDF rules 6.6.4-4 and 5-3).</param>
+/// (veraPDF rules 6.6.4-4 to -7 for pdfaid; rule 5-3 of PDF/UA-1 for pdfuaid).</param>
 /// <param name="Uri">The namespace URI.</param>
 public sealed record XmpNamespace(string Prefix, string Uri)
 {

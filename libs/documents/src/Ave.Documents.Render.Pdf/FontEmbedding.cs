@@ -71,8 +71,7 @@ internal static class FontEmbedding
         ("ToUnicode", new PdfReference(numbers.ToUnicode)));
 
     /// <summary>
-    /// §9.7.4.1, Table 117. CIDToGIDMap /Identity makes CID = glyph id. The character collection
-    /// Adobe-Identity-0 says the CIDs have no meaning outside this font. /W gives the widths of the used glyphs;
+    /// §9.7.4.1, Table 117. CIDToGIDMap /Identity makes CID = glyph id; the CIDSystemInfo is Adobe-Identity-0. /W gives the widths of the used glyphs;
     /// viewers use them to advance the pen, so they must equal the advances layout used.
     /// </summary>
     private static PdfDictionary CidFont(PdfName name, UsedFont used, FontObjectNumbers numbers) => PdfDictionary.Of(

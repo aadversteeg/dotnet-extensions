@@ -129,7 +129,7 @@ public static class PdfRenderer
     /// <item><c>/Metadata</c>, the XMP stream (§14.3.2; ISO 19005-3 §6.6.2.1, ISO 14289-1 §7.1);</item>
     /// <item><c>/OutputIntents</c> (§14.11.5): one PDF/A output intent, subtype <c>/GTS_PDFA1</c> (the name every PDF/A
     /// part uses), with the sRGB profile as its destination (ISO 19005-3 §6.2.3);</item>
-    /// <item><c>/MarkInfo &lt;&lt;/Marked true&gt;&gt;</c> and <c>/StructTreeRoot</c> for tagged PDF (§14.7.1, §14.8.1;
+    /// <item><c>/MarkInfo &lt;&lt;/Marked true&gt;&gt;</c> and <c>/StructTreeRoot</c> for tagged PDF (§14.7.1 for MarkInfo, §14.7.2;
     /// veraPDF rules 6.7.2.2-1, 6.7.3.3-1, 6.2-1, 7.1-11);</item>
     /// <item><c>/ViewerPreferences &lt;&lt;/DisplayDocTitle true&gt;&gt;</c> for PDF/UA (§12.2, Table 150; rule 7.1-10),
     /// so a viewer shows the title, not the file name;</item>

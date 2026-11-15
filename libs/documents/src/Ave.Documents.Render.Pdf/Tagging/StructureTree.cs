@@ -28,7 +28,8 @@ internal sealed record StructureTree(
 {
     /// <summary>
     /// Builds the tree. Reading order is document order (the order of the markers), which is also the order of the
-    /// kids of every element (§14.7.2: "the order of the kids … is the logical order"). A node split over pages is ONE
+    /// kids of every element (§14.8.2.3.1: "the logical structure order defined by a depth-first traversal of the
+    /// page's logical structure hierarchy"). A node split over pages is ONE
     /// element: it is reopened on the next page and its content there is added after its earlier content. Every
     /// content run outside an artifact gets the next MCID of its page and becomes a kid of the innermost open element.
     /// </summary>

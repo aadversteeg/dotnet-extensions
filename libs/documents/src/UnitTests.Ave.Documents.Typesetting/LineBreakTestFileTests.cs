@@ -12,9 +12,9 @@ namespace UnitTests.Ave.Documents.Typesetting;
 /// Unicode version as the property table (assets/unicode/18.0.0). Every case must pass; nothing is skipped.
 /// </summary>
 /// <remarks>
-/// Format (header of the file): each line is a sequence of code points in hexadecimal separated by "×" (no
-/// break allowed) or "÷" (break allowed), with a leading "×" for the start of text and a trailing "÷" for the
-/// end. The file does not distinguish mandatory from allowed breaks, so both count as "÷".
+/// Format: each line is a sequence of code points in hexadecimal, with "÷ wherever there is a break opportunity,
+/// and × wherever there is not" (the file's header). Every line starts with × and ends with ÷, the rules for the
+/// start and the end of text; mandatory and allowed breaks are both written ÷.
 /// </remarks>
 public class LineBreakTestFileTests(ITestOutputHelper output)
 {

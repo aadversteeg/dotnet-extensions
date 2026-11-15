@@ -142,8 +142,9 @@ public class WrittenValueTests
     [Fact]
     public void Xmp_repeats_the_title_and_states_the_modification_date()
     {
-        // ISO 32000-1 §14.3.3 and ISO 19005-3 §6.6.3: XMP dc:title and xmp:ModifyDate are equivalent to Info /Title and
-        // /ModDate and must hold the same values.
+        // The document information (ISO 32000-1 §14.3.3) and the XMP metadata (§14.3.2) say the same: the writer puts the
+        // same title and modification date in both, so a reader that prefers either finds the same values. (PDF/A-3 does
+        // not require it; PDF/A-1 did.)
         var document = OnePage(new DocumentMetadata("Test é", null), Run("x", TestFonts.Regular, new Point(10, 50)));
 
         var file = Latin1(PdfRenderer.Render(document, Plain with { Profile = PdfProfile.PdfA3b }).Value);
@@ -214,8 +215,8 @@ public class WrittenValueTests
     [Fact]
     public void The_text_map_has_at_most_100_entries_per_block()
     {
-        // Adobe Technical Note #5014 (the CMap format ISO 32000-1 §9.10.3 refers to): "No more than 100 … mappings may
-        // appear in one bfchar block". 150 distinct letters need two blocks.
+        // Adobe Technical Note #5014 (the CMap format ISO 32000-1 §9.10.3 refers to): "There can be a maximum of 100
+        // lines in each ~bfchar set". 150 distinct letters need two blocks.
         var text = string.Concat(Enumerable.Range(0x21, 94).Concat(Enumerable.Range(0xC0, 56)).Select(code => (char)code));
         var font = TestFonts.Regular;
         var glyphs = Shaper.Shape(text, font, 10).Value;

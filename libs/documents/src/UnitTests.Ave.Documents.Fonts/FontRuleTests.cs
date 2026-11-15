@@ -42,8 +42,8 @@ public class FontRuleTests
     [Fact]
     public void A_kern_subtable_of_another_format_than_0_is_not_read_as_pairs()
     {
-        // OpenType 'kern': the high byte of coverage is the subtable format; only format 0 holds the pair list
-        // "nPairs, searchRange, entrySelector, rangeShift, pairs". This format-2 subtable has bytes that would read as
+        // OpenType 'kern': the high byte of coverage is the subtable format; only format 0 holds the pair list (the
+        // fields nPairs, searchRange, entrySelector, rangeShift and kernPairs). This format-2 subtable has bytes that would read as
         // the pair (5, 7) → -40 if its format were ignored.
         var table = new BigEndianBuilder()
             .UInt16(0).UInt16(1)

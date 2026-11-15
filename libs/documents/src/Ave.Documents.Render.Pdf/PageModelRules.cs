@@ -159,7 +159,7 @@ internal static class PageModelRules
 }
 
 /// <summary>
-/// How tagged PDF's table structure nests (ISO 32000-1 §14.8.4.3.4, table elements): a row (TR) is a child of a table or
+/// How tagged PDF's table structure nests (ISO 32000-1 §14.8.4.3.4, table elements, Table 337): a row (TR) is a child of a table or
 /// of one of its row groups (THead, TBody, TFoot); a header or data cell (TH, TD) is a child of a row; a row group is a
 /// child of a table. Seen from the parent, a table holds only rows and row groups, a row group only rows, a row only
 /// cells. veraPDF checks the same for PDF/UA-1 (rules 7.2-3 to 7.2-10, 7.2-36 to 7.2-38). Parent here means the nearest

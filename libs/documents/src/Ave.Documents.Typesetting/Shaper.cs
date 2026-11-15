@@ -144,6 +144,8 @@ public static class Shaper
     /// otherwise of U+002D HYPHEN-MINUS; null when it has neither, and the break then shows nothing (a documented
     /// limit). Whatever glyph is drawn, its text is the soft hyphen it stands for, not the character whose glyph it
     /// borrows: a reader gets the word back whole, and a hyphen-minus elsewhere in the document keeps its own text.
+    /// Tagged PDF asks for exactly this: "such an incidental word division shall be represented by a soft hyphen
+    /// character" (ISO 32000-1 §14.8.2.2.3, Hyphenation).
     /// </summary>
     private static ShapedGlyph? Hyphen(TrueTypeFont font, double fontSize) =>
         new[] { 0x2010, 0x002D }

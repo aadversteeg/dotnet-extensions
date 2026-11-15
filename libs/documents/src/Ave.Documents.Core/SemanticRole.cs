@@ -32,7 +32,7 @@ public abstract record SemanticRole
     /// <summary>A grouping with no meaning of its own (PDF structure type <c>Div</c>, §14.8.4.2).</summary>
     public static SemanticRole Generic { get; } = new GenericRole();
 
-    /// <summary>A paragraph (PDF structure type <c>P</c>, §14.8.4.3.1).</summary>
+    /// <summary>A paragraph (PDF structure type <c>P</c>, §14.8.4.3.2, Table 335).</summary>
     public static SemanticRole Paragraph { get; } = new ParagraphRole();
 
     /// <summary>A table (PDF structure type <c>Table</c>, §14.8.4.3.4).</summary>

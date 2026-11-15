@@ -64,7 +64,8 @@ public static class PdfWriter
             ? new Error(PdfErrorCodes.Write.InvalidFileIdentifier, "The file identifier is empty; give one of at least one byte, or none to derive it from the content.")
             : null;
 
-    /// <summary>§7.5.4: object numbers must be 1..N; the table then needs one section without gaps.</summary>
+    /// <summary>The writer's own rule: objects are numbered 1..N without gaps, so the cross-reference table (§7.5.4)
+    /// is one subsection from 0.</summary>
     private static Error? CheckNumbering(ImmutableArray<IndirectObject> objects)
     {
         var numbers = objects.Select(indirect => indirect.Number).Order().ToImmutableArray();
@@ -161,8 +162,9 @@ public static class PdfWriter
     }
 
     /// <summary>
-    /// §14.4 asks for an identifier that is unique for the file and suggests a digest of the file's content
-    /// among other things. A digest of everything written before the trailer satisfies "same content, same id".
+    /// §14.4 asks for identifiers that are likely to be unique and suggests a message digest such as MD5 over the time,
+    /// the file's location and size and its Info entries. The engine digests everything written before the trailer
+    /// instead, so that the same document always gets the same identifier and the output is reproducible.
     /// </summary>
     private static ImmutableArray<byte> IdentifierFromContent(ReadOnlySpan<byte> body) =>
         [.. SHA256.HashData(body).AsSpan(0, FileIdentifierLength)];

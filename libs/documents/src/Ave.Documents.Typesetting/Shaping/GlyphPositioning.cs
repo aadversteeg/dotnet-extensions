@@ -19,8 +19,8 @@ internal static class GlyphPositioning
 
     /// <summary>
     /// A mark takes no horizontal space: its advance becomes 0 once GPOS is applied, whatever 'hmtx' and the lookups
-    /// gave it. The OpenType specification leaves advances alone ("Advance widths are not affected", GPOS mark-to-base
-    /// and mark-to-mark); this is HarfBuzz's convention, which the engine follows where the specification is silent
+    /// gave it. The OpenType specification leaves advances alone (GPOS mark-to-base: "Placement of the base glyph and advances
+    /// of both glyphs are not affected"; mark-to-mark: "Advance widths are not affected"); this is HarfBuzz's convention, which the engine follows where the specification is silent
     /// (hb-ot-shape.cc <c>zero_mark_widths_by_gdef</c>, mode <c>BY_GDEF_LATE</c> of the default shaper). A glyph is a
     /// mark by its GDEF class, or, in a font without GDEF, by its character (<see cref="GlyphFilter.ClassOf"/>, as
     /// HarfBuzz synthesises the classes). Without that, every accent of a font whose marks have an advance — Consolas,

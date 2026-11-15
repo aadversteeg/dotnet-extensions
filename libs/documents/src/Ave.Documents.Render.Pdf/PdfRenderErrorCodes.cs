@@ -141,7 +141,8 @@ public static class PdfRenderErrorCodes
             public static readonly ErrorCode HeadingLevelSkipped = _ / "HeadingLevelSkipped";
 
             /// <summary>A table row that does not fill every column of its table, counting spans, or cells that
-            /// overlap (veraPDF rules 7.2-41, 7.2-42: "Table rows shall have the same number of columns"; 7.2-15).
+            /// overlap (veraPDF rules 7.2-42 and 7.2-43: "Table rows shall have the same number of columns (taking into account
+            /// column spans)"; 7.2-41 for the columns, 7.2-15 for overlapping cells).
             /// Metadata: Node, Value (slots filled / columns), SourceFile, SourceLine (the row).</summary>
             public static readonly ErrorCode IrregularTable = _ / "IrregularTable";
 

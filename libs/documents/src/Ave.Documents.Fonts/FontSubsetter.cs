@@ -12,7 +12,8 @@ namespace Ave.Documents.Fonts;
 
 /// <summary>
 /// Builds a TrueType font program that holds only the glyphs a document uses, for embedding in PDF (ISO
-/// 32000-1 §9.9: an embedded font "may be a subset"). Glyph ids are KEPT: every glyph that is not used becomes an
+/// 32000-1 §9.9: "an embedded font program may contain only the subset of glyphs that are used in the PDF
+/// document"). Glyph ids are KEPT: every glyph that is not used becomes an
 /// empty glyph, so the codes in the content streams, the widths and the ToUnicode map stay valid without any
 /// renumbering. Deterministic: the same font and glyphs always give the same bytes.
 /// </summary>
@@ -159,7 +160,7 @@ public static class FontSubsetter
     /// <summary>
     /// New 'glyf' and 'loca': kept glyphs are copied byte for byte, every other glyph is empty (equal successive
     /// offsets mean "no outline", OpenType spec "loca"). Each glyph is padded to 4 bytes, which the long 'loca'
-    /// format allows and the spec recommends.
+    /// format allows (the specification recommends only 2-byte alignment, "Local offsets should be 16-bit aligned").
     /// </summary>
     private static (byte[] Glyf, byte[] Loca) GlyphTables(TrueTypeFont font, ImmutableSortedSet<GlyphId> kept)
     {
@@ -236,8 +237,8 @@ public static class FontSubsetter
     }
 
     /// <summary>
-    /// "The table checksum is the unsigned sum of the uint32 units of a given table", the table padded with zero
-    /// bytes to a multiple of four (OpenType spec, "Calculating checksums").
+    /// "Table checksums are the unsigned sum of the uint32 units of a given table", the table padded with zero bytes to
+    /// a multiple of four (OpenType spec, "Calculating Checksums").
     /// </summary>
     public static uint Checksum(ReadOnlySpan<byte> data)
     {

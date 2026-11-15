@@ -72,8 +72,9 @@ internal static class SlicedBox
     /// before it — what Chromium prints for this case (checked against its print output). Because a layout call is
     /// pure, this second call is just another call; no state is kept.</item>
     /// <item>LIMIT: if even then nothing fits and the box is at the start of a page, it is placed anyway and its
-    /// bottom padding and border overflow the page area; there is no earlier page where it would fit better (§4.4
-    /// allows a UA to overflow when no break point is left).</item>
+    /// bottom padding and border overflow the page area; there is no earlier page where it would fit better.
+    /// CSS Fragmentation 3 §4.4 would let the user agent "break anywhere in order to avoid losing content off the edge
+    /// of the fragmentainer"; the engine does not cut padding or borders.</item>
     /// </list>
     /// </remarks>
     /// <param name="box">The box.</param>

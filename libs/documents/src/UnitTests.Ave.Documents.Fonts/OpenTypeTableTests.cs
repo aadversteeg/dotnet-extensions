@@ -84,8 +84,8 @@ public class OpenTypeTableTests
     [Fact]
     public void A_null_class_definition_offset_in_a_pair_subtable_means_every_glyph_is_class_0()
     {
-        // The sub-review's probe P6: classDef2Offset 0 is NULL ("every glyph class 0", as HarfBuzz reads it); it used
-        // to be read as a class table at the start of the subtable itself.
+        // A classDef2Offset of 0 is a null offset: no class definition, so every glyph is in class 0 (HarfBuzz reads a
+        // null class definition the same way). It used to be read as a class table at the start of the subtable itself.
         var subtable = new BigEndianBuilder()
             .UInt16(2).UInt16(20).UInt16(4).UInt16(0)
             .UInt16(26).UInt16(0)
@@ -112,7 +112,8 @@ public class OpenTypeTableTests
     {
         // HarfBuzz, hb-ot-layout.cc hb_ot_layout_table_select_script: the script's own tags, then 'DFLT', then
         // 'dflt' ("try with 'dflt'; MS site has had typos and many fonts use it now"), then 'latn' ("try with
-        // 'latn'; some old fonts put their features there even if they're really trying to support Thai").
+        // 'latn'; some old fonts put their features there even though they're really trying to support Thai, for example
+        // :(").
         var language = new LanguageSystem(null, [0]);
         var table = new LayoutTable(
             [new ScriptTable(present, language)],

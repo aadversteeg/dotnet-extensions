@@ -20,9 +20,9 @@ public static class WhiteSpaceCollapsing
     /// are removed later, by line breaking (§4.1.2).
     /// </summary>
     /// <remarks>
-    /// Collapsible white space is U+0020, tab U+0009 and the segment breaks line feed U+000A and carriage return
-    /// U+000D, which CSS Text 3 §4.1 treats "identically to spaces". For Latin text a segment break becomes a
-    /// space (§4.1.3). Other spaces, such as the no-break space U+00A0, are not collapsible and stay as they are.
+    /// Collapsible white space is U+0020, tab U+0009, the segment break line feed U+000A, and carriage return U+000D,
+    /// which CSS Text 3 §4 says is "treated identically to spaces (U+0020) in all respects". For Latin text a segment
+    /// break becomes a space (§4.1.3). Other spaces, such as the no-break space U+00A0, are not collapsible and stay as they are.
     /// </remarks>
     /// <param name="runs">The text of each run, in order.</param>
     /// <returns>The collapsed text of each run; same count and order.</returns>

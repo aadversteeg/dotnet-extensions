@@ -51,8 +51,8 @@ internal static class PngDecoder
 
     /// <summary>
     /// The chunk ordering rules of §5.6 (Table 5.3) for the critical chunks, or null when they hold: IHDR first and only
-    /// once; PLTE at most once and before the first IDAT; the IDAT chunks consecutive ("If multiple IDAT chunks are
-    /// present, they shall appear consecutively with no other intervening chunks"). IEND ends the list
+    /// once; PLTE at most once and before the first IDAT; the IDAT chunks consecutive (Table 5.3: "Multiple IDAT chunks
+    /// shall be consecutive"; §11.2.4). IEND ends the list
     /// (<see cref="PngChunk.ReadAll"/> stops there).
     /// </summary>
     private static (string Message, long Offset)? OrderProblem(ImmutableArray<PngChunk> chunks)

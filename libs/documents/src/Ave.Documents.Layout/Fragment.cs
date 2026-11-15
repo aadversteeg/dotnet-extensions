@@ -6,8 +6,8 @@ using Ave.Documents.Typesetting;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// The output of layout for one page: an immutable tree of rectangles (CSS Fragmentation 3 §2: "the portion of
-/// a box that belongs to one fragmentainer"). A box split over two pages has one fragment on each page.
+/// The output of layout for one page: an immutable tree of rectangles (CSS Fragmentation 3 §2: "The portion of
+/// a box that belongs to exactly one fragmentainer"). A box split over two pages has one fragment on each page.
 /// Child positions are relative to the parent fragment's top-left corner.
 /// </summary>
 public abstract record Fragment

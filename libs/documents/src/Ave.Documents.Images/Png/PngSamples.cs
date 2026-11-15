@@ -8,8 +8,8 @@ namespace Ave.Documents.Images.Png;
 
 /// <summary>
 /// Turns unfiltered scanlines into 8-bit colour samples and an optional alpha channel (PNG §7.2 "Scanlines": pixels
-/// are packed left to right, "pixels smaller than a byte … packed into bytes with the leftmost pixel in the
-/// high-order bits of a byte").
+/// are packed left to right: "These samples are packed into bytes with the leftmost sample in the high-order bits
+/// of a byte followed by the other samples for the scanline").
 /// </summary>
 internal static class PngSamples
 {
@@ -74,8 +74,8 @@ internal static class PngSamples
 
     /// <summary>
     /// One indexed pixel: its index is <paramref name="bitDepth"/> bits wide, the leftmost pixel in the high-order
-    /// bits; the palette gives its RGB and alpha. Returns −1 for an index past the palette ("shall not exceed the
-    /// number of palette entries", §11.2.3).
+    /// bits; the palette gives its RGB and alpha. Returns −1 for an index past the palette (§11.2.3: "any out-of-range
+    /// pixel value found in the image data is an error").
     /// </summary>
     private static int IndexedPixel(ReadOnlySpan<byte> line, int x, int bitDepth, PngPalette palette, byte[] samples, int pixel)
     {

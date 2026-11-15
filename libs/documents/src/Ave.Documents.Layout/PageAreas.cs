@@ -7,7 +7,8 @@ namespace Ave.Documents.Layout;
 
 /// <summary>
 /// Lays out the header and footer areas of one page (<see cref="PageTemplate"/>). Each is laid out like a CSS
-/// page-margin box (CSS Paged Media 3 §5): its own block formatting context, as wide as the page area, with the same
+/// page-margin box (CSS Paged Media 3 §5: content laid out in a box of its own on every page), as the root of its own
+/// block formatting context (the engine's choice; the section does not say), as wide as the page area, with the same
 /// algorithms as the body — so it may hold tables, images and page counters. It never breaks: an area that does not
 /// fit on its page is <c>Documents.Layout.DoesNotFit</c>.
 /// </summary>

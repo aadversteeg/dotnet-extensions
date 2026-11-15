@@ -8,7 +8,7 @@ namespace Ave.Documents.Fluent;
 /// </summary>
 public static class UserAgentStyles
 {
-    /// <summary>The CSS initial value of <c>font-size</c>: <c>medium</c>, 16px = 12pt (CSS Fonts 4 §2.5).</summary>
+    /// <summary>The CSS initial value of <c>font-size</c>: <c>medium</c> (CSS Fonts 4 §2.5), 12pt: the 16px browsers use, since the specification leaves the size to the user agent.</summary>
     public static Length InitialFontSize => 12.Pt();
 
     /// <summary>

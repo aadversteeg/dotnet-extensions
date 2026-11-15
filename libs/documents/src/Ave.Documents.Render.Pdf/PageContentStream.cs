@@ -53,8 +53,9 @@ internal static class PageContentStream
     ];
 
     /// <summary>
-    /// An image: inside q/Q, map the unit square of image space onto the image's rectangle with <c>cm</c> (§8.9.4:
-    /// "an image is mapped to … the unit square"), whose y is its BOTTOM edge in PDF space, then paint it with
+    /// An image: inside q/Q, map the unit square of user space onto the image's rectangle with <c>cm</c> (§8.9.4: "the
+    /// unit square of user space, bounded by user coordinates (0, 0) and (1, 1), corresponds to the boundary of the image
+    /// in image space"), whose y is its BOTTOM edge in PDF space, then paint it with
     /// <c>Do</c> (§8.8).
     /// </summary>
     private static ImmutableArray<ContentOperation> Image(DrawImage image, PdfName resource, double pageHeight) =>
@@ -70,7 +71,7 @@ internal static class PageContentStream
     /// stretch of glyphs (<see cref="Stretches"/>), it moves the text origin to the first glyph of the stretch and shows
     /// the glyphs. A stretch whose glyph needs its own text is enclosed in a <c>/Span</c> marked-content sequence with
     /// an <c>/ActualText</c> entry (§14.9.4): a reader takes that text instead of the ToUnicode text of the glyph.
-    /// Marked-content operators may appear inside a text object (§8.2, Figure 9).
+    /// Marked-content operators may appear inside a text object (§9.4.1, Figure 9).
     /// </summary>
     private static ImmutableArray<ContentOperation> Text(GlyphRun run, UsedFont font, double pageHeight) =>
     [

@@ -12,7 +12,7 @@ namespace Ave.Documents.Render.Pdf;
 /// </summary>
 internal static class ToUnicodeCMap
 {
-    /// <summary>"No more than 100 … mappings may appear in one bfchar block" (Adobe Technical Note #5014, the CMap
+    /// <summary>"There can be a maximum of 100 lines in each ~bfchar set" (Adobe Technical Note #5014, "CMap Reference", the CMap
     /// file format that §9.10.3 refers to).</summary>
     private const int MaximumEntriesPerBlock = 100;
 

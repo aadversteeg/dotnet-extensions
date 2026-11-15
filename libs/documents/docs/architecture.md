@@ -81,7 +81,7 @@ the three places to open, with that front-end as their first user.
 
 | What | Where | Rule it implements |
 | --- | --- | --- |
-| cascade and inheritance, user-agent styles | `Fluent/DocumentTranslator.cs`, `Cascade.cs`, `UserAgentStyles.cs` | CSS Cascade 4 §4, §7.1; HTML rendering (heading sizes) |
+| cascade and inheritance, user-agent styles | `Fluent/DocumentTranslator.cs`, `Cascade.cs`, `UserAgentStyles.cs` | CSS Cascade 4 §4, §6.1, §7.2; HTML rendering (heading sizes) |
 | input validation | `Fluent/InputChecks.cs` | one function per rule, each cites its source |
 | block flow, keep rules, break choice | `Layout/FlowLayout.cs`, `BreakAvoidance.cs`, `ForcedBreaks.cs` | CSS 2.1 §9.4.1, CSS Fragmentation 3 §3–§4 |
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |

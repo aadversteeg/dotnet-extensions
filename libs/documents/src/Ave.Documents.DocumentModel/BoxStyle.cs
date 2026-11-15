@@ -50,7 +50,7 @@ public sealed record BoxStyle
     /// of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>.</summary>
     public TableDisplay TableDisplay { get; init; }
 
-    /// <summary>How many columns and rows a table cell covers (HTML <c>colspan</c> / <c>rowspan</c>, CSS 2.1 §17.2.1);
+    /// <summary>How many columns and rows a table cell covers (HTML <c>colspan</c> / <c>rowspan</c>, HTML §4.9.11; CSS 2.1 §17.5);
     /// <see cref="CellSpan.Single"/> for every other box.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;
 
@@ -72,7 +72,8 @@ public enum BoxDecorationBreak
 
     /// <summary>Each fragment of the table is closed by a whole line: the page ends with the whole line and the next
     /// page starts with it again, as word processors print tables. For collapsed table borders this is the engine's
-    /// rule, modelled on <c>clone</c> (which gives each fragment its own complete border); no specification defines it.
+    /// rule, modelled on <c>clone</c> (which gives each fragment its own complete border); no specification defines it,
+    /// and Chromium does not implement it for collapsed borders (it paints half the line on each side of a break).
     /// A row fits when it fits with the whole line below it.</summary>
     Clone,
 }

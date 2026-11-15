@@ -8,7 +8,8 @@ namespace Ave.Documents.Core;
 /// breaks line feed, vertical tab, form feed, carriage return and next line (U+0085), which UAX #14 classes as
 /// mandatory breaks (BK, CR, LF, NL);</item>
 /// <item>noncharacters: U+FDD0 to U+FDEF and the last two code points of every plane (U+FFFE, U+FFFF, U+1FFFE, …),
-/// which the Unicode Standard reserves for internal use and keeps out of interchange;</item>
+/// "permanently reserved in the Unicode Standard for internal use" and "not recommended for use in open interchange
+/// of Unicode text data" (the Unicode Standard §23.7);</item>
 /// <item>unpaired surrogates, which are not Unicode scalar values at all.</item>
 /// </list>
 /// Such a character cannot be shown, and a PDF that maps a glyph to it fails PDF/A and PDF/UA (veraPDF rules

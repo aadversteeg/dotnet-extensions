@@ -7,7 +7,8 @@ namespace Ave.Documents.Core;
 /// <summary>
 /// The slot-filling rule of a table, in one place for every layer that needs it: the front-end checks an author's
 /// table with it, layout builds its grid with it, and the PDF/UA check finds rows that do not fill every column with
-/// it. The rule is the HTML table model's ("forming a table", which CSS 2.1 §17.2 relies on for the visual model):
+/// it. The rule is the HTML table model's (HTML Living Standard §4.9.12.1, "Forming a table"; CSS 2.1 §17.5 places cells
+/// the same way and says "A cell box cannot extend beyond the last row box of a table or row group"):
 /// rows are filled top to bottom; each cell takes the first column of its row that no cell from above covers yet,
 /// and covers as many columns and rows as its span says; a row span ends with its row group.
 /// </summary>
@@ -35,7 +36,7 @@ public static class TableSlots
 
     /// <summary>
     /// The largest column span: HTML's limit for <c>colspan</c> ("greater than zero and less than or equal to 1000",
-    /// HTML Living Standard §4.9.11, the <c>td</c> element's attributes). It bounds how far one cell can widen a grid
+    /// HTML Living Standard §4.9.11, attributes common to <c>td</c> and <c>th</c> elements). It bounds how far one cell can widen a grid
     /// whose column count is not given.
     /// </summary>
     public const int MaxColumnSpan = 1000;

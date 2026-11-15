@@ -15,7 +15,8 @@ internal static class ScanlineFilters
     /// </summary>
     /// <param name="data">Height × (1 + stride) bytes: each scanline's filter type and its filtered bytes.</param>
     /// <param name="stride">The bytes of one scanline without the filter-type byte.</param>
-    /// <param name="bytesPerPixel">"bpp" of §9.2: bytes per complete pixel, rounded up to 1 for bit depths below 8.</param>
+    /// <param name="bytesPerPixel">Bytes per complete pixel, 1 for bit depths below 8, where §9.2 takes the byte
+    /// immediately before as the left neighbour.</param>
     /// <returns>The index of the first scanline with an undefined filter type, or −1 when all are valid.</returns>
     public static int Unfilter(Span<byte> data, int stride, int bytesPerPixel)
     {

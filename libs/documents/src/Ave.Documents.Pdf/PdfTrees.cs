@@ -7,7 +7,8 @@ namespace Ave.Documents.Pdf;
 
 /// <summary>
 /// Name trees and number trees (ISO 32000-1 §7.9.6 and §7.9.7) written as a single root node that holds all entries.
-/// The sections allow it ("the root node … shall have either Kids or Names", resp. Nums), and a document has few
+/// The sections allow it ("The tree shall always have exactly one root node, which shall contain a single entry:
+/// either Kids or Names but not both", resp. Nums), and a document has few
 /// entries; a balanced tree of intermediate nodes only pays off for thousands.
 /// </summary>
 public static class PdfTrees

@@ -61,7 +61,7 @@ public static class DocumentErrorCodes
             public static readonly ErrorCode Text = _ / "Text";
 
             /// <summary>Metadata text — the title, the author, an attachment's file name or description — with a
-            /// character XML 1.0 does not allow (§2.2, production [2] Char: a control character other than tab, line
+            /// character XML 1.0 does not allow (§2.2, production [2] Char: a C0 control character other than tab, line
             /// feed and carriage return, U+FFFE, U+FFFF or an unpaired surrogate). The XMP metadata is XML, so such
             /// text cannot be written. Metadata: Property, Offset.</summary>
             public static readonly ErrorCode MetadataText = _ / "MetadataText";

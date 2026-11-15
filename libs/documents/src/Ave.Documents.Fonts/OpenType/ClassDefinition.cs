@@ -7,8 +7,8 @@ namespace Ave.Documents.Fonts.OpenType;
 
 /// <summary>
 /// A class definition table (OpenType spec, "OpenType Layout Common Table Formats" → "Class definition table"):
-/// assigns glyphs to numbered classes. "Any glyph not included in the range of covered glyph IDs automatically
-/// belongs to Class 0."
+/// assigns glyphs to numbered classes. "Any glyph not included in the range of covered glyph IDs is assigned to
+/// Class 0."
 /// </summary>
 /// <remarks>
 /// Kept as ranges and searched, never expanded glyph by glyph: in the fonts of large scripts one range record gives

@@ -12,8 +12,9 @@ public static class LineJustification
 {
     /// <summary>
     /// The word-separator characters, the justification opportunities of <c>text-justify: inter-word</c> (CSS
-    /// Text 3 §7.1: "word-separator characters … U+0020 space, U+00A0 no-break space, U+1361 Ethiopic word space,
-    /// U+10100 and U+10101 Aegean word separators, U+1039F Ugaritic word divider, U+1091F Phoenician word separator").
+    /// Text 3 §7.1, which lists among the word-separator characters the space U+0020, the no-break space U+00A0, the
+    /// Ethiopic word space U+1361, the Aegean word separators U+10100 and U+10101, the Ugaritic word divider U+1039F and
+    /// the Phoenician word separator U+1091F).
     /// </summary>
     private static readonly ImmutableHashSet<string> WordSeparators =
     [

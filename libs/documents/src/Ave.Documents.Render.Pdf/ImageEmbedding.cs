@@ -16,8 +16,8 @@ internal static class ImageEmbedding
     /// The objects of one image:
     /// <list type="bullet">
     /// <item>a decoded image: its 8-bit samples in DeviceGray or DeviceRGB, Flate-compressed; with an alpha channel, a
-    /// second DeviceGray image of the alpha values referenced as its <c>/SMask</c> (§11.6.5.3, soft-mask images:
-    /// "the mask values shall be … the alpha values"), which needs PDF 1.4 or later — this writer writes PDF 1.7;</item>
+    /// second DeviceGray image of the alpha values referenced as its <c>/SMask</c> (§11.6.5.3; Table 89: "a soft-mask
+    /// image … that shall be used as a source of mask shape or mask opacity values"), which needs PDF 1.4 or later — this writer writes PDF 1.7;</item>
     /// <item>a JPEG: the file unchanged with <c>/Filter /DCTDecode</c> (§7.4.8); DCTDecode's default colour transform
     /// turns a three-component file's YCbCr into RGB.</item>
     /// </list>

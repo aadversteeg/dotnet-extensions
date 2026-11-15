@@ -83,7 +83,7 @@ internal static class NameTable
         var postScriptName = Find(PostScriptNameId);
         if (family is null || postScriptName is null)
         {
-            // The PDF writer needs the PostScript name (BaseFont, ISO 32000-1 §9.6.2.1) and the font set needs
+            // The PDF writer needs the PostScript name (BaseFont, ISO 32000-1 §9.7.4.1, Table 117; §9.6.3) and the font set needs
             // the family name to match requests against.
             return FontParseErrors.InvalidValue<FontNames>(
                 Tag, "the font has no Unicode family name (ID 1 or 16) or PostScript name (ID 6).", "missing");
