@@ -250,13 +250,11 @@ internal static class InputChecks
             .Select(size => Problem(DocumentErrorCodes.Input.Invalid.ImageSize, $"An image {size.Name} must be a positive length.", size.Value.ToString()!, size.Name, source));
 
     /// <summary>
-    /// A language tag as ISO 32000-1 §14.9.2.2 asks for ("a Language-Tag as defined in RFC 3066, Tags for the
-    /// Identification of Languages"; the empty string, "language unknown", is not offered to authors): a primary
-    /// subtag of 1–8 letters, then subtags of 1–8 letters or digits, each after a hyphen (RFC 3066 §2.1). Whether the
-    /// subtags are registered is not checked.
+    /// A language tag of the form <see cref="LanguageTags"/> describes. The empty string, which a PDF reads as
+    /// "language unknown", is not offered to authors.
     /// </summary>
     public static IEnumerable<Error> Language(string? language, SourceLocation source) =>
-        language is null || LanguageTag.IsMatch(language)
+        language is null || LanguageTags.IsWellFormed(language)
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
 
@@ -336,10 +334,6 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.ImageDescription, "An image is either described (Alt) or decorative, not both.", image.AlternativeText, "alt", image.Source);
         }
     }
-
-    /// <summary>RFC 3066 §2.1: <c>1*8ALPHA *( "-" 1*8(ALPHA / DIGIT) )</c>, matched against the whole string: <c>\z</c>,
-    /// not <c>$</c>, which also matches before a final line feed.</summary>
-    private static readonly Regex LanguageTag = new(@"^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*\z", RegexOptions.CultureInvariant);
 
     /// <summary>RFC 6838 §4.2: <c>type-name "/" subtype-name</c>, each a restricted name of 1–127 characters, matched
     /// against the whole string (<c>\z</c>).</summary>

@@ -48,6 +48,27 @@ public static class PdfRenderErrorCodes
             /// artifact, so it can be neither tagged nor marked as decoration (veraPDF rule 7.1-3: "Content shall be
             /// marked as Artifact or tagged as real content"). Metadata: Value (the page number).</summary>
             public static readonly ErrorCode UnmarkedContent = _ / "UnmarkedContent";
+
+            /// <summary>A document language that is not a language tag (veraPDF rules 6.7.4-1 and 7.2-29: the value
+            /// of /Lang "shall be a language identifier"; the pattern is <c>LanguageTags</c>). Metadata: Value.</summary>
+            public static readonly ErrorCode InvalidLanguage = _ / "InvalidLanguage";
+
+            /// <summary>A glyph whose text a ToUnicode map cannot carry: U+0000, U+FEFF or U+FFFE (veraPDF rules
+            /// 6.2.11.7.2-2 and 7.21.7-2: the Unicode values "shall all be greater than zero (0), but not equal to
+            /// either U+FEFF or U+FFFE"). Metadata: Value (the page number).</summary>
+            public static readonly ErrorCode UnmappableText = _ / "UnmappableText";
+        }
+
+        /// <summary>Rules on the glyphs a page shows that PDF/A-3 (every level) and PDF/UA-1 share.</summary>
+        public static class Glyphs
+        {
+            /// <summary><c>Documents.Pdf.Conformance.Glyphs</c>.</summary>
+            public static readonly ErrorCode _ = Conformance._ / "Glyphs";
+
+            /// <summary>A glyph run that shows glyph 0, the .notdef glyph (veraPDF rules 6.2.11.8-1 and 7.21.8-1: no
+            /// "reference to the .notdef glyph from any of the text showing operators"). Metadata: Value (the page
+            /// number).</summary>
+            public static readonly ErrorCode NotdefGlyph = _ / "NotdefGlyph";
         }
 
         /// <summary>Rules of PDF/A-3 (ISO 19005-3) at every conformance level.</summary>
@@ -60,6 +81,32 @@ public static class PdfRenderErrorCodes
             /// file specification dictionary shall contain key AFRelationship"). Metadata: Value (the file name),
             /// SourceFile, SourceLine.</summary>
             public static readonly ErrorCode AttachmentWithoutRelationship = _ / "AttachmentWithoutRelationship";
+
+            /// <summary>An attachment media type outside the form PDF/A-3 accepts: <c>type/subtype</c> of letters,
+            /// digits and <c>_ - + .</c> (veraPDF rule 6.8-1, pattern <c>^[-\w+\.]+\/[-\w+\.]+$</c>). Metadata: Value,
+            /// SourceFile, SourceLine.</summary>
+            public static readonly ErrorCode MediaType = _ / "MediaType";
+
+            /// <summary>A page side outside 3 to 14 400 units (veraPDF rule 6.1.13-11: "the size of any of the page
+            /// boundaries … shall not be less than 3 units in either direction, nor shall it be greater than 14 400
+            /// units"). Metadata: Value (the page number and size).</summary>
+            public static readonly ErrorCode PageSize = _ / "PageSize";
+
+            /// <summary>A text that would be written as a string longer than 32 767 bytes (veraPDF rule 6.1.13-3).
+            /// Metadata: Property, Value (the length in bytes), and SourceFile, SourceLine where known.</summary>
+            public static readonly ErrorCode TextTooLong = _ / "TextTooLong";
+
+            /// <summary>A value that would be written as a name longer than 127 bytes: a media type or a font name
+            /// (veraPDF rule 6.1.13-4). Metadata: Property, Value.</summary>
+            public static readonly ErrorCode NameTooLong = _ / "NameTooLong";
+
+            /// <summary>Under level A, a glyph whose text lies in the Unicode Private Use Area: level A requires
+            /// replacement text for it (veraPDF rule 6.2.11.7.3-1), which the page model cannot carry. Metadata: Value
+            /// (the page number and code point).</summary>
+            public static readonly ErrorCode PrivateUseText = _ / "PrivateUseText";
+
+            /// <summary>A file of more than 8 388 607 indirect objects (veraPDF rule 6.1.13-7). Metadata: Value.</summary>
+            public static readonly ErrorCode TooManyObjects = _ / "TooManyObjects";
         }
 
         /// <summary>Rules of PDF/UA-1 (ISO 14289-1) that the engine can check from the page model.</summary>

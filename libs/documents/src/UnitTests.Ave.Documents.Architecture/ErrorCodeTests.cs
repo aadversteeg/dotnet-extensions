@@ -135,8 +135,9 @@ public class ErrorCodeTests
                 continue;
             }
 
+            // A branch field "_" is not raised: another library's branch is where this one adds its own codes.
             var (assembly, type) = Owner(metadata, (TypeReferenceHandle)member.Parent);
-            if (type.Split('.')[0].EndsWith("ErrorCodes", StringComparison.Ordinal))
+            if (type.Split('.')[0].EndsWith("ErrorCodes", StringComparison.Ordinal) && metadata.GetString(member.Name) != "_")
             {
                 found.Add($"{assembly}: {type}.{metadata.GetString(member.Name)}");
             }

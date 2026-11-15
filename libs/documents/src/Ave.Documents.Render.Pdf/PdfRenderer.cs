@@ -89,7 +89,7 @@ public static class PdfRenderer
         return fontObjects
             .OnSuccessCombine(_ => pageObjects)
             .OnSuccessCombine((_, _) => metadataObjects)
-            .OnSuccessBind((fontParts, pageParts, metadataParts) => PdfWriter.Write(new PdfFile(
+            .OnSuccessMap((fontParts, pageParts, metadataParts) => (ImmutableArray<IndirectObject>)
                 [
                     new IndirectValue(ObjectPlan.Catalog, Catalog(document.Metadata, profile, plan)),
                     new IndirectValue(ObjectPlan.PageTree, PageTree(plan)),
@@ -101,10 +101,14 @@ public static class PdfRenderer
                     .. plan.HasOutputIntent ? [OutputIntentProfile(plan)] : ImmutableArray<IndirectObject>.Empty,
                     .. tree is not null ? StructureObjects.Build(tree, ElementBounds.Of(tree, pages, document.Pages), plan) : [],
                     .. attachments.SelectMany((attachment, index) => AttachmentEmbedding.Build(attachment, plan.Attachment(index))),
-                ],
-                Catalog: new PdfReference(ObjectPlan.Catalog),
-                Info: new PdfReference(ObjectPlan.Info),
-                FileIdentifier: options.FileIdentifier)));
+                ])
+            .OnSuccessBind(objects => ProfileLimits.ObjectCount(objects.Length, profile).ToList() is [var tooMany]
+                ? Result<ImmutableArray<byte>, Error>.Failure(tooMany)
+                : PdfWriter.Write(new PdfFile(
+                    objects,
+                    Catalog: new PdfReference(ObjectPlan.Catalog),
+                    Info: new PdfReference(ObjectPlan.Info),
+                    FileIdentifier: options.FileIdentifier)));
     }
 
     /// <summary>

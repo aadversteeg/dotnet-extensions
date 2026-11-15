@@ -24,7 +24,12 @@ internal static class ConformanceRules
     /// <returns>The document unchanged, or the violations (several aggregated with <c>Errors.Aggregate</c>).</returns>
     public static Result<PageDocument, Error> Check(PageDocument document, PdfProfile profile)
     {
-        var violations = PdfA3(document, profile).Concat(PdfUa1(document, profile)).ToList();
+        var violations = PdfA3(document, profile)
+            .Concat(ProfileLimits.PdfA3(document, profile))
+            .Concat(ProfileLimits.Glyphs(document, profile))
+            .Concat(ProfileLimits.Language(document, profile))
+            .Concat(PdfUa1(document, profile))
+            .ToList();
         return violations.Count == 0
             ? Result<PageDocument, Error>.Success(document)
             : Result<PageDocument, Error>.Failure(Errors.Aggregate(violations));

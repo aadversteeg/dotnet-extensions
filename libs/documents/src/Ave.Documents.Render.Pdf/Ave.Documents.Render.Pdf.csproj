@@ -12,4 +12,8 @@
     <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Render.Pdf" />
+  </ItemGroup>
+
 </Project>

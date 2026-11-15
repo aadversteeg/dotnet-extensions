@@ -141,6 +141,61 @@ public class PageModelValidationTests
         error.Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable);
     }
 
+    /// <summary>The profile rules that only a hand-made page model can break (the front-end never draws glyph 0 and
+    /// refuses the characters these rules forbid): each is refused with its own code.</summary>
+    [Theory]
+    [InlineData("3b")]
+    [InlineData("3a")]
+    [InlineData("ua1")]
+    public void The_notdef_glyph_is_refused_under_PDF_A_and_PDF_UA(string profile)
+    {
+        var notdef = new GlyphRun(TestFonts.Regular, 10, Color.Black, new Point(10, 50), [new PositionedGlyph(new GlyphId(0), 0, "x")]);
+
+        Refused(Tagged(Accessible, Start(1, SemanticRole.Paragraph), notdef, End(1)), ProfileNamed(profile)).Code
+            .Should().Be(PdfRenderErrorCodes.Conformance.Glyphs.NotdefGlyph);
+    }
+
+    [Theory]
+    [InlineData("\0")]
+    [InlineData("\uFEFF")]
+    [InlineData("\uFFFE")]
+    public void Glyph_text_a_ToUnicode_map_cannot_carry_is_refused_when_tagged(string text)
+    {
+        var glyph = Shaper.Shape("x", TestFonts.Regular, 10).Value[0];
+        var run = new GlyphRun(TestFonts.Regular, 10, Color.Black, new Point(10, 50), [new PositionedGlyph(glyph.Glyph, 0, text)]);
+
+        Refused(Tagged(Accessible, Start(1, SemanticRole.Paragraph), run, End(1)), PdfProfile.PdfA3a).Code
+            .Should().Be(PdfRenderErrorCodes.Conformance.Tagged.UnmappableText);
+    }
+
+    [Fact]
+    public void Private_use_text_is_refused_at_PDF_A_level_A_only()
+    {
+        var glyph = Shaper.Shape("x", TestFonts.Regular, 10).Value[0];
+        var run = new GlyphRun(TestFonts.Regular, 10, Color.Black, new Point(10, 50), [new PositionedGlyph(glyph.Glyph, 0, "\uE000")]);
+        var document = Tagged(Accessible, Start(1, SemanticRole.Paragraph), run, End(1));
+
+        Refused(document, PdfProfile.PdfA3a).Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfA3.PrivateUseText);
+        PdfRenderer.Render(document, With(PdfProfile.PdfA3b)).IsSuccess.Should().BeTrue("level B has no rule on the text of glyphs");
+    }
+
+    [Theory]
+    [InlineData("3a", "not a language")]
+    [InlineData("ua1", "not a language")]
+    [InlineData("3a", "en\n")]
+    public void A_document_language_that_is_not_a_language_tag_is_refused_when_tagged(string profile, string language) =>
+        Refused(Tagged(Accessible with { Language = language }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), ProfileNamed(profile)).Code
+            .Should().Be(PdfRenderErrorCodes.Conformance.Tagged.InvalidLanguage);
+
+    [Fact]
+    public void More_indirect_objects_than_PDF_A_allows_are_refused()
+    {
+        ProfileLimits.ObjectCount(ProfileLimits.MaxIndirectObjects, PdfProfile.PdfA3b).Should().BeEmpty();
+        ProfileLimits.ObjectCount(ProfileLimits.MaxIndirectObjects + 1, PdfProfile.PdfA3b).Should().ContainSingle()
+            .Which.Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfA3.TooManyObjects);
+        ProfileLimits.ObjectCount(ProfileLimits.MaxIndirectObjects + 1, PdfProfile.PdfUa1).Should().BeEmpty("the limit is PDF/A's");
+    }
+
     [Fact]
     public void A_valid_hand_made_page_model_is_written() =>
         PdfRenderer.Render(Tagged(Accessible, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
