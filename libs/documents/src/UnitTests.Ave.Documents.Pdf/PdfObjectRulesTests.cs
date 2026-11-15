@@ -46,11 +46,20 @@ public class PdfObjectRulesTests
     [Theory]
     [InlineData(double.NaN)]
     [InlineData(double.PositiveInfinity)]
-    public void A_number_that_is_not_finite_is_an_error_value_wherever_it_is(double value)
+    [InlineData(3.5e38)]
+    [InlineData(-1e300)]
+    public void A_number_that_is_not_finite_or_beyond_the_real_range_is_an_error_value_wherever_it_is(double value)
     {
         PdfWriter.Write(FileWith(new PdfArray([new PdfArray([new PdfReal(value)])]))).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
         PdfSerializer.Serialize(new PdfReal(value)).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
         ContentStream.Serialize([ContentOperators.Rectangle(0, 0, value, 1)]).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
+    }
+
+    [Fact]
+    public void The_largest_real_is_written()
+    {
+        PdfSerializer.Serialize(new PdfReal(PdfSerializer.MaxReal)).IsSuccess.Should().BeTrue();
+        PdfSerializer.Serialize(new PdfReal(-PdfSerializer.MaxReal)).IsSuccess.Should().BeTrue();
     }
 
     [Fact]

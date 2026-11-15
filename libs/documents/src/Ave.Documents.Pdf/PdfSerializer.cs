@@ -17,6 +17,11 @@ public static class PdfSerializer
     /// <summary>Decimals written for real numbers. 0.0001 pt is far below what any device can show.</summary>
     public const int RealDecimals = 4;
 
+    /// <summary>The largest magnitude of a real number: veraPDF rule 6.1.13-2 refuses a real "outside the range of
+    /// +/-3.403 x 10^38" in PDF/A, the range of a 32-bit float. Applied to every file, since a reader is free to read
+    /// reals as such floats.</summary>
+    public const double MaxReal = 3.403e38;
+
     /// <summary>Writes an object, after checking it (<see cref="Problem"/>).</summary>
     /// <param name="value">The object.</param>
     /// <returns>Its PDF syntax, or a <see cref="PdfErrorCodes.Write.InvalidNumber"/> or
@@ -38,7 +43,7 @@ public static class PdfSerializer
 
     private static Error? ProblemIn(PdfObject value) => value switch
     {
-        PdfReal real when !double.IsFinite(real.Value) => InvalidNumber(real.Value),
+        PdfReal real when !double.IsFinite(real.Value) || Math.Abs(real.Value) > MaxReal => InvalidNumber(real.Value),
         PdfArray array => Problem(array.Items),
         PdfDictionary { DuplicateKey: { } key } => new Error(PdfErrorCodes.Write.InvalidObject, $"A dictionary has two entries with the key /{key}.")
             .With(ErrorMetadataKeys.Value, key),
@@ -47,7 +52,7 @@ public static class PdfSerializer
     };
 
     private static Error InvalidNumber(double value) =>
-        new Error(PdfErrorCodes.Write.InvalidNumber, $"PDF numbers must be finite, got {value}.")
+        new Error(PdfErrorCodes.Write.InvalidNumber, $"PDF numbers must be finite and within ±{MaxReal}, got {value}.")
             .With(ErrorMetadataKeys.Value, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     /// <summary>Writes an object whose numbers are known to be finite.</summary>
