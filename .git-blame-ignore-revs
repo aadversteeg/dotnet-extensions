@@ -1,0 +1,6 @@
+# Commits that "git blame" skips. Use it with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub reads this file by itself.
+
+# chore: normalize line endings to LF in the repository
+1f2e8fb20f55aa0869d51a56f10d91a036f895f2
