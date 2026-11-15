@@ -4,30 +4,17 @@ using Ave.Documents.Pdf;
 namespace Ave.Documents.Render.Pdf.Tagging;
 
 /// <summary>
-/// The standard structure type of each role (ISO 32000-1 §14.8.4) and the attributes that go with it. Only standard
-/// types are written, so the file needs no role map (veraPDF rules 6.7.3.4-1 and 7.1-5 apply to non-standard types only).
+/// The standard structure type of each role (ISO 32000-1 §14.8.4) and the attributes that go with it. Every role names
+/// its standard type itself, and a role without one is refused (<see cref="StructureTree"/>), so only standard types
+/// are written and the file needs no role map (veraPDF rules 6.7.3.4-1 and 7.1-5 apply to non-standard types only).
 /// </summary>
 internal static class StructureTypes
 {
-    /// <summary>The structure type of a role, or null for <see cref="SemanticRole.Decorative"/>, which is not structure.</summary>
+    /// <summary>The structure type of a role: the standard type the role names itself
+    /// (<see cref="SemanticRole.StandardStructureType"/>); null for a role that is no structure.</summary>
     /// <param name="role">The role.</param>
-    /// <returns>The type: Document, Div, P, H1–H6 (§14.8.4.2–§14.8.4.3); Table, THead, TBody, TR, TH, TD (§14.8.4.3.4);
-    /// Figure (§14.8.4.5).</returns>
-    public static PdfName? Of(SemanticRole role) => role switch
-    {
-        SemanticRole.HeadingRole { Level: >= 1 and <= 6 } heading => new PdfName($"H{heading.Level}"),
-        SemanticRole.ParagraphRole => new PdfName("P"),
-        SemanticRole.GenericRole => new PdfName("Div"),
-        SemanticRole.FigureRole => new PdfName("Figure"),
-        _ when role == SemanticRole.Document => new PdfName("Document"),
-        _ when role == SemanticRole.Table => new PdfName("Table"),
-        _ when role == SemanticRole.TableHead => new PdfName("THead"),
-        _ when role == SemanticRole.TableBody => new PdfName("TBody"),
-        _ when role == SemanticRole.TableRow => new PdfName("TR"),
-        _ when role == SemanticRole.TableHeaderCell => new PdfName("TH"),
-        _ when role == SemanticRole.TableCell => new PdfName("TD"),
-        _ => null,
-    };
+    /// <returns>The type, or null.</returns>
+    public static PdfName? Of(SemanticRole role) => role.StandardStructureType is { } type ? new PdfName(type) : null;
 
     /// <summary>
     /// The attribute object of a table cell (§14.8.5.7, Table 349, owner <c>/Table</c>): a header cell's
