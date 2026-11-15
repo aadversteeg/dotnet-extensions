@@ -1,0 +1,234 @@
+{
+  "reportDate": "2026-11-03T00:00:00",
+  "projectName": "SmallBusiness onderhoud",
+  "projectTitle": "PoC",
+  "periodStart": "2026-10-01T00:00:00",
+  "periodEnd": "2026-10-31T00:00:00",
+  "customerName": "Jansen \u0026 Zn. Installatietechniek",
+  "timeEntries": [
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "",
+      "taskName": "Beheer",
+      "duration": 1,
+      "executedAt": "2026-10-01T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Analyse",
+      "duration": 3.5,
+      "executedAt": "2026-10-01T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Overleg",
+      "duration": 1.75,
+      "executedAt": "2026-10-02T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Overleg",
+      "duration": 1,
+      "executedAt": "2026-10-05T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Ontwikkeling",
+      "duration": 3,
+      "executedAt": "2026-10-06T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Beheer",
+      "duration": 1,
+      "executedAt": "2026-10-06T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Ontwikkeling",
+      "duration": 2.75,
+      "executedAt": "2026-10-07T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 0.75,
+      "executedAt": "2026-10-08T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Analyse",
+      "duration": 3.5,
+      "executedAt": "2026-10-08T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "",
+      "taskName": "Beheer",
+      "duration": 2.5,
+      "executedAt": "2026-10-09T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Beheer",
+      "duration": 1,
+      "executedAt": "2026-10-09T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "",
+      "taskName": "Review",
+      "duration": 0.5,
+      "executedAt": "2026-10-12T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Beheer",
+      "duration": 2,
+      "executedAt": "2026-10-13T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 3,
+      "executedAt": "2026-10-14T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Overleg",
+      "duration": 2.25,
+      "executedAt": "2026-10-14T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "",
+      "taskName": "Overleg",
+      "duration": 3.75,
+      "executedAt": "2026-10-15T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "",
+      "taskName": "Beheer",
+      "duration": 3,
+      "executedAt": "2026-10-16T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Review",
+      "duration": 1,
+      "executedAt": "2026-10-19T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Review",
+      "duration": 1,
+      "executedAt": "2026-10-19T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Documentatie",
+      "duration": 3.75,
+      "executedAt": "2026-10-20T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "",
+      "taskName": "Documentatie",
+      "duration": 3,
+      "executedAt": "2026-10-21T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 1,
+      "executedAt": "2026-10-21T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "",
+      "taskName": "Overleg",
+      "duration": 0.75,
+      "executedAt": "2026-10-22T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "",
+      "taskName": "Analyse",
+      "duration": 3.75,
+      "executedAt": "2026-10-23T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "",
+      "taskName": "Documentatie",
+      "duration": 1.25,
+      "executedAt": "2026-10-26T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "",
+      "taskName": "Beheer",
+      "duration": 3,
+      "executedAt": "2026-10-27T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 1.25,
+      "executedAt": "2026-10-27T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Documentatie",
+      "duration": 1,
+      "executedAt": "2026-10-28T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Review",
+      "duration": 0.75,
+      "executedAt": "2026-10-28T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Overleg",
+      "duration": 4,
+      "executedAt": "2026-10-29T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Ontwikkeling",
+      "duration": 0.5,
+      "executedAt": "2026-10-30T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "",
+      "taskName": "Review",
+      "duration": 2.25,
+      "executedAt": "2026-10-30T00:00:00"
+    }
+  ]
+}
