@@ -46,7 +46,7 @@ public static class GreedyLineBreaker
         {
             if (line.Count > 0 && !Fitting.Fits(lineWidth + segment.WidthWithoutTrailingSpaces, availableWidth))
             {
-                AddLine(lines, line);
+                AddLine(lines, line, endsWithForcedBreak: false);
                 line.Clear();
                 lineWidth = 0;
             }
@@ -61,19 +61,19 @@ public static class GreedyLineBreaker
 
             if (segment.EndsWithMandatoryBreak)
             {
-                AddLine(lines, line);
+                AddLine(lines, line, endsWithForcedBreak: true);
                 line.Clear();
                 lineWidth = 0;
             }
         }
 
-        AddLine(lines, line);
+        AddLine(lines, line, endsWithForcedBreak: false);
         return lines.ToImmutable();
     }
 
     /// <summary>Adds a line without its trailing spaces, grouping its glyphs into one segment per consecutive
     /// stretch of the same run. Nothing is added when no glyph is left.</summary>
-    private static void AddLine(ImmutableArray<TextLine>.Builder lines, List<BreakableSegments.RunGlyph> line)
+    private static void AddLine(ImmutableArray<TextLine>.Builder lines, List<BreakableSegments.RunGlyph> line, bool endsWithForcedBreak)
     {
         var glyphs = line.Take(line.Count - line.AsEnumerable().Reverse().TakeWhile(glyph => glyph.Glyph.IsSpace).Count()).ToList();
         if (glyphs.Count == 0)
@@ -92,6 +92,6 @@ public static class GreedyLineBreaker
             }
         }
 
-        lines.Add(new TextLine(segments.ToImmutable()));
+        lines.Add(new TextLine(segments.ToImmutable(), endsWithForcedBreak));
     }
 }

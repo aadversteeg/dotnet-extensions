@@ -70,6 +70,11 @@ public static class DocumentModelText
             parts.Add("break-before=page");
         }
 
+        if (style.TextAlign != TextAlign.Left)
+        {
+            parts.Add($"text-align={style.TextAlign.ToString().ToLowerInvariant()}");
+        }
+
         parts.Add($"@{box.Source}");
         return string.Join(" ", parts);
     }

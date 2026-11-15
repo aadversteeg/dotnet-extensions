@@ -111,6 +111,27 @@ public class PaginationTests
     }
 
     [Fact]
+    public void A_justified_paragraph_fills_every_line_but_the_last()
+    {
+        var pages = Paginate(Document(Paragraph(1, string.Join(" ", Enumerable.Repeat("justify", 20)), BoxStyle.Initial with { TextAlign = TextAlign.Justify })));
+
+        var lines = ((BoxFragment)Root(pages[0]).Children[0].Fragment).Children.Select(child => (LineFragment)child.Fragment).ToList();
+        lines.Should().HaveCountGreaterThan(1);
+        lines.SkipLast(1).Should().AllSatisfy(line => line.Size.Width.Should().BeApproximately(180, 1e-9, "the page area is 180 pt wide"));
+        lines[^1].Size.Width.Should().BeLessThan(180);
+    }
+
+    [Fact]
+    public void A_right_aligned_line_ends_at_the_right_edge()
+    {
+        var pages = Paginate(Document(Paragraph(1, "One", BoxStyle.Initial with { TextAlign = TextAlign.Right })));
+
+        var line = (LineFragment)((BoxFragment)Root(pages[0]).Children[0].Fragment).Children[0].Fragment;
+        var text = line.Children.Single();
+        (text.Offset.X + text.Fragment.Size.Width).Should().BeApproximately(180, 1e-9);
+    }
+
+    [Fact]
     public void A_forced_break_starts_the_box_on_a_new_page_even_when_it_would_fit()
     {
         var pages = Paginate(Document(

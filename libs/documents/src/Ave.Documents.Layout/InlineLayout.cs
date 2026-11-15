@@ -47,7 +47,7 @@ public static class InlineLayout
         };
 
         return ShapeRuns(environment, [.. box.Children.Cast<TextRun>()]).OnSuccessBind(runs =>
-            SlicedBox.Layout(box, space, incoming, (width, height) => StackLines(runs, firstLine, width, height)));
+            SlicedBox.Layout(box, space, incoming, (width, height) => StackLines(runs, box.Style.TextAlign, firstLine, width, height)));
     }
 
     /// <summary>
@@ -80,14 +80,14 @@ public static class InlineLayout
     /// <summary>Breaks the paragraph into lines for the content width and stacks them from
     /// <paramref name="firstLine"/> until the next one does not fit. None when not even that first line fits.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        ImmutableArray<LineBoxes.ShapedRun> runs, int firstLine, double contentWidth, double contentHeight)
+        ImmutableArray<LineBoxes.ShapedRun> runs, TextAlign align, int firstLine, double contentWidth, double contentHeight)
     {
         var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], contentWidth);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)
         {
-            var line = LineBoxes.Build(lines[index], runs);
+            var line = LineBoxes.Build(lines[index], runs, contentWidth, align, isLastLine: index == lines.Count - 1);
             if (!Fitting.Fits(bottom + line.Size.Height, contentHeight))
             {
                 return placed.Count == 0

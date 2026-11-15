@@ -105,6 +105,18 @@ public static class BoxModifiers
     public static T Background<T>(this T element, Color color) where T : IBoxFormatted<T> =>
         element.WithBox(element.Format.Box with { Background = color });
 
+    /// <summary>
+    /// Sets how the lines are aligned (CSS <c>text-align</c>): left, right, centre or justified. Inherited, like a
+    /// text property, by the paragraphs inside a block; only for blocks, paragraphs and styles, because a span has
+    /// no lines of its own.
+    /// </summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="align">The alignment.</param>
+    /// <returns>A copy with the alignment set.</returns>
+    public static T TextAlign<T>(this T element, TextAlign align) where T : IBoxFormatted<T> =>
+        element.WithFormat(element.Format with { Text = element.Format.Text with { TextAlign = align } });
+
     private static T WithBox<T>(this T element, BoxFormat box) where T : IBoxFormatted<T> =>
         element.WithFormat(element.Format with { Box = box });
 }

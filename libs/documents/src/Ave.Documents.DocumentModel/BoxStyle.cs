@@ -8,9 +8,12 @@ namespace Ave.Documents.DocumentModel;
 /// <param name="Background">The background colour, or null for transparent (CSS Backgrounds 3 §3.2,
 /// initial value <c>transparent</c>). Painted under the border box (initial <c>background-clip: border-box</c>).</param>
 /// <param name="BreakBefore">Whether a page break is forced before the box (CSS Fragmentation 3 §3.1).</param>
-public sealed record BoxStyle(Edges Margin, Edges Padding, Color? Background, BreakBefore BreakBefore)
+/// <param name="TextAlign">How the box's lines are aligned (CSS Text 3 §6.1, <c>text-align</c>); an inherited
+/// property, so the front-end computes it for every box. Used by inline layout.</param>
+public sealed record BoxStyle(Edges Margin, Edges Padding, Color? Background, BreakBefore BreakBefore, TextAlign TextAlign = TextAlign.Left)
 {
-    /// <summary>The CSS initial values: no margin, no padding, transparent, <c>break-before: auto</c>.</summary>
+    /// <summary>The CSS initial values: no margin, no padding, transparent, <c>break-before: auto</c>,
+    /// <c>text-align: start</c> (left).</summary>
     public static BoxStyle Initial { get; } = new(Edges.Zero, Edges.Zero, null, BreakBefore.Auto);
 }
 

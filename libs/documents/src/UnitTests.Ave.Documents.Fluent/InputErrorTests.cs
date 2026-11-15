@@ -153,6 +153,15 @@ public class InputErrorTests
     }
 
     [Fact]
+    public void A_shared_style_with_a_text_alignment_on_a_span_is_not_applicable()
+    {
+        var line = CurrentLine() + 1;
+        var span = Text("x").With(Style.Empty.TextAlign(TextAlign.Center));
+
+        ShouldPointAt(Fail(Document([Paragraph([span])]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.NotApplicable, line);
+    }
+
+    [Fact]
     public void An_invalid_value_from_a_shared_style_is_reported_at_the_element_that_uses_it()
     {
         var style = Style.Empty.FontSize((-1).Pt());

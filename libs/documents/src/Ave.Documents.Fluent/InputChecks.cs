@@ -79,7 +79,7 @@ internal static class InputChecks
 
     /// <summary>A span got a shared style that sets box properties; a span has no box, so they cannot apply.</summary>
     public static Error BoxPropertiesOnSpan(SourceLocation source) =>
-        Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, "A span has no box: its style may not set margin, padding or background.", "Style", "style", source);
+        Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, "A span has no box and no lines: its style may not set margin, padding, background or text alignment.", "Style", "style", source);
 
     /// <summary>A page break with nothing after it in its list has nothing to move to the next page.</summary>
     public static Error TrailingPageBreak(SourceLocation source) =>

@@ -121,5 +121,17 @@ public class ModifierTests
     public void Bold_text_is_text_with_the_bold_modifier() =>
         Bold("x", "file.cs", 3).Should().Be(Text("x", "file.cs", 3).Bold());
 
+    [Fact]
+    public void Text_align_is_inherited_from_a_block_by_its_paragraphs_and_can_be_overridden()
+    {
+        var model = DocumentTranslator.ToModel(Document(
+            [Block([Paragraph("a"), Paragraph("b").TextAlign(TextAlign.Right)]).TextAlign(TextAlign.Justify)]).FontFamily("Lato")).Value;
+
+        var block = (Box)model.Root.Children[0];
+        block.Style.TextAlign.Should().Be(TextAlign.Justify);
+        block.Children.Cast<Box>().Select(paragraph => paragraph.Style.TextAlign).Should().Equal(TextAlign.Justify, TextAlign.Right);
+        model.Root.Style.TextAlign.Should().Be(TextAlign.Left, "the initial value");
+    }
+
     private static int CurrentLine([System.Runtime.CompilerServices.CallerLineNumber] int line = 0) => line;
 }

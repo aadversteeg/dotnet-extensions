@@ -36,11 +36,19 @@ internal static class LineBoxes
     /// height is the distance between the uppermost box top and the lowermost box bottom"). Stage 0 has no
     /// "strut" of the paragraph's own font (§10.8.1); line height comes from the runs on the line only.
     /// </summary>
-    /// <param name="line">The broken line.</param>
+    /// <remarks>
+    /// Horizontally the line is placed by its paragraph's <c>text-align</c> (<see cref="LineJustification.Place"/>):
+    /// moved right or to the centre, or justified by widening its word separators.
+    /// </remarks>
+    /// <param name="broken">The broken line.</param>
     /// <param name="runs">The paragraph's runs; <see cref="LineSegment.Run"/> indexes into it.</param>
+    /// <param name="width">The width of the line box (the paragraph's content width).</param>
+    /// <param name="align">The paragraph's text-align.</param>
+    /// <param name="isLastLine">True for the paragraph's last line, which is never justified.</param>
     /// <returns>The line fragment with its text fragments.</returns>
-    public static LineFragment Build(TextLine line, IReadOnlyList<ShapedRun> runs)
+    public static LineFragment Build(TextLine broken, IReadOnlyList<ShapedRun> runs, double width, TextAlign align, bool isLastLine)
     {
+        var (line, offset) = LineJustification.Place(broken, width, align, isLastLine);
         var pieces = line.Segments
             .Select(segment => (Segment: segment, Run: runs[segment.Run]))
             .Select(piece => (piece.Segment, piece.Run, Extent: InlineExtent.Of(piece.Run.Font, piece.Run.Run.Style.FontSize.Points)))
@@ -49,7 +57,7 @@ internal static class LineBoxes
         var above = pieces.Max(piece => piece.Extent.Above);
         var below = pieces.Max(piece => piece.Extent.Below);
         var children = ImmutableArray.CreateBuilder<PlacedFragment>(pieces.Length);
-        var x = 0.0;
+        var x = offset;
         foreach (var (segment, run, extent) in pieces)
         {
             var size = new Size(segment.Width, extent.Ascent + extent.Descent);

@@ -26,7 +26,8 @@ internal static class Cascade
         own.Text.FontFamily ?? shared.Text.FontFamily,
         own.Text.FontSize ?? shared.Text.FontSize,
         own.Text.FontWeight ?? shared.Text.FontWeight,
-        own.Text.Color ?? shared.Text.Color);
+        own.Text.Color ?? shared.Text.Color,
+        own.Text.TextAlign ?? shared.Text.TextAlign);
 
     /// <summary>The box values an element specifies.</summary>
     public static BoxValues Box(Style own, Style shared)
