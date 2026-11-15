@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Ave.Documents.Core;
+using Ave.Documents.Fonts.OpenType;
 using Ave.Documents.Fonts.Tables;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
@@ -101,6 +102,12 @@ public static class FontParser
             return Fail(loca.Error);
         }
 
+        var layout = Layout(directory, glyphCount);
+        if (layout.IsFailure)
+        {
+            return Fail(layout.Error);
+        }
+
         var metrics = new FontMetrics(
             UnitsPerEm: head.Value.UnitsPerEm,
             Ascender: hhea.Value.Ascender,
@@ -120,8 +127,26 @@ public static class FontParser
             cmap.Value,
             hmtx.Value.AdvanceWidths,
             loca.Value.Offsets,
-            glyf.Value));
+            glyf.Value,
+            layout.Value));
     }
+
+    /// <summary>
+    /// The optional advanced typography tables GSUB, GPOS, GDEF and 'kern'. A table the font does not have reads as
+    /// empty; a table it has must be well formed, like every other table.
+    /// </summary>
+    private static Result<OpenTypeLayout, Error> Layout(TableDirectory directory, int glyphCount)
+    {
+        var substitutions = Optional(directory, LayoutTableParser.Gsub, LayoutTable.Empty, data => LayoutTableParser.Parse(LayoutTableParser.Gsub, data, glyphCount));
+        var positions = Optional(directory, LayoutTableParser.Gpos, LayoutTable.Empty, data => LayoutTableParser.Parse(LayoutTableParser.Gpos, data, glyphCount));
+        var definitions = Optional<GlyphDefinitions?>(directory, GlyphDefinitions.Tag, null, data => GlyphDefinitions.Parse(data).OnSuccessMap(found => (GlyphDefinitions?)found));
+        var kerning = Optional(directory, LegacyKerning.Tag, LegacyKerning.None, LegacyKerning.Parse);
+        return substitutions.OnSuccessBind(gsub => positions.OnSuccessBind(gpos => definitions.OnSuccessBind(gdef => kerning.OnSuccessMap(kern =>
+            new OpenTypeLayout(gsub, gpos, gdef, kern)))));
+    }
+
+    private static Result<T, Error> Optional<T>(TableDirectory directory, string tag, T absent, Func<ReadOnlyMemory<byte>, Result<T, Error>> parse) =>
+        directory.Tables.TryGetValue(tag, out var data) ? parse(data) : Result<T, Error>.Success(absent);
 
     private static Result<TrueTypeFont, Error> Fail(Error error) => Result<TrueTypeFont, Error>.Failure(error);
 }

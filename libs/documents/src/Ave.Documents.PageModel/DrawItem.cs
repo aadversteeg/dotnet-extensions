@@ -41,8 +41,11 @@ public sealed record GlyphRun(TrueTypeFont Font, double FontSize, Color Color, P
 /// <summary>A glyph in a <see cref="GlyphRun"/>.</summary>
 /// <param name="Glyph">The glyph id.</param>
 /// <param name="X">The glyph origin's distance from the run's origin along the baseline, in points.</param>
-/// <param name="Text">The source characters the glyph shows (for copy, search and accessibility).</param>
-public sealed record PositionedGlyph(GlyphId Glyph, double X, string Text);
+/// <param name="Text">The source characters the glyph shows (for copy, search and accessibility); several for a
+/// ligature, empty for a glyph that only continues the previous one's text.</param>
+/// <param name="Y">The glyph origin's distance BELOW the baseline, in points (page coordinates, y down); negative
+/// for a mark raised above its base. Zero for almost every glyph.</param>
+public sealed record PositionedGlyph(GlyphId Glyph, double X, string Text, double Y = 0);
 
 /// <summary>
 /// Starts the content of a document node with a meaning (a paragraph, a heading). Every start has a matching

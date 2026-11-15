@@ -2,6 +2,7 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Text;
+using Ave.Documents.Fonts.OpenType;
 using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Fonts;
@@ -28,7 +29,8 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
         FrozenDictionary<int, GlyphId> characterMap,
         ImmutableArray<int> advanceWidths,
         ImmutableArray<int> glyphOffsets,
-        ReadOnlyMemory<byte> glyphData)
+        ReadOnlyMemory<byte> glyphData,
+        OpenTypeLayout layout)
     {
         Id = FontId.Of(fileData.Span);
         FileData = fileData;
@@ -39,6 +41,7 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
         _advanceWidths = advanceWidths;
         _glyphOffsets = glyphOffsets;
         _glyphData = glyphData;
+        Layout = layout;
     }
 
     /// <summary>The content digest of the font file.</summary>
@@ -55,6 +58,9 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
 
     /// <summary>What the font's licence allows for embedding.</summary>
     public EmbeddingPermissions Embedding { get; }
+
+    /// <summary>The advanced typography tables (GSUB, GPOS, GDEF, 'kern') that shaping uses.</summary>
+    public OpenTypeLayout Layout { get; }
 
     /// <summary>The number of glyphs ('maxp' numGlyphs); valid glyph ids are 0 to GlyphCount − 1.</summary>
     public int GlyphCount => _advanceWidths.Length;

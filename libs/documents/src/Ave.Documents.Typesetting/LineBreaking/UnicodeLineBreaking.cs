@@ -91,7 +91,7 @@ public static class UnicodeLineBreaking
         {
             // An invalid sequence decodes to U+FFFD with one code unit consumed, which keeps the walk going.
             Rune.DecodeFromUtf16(text.AsSpan(offset), out var rune, out var consumed);
-            var (original, traits) = UnicodeProperties.Of(rune.Value);
+            var (original, traits, _) = UnicodeProperties.Of(rune.Value);
             var resolved = original switch
             {
                 AI or SG or XX => AL,

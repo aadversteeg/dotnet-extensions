@@ -150,7 +150,7 @@ public class PaginationTests
         var run = page.Items.OfType<global::Ave.Documents.PageModel.GlyphRun>().Single();
         run.Origin.X.Should().Be(10);
         run.Origin.Y.Should().BeApproximately(10 + Ascent, 1e-9);
-        run.Glyphs.Select(glyph => glyph.X).Should().Equal(0, 1527 * 10 / 2000.0);
+        run.Glyphs.Select(glyph => glyph.X).Should().Equal(0, (1527 - 15) * 10 / 2000.0); // H-i kerned by -15 units (fontTools)
     }
 
     [Fact]

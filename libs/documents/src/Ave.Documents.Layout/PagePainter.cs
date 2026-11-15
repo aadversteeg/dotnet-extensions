@@ -53,7 +53,9 @@ public static class PagePainter
 
     /// <summary>
     /// A glyph run starts on the baseline, <see cref="TextFragment.Ascent"/> below the fragment's top edge;
-    /// each glyph's position is the sum of the advances before it.
+    /// each glyph's pen position is the sum of the advances before it, and the glyph is drawn at the pen plus its
+    /// own offset from shaping (GPOS placement, a mark on its base); y flips from the font's "up" to the page's
+    /// "down".
     /// </summary>
     private static GlyphRun Glyphs(TextFragment text, Point origin)
     {
@@ -61,7 +63,7 @@ public static class PagePainter
         var x = 0.0;
         foreach (var glyph in text.Glyphs)
         {
-            glyphs.Add(new PositionedGlyph(glyph.Glyph, x, glyph.Text));
+            glyphs.Add(new PositionedGlyph(glyph.Glyph, x + glyph.XOffset, glyph.Text, -glyph.YOffset));
             x += glyph.Advance;
         }
 

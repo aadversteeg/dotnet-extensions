@@ -61,7 +61,7 @@ public static class PdfReadBack
             .SelectMany(run => run.Glyphs.Select(glyph => new ReadLetter(
                 glyph.Text,
                 run.Origin.X + glyph.X,
-                page.Size.Height - run.Origin.Y,
+                page.Size.Height - (run.Origin.Y + glyph.Y),
                 run.Font.Names.PostScriptName,
                 run.FontSize)))
             .ToImmutableArray();

@@ -29,4 +29,8 @@ internal enum CharacterTraits : byte
 
     /// <summary>General_Category Cn, unassigned, used by LB30b.</summary>
     Unassigned = 1 << 5,
+
+    /// <summary>General_Category Mn, a nonspacing mark. Shaping treats its glyph as a mark when the font has no
+    /// glyph classes of its own (no GDEF table).</summary>
+    NonspacingMark = 1 << 6,
 }

@@ -3,16 +3,20 @@ using Ave.Documents.Fonts;
 namespace Ave.Documents.Typesetting;
 
 /// <summary>
-/// One glyph produced by shaping: which glyph, how far it advances the pen, and which source text it shows.
+/// One glyph produced by shaping: which glyph, how far it advances the pen, where it is drawn relative to the
+/// pen, and which source text it shows.
 /// </summary>
 /// <param name="Glyph">The glyph id in the run's font.</param>
-/// <param name="Advance">The horizontal advance, in points at the run's font size.</param>
-/// <param name="Text">The characters this glyph represents (its cluster). Stage 0 maps exactly one character to
-/// one glyph; ligatures (one glyph for "fi") will map several characters to one glyph. The PDF writer uses this
-/// to build the ToUnicode map, so text can be copied and searched.</param>
-public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text)
+/// <param name="Advance">The horizontal advance, in points at the run's font size, kerning included.</param>
+/// <param name="Text">The characters this glyph shows (its cluster): one character, several for a ligature ("fi"),
+/// or empty for the later glyphs of a one-to-many substitution. The PDF writer builds the ToUnicode map from it,
+/// so text can be copied and searched.</param>
+/// <param name="XOffset">How far the glyph is drawn to the right of the pen, in points (GPOS placement, mark
+/// attachment).</param>
+/// <param name="YOffset">How far the glyph is drawn ABOVE the baseline, in points (font convention, y up).</param>
+public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, double XOffset = 0, double YOffset = 0)
 {
     /// <summary>True for the glyph of a collapsed space U+0020: removed at the start and end of a line
-    /// (CSS Text 3 §4.1.2).</summary>
+    /// (CSS Text 3 §4.1.2), and stretched by justification.</summary>
     public bool IsSpace => Text == " ";
 }

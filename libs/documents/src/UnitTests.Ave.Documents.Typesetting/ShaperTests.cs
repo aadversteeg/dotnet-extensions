@@ -14,11 +14,23 @@ public class ShaperTests
     [Fact]
     public void Each_character_becomes_its_cmap_glyph_with_its_hmtx_advance_scaled_to_the_size()
     {
-        var glyphs = Shaper.Shape("Hi ", TestFonts.Regular, fontSize: 10).Value;
+        // "ab": a pair Lato does not kern (fontTools: PairPos format 2, classes 0 and 0, XAdvance 0).
+        var glyphs = Shaper.Shape("ab ", TestFonts.Regular, fontSize: 10).Value;
 
-        glyphs.Select(glyph => glyph.Glyph).Should().Equal(new GlyphId(15), new GlyphId(98), new GlyphId(2));
-        glyphs.Select(glyph => glyph.Advance).Should().Equal(1527 * 10 / 2000.0, 480 * 10 / 2000.0, 512 * 10 / 2000.0);
-        glyphs.Select(glyph => glyph.Text).Should().Equal("H", "i", " ");
+        glyphs.Select(glyph => glyph.Text).Should().Equal("a", "b", " ");
+        glyphs.Select(glyph => glyph.Advance).Should().Equal(
+            TestFonts.Regular.AdvanceWidth(glyphs[0].Glyph) * 10 / 2000.0, TestFonts.Regular.AdvanceWidth(glyphs[1].Glyph) * 10 / 2000.0, 512 * 10 / 2000.0);
+    }
+
+    [Fact]
+    public void A_kerning_pair_changes_the_advance_of_its_first_glyph()
+    {
+        // fontTools 4.68.0: Lato Regular GPOS lookup 0 (kern), PairPos format 2, H (class 7) + i (class 1): XAdvance -15.
+        var glyphs = Shaper.Shape("Hi", TestFonts.Regular, fontSize: 10).Value;
+
+        glyphs.Select(glyph => glyph.Glyph).Should().Equal(new GlyphId(15), new GlyphId(98));
+        glyphs[0].Advance.Should().Be((1527 - 15) * 10 / 2000.0);
+        glyphs[1].Advance.Should().Be(480 * 10 / 2000.0);
     }
 
     [Fact]

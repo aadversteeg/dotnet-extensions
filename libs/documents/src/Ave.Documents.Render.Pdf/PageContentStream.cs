@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.PageModel;
@@ -59,8 +60,10 @@ internal static class PageContentStream
     ];
 
     /// <summary>
-    /// A glyph run: one text object (§9.4) that selects the font and size, sets the colour, moves the text
-    /// origin to the start of the baseline and shows the glyphs.
+    /// A glyph run: one text object (§9.4) that selects the font and size and sets the colour; then, for each
+    /// stretch of glyphs at the same height (almost always the whole run; a raised or lowered mark makes its own
+    /// stretch), it moves the text origin to the first glyph of the stretch and shows the glyphs. TJ can move the
+    /// pen only horizontally (§9.4.3), hence one positioning per height.
     /// </summary>
     private static ImmutableArray<ContentOperation> Text(GlyphRun run, PdfName fontResource, double pageHeight) =>
     [
@@ -68,25 +71,50 @@ internal static class PageContentStream
         ContentOperators.BeginText(),
         ContentOperators.SetFont(fontResource, run.FontSize),
         FillColor(run.Color),
-        ContentOperators.MoveTextTo(run.Origin.X, pageHeight - run.Origin.Y),
-        ContentOperators.ShowGlyphsWithAdjustments(GlyphArray(run)),
+        .. SameHeightStretches(run.Glyphs).SelectMany(stretch => new[]
+        {
+            ContentOperators.MoveTextTo(run.Origin.X + stretch[0].X, pageHeight - (run.Origin.Y + stretch[0].Y)),
+            ContentOperators.ShowGlyphsWithAdjustments(GlyphArray(run, stretch)),
+        }),
         ContentOperators.EndText(),
         ContentOperators.RestoreState(),
     ];
 
+    /// <summary>The glyphs split into consecutive stretches with the same <see cref="PositionedGlyph.Y"/>.</summary>
+    private static IEnumerable<ImmutableArray<PositionedGlyph>> SameHeightStretches(ValueList<PositionedGlyph> glyphs)
+    {
+        var stretch = ImmutableArray.CreateBuilder<PositionedGlyph>();
+        foreach (var glyph in glyphs)
+        {
+            if (stretch.Count > 0 && stretch[0].Y != glyph.Y)
+            {
+                yield return stretch.ToImmutable();
+                stretch.Clear();
+            }
+
+            stretch.Add(glyph);
+        }
+
+        if (stretch.Count > 0)
+        {
+            yield return stretch.ToImmutable();
+        }
+    }
+
     /// <summary>
-    /// The TJ array (§9.4.3). After each glyph a viewer advances the pen by the glyph's /W width. Where the page
-    /// model puts a glyph somewhere else (kerning, in a later stage), a number is inserted that moves the pen:
+    /// The TJ array (§9.4.3) of one stretch, whose first glyph is at the text origin. After each glyph a viewer
+    /// advances the pen by the glyph's /W width. Where the page model puts a glyph somewhere else (kerning,
+    /// placement, justification), a number is inserted that moves the pen:
     /// by the formula of §9.4.4, a number n moves it by −n / 1000 × font size. Numbers smaller than 0.001 (a
     /// millionth of the font size) are rounding noise from summing widths, and are left out. Glyph codes are
     /// two bytes, big-endian: the glyph id under Identity-H.
     /// </summary>
-    private static ImmutableArray<PdfObject> GlyphArray(GlyphRun run)
+    private static ImmutableArray<PdfObject> GlyphArray(GlyphRun run, ImmutableArray<PositionedGlyph> stretch)
     {
         var items = ImmutableArray.CreateBuilder<PdfObject>();
         var codes = new List<byte>();
-        var pen = 0.0;
-        foreach (var glyph in run.Glyphs)
+        var pen = stretch[0].X;
+        foreach (var glyph in stretch)
         {
             var adjustment = Math.Round((pen - glyph.X) * 1000 / run.FontSize, 3);
             if (adjustment != 0)
