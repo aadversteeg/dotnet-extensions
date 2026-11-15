@@ -43,9 +43,10 @@ dotnet pack libs/functional/Ave.Extensions.Functional/Ave.Extensions.Functional.
 
 The file-system packages were developed past the versions on nuget.org: nuget.org has `0.6.0-preview.1`, the
 source is past `0.7.0-preview.9`. So the file-system minimum versions in `Directory.Packages.props`
-(`0.6.0-preview.1`) cannot be right before the first release from this repository, and a release-mode build of
-`Ave.Extensions.FileSystem`, `.Local`, `.InMemory`, `.MimeDetective` or `.AzureFileStorage` against them is not
-expected to work.
+(`0.6.0-preview.1`) cannot be right before the first release from this repository. In release mode
+`Ave.Extensions.FileSystem` does not compile against them. `.Local`, `.InMemory`, `.MimeDetective` and
+`.AzureFileStorage` do compile, but against an older Abstractions API than their code is written for, so a package
+built that way must not be published.
 
 The first wave therefore goes in dependency order, raising the minimum after each step:
 
