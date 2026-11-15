@@ -39,6 +39,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             _fileSystem = new AzureFileSystem(_mockLogger.Object, options, new UnixPathMapper());
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-015: MoveAsync should handle Azure SDK exceptions gracefully")]
         public async Task AZFS015()
         {
@@ -57,6 +59,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Should().NotBeNull();
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-016: CopyAsync should validate canonical paths")]
         public async Task AZFS016()
         {
@@ -74,6 +78,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             // The actual error will be Azure-related, not path validation
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-019: MoveAsync should fail when source doesn't exist")]
         public async Task AZFS019()
         {
@@ -89,6 +95,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             // The error should indicate path not found once we get past Azure connection issues
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-021: Generic operations should handle path security validation")]
         public async Task AZFS021()
         {

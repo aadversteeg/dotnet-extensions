@@ -71,6 +71,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Message.Should().Contain("subdirectory of itself");
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-011: MoveDirectoryAsync should handle Azure SDK exceptions gracefully")]
         public async Task AZFS011()
         {
@@ -89,6 +91,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Should().NotBeNull();
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-012: CopyDirectoryAsync should validate canonical paths")]
         public async Task AZFS012()
         {

@@ -417,8 +417,13 @@ Against the `netstandard2.0` build of the libraries (see the repository README):
 dotnet test extensions.slnx -p:UseNs20=true
 ```
 
-`UnitTests.Extensions.FileSystem.AzureFileStorage` needs no Azure account, but about half of its tests wait for
-the Azure SDK to give up on a storage account that does not exist, so the project takes about two minutes.
+`UnitTests.Extensions.FileSystem.AzureFileStorage` needs no Azure account, but 9 of its tests call the Azure SDK
+against a storage account host name that does not exist and wait for the SDK to give up, so the project takes
+about two minutes. Those tests have the trait `Category=Network`; CI leaves them out. To do the same locally:
+
+```shell
+dotnet test extensions.slnx --filter "Category!=Network"
+```
 
 ### The netstandard2.0 build
 

@@ -54,6 +54,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Message.Should().Contain("Source and destination paths are the same");
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-002: MoveFileAsync should validate canonical paths")]
         public async Task AZFS002()
         {
@@ -71,6 +73,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             // The actual error will be Azure-related, not path validation
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-003: MoveFileAsync should handle Azure SDK exceptions gracefully")]
         public async Task AZFS003()
         {

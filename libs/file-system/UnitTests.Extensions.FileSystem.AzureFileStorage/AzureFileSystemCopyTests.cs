@@ -39,6 +39,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             _fileSystem = new AzureFileSystem(_mockLogger.Object, options, new UnixPathMapper());
         }
         
+        // Calls the Azure SDK against a real host name and waits for its retries (20-50 s): CI excludes Category=Network
+        [Trait("Category", "Network")]
         [Fact(DisplayName = "AZFS-004: CopyFileAsync should handle Azure SDK exceptions gracefully")]
         public async Task AZFS004()
         {
