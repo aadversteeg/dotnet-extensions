@@ -518,6 +518,50 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.Path);
         }
 
+        [Fact(DisplayName = "IMFS-040: OpenWriteAsync creates file when disposed with await using")]
+        public async Task IMFS040()
+        {
+            // Arrange
+            var path = "/test/async.txt";
+            var content = "Hello, async!";
+
+            // Act
+            var result = await _fileSystem.OpenWriteAsync(path.ToCanonicalPath());
+            result.IsSuccess.Should().BeTrue();
+
+            await using (var stream = result.Value)
+            {
+                var bytes = Encoding.UTF8.GetBytes(content);
+                await stream.WriteAsync(bytes, 0, bytes.Length);
+            }
+
+            // Assert
+            var readResult = await _fileSystem.ReadAllTextAsync(path.ToCanonicalPath());
+            readResult.IsSuccess.Should().BeTrue();
+            readResult.Value.Should().Be(content);
+        }
+
+        [Fact(DisplayName = "IMFS-041: The write stream implements IAsyncDisposable itself, so disposing it through IAsyncDisposable writes asynchronously")]
+        public async Task IMFS041()
+        {
+            // Arrange - the stream writes its content when it is disposed. If the IAsyncDisposable
+            // implementation were the one inherited from Stream, it would fall back to the synchronous
+            // Dispose. netstandard2.0's Stream has no DisposeAsync to override, so the netstandard2.0
+            // asset implements IAsyncDisposable on the stream type itself.
+            var result = await _fileSystem.OpenWriteAsync("/test/mapping.txt".ToCanonicalPath());
+            result.IsSuccess.Should().BeTrue();
+            var stream = result.Value;
+
+            // Act
+            var mapping = stream.GetType().GetInterfaceMap(typeof(IAsyncDisposable));
+
+            // Assert
+            mapping.TargetMethods.Should().ContainSingle()
+                .Which.DeclaringType.Should().Be(stream.GetType());
+            await ((IAsyncDisposable)stream).DisposeAsync();
+            (await _fileSystem.FileExistsAsync("/test/mapping.txt".ToCanonicalPath())).Value.Should().BeTrue();
+        }
+
         public void Dispose()
         {
             _fileSystem?.Dispose();
