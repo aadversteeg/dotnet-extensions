@@ -50,25 +50,3 @@ public sealed record LayoutTable(ValueList<ScriptTable> Scripts, ValueList<Featu
             .Select(index => Lookups[index])];
     }
 }
-
-/// <summary>A script table: its tag and its default language system (OpenType spec, "Script table").</summary>
-/// <param name="Tag">The script tag, for example <c>latn</c> or <c>DFLT</c>.</param>
-/// <param name="DefaultLanguage">The default language system, or null when the font has none for this script.</param>
-public sealed record ScriptTable(string Tag, LanguageSystem? DefaultLanguage);
-
-/// <summary>A language system table (OpenType spec, "Language system table").</summary>
-/// <param name="RequiredFeature">The index of the feature that is always applied, or null ("0xFFFF if no
-/// required features").</param>
-/// <param name="FeatureIndices">The indices of its features in the feature list.</param>
-public sealed record LanguageSystem(int? RequiredFeature, ValueList<int> FeatureIndices);
-
-/// <summary>A feature (OpenType spec, "Feature table"): its tag and the lookups that implement it.</summary>
-/// <param name="Tag">The feature tag, for example <c>kern</c>.</param>
-/// <param name="LookupIndices">Indices into the lookup list.</param>
-public sealed record FeatureTable(string Tag, ValueList<int> LookupIndices);
-
-/// <summary>A lookup (OpenType spec, "Lookup table"): subtables of one lookup type, tried in order.</summary>
-/// <param name="Index">Its index in the lookup list.</param>
-/// <param name="Flags">The lookup flags: which glyphs the lookup skips.</param>
-/// <param name="Subtables">The subtables, already resolved through extension subtables.</param>
-public sealed record Lookup(int Index, LookupFlags Flags, ValueList<LookupSubtable> Subtables);
