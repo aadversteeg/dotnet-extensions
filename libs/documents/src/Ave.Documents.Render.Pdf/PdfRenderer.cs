@@ -36,16 +36,28 @@ public static class PdfRenderer
     public static Result<ImmutableArray<byte>, Error> Render(PageDocument document, PdfRenderOptions options) =>
         PageModelRules.Check(document)
             .OnSuccessBind(validDocument => ConformanceRules.Check(validDocument, options.Profile))
-            .OnSuccessBind(checkedDocument => checkedDocument.Pages.Select((page, index) => (page, index))
-                .TraverseAll(page => PageEvents.Read(page.page, page.index + 1)))
-            .OnSuccessCombine(pages => options.Profile.IsTagged
-                ? StructureTree.Build(pages).OnSuccessBind(tree => ConformanceRules.CheckStructure(tree, options.Profile)).OnSuccessMap(tree => (StructureTree?)tree)
-                : Result<StructureTree?, Error>.Success(null))
+            .OnSuccessBind(ReadEvents)
+            .OnSuccessCombine(pages => Structure(pages, options.Profile))
             .OnSuccessBind((pages, tree) => Write(document, options, pages, tree));
+
+    /// <summary>Every page's markers read into events (<see cref="PageEvents"/>), which also checks that they nest.</summary>
+    private static Result<ImmutableArray<ImmutableArray<PageEvent>>, Error> ReadEvents(PageDocument document) =>
+        document.Pages.Select((page, index) => (page, index))
+            .TraverseAll(page => PageEvents.Read(page.page, page.index + 1))
+            .OnSuccessMap(pages => pages.ToImmutableArray());
+
+    /// <summary>For a tagged profile, the structure tree built from the events and checked against the profile's
+    /// structure rules; for an untagged one, none.</summary>
+    private static Result<StructureTree?, Error> Structure(ImmutableArray<ImmutableArray<PageEvent>> pages, PdfProfile profile) =>
+        profile.IsTagged
+            ? StructureTree.Build(pages)
+                .OnSuccessBind(tree => ConformanceRules.CheckStructure(tree, profile))
+                .OnSuccessMap(tree => (StructureTree?)tree)
+            : Result<StructureTree?, Error>.Success(null);
 
     /// <summary>All objects of the file, in plan order, then the file itself.</summary>
     private static Result<ImmutableArray<byte>, Error> Write(
-        PageDocument document, PdfRenderOptions options, IReadOnlyList<ImmutableArray<PageEvent>> pages, StructureTree? tree)
+        PageDocument document, PdfRenderOptions options, ImmutableArray<ImmutableArray<PageEvent>> pages, StructureTree? tree)
     {
         var profile = options.Profile;
         var attachments = document.Metadata.Attachments;
@@ -62,12 +74,13 @@ public static class PdfRenderer
         var resources = new ResourceNames(
             fonts.ToImmutableDictionary(used => used.Font),
             images.ToImmutableDictionary(used => used.Image));
-        var marks = tree?.Marks ?? StructureTree.Unmarked(pages);
+        var marked = tree?.Marks ?? StructureTree.Unmarked(pages);
+        var shared = new SharedResources(plan, fonts, images, resources);
 
         var fontObjects = fonts.Select((used, index) => (used, index))
             .TraverseAll(font => FontEmbedding.Build(font.used, plan.Font(font.index)));
         var pageObjects = document.Pages.Select((page, index) => (page, index))
-            .TraverseAll(page => PageObjects(page.page, pages[page.index], marks[page.index], plan, page.index, fonts, images, resources));
+            .TraverseAll(page => PageObjects(new PageInput(page.page, page.index, marked[page.index]), shared));
 
         var metadataObjects = plan.HasMetadata
             ? Metadata(document.Metadata, options, plan).OnSuccessMap(stream => ImmutableArray.Create(stream))
@@ -170,18 +183,13 @@ public static class PdfRenderer
     /// A page object (§7.7.3.3, Table 30) and its content stream. The resources (§7.8.3, Table 33) name only the fonts
     /// and images this page uses. MediaBox is the page size in points with the origin at the bottom-left. In a tagged
     /// file, <c>/StructParents</c> is the page's key in the parent tree (§14.7.4.4) and <c>/Tabs /S</c> makes the tab
-    /// order follow the structure (§12.5, Table 30; ISO 14289-1 §7.18.3).
+    /// order follow the structure (§7.7.3.3, Table 30, <c>/Tabs</c>, see §12.5; ISO 14289-1 §7.18.3, veraPDF rule
+    /// 7.18.3-1).
     /// </summary>
-    private static Result<ImmutableArray<IndirectObject>, Error> PageObjects(
-        Page page,
-        ImmutableArray<PageEvent> events,
-        ImmutableArray<ContentMark> marks,
-        ObjectPlan plan,
-        int pageIndex,
-        ImmutableArray<UsedFont> fonts,
-        ImmutableArray<UsedImage> images,
-        ResourceNames resources)
+    private static Result<ImmutableArray<IndirectObject>, Error> PageObjects(PageInput input, SharedResources shared)
     {
+        var (page, pageIndex) = (input.Page, input.Index);
+        var (plan, fonts, images) = (shared.Plan, shared.Fonts, shared.Images);
         var numbers = plan.Page(pageIndex);
         var fontsHere = page.Items.OfType<GlyphRun>().Select(run => run.Font).ToHashSet();
         var imagesHere = page.Items.OfType<DrawImage>().Select(draw => draw.Image).ToHashSet();
@@ -195,7 +203,7 @@ public static class PdfRenderer
             .Select(image => (image.used.ResourceName, (PdfObject?)new PdfReference(plan.Image(image.index).Image)))
             .ToImmutableArray();
 
-        return PageContentStream.Build(page, events, marks, resources).OnSuccessMap(content => ImmutableArray.Create<IndirectObject>(
+        return PageContentStream.Build(page, input.Runs, shared.Names).OnSuccessMap(content => ImmutableArray.Create<IndirectObject>(
             new IndirectValue(numbers.Page, PdfDictionary.Of(
                 ("Type", new PdfName("Page")),
                 ("Parent", new PdfReference(ObjectPlan.PageTree)),
@@ -209,6 +217,19 @@ public static class PdfRenderer
             new IndirectStream(numbers.Contents, new PdfStream(PdfDictionary.Of(), content, StreamEncoding.Flate))));
     }
 }
+
+/// <summary>One page to write.</summary>
+/// <param name="Page">The page.</param>
+/// <param name="Index">Its index, 0-based.</param>
+/// <param name="Runs">Its content runs, each with its mark.</param>
+internal sealed record PageInput(Page Page, int Index, ImmutableArray<MarkedRun> Runs);
+
+/// <summary>What every page of the file shares: the object plan, the used fonts and images, and their resource names.</summary>
+/// <param name="Plan">The object numbers.</param>
+/// <param name="Fonts">The used fonts, in object order.</param>
+/// <param name="Images">The used images, in object order.</param>
+/// <param name="Names">The resource names of both.</param>
+internal sealed record SharedResources(ObjectPlan Plan, ImmutableArray<UsedFont> Fonts, ImmutableArray<UsedImage> Images, ResourceNames Names);
 
 /// <summary>Every font and image of the document by its resource name, for the content streams.</summary>
 /// <param name="Fonts">The used fonts.</param>

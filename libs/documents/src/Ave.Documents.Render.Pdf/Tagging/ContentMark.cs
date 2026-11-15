@@ -3,6 +3,12 @@ using Ave.Documents.Pdf;
 
 namespace Ave.Documents.Render.Pdf.Tagging;
 
+/// <summary>A content run of a page together with how it is marked: the two are made together, by the structure tree
+/// (or <see cref="StructureTree.Unmarked"/>), so the content stream can never pair a run with another run's mark.</summary>
+/// <param name="Run">The run.</param>
+/// <param name="Mark">Its mark.</param>
+internal sealed record MarkedRun(ContentRun Run, ContentMark Mark);
+
 /// <summary>
 /// How one <see cref="ContentRun"/> is marked in the content stream: not at all (untagged PDF), as content of a
 /// structure element, or as an artifact. Every marked run is one marked-content sequence of its own, so tagged

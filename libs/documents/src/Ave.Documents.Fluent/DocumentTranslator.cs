@@ -229,11 +229,17 @@ public static class DocumentTranslator
     /// </summary>
     private static Result<PageStyle, Error> PageStyle(PageSetup page, NodeId firstId, Inherited inherited)
     {
+        // Each area's root gets the next id, its content the ids after it; an absent area takes none.
         var areas = new[] { page.Header, page.Footer, page.FirstPageHeader, page.FirstPageFooter };
-        var ids = areas.Aggregate(
-            (Next: firstId.Value, Ids: ImmutableArray<int>.Empty),
-            (state, area) => (state.Next + (area is null ? 0 : 1 + NodeCount(area.Content)), state.Ids.Add(state.Next)));
-        return areas.Select((area, index) => (area, id: ids.Ids[index]))
+        var ids = new int[areas.Length];
+        var next = firstId.Value;
+        for (var index = 0; index < areas.Length; index++)
+        {
+            ids[index] = next;
+            next += areas[index] is { } area ? 1 + NodeCount(area.Content) : 0;
+        }
+
+        return areas.Select((area, index) => (area, id: ids[index]))
             .TraverseAll(pair => Area(pair.area, new NodeId(pair.id), inherited))
             .OnSuccessMap(translated =>
             {

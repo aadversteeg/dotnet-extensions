@@ -22,12 +22,11 @@ internal static class PageContentStream
     /// order, inside its marked-content sequence when the run is marked (tagged PDF, ISO 32000-1 §14.6 and §14.8).
     /// </summary>
     /// <param name="page">The page.</param>
-    /// <param name="events">The page's events.</param>
-    /// <param name="marks">How each of its content runs is marked, in order.</param>
+    /// <param name="runs">The page's content runs, each with its mark, in order.</param>
     /// <param name="resources">The used fonts and images, to find each one's resource name.</param>
     /// <returns>The stream data, or an error for a number that is not finite.</returns>
-    public static Result<ImmutableArray<byte>, Error> Build(Page page, ImmutableArray<PageEvent> events, ImmutableArray<ContentMark> marks, ResourceNames resources) =>
-        ContentStream.Serialize(events.OfType<ContentRun>().Zip(marks).SelectMany(run => Marked(run.Second, run.First.Items.SelectMany(item => Operations(item, page, resources)))));
+    public static Result<ImmutableArray<byte>, Error> Build(Page page, ImmutableArray<MarkedRun> runs, ResourceNames resources) =>
+        ContentStream.Serialize(runs.SelectMany(marked => Marked(marked.Mark, marked.Run.Items.SelectMany(item => Operations(item, page, resources)))));
 
     private static IEnumerable<ContentOperation> Marked(ContentMark mark, IEnumerable<ContentOperation> operations) =>
         mark.Begin() is { } begin ? [begin, .. operations, ContentOperators.EndMarkedContent()] : operations;

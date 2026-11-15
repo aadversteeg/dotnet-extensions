@@ -24,7 +24,7 @@ internal sealed record StructureTree(
     ImmutableArray<StructureElement> Elements,
     ImmutableArray<int> TopLevel,
     ImmutableArray<ImmutableArray<int>> ParentTree,
-    ImmutableArray<ImmutableArray<ContentMark>> Marks)
+    ImmutableArray<ImmutableArray<MarkedRun>> Marks)
 {
     /// <summary>
     /// Builds the tree. Reading order is document order (the order of the markers), which is also the order of the
@@ -42,13 +42,13 @@ internal sealed record StructureTree(
         var indexOfNode = new Dictionary<NodeId, int>();
         var topLevel = ImmutableArray.CreateBuilder<int>();
         var parentTree = ImmutableArray.CreateBuilder<ImmutableArray<int>>();
-        var marks = ImmutableArray.CreateBuilder<ImmutableArray<ContentMark>>();
+        var marks = ImmutableArray.CreateBuilder<ImmutableArray<MarkedRun>>();
 
         for (var page = 0; page < pages.Count; page++)
         {
             var open = new Stack<int>();
             var owners = ImmutableArray.CreateBuilder<int>();
-            var pageMarks = ImmutableArray.CreateBuilder<ContentMark>();
+            var pageMarks = ImmutableArray.CreateBuilder<MarkedRun>();
             foreach (var pageEvent in pages[page])
             {
                 switch (pageEvent)
@@ -88,17 +88,17 @@ internal sealed record StructureTree(
                     case StructureClosed:
                         open.Pop();
                         break;
-                    case ContentRun { Artifact: { } kind }:
-                        pageMarks.Add(new ArtifactContent(kind));
+                    case ContentRun { Artifact: { } kind } run:
+                        pageMarks.Add(new MarkedRun(run, new ArtifactContent(kind)));
                         break;
                     case ContentRun when open.Count == 0:
                         return Result<StructureTree, Error>.Failure(
                             new Error(DocumentErrorCodes.Pdf.Conformance.Tagged.UnmarkedContent, $"Page {page + 1} has content outside every structure node and every artifact.")
                                 .With(ErrorMetadataKeys.Value, (page + 1).ToString(CultureInfo.InvariantCulture)));
-                    case ContentRun:
+                    case ContentRun tagged:
                         var owner = elements[open.Peek()];
                         owner.Kids.Add(new ContentKid(page, owners.Count));
-                        pageMarks.Add(new TaggedContent(owner.Type, owners.Count));
+                        pageMarks.Add(new MarkedRun(tagged, new TaggedContent(owner.Type, owners.Count)));
                         owners.Add(open.Peek());
                         break;
                 }
@@ -118,8 +118,8 @@ internal sealed record StructureTree(
     /// <summary>The marks of untagged output: every run unmarked.</summary>
     /// <param name="pages">The events of every page.</param>
     /// <returns>Per page, <see cref="ContentMark.None"/> for each run.</returns>
-    public static ImmutableArray<ImmutableArray<ContentMark>> Unmarked(IReadOnlyList<ImmutableArray<PageEvent>> pages) =>
-        [.. pages.Select(events => events.OfType<ContentRun>().Select(_ => ContentMark.None).ToImmutableArray())];
+    public static ImmutableArray<ImmutableArray<MarkedRun>> Unmarked(IReadOnlyList<ImmutableArray<PageEvent>> pages) =>
+        [.. pages.Select(events => events.OfType<ContentRun>().Select(run => new MarkedRun(run, ContentMark.None)).ToImmutableArray())];
 
     private static Result<StructureTree, Error> Invalid(StructureStart start, int page, string problem) =>
         Result<StructureTree, Error>.Failure(
