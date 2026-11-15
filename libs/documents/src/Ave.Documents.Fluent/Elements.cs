@@ -138,6 +138,19 @@ public static class Elements
         [CallerLineNumber] int callerLine = 0) =>
         new(text, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
 
+    /// <summary>
+    /// A forced line break inside a paragraph, as HTML's <c>br</c>: the text after it starts a new line. It is the line
+    /// separator U+2028, a mandatory break (UAX #14, class BK), which white-space collapsing keeps and which draws
+    /// nothing; a line that ends with it is not justified (CSS Text 3 §6.3).
+    /// </summary>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span LineBreak(
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(char.ConvertFromUtf32(0x2028), Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
     /// <summary>A span of bold text (weight 700) inside a paragraph: <c>Text(text).Bold()</c>.</summary>
     /// <param name="text">The text.</param>
     /// <param name="callerFile">Filled in by the compiler.</param>

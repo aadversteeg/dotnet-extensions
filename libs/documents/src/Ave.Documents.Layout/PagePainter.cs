@@ -54,7 +54,7 @@ public static class PagePainter
     {
         BoxFragment box => Box(box, origin, inArtifact),
         LineFragment line => Children(line.Children, origin, inArtifact),
-        TextFragment text => [Glyphs(text, origin)],
+        TextFragment text => Glyphs(text, origin) is { Glyphs.Count: > 0 } run ? [run] : [],
         ImageFragment image => [new DrawImage(new Rect(origin, image.Size), image.Image.Image)],
         RuleFragment rule => Decoration([new FillRectangle(new Rect(origin, rule.Size), rule.Color)], inArtifact),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),

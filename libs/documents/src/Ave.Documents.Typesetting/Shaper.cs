@@ -93,13 +93,16 @@ public static class Shaper
     /// <summary>
     /// The glyph 'cmap' gives a character, before any substitution. A
     /// default-ignorable character needs no glyph: it is invisible whatever the font has for it (HarfBuzz hides
-    /// them the same way, hb-ot-shape <c>hb_ot_hide_default_ignorables</c>), so it is never missing.
+    /// them the same way, hb-ot-shape <c>hb_ot_hide_default_ignorables</c>), so it is never missing. Nor does a
+    /// mandatory line break (UAX #14 classes BK, CR, LF and NL, such as the line separator U+2028 that
+    /// <c>LineBreak()</c> writes): it ends a line and draws nothing.
     /// </summary>
     private static Result<GlyphItem, Error> InitialGlyph(Rune character, int index, TrueTypeFont font)
     {
         var filter = new GlyphFilter(font.Layout.Definitions);
-        var traits = UnicodeProperties.Of(character.Value).Traits;
-        if ((traits & CharacterTraits.DefaultIgnorable) != 0)
+        var properties = UnicodeProperties.Of(character.Value);
+        var traits = properties.Traits;
+        if ((traits & CharacterTraits.DefaultIgnorable) != 0 || properties.Class is LineBreakClass.BK or LineBreakClass.CR or LineBreakClass.LF or LineBreakClass.NL)
         {
             return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), character.ToString(), GlyphClass.Base) { IsDefaultIgnorable = true });
         }
