@@ -42,7 +42,7 @@ See [USER_SECRETS_SETUP.md](USER_SECRETS_SETUP.md) for detailed setup instructio
 
 1. Navigate to this project directory:
    ```bash
-   cd tst/IntegrationTests.AzureFileStorage
+   cd libs/file-system/integration-tests/IntegrationTests.AzureFileStorage
    ```
 
 2. Set your Azure credentials:

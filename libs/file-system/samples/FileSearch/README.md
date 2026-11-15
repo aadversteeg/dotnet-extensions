@@ -153,4 +153,4 @@ dotnet run -- --pattern "*.cs" --larger-than 1KB --format json
 
 - [FileCounter](../FileCounter/) - Count files and directories with detailed statistics
 - [DirSize](../DirSize/) - Analyze directory sizes and generate comprehensive reports
-- [Ave.Extensions.FileSystem](../../src/Ave.Extensions.FileSystem/) - Core file system library
+- [Ave.Extensions.FileSystem](../../Ave.Extensions.FileSystem/) - Core file system library

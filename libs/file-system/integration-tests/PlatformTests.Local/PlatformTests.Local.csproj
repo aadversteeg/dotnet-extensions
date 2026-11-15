@@ -14,15 +14,14 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="AutoFixture" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Xunit.SkippableFact" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
-    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
-    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
+    <ProjectReference Include="..\..\Ave.Extensions.FileSystem.Abstractions\Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
+    <ProjectReference Include="..\..\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
+    <ProjectReference Include="..\..\Ave.Extensions.FileSystem.InMemory\Ave.Extensions.FileSystem.InMemory.csproj" />
   </ItemGroup>
 
 </Project>

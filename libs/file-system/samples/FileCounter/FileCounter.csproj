@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
-    <ProjectReference Include="..\..\src\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
+    <ProjectReference Include="..\..\Ave.Extensions.FileSystem\Ave.Extensions.FileSystem.csproj" />
+    <ProjectReference Include="..\..\Ave.Extensions.FileSystem.Local\Ave.Extensions.FileSystem.Local.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 

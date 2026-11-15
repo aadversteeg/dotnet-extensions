@@ -9,7 +9,7 @@ User Secrets is a .NET feature that allows you to store sensitive configuration 
 ### 1. Navigate to the Integration Test Project
 
 ```bash
-cd src/IntegrationTests.Extensions.FileSystem.AzureFileStorage
+cd libs/file-system/integration-tests/IntegrationTests.AzureFileStorage
 ```
 
 ### 2. Initialize User Secrets (if not already done)
@@ -129,7 +129,7 @@ This means your user secrets will override the template `appsettings.test.json` 
 
 ### "No secrets found" or tests are skipped
 
-1. Verify you're in the correct directory: `src/IntegrationTests.Extensions.FileSystem.AzureFileStorage`
+1. Verify you're in the correct directory: `libs/file-system/integration-tests/IntegrationTests.AzureFileStorage`
 2. Check your secrets: `dotnet user-secrets list`
 3. Ensure the key names are exact: `AzureFileStorage:AccountName` (case-sensitive)
 

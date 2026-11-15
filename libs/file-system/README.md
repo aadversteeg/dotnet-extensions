@@ -414,7 +414,7 @@ cd src && dotnet test
 The repository includes performance benchmarks using BenchmarkDotNet:
 
 ```shell
-cd tst/Benchmarks && dotnet run -c Release
+cd libs/file-system/benchmarks/Benchmarks && dotnet run -c Release
 ```
 
 Available benchmark classes:
@@ -425,7 +425,7 @@ Available benchmark classes:
 
 Run a specific benchmark:
 ```shell
-cd tst/Benchmarks && dotnet run -c Release -- --filter "*LocalFileSystem*"
+cd libs/file-system/benchmarks/Benchmarks && dotnet run -c Release -- --filter "*LocalFileSystem*"
 ```
 
 ### Running Platform Tests
@@ -433,7 +433,7 @@ cd tst/Benchmarks && dotnet run -c Release -- --filter "*LocalFileSystem*"
 Platform-specific tests verify cross-platform behavior:
 
 ```shell
-cd tst/Platform && dotnet test
+cd libs/file-system/integration-tests/PlatformTests.Local && dotnet test
 ```
 
 ### Publishing a New Version
