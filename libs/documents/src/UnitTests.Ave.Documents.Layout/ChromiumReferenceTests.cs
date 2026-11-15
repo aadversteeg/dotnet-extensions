@@ -117,8 +117,9 @@ public class ChromiumReferenceTests
                 (string[])["head", .. Enumerable.Range(17, 4).Select(i => $"r{i:00}")],
             ],
             options => options.WithStrictOrdering());
-        var firstBodyRowTops = pages.Select(page => Boxes(page.Root.Fragment, SemanticRole.TableRow).ElementAt(1)).Select(row => row.Size.Height);
-        firstBodyRowTops.Should().AllSatisfy(height => height.Should().BeApproximately(12 + 4 + 0.75, 1e-9, "line + padding + two half lines"));
+        // The first body row is equally high on every page, so it starts where r01 starts: after the repeated header.
+        var firstBodyRowHeights = pages.Select(page => Boxes(page.Root.Fragment, SemanticRole.TableRow).ElementAt(1)).Select(row => row.Size.Height);
+        firstBodyRowHeights.Should().AllSatisfy(height => height.Should().BeApproximately(12 + 4 + 0.75, 1e-9, "line + padding + two half lines"));
     }
 
     [Fact]

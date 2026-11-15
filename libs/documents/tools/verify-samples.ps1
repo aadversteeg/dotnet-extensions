@@ -20,6 +20,12 @@
        by poppler at 100 dpi, to out/samples/sbs.
     Tools run in Docker only; nothing here is part of the engine. Needs Docker and network access for apk.
 
+.PARAMETER ToolImage
+    The Alpine image the independent checks run in, pinned by digest (Alpine 3.22.8), with the tool packages pinned
+    to their versions in it (qpdf 12.2.0, poppler 25.04.0, MuPDF 1.25.6, fontTools 4.58.0): a check never runs with
+    another tool than the one it was written for. A pinned package that the repository no longer has fails the
+    script instead of falling back to another version.
+
 .PARAMETER VeraPdfImage
     The veraPDF image; pinned to 1.30.4 by digest, the same as the reference tests (TestSupport/VeraPdf.cs).
 
@@ -31,6 +37,7 @@
 #>
 [CmdletBinding()]
 param(
+    [string]$ToolImage = 'alpine@sha256:49340b346798875b5592e5d420241f2f9cfba5f47e62ebb1446a1b34734e898f',
     [string]$VeraPdfImage = 'verapdf/cli@sha256:f085855d442ad415e79fabbabcdd1803c2db4ee097cd5b94506c95ecdcfa1728',
     [string]$PocPdfs = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'reporting-poc/out')
 )
@@ -73,8 +80,8 @@ if ($LASTEXITCODE -ne 0) { throw 'samples failed' }
 
 Write-Host '== 4. independent checks in Docker'
 $script = @'
-set -e
-apk add -q --no-cache qpdf poppler-utils mupdf-tools py3-fonttools >/dev/null
+set -eu -o pipefail
+apk add -q --no-cache qpdf=12.2.0-r0 poppler-utils=25.04.0-r0 mupdf-tools=1.25.6-r1 py3-fonttools=4.58.0-r0 >/dev/null
 echo "qpdf $(qpdf --version | head -1 | cut -d' ' -f3), $(pdftoppm -v 2>&1 | head -1), mutool $(mutool -v 2>&1 | head -1 | cut -d' ' -f3), fontTools $(python3 -c 'import fontTools; print(fontTools.version)')"
 mkdir -p /work/png /work/fonts
 for f in /work/*.pdf; do
@@ -92,15 +99,22 @@ for f in /work/*.pdf; do
 done
 ls /work/png | sed 's|^|   png: |'
 '@
-docker run --rm -v "${samples}:/work" alpine:latest sh -c $script
+docker run --rm -v "${samples}:/work" $ToolImage sh -c $script
 if ($LASTEXITCODE -ne 0) { throw 'independent checks failed' }
 
 Write-Host "== 5. veraPDF $VeraPdfImage"
 $pdfs = Get-ChildItem $samples -Filter *.pdf | Sort-Object Name | ForEach-Object { "/data/$($_.Name)" }
 $failed = @()
 foreach ($flavour in '3b', '3a', 'ua1') {
-    $report = [xml]((docker run --rm -v "${samples}:/data:ro" $VeraPdfImage --flavour $flavour --format mrr @pdfs) -join "`n")
-    foreach ($job in $report.report.jobs.job) {
+    $output = (docker run --rm -v "${samples}:/data:ro" $VeraPdfImage --flavour $flavour --format mrr @pdfs) -join "`n"
+    $start = $output.IndexOf('<?xml')
+    if ($start -lt 0) { throw "veraPDF wrote no report for $flavour" }
+    $report = [xml]$output.Substring($start)
+    $jobs = @($report.report.jobs.job)
+    # An empty or short report must not pass as "no failures": every file has to be validated.
+    if ($jobs.Count -ne $pdfs.Count) { throw "veraPDF $flavour reported $($jobs.Count) of $($pdfs.Count) files" }
+    foreach ($job in $jobs) {
+        if ($null -eq $job.validationReport) { throw "veraPDF $flavour did not validate $($job.item.name)" }
         $name = Split-Path -Leaf $job.item.name
         $validation = $job.validationReport
         $verdict = if ($validation.isCompliant -eq 'true') { 'PASS' } else { 'FAIL' }
@@ -115,22 +129,22 @@ foreach ($flavour in '3b', '3a', 'ua1') {
 if ($failed.Count -gt 0) { throw "veraPDF: not compliant: $($failed -join ', ')" }
 
 $extract = @'
-set -e
-apk add -q --no-cache qpdf >/dev/null
+set -eu -o pipefail
+apk add -q --no-cache qpdf=12.2.0-r0 >/dev/null
 for f in /work/timesheet-*.pdf; do
   name=$(basename "$f" .pdf)
   qpdf --show-attachment=timesheet.xml "$f" > "/tmp/$name.xml"
   if cmp -s "/tmp/$name.xml" "/work/$name.attachment.timesheet.xml"; then echo "   attachment $name: byte-identical ($(wc -c < "/tmp/$name.xml") bytes)"; else echo "   attachment $name: DIFFERS"; exit 1; fi
 done
 '@
-docker run --rm -v "${samples}:/work:ro" alpine:latest sh -c $extract
+docker run --rm -v "${samples}:/work:ro" $ToolImage sh -c $extract
 if ($LASTEXITCODE -ne 0) { throw 'attachment round trip failed' }
 
 if (Test-Path $PocPdfs) {
     Write-Host "== 6. side by side with the PoC's Typst output ($PocPdfs)"
     $compose = @'
-set -e
-apk add -q --no-cache poppler-utils py3-pillow >/dev/null
+set -eu -o pipefail
+apk add -q --no-cache poppler-utils=25.04.0-r0 py3-pillow=11.2.1-r0 >/dev/null
 mkdir -p /work/sbs /tmp/poc
 for f in /poc/sample-*.typst.pdf; do pdftoppm -r 100 -png "$f" "/tmp/poc/$(basename "$f" .pdf)"; done
 python3 - <<'PY'
@@ -152,7 +166,7 @@ for set_ in ("normal", "long", "edge"):
             print("   side by side:", os.path.basename(path), "ours" if left else "-", "| typst" if right else "| -")
 PY
 '@
-    docker run --rm -v "${samples}:/work" -v "${PocPdfs}:/poc:ro" alpine:latest sh -c $compose
+    docker run --rm -v "${samples}:/work" -v "${PocPdfs}:/poc:ro" $ToolImage sh -c $compose
     if ($LASTEXITCODE -ne 0) { throw 'side-by-side rendering failed' }
 }
 else {

@@ -15,6 +15,10 @@ namespace UnitTests.Ave.Documents.Samples;
 [Trait("Category", "Reference")]
 public sealed class ReferenceValidationTests : IClassFixture<ReferenceValidationTests.SampleFolder>
 {
+    /// <summary>The image qpdf runs in: Alpine 3.22.8 pinned by digest, with the qpdf package pinned to 12.2.0, the same
+    /// as tools/verify-samples.ps1.</summary>
+    private const string ToolImage = "alpine@sha256:49340b346798875b5592e5d420241f2f9cfba5f47e62ebb1446a1b34734e898f";
+
     private readonly SampleFolder _samples;
 
     public ReferenceValidationTests(SampleFolder samples) => _samples = samples;
@@ -73,8 +77,8 @@ public sealed class ReferenceValidationTests : IClassFixture<ReferenceValidation
         var extracted = System.IO.Path.Combine(_samples.Path, "extracted-timesheet.xml");
         var (exitCode, output) = Docker.Run(
             [
-                "run", "--rm", "-v", $"{_samples.Path}:/work", "alpine:latest", "sh", "-c",
-                "apk add -q --no-cache qpdf >/dev/null && qpdf --list-attachments /work/timesheet-normal.nl.pdf "
+                "run", "--rm", "-v", $"{_samples.Path}:/work", ToolImage, "sh", "-c",
+                "set -eu -o pipefail && apk add -q --no-cache qpdf=12.2.0-r0 >/dev/null && qpdf --list-attachments /work/timesheet-normal.nl.pdf "
                 + "&& qpdf --show-attachment=timesheet.xml /work/timesheet-normal.nl.pdf > /work/extracted-timesheet.xml",
             ],
             TimeSpan.FromMinutes(3));
