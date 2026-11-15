@@ -174,6 +174,12 @@ public class TableBreakLineTests
                     because + $": a row on a page holds content or lies beside a spanning cell that does (row at {rowAt.Y})");
             }
 
+            foreach (var (row, _) in Boxes(table, new Point(0, 0), SemanticRole.TableRow))
+            {
+                // A row's box starts where its cells start; a zero-high continued row sits at the top of its cells.
+                row.Children.Should().OnlyContain(cell => Math.Abs(cell.Offset.Y) < Epsilon, because + ": a row's cells start at the row's top");
+            }
+
             words.AddRange(Words(table));
         }
 

@@ -99,6 +99,19 @@ public class PageTemplateTests
     }
 
     [Fact]
+    public void A_page_count_only_in_the_first_page_s_template_shows_the_real_count()
+    {
+        // The count is looked for in both templates: here only page 1's header shows it, and it still needs the
+        // passes until the count settles.
+        var normal = new PageTemplate(new PageArea(Area(50, Line(51, Text(52, "Every"))), null), null);
+        var first = new PageTemplate(new PageArea(Area(60, Line(61, Text(62, "of "), Counter(63, PageCounter.PageCount))), 24.Pt()), null);
+
+        var pages = Paginate(WithTemplate(Document(Paragraph(1, Words(10), Narrow)), normal, first)).Value;
+
+        pages.Select(page => TextOf(page.Header!.Fragment)).Should().Equal("of 3", "Every", "Every");
+    }
+
+    [Fact]
     public void A_page_count_whose_digits_change_the_wrapping_still_settles()
     {
         // The footer box is wide enough for "of 9" but not for "of 10", which wraps to two lines and leaves the body
