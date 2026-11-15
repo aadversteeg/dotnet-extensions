@@ -159,14 +159,16 @@ public static class FlowLayout
         for (var index = resume.ChildIndex; index < children.Length; index++)
         {
             var child = children[index];
+            if (index > resume.ChildIndex && (hasContent || !space.IsAtPageStart) && ForcedBreaks.Before(child))
+            {
+                // A forced break between two children is taken when there is content on the page before it — in this
+                // box or before the box — even if what this box placed so far is empty (see ForcedBreaks). Margins
+                // before the break are truncated (CSS Fragmentation 3 §5.2): `pending` is dropped.
+                return Broken(SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null)));
+            }
+
             if (hasContent)
             {
-                if (ForcedBreaks.Before(child))
-                {
-                    // Margins before the break are truncated (CSS Fragmentation 3 §5.2): `pending` is dropped.
-                    return Broken(SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null)));
-                }
-
                 // Remember this class-A breakpoint; a later tie wins because it fits more content.
                 var candidate = new Breakpoint(index, placed.Count, cursor, BreakAvoidance.Between(children[index - 1], child));
                 best = best is null || candidate.Appeal >= best.Appeal ? candidate : best;

@@ -159,6 +159,37 @@ public class PaginationTests
         ((BoxFragment)Root(pages[1]).Children[0].Fragment).Box.Id.Should().Be(new NodeId(2), "the break falls before the parent");
     }
 
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("")]
+    public void A_forced_break_after_empty_content_in_a_box_that_follows_content_on_the_page_is_honoured(string empty)
+    {
+        // The reviewer's probe B: [A, Block([" ", PageBreak, B])]. The forced break falls between two children of
+        // the block; nothing of the block is visible before it, but "A" is on the page, so the break is not at the
+        // start of the page and must be taken (CSS Fragmentation 3 §3.1).
+        var block = Flow(2, [Paragraph(3, empty), Paragraph(4, "B", BoxStyle.Initial with { BreakBefore = BreakBetween.Page })]);
+
+        var pages = Paginate(Document(Paragraph(1, "A"), block));
+
+        pages.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void A_forced_break_after_an_empty_box_that_follows_content_on_the_page_is_honoured()
+    {
+        var block = Flow(2, [Flow(3, []), Paragraph(4, "B", BoxStyle.Initial with { BreakBefore = BreakBetween.Page })]);
+
+        Paginate(Document(Paragraph(1, "A"), block)).Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void A_forced_break_after_only_empty_content_at_the_start_of_the_document_makes_no_empty_page()
+    {
+        var pages = Paginate(Document(Paragraph(1, string.Empty), Paragraph(2, "B", BoxStyle.Initial with { BreakBefore = BreakBetween.Page })));
+
+        pages.Should().HaveCount(1, "nothing visible would be on the first page");
+    }
+
     [Fact]
     public void Painting_puts_the_background_under_the_box_and_the_baseline_one_ascent_below_its_top()
     {
