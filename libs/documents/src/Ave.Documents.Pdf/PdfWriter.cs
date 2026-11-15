@@ -28,7 +28,7 @@ public static class PdfWriter
 
     /// <summary>Writes the file.</summary>
     /// <param name="file">The objects and trailer entries.</param>
-    /// <returns>The PDF bytes, or a <see cref="DocumentErrorCodes.Pdf.Write"/> error when objects are not numbered
+    /// <returns>The PDF bytes, or a <see cref="PdfErrorCodes.Write"/> error when objects are not numbered
     /// 1 to N or a number is not finite.</returns>
     public static Result<ImmutableArray<byte>, Error> Write(PdfFile file)
     {
@@ -64,7 +64,7 @@ public static class PdfWriter
         return numbers.SequenceEqual(expected)
             ? null
             : new Error(
-                    DocumentErrorCodes.Pdf.Write.InvalidObjectNumbers,
+                    PdfErrorCodes.Write.InvalidObjectNumbers,
                     "Indirect objects must be numbered 1 to N without gaps or duplicates.")
                 .With(ErrorMetadataKeys.Value, string.Join(",", numbers));
     }

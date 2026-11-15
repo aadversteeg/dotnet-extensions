@@ -4,7 +4,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
-using Ave.Documents.Core;
 using Ave.Documents.Pdf;
 
 namespace UnitTests.Ave.Documents.Pdf;
@@ -87,7 +86,7 @@ public class PdfWriterTests
     {
         var file = MinimalFile() with { Objects = MinimalFile().Objects.RemoveAt(1) };
 
-        PdfWriter.Write(file).Error.Code.Should().Be(DocumentErrorCodes.Pdf.Write.InvalidObjectNumbers);
+        PdfWriter.Write(file).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObjectNumbers);
     }
 
     [Fact]
@@ -95,7 +94,7 @@ public class PdfWriterTests
     {
         var file = MinimalFile() with { Objects = MinimalFile().Objects.SetItem(2, new IndirectValue(3, new PdfReal(double.PositiveInfinity))) };
 
-        PdfWriter.Write(file).Error.Code.Should().Be(DocumentErrorCodes.Pdf.Write.InvalidNumber);
+        PdfWriter.Write(file).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
     }
 
     [Fact]
@@ -116,5 +115,5 @@ public class PdfWriterTests
     [Fact]
     public void Content_stream_with_a_non_finite_operand_is_an_error() =>
         ContentStream.Serialize([ContentOperators.MoveTextTo(double.NaN, 0)]).Error.Code
-            .Should().Be(DocumentErrorCodes.Pdf.Write.InvalidNumber);
+            .Should().Be(PdfErrorCodes.Write.InvalidNumber);
 }

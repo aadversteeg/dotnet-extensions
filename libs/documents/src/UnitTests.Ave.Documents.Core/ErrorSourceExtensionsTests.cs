@@ -10,7 +10,7 @@ public class ErrorSourceExtensionsTests
     [Fact]
     public void WithSource_adds_file_and_line()
     {
-        var error = new Error(DocumentErrorCodes.Layout.DoesNotFit, "too big").WithSource(Location);
+        var error = new Error(DocumentErrorCodes.Input.Invalid.Length, "too big").WithSource(Location);
 
         error.Metadata![ErrorMetadataKeys.SourceFile].Should().Be(@"C:\src\Letter.cs");
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(42);
@@ -20,7 +20,7 @@ public class ErrorSourceExtensionsTests
     public void WithSource_on_combined_errors_adds_the_location_to_every_part()
     {
         var combined = Errors.Aggregate(
-            [new Error(DocumentErrorCodes.Font.GlyphMissing, "a"), new Error(DocumentErrorCodes.Font.GlyphMissing, "b")]);
+            [new Error(DocumentErrorCodes.Input.Invalid.Text, "a"), new Error(DocumentErrorCodes.Input.Invalid.Text, "b")]);
 
         var located = combined.WithSource(Location);
 

@@ -5,6 +5,8 @@ using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using Ave.Documents.Render.Pdf;
 using Ave.Documents.TestSupport;
+using Ave.Documents.Fonts;
+using Ave.Documents.Layout;
 using static Ave.Documents.Fluent.Elements;
 
 namespace UnitTests.Ave.Documents.Fluent;
@@ -33,7 +35,7 @@ public class RenderingTests
 
         var error = Document([Paragraph([Bold("Note: "), span])]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.GlyphMissing);
+        error.Code.Should().Be(FontErrorCodes.GlyphMissing);
         error.Metadata![ErrorMetadataKeys.Character].Should().Be("漢");
         error.Metadata![ErrorMetadataKeys.SourceFile].Should().Be(ThisFile());
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
@@ -47,7 +49,7 @@ public class RenderingTests
 
         var error = Document([Paragraph("Before"), tall]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.DoesNotFit);
+        error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
         error.Metadata![ErrorMetadataKeys.SourceFile].Should().Be(ThisFile());
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
     }
@@ -60,7 +62,7 @@ public class RenderingTests
 
         var error = Document([Paragraph([span])]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.NotFound);
+        error.Code.Should().Be(FontErrorCodes.NotFound);
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
     }
 

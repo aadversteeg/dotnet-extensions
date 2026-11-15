@@ -1,4 +1,3 @@
-using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.Fonts.Tables;
 
@@ -32,7 +31,10 @@ public class TableParserTests
 
         map.Should().BeEquivalentTo(new Dictionary<int, GlyphId>
         {
-            ['A'] = new(10), ['B'] = new(11), ['C'] = new(12), ['a'] = new(20),
+            ['A'] = new(10),
+            ['B'] = new(11),
+            ['C'] = new(12),
+            ['a'] = new(20),
         });
     }
 
@@ -45,7 +47,11 @@ public class TableParserTests
 
         map.Should().BeEquivalentTo(new Dictionary<int, GlyphId>
         {
-            [0x41] = new(5), [0x42] = new(6), [0x43] = new(7), [0x1F600] = new(8), [0x1F601] = new(9),
+            [0x41] = new(5),
+            [0x42] = new(6),
+            [0x43] = new(7),
+            [0x1F600] = new(8),
+            [0x1F601] = new(9),
         });
     }
 
@@ -69,7 +75,7 @@ public class TableParserTests
     {
         var subtable = Format12((0x50, 0x51, 1), (0x41, 0x42, 3));
 
-        CmapTable.Parse(Cmap(3, 10, subtable), glyphCount: 30).Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+        CmapTable.Parse(Cmap(3, 10, subtable), glyphCount: 30).Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
 
     [Fact]
@@ -77,7 +83,7 @@ public class TableParserTests
     {
         var subtable = Format12((0x41, 0x41, 99));
 
-        CmapTable.Parse(Cmap(3, 10, subtable), glyphCount: 30).Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+        CmapTable.Parse(Cmap(3, 10, subtable), glyphCount: 30).Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
 
     [Fact]
@@ -95,7 +101,7 @@ public class TableParserTests
         var descending = new BigEndianBuilder().UInt16(0).UInt16(5).UInt16(4).UInt16(9).ToArray();
 
         LocaTable.Parse(ascending, longOffsets: false, glyphCount: 3, glyfLength: 18).Value.Offsets.Should().Equal(0, 10, 10, 18);
-        LocaTable.Parse(descending, longOffsets: false, glyphCount: 3, glyfLength: 18).Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+        LocaTable.Parse(descending, longOffsets: false, glyphCount: 3, glyfLength: 18).Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
 
     [Theory]
@@ -142,7 +148,7 @@ public class TableParserTests
 
         watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(1));
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+        result.Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
 
     [Fact]
@@ -184,6 +190,6 @@ public class TableParserTests
         var result = CmapTable.Parse(cmap, glyphCount: 200);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+        result.Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
 }

@@ -163,7 +163,7 @@ public class ImageDecoderTests
     {
         var error = ImageDecoder.Decode(Asset(name)).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Image.Unsupported);
+        error.Code.Should().Be(ImageErrorCodes.Unsupported);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be(variant);
     }
 
@@ -177,7 +177,7 @@ public class ImageDecoderTests
 
         var error = ImageDecoder.Decode(bytes).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Image.Unsupported);
+        error.Code.Should().Be(ImageErrorCodes.Unsupported);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("JPEG arithmetic coding (SOF9)");
     }
 
@@ -187,14 +187,14 @@ public class ImageDecoderTests
         var bytes = Asset("rgb8.png");
         bytes[^20] ^= 0xFF; // inside the IDAT data
 
-        ImageDecoder.Decode(bytes).Error.Code.Should().Be(DocumentErrorCodes.Image.Invalid);
+        ImageDecoder.Decode(bytes).Error.Code.Should().Be(ImageErrorCodes.Invalid);
     }
 
     [Fact]
     public void A_truncated_file_is_invalid()
     {
-        ImageDecoder.Decode(Asset("rgb8.png").AsMemory(0, 40)).Error.Code.Should().Be(DocumentErrorCodes.Image.Invalid);
-        ImageDecoder.Decode(Asset("baseline-rgb.jpg").AsMemory(0, 10)).Error.Code.Should().Be(DocumentErrorCodes.Image.Invalid);
+        ImageDecoder.Decode(Asset("rgb8.png").AsMemory(0, 40)).Error.Code.Should().Be(ImageErrorCodes.Invalid);
+        ImageDecoder.Decode(Asset("baseline-rgb.jpg").AsMemory(0, 10)).Error.Code.Should().Be(ImageErrorCodes.Invalid);
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public class ImageDecoderTests
     {
         var error = ImageDecoder.Decode("GIF89a"u8.ToArray()).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Image.Unsupported);
+        error.Code.Should().Be(ImageErrorCodes.Unsupported);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("a format other than PNG or JPEG");
     }
 

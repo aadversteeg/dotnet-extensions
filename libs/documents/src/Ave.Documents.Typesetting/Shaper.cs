@@ -56,7 +56,7 @@ public static class Shaper
     /// <param name="text">The text, already white-space collapsed.</param>
     /// <param name="font">The font.</param>
     /// <param name="fontSize">The font size in points.</param>
-    /// <returns>The glyphs in text order, or a <see cref="DocumentErrorCodes.Font.GlyphMissing"/> error (several
+    /// <returns>The glyphs in text order, or a <see cref="FontErrorCodes.GlyphMissing"/> error (several
     /// combined into <see cref="ErrorCodes.Aggregate"/>), or <see cref="DocumentErrorCodes.Input.Invalid.Text"/>
     /// for text that is not valid UTF-16.</returns>
     public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, double fontSize) =>
@@ -207,7 +207,7 @@ public static class Shaper
     {
         var codePoint = $"U+{character.Value:X4}";
         return new Error(
-                DocumentErrorCodes.Font.GlyphMissing,
+                FontErrorCodes.GlyphMissing,
                 $"Font '{font.Names.PostScriptName}' has no glyph for '{character}' ({codePoint}).")
             .With(ErrorMetadataKeys.FontName, font.Names.PostScriptName)
             .With(ErrorMetadataKeys.Character, character.ToString())

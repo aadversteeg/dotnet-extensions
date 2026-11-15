@@ -60,7 +60,7 @@ public class OpenTypeTableTests
 
         gpos.Lookups.Should().NotBeEmpty();
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.Truncated);
+        result.Error.Code.Should().Be(FontErrorCodes.Parse.Truncated);
         result.Error.Metadata![ErrorMetadataKeys.Table].Should().Be("GPOS");
     }
 
@@ -78,7 +78,7 @@ public class OpenTypeTableTests
         var result = LegacyKerning.Parse(table);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Is(DocumentErrorCodes.Font.Parse._).Should().BeTrue();
+        result.Error.Is(FontErrorCodes.Parse._).Should().BeTrue();
     }
 
     [Fact]

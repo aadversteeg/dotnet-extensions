@@ -19,7 +19,7 @@ public static class PdfSerializer
 
     /// <summary>Writes an object, after checking that every number in it is finite.</summary>
     /// <param name="value">The object.</param>
-    /// <returns>Its PDF syntax, or a <see cref="DocumentErrorCodes.Pdf.Write.InvalidNumber"/> error.</returns>
+    /// <returns>Its PDF syntax, or a <see cref="PdfErrorCodes.Write.InvalidNumber"/> error.</returns>
     public static Result<string, Error> Serialize(PdfObject value) =>
         FindNonFinite(value) is { } invalid
             ? Result<string, Error>.Failure(InvalidNumber(invalid))
@@ -40,7 +40,7 @@ public static class PdfSerializer
     /// <param name="value">The number.</param>
     /// <returns>The error.</returns>
     public static Error InvalidNumber(double value) =>
-        new Error(DocumentErrorCodes.Pdf.Write.InvalidNumber, $"PDF numbers must be finite, got {value}.")
+        new Error(PdfErrorCodes.Write.InvalidNumber, $"PDF numbers must be finite, got {value}.")
             .With(ErrorMetadataKeys.Value, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     /// <summary>Writes an object whose numbers are known to be finite.</summary>

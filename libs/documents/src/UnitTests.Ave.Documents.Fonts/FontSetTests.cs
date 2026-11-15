@@ -1,5 +1,6 @@
 using Ave.Documents.Core;
 using Ave.Documents.TestSupport;
+using Ave.Documents.Fonts;
 
 namespace UnitTests.Ave.Documents.Fonts;
 
@@ -21,7 +22,7 @@ public class FontSetTests
     {
         var error = TestFonts.Set.Find("Lato", new FontWeight(500)).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.NotFound);
+        error.Code.Should().Be(FontErrorCodes.NotFound);
         error.Message.Should().Contain("Available: Lato 400, Lato 700");
     }
 
@@ -39,7 +40,7 @@ public class FontSetTests
     {
         var error = TestFonts.Set.Find("Lato", FontWeight.Bold, FontStyle.Italic).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.NotFound);
+        error.Code.Should().Be(FontErrorCodes.NotFound);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("700 italic");
     }
 }

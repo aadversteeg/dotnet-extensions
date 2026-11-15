@@ -106,7 +106,7 @@ public class TracksLayoutTests
 
         var error = Paginate(TableModels.Page(250, 300, table)).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.ColumnsDoNotFit);
+        error.Code.Should().Be(LayoutErrorCodes.ColumnsDoNotFit);
         error.Metadata![ErrorMetadataKeys.Node].Should().Be(table.Id.ToString());
         error.Metadata!.Should().ContainKey(ErrorMetadataKeys.SourceLine);
     }
@@ -172,7 +172,7 @@ public class TracksLayoutTests
         var cell = t.Cell("before") with { Children = [Models.Paragraph(901, "before"), inner] };
         var table = t.Table([new TrackSize.Fixed(80.Pt())], t.Body(t.Row(cell)));
 
-        Paginate(TableModels.Page(200, 100, table)).Error.Code.Should().Be(DocumentErrorCodes.Layout.InvalidContent);
+        Paginate(TableModels.Page(200, 100, table)).Error.Code.Should().Be(LayoutErrorCodes.InvalidContent);
     }
 
     [Theory]
@@ -186,7 +186,7 @@ public class TracksLayoutTests
 
         var error = Paginate(TableModels.Page(200, 100, table)).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.InvalidContent);
+        error.Code.Should().Be(LayoutErrorCodes.InvalidContent);
         error.Message.Should().Contain(message);
     }
 

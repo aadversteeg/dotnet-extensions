@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
-using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.Fonts.Tables;
 using Ave.Documents.TestSupport;
@@ -47,7 +46,7 @@ public class FontSubsetterTests
         var result = FontSubsetter.Subset(FontParser.Parse(bytes).Value, [Aacute]);
 
         result.IsFailure.Should().BeTrue("glyph 65535 does not exist in a font of 3023 glyphs");
-        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+        result.Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
 
     [Fact]

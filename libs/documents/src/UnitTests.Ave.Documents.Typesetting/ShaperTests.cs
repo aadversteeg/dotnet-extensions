@@ -42,7 +42,7 @@ public class ShaperTests
         parts.Should().HaveCount(2);
         parts.Should().AllSatisfy(part =>
         {
-            part.Code.Should().Be(DocumentErrorCodes.Font.GlyphMissing);
+            part.Code.Should().Be(FontErrorCodes.GlyphMissing);
             part.Metadata![ErrorMetadataKeys.FontName].Should().Be("Lato-Regular");
             part.Metadata![ErrorMetadataKeys.Character].Should().Be("漢");
             part.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+6F22");
@@ -54,7 +54,7 @@ public class ShaperTests
     {
         var error = Shaper.Shape("\U0001F600", TestFonts.Regular, 10).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.GlyphMissing);
+        error.Code.Should().Be(FontErrorCodes.GlyphMissing);
         error.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+1F600");
     }
 

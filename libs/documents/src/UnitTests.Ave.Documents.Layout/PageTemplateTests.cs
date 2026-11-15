@@ -64,7 +64,7 @@ public class PageTemplateTests
 
         Paginate(WithTemplate(Document(Paragraph(1, "Body")), fixedHeader)).Value[0].Root.Offset.Y.Should().Be(10 + 30);
         var error = Paginate(WithTemplate(Document(Paragraph(1, "Body")), tooSmall)).Error;
-        error.Code.Should().Be(DocumentErrorCodes.Layout.DoesNotFit);
+        error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
         error.Metadata![ErrorMetadataKeys.Node].Should().Be("#51", "the area's paragraph is what does not fit");
     }
 
@@ -73,7 +73,7 @@ public class PageTemplateTests
     {
         var full = new PageTemplate(new PageArea(Area(50), 40.Pt()), new PageArea(Area(60), 40.Pt()));
 
-        Paginate(WithTemplate(Document(Paragraph(1, "Body")), full)).Error.Code.Should().Be(DocumentErrorCodes.Layout.DoesNotFit);
+        Paginate(WithTemplate(Document(Paragraph(1, "Body")), full)).Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
     }
 
     [Fact]
@@ -136,7 +136,7 @@ public class PageTemplateTests
 
         var error = Paginate(document, environment).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.NotConverging);
+        error.Code.Should().Be(LayoutErrorCodes.NotConverging);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("2,3,2,3,2");
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
         error.Metadata![ErrorMetadataKeys.Node].Should().Be("#62");

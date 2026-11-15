@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text;
-using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.Fonts.OpenType;
 using Ave.Documents.TestSupport;
@@ -88,7 +87,7 @@ public class MalformedLayoutTableTests
         var result = FontParser.Parse(font);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Is(DocumentErrorCodes.Font.Parse._).Should().BeTrue(result.Error.ToString());
+        result.Error.Is(FontErrorCodes.Parse._).Should().BeTrue(result.Error.ToString());
     }
 
     [Theory]

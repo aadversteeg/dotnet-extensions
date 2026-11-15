@@ -59,7 +59,7 @@ public class ImageLayoutTests
     {
         var error = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(Image(10, height: 100.Pt()))).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.DoesNotFit);
+        error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
     }
 
     [Fact]

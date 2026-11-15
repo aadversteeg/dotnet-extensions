@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.PageModel;
+using Ave.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -117,7 +118,7 @@ internal static class PageEvents
 
     private static Result<ImmutableArray<PageEvent>, Error> Invalid(int page, string problem, NodeId? node = null)
     {
-        var error = new Error(DocumentErrorCodes.Pdf.Write.InvalidStructure, $"Page {page} has {problem}.")
+        var error = new Error(PdfErrorCodes.Write.InvalidStructure, $"Page {page} has {problem}.")
             .With(ErrorMetadataKeys.Value, page.ToString(System.Globalization.CultureInfo.InvariantCulture));
         return Result<ImmutableArray<PageEvent>, Error>.Failure(node is { } id ? error.With(ErrorMetadataKeys.Node, id.ToString()) : error);
     }

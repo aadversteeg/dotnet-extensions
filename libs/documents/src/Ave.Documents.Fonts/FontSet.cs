@@ -20,7 +20,7 @@ public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
     /// </summary>
     /// <param name="family">The family name, for example <c>Lato</c>.</param>
     /// <param name="weight">The weight, for example <see cref="FontWeight.Bold"/>.</param>
-    /// <returns>The font, or a <see cref="DocumentErrorCodes.Font.NotFound"/> error.</returns>
+    /// <returns>The font, or a <see cref="FontErrorCodes.NotFound"/> error.</returns>
     public Result<TrueTypeFont, Error> Find(string family, FontWeight weight) => Find(family, weight, FontStyle.Normal);
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
     /// <param name="family">The family name, for example <c>Lato</c>.</param>
     /// <param name="weight">The weight, for example <see cref="FontWeight.Bold"/>.</param>
     /// <param name="style">Upright or italic.</param>
-    /// <returns>The font, or a <see cref="DocumentErrorCodes.Font.NotFound"/> error.</returns>
+    /// <returns>The font, or a <see cref="FontErrorCodes.NotFound"/> error.</returns>
     public Result<TrueTypeFont, Error> Find(string family, FontWeight weight, FontStyle style)
     {
         var match = Fonts.FirstOrDefault(font =>
@@ -45,7 +45,7 @@ public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
             ? Result<TrueTypeFont, Error>.Success(match)
             : Result<TrueTypeFont, Error>.Failure(
                 new Error(
-                        DocumentErrorCodes.Font.NotFound,
+                        FontErrorCodes.NotFound,
                         $"No font for family '{family}' with weight {weight}{StyleSuffix(style == FontStyle.Italic)}. Available: {Describe()}.")
                     .With(ErrorMetadataKeys.FontName, family)
                     .With(ErrorMetadataKeys.Value, weight + StyleSuffix(style == FontStyle.Italic)));

@@ -24,7 +24,7 @@ public static class FontParser
     /// the underlying bytes afterwards.</param>
     /// <param name="callerFile">Filled in by the compiler: the file that loads the font, reported in errors.</param>
     /// <param name="callerLine">Filled in by the compiler: the line that loads the font, reported in errors.</param>
-    /// <returns>The font, or a <see cref="DocumentErrorCodes.Font.Parse"/> error carrying the caller's location.</returns>
+    /// <returns>The font, or a <see cref="FontErrorCodes.Parse"/> error carrying the caller's location.</returns>
     public static Result<TrueTypeFont, Error> Parse(
         ReadOnlyMemory<byte> fontFile,
         [CallerFilePath] string callerFile = "",

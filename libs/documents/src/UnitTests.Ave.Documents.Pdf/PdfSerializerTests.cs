@@ -1,4 +1,3 @@
-using Ave.Documents.Core;
 using Ave.Documents.Pdf;
 
 namespace UnitTests.Ave.Documents.Pdf;
@@ -57,7 +56,7 @@ public class PdfSerializerTests
     {
         var value = new PdfArray([new PdfInteger(1), PdfDictionary.Of(("X", new PdfReal(double.NaN)))]);
 
-        PdfSerializer.Serialize(value).Error.Code.Should().Be(DocumentErrorCodes.Pdf.Write.InvalidNumber);
+        PdfSerializer.Serialize(value).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
     }
 
     [Fact]

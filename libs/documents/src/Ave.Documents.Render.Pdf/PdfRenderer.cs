@@ -31,8 +31,8 @@ public static class PdfRenderer
     /// </remarks>
     /// <param name="document">The page document.</param>
     /// <param name="options">Creation date, file identifier and profile.</param>
-    /// <returns>The PDF bytes, a <see cref="DocumentErrorCodes.Pdf.Conformance"/> error for input the profile forbids,
-    /// or a <see cref="DocumentErrorCodes.Pdf.Write"/> error.</returns>
+    /// <returns>The PDF bytes, a <see cref="PdfErrorCodes.Conformance"/> error for input the profile forbids,
+    /// or a <see cref="PdfErrorCodes.Write"/> error.</returns>
     public static Result<ImmutableArray<byte>, Error> Render(PageDocument document, PdfRenderOptions options) =>
         PageModelRules.Check(document)
             .OnSuccessBind(validDocument => ConformanceRules.Check(validDocument, options.Profile))

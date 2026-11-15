@@ -93,7 +93,7 @@ internal sealed record StructureTree(
                         break;
                     case ContentRun when open.Count == 0:
                         return Result<StructureTree, Error>.Failure(
-                            new Error(DocumentErrorCodes.Pdf.Conformance.Tagged.UnmarkedContent, $"Page {page + 1} has content outside every structure node and every artifact.")
+                            new Error(PdfErrorCodes.Conformance.Tagged.UnmarkedContent, $"Page {page + 1} has content outside every structure node and every artifact.")
                                 .With(ErrorMetadataKeys.Value, (page + 1).ToString(CultureInfo.InvariantCulture)));
                     case ContentRun tagged:
                         var owner = elements[open.Peek()];
@@ -123,7 +123,7 @@ internal sealed record StructureTree(
 
     private static Result<StructureTree, Error> Invalid(StructureStart start, int page, string problem) =>
         Result<StructureTree, Error>.Failure(
-            new Error(DocumentErrorCodes.Pdf.Write.InvalidStructure, $"Node {start.Node} on page {page + 1} {problem}.")
+            new Error(PdfErrorCodes.Write.InvalidStructure, $"Node {start.Node} on page {page + 1} {problem}.")
                 .With(ErrorMetadataKeys.Node, start.Node.ToString())
                 .With(ErrorMetadataKeys.Value, (page + 1).ToString(CultureInfo.InvariantCulture))
                 .WithSource(start.Source));

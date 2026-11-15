@@ -2,6 +2,7 @@ using Ave.Documents.Core;
 using Ave.Documents.Layout;
 using Ave.Documents.DocumentModel;
 using Ave.Documents.TestSupport;
+using Ave.Documents.Fonts;
 using Ave.Extensions.ErrorPaths;
 using static UnitTests.Ave.Documents.Layout.Models;
 
@@ -24,7 +25,7 @@ public class LayoutErrorTests
 
         var error = Fail(Document(tall));
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.DoesNotFit);
+        error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
         error.Metadata![ErrorMetadataKeys.Node].Should().Be("#1");
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
         error.Metadata![ErrorMetadataKeys.SourceFile].Should().Be(At(0).File, "the location is the test's own line, not the helper's");
@@ -37,7 +38,7 @@ public class LayoutErrorTests
         // next page the big paragraph is at the start and still does not fit, so this is an error, not a loop.
         var error = Fail(Document(Paragraph(1, "One"), Paragraph(2, "Huge", size: 100)));
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.DoesNotFit);
+        error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
         error.Metadata![ErrorMetadataKeys.Node].Should().Be("#2");
     }
 
@@ -49,7 +50,7 @@ public class LayoutErrorTests
 
         var error = Fail(Document(paragraph));
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.NotFound);
+        error.Code.Should().Be(FontErrorCodes.NotFound);
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(77);
     }
 
@@ -58,7 +59,7 @@ public class LayoutErrorTests
     {
         var error = Fail(Document(Paragraph(1, "Kanji 漢")));
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.GlyphMissing);
+        error.Code.Should().Be(FontErrorCodes.GlyphMissing);
         error.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+6F22");
         error.Metadata.Should().ContainKey(ErrorMetadataKeys.SourceLine);
     }
@@ -68,7 +69,7 @@ public class LayoutErrorTests
     {
         var flow = Flow(1, [new TextRun(new NodeId(2), "loose text", Models.Text(), At(1))]);
 
-        Fail(Document(flow)).Code.Should().Be(DocumentErrorCodes.Layout.InvalidContent);
+        Fail(Document(flow)).Code.Should().Be(LayoutErrorCodes.InvalidContent);
     }
 
     [Fact]
@@ -78,7 +79,7 @@ public class LayoutErrorTests
 
         var error = Fail(Document(box));
 
-        error.Code.Should().Be(DocumentErrorCodes.Layout.InvalidContent);
+        error.Code.Should().Be(LayoutErrorCodes.InvalidContent);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("grid");
     }
 

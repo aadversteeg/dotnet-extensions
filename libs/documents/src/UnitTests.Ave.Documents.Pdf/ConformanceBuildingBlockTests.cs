@@ -67,7 +67,7 @@ public class ConformanceBuildingBlockTests
         var result = new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, property, value)]).Write();
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be(DocumentErrorCodes.Pdf.Write.InvalidText);
+        result.Error.Code.Should().Be(PdfErrorCodes.Write.InvalidText);
         result.Error.Metadata![ErrorMetadataKeys.Property].Should().Be("dc:" + property);
         result.Error.Metadata![ErrorMetadataKeys.Offset].Should().Be(1);
     }

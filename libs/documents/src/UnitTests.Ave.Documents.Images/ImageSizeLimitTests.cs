@@ -2,7 +2,6 @@ using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using Ave.Documents.Core;
 using Ave.Documents.Images;
 using Ave.Documents.Images.Png;
 
@@ -65,7 +64,7 @@ public class ImageSizeLimitTests
 
         (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(16L * 1024 * 1024, "nothing is decoded for an image above the limit");
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be(DocumentErrorCodes.Image.TooLarge, result.Error.ToString());
+        result.Error.Code.Should().Be(ImageErrorCodes.TooLarge, result.Error.ToString());
     }
 
     [Fact]

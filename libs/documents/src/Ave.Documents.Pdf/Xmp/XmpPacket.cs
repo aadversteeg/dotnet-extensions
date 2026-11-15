@@ -76,7 +76,7 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     private static IEnumerable<Error> Problems(XmpProperty property, string name) => Texts(property.Value)
         .Select(text => (Text: text, Offset: XmlCharacters.IndexOfForbidden(text)))
         .Where(found => found.Offset is not null)
-        .Select(found => new Error(DocumentErrorCodes.Pdf.Write.InvalidText, $"The XMP property {name} holds a character XML does not allow, at position {found.Offset}.")
+        .Select(found => new Error(PdfErrorCodes.Write.InvalidText, $"The XMP property {name} holds a character XML does not allow, at position {found.Offset}.")
             .With(ErrorMetadataKeys.Property, name)
             .With(ErrorMetadataKeys.Offset, found.Offset!.Value));
 

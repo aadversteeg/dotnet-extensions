@@ -90,7 +90,7 @@ public class FontParserTests
         var line = CurrentLine() + 1;
         var result = FontParser.Parse(Encoding.ASCII.GetBytes("This is not a font file at all."));
 
-        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.UnsupportedFormat);
+        result.Error.Code.Should().Be(FontErrorCodes.Parse.UnsupportedFormat);
         result.Error.Metadata![ErrorMetadataKeys.SourceFile].Should().Be(ThisFile());
         result.Error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
     }
@@ -104,7 +104,7 @@ public class FontParserTests
 
         var error = FontParser.Parse(data).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.Parse.UnsupportedFormat);
+        error.Code.Should().Be(FontErrorCodes.Parse.UnsupportedFormat);
         error.Message.Should().StartWith(message);
     }
 
@@ -113,7 +113,7 @@ public class FontParserTests
     {
         var data = TestFonts.Bytes("Lato-Regular.ttf")[..1000];
 
-        FontParser.Parse(data).Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.Truncated);
+        FontParser.Parse(data).Error.Code.Should().Be(FontErrorCodes.Parse.Truncated);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class FontParserTests
 
         var error = FontParser.Parse(data).Error;
 
-        error.Code.Should().Be(DocumentErrorCodes.Font.Parse.MissingTable);
+        error.Code.Should().Be(FontErrorCodes.Parse.MissingTable);
         error.Metadata![ErrorMetadataKeys.Table].Should().Be("cmap");
     }
 

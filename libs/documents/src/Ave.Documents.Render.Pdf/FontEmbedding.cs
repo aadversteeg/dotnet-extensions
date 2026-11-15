@@ -41,7 +41,7 @@ internal static class FontEmbedding
         {
             return Result<ImmutableArray<IndirectObject>, Error>.Failure(
                 new Error(
-                        DocumentErrorCodes.Pdf.Write.FontEmbeddingNotPermitted,
+                        PdfErrorCodes.Write.FontEmbeddingNotPermitted,
                         $"The licence bits of font '{font.Names.PostScriptName}' (OS/2 fsType 0x{font.Embedding.FsType:X4}) do not allow embedding.")
                     .With(ErrorMetadataKeys.FontName, font.Names.PostScriptName));
         }

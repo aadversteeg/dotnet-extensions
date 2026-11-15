@@ -54,7 +54,7 @@ public class ConformanceRefusalTests
 
         var error = Refused(Accessible([image]), PdfProfile.PdfUa1);
 
-        ShouldPointAt(error, DocumentErrorCodes.Pdf.Conformance.PdfUa1.FigureWithoutAlternativeText, line);
+        ShouldPointAt(error, PdfErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText, line);
         error.Metadata![ErrorMetadataKeys.Node].Should().Be("#1");
     }
 
@@ -73,7 +73,7 @@ public class ConformanceRefusalTests
         var line = CurrentLine() + 1;
         var document = Document([Paragraph("x")], language: "en").FontFamily("Lato");
 
-        ShouldPointAt(Refused(document, PdfProfile.PdfUa1), DocumentErrorCodes.Pdf.Conformance.PdfUa1.MissingTitle, line);
+        ShouldPointAt(Refused(document, PdfProfile.PdfUa1), PdfErrorCodes.Conformance.PdfUa1.MissingTitle, line);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class ConformanceRefusalTests
         var line = CurrentLine() + 1;
         var document = Document([Paragraph("x")], title: "Title").FontFamily("Lato");
 
-        ShouldPointAt(Refused(document, PdfProfile.PdfA3a.AndPdfUa1()), DocumentErrorCodes.Pdf.Conformance.PdfUa1.MissingLanguage, line);
+        ShouldPointAt(Refused(document, PdfProfile.PdfA3a.AndPdfUa1()), PdfErrorCodes.Conformance.PdfUa1.MissingLanguage, line);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class ConformanceRefusalTests
 
         var error = Refused(Accessible([heading, Paragraph("x")]), PdfProfile.PdfUa1);
 
-        ShouldPointAt(error, DocumentErrorCodes.Pdf.Conformance.PdfUa1.FirstHeadingNotH1, line);
+        ShouldPointAt(error, PdfErrorCodes.Conformance.PdfUa1.FirstHeadingNotH1, line);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("2");
     }
 
@@ -106,7 +106,7 @@ public class ConformanceRefusalTests
 
         var error = Refused(Accessible([.. body]), PdfProfile.PdfUa1);
 
-        ShouldPointAt(error, DocumentErrorCodes.Pdf.Conformance.PdfUa1.HeadingLevelSkipped, line);
+        ShouldPointAt(error, PdfErrorCodes.Conformance.PdfUa1.HeadingLevelSkipped, line);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("1->3");
     }
 
@@ -127,7 +127,7 @@ public class ConformanceRefusalTests
 
         var error = Refused(Accessible([table]), PdfProfile.PdfUa1);
 
-        ShouldPointAt(error, DocumentErrorCodes.Pdf.Conformance.PdfUa1.IrregularTable, line);
+        ShouldPointAt(error, PdfErrorCodes.Conformance.PdfUa1.IrregularTable, line);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("2/3");
         Render(Accessible([table]), PdfProfile.PdfA3a).IsSuccess.Should().BeTrue("PDF/A-3a does not have this rule");
     }
@@ -152,7 +152,7 @@ public class ConformanceRefusalTests
 
         var error = Refused(Accessible([Paragraph("x")]).Attach(attachment), PdfProfile.PdfA3b);
 
-        ShouldPointAt(error, DocumentErrorCodes.Pdf.Conformance.PdfA3.AttachmentWithoutRelationship, line);
+        ShouldPointAt(error, PdfErrorCodes.Conformance.PdfA3.AttachmentWithoutRelationship, line);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("data.xml");
     }
 
@@ -176,13 +176,13 @@ public class ConformanceRefusalTests
         error.Code.Should().Be(ErrorCodes.Aggregate);
         error.Parts().Select(part => part.Code).Should().BeEquivalentTo(
         [
-            DocumentErrorCodes.Pdf.Conformance.PdfA3.AttachmentWithoutRelationship,
-            DocumentErrorCodes.Pdf.Conformance.PdfUa1.MissingTitle,
-            DocumentErrorCodes.Pdf.Conformance.PdfUa1.MissingLanguage,
-            DocumentErrorCodes.Pdf.Conformance.PdfUa1.FigureWithoutAlternativeText,
-            DocumentErrorCodes.Pdf.Conformance.PdfUa1.FirstHeadingNotH1,
+            PdfErrorCodes.Conformance.PdfA3.AttachmentWithoutRelationship,
+            PdfErrorCodes.Conformance.PdfUa1.MissingTitle,
+            PdfErrorCodes.Conformance.PdfUa1.MissingLanguage,
+            PdfErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText,
+            PdfErrorCodes.Conformance.PdfUa1.FirstHeadingNotH1,
         ]);
-        error.Parts().Should().OnlyContain(part => part.Is(DocumentErrorCodes.Pdf.Conformance._));
+        error.Parts().Should().OnlyContain(part => part.Is(PdfErrorCodes.Conformance._));
     }
 
     [Fact]
@@ -245,7 +245,7 @@ public class ConformanceRefusalTests
         var line = CurrentLine() + 1;
         var blank = Image(Logo).Alt(" ");
 
-        ShouldPointAt(Refused(Accessible([blank]), PdfProfile.PdfUa1), DocumentErrorCodes.Pdf.Conformance.PdfUa1.FigureWithoutAlternativeText, line);
+        ShouldPointAt(Refused(Accessible([blank]), PdfProfile.PdfUa1), PdfErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText, line);
     }
 
     [Fact]

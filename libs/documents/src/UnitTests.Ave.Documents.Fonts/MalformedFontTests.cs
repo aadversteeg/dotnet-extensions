@@ -1,4 +1,3 @@
-using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.TestSupport;
 
@@ -23,7 +22,7 @@ public class MalformedFontTests
             var result = FontParser.Parse(Lato.AsMemory(0, length));
 
             result.IsFailure.Should().BeTrue($"a font cut at {length} bytes is incomplete");
-            result.Error.Is(DocumentErrorCodes.Font.Parse._).Should().BeTrue();
+            result.Error.Is(FontErrorCodes.Parse._).Should().BeTrue();
         }
     }
 

@@ -16,13 +16,13 @@ internal static class LayoutErrors
 
     public static Error DoesNotFit(Box box) =>
         new Error(
-                DocumentErrorCodes.Layout.DoesNotFit,
+                LayoutErrorCodes.DoesNotFit,
                 $"{Describe(box)} does not fit on a page, not even on an empty one, and cannot be broken.")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())
             .WithSource(box.Source);
 
     public static Error InvalidContent(Box box, string message) =>
-        new Error(DocumentErrorCodes.Layout.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")
+        new Error(LayoutErrorCodes.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())
             .With(ErrorMetadataKeys.Value, box.Layout.ToString())
             .WithSource(box.Source);
@@ -32,7 +32,7 @@ internal static class LayoutErrors
     {
         var area = template.Header?.Content ?? template.Footer!.Content;
         return new Error(
-                DocumentErrorCodes.Layout.DoesNotFit,
+                LayoutErrorCodes.DoesNotFit,
                 $"The header and footer of page {pageNumber} leave no room for the page's content.")
             .With(ErrorMetadataKeys.Node, area.Id.ToString())
             .WithSource(area.Source);
@@ -40,7 +40,7 @@ internal static class LayoutErrors
 
     public static Error ColumnsDoNotFit(Box table, double needed, double available) =>
         new Error(
-                DocumentErrorCodes.Layout.ColumnsDoNotFit,
+                LayoutErrorCodes.ColumnsDoNotFit,
                 $"{Describe(table)} needs {InvariantNumber.Format(needed)}pt for its fixed columns and the narrowest content of the others, "
                 + $"but has {InvariantNumber.Format(available)}pt.")
             .With(ErrorMetadataKeys.Node, table.Id.ToString())
@@ -61,7 +61,7 @@ internal static class LayoutErrors
             .FirstOrDefault(run => run.Counter == PageCounter.PageCount);
         var (node, source) = reference is null ? (document.Root.Id, document.Root.Source) : (reference.Id, reference.Source);
         return new Error(
-                DocumentErrorCodes.Layout.NotConverging,
+                LayoutErrorCodes.NotConverging,
                 $"The page count did not settle in {Paginator.MaxPasses} layout passes (page counts: {string.Join(", ", counts)}).")
             .With(ErrorMetadataKeys.Node, node.ToString())
             .With(ErrorMetadataKeys.Value, string.Join(",", counts))

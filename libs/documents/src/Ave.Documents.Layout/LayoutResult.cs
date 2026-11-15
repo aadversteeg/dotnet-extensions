@@ -1,4 +1,3 @@
-using Ave.Documents.Core;
 using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -37,7 +36,7 @@ public abstract record LayoutResult
     /// <summary>
     /// The rule every algorithm applies when not even the first piece of a box fits. At the start of a page
     /// the box will not fit on any later page either, because all pages have the same size: that is
-    /// <see cref="DocumentErrorCodes.Layout.DoesNotFit"/>, with the box's source location. Anywhere else it is
+    /// <see cref="LayoutErrorCodes.DoesNotFit"/>, with the box's source location. Anywhere else it is
     /// <see cref="NoRoom"/>, and the box moves to the next page.
     /// </summary>
     /// <param name="box">The box that does not fit.</param>

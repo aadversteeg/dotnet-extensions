@@ -3,6 +3,7 @@ using Ave.Documents.Core;
 using Ave.Documents.DocumentModel;
 using Ave.Documents.Fluent;
 using Ave.Documents.TestSupport;
+using Ave.Documents.Images;
 using Ave.Extensions.ErrorPaths;
 using static Ave.Documents.Fluent.Elements;
 
@@ -199,7 +200,7 @@ public class TablesImagesAndPageAreasTests
         var line = CurrentLine() + 1;
         var error = Fail(Doc(Image("not an image"u8)));
 
-        ShouldPointAt(error, DocumentErrorCodes.Image.Unsupported, line);
+        ShouldPointAt(error, ImageErrorCodes.Unsupported, line);
     }
 
     [Fact]
@@ -208,7 +209,7 @@ public class TablesImagesAndPageAreasTests
         var line = CurrentLine() + 1;
         var error = Fail(Doc(Image(TestImages.Bytes("grey16.png"))));
 
-        ShouldPointAt(error, DocumentErrorCodes.Image.Unsupported, line);
+        ShouldPointAt(error, ImageErrorCodes.Unsupported, line);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("PNG greyscale with bit depth 16");
     }
 
