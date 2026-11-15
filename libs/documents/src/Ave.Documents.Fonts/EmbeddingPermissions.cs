@@ -7,12 +7,17 @@ namespace Ave.Documents.Fonts;
 /// <param name="FsType">The raw fsType value.</param>
 public sealed record EmbeddingPermissions(ushort FsType)
 {
-    // fsType bits: 0x0002 restricted licence embedding, 0x0004 preview & print, 0x0008 editable,
-    // 0x0200 bitmap embedding only. Installable embedding is fsType == 0 (no bits set).
+    // fsType bits: 0x0002 restricted licence embedding, 0x0004 preview & print, 0x0008 editable, 0x0100 no
+    // subsetting, 0x0200 bitmap embedding only. Installable embedding is fsType == 0 (no bits set).
     private const ushort Restricted = 0x0002;
     private const ushort PreviewAndPrint = 0x0004;
     private const ushort Editable = 0x0008;
+    private const ushort NoSubsetting = 0x0100;
     private const ushort BitmapOnly = 0x0200;
+
+    /// <summary>False when the "No subsetting" bit is set: "When this bit is set, the font may not be subsetted
+    /// prior to embedding." Such a font is embedded whole.</summary>
+    public bool AllowsSubsetting => (FsType & NoSubsetting) == 0;
 
     /// <summary>
     /// True when the outlines may be embedded. Not allowed when only "Restricted License embedding" is set

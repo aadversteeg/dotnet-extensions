@@ -41,13 +41,15 @@ public static class FontSubsetter
     /// <param name="glyphs">The glyphs used. Glyph 0 (.notdef) and the components of every composite glyph are
     /// added, because "the .notdef glyph … must be present" and a composite is drawn from its components.</param>
     /// <returns>The subset, or <c>Documents.Font.Parse.InvalidValue</c> for a composite glyph whose data is
-    /// malformed.</returns>
+    /// malformed. A font whose licence forbids subsetting (<see cref="EmbeddingPermissions.AllowsSubsetting"/>)
+    /// gives its whole font file, marked <see cref="FontSubset.IsSubset"/> false.</returns>
     public static Result<FontSubset, Error> Subset(TrueTypeFont font, IEnumerable<GlyphId> glyphs) =>
-        Closure(font, [new GlyphId(0), .. glyphs]).OnSuccessBind(kept =>
-            TableDirectory.Parse(font.FileData).OnSuccessMap(directory =>
+        Closure(font, [new GlyphId(0), .. glyphs]).OnSuccessBind(kept => font.Embedding.AllowsSubsetting
+            ? TableDirectory.Parse(font.FileData).OnSuccessMap(directory =>
+                new FontSubset(Tag(font, kept), [.. kept], [.. Assemble(SubsetTables(font, directory, kept))]))
+            : Result<FontSubset, Error>.Success(new FontSubset(Tag(font, kept), [.. Enumerable.Range(0, font.GlyphCount).Select(glyph => new GlyphId((ushort)glyph))], [.. font.FileData.Span])
             {
-                var tables = SubsetTables(font, directory, kept);
-                return new FontSubset(Tag(font, kept), [.. kept], [.. Assemble(tables)]);
+                IsSubset = false,
             }));
 
     /// <summary>

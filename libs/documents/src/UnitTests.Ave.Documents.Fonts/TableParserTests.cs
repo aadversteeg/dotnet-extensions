@@ -122,4 +122,68 @@ public class TableParserTests
 
         return builder.ToArray();
     }
+
+    [Fact]
+    public void The_sub_review_s_8000_overlapping_format_4_segments_are_refused_quickly()
+    {
+        // Probe P4: 8000 segments of 0x0000–0xFFFE (64 KB) took 4.4 s. Their endCodes do not increase ("The segments
+        // are sorted in order of increasing endCode values"), so the table is malformed.
+        const int Segments = 8000;
+        var builder = new BigEndianBuilder().UInt16(4).UInt16(16 + Segments * 8).UInt16(0).UInt16(Segments * 2).UInt16(0).UInt16(0).UInt16(0);
+        for (var index = 0; index < Segments; index++) { builder.UInt16(index == Segments - 1 ? 0xFFFF : 0xFFFE); }
+        builder.UInt16(0);
+        for (var index = 0; index < Segments; index++) { builder.UInt16(index == Segments - 1 ? 0xFFFF : 0); }
+        for (var index = 0; index < Segments; index++) { builder.UInt16(index == Segments - 1 ? 1 : 0); }
+        for (var index = 0; index < Segments; index++) { builder.UInt16(0); }
+        var cmap = new BigEndianBuilder().UInt16(0).UInt16(1).UInt16(3).UInt16(1).UInt32(12).Bytes(builder.ToArray()).ToArray();
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = CmapTable.Parse(cmap, glyphCount: 65535);
+
+        watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(1));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+    }
+
+    [Fact]
+    public void In_a_format_4_cmap_a_code_belongs_to_the_first_segment_whose_end_code_covers_it()
+    {
+        // A lookup finds the first segment whose endCode is at or above the code, then checks its startCode. Segment
+        // 1 is 0x41–0x50 (delta 1), segment 2 starts lower, 0x30–0x60 (delta 7): U+0041 is segment 1's; U+0035 finds
+        // segment 1 too, whose startCode is above it, so it is not mapped; U+0055 is segment 2's.
+        var subtable = new BigEndianBuilder()
+            .UInt16(4).UInt16(16 + 3 * 8).UInt16(0).UInt16(6).UInt16(0).UInt16(0).UInt16(0)
+            .UInt16(0x50).UInt16(0x60).UInt16(0xFFFF)
+            .UInt16(0)
+            .UInt16(0x41).UInt16(0x30).UInt16(0xFFFF)
+            .UInt16(1).UInt16(7).UInt16(1)
+            .UInt16(0).UInt16(0).UInt16(0)
+            .ToArray();
+        var cmap = new BigEndianBuilder().UInt16(0).UInt16(1).UInt16(3).UInt16(1).UInt32(12).Bytes(subtable).ToArray();
+
+        var map = CmapTable.Parse(cmap, glyphCount: 200).Value;
+
+        map[0x41].Value.Should().Be(0x42);
+        map.Should().NotContainKey(0x35);
+        map[0x55].Value.Should().Be(0x5C);
+    }
+
+    [Fact]
+    public void A_format_4_cmap_whose_end_codes_decrease_is_invalid()
+    {
+        var subtable = new BigEndianBuilder()
+            .UInt16(4).UInt16(16 + 3 * 8).UInt16(0).UInt16(6).UInt16(0).UInt16(0).UInt16(0)
+            .UInt16(0x60).UInt16(0x50).UInt16(0xFFFF)
+            .UInt16(0)
+            .UInt16(0x41).UInt16(0x41).UInt16(0xFFFF)
+            .UInt16(1).UInt16(1).UInt16(1)
+            .UInt16(0).UInt16(0).UInt16(0)
+            .ToArray();
+        var cmap = new BigEndianBuilder().UInt16(0).UInt16(1).UInt16(3).UInt16(1).UInt32(12).Bytes(subtable).ToArray();
+
+        var result = CmapTable.Parse(cmap, glyphCount: 200);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
+    }
 }

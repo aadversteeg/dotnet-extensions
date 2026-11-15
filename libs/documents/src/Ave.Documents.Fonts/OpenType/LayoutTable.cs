@@ -24,16 +24,19 @@ public sealed record LayoutTable(ValueList<ScriptTable> Scripts, ValueList<Featu
     /// <summary>
     /// The lookups that implement <paramref name="features"/> for a script, in lookup-list order: "During text
     /// processing, a client applies a lookup to each glyph in the string before moving to the next lookup", and
-    /// lookups are taken in the order of the lookup list (OpenType spec, "Lookup list table"). The script falls back
-    /// to <see cref="DefaultScript"/> when the font does not list it ("Script list table"); the language system is
-    /// the script's default one, and its required feature, if any, is always included ("Language system table").
+    /// lookups are taken in the order of the lookup list (OpenType spec, "Lookup list table"). When the font does not
+    /// list the script, it falls back as HarfBuzz does (hb-ot-layout.cc, <c>hb_ot_layout_table_select_script</c>):
+    /// to <see cref="DefaultScript"/> ("Script list table": "If there is no script table for the script, the default
+    /// script table is used"), then to <c>dflt</c>, which many fonts use by mistake, then to <c>latn</c>, where
+    /// some old fonts put all their features. The language system is the script's default one, and its required
+    /// feature, if any, is always included ("Language system table").
     /// </summary>
     /// <param name="script">The OpenType script tag, for example <c>latn</c>.</param>
     /// <param name="features">The feature tags to apply, for example <c>liga</c>.</param>
-    /// <returns>The lookups; empty when the font has neither the script nor a default script.</returns>
+    /// <returns>The lookups; empty when the font has none of the scripts tried.</returns>
     public ImmutableArray<Lookup> LookupsFor(string script, IReadOnlySet<string> features)
     {
-        var table = Scripts.FirstOrDefault(found => found.Tag == script) ?? Scripts.FirstOrDefault(found => found.Tag == DefaultScript);
+        var table = FallbackOrder(script).Select(tag => Scripts.FirstOrDefault(found => found.Tag == tag)).FirstOrDefault(found => found is not null);
         if (table?.DefaultLanguage is not { } language)
         {
             return [];
@@ -49,4 +52,7 @@ public sealed record LayoutTable(ValueList<ScriptTable> Scripts, ValueList<Featu
             .Order()
             .Select(index => Lookups[index])];
     }
+
+    /// <summary>The script tags tried in turn for <paramref name="script"/> (see <see cref="LookupsFor"/>).</summary>
+    private static string[] FallbackOrder(string script) => [script, DefaultScript, "dflt", "latn"];
 }

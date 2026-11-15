@@ -2,7 +2,6 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using Ave.Documents.Core;
-using Ave.Documents.Fonts.Tables;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -48,7 +47,9 @@ public sealed record LegacyKerning(ValueList<KerningSubtable> Subtables)
     /// Reads a version-0 (OpenType) 'kern' table: "version 0, nTables", then per subtable "version, length,
     /// coverage" and, for format 0 (coverage high byte), "nPairs, searchRange, entrySelector, rangeShift" and the
     /// pairs (left, right, value FWORD). The Apple variant (version 1.0, 32-bit) is not an OpenType table and is
-    /// read as "no kerning"; other subtable formats are skipped.
+    /// read as "no kerning"; other subtable formats are skipped. Subtables follow each other by their length field,
+    /// summed in 64 bits; any problem the reader records — a read past the end, the work budget used up by subtables
+    /// that do not move on — ends the loop and makes the table an error.
     /// </summary>
     /// <param name="data">The table bytes.</param>
     /// <returns>The kerning, or a parse error.</returns>
@@ -62,18 +63,20 @@ public sealed record LegacyKerning(ValueList<KerningSubtable> Subtables)
         }
 
         var subtables = new List<KerningSubtable>();
-        var offset = 4;
-        for (var index = 0; index < reader.UInt16(2) && reader.FirstOutOfRange is null; index++)
+        var offset = 4L;
+        var count = reader.UInt16(2);
+        for (var index = 0; index < count && !reader.HasProblem && offset <= reader.Length; index++)
         {
-            var (length, coverage) = (reader.UInt16(offset + 2), reader.UInt16(offset + 4));
+            var at = (int)offset;
+            var (length, coverage) = (reader.UInt16(at + 2), reader.UInt16(at + 4));
             var applies = (coverage >> 8) == 0 && (coverage & (Horizontal | Minimum | CrossStream)) == Horizontal;
             if (applies)
             {
                 var pairs = new Dictionary<(ushort, ushort), short>();
-                var pairCount = reader.Count(offset + 6, offset + 14, 6);
+                var pairCount = reader.Count(at + 6, at + 14, 6);
                 for (var pair = 0; pair < pairCount; pair++)
                 {
-                    var record = offset + 14 + pair * 6;
+                    var record = at + 14 + pair * 6;
                     pairs.TryAdd((reader.UInt16(record), reader.UInt16(record + 2)), reader.Int16(record + 4));
                 }
 
@@ -83,8 +86,6 @@ public sealed record LegacyKerning(ValueList<KerningSubtable> Subtables)
             offset += length;
         }
 
-        return reader.FirstOutOfRange is { } outside
-            ? FontParseErrors.Truncated<LegacyKerning>(Tag, outside, reader.Length)
-            : Result<LegacyKerning, Error>.Success(new LegacyKerning([.. subtables]));
+        return reader.Finish(Tag, new LegacyKerning([.. subtables]));
     }
 }

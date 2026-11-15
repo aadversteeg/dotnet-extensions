@@ -47,8 +47,13 @@ internal static class CmapFormat4
             return FontParseErrors.Truncated<FrozenDictionary<int, GlyphId>>(Tag, arraysEnd, length);
         }
 
+        // "The segments are sorted in order of increasing endCode values", and a lookup finds the first segment whose
+        // endCode is at or above the code, then checks its startCode. So a code at or below an earlier segment's
+        // endCode belongs to that segment, never to a later one: each segment adds only the codes above the one
+        // before it, which also bounds the work to one step per code (65 536 at most), however the segments overlap.
         var data = subtable[..length];
         var map = new Dictionary<int, GlyphId>();
+        var previousEnd = -1;
         for (var segment = 0; segment < segCountX2 / 2; segment++)
         {
             var offset = segment * 2;
@@ -62,7 +67,14 @@ internal static class CmapFormat4
                 return FontParseErrors.InvalidValue<FrozenDictionary<int, GlyphId>>(Tag, $"format 4 segment {segment} has startCode > endCode.", start);
             }
 
-            for (var codePoint = start; codePoint <= end; codePoint++)
+            if (end <= previousEnd)
+            {
+                return FontParseErrors.InvalidValue<FrozenDictionary<int, GlyphId>>(Tag, $"format 4 segment {segment} does not end after the segment before it.", end);
+            }
+
+            var first = Math.Max(start, previousEnd + 1);
+            previousEnd = end;
+            for (var codePoint = first; codePoint <= end; codePoint++)
             {
                 int glyph;
                 if (rangeOffset == 0)

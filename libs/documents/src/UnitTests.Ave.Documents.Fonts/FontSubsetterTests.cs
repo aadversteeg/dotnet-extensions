@@ -127,4 +127,28 @@ public class FontSubsetterTests
     {
         Subset(A, E).FontFile.Length.Should().BeLessThan(TestFonts.Regular.FileData.Length / 10);
     }
+
+    /// <summary>Lato with its OS/2 fsType set to <paramref name="fsType"/> (OS/2 offset 8).</summary>
+    private static TrueTypeFont WithFsType(ushort fsType)
+    {
+        var bytes = TestFonts.Bytes("Lato-Regular.ttf");
+        var os2 = TableDirectory.Parse(bytes).Value.Tables["OS/2"];
+        MemoryMarshal.TryGetArray(os2, out var table).Should().BeTrue();
+        BinaryPrimitives.WriteUInt16BigEndian(bytes.AsSpan(table.Offset + 8), fsType);
+        return FontParser.Parse(bytes).Value;
+    }
+
+    [Fact]
+    public void A_font_whose_licence_forbids_subsetting_is_embedded_whole_without_a_subset_tag()
+    {
+        // OS/2 fsType bit 8, 0x0100 "No subsetting": "When this bit is set, the font may not be subsetted prior to
+        // embedding."
+        var font = WithFsType(0x0100);
+
+        var embedded = FontSubsetter.Subset(font, [A, E]).Value;
+
+        embedded.IsSubset.Should().BeFalse();
+        embedded.FontFile.Should().Equal(font.FileData.ToArray());
+        embedded.PdfName(font).Should().Be("Lato-Regular", "only a subset carries a tag (ISO 32000-1 §9.6.4)");
+    }
 }

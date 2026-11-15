@@ -57,11 +57,14 @@ public sealed record ClassDefinition(ImmutableArray<ClassDefinition.Range> Range
     /// Reads a class definition table; one that several subtables point at is read once per table (see
     /// <see cref="TableReader.Shared{T}"/>). Format 1: "startGlyphID, glyphCount, classValueArray[glyphCount]" — each
     /// glyph from startGlyphID on becomes a range of one. Format 2: "classRangeCount, classRangeRecords[]" of
-    /// (startGlyphID, endGlyphID, class), "in startGlyphID order" and not overlapping, which is checked. Offset 0
-    /// means "no table".
+    /// (startGlyphID, endGlyphID, class), "in startGlyphID order" and not overlapping, which is checked. An offset of
+    /// 0 is NULL, "no table": every glyph is in class 0.
     /// </summary>
-    internal static ClassDefinition Read(TableReader reader, int offset) =>
-        offset == 0 ? Empty : reader.Shared(offset, () => ReadAt(reader, offset));
+    /// <param name="reader">The table's reader.</param>
+    /// <param name="parent">Where the structure that holds the offset starts; offsets count from there.</param>
+    /// <param name="relative">The offset as stored, from <paramref name="parent"/>.</param>
+    internal static ClassDefinition Read(TableReader reader, int parent, int relative) =>
+        relative == 0 ? Empty : reader.Shared(parent + relative, () => ReadAt(reader, parent + relative));
 
     private static ClassDefinition ReadAt(TableReader reader, int offset)
     {

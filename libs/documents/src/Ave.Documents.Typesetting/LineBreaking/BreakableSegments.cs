@@ -35,7 +35,9 @@ internal static class BreakableSegments
     /// Splits the paragraph at its break opportunities. The opportunities are found on the paragraph's whole text
     /// (the glyphs' texts joined, which is the white-space-collapsed text) by <see cref="UnicodeLineBreaking"/>. A
     /// glyph that shows several characters (a ligature cluster) cannot be split, so an opportunity inside a cluster
-    /// is not used.
+    /// is not used; and the glyphs of one character are never split either: the later glyphs of a one-to-many
+    /// substitution have an empty text (<see cref="ShapedGlyph.Text"/>), so an opportunity is taken only before a
+    /// glyph that starts a character.
     /// </summary>
     /// <param name="runs">The shaped glyphs of each run, in order.</param>
     /// <returns>The segments, in order; empty for an empty paragraph.</returns>
@@ -50,13 +52,20 @@ internal static class BreakableSegments
         var offset = 0;
         foreach (var glyph in glyphs)
         {
-            current.Add(glyph);
-            offset += glyph.Glyph.Text.Length;
-            if (opportunities.TryGetValue(offset, out var mandatory))
+            if (current.Count > 0 && glyph.Glyph.Text.Length > 0 && opportunities.TryGetValue(offset, out var mandatory))
             {
-                segments.Add(new Segment(current.ToImmutable(), mandatory && offset < text.Length));
+                segments.Add(new Segment(current.ToImmutable(), mandatory));
                 current.Clear();
             }
+
+            current.Add(glyph);
+            offset += glyph.Glyph.Text.Length;
+        }
+
+        // The end of the text is always an opportunity (UAX #14 LB3); a mandatory break there ends nothing.
+        if (current.Count > 0)
+        {
+            segments.Add(new Segment(current.ToImmutable(), false));
         }
 
         return segments.ToImmutable();

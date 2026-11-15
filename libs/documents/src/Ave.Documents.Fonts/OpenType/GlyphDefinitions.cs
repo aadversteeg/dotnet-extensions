@@ -1,5 +1,4 @@
 using System;
-using Ave.Documents.Fonts.Tables;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -39,12 +38,8 @@ public sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinit
         }
 
         var definitions = new GlyphDefinitions(
-            ClassDefinition.Read(reader, reader.UInt16(4)),
-            ClassDefinition.Read(reader, reader.UInt16(10)));
-        return reader.FirstOutOfRange is { } offset
-            ? FontParseErrors.Truncated<GlyphDefinitions>(Tag, offset, reader.Length)
-            : reader.FirstInvalid is { } problem
-                ? FontParseErrors.InvalidValue<GlyphDefinitions>(Tag, problem, problem)
-                : Result<GlyphDefinitions, Error>.Success(definitions);
+            ClassDefinition.Read(reader, 0, reader.UInt16(4)),
+            ClassDefinition.Read(reader, 0, reader.UInt16(10)));
+        return reader.Finish(Tag, definitions);
     }
 }

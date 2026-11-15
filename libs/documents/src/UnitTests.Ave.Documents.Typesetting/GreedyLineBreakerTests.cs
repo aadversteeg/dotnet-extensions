@@ -112,4 +112,19 @@ public class GreedyLineBreakerTests
         Texts(lines).Should().Equal(expected);
         lines[0].Width.Should().BeApproximately(firstLineWidth, 1e-9);
     }
+
+    [Fact]
+    public void The_glyphs_of_one_character_are_never_split_over_two_lines()
+    {
+        // The sub-review's probe T3: a one-to-many substitution gives the later glyphs of a character an empty text.
+        // "xä—y" may break before the em dash; the two glyphs of the decomposed ä must stay on one line.
+        ValueList<ShapedGlyph> glyphs =
+        [
+            new(new GlyphId(1), 1, "x"), new(new GlyphId(2), 1, "ä"), new(new GlyphId(3), 1, string.Empty), new(new GlyphId(4), 1, "—"), new(new GlyphId(5), 1, "y"),
+        ];
+
+        var lines = GreedyLineBreaker.BreakLines([glyphs], availableWidth: 2);
+
+        lines[0].Segments.SelectMany(segment => segment.Glyphs).Select(glyph => glyph.Glyph.Value).Should().Equal(1, 2, 3);
+    }
 }

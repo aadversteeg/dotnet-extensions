@@ -15,5 +15,10 @@ public sealed record FontSubset(string Tag, ValueList<GlyphId> Glyphs, Immutable
     /// <summary>The name of the subset font in a PDF: the tag, a plus sign, and the PostScript name.</summary>
     /// <param name="font">The font the subset was made from.</param>
     /// <returns>For example <c>EOODIA+Lato-Regular</c>.</returns>
-    public string PdfName(TrueTypeFont font) => $"{Tag}+{font.Names.PostScriptName}";
+    public string PdfName(TrueTypeFont font) => IsSubset ? $"{Tag}+{font.Names.PostScriptName}" : font.Names.PostScriptName;
+
+    /// <summary>False when the font file is the whole font, because its licence does not allow subsetting
+    /// (<see cref="EmbeddingPermissions.AllowsSubsetting"/>). Only a subset carries a tag in its name (ISO 32000-1
+    /// §9.6.4).</summary>
+    public bool IsSubset { get; init; } = true;
 }

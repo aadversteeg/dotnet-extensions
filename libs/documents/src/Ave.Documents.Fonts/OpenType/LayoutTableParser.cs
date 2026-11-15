@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Ave.Documents.Core;
-using Ave.Documents.Fonts.Tables;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -41,11 +40,7 @@ internal static class LayoutTableParser
             Features(reader, reader.UInt16(6)),
             Lookups(reader, reader.UInt16(8), tag, glyphCount));
 
-        return reader.FirstOutOfRange is { } offset
-            ? FontParseErrors.Truncated<LayoutTable>(tag, offset, reader.Length)
-            : reader.FirstInvalid is { } problem
-                ? FontParseErrors.InvalidValue<LayoutTable>(tag, problem, problem)
-                : Result<LayoutTable, Error>.Success(table);
+        return reader.Finish(tag, table);
     }
 
     /// <summary>Script list: "scriptCount, scriptRecords[]" of (scriptTag, scriptOffset); a script table:
@@ -244,8 +239,8 @@ internal static class LayoutTableParser
         });
         return new PairAdjustmentByClass(
             Coverage.Read(reader, offset + reader.UInt16(offset + 2)),
-            ClassDefinition.Read(reader, offset + reader.UInt16(offset + 8)),
-            ClassDefinition.Read(reader, offset + reader.UInt16(offset + 10)),
+            ClassDefinition.Read(reader, offset, reader.UInt16(offset + 8)),
+            ClassDefinition.Read(reader, offset, reader.UInt16(offset + 10)),
             [.. values],
             records == 0 ? 0 : class1Count,
             records == 0 ? 0 : class2Count,

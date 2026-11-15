@@ -110,16 +110,32 @@ public class PdfRendererTests
         text.Should().Contain(@"/Title (\376\377\000T\000e\000s\000t\000 \000\351)");
     }
 
-    [Fact]
-    public void A_font_whose_licence_forbids_embedding_is_an_error()
+    [Theory]
+    [InlineData((ushort)0x0002)]
+    [InlineData((ushort)0x0200)]
+    public void A_font_whose_licence_forbids_embedding_is_an_error(ushort fsType)
     {
-        var restricted = FontParser.Parse(WithFsType(TestFonts.Bytes("Lato-Regular.ttf"), 0x0002)).Value;
+        // OS/2 fsType: 0x0002 "Restricted License embedding" alone, 0x0200 "Bitmap embedding only" (a PDF embeds outlines).
+        var restricted = FontParser.Parse(WithFsType(TestFonts.Bytes("Lato-Regular.ttf"), fsType)).Value;
         var model = new PageDocument(new DocumentMetadata(null, null), [new Page(new Size(100, 100), [Run("x", restricted, 10, new Point(0, 50))])]);
 
         var error = PdfRenderer.Render(model, Options).Error;
 
         error.Code.Should().Be(DocumentErrorCodes.Pdf.Write.FontEmbeddingNotPermitted);
         error.Metadata![ErrorMetadataKeys.FontName].Should().Be("Lato-Regular");
+    }
+
+    [Fact]
+    public void A_font_whose_licence_forbids_subsetting_is_embedded_whole()
+    {
+        var bytes = WithFsType(TestFonts.Bytes("Lato-Regular.ttf"), 0x0100);
+        var whole = FontParser.Parse(bytes).Value;
+        var model = new PageDocument(new DocumentMetadata(null, null), [new Page(new Size(100, 100), [Run("x", whole, 10, new Point(0, 50))])]);
+
+        var text = Latin1(PdfRenderer.Render(model, Options).Value);
+
+        text.Should().Contain("/BaseFont /Lato-Regular").And.NotContain("+Lato-Regular", "only a subset carries a tag (ISO 32000-1 §9.6.4)");
+        text.Should().Contain($"/Length1 {bytes.Length}");
     }
 
     [Fact]

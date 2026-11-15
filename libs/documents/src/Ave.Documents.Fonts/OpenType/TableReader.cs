@@ -1,6 +1,9 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using Ave.Documents.Fonts.Tables;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Fonts.OpenType;
 
@@ -42,7 +45,22 @@ internal sealed class TableReader(ReadOnlyMemory<byte> table)
     /// <summary>The table's length in bytes.</summary>
     public int Length => table.Length;
 
-    private bool HasProblem => FirstOutOfRange is not null || FirstInvalid is not null;
+    /// <summary>True once a read went past the end or a value was invalid: the table is known to be malformed.</summary>
+    public bool HasProblem => FirstOutOfRange is not null || FirstInvalid is not null;
+
+    /// <summary>
+    /// The outcome of the whole parse: <paramref name="value"/> when every read was in range and every value valid;
+    /// otherwise the first problem, <c>Documents.Font.Parse.Truncated</c> before <c>InvalidValue</c>. Every parser
+    /// that uses a reader ends with this call, so no recorded problem can be ignored.
+    /// </summary>
+    /// <typeparam name="T">The parsed value.</typeparam>
+    /// <param name="tag">The table tag, for the error.</param>
+    /// <param name="value">What the parser built.</param>
+    /// <returns>The value or the error.</returns>
+    public Result<T, Error> Finish<T>(string tag, T value) =>
+        FirstOutOfRange is { } offset ? FontParseErrors.Truncated<T>(tag, offset, Length)
+        : FirstInvalid is { } problem ? FontParseErrors.InvalidValue<T>(tag, problem, problem)
+        : Result<T, Error>.Success(value);
 
     /// <summary>Records a value the specification does not allow; the first one is kept.</summary>
     /// <param name="description">What is wrong, for example "coverage format 3".</param>
