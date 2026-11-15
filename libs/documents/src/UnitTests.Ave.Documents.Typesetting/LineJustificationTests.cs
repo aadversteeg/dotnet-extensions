@@ -4,7 +4,7 @@ using Ave.Documents.Typesetting;
 
 namespace UnitTests.Ave.Documents.Typesetting;
 
-/// <summary>text-align and inter-word justification (CSS Text 3 §6, §7) on lines of 1-point-wide glyphs.</summary>
+/// <summary>text-align and inter-word justification (CSS Text 3 §6.1, §6.4) on lines of 1-point-wide glyphs.</summary>
 public class LineJustificationTests
 {
     private static TextLine Line(string text, bool forcedBreak = false) =>

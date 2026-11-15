@@ -21,11 +21,12 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     public bool IsSpace => Text == " ";
 
     /// <summary>True for a default-ignorable character (a soft hyphen, a joiner, a zero width space, …): its advance
-    /// is 0 and it is not drawn, but it stays in the text for line breaking. The Unicode Standard, §5.21: default
-    /// ignorable code points are "rendered invisible" when they have no visible effect.</summary>
+    /// is 0 and it is not drawn, but it stays in the text for line breaking. The Unicode Standard §5.21.6, "Characters
+    /// Ignored for Display": the characters to ignore for display are those with the Default_Ignorable_Code_Point
+    /// property.</summary>
     public bool IsInvisible { get; init; }
 
-    /// <summary>For a soft hyphen: the visible hyphen that replaces it when a line breaks after it (CSS Text 3,
-    /// <c>hyphens: manual</c>); null for every other glyph, and for a soft hyphen in a font without a hyphen.</summary>
+    /// <summary>For a soft hyphen: the visible hyphen that replaces it when a line breaks after it (UAX #14 §5.4;
+    /// CSS Text 3 §5.3, <c>hyphens: manual</c>); null for every other glyph, and for a soft hyphen in a font without a hyphen.</summary>
     public ShapedGlyph? BreakHyphen { get; init; }
 }

@@ -8,8 +8,8 @@ namespace Ave.Documents.Pdf;
 /// </summary>
 /// <remarks>
 /// <para>The profiles that make sense: <see cref="Plain"/>; <see cref="PdfA3b"/> (ISO 19005-3 level B, "visual
-/// appearance preserved"); <see cref="PdfA3a"/> (level A: level B plus tagged, logical structure and Unicode text,
-/// ISO 19005-3 §6.7–§6.8); <see cref="PdfUa1"/> (ISO 14289-1); and PDF/A-3 plus PDF/UA-1 with
+/// appearance preserved"); <see cref="PdfA3a"/> (level A: level B plus the logical structure of §6.7 — tagging — and
+/// the Unicode mapping of §6.2.11.7, the clauses level B leaves out, ISO 19005-3 clause 5); <see cref="PdfUa1"/> (ISO 14289-1); and PDF/A-3 plus PDF/UA-1 with
 /// <see cref="AndPdfUa1"/>, which is what a long-lived accessible business document wants.</para>
 /// <para>PDF/A-3 here means a PDF 1.7 file (ISO 32000-1), the base ISO 19005-3 builds on; every rule cited is from
 /// the veraPDF validation profiles (rule ids such as <c>6.8-3</c>), whose clause numbers are the standards'.</para>
@@ -61,7 +61,7 @@ public sealed record PdfProfile
     };
 }
 
-/// <summary>The conformance levels of PDF/A-3 that the engine writes (ISO 19005-3 §2; level U is not offered:
+/// <summary>The conformance levels of PDF/A-3 that the engine writes (ISO 19005-3 clause 5; level U is not offered:
 /// level A includes everything it adds).</summary>
 public enum PdfA3Level
 {

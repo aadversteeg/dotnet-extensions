@@ -16,7 +16,7 @@ internal static class InputChecks
     private static readonly string[] Sides = ["top", "right", "bottom", "left"];
 
     /// <summary>Page size: positive finite width and height; margins finite and not negative; and the margins
-    /// must leave a page area (CSS Paged Media 3 §3.1) to lay content out in.</summary>
+    /// must leave a page area (CSS Paged Media 3 §3) to lay content out in.</summary>
     public static IEnumerable<Error> Page(PageSetup page, SourceLocation source)
     {
         if (!(page.Width.IsFinite && page.Height.IsFinite && page.Width.Points > 0 && page.Height.Points > 0))
@@ -39,7 +39,7 @@ internal static class InputChecks
     }
 
     /// <summary>
-    /// Margins and padding. Padding may not be negative (CSS Box Model 3 §5.2: "Negative values for padding
+    /// Margins and padding. Padding may not be negative (CSS Box Model 3 §4.2: "Negative values for padding
     /// properties are invalid"). Negative margins are valid CSS but not implemented yet, so they are reported as
     /// unsupported rather than drawn wrongly.
     /// </summary>
@@ -49,7 +49,7 @@ internal static class InputChecks
 
     /// <summary>
     /// Text formatting: a family name that is not empty, a positive finite size (CSS Fonts 4 §2.5: "Negative
-    /// values are not allowed"; zero would make every glyph invisible), and a weight in 1–1000 (§2.2).
+    /// lengths are invalid."; zero would make every glyph invisible), and a weight in 1–1000 (§2.2).
     /// </summary>
     public static IEnumerable<Error> Text(TextFormat format, SourceLocation source)
     {
@@ -96,7 +96,7 @@ internal static class InputChecks
             _ => System.Array.Empty<Error>(),
         });
 
-    /// <summary>Border widths: finite and not negative (CSS Backgrounds 3 §4.3: "Negative values are invalid").</summary>
+    /// <summary>Border widths: finite and not negative (CSS Backgrounds 3 §3.3: "Negative values are invalid").</summary>
     public static IEnumerable<Error> Border(DocumentModel.Border border, SourceLocation source) =>
         Lengths(border.Widths, "border", source, DocumentErrorCodes.Input.Invalid.Length);
 
@@ -209,7 +209,8 @@ internal static class InputChecks
             .Select(size => Problem(DocumentErrorCodes.Input.Invalid.ImageSize, $"An image {size.Name} must be a positive length.", size.Value.ToString()!, size.Name, source));
 
     /// <summary>
-    /// A language tag as ISO 32000-1 §14.9.2.1 asks for ("a language identifier … as defined in RFC 3066"): a primary
+    /// A language tag as ISO 32000-1 §14.9.2.2 asks for ("a Language-Tag as defined in RFC 3066, Tags for the
+    /// Identification of Languages"; the empty string, "language unknown", is not offered to authors): a primary
     /// subtag of 1–8 letters, then subtags of 1–8 letters or digits, each after a hyphen (RFC 3066 §2.1). Whether the
     /// subtags are registered is not checked.
     /// </summary>

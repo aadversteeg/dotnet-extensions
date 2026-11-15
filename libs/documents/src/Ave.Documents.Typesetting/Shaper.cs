@@ -28,7 +28,7 @@ namespace Ave.Documents.Typesetting;
 /// <item>GPOS features <c>kern</c> and <c>mark</c>; lookup types 2 (pair adjustment, formats 1 and 2) and 4
 /// (mark-to-base), directly or through type 9 (extension). Without a GPOS <c>kern</c> feature, the 'kern' table
 /// is used.</item>
-/// <item>The script's default language system (OpenType spec, "Script list table"); language-specific systems
+/// <item>The script's default language system (OpenType spec, "ScriptList table"); language-specific systems
 /// are not used yet.</item>
 /// </list>
 /// <para>DOCUMENTED SKIPS (never errors, never crashes): a subtable of any other lookup type or format inside these
@@ -130,8 +130,10 @@ public static class Shaper
     private const string SoftHyphen = "\u00AD";
 
     /// <summary>
-    /// The hyphen shown where a line breaks at a soft hyphen: "the UA must … insert a visible hyphen" (CSS Text 3,
-    /// <c>hyphens</c>), U+2010 HYPHEN when the font has it, otherwise U+002D HYPHEN-MINUS; null when it has neither,
+    /// The hyphen shown where a line breaks at a soft hyphen. UAX #14 §5.4: the soft hyphen is "an invisible format
+    /// character that merely indicates a preferred intraword line break position. If the line is broken at that
+    /// point, then whatever mechanism is appropriate for intraword line breaks should be invoked" (CSS Text 3 §5.3,
+    /// <c>hyphens: manual</c>, hyphenates only there). Shown as U+2010 HYPHEN when the font has it, otherwise U+002D HYPHEN-MINUS; null when it has neither,
     /// and the break then shows nothing (a documented limit).
     /// </summary>
     private static ShapedGlyph? Hyphen(TrueTypeFont font, double fontSize) =>

@@ -2,7 +2,7 @@ namespace Ave.Documents.Core;
 
 /// <summary>
 /// Four lengths, one per side of a box, for margins and padding. The parameter order is top, right, bottom,
-/// left: the order of the CSS shorthand properties (CSS Box Model 3 §4.2 "margin", §5.2 "padding").
+/// left: the order of the CSS shorthand properties (CSS Box Model 3 §3.2 "margin", §4.2 "padding").
 /// </summary>
 /// <param name="Top">The top side.</param>
 /// <param name="Right">The right side.</param>

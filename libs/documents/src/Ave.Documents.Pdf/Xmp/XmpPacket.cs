@@ -19,7 +19,8 @@ namespace Ave.Documents.Pdf.Xmp;
 /// <c>rdf:Description</c>, in the order their namespaces first appear.</param>
 public sealed record XmpPacket(ValueList<XmpProperty> Properties)
 {
-    /// <summary>The packet wrapper's id (ISO 16684-1 §7.3.2: "the value of id shall be W5M0MpCehiHzreSzNTczkc9d").</summary>
+    /// <summary>The packet wrapper's id (ISO 16684-1 §7.3.2: "The header PI shall be an XML processing instruction
+    /// of exactly the form shown in Figure 6", whose id is W5M0MpCehiHzreSzNTczkc9d).</summary>
     private const string PacketId = "W5M0MpCehiHzreSzNTczkc9d";
 
     /// <summary>
@@ -122,9 +123,9 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     };
 
     /// <summary>
-    /// A property element (ISO 16684-1 §7.9.2): a simple value as element text; an array as a <c>rdf:Seq</c>,
-    /// <c>rdf:Bag</c> or <c>rdf:Alt</c> of <c>rdf:li</c> items; a structure as the fields inside an element with
-    /// <c>rdf:parseType="Resource"</c> (§7.9.2.4).
+    /// A property element: a simple value as element text (ISO 16684-1 §7.5); an array as "exactly one nested element"
+    /// <c>rdf:Seq</c>, <c>rdf:Bag</c> or <c>rdf:Alt</c> of <c>rdf:li</c> items (§7.7); a structure as the fields inside
+    /// an element with <c>rdf:parseType="Resource"</c> (§7.9.2, allowed equivalent RDF).
     /// </summary>
     private static void WriteProperty(XmlWriter xml, XmpProperty property)
     {

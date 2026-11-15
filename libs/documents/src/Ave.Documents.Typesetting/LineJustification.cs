@@ -5,8 +5,8 @@ using Ave.Documents.Core;
 namespace Ave.Documents.Typesetting;
 
 /// <summary>
-/// Places a line between the edges of its line box: alignment and inter-word justification (CSS Text 3 §6
-/// <c>text-align</c>, §7 justification).
+/// Places a line between the edges of its line box: alignment and inter-word justification (CSS Text 3 §6.1
+/// <c>text-align</c>, §6.4 <c>text-justify</c>).
 /// </summary>
 public static class LineJustification
 {
@@ -28,10 +28,10 @@ public static class LineJustification
     /// <remarks>
     /// <list type="bullet">
     /// <item>Left, right, centre: the line moves; nothing inside it changes (§6.1).</item>
-    /// <item>Justify: the free space is shared equally by the word separators inside the line ("inter-word …
-    /// justification opportunities are … word-separator characters", §7.1); the spaces at the line's ends were
+    /// <item>Justify: the free space is shared equally by the word separators inside the line (<c>text-justify:
+    /// inter-word</c>, §6.4; the word-separator characters are listed with <c>word-spacing</c>, §7.1); the spaces at the line's ends were
     /// already removed by line breaking. The last line of the paragraph and a line that ends in a forced break are
-    /// not justified but start-aligned (<c>text-align-last: auto</c>, §6.2). A line without a word separator cannot
+    /// not justified but start-aligned (<c>text-align-last: auto</c>, §6.3). A line without a word separator cannot
     /// be justified inter-word and is start-aligned too.</item>
     /// <item>A line wider than its box is start-aligned: "If … the inline contents of a line box are too long to
     /// fit within it, then the contents are start-aligned" (§6.1).</item>

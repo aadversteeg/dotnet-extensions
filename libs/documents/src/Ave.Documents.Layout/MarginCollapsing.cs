@@ -79,8 +79,9 @@ internal static class MarginCollapsing
     /// <summary>
     /// True when the box's own top and bottom margins adjoin (§8.3.1, last case: a box with "zero or 'auto'
     /// computed 'height', and no in-flow children"): no vertical padding or border, and either a flow box whose
-    /// children are all empty, or an inline box that makes no line boxes (CSS 2.1 §9.4.2: line boxes with no text
-    /// "must be treated as not existing for … margin collapsing").
+    /// children are all empty, or an inline box that makes no line boxes (CSS 2.1 §9.4.2: such line boxes "must be
+    /// treated as zero-height line boxes for the purposes of determining the positions of any elements inside of them
+    /// … and must be treated as not existing for any other purpose", margin collapsing included).
     /// </summary>
     public static bool IsEmpty(Box box) =>
         box.Style.Padding.Top.Points == 0

@@ -69,7 +69,7 @@ public static class Paginator
 
     /// <summary>
     /// One layout pass: every page with the given page count. Each page is the page style's size. Its page area (the
-    /// page minus its margins, CSS Paged Media 3 §3.1) holds, from the top, the template's header area, the body and
+    /// page minus its margins, CSS Paged Media 3 §3: "The content area of a page box is called the page area") holds, from the top, the template's header area, the body and
     /// the footer area. The areas are laid out first (they may show the page number), and the root box goes in the
     /// height they leave, as the root of the block formatting context, with its own margins inside.
     /// </summary>

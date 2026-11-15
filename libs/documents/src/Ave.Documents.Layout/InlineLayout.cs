@@ -50,9 +50,9 @@ public static class InlineLayout
     }
 
     /// <summary>
-    /// The intrinsic widths of a paragraph (CSS Sizing 3 §5.1, "min-content inline size … the largest min-content
-    /// contribution", which for text is the widest piece that cannot be broken; "max-content inline size" is the
-    /// widest line when the text only breaks at forced breaks). Both come from the same line breaker as layout: break
+    /// The intrinsic widths of a paragraph (CSS Sizing 3 §5.1): the min-content inline size, which for text is the
+    /// widest piece that cannot be broken, and the max-content inline size, the widest line when the text only breaks
+    /// at forced breaks (CSS Sizing 3 §5.2 leaves the details to CSS 2.1). Both come from the same line breaker as layout: break
     /// with no width at all (every break opportunity is taken) and with unlimited width. Border and padding are added.
     /// </summary>
     /// <param name="environment">The fonts, algorithms and current page.</param>

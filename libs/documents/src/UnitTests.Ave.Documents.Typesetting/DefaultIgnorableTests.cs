@@ -6,10 +6,10 @@ namespace UnitTests.Ave.Documents.Typesetting;
 
 /// <summary>
 /// Default-ignorable code points (Unicode <c>Default_Ignorable_Code_Point</c>, DerivedCoreProperties.txt): they take
-/// no space and draw nothing, and need no glyph in the font (the Unicode Standard, §5.21: "rendered invisible").
+/// no space and draw nothing, and need no glyph in the font (the Unicode Standard §5.21.6, "Characters Ignored for Display", and §5.3: such a character "should not be displayed with a visible fallback glyph").
 /// The joiners act as HarfBuzz has them act: ZWJ is skipped while matching, so it does not stop a ligature; ZWNJ
-/// stops one. A soft hyphen is a break opportunity that shows a hyphen only when the line breaks there (CSS Text 3
-/// <c>hyphens: manual</c>). Lato: f = 61, i = 98, "fi" = 67, U+2010 has a glyph.
+/// stops one. A soft hyphen is a break opportunity that shows a hyphen only when the line breaks there (UAX #14 §5.4;
+/// CSS Text 3 §5.3, <c>hyphens: manual</c>). Lato: f = 61, i = 98, "fi" = 67, U+2010 has a glyph.
 /// </summary>
 public class DefaultIgnorableTests
 {

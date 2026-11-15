@@ -4,7 +4,7 @@ namespace Ave.Documents.Fluent;
 
 /// <summary>
 /// Text formatting as the author specifies it. A null field means "inherit from the parent" — font family,
-/// size, weight, style and colour are inherited properties in CSS (CSS Cascade 4 §7.1).
+/// size, weight, style and colour are inherited properties in CSS (CSS Cascade 4 §7.2).
 /// </summary>
 /// <param name="FontFamily">The font family, for example <c>Lato</c>.</param>
 /// <param name="FontSize">The font size.</param>

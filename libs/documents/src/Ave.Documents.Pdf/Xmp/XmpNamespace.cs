@@ -1,8 +1,8 @@
 namespace Ave.Documents.Pdf.Xmp;
 
 /// <summary>
-/// An XML namespace of XMP properties (XMP Specification Part 1, ISO 16684-1 §6.2: a schema is a set of properties
-/// in one namespace) with its customary prefix. The schemas the engine writes are listed here; an extension schema
+/// An XML namespace of XMP properties (ISO 16684-1 §6.2: "All names in XMP shall be XML expanded names, consisting
+/// of a namespace URI and a local name") with its customary prefix. The schemas the engine writes are listed here; an extension schema
 /// (Factur-X, later) defines its own namespace the same way.
 /// </summary>
 /// <param name="Prefix">The prefix, for example <c>dc</c>. PDF/A requires the documented prefixes for its own schemas

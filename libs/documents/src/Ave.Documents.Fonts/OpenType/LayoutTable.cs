@@ -24,9 +24,10 @@ public sealed record LayoutTable(ValueList<ScriptTable> Scripts, ValueList<Featu
     /// <summary>
     /// The lookups that implement <paramref name="features"/> for a script, in lookup-list order: "During text
     /// processing, a client applies a lookup to each glyph in the string before moving to the next lookup", and
-    /// lookups are taken in the order of the lookup list (OpenType spec, "Lookup list table"). When the font does not
+    /// lookups are taken in the order of the lookup list (OpenType spec, "LookupList table"). When the font does not
     /// list the script, it falls back as HarfBuzz does (hb-ot-layout.cc, <c>hb_ot_layout_table_select_script</c>):
-    /// to <see cref="DefaultScript"/> ("Script list table": "If there is no script table for the script, the default
+    /// to <see cref="DefaultScript"/> (OpenType spec, "ScriptList table", which says an application "should use a DFLT script table if there is not a
+    /// script table associated with the specific script of the text"; the default
     /// script table is used"), then to <c>dflt</c>, which many fonts use by mistake, then to <c>latn</c>, where
     /// some old fonts put all their features. The language system is the script's default one, and its required
     /// feature, if any, is always included ("Language system table").

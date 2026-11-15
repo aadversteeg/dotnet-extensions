@@ -34,8 +34,8 @@ internal enum CharacterTraits : byte
     /// glyph classes of its own (no GDEF table).</summary>
     NonspacingMark = 1 << 6,
 
-    /// <summary>Default_Ignorable_Code_Point=Yes (DerivedCoreProperties.txt): a character that is rendered invisible
+    /// <summary>Default_Ignorable_Code_Point=Yes (DerivedCoreProperties.txt): a character that is not displayed
     /// when it has no visible effect, such as the soft hyphen, the joiners and the zero width space (the Unicode
-    /// Standard, §5.21).</summary>
+    /// Standard §5.21.6, "Characters Ignored for Display").</summary>
     DefaultIgnorable = 1 << 7,
 }

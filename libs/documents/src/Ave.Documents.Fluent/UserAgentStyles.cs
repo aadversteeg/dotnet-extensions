@@ -4,7 +4,7 @@ namespace Ave.Documents.Fluent;
 
 /// <summary>
 /// The defaults the code front-end applies before the author's own formatting, like a browser's user-agent
-/// style sheet (CSS Cascade 4 §6.1: user-agent origin, overridden by the author origin).
+/// style sheet (CSS Cascade 4 §6.2: user-agent origin, overridden by the author origin).
 /// </summary>
 public static class UserAgentStyles
 {

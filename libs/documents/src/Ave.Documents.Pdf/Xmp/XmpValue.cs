@@ -3,7 +3,7 @@ using Ave.Documents.Core;
 namespace Ave.Documents.Pdf.Xmp;
 
 /// <summary>
-/// The value of an XMP property (ISO 16684-1 §6.4 data model): a simple text value, an array, a language alternative,
+/// The value of an XMP property (ISO 16684-1 §6.3, value forms: simple, structure, array): a simple text value, an array, a language alternative,
 /// or a structure of fields. A closed set of immutable values; <see cref="XmpPacket"/> writes them as RDF/XML.
 /// </summary>
 public abstract record XmpValue
@@ -20,7 +20,8 @@ public sealed record XmpText(string Text) : XmpValue;
 
 /// <summary>
 /// A language alternative with one entry, for the default language (<c>rdf:Alt</c> with one <c>rdf:li
-/// xml:lang="x-default"</c>, ISO 16684-1 §7.9.2.5), the form PDF/A and PDF/UA expect for <c>dc:title</c>.
+/// xml:lang="x-default"</c>; ISO 16684-1 §8.2.2.4: "If used, the x-default item shall be first in the
+/// array"), the form PDF/A and PDF/UA expect for <c>dc:title</c>.
 /// </summary>
 /// <param name="Text">The text.</param>
 public sealed record XmpLanguageAlternative(string Text) : XmpValue;

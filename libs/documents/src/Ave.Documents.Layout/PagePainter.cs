@@ -100,7 +100,7 @@ public static class PagePainter
 
     /// <summary>
     /// The border sides the fragment paints, each a filled rectangle along its edge of the border box (solid borders
-    /// only, CSS Backgrounds 3 §4). The top and bottom sides run the full width; the left and right sides fill the
+    /// only, CSS Backgrounds 3 §3). The top and bottom sides run the full width; the left and right sides fill the
     /// height between them. LIMIT: where two sides of different colours meet, CSS joins them on the diagonal of the
     /// corner (CSS Backgrounds 3, colour transitions at corners); here the top and bottom sides cover the corners.
     /// </summary>

@@ -69,7 +69,7 @@ public static class FlowLayout
     }
 
     /// <summary>
-    /// The intrinsic widths of a flow box (CSS Sizing 3 §5.1): the widest child decides, each child counted with its
+    /// The intrinsic widths of a flow box (CSS Sizing 3 §5.1, contributions §5.2): the widest child decides, each child counted with its
     /// horizontal margins; then the box's own border and padding are added.
     /// </summary>
     /// <param name="environment">The fonts and algorithms.</param>

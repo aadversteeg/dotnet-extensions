@@ -66,7 +66,7 @@ public static class DocumentTranslator
     /// <param name="Align">The text alignment.</param>
     internal sealed record Inherited(TextStyle Text, TextAlign Align)
     {
-        /// <summary>CSS inheritance (CSS Cascade 4 §7.1): what an element does not specify is its parent's value.</summary>
+        /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value.</summary>
         public Inherited With(TextFormat format) => new(
             new TextStyle(
                 format.FontFamily ?? Text.FontFamily,

@@ -28,12 +28,12 @@ public static class GreedyLineBreaker
     /// <item>Spaces at the start and at the end of a line are removed (CSS Text 3 §4.1.2, "Phase II: Trimming and
     /// Positioning"); UAX #14 puts the opportunity AFTER a run of spaces (LB18), so they end the line before.</item>
     /// <item>A line always ends after a mandatory break (UAX #14 "!"); an empty line is not made.</item>
-    /// <item>A line that breaks after a soft hyphen shows a hyphen there (CSS Text 3, <c>hyphens: manual</c>): the
+    /// <item>A line that breaks after a soft hyphen shows a hyphen there (UAX #14 §5.4; CSS Text 3 §5.3, <c>hyphens: manual</c>): the
     /// invisible soft hyphen is replaced by its <see cref="ShapedGlyph.BreakHyphen"/>. A segment that ends in a soft
     /// hyphen goes on the line only when it fits with that hyphen — LIMIT: so a line may end one segment earlier
     /// than it would if the segment after it also fitted, which would make the hyphen unnecessary.</item>
     /// <item>A piece wider than the whole line is put on a line of its own and overflows it: there is no break
-    /// opportunity inside it, and <c>overflow-wrap: normal</c> does not break words (CSS Text 3 §5.5).</item>
+    /// opportunity inside it, and <c>overflow-wrap: normal</c> does not break words (CSS Text 3 §5.4).</item>
     /// </list>
     /// LIMIT: shaping is not redone at line ends. A kerning pair across a break opportunity (a letter and the
     /// space after it) keeps its adjustment on the letter at the end of the line.

@@ -3,7 +3,7 @@ using Ave.Documents.Core;
 namespace Ave.Documents.DocumentModel;
 
 /// <summary>
-/// One side of a box's border: a solid line of a width and a colour (CSS Backgrounds 3 §4: <c>border-width</c>,
+/// One side of a box's border: a solid line of a width and a colour (CSS Backgrounds 3 §3: <c>border-width</c>,
 /// <c>border-color</c>; <c>border-style</c> is always <c>solid</c> in this version). A width of zero is the
 /// initial <c>border-style: none</c>: no border, and the side takes no space.
 /// </summary>

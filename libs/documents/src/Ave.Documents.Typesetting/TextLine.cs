@@ -6,7 +6,7 @@ namespace Ave.Documents.Typesetting;
 /// <summary>One line of a paragraph, as produced by line breaking: consecutive pieces of the input runs.</summary>
 /// <param name="Segments">The pieces, left to right.</param>
 /// <param name="EndsWithForcedBreak">True when the line ends at a mandatory break (UAX #14 "!") inside the
-/// paragraph; such a line is not justified (CSS Text 3 §6.2).</param>
+/// paragraph; such a line is not justified (CSS Text 3 §6.3, <c>text-align-last</c>).</param>
 public sealed record TextLine(ValueList<LineSegment> Segments, bool EndsWithForcedBreak = false)
 {
     /// <summary>The width of the line's content, in points.</summary>

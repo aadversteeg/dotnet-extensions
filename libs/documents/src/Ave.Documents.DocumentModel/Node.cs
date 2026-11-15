@@ -13,7 +13,7 @@ public abstract record Node(NodeId Id, SourceLocation Source);
 
 /// <summary>
 /// A box: a rectangle that is laid out by the algorithm <see cref="Layout"/> names and that contains child
-/// nodes. In CSS terms a block-level box (CSS Display 3 §2); <see cref="Layout"/> is its inner display type.
+/// nodes. In CSS terms a block-level box (CSS Display 3 §2.1); <see cref="Layout"/> is its inner display type.
 /// </summary>
 /// <remarks>
 /// Which children a box may have depends on its algorithm: <see cref="LayoutAlgorithmId.Flow"/> stacks child

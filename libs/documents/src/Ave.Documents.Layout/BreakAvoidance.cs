@@ -6,10 +6,14 @@ namespace Ave.Documents.Layout;
 /// <summary>
 /// The appeal of breakpoints under the <c>avoid</c> values of CSS Fragmentation 3: <c>break-before</c> and
 /// <c>break-after</c> (§3.1) for a break between siblings (class A, §4.1), <c>break-inside</c> (§3.2) for a break
-/// inside a box. Rule 1 of §4.4 allows a class-A break "only if all the break-after and break-before values applicable
-/// to this break point allow it"; here a disallowed break keeps a lower appeal instead of being impossible, so it is
-/// still used when nothing better exists (§4.4: "If the above doesn't provide enough break points … rules 1, 2 and 4
-/// are dropped in order to find additional breakpoints").
+/// inside a box. §4.4 "Unforced Breaks" has four rules. Rule 1: "A fragmented flow may break at a class A break point
+/// only if all the break-after and break-before values applicable to this break point allow it, which is when at least
+/// one of them forces a break or when none of them forbid it". Rule 2: with all of them auto, not when "a common
+/// ancestor of all the elements has a break-inside value of avoid". Rule 3 is orphans and widows (not implemented).
+/// Rule 4: class B and C breaks only when "the break-inside property of all ancestors is auto". The rules are then
+/// relaxed in order — first rule 3 is dropped, and if that still does not lead to sufficient break points, rules 1, 2
+/// and 4 — so here a disallowed break keeps a lower appeal instead of being impossible, and is still used when nothing
+/// better exists.
 /// </summary>
 internal static class BreakAvoidance
 {

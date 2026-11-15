@@ -31,8 +31,10 @@ internal static class GlyphPositioning
 
     /// <summary>
     /// Kerning from the 'kern' table: each pair of adjacent glyphs, skipping marks (a mark sits on its base and
-    /// does not separate a pair), gets the table's adjustment added to the first glyph's advance ("the value is
-    /// added to the advance width of the first glyph", OpenType spec 'kern', format 0).
+    /// does not separate a pair), gets the table's adjustment added to the first glyph's advance. The OpenType spec
+    /// ('kern', format 0) only says "If this value is greater than zero, the characters will be moved apart. If this
+    /// value is less than zero, the character will be moved closer together"; putting the whole value on the first
+    /// glyph's advance is the engine's convention (the positions on the page are the same either way).
     /// </summary>
     public static ImmutableArray<GlyphItem> ApplyLegacyKerning(ImmutableArray<GlyphItem> buffer, LegacyKerning kerning)
     {
