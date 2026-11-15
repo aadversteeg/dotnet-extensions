@@ -19,22 +19,23 @@ public static class DocumentTranslator
     /// Validates and translates the document. Node ids are assigned in pre-order, starting with 0 for the
     /// root box, so the same document always gets the same ids. ALL problems in the document are reported
     /// together (as a <see cref="DocumentErrorCodes.Multiple"/> error when there are several), each with the
-    /// source location of the call that caused it.
+    /// source location of the element that caused it.
     /// </summary>
     /// <param name="document">The document.</param>
     /// <returns>The document model, or the <see cref="DocumentErrorCodes.Input"/> errors.</returns>
     public static Result<StyledDocument, Error> ToModel(Document document)
     {
+        var format = document.Format.Text;
         var problems = InputChecks.Page(document.Page, document.Source)
-            .Concat(InputChecks.Text(document.Format, document.Source))
-            .Concat(document.Format.FontFamily is null ? [InputChecks.MissingFontFamily(document.Source)] : [])
+            .Concat(InputChecks.Text(format, document.Source))
+            .Concat(format.FontFamily is null ? [InputChecks.MissingFontFamily(document.Source)] : [])
             .ToImmutableArray();
 
         var rootStyle = new TextStyle(
-            document.Format.FontFamily ?? string.Empty,
-            document.Format.FontSize ?? UserAgentStyles.InitialFontSize,
-            document.Format.FontWeight ?? FontWeight.Regular,
-            document.Format.Color ?? Color.Black);
+            format.FontFamily ?? string.Empty,
+            format.FontSize ?? UserAgentStyles.InitialFontSize,
+            format.FontWeight ?? FontWeight.Regular,
+            format.Color ?? Color.Black);
         var root = Children(document.Body, new NodeId(1), rootStyle).OnSuccessMap(children =>
             new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
 
@@ -81,37 +82,47 @@ public static class DocumentTranslator
 
     private static Result<Node, Error> Block(BlockElement block, NodeId id, BreakBefore breakBefore, TextStyle inherited)
     {
-        var problems = InputChecks.Box(block.Box, block.Source).Concat(InputChecks.Text(block.Format, block.Source)).ToImmutableArray();
-        var style = Inherit(inherited, block.Format);
-        var children = Children(block.Children, new NodeId(id.Value + 1), style);
+        var box = Cascade.Box(block.Format, block.Style);
+        var text = Cascade.Text(block.Format, block.Style);
+        var problems = InputChecks.Box(box, block.Source).Concat(InputChecks.Text(text, block.Source)).ToImmutableArray();
+        var children = Children(block.Children, new NodeId(id.Value + 1), Inherit(inherited, text));
         return WithProblems(problems, children).OnSuccessMap(nodes =>
-            (Node)new Box(id, SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyleOf(block.Box, breakBefore), nodes, block.Source));
+            (Node)new Box(id, SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyleOf(box, breakBefore), nodes, block.Source));
     }
 
     /// <summary>
     /// A paragraph becomes a box with inline layout whose children are one text run per span. Cascade order
-    /// for its text: inherited, then the user-agent heading defaults, then the paragraph's format, then each
-    /// span's format.
+    /// for its text: inherited, then the user-agent heading defaults, then the paragraph's own values (style,
+    /// then modifiers; see <see cref="Cascade"/>), then each span's own values.
     /// </summary>
     private static Result<Node, Error> Paragraph(ParagraphElement paragraph, NodeId id, BreakBefore breakBefore, TextStyle inherited)
     {
-        var problems = InputChecks.Box(paragraph.Box, paragraph.Source)
-            .Concat(InputChecks.Text(paragraph.Format, paragraph.Source))
+        var box = Cascade.Box(paragraph.Format, paragraph.Style);
+        var text = Cascade.Text(paragraph.Format, paragraph.Style);
+        var problems = InputChecks.Box(box, paragraph.Source)
+            .Concat(InputChecks.Text(text, paragraph.Source))
             .Concat(InputChecks.Role(paragraph.Role, paragraph.Source))
-            .Concat(paragraph.Spans.SelectMany(span => InputChecks.Text(span.Format, span.Source)))
+            .Concat(paragraph.Spans.SelectMany(SpanProblems))
             .ToImmutableArray();
         if (!problems.IsEmpty)
         {
             return Result<Node, Error>.Failure(ResultCollections.Combine(problems));
         }
 
-        var style = Inherit(WithRoleDefaults(inherited, paragraph.Role), paragraph.Format);
+        var style = Inherit(WithRoleDefaults(inherited, paragraph.Role), text);
         var runs = paragraph.Spans
-            .Select((span, index) => (Node)new TextRun(new NodeId(id.Value + 1 + index), span.Text, Inherit(style, span.Format), span.Source))
+            .Select((span, index) => (Node)new TextRun(
+                new NodeId(id.Value + 1 + index), span.Text, Inherit(style, Cascade.Text(span.Format, span.Style)), span.Source))
             .ToImmutableArray();
         return Result<Node, Error>.Success(new Box(
-            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(paragraph.Box, breakBefore), runs, paragraph.Source));
+            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, breakBefore), runs, paragraph.Source));
     }
+
+    /// <summary>A span's text values must be valid, and its shared style may not carry box properties: a span
+    /// has no box in this front-end, so they would be silently lost.</summary>
+    private static IEnumerable<Error> SpanProblems(Span span) =>
+        InputChecks.Text(Cascade.Text(span.Format, span.Style), span.Source)
+            .Concat(span.Style.Box.IsEmpty ? [] : [InputChecks.BoxPropertiesOnSpan(span.Source)]);
 
     /// <summary>The user-agent defaults for a heading: bold, and a size relative to the inherited one.</summary>
     private static TextStyle WithRoleDefaults(TextStyle inherited, SemanticRole role) => role switch
@@ -124,15 +135,15 @@ public static class DocumentTranslator
         _ => inherited,
     };
 
-    /// <summary>CSS inheritance (CSS Cascade 4 §7.1): a value the author did not set is the parent's value.</summary>
+    /// <summary>CSS inheritance (CSS Cascade 4 §7.1): a value the element does not specify is the parent's value.</summary>
     private static TextStyle Inherit(TextStyle parent, TextFormat format) => new(
         format.FontFamily ?? parent.FontFamily,
         format.FontSize ?? parent.FontSize,
         format.FontWeight ?? parent.FontWeight,
         format.Color ?? parent.Color);
 
-    private static BoxStyle BoxStyleOf(BoxFormat box, BreakBefore breakBefore) =>
-        new(box.Margin ?? Edges.Zero, box.Padding ?? Edges.Zero, box.Background, breakBefore);
+    private static BoxStyle BoxStyleOf(Cascade.BoxValues box, BreakBefore breakBefore) =>
+        new(box.Margin, box.Padding, box.Background, breakBefore);
 
     /// <summary>How many model nodes an element becomes: itself, plus its children (blocks) or one text run per
     /// span (paragraphs).</summary>

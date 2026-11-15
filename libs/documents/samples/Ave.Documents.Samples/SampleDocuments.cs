@@ -17,10 +17,8 @@ public static class SampleDocuments
     private static readonly Color Grey = new(0x59, 0x59, 0x59);
 
     private static readonly PageSetup Page = PageSetup.A4 with { Margins = Edges.All(2.Cm()) };
-    private static readonly TextFormat BodyText = new(FontFamily: "Lato", FontSize: 11.Pt());
-
     /// <summary>Space below each paragraph: the stage-0 way to separate paragraphs (no margin collapsing yet).</summary>
-    private static readonly BoxFormat ParagraphSpacing = new(Margin: Edges.OnlyBottom(8.Pt()));
+    private static readonly Style ParagraphSpacing = Style.Empty.MarginBottom(8.Pt());
 
     /// <summary>
     /// Sample A: a two-page letter with a heading, paragraphs in regular and bold, and a coloured block.
@@ -30,9 +28,9 @@ public static class SampleDocuments
     public static Document Letter(string closing = "Kind regards,") =>
         Document(
             [
-                Paragraph("Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town",
-                    new BoxFormat(Margin: Edges.OnlyBottom(24.Pt())), new TextFormat(FontSize: 9.Pt(), Color: Grey)),
-                Heading(1, "Quotation for document rendering", new BoxFormat(Margin: Edges.OnlyBottom(12.Pt())), new TextFormat(Color: Navy)),
+                Paragraph("Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town")
+                    .MarginBottom(24.Pt()).FontSize(9.Pt()).Color(Grey),
+                Heading(1, "Quotation for document rendering").MarginBottom(12.Pt()).Color(Navy),
                 Para("Dear reader,"),
                 Para([
                     Text("Thank you for your interest in our document engine. This letter was written in C# through the "),
@@ -56,39 +54,39 @@ public static class SampleDocuments
                     Text(" and padding on all four sides. Blocks can hold paragraphs and other blocks."),
                 ]),
                 PageBreak(),
-                Heading(2, "Terms", new BoxFormat(Margin: Edges.OnlyBottom(10.Pt())), new TextFormat(Color: Navy)),
+                Heading(2, "Terms").MarginBottom(10.Pt()).Color(Navy),
                 Para("This second page starts with an explicit page break. A page break is not an element of its own in "
                     + "the document model: it sets break-before: page on the element that follows it, as in CSS."),
                 Para([Bold("Validity. "), Text("This quotation is an example and is valid for no time at all.")]),
                 Para([Text(closing)]),
-                Paragraph("The document engine", format: new TextFormat(FontWeight: FontWeight.Bold)),
+                Paragraph("The document engine").Bold(),
             ],
-            BodyText,
             Page,
             title: "Quotation for document rendering",
-            author: "Ave.Documents samples");
+            author: "Ave.Documents samples")
+            .FontFamily("Lato").FontSize(11.Pt());
 
     /// <summary>Sample B: a long text that runs over several pages, with paragraphs split between pages.</summary>
     /// <param name="paragraphs">How many paragraphs to generate.</param>
     public static Document LongText(int paragraphs = 40) =>
         Document(
             [
-                Heading(1, "A long text", new BoxFormat(Margin: Edges.OnlyBottom(12.Pt()))),
+                Heading(1, "A long text").MarginBottom(12.Pt()),
                 .. Enumerable.Range(1, paragraphs).Select(number => (Element)Numbered(number)),
             ],
-            BodyText,
             Page,
-            title: "A long text");
+            title: "A long text")
+            .FontFamily("Lato").FontSize(11.Pt());
 
-    private static ParagraphElement Para(string text) => Paragraph(text, ParagraphSpacing);
+    private static ParagraphElement Para(string text) => Paragraph(text).With(ParagraphSpacing);
 
-    private static ParagraphElement Para(ValueList<Span> spans) => Paragraph(spans, ParagraphSpacing);
+    private static ParagraphElement Para(ValueList<Span> spans) => Paragraph(spans).With(ParagraphSpacing);
 
     /// <summary>A component: a pale-blue block with one bold label and a description per line.</summary>
     private static BlockElement Summary(ImmutableArray<(string Label, string Description)> rows) =>
         Block(
-            [.. rows.Select(row => (Element)Paragraph([Bold(row.Label + ": "), Text(row.Description)], new BoxFormat(Margin: Edges.OnlyBottom(3.Pt()))))],
-            new BoxFormat(Margin: Edges.OnlyBottom(12.Pt()), Padding: Edges.All(4.Mm()), Background: PaleBlue));
+            [.. rows.Select(row => (Element)Paragraph([Bold(row.Label + ": "), Text(row.Description)]).MarginBottom(3.Pt()))])
+            .MarginBottom(12.Pt()).Padding(4.Mm()).Background(PaleBlue);
 
     private static ParagraphElement Numbered(int number) =>
         Para([

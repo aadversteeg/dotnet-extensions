@@ -12,13 +12,12 @@ namespace UnitTests.Ave.Documents.Fluent;
 /// point at the caller's line.</summary>
 public class RenderingTests
 {
-    private static readonly TextFormat Lato = new(FontFamily: "Lato", FontSize: 11.Pt());
     private static readonly PdfRenderOptions Options = new(new DateTimeOffset(2026, 11, 15, 9, 22, 0, TimeSpan.Zero));
 
     [Fact]
     public void A_valid_document_becomes_a_pdf()
     {
-        var pdf = Document([Heading(1, "Hello"), Paragraph("World")], Lato).ToPdf(TestFonts.Set, Options);
+        var pdf = Document([Heading(1, "Hello"), Paragraph("World")]).FontFamily("Lato").FontSize(11.Pt()).ToPdf(TestFonts.Set, Options);
 
         pdf.IsSuccess.Should().BeTrue();
         Encoding.ASCII.GetString(pdf.Value.AsSpan(0, 8)).Should().Be("%PDF-1.7");
@@ -31,7 +30,7 @@ public class RenderingTests
         var line = CurrentLine() + 1;
         var span = Text("Price in yen: ¥ and kanji 漢");
 
-        var error = Document([Paragraph([Bold("Note: "), span])], Lato).ToPdf(TestFonts.Set, Options).Error;
+        var error = Document([Paragraph([Bold("Note: "), span])]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).Error;
 
         error.Code.Should().Be(DocumentErrorCodes.Font.GlyphMissing);
         error.Metadata![ErrorMetadataKeys.Character].Should().Be("漢");
@@ -43,9 +42,9 @@ public class RenderingTests
     public void A_block_that_can_never_fit_a_page_is_an_error_at_the_line_of_the_block()
     {
         var line = CurrentLine() + 1;
-        var tall = Block([Paragraph("x")], new BoxFormat(Padding: new Edges(30.Cm(), 0.Pt(), 0.Pt(), 0.Pt())));
+        var tall = Block([Paragraph("x")]).PaddingTop(30.Cm());
 
-        var error = Document([Paragraph("Before"), tall], Lato).ToPdf(TestFonts.Set, Options).Error;
+        var error = Document([Paragraph("Before"), tall]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).Error;
 
         error.Code.Should().Be(DocumentErrorCodes.Layout.DoesNotFit);
         error.Metadata![ErrorMetadataKeys.SourceFile].Should().Be(ThisFile());
@@ -56,9 +55,9 @@ public class RenderingTests
     public void A_weight_the_font_set_does_not_have_is_an_error_at_the_line_of_the_text()
     {
         var line = CurrentLine() + 1;
-        var span = Text("semi-bold", new TextFormat(FontWeight: new FontWeight(600)));
+        var span = Text("semi-bold").FontWeight(new FontWeight(600));
 
-        var error = Document([Paragraph([span])], Lato).ToPdf(TestFonts.Set, Options).Error;
+        var error = Document([Paragraph([span])]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).Error;
 
         error.Code.Should().Be(DocumentErrorCodes.Font.NotFound);
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);

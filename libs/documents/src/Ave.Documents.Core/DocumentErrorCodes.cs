@@ -59,6 +59,10 @@ public static class DocumentErrorCodes
 
             /// <summary>Text that is not valid UTF-16 (an unpaired surrogate). Metadata: Offset.</summary>
             public static readonly ErrorCode Text = _ / "Text";
+
+            /// <summary>A property set on an element it does not apply to, for example box properties in the
+            /// style of a text span. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode NotApplicable = _ / "NotApplicable";
         }
 
         /// <summary>A value the input language allows but this version of the engine does not implement yet.</summary>

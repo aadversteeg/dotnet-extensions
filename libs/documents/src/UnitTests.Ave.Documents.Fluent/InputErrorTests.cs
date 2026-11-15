@@ -12,8 +12,6 @@ namespace UnitTests.Ave.Documents.Fluent;
 /// </summary>
 public class InputErrorTests
 {
-    private static readonly TextFormat Lato = new(FontFamily: "Lato");
-
     private static Error Fail(Document document)
     {
         var result = DocumentTranslator.ToModel(document);
@@ -32,9 +30,9 @@ public class InputErrorTests
     public void Negative_padding_is_an_invalid_length()
     {
         var line = CurrentLine() + 1;
-        var paragraph = Paragraph("x", new BoxFormat(Padding: new Edges(1.Pt(), 1.Pt(), (-2).Pt(), 1.Pt())));
+        var paragraph = Paragraph("x").Padding(1.Pt()).PaddingBottom((-2).Pt());
 
-        var error = Fail(Document([paragraph], Lato));
+        var error = Fail(Document([paragraph]).FontFamily("Lato"));
 
         ShouldPointAt(error, DocumentErrorCodes.Input.Invalid.Length, line);
         error.Metadata![ErrorMetadataKeys.Property].Should().Be("padding-bottom");
@@ -45,18 +43,18 @@ public class InputErrorTests
     public void A_length_that_is_not_a_number_is_invalid()
     {
         var line = CurrentLine() + 1;
-        var block = Block([Paragraph("x")], new BoxFormat(Margin: Edges.All(Length.FromPoints(double.NaN))));
+        var block = Block([Paragraph("x")]).Margin(Length.FromPoints(double.NaN));
 
-        ShouldPointAt(ResultCollectionsFirst(Fail(Document([block], Lato))), DocumentErrorCodes.Input.Invalid.Length, line);
+        ShouldPointAt(ResultCollectionsFirst(Fail(Document([block]).FontFamily("Lato"))), DocumentErrorCodes.Input.Invalid.Length, line);
     }
 
     [Fact]
     public void A_negative_margin_is_reported_as_not_supported_yet()
     {
         var line = CurrentLine() + 1;
-        var block = Block([Paragraph("x")], new BoxFormat(Margin: new Edges((-1).Pt(), 0.Pt(), 0.Pt(), 0.Pt())));
+        var block = Block([Paragraph("x")]).MarginTop((-1).Pt());
 
-        ShouldPointAt(Fail(Document([block], Lato)), DocumentErrorCodes.Input.Unsupported.NegativeMargin, line);
+        ShouldPointAt(Fail(Document([block]).FontFamily("Lato")), DocumentErrorCodes.Input.Unsupported.NegativeMargin, line);
     }
 
     [Theory]
@@ -66,34 +64,34 @@ public class InputErrorTests
     public void A_font_size_that_is_not_positive_is_invalid(double size)
     {
         var line = CurrentLine() + 1;
-        var span = Text("x", new TextFormat(FontSize: size.Pt()));
+        var span = Text("x").FontSize(size.Pt());
 
-        ShouldPointAt(Fail(Document([Paragraph([span])], Lato)), DocumentErrorCodes.Input.Invalid.FontSize, line);
+        ShouldPointAt(Fail(Document([Paragraph([span])]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.FontSize, line);
     }
 
     [Fact]
     public void A_font_weight_outside_1_to_1000_is_invalid()
     {
         var line = CurrentLine() + 1;
-        var paragraph = Paragraph("x", format: new TextFormat(FontWeight: new FontWeight(0)));
+        var paragraph = Paragraph("x").FontWeight(new FontWeight(0));
 
-        ShouldPointAt(Fail(Document([paragraph], Lato)), DocumentErrorCodes.Input.Invalid.FontWeight, line);
+        ShouldPointAt(Fail(Document([paragraph]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.FontWeight, line);
     }
 
     [Fact]
     public void An_empty_font_family_is_invalid()
     {
         var line = CurrentLine() + 1;
-        var block = Block([Paragraph("x")], format: new TextFormat(FontFamily: " "));
+        var block = Block([Paragraph("x")]).FontFamily(" ");
 
-        ShouldPointAt(Fail(Document([block], Lato)), DocumentErrorCodes.Input.Invalid.FontFamily, line);
+        ShouldPointAt(Fail(Document([block]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.FontFamily, line);
     }
 
     [Fact]
     public void A_document_without_a_font_family_is_invalid_because_fonts_are_explicit_input()
     {
         var line = CurrentLine() + 1;
-        var document = Document([Paragraph("x")], new TextFormat(FontSize: 11.Pt()));
+        var document = Document([Paragraph("x")]).FontSize(11.Pt());
 
         ShouldPointAt(Fail(document), DocumentErrorCodes.Input.Invalid.FontFamily, line);
     }
@@ -106,7 +104,7 @@ public class InputErrorTests
         var line = CurrentLine() + 1;
         var heading = Heading(level, "Title");
 
-        ShouldPointAt(Fail(Document([heading], Lato)), DocumentErrorCodes.Input.Invalid.HeadingLevel, line);
+        ShouldPointAt(Fail(Document([heading]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.HeadingLevel, line);
     }
 
     [Fact]
@@ -115,14 +113,14 @@ public class InputErrorTests
         var line = CurrentLine() + 1;
         var pageBreak = PageBreak();
 
-        ShouldPointAt(Fail(Document([Paragraph("x"), pageBreak], Lato)), DocumentErrorCodes.Input.Invalid.PageBreak, line);
+        ShouldPointAt(Fail(Document([Paragraph("x"), pageBreak]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.PageBreak, line);
     }
 
     [Fact]
     public void Page_margins_that_leave_no_room_are_an_invalid_page_size()
     {
         var line = CurrentLine() + 1;
-        var document = Document([Paragraph("x")], Lato, PageSetup.A4 with { Margins = Edges.All(11.Cm()) });
+        var document = Document([Paragraph("x")], PageSetup.A4 with { Margins = Edges.All(11.Cm()) }).FontFamily("Lato");
 
         ShouldPointAt(Fail(document), DocumentErrorCodes.Input.Invalid.PageSize, line);
     }
@@ -133,14 +131,35 @@ public class InputErrorTests
         var first = CurrentLine() + 1;
         var badHeading = Heading(9, "Title");
         var second = CurrentLine() + 1;
-        var badSpan = Text("x", new TextFormat(FontSize: 0.Pt()));
+        var badSpan = Text("x").FontSize(0.Pt());
 
-        var error = Fail(Document([badHeading, Paragraph([badSpan])], Lato));
+        var error = Fail(Document([badHeading, Paragraph([badSpan])]).FontFamily("Lato"));
 
         error.Code.Should().Be(DocumentErrorCodes.Multiple);
         var parts = global::Ave.Documents.Core.ResultCollections.Parts(error);
         parts.Select(part => part.Metadata![ErrorMetadataKeys.SourceLine]).Should().Equal(first, second);
         parts.Select(part => part.Code).Should().Equal(DocumentErrorCodes.Input.Invalid.HeadingLevel, DocumentErrorCodes.Input.Invalid.FontSize);
+    }
+
+    [Fact]
+    public void A_shared_style_with_box_properties_on_a_span_is_not_applicable()
+    {
+        var line = CurrentLine() + 1;
+        var span = Text("x").With(Style.Empty.MarginTop(2.Pt()));
+
+        var error = Fail(Document([Paragraph([span])]).FontFamily("Lato"));
+
+        ShouldPointAt(error, DocumentErrorCodes.Input.Invalid.NotApplicable, line);
+    }
+
+    [Fact]
+    public void An_invalid_value_from_a_shared_style_is_reported_at_the_element_that_uses_it()
+    {
+        var style = Style.Empty.FontSize((-1).Pt());
+        var line = CurrentLine() + 1;
+        var paragraph = Paragraph("x").With(style);
+
+        ShouldPointAt(Fail(Document([paragraph]).FontFamily("Lato")), DocumentErrorCodes.Input.Invalid.FontSize, line);
     }
 
     private static Error ResultCollectionsFirst(Error error) => global::Ave.Documents.Core.ResultCollections.Parts(error)[0];

@@ -51,18 +51,23 @@ using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using static Ave.Documents.Fluent.Elements;
 
+var note = Style.Empty.Padding(4.Mm()).Background(new Color(0xDD, 0xEB, 0xF7));   // a reusable style
+
 var letter = Document(
     [
-        Heading(1, "Invoice"),
+        Heading(1, "Invoice").MarginBottom(12.Pt()),
         Paragraph([Text("Total: "), Bold("120 EUR")]),
-        Block([Paragraph("Thank you.")], new BoxFormat(Padding: Edges.All(4.Mm()), Background: new Color(0xDD, 0xEB, 0xF7))),
+        Block([Paragraph("Thank you.")]).With(note),
     ],
-    new TextFormat(FontFamily: "Lato", FontSize: 11.Pt()),
-    PageSetup.A4 with { Margins = Edges.All(2.Cm()) });
+    PageSetup.A4 with { Margins = Edges.All(2.Cm()) })
+    .FontFamily("Lato").FontSize(11.Pt());
 
 var fonts = new FontSet([regular, bold]);   // parsed with FontParser.Parse(bytes); no system fonts
 var pdf = letter.ToPdf(fonts, new PdfRenderOptions(CreationDate: someFixedDate));
 ```
+
+Formatting is set with modifiers (`.MarginBottom(…)`, `.Color(…)`, `.FontSize(…)`): each returns a new value
+with one property set, and they give the same result in any order. `docs/code-front-end.md` lists them all.
 
 Every step returns `Result<T, Error>` (Ave.Extensions.Functional / ErrorPaths). Errors carry a path code such
 as `Documents.Font.GlyphMissing` or `Documents.Layout.DoesNotFit` and the file and line of the call that caused

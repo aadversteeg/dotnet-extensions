@@ -41,9 +41,9 @@ internal static class InputChecks
     /// properties are invalid"). Negative margins are valid CSS but not implemented yet, so they are reported as
     /// unsupported rather than drawn wrongly.
     /// </summary>
-    public static IEnumerable<Error> Box(BoxFormat box, SourceLocation source) =>
-        (box.Margin is { } margin ? Lengths(margin, "margin", source, DocumentErrorCodes.Input.Unsupported.NegativeMargin) : [])
-        .Concat(box.Padding is { } padding ? Lengths(padding, "padding", source, DocumentErrorCodes.Input.Invalid.Length) : []);
+    public static IEnumerable<Error> Box(Cascade.BoxValues box, SourceLocation source) =>
+        Lengths(box.Margin, "margin", source, DocumentErrorCodes.Input.Unsupported.NegativeMargin)
+            .Concat(Lengths(box.Padding, "padding", source, DocumentErrorCodes.Input.Invalid.Length));
 
     /// <summary>
     /// Text formatting: a family name that is not empty, a positive finite size (CSS Fonts 4 §2.5: "Negative
@@ -76,6 +76,10 @@ internal static class InputChecks
     /// <summary>The document names no font family: fonts are explicit input, so there is no default family.</summary>
     public static Error MissingFontFamily(SourceLocation source) =>
         Problem(DocumentErrorCodes.Input.Invalid.FontFamily, "The document must name a font family.", "null", "font-family", source);
+
+    /// <summary>A span got a shared style that sets box properties; a span has no box, so they cannot apply.</summary>
+    public static Error BoxPropertiesOnSpan(SourceLocation source) =>
+        Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, "A span has no box: its style may not set margin, padding or background.", "Style", "style", source);
 
     /// <summary>A page break with nothing after it in its list has nothing to move to the next page.</summary>
     public static Error TrailingPageBreak(SourceLocation source) =>
