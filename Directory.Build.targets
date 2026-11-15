@@ -96,7 +96,24 @@
       <_AveReleaseTagName Condition="'$(_AveReleaseTagName)' == ''">$([System.Text.RegularExpressions.Regex]::Replace($(_AveReleaseTagBase), '(?&lt;=[a-z0-9])(?=[A-Z])|(?&lt;=[A-Z])(?=[A-Z][a-z])', '-').Replace('.', '-').ToLowerInvariant())</_AveReleaseTagName>
     </PropertyGroup>
     <ItemGroup>
-      <_AveReleaseTag Include="$(_AveReleaseTagName)" PackageId="$(PackageId)" ProjectPath="$(MSBuildProjectFullPath)" />
+      <_AveReleaseTag Include="$(_AveReleaseTagName)" PackageId="$(PackageId)" ProjectPath="$(MSBuildProjectFullPath)"
+                      TargetFrameworks="$(TargetFrameworks)$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    The packages of this repository a library depends on, with the version its nuspec must carry in release mode:
+    the VersionOverride of the reference, otherwise the PackageVersion in Directory.Packages.props.
+    eng/release-tags.proj calls it with UseRepoProjectReferences=false (in head mode the references are projects).
+  -->
+  <Target Name="GetOwnPackageDependencies" Returns="@(_AveOwnDependency)" Condition="'$(IsPackable)' == 'true'">
+    <ItemGroup>
+      <_AveOwnReference Include="@(PackageReference)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('Ave.Extensions.'))" />
+      <_AveOwnDependency Include="@(_AveOwnReference)" Version="%(_AveOwnReference.VersionOverride)" Condition="'%(_AveOwnReference.VersionOverride)' != ''" />
+      <_AveOwnReferenceCentral Include="@(_AveOwnReference)" Condition="'%(_AveOwnReference.VersionOverride)' == ''" />
+      <_AveOwnVersionNotReferenced Include="@(PackageVersion)" Exclude="@(_AveOwnReferenceCentral)" />
+      <_AveOwnVersionReferenced Include="@(PackageVersion)" Exclude="@(_AveOwnVersionNotReferenced)" />
+      <_AveOwnDependency Include="@(_AveOwnVersionReferenced)" Version="%(_AveOwnVersionReferenced.Version)" />
     </ItemGroup>
   </Target>
 

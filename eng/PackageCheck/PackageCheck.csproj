@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Repository check, not a package: verifies a packed release package (id, version, dependency groups, own
+    dependency versions, files, repository commit). Program.cs describes how to run it;
+    .github/workflows/release.yml runs it before anything is published.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+</Project>

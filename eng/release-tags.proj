@@ -1,18 +1,43 @@
 <Project>
   <!--
-    Prints the release tag name of every package and fails when two packages share a name.
+    Release tags and what a release builds and tests.
+
+    Print the release tag name of every package; fails when two packages share a name:
 
       dotnet msbuild eng/release-tags.proj -nologo
 
-    A release tag is <tag name>/<version>, e.g. functional-core/0.1.0-preview.4. The tag name is derived
-    from the package id by the GetReleaseTag target in Directory.Build.targets; a project can override it
-    with <ReleaseTagName>.
+    Resolve one release tag to its package (used by .github/workflows/release.yml):
+
+      dotnet msbuild eng/release-tags.proj -nologo -t:ResolveRelease -p:Tag=functional-core/0.1.0-preview.4
+          [-p:OutputFile=<file to append name=value lines to, e.g. $GITHUB_OUTPUT>]
+
+    List every test project with the package it tests and whether a release runs it in head mode (used by the
+    release-mode job of .github/workflows/ci.yml):
+
+      dotnet msbuild eng/release-tags.proj -nologo -t:ListTests [-p:OutputFile=<file>]
+
+    A release tag is <tag name>/<version>, e.g. functional-core/0.1.0-preview.4. The tag name is derived from the
+    package id by the GetReleaseTag target in Directory.Build.targets; a project can override it with
+    <ReleaseTagName>. Which package a test project tests comes from the GetTestedPackage target there.
   -->
+  <PropertyGroup>
+    <_RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</_RepoRoot>
+    <!-- SemVer 2.0 without build metadata -->
+    <_VersionPattern>(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?</_VersionPattern>
+  </PropertyGroup>
+
   <ItemGroup>
-    <_Library Include="$(MSBuildThisFileDirectory)../libs/*/Ave.Extensions.*/Ave.Extensions.*.csproj" />
+    <_Library Include="$(_RepoRoot)/libs/*/Ave.Extensions.*/Ave.Extensions.*.csproj" />
+    <_TestProject Include="$(_RepoRoot)/libs/*/UnitTests.*/*.csproj" />
+    <_TestProject Include="$(_RepoRoot)/libs/*/integration-tests/*/*.csproj" />
   </ItemGroup>
 
-  <Target Name="Build">
+  <Target Name="Build" DependsOnTargets="_GetReleaseTags">
+    <Message Importance="high" Text="%(_ReleaseTag.Identity) -> %(_ReleaseTag.PackageId)" />
+    <Message Importance="high" Text="@(_ReleaseTag->Count()) packages" />
+  </Target>
+
+  <Target Name="_GetReleaseTags">
     <MSBuild Projects="@(_Library)" Targets="GetReleaseTag">
       <Output TaskParameter="TargetOutputs" ItemName="_ReleaseTag" />
     </MSBuild>
@@ -20,10 +45,79 @@
     <RemoveDuplicates Inputs="@(_ReleaseTag)">
       <Output TaskParameter="HadAnyDuplicates" PropertyName="_HasDuplicateTags" />
     </RemoveDuplicates>
-
-    <Message Importance="high" Text="%(_ReleaseTag.Identity) -> %(_ReleaseTag.PackageId)" />
-    <Message Importance="high" Text="@(_ReleaseTag->Count()) packages" />
     <Error Condition="'$(_HasDuplicateTags)' == 'true'"
            Text="Two packages share a release tag name. Set a unique ReleaseTagName in one of them." />
+  </Target>
+
+  <Target Name="_GetTestedPackages">
+    <MSBuild Projects="@(_TestProject)" Targets="GetTestedPackage">
+      <Output TaskParameter="TargetOutputs" ItemName="_TestedPackage" />
+    </MSBuild>
+    <ItemGroup>
+      <_TestedPackage RelativePath="$([MSBuild]::MakeRelative('$(_RepoRoot)/', '%(FullPath)').Replace('\', '/'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ResolveRelease" DependsOnTargets="_GetReleaseTags;_GetTestedPackages">
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(Tag)', '^[a-z0-9]+(-[a-z0-9]+)*/$(_VersionPattern)$'))"
+           Text="'$(Tag)' is not a release tag. Expected &lt;tag name&gt;/&lt;version&gt;, e.g. functional-core/0.1.0-preview.4 (see: dotnet msbuild eng/release-tags.proj)." />
+
+    <PropertyGroup>
+      <_TagName>$([System.Text.RegularExpressions.Regex]::Replace('$(Tag)', '/.*$', ''))</_TagName>
+      <_Version>$([System.Text.RegularExpressions.Regex]::Replace('$(Tag)', '^[^/]*/', ''))</_Version>
+      <_Prerelease>false</_Prerelease>
+      <_Prerelease Condition="$(_Version.Contains('-'))">true</_Prerelease>
+    </PropertyGroup>
+    <ItemGroup>
+      <_Match Include="@(_ReleaseTag)" Condition="'%(Identity)' == '$(_TagName)'" />
+    </ItemGroup>
+    <Error Condition="'@(_Match->Count())' != '1'"
+           Text="No package has the release tag name '$(_TagName)'. Run: dotnet msbuild eng/release-tags.proj" />
+
+    <PropertyGroup>
+      <_PackageId>@(_Match->'%(PackageId)')</_PackageId>
+      <_ProjectPath>@(_Match->'%(ProjectPath)')</_ProjectPath>
+      <_Project>$([MSBuild]::MakeRelative('$(_RepoRoot)/', '$(_ProjectPath)').Replace('\', '/'))</_Project>
+      <_TargetFrameworks>@(_Match->'%(TargetFrameworks)')</_TargetFrameworks>
+      <_TargetFrameworks>$(_TargetFrameworks.Replace(';', ' '))</_TargetFrameworks>
+    </PropertyGroup>
+
+    <MSBuild Projects="$(_ProjectPath)" Targets="GetOwnPackageDependencies" Properties="UseRepoProjectReferences=false">
+      <Output TaskParameter="TargetOutputs" ItemName="_OwnDependency" />
+    </MSBuild>
+
+    <ItemGroup>
+      <_ReleaseTest Include="@(_TestedPackage)" Condition="'%(PackageId)' == '$(_PackageId)' and '%(TestInHeadMode)' != 'true'" />
+      <_HeadModeTest Include="@(_TestedPackage)" Condition="'%(PackageId)' == '$(_PackageId)' and '%(TestInHeadMode)' == 'true'" />
+    </ItemGroup>
+    <Error Condition="'@(_ReleaseTest)@(_HeadModeTest)' == ''" Text="No test project tests $(_PackageId)." />
+
+    <PropertyGroup>
+      <_OwnDependencies>@(_OwnDependency->'%(Identity)=%(Version)', ' ')</_OwnDependencies>
+      <_ReleaseTests>@(_ReleaseTest->'%(RelativePath)', ' ')</_ReleaseTests>
+      <_HeadModeTests>@(_HeadModeTest->'%(RelativePath)', ' ')</_HeadModeTests>
+    </PropertyGroup>
+    <ItemGroup>
+      <_Line Include="tag=$(Tag)" />
+      <_Line Include="tag-name=$(_TagName)" />
+      <_Line Include="version=$(_Version)" />
+      <_Line Include="prerelease=$(_Prerelease)" />
+      <_Line Include="package-id=$(_PackageId)" />
+      <_Line Include="project=$(_Project)" />
+      <_Line Include="target-frameworks=$(_TargetFrameworks)" />
+      <_Line Include="own-dependencies=$(_OwnDependencies)" />
+      <_Line Include="release-tests=$(_ReleaseTests)" />
+      <_Line Include="head-mode-tests=$(_HeadModeTests)" />
+    </ItemGroup>
+    <Message Importance="high" Text="%(_Line.Identity)" />
+    <WriteLinesToFile Condition="'$(OutputFile)' != ''" File="$(OutputFile)" Lines="@(_Line)" Overwrite="false" />
+  </Target>
+
+  <Target Name="ListTests" DependsOnTargets="_GetTestedPackages">
+    <ItemGroup>
+      <_TestLine Include="%(_TestedPackage.RelativePath) %(_TestedPackage.PackageId) %(_TestedPackage.TestInHeadMode)" />
+    </ItemGroup>
+    <Message Importance="high" Text="%(_TestLine.Identity)" />
+    <WriteLinesToFile Condition="'$(OutputFile)' != ''" File="$(OutputFile)" Lines="@(_TestLine)" Overwrite="true" />
   </Target>
 </Project>
