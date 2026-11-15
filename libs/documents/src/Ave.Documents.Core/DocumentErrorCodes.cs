@@ -64,6 +64,10 @@ public static class DocumentErrorCodes
             /// text cannot be written. Metadata: Property, Offset.</summary>
             public static readonly ErrorCode MetadataText = _ / "MetadataText";
 
+            /// <summary>Elements nested deeper than the front-end allows (<c>InputLimits.MaxNestingDepth</c> in
+            /// Ave.Documents.Fluent), at the first element past the limit. Metadata: Value (the limit).</summary>
+            public static readonly ErrorCode TooDeep = _ / "TooDeep";
+
             /// <summary>A property set on an element it does not apply to, for example box properties in the
             /// style of a text span. Metadata: Value, Property.</summary>
             public static readonly ErrorCode NotApplicable = _ / "NotApplicable";

@@ -28,6 +28,12 @@ public static class DocumentTranslator
     /// <returns>The document model, or the <see cref="DocumentErrorCodes.Input"/> errors.</returns>
     public static Result<StyledDocument, Error> ToModel(Document document)
     {
+        // Checked first, without recursion: everything after this walks the element tree recursively.
+        if (InputChecks.TooDeep(document) is { } tooDeep)
+        {
+            return Result<StyledDocument, Error>.Failure(tooDeep);
+        }
+
         var format = document.Format.Text;
         var problems = InputChecks.Page(document.Page, document.Source)
             .Concat(InputChecks.Text(format, document.Source))

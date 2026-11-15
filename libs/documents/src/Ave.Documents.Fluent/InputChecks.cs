@@ -75,6 +75,46 @@ internal static class InputChecks
             ? [Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", heading.Level.ToString(System.Globalization.CultureInfo.InvariantCulture), "level", source)]
             : [];
 
+    /// <summary>
+    /// The first element nested deeper than <see cref="InputLimits.MaxNestingDepth"/>, as an error at its line; null
+    /// when the document stays within the limit. Walks the tree with an explicit stack, so the check itself cannot run
+    /// out of stack on the documents it is there to refuse. The body and every page area count, each from level 1.
+    /// </summary>
+    public static Error? TooDeep(Document document)
+    {
+        var areas = new[] { document.Page.Header, document.Page.Footer, document.Page.FirstPageHeader, document.Page.FirstPageFooter };
+        var pending = new Stack<(Element Element, int Depth)>(
+            document.Body.Select(element => (element, 1)).Concat(areas.OfType<PageAreaSetup>().Select(area => (area.Content, 1))));
+        while (pending.Count > 0)
+        {
+            var (element, depth) = pending.Pop();
+            if (depth > InputLimits.MaxNestingDepth)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.TooDeep, $"Elements may nest at most {InputLimits.MaxNestingDepth} levels deep.",
+                    InputLimits.MaxNestingDepth.ToString(System.Globalization.CultureInfo.InvariantCulture), "nesting", element.Source);
+            }
+
+            foreach (var child in Children(element))
+            {
+                pending.Push((child, depth + 1));
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The elements directly inside an element: a block's children, a row's items, a table's cell contents.</summary>
+    private static IEnumerable<Element> Children(Element element) => element switch
+    {
+        BlockElement block => block.Children,
+        RowElement row => row.Items,
+        TableElement table => table.Rows
+            .SelectMany(part => part is RowGroupElement group ? group.Rows.AsEnumerable() : [(TableRowElement)part])
+            .SelectMany(row => row.Cells)
+            .SelectMany(cell => cell.Content),
+        _ => [],
+    };
+
     /// <summary>The document names no font family: fonts are explicit input, so there is no default family.</summary>
     public static Error MissingFontFamily(SourceLocation source) =>
         Problem(DocumentErrorCodes.Input.Invalid.FontFamily, "The document must name a font family.", "null", "font-family", source);
