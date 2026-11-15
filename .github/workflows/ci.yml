@@ -1,8 +1,9 @@
 name: CI
 
 # Builds and tests the families a change touches, on Linux and Windows, against the net10.0 build and the
-# netstandard2.0 build of the libraries. On main it also builds and tests every package the way a release does.
-# Nothing here publishes anything. See docs/RELEASING.md.
+# netstandard2.0 build of the libraries. When the file-system family is affected, its tests also run against the
+# netstandard2.1 build of the two libraries that have one. On main it also builds and tests every package the way
+# a release does. Nothing here publishes anything. See docs/RELEASING.md.
 
 on:
   push:
@@ -35,6 +36,7 @@ jobs:
       pull-requests: read # paths-filter lists the files of a pull request through the API
     outputs:
       solutions: ${{ steps.affected.outputs.solutions }}
+      file-system: ${{ steps.affected.outputs.file-system }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -81,9 +83,17 @@ jobs:
             if has file-system; then solutions="$solutions libs/file-system/extensions.slnx"; fi
           fi
           solutions="${solutions# }"
+          # file-system=true when the solutions to build include the file-system family (the whole repository
+          # does): the job test-netstandard21 runs only then.
+          file_system=false
+          if [ "$solutions" = dotnet-extensions.slnx ] || [[ " $solutions " == *" libs/file-system/extensions.slnx "* ]]; then
+            file_system=true
+          fi
           echo "Changed: $CHANGES"
           echo "Solutions: ${solutions:-none}"
+          echo "File-system family affected: $file_system"
           echo "solutions=$solutions" >> "$GITHUB_OUTPUT"
+          echo "file-system=$file_system" >> "$GITHUB_OUTPUT"
 
   test:
     name: Test (${{ matrix.os }}, ${{ matrix.asset }})
@@ -132,6 +142,47 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.asset }}
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: ignore
+
+  test-netstandard21:
+    # The file-system tests against the netstandard2.1 build of Ave.Extensions.FileSystem.InMemory and
+    # Ave.Extensions.FileSystem.AzureFileStorage, on the netstandard2.0 build of the other libraries: what an
+    # application on .NET Core 3.0 up to .NET 9 gets (-p:UseNs21=true, see README.md). Only the file-system family
+    # has a netstandard2.1 build; for the other families this run would repeat the netstandard2.0 run.
+    name: Test (${{ matrix.os }}, netstandard2.1, file-system)
+    needs: changes
+    if: needs.changes.outputs.file-system == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      SOLUTION: libs/file-system/extensions.slnx
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build "$SOLUTION" -c Release -p:UseNs21=true
+
+      - name: Test
+        # Category=Network is left out, as in the job test.
+        run: |
+          dotnet test "$SOLUTION" -c Release --no-build -p:UseNs21=true --filter "Category!=Network" \
+            --logger trx --results-directory "$RUNNER_TEMP/test-results"
+
+      - name: Keep the test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.os }}-netstandard2.1
           path: ${{ runner.temp }}/test-results
           if-no-files-found: ignore
 

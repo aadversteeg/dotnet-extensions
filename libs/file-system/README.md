@@ -446,7 +446,7 @@ projects run on .NET 10, in three modes:
   `netstandard2.0` build of the other libraries. That is the combination an application on .NET Core 3.0 up to
   .NET 9 gets.
 
-No test runs on a .NET Framework runtime or on .NET Core 3.0 up to .NET 9 itself, so this repository makes no
+CI runs the file-system tests in all three modes, on Linux and Windows. No test runs on a .NET Framework runtime or on .NET Core 3.0 up to .NET 9 itself, so this repository makes no
 promise about a particular version of those runtimes.
 
 ### The netstandard2.0 build
