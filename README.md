@@ -52,6 +52,9 @@ dotnet run --project eng/Ns20ReferenceCheck -c Release -- --configuration Releas
 Such a reference compiles fine, but fails at run time where that assembly version is not present, for example
 on .NET Framework.
 
+`.github/workflows/ci.yml` runs this check and the tests (Linux and Windows, both builds) for every pull request
+and every push to `main`.
+
 ## References between the packages
 
 A library references another package of this repository as a NuGet package:

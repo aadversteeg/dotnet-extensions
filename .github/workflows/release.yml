@@ -1,0 +1,192 @@
+name: Release
+
+# Releases ONE package. The tag says which one and which version: <tag name>/<version>, for example
+# functional-core/0.1.0-preview.4 (dotnet msbuild eng/release-tags.proj prints every tag name).
+#
+#   build           resolve the tag, build and test the package in release mode, pack it with the tag version,
+#                   verify the package
+#   github-release  create the GitHub release for the tag, with the package attached
+#   publish         push the package to nuget.org; runs in the GitHub environment "nuget" (approval) and uses
+#                   nuget.org trusted publishing, so there is no API key anywhere
+#
+# See docs/RELEASING.md.
+
+on:
+  push:
+    tags: ['*/*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  REPOSITORY_URL: https://github.com/aadversteeg/dotnet-extensions
+  # ------------------------------------------------------------------------------------------------------------
+  # nuget.org user name of the account that owns the trusted publishing policy. NuGet/login exchanges the GitHub
+  # token for a short-lived API key of this user. TO BE CONFIRMED before the first release (docs/RELEASING.md).
+  NUGET_USER: ahmverst
+  # ------------------------------------------------------------------------------------------------------------
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build, test and pack
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
+      package-id: ${{ steps.resolve.outputs.package-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the whole history, to check that the tagged commit is on main
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Check that the tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME points at $GITHUB_SHA, which is not on main. Release from main only."
+            exit 1
+          fi
+
+      - name: Resolve the tag to its package
+        id: resolve
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Only the characters a release tag can have, before the tag reaches MSBuild
+          if [[ ! "$TAG" =~ ^[a-z0-9-]+/[0-9A-Za-z.-]+$ ]]; then
+            echo "::error::'$TAG' is not a release tag (<tag name>/<version>)"
+            exit 1
+          fi
+          dotnet msbuild eng/release-tags.proj -nologo -t:ResolveRelease -p:Tag="$TAG" -p:OutputFile="$GITHUB_OUTPUT"
+
+      - name: Build in release mode
+        env:
+          PROJECT: ${{ steps.resolve.outputs.project }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: dotnet build "$PROJECT" -c Release -p:UseRepoProjectReferences=false -p:Version="$VERSION"
+
+      - name: Test in release mode
+        if: steps.resolve.outputs.release-tests != ''
+        # Against the published minimum versions of the packages below it. Category=Network: see ci.yml.
+        env:
+          TESTS: ${{ steps.resolve.outputs.release-tests }}
+        run: |
+          for project in $TESTS; do
+            dotnet test "$project" -c Release -p:UseRepoProjectReferences=false --filter "Category!=Network"
+          done
+
+      - name: Test in head mode
+        if: steps.resolve.outputs.head-mode-tests != ''
+        # Test projects with TestInHeadMode (Directory.Build.targets, target GetTestedPackage): they use another
+        # package of this repository that depends on the package under test.
+        env:
+          TESTS: ${{ steps.resolve.outputs.head-mode-tests }}
+        run: |
+          for project in $TESTS; do
+            dotnet test "$project" -c Release --filter "Category!=Network"
+          done
+
+      - name: Pack in release mode
+        env:
+          PROJECT: ${{ steps.resolve.outputs.project }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          # From a clean tree, so the package holds a release-mode build and nothing the head-mode tests built
+          git clean -xdfq -- libs
+          dotnet pack "$PROJECT" -c Release -p:UseRepoProjectReferences=false -p:Version="$VERSION" \
+            -o "$RUNNER_TEMP/package"
+
+      - name: Verify the package
+        env:
+          PACKAGE_ID: ${{ steps.resolve.outputs.package-id }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+          FRAMEWORKS: ${{ steps.resolve.outputs.target-frameworks }}
+          OWN_DEPENDENCIES: ${{ steps.resolve.outputs.own-dependencies }}
+        run: |
+          dotnet run --project eng/PackageCheck -c Release -- \
+            --package "$RUNNER_TEMP/package/$PACKAGE_ID.$VERSION.nupkg" --id "$PACKAGE_ID" --version "$VERSION" \
+            --frameworks "$FRAMEWORKS" --own-dependencies "$OWN_DEPENDENCIES" \
+            --repository-url "$REPOSITORY_URL" --commit "$GITHUB_SHA"
+
+      - name: Keep the package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package
+          path: |
+            ${{ runner.temp }}/package/*.nupkg
+            ${{ runner.temp }}/package/*.snupkg
+          if-no-files-found: error
+
+  github-release:
+    name: GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: package
+          path: package
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+          PACKAGE_ID: ${{ needs.build.outputs.package-id }}
+          VERSION: ${{ needs.build.outputs.version }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+        run: |
+          prerelease=()
+          if [ "$PRERELEASE" = true ]; then prerelease=(--prerelease); fi
+          gh release create "$TAG" package/* --repo "$GITHUB_REPOSITORY" --verify-tag "${prerelease[@]}" \
+            --title "$PACKAGE_ID $VERSION" \
+            --notes "$PACKAGE_ID $VERSION, built from $GITHUB_SHA. NuGet: https://www.nuget.org/packages/$PACKAGE_ID/$VERSION"
+
+  publish:
+    name: Publish to nuget.org
+    needs: [build, github-release]
+    runs-on: ubuntu-latest
+    environment: nuget # approval; the trusted publishing policy on nuget.org names this environment
+    permissions:
+      id-token: write # trusted publishing: NuGet/login exchanges the GitHub OIDC token for a short-lived API key
+      contents: read
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: package
+          path: package
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Log in to nuget.org (trusted publishing)
+        id: login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ env.NUGET_USER }}
+
+      - name: Push the package
+        # The .snupkg next to the .nupkg is pushed with it. --skip-duplicate: a rerun after a partial failure
+        # does not fail on the version that is already there.
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push "package/*.nupkg" --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json --skip-duplicate

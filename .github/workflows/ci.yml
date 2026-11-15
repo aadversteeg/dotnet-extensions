@@ -1,0 +1,208 @@
+name: CI
+
+# Builds and tests the families a change touches, on Linux and Windows, against the net10.0 build and the
+# netstandard2.0 build of the libraries. On main it also builds and tests every package the way a release does.
+# Nothing here publishes anything. See docs/RELEASING.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  changes:
+    name: Find the affected families
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # paths-filter lists the files of a pull request through the API
+    outputs:
+      solutions: ${{ steps.affected.outputs.solutions }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            root:
+              - 'Directory.Build.props'
+              - 'Directory.Build.targets'
+              - 'Directory.Packages.props'
+              - 'NuGet.config'
+              - 'global.json'
+              - 'dotnet-extensions.slnx'
+              - 'eng/**'
+              - '.github/workflows/ci.yml'
+            functional:
+              - 'libs/functional/**'
+            error-paths:
+              - 'libs/error-paths/**'
+            fluent-contracts:
+              - 'libs/fluent-contracts/**'
+            file-system:
+              - 'libs/file-system/**'
+
+      - id: affected
+        name: Choose the solutions to build
+        env:
+          CHANGES: ${{ steps.filter.outputs.changes }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          # A family is built and tested when it changed or a family below it changed. The order is
+          # functional <- error-paths <- fluent-contracts and file-system (file-system uses both lower families).
+          # So a change at the root (build files, eng/, this workflow), in functional or in error-paths builds
+          # everything; fluent-contracts and file-system only build themselves.
+          has() { [[ "$CHANGES" == *"\"$1\""* ]]; }
+          solutions=""
+          if [ "$EVENT" = workflow_dispatch ] || has root || has functional || has error-paths; then
+            solutions="dotnet-extensions.slnx"
+          else
+            if has fluent-contracts; then solutions="$solutions libs/fluent-contracts/extensions.slnx"; fi
+            if has file-system; then solutions="$solutions libs/file-system/extensions.slnx"; fi
+          fi
+          solutions="${solutions# }"
+          echo "Changed: $CHANGES"
+          echo "Solutions: ${solutions:-none}"
+          echo "solutions=$solutions" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.asset }})
+    needs: changes
+    if: needs.changes.outputs.solutions != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # net10.0: the tests run against the net10.0 build of the libraries.
+        # netstandard2.0: the same tests against the netstandard2.0 build (-p:UseNs20=true, see README.md).
+        asset: [net10.0, netstandard2.0]
+    runs-on: ${{ matrix.os }}
+    env:
+      SOLUTIONS: ${{ needs.changes.outputs.solutions }}
+      USE_NS20: ${{ matrix.asset == 'netstandard2.0' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: |
+          for solution in $SOLUTIONS; do
+            dotnet build "$solution" -c Release -p:UseNs20="$USE_NS20"
+          done
+
+      - name: Test
+        # Category=Network is left out: those Azure unit tests call the Azure SDK against a storage account host
+        # name that does not exist and wait for its retries (about two minutes), and on a runner where the name
+        # resolves they would reach the real Azure endpoint. See libs/file-system/README.md.
+        run: |
+          status=0
+          for solution in $SOLUTIONS; do
+            dotnet test "$solution" -c Release --no-build -p:UseNs20="$USE_NS20" --filter "Category!=Network" \
+              --logger trx --results-directory "$RUNNER_TEMP/test-results" || status=1
+          done
+          exit $status
+
+      - name: Keep the test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.asset }}
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: ignore
+
+  checks:
+    name: Repository checks
+    needs: changes
+    if: needs.changes.outputs.solutions != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Release tag names are unique
+        run: dotnet msbuild eng/release-tags.proj -nologo
+
+      - name: Build
+        run: dotnet build dotnet-extensions.slnx -c Release
+
+      - name: netstandard2.0 builds reference only what their dependencies guarantee
+        run: dotnet run --project eng/Ns20ReferenceCheck -c Release -- --configuration Release
+
+  release-mode:
+    # Builds and tests every package the way release.yml does: against the published minimum versions of our
+    # own packages (UseRepoProjectReferences=false). Shows on main what a release would run into; it is not a
+    # pull request check, because a change that raises a minimum is only releasable after the lower package
+    # is published.
+    name: Release mode (main only)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Build every library against the published minimum versions
+        run: |
+          status=0
+          for project in libs/*/Ave.Extensions.*/Ave.Extensions.*.csproj; do
+            echo "::group::$project"
+            if ! dotnet build "$project" -c Release -p:UseRepoProjectReferences=false; then
+              status=1
+              echo "::error title=Release mode::$project does not build against the published minimum versions"
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Test every package against the published minimum versions
+        if: success() || failure()
+        run: |
+          dotnet msbuild eng/release-tags.proj -nologo -t:ListTests -p:OutputFile="$RUNNER_TEMP/tests.txt"
+          status=0
+          while read -r project package head_mode; do
+            if [ "$head_mode" = true ]; then
+              echo "$project ($package): TestInHeadMode, a release runs it in head mode; skipped here"
+              continue
+            fi
+            echo "::group::$project ($package)"
+            if ! dotnet test "$project" -c Release -p:UseRepoProjectReferences=false --filter "Category!=Network"; then
+              status=1
+              echo "::error title=Release mode::$project fails against the published minimum versions"
+            fi
+            echo "::endgroup::"
+          done < "$RUNNER_TEMP/tests.txt"
+          exit $status
