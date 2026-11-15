@@ -33,6 +33,33 @@ public class ForcedLineBreakTests
         lines[0].Width.Should().BeApproximately(expected, 1e-9, "a no-break space is not collapsible and stays; ordinary spaces go");
     }
 
+    [Theory]
+    [InlineData(0x000B)]
+    [InlineData(0x000C)]
+    [InlineData(0x0085)]
+    [InlineData(0x2028)]
+    [InlineData(0x2029)]
+    public void Every_mandatory_break_that_white_space_collapsing_keeps_forces_a_line_break(int codePoint)
+    {
+        // U+000B LINE TABULATION, U+000C FORM FEED (UAX #14 class BK), U+0085 NEXT LINE (NL), U+2028 and U+2029 (BK)
+        // are not collapsible white space, so they reach line breaking and end the line. (Line feed and carriage
+        // return collapse to a space first.)
+        var text = WhiteSpaceCollapsing.Collapse(["ab" + char.ConvertFromUtf32(codePoint) + "cd"])[0];
+
+        GreedyLineBreaker.BreakLines([[.. Shape(text)]], availableWidth: 1000).Should().HaveCount(2);
+    }
+
+    [Theory]
+    [InlineData(0x000A)]
+    [InlineData(0x000D)]
+    public void A_line_feed_or_carriage_return_collapses_to_a_space_and_forces_nothing(int codePoint)
+    {
+        var text = WhiteSpaceCollapsing.Collapse(["ab" + char.ConvertFromUtf32(codePoint) + "cd"])[0];
+
+        text.Should().Be("ab cd");
+        GreedyLineBreaker.BreakLines([[.. Shape(text)]], availableWidth: 1000).Should().ContainSingle();
+    }
+
     [Fact]
     public void Two_forced_breaks_still_make_an_empty_line()
     {

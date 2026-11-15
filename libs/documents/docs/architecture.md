@@ -165,7 +165,9 @@ Each is documented next to its code as well.
   this engine does not); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
   (GPOS type 6); default language system only; complex scripts, bidi and hyphenation are not implemented. Only
   `white-space: normal` exists: a tab collapses to a space like every other white space, so there are no tab stops.
-  A forced line break inside a paragraph is `LineBreak()` (U+2028; a line feed in the text collapses to a space). A
+  A forced line break inside a paragraph is `LineBreak()` (U+2028; a line feed or carriage return in the text
+  collapses to a space). U+000B, U+000C, U+0085 and U+2029 in the text are mandatory breaks too (UAX #14 classes BK
+  and NL) and are not collapsible, so they also end the line, as CSS Text 3 lets them (§5.5). A
   soft hyphen (U+00AD) shows a hyphen only where the line breaks. Default-ignorable characters, such as U+2060 WORD
   JOINER and the zero-width space, take no space and need no glyph. A character the font has no glyph for is the
   error `GlyphMissing`; there is no fallback font and no substitute character: U+2011 NON-BREAKING HYPHEN, which Lato
@@ -186,7 +188,8 @@ Each is documented next to its code as well.
   replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language, no Span, Link, List, Caption, Note, Formula, TOC or bookmarks; no ActualText; empty structure elements are
+  language, no Span, Link, List, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
+  marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above); empty structure elements are
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on
   another page has none, and no other layout attributes are written.
@@ -207,7 +210,10 @@ Each is documented next to its code as well.
 
   What still grows: the work per page is linear in the rows on that page, but every row is measured once more for
   each layout pass, so a document whose page count is used in its text (two passes or more) takes that many times as
-  long. `TableScalingTests` fails when four times the rows take eight times as long.
+  long. `TableScalingTests` fails when four times the rows cost five times the layout calls (it counts work, not
+  time). Because the columns are computed once, on the page where the table starts, a page number in an auto column
+  keeps the width measured there: "p10" on page 10 overflows a column sized for "p1" (`TableLimitTests`). Give such a
+  column a fixed width.
 
 ## How each reference check is run
 

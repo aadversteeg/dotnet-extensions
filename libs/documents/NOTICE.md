@@ -55,9 +55,9 @@ algorithm is written from UAX #14, revision 57.
 `assets/fonts/lato/` contains Lato 2.015 Regular, Bold and Italic by Łukasz Dziedzic (tyPoland), licensed under the
 SIL Open Font License 1.1 (`assets/fonts/lato/OFL.txt`). Used by the tests and the samples only.
 
-`assets/fonts/theano/` contains Theano Didot 2.0 Regular by Alexey Kryukov (2011), licensed under the SIL Open Font
-License 1.1 with the Reserved Font Name "Theano" (`assets/fonts/theano/OFL.txt`; the author's FONTLOG.txt next to
-it). Unmodified, from the author's release https://github.com/akryukov/theano/releases/download/v2.0/theano-2.0.ttf.zip
+`assets/fonts/theano/` contains Theano Didot 2.0 Regular by Alexey Kryukov, version 2.0 released 2011 (FONTLOG.txt),
+Copyright (c) 2006-2008 Alexey Kryukov (the notice in the author's OFL.txt), licensed under the SIL Open Font License
+1.1 with the Reserved Font Name "Theano" (`assets/fonts/theano/OFL.txt`; the author's FONTLOG.txt next to it). Unmodified, from the author's release https://github.com/akryukov/theano/releases/download/v2.0/theano-2.0.ttf.zip
 (zip SHA-256 `3cabb1e2b874f567606195f4e44e3d97dd23c6406e7f711f63fd848d2582e378`, font SHA-256
 `6d8d8ead05960cd6fcb61a36f045091bfa57ff4f6bcce8b6d9c3b1108b327c3f`). Used by the tests only, for what Lato lacks: a
 GDEF table, a `mkmk` feature, an old-style 'kern' table, a combining mark with a non-zero advance and a non-zero line
