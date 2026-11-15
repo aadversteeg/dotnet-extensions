@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>

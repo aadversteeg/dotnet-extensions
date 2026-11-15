@@ -1,0 +1,8 @@
+document title="Letter"
+page size=595.276x841.89 margin=56.693,56.693,56.693,56.693
+box #0 flow generic @Letter.cs:10
+  box #1 inline heading-1 margin=0,0,6,0 @Letter.cs:11
+    text #2 "Invoice \"42\"" Lato 22pt w700 #000000 @Letter.cs:11
+  box #3 flow generic padding=4,4,4,4 background=#ddebf7 break-before=page @Letter.cs:12
+    box #4 inline paragraph @Letter.cs:13
+      text #5 "Thank you." Lato 11pt w400 #1f4e79 @Letter.cs:13

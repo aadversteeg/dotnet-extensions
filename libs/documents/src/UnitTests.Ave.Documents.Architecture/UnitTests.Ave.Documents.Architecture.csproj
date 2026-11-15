@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Checks the compiled library assemblies themselves: no native code, and every layer depends only on the
+       layers below it. References every library so that all of them are copied next to the tests. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Fluent\Ave.Documents.Fluent.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Text\Ave.Documents.Text.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>

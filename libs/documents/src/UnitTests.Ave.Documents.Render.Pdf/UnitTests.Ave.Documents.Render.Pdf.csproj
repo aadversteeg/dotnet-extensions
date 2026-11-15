@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Render.Pdf\Ave.Documents.Render.Pdf.csproj" />
+    <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
+    <!-- Shaping builds realistic glyph runs for the tests. -->
+    <ProjectReference Include="..\Ave.Documents.Text\Ave.Documents.Text.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+  </ItemGroup>
+
+</Project>

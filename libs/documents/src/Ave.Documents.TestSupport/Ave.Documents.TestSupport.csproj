@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Shared helpers for the test projects: the committed test fonts, golden-file comparison and reading PDFs back with PdfPig.</Description>
+    <IsSampleOrSupport>true</IsSampleOrSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Page\Ave.Documents.Page.csproj" />
+    <!-- PdfPig reads our PDFs back in tests (independent, pure managed, Apache-2.0). Test-only. -->
+    <PackageReference Include="PdfPig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The OFL test fonts, copied next to every assembly that references this project. -->
+    <None Include="$(RepositoryRoot)assets/fonts/lato/*.ttf;$(RepositoryRoot)assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
