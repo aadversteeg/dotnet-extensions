@@ -89,6 +89,28 @@ public class BoundingBoxTests
     }
 
     [Fact]
+    public void A_figure_on_a_later_page_is_flipped_with_that_page_s_height()
+    {
+        // Page 1 is 100 high, page 2 is 300 high: the image at y 30–50 on page 2 is at 250–270 in its user space.
+        var first = Page(Start(0, SemanticRole.Paragraph), Text("a", new Point(20, 50)), End(0));
+        var second = new Page(new Size(200, 300), [Start(1, SemanticRole.Figure("a square")), Image(new Rect(new Point(20, 30), new Size(40, 20))), End(1)]);
+
+        Elements(first, second).Single(element => element.Type == "Figure").BoundingBox.Should().Equal(20, 250, 60, 270);
+    }
+
+    [Fact]
+    public void A_raised_glyph_raises_the_box()
+    {
+        // The same 'A' (yMin 0, yMax 1433 units, 7.165 pt at 10 pt) with its baseline 4 pt higher: glyph Y = −4.
+        var run = new GlyphRun(TestFonts.Regular, 10, Color.Black, new Point(10, 50), [new PositionedGlyph(new GlyphId(3), 0, "A", -4)]);
+
+        var box = Elements(Page(Start(1, SemanticRole.Figure("A")), run, End(1))).Single(element => element.Type == "Figure").BoundingBox!;
+
+        box[1].Should().BeApproximately(100 - 46, 1e-9, "the bottom is the raised baseline");
+        box[3].Should().BeApproximately(100 - (46 - 7.165), 1e-9);
+    }
+
+    [Fact]
     public void A_table_continued_on_the_next_page_has_no_box()
     {
         // Not "in its entirety on a single page": no single rectangle of one page encloses it.

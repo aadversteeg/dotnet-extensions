@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Ave.Documents.Core;
+using Ave.Documents.Fonts;
 using Ave.Documents.PageModel;
 using Ave.Documents.Pdf;
 using Ave.Documents.Render.Pdf;
@@ -195,6 +196,50 @@ public class PageModelContractTests
     public void A_profile_with_an_undefined_PDF_A_level_is_refused() =>
         Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1)), With(PdfProfile.Plain with { PdfA3 = (PdfA3Level)9 })).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidOptions);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_glyph_id_must_be_below_the_font_s_glyph_count(string profile)
+    {
+        // Glyph ids run from 0 to numGlyphs - 1 (OpenType 'maxp'), so the glyph count itself is one past the last.
+        var run = Run("x");
+        var last = run with { Glyphs = [run.Glyphs[0] with { Glyph = new GlyphId((ushort)(TestFonts.Regular.GlyphCount - 1)) }] };
+        var past = run with { Glyphs = [run.Glyphs[0] with { Glyph = new GlyphId((ushort)TestFonts.Regular.GlyphCount) }] };
+
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), past, End(1)), profile).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+        PdfRenderer.Render(Tagged(Start(1, SemanticRole.Paragraph), last, End(1)), With(ProfileNamed(profile))).IsSuccess.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 0)]
+    public void A_cell_span_below_one_is_refused(int columns, int rows)
+    {
+        var document = Tagged(
+            Start(1, SemanticRole.Table), Start(2, SemanticRole.TableBody), Start(3, SemanticRole.TableRow),
+            Start(4, SemanticRole.TableCell) with { Span = new CellSpan(columns, rows) }, Run("x"), End(4),
+            End(3), End(2), End(1));
+
+        Refused(document).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+    }
+
+    [Fact]
+    public void PDF_UA_refuses_cells_that_overlap()
+    {
+        // Row 1: a, then b spanning two rows. Row 2: c spanning two columns, which runs into the slot b covers.
+        var document = Tagged(
+            Start(1, SemanticRole.Table), Start(2, SemanticRole.TableBody),
+            Start(3, SemanticRole.TableRow),
+            Start(4, SemanticRole.TableCell), Run("a"), End(4),
+            Start(5, SemanticRole.TableCell) with { Span = new CellSpan(1, 2) }, Run("b"), End(5),
+            End(3),
+            Start(6, SemanticRole.TableRow),
+            Start(7, SemanticRole.TableCell) with { Span = new CellSpan(2, 1) }, Run("c"), End(7),
+            End(6),
+            End(2), End(1));
+
+        Refused(document, With(PdfProfile.PdfUa1)).Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable);
+    }
 
     [Fact]
     public void PDF_UA_refuses_a_table_head_without_a_body()
