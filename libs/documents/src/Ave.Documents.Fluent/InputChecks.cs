@@ -170,8 +170,24 @@ internal static class InputChecks
             : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
 
     /// <summary>
+    /// The document's title and author: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
+    /// allows (§2.2, production [2] Char; <see cref="XmlCharacters"/>). Reported at the document's line.
+    /// </summary>
+    public static IEnumerable<Error> Metadata(string? title, string? author, SourceLocation source) =>
+        new[] { (Text: title, Property: "title"), (Text: author, Property: "author") }
+            .SelectMany(field => MetadataText(field.Text, field.Property, source));
+
+    /// <summary>One metadata text: an error when it holds a character XML 1.0 does not allow.</summary>
+    private static IEnumerable<Error> MetadataText(string? text, string property, SourceLocation source) =>
+        text is not null && XmlCharacters.IndexOfForbidden(text) is { } offset
+            ? [Problem(DocumentErrorCodes.Input.Invalid.MetadataText, $"The {property} holds a character XML does not allow, at position {offset}.", text, property, source)
+                .With(ErrorMetadataKeys.Offset, offset)]
+            : [];
+
+    /// <summary>
     /// An attachment needs a file name, a media type of the form <c>type/subtype</c> (RFC 6838 §4.2, restricted names),
-    /// and a name no other attachment of the document has: the embedded-files name tree has one entry per name
+    /// a file name and description of characters XML allows (as <see cref="Metadata"/>), and a name no other
+    /// attachment of the document has: the embedded-files name tree has one entry per name
     /// (ISO 32000-1 §7.9.6).
     /// </summary>
     public static IEnumerable<Error> Attachments(ValueList<Attachment> attachments)
@@ -186,6 +202,12 @@ internal static class InputChecks
             if (!MediaType.IsMatch(attachment.MediaType))
             {
                 yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "The media type is not of the form type/subtype.", attachment.MediaType, "media-type", attachment.Source);
+            }
+
+            foreach (var problem in MetadataText(attachment.FileName, "file-name", attachment.Source)
+                         .Concat(MetadataText(attachment.Description, "description", attachment.Source)))
+            {
+                yield return problem;
             }
         }
 

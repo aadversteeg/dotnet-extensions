@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using Ave.Documents.Core;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Pdf.Xmp;
 
@@ -27,8 +29,18 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     /// rdf:about=""</c> per namespace, and the read-only trailer <c>end="w"</c>. No padding is added: the engine writes
     /// new files and never edits metadata in place.
     /// </summary>
-    /// <returns>The packet bytes.</returns>
-    public ImmutableArray<byte> Write()
+    /// <returns>The packet bytes; <c>Documents.Pdf.Write.InvalidText</c> for every value with a character XML 1.0 does
+    /// not allow (§2.2, production [2] Char), which no XML writer can write.</returns>
+    public Result<ImmutableArray<byte>, Error> Write()
+    {
+        var problems = Properties.SelectMany(property => Problems(property, Prefixed(property))).ToImmutableArray();
+        return problems.IsEmpty
+            ? Result<ImmutableArray<byte>, Error>.Success(Serialize())
+            : Result<ImmutableArray<byte>, Error>.Failure(Errors.Aggregate(problems));
+    }
+
+    /// <summary>The checked properties as RDF/XML.</summary>
+    private ImmutableArray<byte> Serialize()
     {
         var settings = new XmlWriterSettings
         {
@@ -57,6 +69,27 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
 
         return [.. output.ToArray()];
     }
+
+    /// <summary>The forbidden characters in a property's text, per text value: arrays and structures are searched
+    /// through. <paramref name="name"/> is the prefixed name of the top-level property, for the message.</summary>
+    private static IEnumerable<Error> Problems(XmpProperty property, string name) => Texts(property.Value)
+        .Select(text => (Text: text, Offset: XmlCharacters.IndexOfForbidden(text)))
+        .Where(found => found.Offset is not null)
+        .Select(found => new Error(DocumentErrorCodes.Pdf.Write.InvalidText, $"The XMP property {name} holds a character XML does not allow, at position {found.Offset}.")
+            .With(ErrorMetadataKeys.Property, name)
+            .With(ErrorMetadataKeys.Offset, found.Offset!.Value));
+
+    private static IEnumerable<string> Texts(XmpValue value) => value switch
+    {
+        XmpText text => [text.Text],
+        XmpLanguageAlternative alternative => [alternative.Text],
+        XmpOrderedArray array => array.Items.SelectMany(Texts),
+        XmpUnorderedArray array => array.Items.SelectMany(Texts),
+        XmpStructure structure => structure.Fields.SelectMany(field => Texts(field.Value)),
+        _ => throw new InvalidOperationException($"Unknown XMP value {value.GetType().Name}."),
+    };
+
+    private static string Prefixed(XmpProperty property) => $"{property.Namespace.Prefix}:{property.Name}";
 
     /// <summary>One <c>rdf:Description</c>; every namespace its properties use is declared on it, so the output does
     /// not depend on where the XML writer would choose to declare them.</summary>

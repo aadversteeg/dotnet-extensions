@@ -67,9 +67,14 @@ public static class PdfRenderer
         var pageObjects = document.Pages.Select((page, index) => (page, index))
             .TraverseAll(page => PageObjects(page.page, pages[page.index], marks[page.index], plan, page.index, fonts, images, resources));
 
+        var metadataObjects = plan.HasMetadata
+            ? Metadata(document.Metadata, options, plan).OnSuccessMap(stream => ImmutableArray.Create(stream))
+            : Result<ImmutableArray<IndirectObject>, Error>.Success([]);
+
         return fontObjects
             .OnSuccessCombine(_ => pageObjects)
-            .OnSuccessBind((fontParts, pageParts) => PdfWriter.Write(new PdfFile(
+            .OnSuccessCombine((_, _) => metadataObjects)
+            .OnSuccessBind((fontParts, pageParts, metadataParts) => PdfWriter.Write(new PdfFile(
                 [
                     new IndirectValue(ObjectPlan.Catalog, Catalog(document.Metadata, profile, plan)),
                     new IndirectValue(ObjectPlan.PageTree, PageTree(plan)),
@@ -77,7 +82,7 @@ public static class PdfRenderer
                     .. fontParts.SelectMany(parts => parts),
                     .. images.SelectMany((used, index) => ImageEmbedding.Build(used, plan.Image(index))),
                     .. pageParts.SelectMany(parts => parts),
-                    .. plan.HasMetadata ? [Metadata(document.Metadata, options, plan)] : ImmutableArray<IndirectObject>.Empty,
+                    .. metadataParts,
                     .. plan.HasOutputIntent ? [OutputIntentProfile(plan)] : ImmutableArray<IndirectObject>.Empty,
                     .. tree is not null ? StructureObjects.Build(tree, plan) : [],
                     .. attachments.SelectMany((attachment, index) => AttachmentEmbedding.Build(attachment, plan.Attachment(index))),
@@ -138,11 +143,11 @@ public static class PdfRenderer
     /// The metadata stream (§14.3.2, Table 315): <c>/Type /Metadata /Subtype /XML</c> (veraPDF rule 6.6.2.1-1). It is
     /// written uncompressed, so that tools which search a file for its XMP packet without parsing the PDF find it.
     /// </summary>
-    private static IndirectObject Metadata(DocumentMetadata metadata, PdfRenderOptions options, ObjectPlan plan) =>
-        new IndirectStream(plan.Metadata, new PdfStream(
+    private static Result<IndirectObject, Error> Metadata(DocumentMetadata metadata, PdfRenderOptions options, ObjectPlan plan) =>
+        MetadataPacket.For(metadata, options).Write().OnSuccessMap(packet => (IndirectObject)new IndirectStream(plan.Metadata, new PdfStream(
             PdfDictionary.Of(("Type", new PdfName("Metadata")), ("Subtype", new PdfName("XML"))),
-            MetadataPacket.For(metadata, options).Write(),
-            StreamEncoding.None));
+            packet,
+            StreamEncoding.None)));
 
     /// <summary>A flat page tree (§7.7.3.2, Table 29): one node whose kids are all the pages.</summary>
     private static PdfDictionary PageTree(ObjectPlan plan) => PdfDictionary.Of(

@@ -54,6 +54,12 @@ public static class DocumentErrorCodes
             /// <summary>Text that is not valid UTF-16 (an unpaired surrogate). Metadata: Offset.</summary>
             public static readonly ErrorCode Text = _ / "Text";
 
+            /// <summary>Metadata text — the title, the author, an attachment's file name or description — with a
+            /// character XML 1.0 does not allow (§2.2, production [2] Char: a control character other than tab, line
+            /// feed and carriage return, U+FFFE, U+FFFF or an unpaired surrogate). The XMP metadata is XML, so such
+            /// text cannot be written. Metadata: Property, Offset.</summary>
+            public static readonly ErrorCode MetadataText = _ / "MetadataText";
+
             /// <summary>A property set on an element it does not apply to, for example box properties in the
             /// style of a text span. Metadata: Value, Property.</summary>
             public static readonly ErrorCode NotApplicable = _ / "NotApplicable";
@@ -189,6 +195,10 @@ public static class DocumentErrorCodes
 
             /// <summary>Indirect objects not numbered 1..N without gaps or duplicates. Metadata: Value.</summary>
             public static readonly ErrorCode InvalidObjectNumbers = _ / "InvalidObjectNumbers";
+
+            /// <summary>An XMP value with a character XML 1.0 does not allow (§2.2, production [2] Char). Metadata:
+            /// Property (prefixed name), Offset.</summary>
+            public static readonly ErrorCode InvalidText = _ / "InvalidText";
 
             /// <summary>A font whose licence bits (OpenType OS/2 fsType) forbid embedding. Metadata: FontName.</summary>
             public static readonly ErrorCode FontEmbeddingNotPermitted = _ / "FontEmbeddingNotPermitted";

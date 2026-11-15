@@ -31,6 +31,7 @@ public static class DocumentTranslator
         var format = document.Format.Text;
         var problems = InputChecks.Page(document.Page, document.Source)
             .Concat(InputChecks.Text(format, document.Source))
+            .Concat(InputChecks.Metadata(document.Title, document.Author, document.Source))
             .Concat(InputChecks.Language(document.Language, document.Source))
             .Concat(InputChecks.Attachments(document.Attachments))
             .Concat(format.FontFamily is null ? [InputChecks.MissingFontFamily(document.Source)] : [])

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Xml.Linq;
+using Ave.Documents.Core;
 using Ave.Documents.Pdf;
 using Ave.Documents.Pdf.Xmp;
 using Ave.Documents.TestSupport;
@@ -22,12 +23,12 @@ public class ConformanceBuildingBlockTests
 
     [Fact]
     public void An_XMP_packet_matches_its_golden_file() =>
-        Golden.Compare("sample.xmp.xml", Encoding.UTF8.GetString(Sample().Write().AsSpan())).Should().BeNull();
+        Golden.Compare("sample.xmp.xml", Encoding.UTF8.GetString(Sample().Write().Value.AsSpan())).Should().BeNull();
 
     [Fact]
     public void An_XMP_packet_is_well_formed_UTF_8_with_the_packet_header_PDF_A_asks_for()
     {
-        var bytes = Sample().Write();
+        var bytes = Sample().Write().Value;
         var text = Encoding.UTF8.GetString(bytes.AsSpan());
 
         text.Should().StartWith("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>");
@@ -40,13 +41,35 @@ public class ConformanceBuildingBlockTests
     [Fact]
     public void Properties_of_one_namespace_share_one_description_even_when_they_are_not_adjacent()
     {
-        var xml = XDocument.Parse(Encoding.UTF8.GetString(Sample().Write().AsSpan()));
+        var xml = XDocument.Parse(Encoding.UTF8.GetString(Sample().Write().Value.AsSpan()));
 
         var descriptions = xml.Descendants(XName.Get("Description", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
             .Where(element => element.Attribute(XName.Get("about", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")) is not null)
             .ToList();
         descriptions.Should().HaveCount(4, "dc, xmp, pdfaid and pdfaExtension");
         descriptions[0].Elements().Select(element => element.Name.LocalName).Should().Equal("title", "creator", "language");
+    }
+
+    [Theory]
+    [InlineData(0x01, "title")]
+    [InlineData(0xD800, "creator")]
+    [InlineData(0xFFFF, "language")]
+    public void An_XMP_value_with_a_character_XML_forbids_is_an_error_value_not_an_exception(int forbidden, string property)
+    {
+        var text = $"a{(char)forbidden}b";
+        XmpValue value = property switch
+        {
+            "title" => new XmpLanguageAlternative(text),
+            "creator" => new XmpOrderedArray([new XmpText(text)]),
+            _ => new XmpUnorderedArray([new XmpText(text)]),
+        };
+
+        var result = new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, property, value)]).Write();
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(DocumentErrorCodes.Pdf.Write.InvalidText);
+        result.Error.Metadata![ErrorMetadataKeys.Property].Should().Be("dc:" + property);
+        result.Error.Metadata![ErrorMetadataKeys.Offset].Should().Be(1);
     }
 
     [Theory]
