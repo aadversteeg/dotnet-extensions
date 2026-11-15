@@ -259,7 +259,7 @@ public static class DocumentTranslator
                 .With(ErrorMetadataKeys.Value, height.ToString()).With(ErrorMetadataKeys.Property, "height").WithSource(source)]
             : [];
         return WithProblems(
-            [.. heightProblems],
+            [.. heightProblems, .. InputChecks.PageBreakIn([area.Content], "page header or footer")],
             Children([area.Content], new NodeId(id.Value + 1), inherited).OnSuccessMap(children =>
                 (PageArea?)new PageArea(new Box(id, SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, source), area.Height)));
     }

@@ -176,7 +176,7 @@ public class TracksLayoutTests
     }
 
     [Theory]
-    [InlineData(3, 1, "does not fit in the 2 columns")]
+    [InlineData(3, 1, "does not fit in the table's 2 columns")]
     [InlineData(1, 2, "runs past the end of its row group")]
     public void A_cell_that_does_not_fit_the_grid_is_invalid_content(int columnSpan, int rowSpan, string message)
     {

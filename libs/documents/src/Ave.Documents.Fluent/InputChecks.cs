@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Ave.Documents.Core;
@@ -125,6 +126,10 @@ internal static class InputChecks
         }
     }
 
+    /// <summary>A row of blocks needs at least one item.</summary>
+    public static IEnumerable<Error> RowItems(int items, SourceLocation source) =>
+        items > 0 ? [] : [Problem(DocumentErrorCodes.Input.Invalid.Columns, "A row needs at least one item.", "0", "items", source)];
+
     /// <summary>A row of blocks with column sizes must have one size per item.</summary>
     public static IEnumerable<Error> ColumnCount(int columns, int items, SourceLocation source) =>
         columns == items
@@ -148,10 +153,54 @@ internal static class InputChecks
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, $"A {element} has no {property}.", edges.ToString(), property, source)];
 
-    /// <summary>A page break inside a table cell or a row of blocks has no next sibling on another page to move.</summary>
-    public static IEnumerable<Error> PageBreakIn(ValueList<Element> content, string container) =>
-        content.OfType<PageBreakElement>().Select(pageBreak =>
+    /// <summary>
+    /// A page break inside a table cell, a row of blocks or a page area cannot move content to another page: a cell
+    /// or an item is laid out whole beside its neighbours, a header or footer repeats on every page. Refused at any
+    /// depth — in a block inside a cell, in a nested table — because the break would still be inside the container.
+    /// </summary>
+    public static IEnumerable<Error> PageBreakIn(IEnumerable<Element> content, string container) =>
+        content.SelectMany(PageBreaksWithin).Select(pageBreak =>
             Problem(DocumentErrorCodes.Input.Invalid.PageBreak, $"A page break is not allowed inside a {container}.", "PageBreak", "break-before", pageBreak.Source));
+
+    /// <summary>Every page break in an element and in everything it contains.</summary>
+    private static IEnumerable<PageBreakElement> PageBreaksWithin(Element element) => element switch
+    {
+        PageBreakElement pageBreak => [pageBreak],
+        BlockElement block => block.Children.SelectMany(PageBreaksWithin),
+        RowElement row => row.Items.SelectMany(PageBreaksWithin),
+        TableElement table => table.Rows
+            .SelectMany(part => part is RowGroupElement group ? group.Rows.AsEnumerable() : [(TableRowElement)part])
+            .SelectMany(row => row.Cells)
+            .SelectMany(cell => cell.Content)
+            .SelectMany(PageBreaksWithin),
+        _ => [],
+    };
+
+    /// <summary>
+    /// The shape of a table: the rule of <see cref="TableSlots"/> (each cell in the first free column of its row; a row
+    /// span ends with its row group), applied to the table's groups and the cells' spans. Each problem is reported at
+    /// the cell or the row that has it. Only checked when the columns are valid.
+    /// </summary>
+    /// <param name="groups">The table's row groups, each a list of rows.</param>
+    /// <param name="columnCount">The number of columns.</param>
+    public static IEnumerable<Error> TableShape(IReadOnlyList<IReadOnlyList<TableRowElement>> groups, int columnCount)
+    {
+        var rows = groups.SelectMany(group => group).ToImmutableArray();
+        var grid = TableSlots.Fill([.. groups.Select(group => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. group.Select(row => (IReadOnlyList<CellSpan>)[.. row.Cells.Select(cell => cell.Span)])])], columnCount);
+        return grid.Problems.Select(problem =>
+        {
+            var row = rows[problem.Row];
+            var source = problem.Cell < 0 ? row.Source : row.Cells[problem.Cell].Source;
+            var message = problem.Kind switch
+            {
+                TableSlots.ProblemKind.PastLastColumn => $"The cell does not fit in the table's {columnCount} columns: the row has more cells than columns, or the cell spans past the last column.",
+                TableSlots.ProblemKind.SpanPastGroup => "The cell's row span runs past the last row of its row group.",
+                TableSlots.ProblemKind.Overlap => "The cell overlaps a cell that spans rows from above.",
+                _ => "A table row needs at least one cell.",
+            };
+            return Problem(DocumentErrorCodes.Input.Invalid.Table, message, problem.Kind.ToString(), problem.Cell < 0 ? "cells" : "span", source);
+        });
+    }
 
     /// <summary>An image's width and height, when set, are positive finite lengths.</summary>
     public static IEnumerable<Error> ImageSize(Length? width, Length? height, SourceLocation source) =>

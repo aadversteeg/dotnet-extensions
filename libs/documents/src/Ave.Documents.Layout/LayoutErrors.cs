@@ -7,18 +7,22 @@ using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Documents.Layout;
 
-/// <summary>The errors layout reports, each with the node and its source location.</summary>
+/// <summary>The errors layout reports, each with the node and its source location. A message names the author's
+/// element by its role and the line that made it, not by its node number.</summary>
 internal static class LayoutErrors
 {
+    /// <summary>The element a box was made from, for a message: its role and its source.</summary>
+    private static string Describe(Box box) => $"The {box.Role} made at {box.Source}";
+
     public static Error DoesNotFit(Box box) =>
         new Error(
                 DocumentErrorCodes.Layout.DoesNotFit,
-                $"Box {box.Id} ({box.Role}) does not fit on a page, not even on an empty one, and cannot be broken.")
+                $"{Describe(box)} does not fit on a page, not even on an empty one, and cannot be broken.")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())
             .WithSource(box.Source);
 
     public static Error InvalidContent(Box box, string message) =>
-        new Error(DocumentErrorCodes.Layout.InvalidContent, $"Box {box.Id} ({box.Layout}): {message}")
+        new Error(DocumentErrorCodes.Layout.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())
             .With(ErrorMetadataKeys.Value, box.Layout.ToString())
             .WithSource(box.Source);
@@ -37,7 +41,7 @@ internal static class LayoutErrors
     public static Error ColumnsDoNotFit(Box table, double needed, double available) =>
         new Error(
                 DocumentErrorCodes.Layout.ColumnsDoNotFit,
-                $"Box {table.Id} needs {InvariantNumber.Format(needed)}pt for its fixed columns and the narrowest content of the others, "
+                $"{Describe(table)} needs {InvariantNumber.Format(needed)}pt for its fixed columns and the narrowest content of the others, "
                 + $"but has {InvariantNumber.Format(available)}pt.")
             .With(ErrorMetadataKeys.Node, table.Id.ToString())
             .With(ErrorMetadataKeys.Value, $"{InvariantNumber.Format(needed)}>{InvariantNumber.Format(available)}")

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Ave.Documents.Core;
 using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -9,8 +10,9 @@ namespace Ave.Documents.Layout;
 
 /// <summary>
 /// The grid of a tracks box: its rows in order, and every cell with the slots it covers. Built from the box tree
-/// (row groups → rows → cells) with the slot-filling rule of the HTML table model, which CSS 2.1 §17.2 relies on:
-/// each cell takes the first free column of its row, skipping slots that a row span from above already covers.
+/// (row groups → rows → cells) with <see cref="TableSlots"/>, the one implementation of the slot-filling rule: each
+/// cell takes the first free column of its row, skipping slots that a row span from above already covers. A row
+/// without cells is allowed here (its slots are empty); the front-end refuses it as input.
 /// </summary>
 /// <param name="Rows">Every row, header rows first, in document order.</param>
 /// <param name="Cells">Every cell, in document order (row by row).</param>
@@ -96,81 +98,39 @@ internal sealed record TableGrid(
             return Invalid(table, "a header row group may only be the first group.");
         }
 
-        var rows = ImmutableArray.CreateBuilder<Row>();
-        var cells = ImmutableArray.CreateBuilder<Cell>();
-        var slots = new List<int[]>();
-        foreach (var group in groups)
+        var groupRows = groups.Select(group => group.Children.OfType<Box>().ToImmutableArray()).ToImmutableArray();
+        for (var index = 0; index < groups.Length; index++)
         {
-            var groupRows = group.Children.OfType<Box>().ToImmutableArray();
-            if (groupRows.Length != group.Children.Count || groupRows.Any(row => row.Layout != LayoutAlgorithmId.TableRow))
+            if (groupRows[index].Length != groups[index].Children.Count || groupRows[index].Any(row => row.Layout != LayoutAlgorithmId.TableRow))
             {
-                return Invalid(group, "the children of a row group must be rows.");
-            }
-
-            var firstRow = rows.Count;
-            slots.AddRange(groupRows.Select(_ => Enumerable.Repeat(-1, columnCount).ToArray()));
-            for (var index = 0; index < groupRows.Length; index++)
-            {
-                var rowBox = groupRows[index];
-                rows.Add(new Row(rowBox, group, index == 0, index == groupRows.Length - 1));
-                if (PlaceCells(rowBox, firstRow + index, firstRow + groupRows.Length - 1, columnCount, slots, cells) is { } problem)
-                {
-                    return Result<TableGrid, Error>.Failure(problem);
-                }
+                return Invalid(groups[index], "the children of a row group must be rows.");
             }
         }
 
-        var headerRows = groups.FirstOrDefault()?.Layout == LayoutAlgorithmId.TableHeaderGroup ? groups[0].Children.Count : 0;
-        var builtCells = cells.ToImmutable();
-        return Result<TableGrid, Error>.Success(new TableGrid(
-            rows.ToImmutable(), builtCells, columnCount, headerRows, BuildUnits(rows.ToImmutable(), builtCells), [.. slots.Select(row => row.ToImmutableArray())]));
-    }
-
-    /// <summary>The slot-filling rule for one row: each cell goes to the first column not yet covered.</summary>
-    private static Error? PlaceCells(Box rowBox, int row, int lastRowOfGroup, int columnCount, List<int[]> slots, ImmutableArray<Cell>.Builder cells)
-    {
-        var column = 0;
-        foreach (var child in rowBox.Children)
+        var rowBoxes = groupRows.SelectMany(rows => rows).ToImmutableArray();
+        if (rowBoxes.FirstOrDefault(row => row.Children.Any(child => child is not Box)) is { } mixed)
         {
-            if (child is not Box cellBox)
-            {
-                return LayoutErrors.InvalidContent(rowBox, "the children of a row must be cell boxes.");
-            }
-
-            while (column < columnCount && slots[row][column] >= 0)
-            {
-                column++;
-            }
-
-            var span = cellBox.Style.Span;
-            if (span.Columns < 1 || span.Rows < 1 || column + span.Columns > columnCount)
-            {
-                return LayoutErrors.InvalidContent(cellBox, $"the cell (span {span}) does not fit in the {columnCount} columns from column {column + 1}.");
-            }
-
-            if (row + span.Rows - 1 > lastRowOfGroup)
-            {
-                return LayoutErrors.InvalidContent(cellBox, $"the cell's row span of {span.Rows} runs past the end of its row group.");
-            }
-
-            for (var covered = row; covered < row + span.Rows; covered++)
-            {
-                for (var spanned = column; spanned < column + span.Columns; spanned++)
-                {
-                    if (slots[covered][spanned] >= 0)
-                    {
-                        return LayoutErrors.InvalidContent(cellBox, "the cell overlaps a cell that spans rows from above.");
-                    }
-
-                    slots[covered][spanned] = cells.Count;
-                }
-            }
-
-            cells.Add(new Cell(cellBox, row, column, span.Rows, span.Columns));
-            column += span.Columns;
+            return Invalid(mixed, "the children of a row must be cell boxes.");
         }
 
-        return null;
+        var cellBoxes = rowBoxes.Select(row => row.Children.Cast<Box>().ToImmutableArray()).ToImmutableArray();
+        var grid = TableSlots.Fill([.. groupRows.Select(rows => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. rows.Select(row => (IReadOnlyList<CellSpan>)[.. row.Children.Cast<Box>().Select(cell => cell.Style.Span)])])], columnCount);
+        if (grid.Problems.Where(problem => problem.Kind != TableSlots.ProblemKind.EmptyRow).Select(problem => (TableSlots.Problem?)problem).FirstOrDefault() is { } problem)
+        {
+            var box = cellBoxes[problem.Row][problem.Cell];
+            return Invalid(box, problem.Kind switch
+            {
+                TableSlots.ProblemKind.PastLastColumn => $"the cell (span {box.Style.Span}) does not fit in the table's {columnCount} columns.",
+                TableSlots.ProblemKind.SpanPastGroup => $"the cell's row span of {box.Style.Span.Rows} runs past the end of its row group.",
+                _ => "the cell overlaps a cell that spans rows from above.",
+            });
+        }
+
+        var rows = groupRows.SelectMany((rows, group) => rows.Select((row, index) => new Row(row, groups[group], index == 0, index == rows.Length - 1))).ToImmutableArray();
+        var flatCells = cellBoxes.SelectMany(cells => cells).ToImmutableArray();
+        var cells = grid.Cells.Select((placement, index) => new Cell(flatCells[index], placement.Row, placement.Column, placement.Span.Rows, placement.Span.Columns)).ToImmutableArray();
+        var headerRows = groups.FirstOrDefault()?.Layout == LayoutAlgorithmId.TableHeaderGroup ? groupRows[0].Length : 0;
+        return Result<TableGrid, Error>.Success(new TableGrid(rows, cells, columnCount, headerRows, BuildUnits(rows, cells), grid.Slots));
     }
 
     /// <summary>Joins rows into units: a unit grows while a cell that starts inside it reaches a later row.</summary>

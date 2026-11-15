@@ -15,9 +15,11 @@ namespace Ave.Documents.Render.Pdf.Tagging;
 internal static class TableRegularity
 {
     /// <summary>
-    /// Builds each table's grid from its structure elements, as a reader does: rows in order, row groups (THead, TBody)
-    /// ending row spans, each cell taking the first free slot of its row and as many slots as its span covers (CSS 2.1
-    /// §17.5 slot filling). A row with a free slot left of the widest row's last column is a violation.
+    /// Builds each table's grid from its structure elements, as a reader does, with <see cref="TableSlots"/> — the
+    /// same slot-filling rule layout uses: rows in order; row groups (THead, TBody) end row spans, and consecutive
+    /// rows directly under the table form one group, as in the HTML table model; each cell takes the first free slot
+    /// of its row and covers what its span covers. A row with a free slot left of the widest row's last column is a
+    /// violation.
     /// </summary>
     /// <param name="tree">The structure tree.</param>
     /// <returns>One error per row that does not fill the table's columns, at the row's source location.</returns>
@@ -26,46 +28,49 @@ internal static class TableRegularity
 
     private static IEnumerable<Error> Violations(StructureTree tree, StructureElement table)
     {
-        var groups = Children(tree, table)
-            .Select(child => child.Type.Value == "TR" ? [child] : Children(tree, child).Where(row => row.Type.Value == "TR").ToImmutableArray())
-            .ToImmutableArray();
-        var rows = groups.SelectMany(group => Slots(tree, group)).ToImmutableArray();
-        var columns = rows.Select(row => row.Filled.Count == 0 ? 0 : row.Filled.Max() + 1).DefaultIfEmpty(0).Max();
-        return rows
-            .Where(row => row.Filled.Count < columns)
-            .Select(row => new Error(
+        var groups = Groups(tree, table);
+        var rows = groups.SelectMany(group => group).ToImmutableArray();
+        var grid = TableSlots.Fill([.. groups.Select(group => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. group.Select(row => (IReadOnlyList<CellSpan>)[.. Children(tree, row).Select(cell => cell.Start.Span)])])]);
+        return grid.IncompleteRows.Select(index =>
+        {
+            var (row, filled) = (rows[index], grid.Slots[index].Count(slot => slot >= 0));
+            return new Error(
                     DocumentErrorCodes.Pdf.Conformance.PdfUa1.IrregularTable,
-                    $"PDF/UA-1 needs every table row to fill all {columns} columns; this row fills {row.Filled.Count} (ISO 14289-1 §7.2) ({row.Row.Start.Source}).")
-                .With(ErrorMetadataKeys.Node, row.Row.Start.Node.ToString())
-                .With(ErrorMetadataKeys.Value, $"{row.Filled.Count}/{columns}")
-                .WithSource(row.Row.Start.Source));
+                    $"PDF/UA-1 needs every table row to fill all {grid.ColumnCount} columns; this row fills {filled} (ISO 14289-1 §7.2) ({row.Start.Source}).")
+                .With(ErrorMetadataKeys.Node, row.Start.Node.ToString())
+                .With(ErrorMetadataKeys.Value, $"{filled}/{grid.ColumnCount}")
+                .WithSource(row.Start.Source);
+        });
     }
 
-    /// <summary>The slots each row of one row group fills; a row span never reaches past the group's last row.</summary>
-    private static IEnumerable<(StructureElement Row, HashSet<int> Filled)> Slots(StructureTree tree, ImmutableArray<StructureElement> group)
+    /// <summary>The table's row groups: each THead or TBody, and each run of rows directly under the table.</summary>
+    private static ImmutableArray<ImmutableArray<StructureElement>> Groups(StructureTree tree, StructureElement table)
     {
-        var filled = group.Select(_ => new HashSet<int>()).ToArray();
-        for (var row = 0; row < group.Length; row++)
+        var groups = ImmutableArray.CreateBuilder<ImmutableArray<StructureElement>>();
+        var loose = ImmutableArray.CreateBuilder<StructureElement>();
+        foreach (var child in Children(tree, table))
         {
-            var column = 0;
-            foreach (var cell in Children(tree, group[row]))
+            if (child.Type.Value == "TR")
             {
-                while (filled[row].Contains(column))
-                {
-                    column++;
-                }
-
-                var span = cell.Start.Span;
-                for (var spanned = row; spanned < System.Math.Min(row + span.Rows, group.Length); spanned++)
-                {
-                    filled[spanned].UnionWith(Enumerable.Range(column, span.Columns));
-                }
-
-                column += span.Columns;
+                loose.Add(child);
+                continue;
             }
+
+            if (loose.Count > 0)
+            {
+                groups.Add(loose.ToImmutable());
+                loose.Clear();
+            }
+
+            groups.Add([.. Children(tree, child).Where(row => row.Type.Value == "TR")]);
         }
 
-        return group.Select((row, index) => (row, filled[index]));
+        if (loose.Count > 0)
+        {
+            groups.Add(loose.ToImmutable());
+        }
+
+        return groups.ToImmutable();
     }
 
     private static IEnumerable<StructureElement> Children(StructureTree tree, StructureElement element) =>

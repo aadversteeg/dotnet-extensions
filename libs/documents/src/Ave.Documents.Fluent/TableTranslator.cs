@@ -51,6 +51,7 @@ internal static class TableTranslator
             .Concat(InputChecks.Columns(table.Columns, table.Source))
             .Concat(InputChecks.NotApplicable(box.Padding, "padding", "table", table.Source))
             .Concat(misplaced.Select(InputChecks.MisplacedHeaderRow))
+            .Concat(table.Columns.Count > 0 ? InputChecks.TableShape([.. groups.Select(group => (IReadOnlyList<TableRowElement>)group.Rows)], table.Columns.Count) : [])
             .ToImmutableArray();
         var own = inherited.With(text);
         var children = Parts(groups, new NodeId(id.Value + 1), own, table.CellDefaults, isLayoutOnly: false);
@@ -74,7 +75,7 @@ internal static class TableTranslator
         var columns = row.EffectiveColumns;
         var problems = DocumentTranslator.BoxProblems(box, row.Source)
             .Concat(InputChecks.Text(text, row.Source))
-            .Concat(InputChecks.Columns(columns, row.Source))
+            .Concat(row.Items.Count == 0 ? InputChecks.RowItems(0, row.Source) : InputChecks.Columns(columns, row.Source))
             .Concat(row.ColumnSizes.Count > 0 ? InputChecks.ColumnCount(row.ColumnSizes.Count, row.Items.Count, row.Source) : [])
             .Concat(InputChecks.PageBreakIn(row.Items, "row"))
             .ToImmutableArray();
