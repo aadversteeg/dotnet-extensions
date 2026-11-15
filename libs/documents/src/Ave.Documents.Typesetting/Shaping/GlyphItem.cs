@@ -24,4 +24,12 @@ internal sealed record GlyphItem(
     int XAdvance = 0,
     int XOffset = 0,
     int YOffset = 0,
-    MarkAttachment? Attachment = null);
+    MarkAttachment? Attachment = null)
+{
+    /// <summary>The zero width joiner U+200D.</summary>
+    public const string ZeroWidthJoiner = "\u200D";
+
+    /// <summary>True for a default-ignorable character (Unicode Default_Ignorable_Code_Point): it takes no space and
+    /// draws nothing; see <see cref="GlyphFilter"/> for how lookups treat it.</summary>
+    public bool IsDefaultIgnorable { get; init; }
+}

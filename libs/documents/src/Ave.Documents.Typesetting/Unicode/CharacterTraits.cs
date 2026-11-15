@@ -3,7 +3,7 @@ using System;
 namespace Ave.Documents.Typesetting.Unicode;
 
 /// <summary>
-/// The other Unicode properties the line breaking rules look at, besides Line_Break. Each comes from its own
+/// The other Unicode properties the line breaking and shaping rules look at, besides Line_Break. Each comes from its own
 /// Unicode data file (see <see cref="UnicodeProperties"/>).
 /// </summary>
 [Flags]
@@ -33,4 +33,9 @@ internal enum CharacterTraits : byte
     /// <summary>General_Category Mn, a nonspacing mark. Shaping treats its glyph as a mark when the font has no
     /// glyph classes of its own (no GDEF table).</summary>
     NonspacingMark = 1 << 6,
+
+    /// <summary>Default_Ignorable_Code_Point=Yes (DerivedCoreProperties.txt): a character that is rendered invisible
+    /// when it has no visible effect, such as the soft hyphen, the joiners and the zero width space (the Unicode
+    /// Standard, §5.21).</summary>
+    DefaultIgnorable = 1 << 7,
 }

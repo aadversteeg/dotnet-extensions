@@ -49,7 +49,7 @@ internal static class GlyphPositioning
         var index = 0;
         while (index < glyphs.Length)
         {
-            var next = filter.Skips(lookup.Flags, glyphs[index])
+            var next = filter.SkipsInPositioning(lookup.Flags, glyphs[index])
                 ? null
                 : lookup.Subtables.Select(subtable => Position(glyphs, index, subtable, lookup.Flags, filter)).FirstOrDefault(found => found is not null);
             index = next ?? index + 1;
@@ -81,7 +81,7 @@ internal static class GlyphPositioning
     private static int? AdjustPair(
         GlyphItem[] glyphs, int index, LookupFlags flags, GlyphFilter filter, bool secondHasValues, System.Func<GlyphItem, GlyphItem, PairValues?> find)
     {
-        if (NextIndex(glyphs, index, item => filter.Skips(flags, item)) is not { } second || find(glyphs[index], glyphs[second]) is not { } values)
+        if (NextIndex(glyphs, index, item => filter.SkipsInPositioning(flags, item)) is not { } second || find(glyphs[index], glyphs[second]) is not { } values)
         {
             return null;
         }
@@ -126,7 +126,7 @@ internal static class GlyphPositioning
         }
 
         var baseIndex = index - 1;
-        while (baseIndex >= 0 && glyphs[baseIndex].Class == GlyphClass.Mark)
+        while (baseIndex >= 0 && (glyphs[baseIndex].Class == GlyphClass.Mark || glyphs[baseIndex].IsDefaultIgnorable))
         {
             baseIndex--;
         }

@@ -20,6 +20,10 @@ internal static class BreakableSegments
     /// <param name="EndsWithMandatoryBreak">True when a line must end after this segment (UAX #14 "!").</param>
     public sealed record Segment(ImmutableArray<RunGlyph> Glyphs, bool EndsWithMandatoryBreak)
     {
+        /// <summary>The width of the hyphen that shows when a line breaks after this segment: a segment that ends in
+        /// a soft hyphen needs room for it at a line end (<see cref="ShapedGlyph.BreakHyphen"/>); otherwise 0.</summary>
+        public double HyphenWidth => Glyphs.IsEmpty ? 0 : Glyphs[^1].Glyph.BreakHyphen?.Advance ?? 0;
+
         /// <summary>The width of all glyphs.</summary>
         public double Width => Glyphs.Sum(glyph => glyph.Glyph.Advance);
 

@@ -32,10 +32,24 @@ internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
         Definitions is null ? previous : ClassOf(glyph, isNonspacingMarkCharacter: false);
 
     /// <summary>
+    /// True when a substitution lookup with these flags skips the glyph while matching: as <see cref="Skips"/>, and
+    /// always the zero width joiner, which therefore does not stop a ligature. Every other default-ignorable
+    /// character is matched, so a zero width non-joiner between two letters stops their ligature ("ZWNJ … the
+    /// characters are not to be connected", the Unicode Standard §23.2). This is HarfBuzz's rule (hb-ot-layout:
+    /// GSUB matching ignores ZWJ, GPOS matching ignores ZWJ and ZWNJ, and both skip hidden default ignorables when
+    /// positioning).
+    /// </summary>
+    public bool SkipsInSubstitution(LookupFlags flags, GlyphItem item) => item.Text == GlyphItem.ZeroWidthJoiner || Skips(flags, item);
+
+    /// <summary>True when a positioning lookup with these flags skips the glyph: as <see cref="Skips"/>, and every
+    /// default-ignorable character, which takes no space and so has no place in a kerning pair or under a mark.</summary>
+    public bool SkipsInPositioning(LookupFlags flags, GlyphItem item) => item.IsDefaultIgnorable || Skips(flags, item);
+
+    /// <summary>
     /// True when a lookup with these flags skips the glyph: "IgnoreBaseGlyphs", "IgnoreLigatures" and
     /// "IgnoreMarks" skip glyphs of that class; a MarkAttachmentType skips marks of any other attachment class.
     /// </summary>
-    public bool Skips(LookupFlags flags, GlyphItem item) => item.Class switch
+    private bool Skips(LookupFlags flags, GlyphItem item) => item.Class switch
     {
         GlyphClass.Base => flags.IgnoreBaseGlyphs,
         GlyphClass.Ligature => flags.IgnoreLigatures,

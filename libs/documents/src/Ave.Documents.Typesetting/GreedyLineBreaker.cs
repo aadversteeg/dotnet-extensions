@@ -28,6 +28,10 @@ public static class GreedyLineBreaker
     /// <item>Spaces at the start and at the end of a line are removed (CSS Text 3 §4.1.2, "Phase II: Trimming and
     /// Positioning"); UAX #14 puts the opportunity AFTER a run of spaces (LB18), so they end the line before.</item>
     /// <item>A line always ends after a mandatory break (UAX #14 "!"); an empty line is not made.</item>
+    /// <item>A line that breaks after a soft hyphen shows a hyphen there (CSS Text 3, <c>hyphens: manual</c>): the
+    /// invisible soft hyphen is replaced by its <see cref="ShapedGlyph.BreakHyphen"/>. A segment that ends in a soft
+    /// hyphen goes on the line only when it fits with that hyphen — LIMIT: so a line may end one segment earlier
+    /// than it would if the segment after it also fitted, which would make the hyphen unnecessary.</item>
     /// <item>A piece wider than the whole line is put on a line of its own and overflows it: there is no break
     /// opportunity inside it, and <c>overflow-wrap: normal</c> does not break words (CSS Text 3 §5.5).</item>
     /// </list>
@@ -44,9 +48,9 @@ public static class GreedyLineBreaker
         var lineWidth = 0.0;
         foreach (var segment in BreakableSegments.Split(runs))
         {
-            if (line.Count > 0 && !Fitting.Fits(lineWidth + segment.WidthWithoutTrailingSpaces, availableWidth))
+            if (line.Count > 0 && !Fitting.Fits(lineWidth + segment.WidthWithoutTrailingSpaces + segment.HyphenWidth, availableWidth))
             {
-                AddLine(lines, line, endsWithForcedBreak: false);
+                AddLine(lines, line, endsWithForcedBreak: false, breaksHere: true);
                 line.Clear();
                 lineWidth = 0;
             }
@@ -61,24 +65,30 @@ public static class GreedyLineBreaker
 
             if (segment.EndsWithMandatoryBreak)
             {
-                AddLine(lines, line, endsWithForcedBreak: true);
+                AddLine(lines, line, endsWithForcedBreak: true, breaksHere: true);
                 line.Clear();
                 lineWidth = 0;
             }
         }
 
-        AddLine(lines, line, endsWithForcedBreak: false);
+        AddLine(lines, line, endsWithForcedBreak: false, breaksHere: false);
         return lines.ToImmutable();
     }
 
     /// <summary>Adds a line without its trailing spaces, grouping its glyphs into one segment per consecutive
-    /// stretch of the same run. Nothing is added when no glyph is left.</summary>
-    private static void AddLine(ImmutableArray<TextLine>.Builder lines, List<BreakableSegments.RunGlyph> line, bool endsWithForcedBreak)
+    /// stretch of the same run; when the paragraph breaks after the line (<paramref name="breaksHere"/>) and the
+    /// line ends in a soft hyphen, the hyphen shows. Nothing is added when no glyph is left.</summary>
+    private static void AddLine(ImmutableArray<TextLine>.Builder lines, List<BreakableSegments.RunGlyph> line, bool endsWithForcedBreak, bool breaksHere)
     {
         var glyphs = line.Take(line.Count - line.AsEnumerable().Reverse().TakeWhile(glyph => glyph.Glyph.IsSpace).Count()).ToList();
         if (glyphs.Count == 0)
         {
             return;
+        }
+
+        if (breaksHere && glyphs[^1].Glyph.BreakHyphen is { } hyphen)
+        {
+            glyphs[^1] = glyphs[^1] with { Glyph = hyphen };
         }
 
         var segments = ImmutableArray.CreateBuilder<LineSegment>();

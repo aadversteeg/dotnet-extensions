@@ -19,4 +19,13 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// <summary>True for the glyph of a collapsed space U+0020: removed at the start and end of a line
     /// (CSS Text 3 §4.1.2), and stretched by justification.</summary>
     public bool IsSpace => Text == " ";
+
+    /// <summary>True for a default-ignorable character (a soft hyphen, a joiner, a zero width space, …): its advance
+    /// is 0 and it is not drawn, but it stays in the text for line breaking. The Unicode Standard, §5.21: default
+    /// ignorable code points are "rendered invisible" when they have no visible effect.</summary>
+    public bool IsInvisible { get; init; }
+
+    /// <summary>For a soft hyphen: the visible hyphen that replaces it when a line breaks after it (CSS Text 3,
+    /// <c>hyphens: manual</c>); null for every other glyph, and for a soft hyphen in a font without a hyphen.</summary>
+    public ShapedGlyph? BreakHyphen { get; init; }
 }

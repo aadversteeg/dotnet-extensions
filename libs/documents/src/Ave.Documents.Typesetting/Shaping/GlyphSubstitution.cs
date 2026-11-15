@@ -36,7 +36,7 @@ internal static class GlyphSubstitution
         var index = 0;
         while (index < glyphs.Length)
         {
-            if (filter.Skips(lookup.Flags, glyphs[index]))
+            if (filter.SkipsInSubstitution(lookup.Flags, glyphs[index]))
             {
                 output.Add(glyphs[index++]);
                 continue;
@@ -106,7 +106,7 @@ internal static class GlyphSubstitution
         var position = index + 1;
         foreach (var component in ligature.Components)
         {
-            while (position < glyphs.Length && filter.Skips(flags, glyphs[position]))
+            while (position < glyphs.Length && filter.SkipsInSubstitution(flags, glyphs[position]))
             {
                 skipped.Add(glyphs[position++]);
             }

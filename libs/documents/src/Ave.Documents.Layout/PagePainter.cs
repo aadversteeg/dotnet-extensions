@@ -122,7 +122,8 @@ public static class PagePainter
     /// A glyph run starts on the baseline, <see cref="TextFragment.Ascent"/> below the fragment's top edge;
     /// each glyph's pen position is the sum of the advances before it, and the glyph is drawn at the pen plus its
     /// own offset from shaping (GPOS placement, a mark on its base); y flips from the font's "up" to the page's
-    /// "down".
+    /// "down". An invisible glyph (a default-ignorable character, <see cref="Typesetting.ShapedGlyph.IsInvisible"/>) is not
+    /// drawn.
     /// </summary>
     private static GlyphRun Glyphs(TextFragment text, Point origin)
     {
@@ -130,11 +131,15 @@ public static class PagePainter
         var x = 0.0;
         foreach (var glyph in text.Glyphs)
         {
-            glyphs.Add(new PositionedGlyph(glyph.Glyph, x + glyph.XOffset, glyph.Text, -glyph.YOffset));
+            if (!glyph.IsInvisible)
+            {
+                glyphs.Add(new PositionedGlyph(glyph.Glyph, x + glyph.XOffset, glyph.Text, -glyph.YOffset));
+            }
+
             x += glyph.Advance;
         }
 
         var style = text.Run.Style;
-        return new GlyphRun(text.Font, style.FontSize.Points, style.Color, origin + new Point(0, text.Ascent), glyphs.MoveToImmutable());
+        return new GlyphRun(text.Font, style.FontSize.Points, style.Color, origin + new Point(0, text.Ascent), glyphs.ToImmutable());
     }
 }
