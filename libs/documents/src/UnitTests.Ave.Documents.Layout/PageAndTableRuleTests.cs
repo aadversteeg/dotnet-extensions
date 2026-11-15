@@ -7,8 +7,8 @@ using static UnitTests.Ave.Documents.Layout.Models;
 namespace UnitTests.Ave.Documents.Layout;
 
 /// <summary>
-/// Page and table rules that the mutation re-run on the fix branch could still change without a test failing. Each
-/// test builds the one situation in which the rule decides the outcome.
+/// Page and table rules that no other test pins. Each test builds the one situation in which the rule decides the
+/// outcome.
 /// </summary>
 public class PageAndTableRuleTests
 {
