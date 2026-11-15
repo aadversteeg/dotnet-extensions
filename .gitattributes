@@ -1,0 +1,6 @@
+# Git stores every text file with LF line endings; a checkout uses the line endings of the platform
+# (core.autocrlf / core.eol). Git detects binary files itself.
+* text=auto
+
+# Shell scripts keep LF in every checkout: bash reads a CR as part of the command.
+*.sh text eol=lf
