@@ -91,6 +91,104 @@ public class TableBreakLineTests
         }
     }
 
+    /// <summary>Every text fragment's text, in tree order: one word per line in these tables.</summary>
+    private static IEnumerable<string> Words(Fragment fragment) => fragment switch
+    {
+        BoxFragment box => box.Children.SelectMany(child => Words(child.Fragment)),
+        LineFragment line => line.Children.SelectMany(child => Words(child.Fragment)),
+        TextFragment text => [string.Concat(text.Glyphs.Select(glyph => glyph.Text))],
+        _ => [],
+    };
+
+    /// <summary>
+    /// Twelve units of two rows tied by a cell spanning both, three lines high, next to two one-line cells; every line
+    /// 3pt wide. A unit that does not fit is broken between its rows or inside a row.
+    /// </summary>
+    private static (StyledDocument Document, string[] Words) SpannedUnits(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12)
+    {
+        var t = new TableModels();
+        var style = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(3.Pt(), Color.Black)) };
+        var words = new List<string>();
+        Box Cell(int span, params string[] lines)
+        {
+            words.AddRange(lines);
+            return t.Lines(lines) with { Style = style with { Span = new CellSpan(1, span) } };
+        }
+
+        var rows = Enumerable.Range(0, units).SelectMany(unit => new[]
+        {
+            t.Row(Cell(2, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(1, $"a{unit:00}")),
+            t.Row(Cell(1, $"b{unit:00}")),
+        }).ToArray();
+        var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
+        var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body(rows));
+        return (TableModels.Page(280, pageHeight, spacer, table with { Style = table.Style with { DecorationBreak = mode } }), [.. words]);
+    }
+
+    [Theory]
+    [InlineData(BoxDecorationBreak.Slice)]
+    [InlineData(BoxDecorationBreak.Clone)]
+    public void Units_broken_between_or_inside_their_rows_keep_every_part_and_every_line_inside_the_page(BoxDecorationBreak mode)
+    {
+        // A row of a unit is kept on the page only when it fits with its share of the line below it (half the line
+        // for slice, all of it for clone), and a break inside a row is taken only when it leaves content of the row
+        // for the next page: a row continued on a page holds content, or lies beside a spanning cell that does.
+        // The offset sweep moves every row through the window where its content fits and its line does not.
+        for (var offset = 0.0; offset < 60; offset += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(offset, 120, mode);
+        }
+    }
+
+    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode)
+    {
+        var (document, expected) = SpannedUnits(offset, pageHeight, mode);
+        var pages = Paginate(document);
+
+        var because = $"{mode}, offset {offset}, page area {pageHeight}";
+        var words = new List<string>();
+        foreach (var page in pages)
+        {
+            var (table, at) = Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single();
+            (at.Y + table.Size.Height).Should().BeLessThanOrEqualTo(pageHeight + Epsilon, because + ": the table's part fits the page area");
+            foreach (var rule in table.Children.Where(child => child.Fragment is RuleFragment))
+            {
+                (rule.Offset.Y + rule.Fragment.Size.Height).Should().BeLessThanOrEqualTo(table.Size.Height + Epsilon, because + ": no rule outside the table's box");
+            }
+
+            var cells = Boxes(table, new Point(0, 0), SemanticRole.TableCell).Where(cell => Words(cell.Box).Any()).ToList();
+            foreach (var (row, rowAt) in Boxes(table, new Point(0, 0), SemanticRole.TableRow).Where(row => !Words(row.Box).Any() && row.Box.Size.Height > Epsilon))
+            {
+                // A row without words of its own is only right beside a spanning cell that shows content on this
+                // page: its own cells moved on whole, or were complete on the page before. (A row of height 0 only
+                // holds a spanning cell that continues into the rows below it, and draws nothing.)
+                cells.Should().Contain(cell => cell.At.Y < rowAt.Y + row.Size.Height - Epsilon && cell.At.Y + cell.Box.Size.Height > rowAt.Y + Epsilon,
+                    because + $": a row on a page holds content or lies beside a spanning cell that does (row at {rowAt.Y})");
+            }
+
+            words.AddRange(Words(table));
+        }
+
+        words.Should().BeEquivalentTo(expected, because + ": every line once");
+    }
+
+    [Fact]
+    public void A_break_inside_a_row_is_not_taken_above_the_bottom_of_the_line_over_the_row()
+    {
+        // Offset 12.25, page area 120: the second row of unit 02 starts at 106.5 (the centre of the 3pt line above it)
+        // and the page ends at 107.75, inside the lower half of that line. Breaking inside that row would cut the line
+        // off at 108, so it is no breakpoint; of the others, the break before the unit (at 87.5) keeps the unit
+        // together and wins over the break between its rows, which cuts the spanning cell.
+        var (document, _) = SpannedUnits(12.25, 120, BoxDecorationBreak.Slice);
+
+        var pages = Paginate(document);
+
+        var table = Boxes(pages[0].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box;
+        table.Size.Height.Should().BeApproximately(87.5, Epsilon);
+        Words(table).Should().EndWith(["b01"]);
+        Words(Boxes(pages[1].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).Should().StartWith(["s02x", "s02y", "s02z", "a02", "b02"]);
+    }
+
     [Theory]
     [InlineData(0.0)]
     [InlineData(0.75)]

@@ -70,11 +70,27 @@ internal static class TableBreaks
 
             if (!Fitting.Fits(top + segment.Heights[row - segment.FirstRow] + InsideBelow(table, row), height) || row == segment.LastRow)
             {
-                yield return new Breakpoint(BreakKind.InsideRow, row, InsideAppeal(table.Grid, row), content, segment);
+                // A break inside the row ends the page inside the row's cells, below the whole line above the row: the
+                // page must reach the bottom of that line, or its lower half would be cut off at the page end.
+                if (Fitting.Fits(top + LineInside(table, segment, row), height))
+                {
+                    yield return new Breakpoint(BreakKind.InsideRow, row, InsideAppeal(table.Grid, row), content, segment);
+                }
+
                 yield break;
             }
         }
     }
+
+    /// <summary>
+    /// How far the line above <paramref name="row"/> reaches below the row's top: half its width. A row's top is the
+    /// centre of the line above it, both for a line between two rows and for the line that starts the page (the
+    /// table's top line, or the line that continues after a break, whose centre or upper edge is the row's top).
+    /// </summary>
+    private static double LineInside(TableGeometry table, TableSegments.Segment segment, int row) =>
+        row > segment.FirstRow ? table.HorizontalWidth(row - 1, row, CollapsedBorders.LineContext.Interior) / 2
+        : segment.Above.Part == LinePart.UpperHalf ? 0
+        : table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2;
 
     /// <summary>The latest breakpoint of the highest appeal that places body content, taken; None when none does.</summary>
     /// <param name="table">The table.</param>
