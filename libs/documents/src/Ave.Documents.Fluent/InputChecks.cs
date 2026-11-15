@@ -191,24 +191,20 @@ internal static class InputChecks
     /// <summary>
     /// A page break inside a table cell, a row of blocks or a page area cannot move content to another page: a cell
     /// or an item is laid out whole beside its neighbours, a header or footer repeats on every page. Refused at any
-    /// depth — in a block inside a cell, in a nested table — because the break would still be inside the container.
+    /// depth inside the container — in a block inside a cell — because the break would still be inside it. A table or
+    /// a row of blocks inside the container is a container of its own that checks its content when it is translated,
+    /// so the walk stops there and every break is reported once, by its innermost container.
     /// </summary>
     public static IEnumerable<Error> PageBreakIn(IEnumerable<Element> content, string container) =>
         content.SelectMany(PageBreaksWithin).Select(pageBreak =>
             Problem(DocumentErrorCodes.Input.Invalid.PageBreak, $"A page break is not allowed inside a {container}.", "PageBreak", "break-before", pageBreak.Source));
 
-    /// <summary>Every page break in an element and in everything it contains.</summary>
+    /// <summary>The page breaks in an element and in everything it contains, down to the next container.</summary>
     private static IEnumerable<PageBreakElement> PageBreaksWithin(Element element) => element switch
     {
         PageBreakElement pageBreak => [pageBreak],
-        BlockElement block => block.Children.SelectMany(PageBreaksWithin),
-        RowElement row => row.Items.SelectMany(PageBreaksWithin),
-        TableElement table => table.Rows
-            .SelectMany(part => part is RowGroupElement group ? group.Rows.AsEnumerable() : [(TableRowElement)part])
-            .SelectMany(row => row.Cells)
-            .SelectMany(cell => cell.Content)
-            .SelectMany(PageBreaksWithin),
-        _ => [],
+        RowElement or TableElement => [],
+        _ => Children(element).SelectMany(PageBreaksWithin),
     };
 
     /// <summary>

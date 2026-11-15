@@ -123,6 +123,35 @@ public class TableShapeTests
         ShouldPointAt(error, DocumentErrorCodes.Input.Invalid.PageBreak, line);
     }
 
+    /// <summary>A block of two paragraphs with a page break between them.</summary>
+    private static BlockElement Broken() => Block([Paragraph("a"), PageBreak(), Paragraph("b")]);
+
+    private static ValueList<Element> InCell(Element content) => [Table(Columns(Fill(1)), [TableRow([Cell([content])])])];
+
+    public static TheoryData<string, string> Containers => new()
+    {
+        // Each break is reported by the innermost container that cannot move content to another page, once.
+        { "an item of a row of blocks", "row" },
+        { "a cell of a table in a cell", "table cell" },
+        { "a cell of a table in a page header", "table cell" },
+        { "a row of blocks in a cell", "row" },
+    };
+
+    [Theory]
+    [MemberData(nameof(Containers))]
+    public void A_page_break_is_reported_once_by_its_innermost_container(string where, string container)
+    {
+        var error = where switch
+        {
+            "an item of a row of blocks" => Problems([Row([Broken(), Paragraph("c")])]),
+            "a cell of a table in a cell" => Problems(InCell(InCell(Broken())[0])),
+            "a cell of a table in a page header" => Problems([Paragraph("body")], PageSetup.A4.Header(InCell(Broken())[0])),
+            _ => Problems(InCell(Row([Broken(), Paragraph("c")]))),
+        };
+
+        error.Parts().Should().ContainSingle().Which.Message.Should().StartWith($"A page break is not allowed inside a {container}.");
+    }
+
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 
     private static string ThisFile([CallerFilePath] string file = "") => file;

@@ -28,4 +28,15 @@ public class NestingDepthTests
         error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.TooDeep);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be(InputLimits.MaxNestingDepth.ToString(System.Globalization.CultureInfo.InvariantCulture));
     }
+
+    [Fact]
+    public void Tables_nested_in_cells_count_as_levels()
+    {
+        // Each table puts its cells' content one level deeper, like a block: a table in a cell in a table, and so
+        // on, runs as deep in layout as blocks in blocks.
+        var tables = Enumerable.Range(0, InputLimits.MaxNestingDepth).Aggregate((Element)Paragraph("deep"),
+            (inner, _) => Table(Columns(Fill(1)), [TableRow([Cell([inner])])]));
+
+        DocumentTranslator.ToModel(Document([tables]).FontFamily("Lato")).Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.TooDeep);
+    }
 }

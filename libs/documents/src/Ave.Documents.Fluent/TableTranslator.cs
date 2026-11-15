@@ -76,7 +76,6 @@ internal static class TableTranslator
             .Concat(InputChecks.Text(text, row.Source))
             .Concat(row.Items.Count == 0 ? InputChecks.RowItems(0, row.Source) : InputChecks.Columns(columns, row.Source))
             .Concat(row.ColumnSizes.Count > 0 ? InputChecks.ColumnCount(row.ColumnSizes.Count, row.Items.Count, row.Source) : [])
-            .Concat(InputChecks.PageBreakIn(row.Items, "row"))
             .ToImmutableArray();
         var own = inherited.With(text);
         var cells = row.Items.Select(item => new CellElement([item], CellSpan.Single, row.VerticalAlignment, Style.Empty, Style.Empty, item.Source));
@@ -206,22 +205,24 @@ internal static class TableTranslator
 
         var role = isLayoutOnly ? SemanticRole.Generic : row.IsHeader ? SemanticRole.TableHeaderCell : SemanticRole.TableCell;
         var children = cells
-            .TraverseAll(item => CellNode(item.Cell, item.Id, own, cellDefaults, role))
+            .TraverseAll(item => CellNode(item.Cell, item.Id, own, cellDefaults, role, isLayoutOnly ? "row" : "table cell"))
             .OnSuccessMap(nodes => nodes.ToValueList());
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes => (Node)new Box(
             id, isLayoutOnly ? SemanticRole.Generic : SemanticRole.TableRow, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own.Align) with { TableDisplay = TableDisplay.Row }, nodes, row.Source));
     }
 
     /// <summary>A cell box: a flow box with the cell's content; padding and border fall back to the table's cell
-    /// defaults; span and vertical alignment set.</summary>
-    private static Result<Node, Error> CellNode(CellElement cell, NodeId id, DocumentTranslator.Inherited inherited, BoxFormat cellDefaults, SemanticRole role)
+    /// defaults; span and vertical alignment set. <paramref name="container"/> names what the author wrote, a table
+    /// cell or an item of a row of blocks, for the page-break check.</summary>
+    private static Result<Node, Error> CellNode(
+        CellElement cell, NodeId id, DocumentTranslator.Inherited inherited, BoxFormat cellDefaults, SemanticRole role, string container)
     {
         var box = Cascade.Box(cell.Format, cell.Style, cellDefaults);
         var text = Cascade.Text(cell.Format, cell.Style);
         var problems = DocumentTranslator.BoxProblems(box, cell.Source)
             .Concat(InputChecks.Text(text, cell.Source))
             .Concat(InputChecks.NotApplicable(box.Margin, "margin", "cell", cell.Source))
-            .Concat(InputChecks.PageBreakIn(cell.Content, "table cell"))
+            .Concat(InputChecks.PageBreakIn(cell.Content, container))
             .ToImmutableArray();
         var own = inherited.With(text);
         var children = DocumentTranslator.Children(cell.Content, new NodeId(id.Value + 1), own);
