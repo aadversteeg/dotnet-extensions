@@ -49,7 +49,8 @@ one references an assembly, or a version of it, that the package's declared depe
 dotnet run --project eng/Ns20ReferenceCheck -c Release -- --configuration Release
 ```
 
-Such a reference compiles fine but fails to load on .NET Framework.
+Such a reference compiles fine, but fails at run time where that assembly version is not present, for example
+on .NET Framework.
 
 ## References between the packages
 

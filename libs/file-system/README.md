@@ -12,7 +12,7 @@ Cross-platform filesystem operations for .NET applications with advanced path ma
 - **File system monitoring** - Real-time change notifications with reactive streams
 - **High-performance move and copy operations** - Native platform optimizations with progress reporting
 - **Dependency injection ready** - Full integration with Microsoft.Extensions.DependencyInjection
-- **netstandard2.0 and net10.0** - Works with .NET Framework 4.7.2+, .NET Core and .NET 5+; .NET 10 gets its own build
+- **netstandard2.0 and net10.0** - A `netstandard2.0` build for any runtime that implements .NET Standard 2.0, and a `net10.0` build for .NET 10 (see [Supported runtimes](#supported-runtimes))
 
 ## Packages
 
@@ -424,6 +424,12 @@ about two minutes. Those tests have the trait `Category=Network`; CI leaves them
 ```shell
 dotnet test extensions.slnx --filter "Category!=Network"
 ```
+
+### Supported runtimes
+
+The packages target `netstandard2.0` and `net10.0`. What is tested: the test projects run on .NET 10, against
+the `net10.0` build and, with `-p:UseNs20=true`, against the `netstandard2.0` build. No test runs on a .NET
+Framework runtime, so this repository makes no promise about a particular .NET Framework version.
 
 ### The netstandard2.0 build
 
