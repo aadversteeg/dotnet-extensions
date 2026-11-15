@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Ave.Documents.Core;
 
 namespace Ave.Documents.DocumentModel;
@@ -31,7 +30,7 @@ public sealed record Box(
     SemanticRole Role,
     LayoutAlgorithmId Layout,
     BoxStyle Style,
-    ImmutableArray<Node> Children,
+    ValueList<Node> Children,
     SourceLocation Source) : Node(Id, Source);
 
 /// <summary>A run of text in one style; a leaf of the tree, laid out by its parent's inline algorithm.</summary>

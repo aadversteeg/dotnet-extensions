@@ -36,7 +36,7 @@ bool Write(string name, Document document)
             File.WriteAllText(Path.Combine(output, $"{name}.model.txt"), DocumentModelText.Write(model));
             File.WriteAllText(Path.Combine(output, $"{name}.fragments.txt"), FragmentText.Write(fragments));
             File.WriteAllText(Path.Combine(output, $"{name}.page.txt"), PageModelText.Write(pages));
-            return PdfRenderer.Render(pages, options).OnSuccessMap(pdf => (Pdf: pdf, PageCount: pages.Pages.Length));
+            return PdfRenderer.Render(pages, options).OnSuccessMap(pdf => (Pdf: pdf, PageCount: pages.Pages.Count));
         }));
 
     return result.Match(

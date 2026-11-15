@@ -79,7 +79,7 @@ public static class InlineLayout
         var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], frame.ContentWidth);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
-        for (var index = firstLine; index < lines.Length; index++)
+        for (var index = firstLine; index < lines.Count; index++)
         {
             var line = LineBoxes.Build(lines[index], runs);
             if (!Fitting.Fits(bottom + line.Size.Height, frame.ContentHeight))

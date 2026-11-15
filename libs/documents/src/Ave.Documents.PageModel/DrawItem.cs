@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 
@@ -37,7 +36,7 @@ public sealed record FillRectangle(Rect Area, Color Color) : DrawItem;
 /// <param name="Color">The fill colour of the glyphs.</param>
 /// <param name="Origin">The start of the baseline: the origin of the first glyph.</param>
 /// <param name="Glyphs">The glyphs, each with its position along the baseline.</param>
-public sealed record GlyphRun(TrueTypeFont Font, double FontSize, Color Color, Point Origin, ImmutableArray<PositionedGlyph> Glyphs) : DrawItem;
+public sealed record GlyphRun(TrueTypeFont Font, double FontSize, Color Color, Point Origin, ValueList<PositionedGlyph> Glyphs) : DrawItem;
 
 /// <summary>A glyph in a <see cref="GlyphRun"/>.</summary>
 /// <param name="Glyph">The glyph id.</param>

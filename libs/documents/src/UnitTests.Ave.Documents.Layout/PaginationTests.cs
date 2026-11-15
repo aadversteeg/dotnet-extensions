@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.Layout;
 using Ave.Documents.DocumentModel;
@@ -9,7 +8,7 @@ namespace UnitTests.Ave.Documents.Layout;
 
 public class PaginationTests
 {
-    private static ImmutableArray<PageFragment> Paginate(StyledDocument document)
+    private static ValueList<PageFragment> Paginate(StyledDocument document)
     {
         var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);

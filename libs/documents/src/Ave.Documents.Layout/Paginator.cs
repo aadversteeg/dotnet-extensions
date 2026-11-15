@@ -25,12 +25,12 @@ public static class Paginator
     /// <exception cref="InvalidOperationException">An algorithm broke the layout contract: it reported NoRoom at
     /// the start of a page, or returned the token it was given. Without this check pagination could loop
     /// forever.</exception>
-    public static Result<ImmutableArray<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document)
+    public static Result<ValueList<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document)
     {
         var page = document.Page;
         if (!(page.AreaWidth.Points > 0 && page.AreaHeight.Points > 0))
         {
-            return Result<ImmutableArray<PageFragment>, Error>.Failure(
+            return Result<ValueList<PageFragment>, Error>.Failure(
                 new Error(DocumentErrorCodes.Input.Invalid.PageSize, "The page margins leave no page area for content.")
                     .With(ErrorMetadataKeys.Value, $"{page.Width}x{page.Height} margin={page.Margins}"));
         }
@@ -45,7 +45,7 @@ public static class Paginator
                 environment, document.Root, page.AreaWidth.Points, top: 0, page.AreaHeight.Points, isAtPageStart: true, token);
             if (outcome.IsFailure)
             {
-                return Result<ImmutableArray<PageFragment>, Error>.Failure(outcome.Error);
+                return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);
             }
 
             if (outcome.Value.HasNoValue)
@@ -65,6 +65,6 @@ public static class Paginator
         }
         while (token is not null);
 
-        return Result<ImmutableArray<PageFragment>, Error>.Success(pages.ToImmutable());
+        return Result<ValueList<PageFragment>, Error>.Success(pages.ToImmutable());
     }
 }

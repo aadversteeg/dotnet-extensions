@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using Ave.Documents.Core;
 using Ave.Documents.DocumentModel;
@@ -23,7 +22,7 @@ internal static class Models
             [new TextRun(new NodeId(id + 100), text, Text(size), new SourceLocation(file, line))], new SourceLocation(file, line));
 
     public static Box Flow(
-        int id, ImmutableArray<Node> children, BoxStyle? style = null, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0) =>
+        int id, ValueList<Node> children, BoxStyle? style = null, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0) =>
         new(new NodeId(id), SemanticRole.Generic, LayoutAlgorithmId.Flow, style ?? BoxStyle.Initial, children, new SourceLocation(file, line));
 
     public static StyledDocument Document(params Node[] children) =>

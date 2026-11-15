@@ -12,7 +12,7 @@ namespace Ave.Documents.Layout;
 internal static class LineBoxes
 {
     /// <summary>A text run with its resolved font and shaped glyphs.</summary>
-    public sealed record ShapedRun(TextRun Run, TrueTypeFont Font, ImmutableArray<ShapedGlyph> Glyphs);
+    public sealed record ShapedRun(TextRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs);
 
     /// <summary>
     /// The vertical extent of one inline box around the baseline. With <c>line-height: normal</c> (the

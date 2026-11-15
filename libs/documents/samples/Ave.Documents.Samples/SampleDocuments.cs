@@ -26,7 +26,8 @@ public static class SampleDocuments
     /// Sample A: a two-page letter with a heading, paragraphs in regular and bold, and a coloured block.
     /// The second page starts with an explicit page break.
     /// </summary>
-    public static Document Letter() =>
+    /// <param name="closing">The closing line; a parameter so tests can change one leaf of the tree.</param>
+    public static Document Letter(string closing = "Kind regards,") =>
         Document(
             [
                 Paragraph("Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town",
@@ -59,7 +60,7 @@ public static class SampleDocuments
                 Para("This second page starts with an explicit page break. A page break is not an element of its own in "
                     + "the document model: it sets break-before: page on the element that follows it, as in CSS."),
                 Para([Bold("Validity. "), Text("This quotation is an example and is valid for no time at all.")]),
-                Para([Text("Kind regards,")]),
+                Para([Text(closing)]),
                 Paragraph("The document engine", format: new TextFormat(FontWeight: FontWeight.Bold)),
             ],
             BodyText,
@@ -81,7 +82,7 @@ public static class SampleDocuments
 
     private static ParagraphElement Para(string text) => Paragraph(text, ParagraphSpacing);
 
-    private static ParagraphElement Para(ImmutableArray<Span> spans) => Paragraph(spans, ParagraphSpacing);
+    private static ParagraphElement Para(ValueList<Span> spans) => Paragraph(spans, ParagraphSpacing);
 
     /// <summary>A component: a pale-blue block with one bold label and a description per line.</summary>
     private static BlockElement Summary(ImmutableArray<(string Label, string Description)> rows) =>

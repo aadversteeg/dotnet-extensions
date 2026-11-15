@@ -1,40 +1,40 @@
 document title="Quotation for document rendering" author="Ave.Documents samples"
 page size=595.276x841.89 margin=56.693,56.693,56.693,56.693
-box #0 flow generic @SampleDocuments.cs:30
-  box #1 inline paragraph margin=0,0,24,0 @SampleDocuments.cs:32
-    text #2 "Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town" Lato 9pt w400 #595959 @SampleDocuments.cs:32
-  box #3 inline heading-1 margin=0,0,12,0 @SampleDocuments.cs:34
-    text #4 "Quotation for document rendering" Lato 22pt w700 #1f4e79 @SampleDocuments.cs:34
-  box #5 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:82
-    text #6 "Dear reader," Lato 11pt w400 #000000 @SampleDocuments.cs:82
-  box #7 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:84
-    text #8 "Thank you for your interest in our document engine. This letter was written in C# through the " Lato 11pt w400 #000000 @SampleDocuments.cs:37
-    text #9 "code front-end" Lato 11pt w700 #000000 @SampleDocuments.cs:38
-    text #10 ", laid out by the engine's own layout algorithms, and written to PDF by its own PDF writer. No native library and no external tool took part in making it." Lato 11pt w400 #000000 @SampleDocuments.cs:39
-  box #11 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:82
-    text #12 "Every paragraph you see is broken into lines at spaces with the greedy method that browsers use: each line takes as many words as fit, and the next word starts a new line. The widths come straight from the font's horizontal metrics, and the text stays selectable and searchable because the PDF carries a map from every glyph back to its characters." Lato 11pt w400 #000000 @SampleDocuments.cs:82
-  box #13 flow generic margin=0,0,12,0 padding=11.339,11.339,11.339,11.339 background=#ddebf7 @SampleDocuments.cs:88
-    box #14 inline paragraph margin=0,0,3,0 @SampleDocuments.cs:89
-      text #15 "Layers: " Lato 11pt w700 #000000 @SampleDocuments.cs:89
-      text #16 "code front-end, document model, layout, page model, PDF writer" Lato 11pt w400 #000000 @SampleDocuments.cs:89
-    box #17 inline paragraph margin=0,0,3,0 @SampleDocuments.cs:89
-      text #18 "Fonts: " Lato 11pt w700 #000000 @SampleDocuments.cs:89
-      text #19 "TrueType, embedded whole, explicit input only" Lato 11pt w400 #000000 @SampleDocuments.cs:89
-    box #20 inline paragraph margin=0,0,3,0 @SampleDocuments.cs:89
-      text #21 "Output: " Lato 11pt w700 #000000 @SampleDocuments.cs:89
-      text #22 "the same bytes for the same input, every time" Lato 11pt w400 #000000 @SampleDocuments.cs:89
-  box #23 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:84
-    text #24 "The block above has a " Lato 11pt w400 #000000 @SampleDocuments.cs:53
-    text #25 "coloured background" Lato 11pt w700 #000000 @SampleDocuments.cs:54
-    text #26 " and padding on all four sides. Blocks can hold paragraphs and other blocks." Lato 11pt w400 #000000 @SampleDocuments.cs:55
-  box #27 inline heading-2 margin=0,0,10,0 break-before=page @SampleDocuments.cs:58
-    text #28 "Terms" Lato 16.5pt w700 #1f4e79 @SampleDocuments.cs:58
-  box #29 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:82
-    text #30 "This second page starts with an explicit page break. A page break is not an element of its own in the document model: it sets break-before: page on the element that follows it, as in CSS." Lato 11pt w400 #000000 @SampleDocuments.cs:82
-  box #31 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:84
-    text #32 "Validity. " Lato 11pt w700 #000000 @SampleDocuments.cs:61
-    text #33 "This quotation is an example and is valid for no time at all." Lato 11pt w400 #000000 @SampleDocuments.cs:61
-  box #34 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:84
-    text #35 "Kind regards," Lato 11pt w400 #000000 @SampleDocuments.cs:62
-  box #36 inline paragraph @SampleDocuments.cs:63
-    text #37 "The document engine" Lato 11pt w700 #000000 @SampleDocuments.cs:63
+box #0 flow generic @SampleDocuments.cs:31
+  box #1 inline paragraph margin=0,0,24,0 @SampleDocuments.cs:33
+    text #2 "Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town" Lato 9pt w400 #595959 @SampleDocuments.cs:33
+  box #3 inline heading-1 margin=0,0,12,0 @SampleDocuments.cs:35
+    text #4 "Quotation for document rendering" Lato 22pt w700 #1f4e79 @SampleDocuments.cs:35
+  box #5 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:83
+    text #6 "Dear reader," Lato 11pt w400 #000000 @SampleDocuments.cs:83
+  box #7 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:85
+    text #8 "Thank you for your interest in our document engine. This letter was written in C# through the " Lato 11pt w400 #000000 @SampleDocuments.cs:38
+    text #9 "code front-end" Lato 11pt w700 #000000 @SampleDocuments.cs:39
+    text #10 ", laid out by the engine's own layout algorithms, and written to PDF by its own PDF writer. No native library and no external tool took part in making it." Lato 11pt w400 #000000 @SampleDocuments.cs:40
+  box #11 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:83
+    text #12 "Every paragraph you see is broken into lines at spaces with the greedy method that browsers use: each line takes as many words as fit, and the next word starts a new line. The widths come straight from the font's horizontal metrics, and the text stays selectable and searchable because the PDF carries a map from every glyph back to its characters." Lato 11pt w400 #000000 @SampleDocuments.cs:83
+  box #13 flow generic margin=0,0,12,0 padding=11.339,11.339,11.339,11.339 background=#ddebf7 @SampleDocuments.cs:89
+    box #14 inline paragraph margin=0,0,3,0 @SampleDocuments.cs:90
+      text #15 "Layers: " Lato 11pt w700 #000000 @SampleDocuments.cs:90
+      text #16 "code front-end, document model, layout, page model, PDF writer" Lato 11pt w400 #000000 @SampleDocuments.cs:90
+    box #17 inline paragraph margin=0,0,3,0 @SampleDocuments.cs:90
+      text #18 "Fonts: " Lato 11pt w700 #000000 @SampleDocuments.cs:90
+      text #19 "TrueType, embedded whole, explicit input only" Lato 11pt w400 #000000 @SampleDocuments.cs:90
+    box #20 inline paragraph margin=0,0,3,0 @SampleDocuments.cs:90
+      text #21 "Output: " Lato 11pt w700 #000000 @SampleDocuments.cs:90
+      text #22 "the same bytes for the same input, every time" Lato 11pt w400 #000000 @SampleDocuments.cs:90
+  box #23 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:85
+    text #24 "The block above has a " Lato 11pt w400 #000000 @SampleDocuments.cs:54
+    text #25 "coloured background" Lato 11pt w700 #000000 @SampleDocuments.cs:55
+    text #26 " and padding on all four sides. Blocks can hold paragraphs and other blocks." Lato 11pt w400 #000000 @SampleDocuments.cs:56
+  box #27 inline heading-2 margin=0,0,10,0 break-before=page @SampleDocuments.cs:59
+    text #28 "Terms" Lato 16.5pt w700 #1f4e79 @SampleDocuments.cs:59
+  box #29 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:83
+    text #30 "This second page starts with an explicit page break. A page break is not an element of its own in the document model: it sets break-before: page on the element that follows it, as in CSS." Lato 11pt w400 #000000 @SampleDocuments.cs:83
+  box #31 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:85
+    text #32 "Validity. " Lato 11pt w700 #000000 @SampleDocuments.cs:62
+    text #33 "This quotation is an example and is valid for no time at all." Lato 11pt w400 #000000 @SampleDocuments.cs:62
+  box #34 inline paragraph margin=0,0,8,0 @SampleDocuments.cs:85
+    text #35 "Kind regards," Lato 11pt w400 #000000 @SampleDocuments.cs:63
+  box #36 inline paragraph @SampleDocuments.cs:64
+    text #37 "The document engine" Lato 11pt w700 #000000 @SampleDocuments.cs:64

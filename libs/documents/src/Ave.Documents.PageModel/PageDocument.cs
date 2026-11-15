@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Ave.Documents.Core;
 
 namespace Ave.Documents.PageModel;
@@ -10,7 +9,7 @@ namespace Ave.Documents.PageModel;
 /// </summary>
 /// <param name="Info">Descriptive information for the output file.</param>
 /// <param name="Pages">The pages, in order.</param>
-public sealed record PageDocument(DocumentInfo Info, ImmutableArray<Page> Pages);
+public sealed record PageDocument(DocumentInfo Info, ValueList<Page> Pages);
 
 /// <summary>Descriptive information about the document (written to the PDF document information).</summary>
 /// <param name="Title">The title, or null.</param>
@@ -22,4 +21,4 @@ public sealed record DocumentInfo(string? Title, string? Author);
 /// </summary>
 /// <param name="Size">The page size in points.</param>
 /// <param name="Items">What to draw, in painting order: later items are painted over earlier ones.</param>
-public sealed record Page(Size Size, ImmutableArray<DrawItem> Items);
+public sealed record Page(Size Size, ValueList<DrawItem> Items);

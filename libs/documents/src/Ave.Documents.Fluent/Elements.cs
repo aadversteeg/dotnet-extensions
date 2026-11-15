@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using Ave.Documents.Core;
 
@@ -36,7 +35,7 @@ public static class Elements
     /// <param name="callerLine">Filled in by the compiler.</param>
     /// <returns>The document.</returns>
     public static Document Document(
-        ImmutableArray<Element> body,
+        ValueList<Element> body,
         TextFormat format,
         PageSetup? page = null,
         string? title = null,
@@ -53,7 +52,7 @@ public static class Elements
     /// <param name="callerLine">Filled in by the compiler.</param>
     /// <returns>The block.</returns>
     public static BlockElement Block(
-        ImmutableArray<Element> children,
+        ValueList<Element> children,
         BoxFormat? box = null,
         TextFormat? format = null,
         [CallerFilePath] string callerFile = "",
@@ -86,7 +85,7 @@ public static class Elements
     /// <param name="callerLine">Filled in by the compiler.</param>
     /// <returns>The paragraph.</returns>
     public static ParagraphElement Paragraph(
-        ImmutableArray<Span> spans,
+        ValueList<Span> spans,
         BoxFormat? box = null,
         TextFormat? format = null,
         [CallerFilePath] string callerFile = "",

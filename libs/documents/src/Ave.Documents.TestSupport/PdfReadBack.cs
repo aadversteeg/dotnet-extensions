@@ -47,9 +47,9 @@ public static class PdfReadBack
     public static IReadOnlyList<string> Differences(PageDocument model, ImmutableArray<byte> pdf)
     {
         var pages = Letters(pdf);
-        if (pages.Length != model.Pages.Length)
+        if (pages.Length != model.Pages.Count)
         {
-            return [$"The PDF has {pages.Length} pages, the page model {model.Pages.Length}."];
+            return [$"The PDF has {pages.Length} pages, the page model {model.Pages.Count}."];
         }
 
         return [.. model.Pages.SelectMany((page, index) => PageDifferences(page, pages[index], index + 1))];

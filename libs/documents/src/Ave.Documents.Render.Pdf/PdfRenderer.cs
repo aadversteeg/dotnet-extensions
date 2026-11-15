@@ -24,7 +24,7 @@ public static class PdfRenderer
     public static Result<ImmutableArray<byte>, Error> Render(PageDocument document, PdfRenderOptions options)
     {
         var fonts = UsedFont.Collect(document);
-        var plan = new ObjectPlan(fonts.Length, document.Pages.Length);
+        var plan = new ObjectPlan(fonts.Length, document.Pages.Count);
         var fontsByFont = fonts.ToImmutableDictionary(used => used.Font);
 
         var fontObjects = fonts.Select((used, index) => (used, index))

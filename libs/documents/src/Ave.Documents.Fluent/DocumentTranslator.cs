@@ -49,7 +49,7 @@ public static class DocumentTranslator
     /// <c>break-before: page</c> on the next element of the list (CSS Fragmentation 3 §3.1). Ids continue from
     /// <paramref name="firstId"/>, each element taking as many as it has nodes.
     /// </summary>
-    private static Result<ImmutableArray<Node>, Error> Children(ImmutableArray<Element> elements, NodeId firstId, TextStyle inherited)
+    private static Result<ImmutableArray<Node>, Error> Children(ValueList<Element> elements, NodeId firstId, TextStyle inherited)
     {
         var pending = new List<(Element Element, BreakBefore BreakBefore, NodeId Id)>();
         PageBreakElement? pageBreak = null;
@@ -139,7 +139,7 @@ public static class DocumentTranslator
     private static int NodeCount(Element element) => element switch
     {
         BlockElement block => 1 + block.Children.Sum(NodeCount),
-        ParagraphElement paragraph => 1 + paragraph.Spans.Length,
+        ParagraphElement paragraph => 1 + paragraph.Spans.Count,
         _ => 0,
     };
 

@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Ave.Documents.Core;
 
 namespace Ave.Documents.Fluent;
@@ -22,7 +21,7 @@ public abstract record Element
 /// <param name="Box">Margin, padding and background.</param>
 /// <param name="Format">Text formatting inherited by the children; null fields inherit from the parent.</param>
 /// <param name="Source">Where the element was created.</param>
-public sealed record BlockElement(ImmutableArray<Element> Children, BoxFormat Box, TextFormat Format, SourceLocation Source) : Element(Source);
+public sealed record BlockElement(ValueList<Element> Children, BoxFormat Box, TextFormat Format, SourceLocation Source) : Element(Source);
 
 /// <summary>A paragraph or heading: lines of text. Made by <see cref="Elements.Paragraph(string, BoxFormat?, TextFormat?, string, int)"/>
 /// and <see cref="Elements.Heading"/>.</summary>
@@ -31,7 +30,7 @@ public sealed record BlockElement(ImmutableArray<Element> Children, BoxFormat Bo
 /// <param name="Box">Margin, padding and background.</param>
 /// <param name="Format">Text formatting for the spans; null fields inherit from the parent.</param>
 /// <param name="Source">Where the element was created.</param>
-public sealed record ParagraphElement(ImmutableArray<Span> Spans, SemanticRole Role, BoxFormat Box, TextFormat Format, SourceLocation Source) : Element(Source);
+public sealed record ParagraphElement(ValueList<Span> Spans, SemanticRole Role, BoxFormat Box, TextFormat Format, SourceLocation Source) : Element(Source);
 
 /// <summary>Forces the element after it to start on a new page. Made by <see cref="Elements.PageBreak"/>.</summary>
 /// <param name="Source">Where the element was created.</param>

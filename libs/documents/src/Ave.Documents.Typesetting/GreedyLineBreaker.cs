@@ -40,7 +40,7 @@ public static class GreedyLineBreaker
     /// <param name="runs">The shaped glyphs of each run, in order, after white-space collapsing.</param>
     /// <param name="availableWidth">The width of the line box, in points.</param>
     /// <returns>The lines, top to bottom; empty when the paragraph has no visible text.</returns>
-    public static ImmutableArray<TextLine> BreakLines(IReadOnlyList<ImmutableArray<ShapedGlyph>> runs, double availableWidth)
+    public static ValueList<TextLine> BreakLines(IReadOnlyList<ValueList<ShapedGlyph>> runs, double availableWidth)
     {
         var lines = ImmutableArray.CreateBuilder<TextLine>();
         var line = new List<PlacedGlyph>();
@@ -77,7 +77,7 @@ public static class GreedyLineBreaker
     /// Cuts the paragraph at its spaces into words. A word may span several runs ("bold" in the middle of a
     /// word). Each word remembers the space before it; a space after the last word has no word and is dropped.
     /// </summary>
-    private static IEnumerable<Word> SplitIntoWords(IReadOnlyList<ImmutableArray<ShapedGlyph>> runs)
+    private static IEnumerable<Word> SplitIntoWords(IReadOnlyList<ValueList<ShapedGlyph>> runs)
     {
         var word = ImmutableArray.CreateBuilder<PlacedGlyph>();
         PlacedGlyph? spaceBefore = null;

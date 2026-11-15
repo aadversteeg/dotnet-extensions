@@ -17,7 +17,7 @@ public static class PagePainter
     /// <param name="metadata">The document's metadata.</param>
     /// <param name="pages">The fragment tree, one entry per page.</param>
     /// <returns>The page document.</returns>
-    public static PageDocument Paint(DocumentMetadata metadata, ImmutableArray<PageFragment> pages) =>
+    public static PageDocument Paint(DocumentMetadata metadata, ValueList<PageFragment> pages) =>
         new(new DocumentInfo(metadata.Title, metadata.Author), [.. pages.Select(PaintPage)]);
 
     private static Page PaintPage(PageFragment page) =>
@@ -45,7 +45,7 @@ public static class PagePainter
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
 
-    private static IEnumerable<DrawItem> Children(ImmutableArray<PlacedFragment> children, Point origin) =>
+    private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin) =>
         children.SelectMany(child => Items(child.Fragment, origin + child.Offset));
 
     private static IEnumerable<DrawItem> Background(BoxFragment box, Point origin) =>
@@ -57,7 +57,7 @@ public static class PagePainter
     /// </summary>
     private static GlyphRun Glyphs(TextFragment text, Point origin)
     {
-        var glyphs = ImmutableArray.CreateBuilder<PositionedGlyph>(text.Glyphs.Length);
+        var glyphs = ImmutableArray.CreateBuilder<PositionedGlyph>(text.Glyphs.Count);
         var x = 0.0;
         foreach (var glyph in text.Glyphs)
         {

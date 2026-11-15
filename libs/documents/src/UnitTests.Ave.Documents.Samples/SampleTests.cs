@@ -1,11 +1,12 @@
 using System.Collections.Immutable;
+using Ave.Documents.Core;
+using Ave.Documents.DocumentModel;
 using Ave.Documents.Fluent;
 using Ave.Documents.Layout;
-using Ave.Documents.DocumentModel;
 using Ave.Documents.PageModel;
 using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
 using Ave.Documents.Samples;
+using Ave.Documents.TestSupport;
 
 namespace UnitTests.Ave.Documents.Samples;
 
@@ -17,7 +18,7 @@ public class SampleTests
 {
     private static readonly PdfRenderOptions Options = new(new DateTimeOffset(2026, 11, 15, 9, 22, 0, TimeSpan.FromHours(1)));
 
-    private sealed record Stages(StyledDocument Model, ImmutableArray<PageFragment> Fragments, PageDocument Pages, ImmutableArray<byte> Pdf);
+    private sealed record Stages(StyledDocument Model, ValueList<PageFragment> Fragments, PageDocument Pages, ImmutableArray<byte> Pdf);
 
     private static Stages Run(Document document)
     {
@@ -45,7 +46,32 @@ public class SampleTests
     public void The_letter_has_two_pages_and_the_long_text_more_than_three()
     {
         Run(SampleDocuments.Letter()).Pages.Pages.Should().HaveCount(2);
-        Run(SampleDocuments.LongText()).Pages.Pages.Length.Should().BeGreaterThan(3);
+        Run(SampleDocuments.LongText()).Pages.Pages.Count.Should().BeGreaterThan(3);
+    }
+
+    [Fact]
+    public void Two_builds_of_the_same_document_are_equal_values_at_every_stage()
+    {
+        // Rule A3 of the stage-1 brief: documents, document models, fragment trees and page models are values.
+        var first = Run(SampleDocuments.Letter());
+        var second = Run(SampleDocuments.Letter());
+
+        (SampleDocuments.Letter() == SampleDocuments.Letter()).Should().BeTrue();
+        (first.Model == second.Model).Should().BeTrue();
+        (first.Fragments == second.Fragments).Should().BeTrue();
+        (first.Pages == second.Pages).Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_changed_leaf_makes_the_trees_unequal_at_every_stage()
+    {
+        var original = Run(SampleDocuments.Letter());
+        var changed = Run(SampleDocuments.Letter(closing: "Kind regards!"));
+
+        (SampleDocuments.Letter() == SampleDocuments.Letter(closing: "Kind regards!")).Should().BeFalse();
+        (original.Model == changed.Model).Should().BeFalse();
+        (original.Fragments == changed.Fragments).Should().BeFalse();
+        (original.Pages == changed.Pages).Should().BeFalse();
     }
 
     [Fact]

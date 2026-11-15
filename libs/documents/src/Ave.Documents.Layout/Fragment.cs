@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.DocumentModel;
@@ -29,12 +28,12 @@ public sealed record PlacedFragment(Point Offset, Fragment Fragment);
 /// <param name="Box">The document node.</param>
 /// <param name="Size">The border box size on this page (padding included, sliced at page breaks).</param>
 /// <param name="Children">Child fragments: boxes for Flow, lines for Inline.</param>
-public sealed record BoxFragment(Box Box, Size Size, ImmutableArray<PlacedFragment> Children) : Fragment(Size);
+public sealed record BoxFragment(Box Box, Size Size, ValueList<PlacedFragment> Children) : Fragment(Size);
 
 /// <summary>A line box (CSS 2.1 §9.4.2): one line of a paragraph.</summary>
 /// <param name="Size">The line's content width and its height (CSS 2.1 §10.8).</param>
 /// <param name="Children">The text fragments on the line, left to right.</param>
-public sealed record LineFragment(Size Size, ImmutableArray<PlacedFragment> Children) : Fragment(Size);
+public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size);
 
 /// <summary>
 /// The part of one <see cref="TextRun"/> that lies on one line. Its top edge is <see cref="Ascent"/> above the
@@ -45,5 +44,5 @@ public sealed record LineFragment(Size Size, ImmutableArray<PlacedFragment> Chil
 /// <param name="Ascent">The font's ascent at the run's size, in points.</param>
 /// <param name="Glyphs">The glyphs on this line.</param>
 /// <param name="Size">The glyphs' total advance and the font's ascent plus descent.</param>
-public sealed record TextFragment(TextRun Run, TrueTypeFont Font, double Ascent, ImmutableArray<ShapedGlyph> Glyphs, Size Size)
+public sealed record TextFragment(TextRun Run, TrueTypeFont Font, double Ascent, ValueList<ShapedGlyph> Glyphs, Size Size)
     : Fragment(Size);

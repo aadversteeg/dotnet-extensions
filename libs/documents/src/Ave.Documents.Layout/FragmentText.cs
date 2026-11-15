@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
 
@@ -24,7 +23,7 @@ public static class FragmentText
     /// <summary>Writes the pages.</summary>
     /// <param name="pages">The fragment tree, one entry per page.</param>
     /// <returns>The text, lines separated by <c>\n</c>, ending with a line feed.</returns>
-    public static string Write(ImmutableArray<PageFragment> pages) =>
+    public static string Write(ValueList<PageFragment> pages) =>
         string.Join("\n", pages.SelectMany((page, index) => PageLines(page, index + 1))) + "\n";
 
     private static IEnumerable<string> PageLines(PageFragment page, int number) =>

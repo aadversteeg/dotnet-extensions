@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.TestSupport;
 using Ave.Documents.Typesetting;
@@ -8,10 +8,10 @@ namespace UnitTests.Ave.Documents.Typesetting;
 public class GreedyLineBreakerTests
 {
     /// <summary>Glyphs with an advance of exactly 1 point per character, so widths are easy to count.</summary>
-    private static ImmutableArray<ShapedGlyph> Unit(string text) =>
+    private static ValueList<ShapedGlyph> Unit(string text) =>
         [.. text.Select(character => new ShapedGlyph(new GlyphId(1), 1, character.ToString()))];
 
-    private static IEnumerable<string> Texts(ImmutableArray<TextLine> lines) =>
+    private static IEnumerable<string> Texts(ValueList<TextLine> lines) =>
         lines.Select(line => string.Concat(line.Segments.SelectMany(segment => segment.Glyphs).Select(glyph => glyph.Text)));
 
     [Fact]
