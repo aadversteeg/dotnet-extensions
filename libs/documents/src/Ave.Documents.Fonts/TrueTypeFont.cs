@@ -2,7 +2,9 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Text;
+using Ave.Documents.Core;
 using Ave.Documents.Fonts.OpenType;
+using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Fonts;
@@ -72,6 +74,21 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
     /// <returns>The glyph id, or None.</returns>
     public Maybe<GlyphId> GlyphFor(Rune character) =>
         _characterMap.TryGetValue(character.Value, out var glyph) ? glyph : Maybe<GlyphId>.None;
+
+    /// <summary>
+    /// The glyph the font's 'cmap' assigns to a character, or the error <see cref="FontErrorCodes.GlyphMissing"/>
+    /// that names the font and the character: for text that must be shown, a missing glyph is never dropped.
+    /// </summary>
+    /// <param name="character">The Unicode scalar value.</param>
+    /// <returns>The glyph id, or the error.</returns>
+    public Result<GlyphId, Error> RequireGlyph(Rune character) =>
+        GlyphFor(character).Match(
+            Result<GlyphId, Error>.Success,
+            () => Result<GlyphId, Error>.Failure(
+                new Error(FontErrorCodes.GlyphMissing, $"Font '{Names.PostScriptName}' has no glyph for '{character}' (U+{character.Value:X4}).")
+                    .With(ErrorMetadataKeys.FontName, Names.PostScriptName)
+                    .With(ErrorMetadataKeys.Character, character.ToString())
+                    .With(ErrorMetadataKeys.CodePoint, $"U+{character.Value:X4}")));
 
     /// <summary>The horizontal advance of a glyph in font design units ('hmtx').</summary>
     /// <param name="glyph">A glyph id of this font.</param>

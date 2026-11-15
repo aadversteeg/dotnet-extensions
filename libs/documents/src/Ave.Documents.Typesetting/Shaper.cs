@@ -108,9 +108,8 @@ public static class Shaper
         }
 
         var isNonspacingMark = (traits & CharacterTraits.NonspacingMark) != 0;
-        return font.GlyphFor(character).Match(
-            glyph => Result<GlyphItem, Error>.Success(new GlyphItem(glyph, character.ToString(), filter.ClassOf(glyph, isNonspacingMark))),
-            () => Result<GlyphItem, Error>.Failure(GlyphMissing(character, font)));
+        return font.RequireGlyph(character)
+            .OnSuccessMap(glyph => new GlyphItem(glyph, character.ToString(), filter.ClassOf(glyph, isNonspacingMark)));
     }
 
     private static ImmutableArray<ShapedGlyph> ShapeScriptRuns(ImmutableArray<Rune> characters, ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, double fontSize)
@@ -207,15 +206,4 @@ public static class Shaper
         TextScript.Cyrillic => "cyrl",
         _ => LayoutTable.DefaultScript,
     };
-
-    private static Error GlyphMissing(Rune character, TrueTypeFont font)
-    {
-        var codePoint = $"U+{character.Value:X4}";
-        return new Error(
-                FontErrorCodes.GlyphMissing,
-                $"Font '{font.Names.PostScriptName}' has no glyph for '{character}' ({codePoint}).")
-            .With(ErrorMetadataKeys.FontName, font.Names.PostScriptName)
-            .With(ErrorMetadataKeys.Character, character.ToString())
-            .With(ErrorMetadataKeys.CodePoint, codePoint);
-    }
 }
