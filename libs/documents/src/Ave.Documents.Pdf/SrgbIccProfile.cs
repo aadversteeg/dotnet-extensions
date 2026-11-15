@@ -15,13 +15,15 @@ namespace Ave.Documents.Pdf;
 /// <remarks>
 /// <para>Why written here and not copied from a file: the profile is a few numbers from public standards — the sRGB
 /// primaries, white point and transfer function of IEC 61966-2-1 — so it needs no third-party file and no licence. The
-/// numbers are the standard's, adapted to the D50 illuminant of the profile connection space with the Bradford
-/// transform (ICC.1:2001-04 Annex E), as every sRGB profile does.</para>
+/// colorants are the sRGB primaries adapted to the D50 illuminant of the profile connection space; the values are
+/// those of the ICC's own <c>sRGB2014.icc</c> and of the HP/Microsoft <c>sRGB IEC61966-2.1</c> profile, which agree to
+/// the last bit (decoded from both files, 2026-11-15). The white point is D50, as in <c>sRGB2014.icc</c> (the older HP
+/// profile records the unadapted D65 white instead).</para>
 /// <para>Why version 2: every PDF/A part and every viewer accepts it; version 4 would add the chromatic adaptation tag
 /// and a profile id and gain nothing for a display profile.</para>
-/// <para>What it contains (ICC.1:2001-04 §6.3.1.2, the required tags of a three-component matrix-based display
-/// profile): description, copyright, media white point, the three colorants (the columns of the RGB → XYZ matrix) and
-/// the three tone reproduction curves (one curve, shared).</para>
+/// <para>What it contains (ICC.1:2001-04 §6.3.2.2, Table 25, the required tags of an RGB display profile): description,
+/// copyright, media white point, the three colorants (the columns of the RGB → XYZ matrix) and the three tone
+/// reproduction curves — one curve, shared by the three tags, as both reference profiles do.</para>
 /// </remarks>
 public static class SrgbIccProfile
 {
@@ -34,16 +36,20 @@ public static class SrgbIccProfile
     /// <summary>Entries of the tone curve: 1024 samples keep the steepest part (near black) accurate to about 1/1000.</summary>
     private const int CurveEntries = 1024;
 
-    /// <summary>The PCS illuminant D50 (ICC.1:2001-04 §6.1.14: X = 0.9642, Y = 1.0, Z = 0.8249).</summary>
-    private static readonly (double X, double Y, double Z) D50 = (0.9642, 1.0, 0.8249);
+    /// <summary>The PCS illuminant D50 (ICC.1:2001-04 Annex A.1: "must be set to the CIE Illuminant D50 [X=0.9642,
+    /// Y=1.0000, Z=0.8249]"), as s15Fixed16Numbers <c>0000F6D6 00010000 0000D32D</c>.</summary>
+    private static readonly (int X, int Y, int Z) D50 = (0xF6D6, 0x10000, 0xD32D);
 
-    /// <summary>The sRGB primaries as XYZ under D50 (IEC 61966-2-1 primaries, Bradford-adapted from D65); each is a
-    /// column of the matrix that turns linear RGB into PCS XYZ. They add up to D50, as they must for white.</summary>
-    private static readonly (double X, double Y, double Z) Red = (0.4361, 0.2225, 0.0139);
+    /// <summary>The sRGB primaries as XYZ under D50, as s15Fixed16Numbers; each is a column of the matrix that turns
+    /// linear RGB into PCS XYZ, and the three add up to D50 within 5/65536, as they must for white. Red is 0.436066,
+    /// 0.222488, 0.013916.</summary>
+    private static readonly (int X, int Y, int Z) Red = (0x6FA2, 0x38F5, 0x0390);
 
-    private static readonly (double X, double Y, double Z) Green = (0.3851, 0.7169, 0.0971);
+    /// <summary>Green: 0.385147, 0.716873, 0.097076.</summary>
+    private static readonly (int X, int Y, int Z) Green = (0x6299, 0xB785, 0x18DA);
 
-    private static readonly (double X, double Y, double Z) Blue = (0.1431, 0.0606, 0.7141);
+    /// <summary>Blue: 0.143066, 0.060608, 0.714096.</summary>
+    private static readonly (int X, int Y, int Z) Blue = (0x24A0, 0x0F84, 0xB6CF);
 
     /// <summary>The fixed creation date written into the header, so the profile bytes never change.</summary>
     private static readonly DateTime Created = new(2026, 11, 15, 0, 0, 0, DateTimeKind.Utc);
@@ -52,10 +58,10 @@ public static class SrgbIccProfile
     public static ImmutableArray<byte> Bytes { get; } = Build();
 
     /// <summary>
-    /// The profile file: the 128-byte header, the tag table (a count, then one 12-byte entry per tag: signature,
-    /// offset, size), then the tag data, each element starting on a 4-byte boundary (ICC.1:2001-04 §6: "all tagged
-    /// element data … shall be padded … to a 4-byte boundary"). The three curve tags point at the same data, which
-    /// the format allows ("multiple tags may share the same data").
+    /// The profile file (ICC.1:2001-04 §6, Figure 2): the 128-byte header, the tag table (§6.2, Table 19: a count, then
+    /// one 12-byte entry per tag: signature, offset, size), then the tag data. §6.2.2: "All tag data is required to start
+    /// on a 4-byte boundary"; §6.2.3: the element size "must not include any padding". The three curve tags point at the
+    /// same data.
     /// </summary>
     private static ImmutableArray<byte> Build()
     {
@@ -104,7 +110,8 @@ public static class SrgbIccProfile
     }
 
     /// <summary>
-    /// The header (ICC.1:2001-04 §6.1): size, preferred CMM (none), version 2.1.0, device class <c>mntr</c> (display),
+    /// The header (ICC.1:2001-04 §6.1, Table 9): size, preferred CMM (none), version 2.1.0, device class <c>mntr</c> (display,
+    /// §6.1.4),
     /// colour space <c>RGB </c>, profile connection space <c>XYZ </c>, creation date, the file signature <c>acsp</c>,
     /// platform, flags, manufacturer, model and attributes (all zero: none), rendering intent 0 (perceptual), the PCS
     /// illuminant D50, creator (none); the rest is reserved and zero. PDF/A accepts a display or output profile in RGB
@@ -127,8 +134,8 @@ public static class SrgbIccProfile
         WriteXyzNumber(header[68..], D50);
     }
 
-    /// <summary>XYZType (ICC.1:2001-04 §6.5.26): signature <c>XYZ </c>, 4 reserved bytes, then one XYZNumber.</summary>
-    private static byte[] XyzType((double X, double Y, double Z) value)
+    /// <summary>XYZType (ICC.1:2001-04 §6.5.26, Table 78): signature <c>XYZ </c>, 4 reserved bytes, then one XYZNumber.</summary>
+    private static byte[] XyzType((int X, int Y, int Z) value)
     {
         var data = new byte[20];
         WriteSignature(data, "XYZ ");
@@ -137,8 +144,9 @@ public static class SrgbIccProfile
     }
 
     /// <summary>
-    /// curveType (ICC.1:2001-04 §6.5.3): signature <c>curv</c>, 4 reserved bytes, the entry count, then the entries as
-    /// 16-bit values of the curve sampled evenly over 0–1. The curve is the sRGB decoding function (IEC 61966-2-1
+    /// curveType (ICC.1:2001-04 §6.5.3, Table 37): signature <c>curv</c>, 4 reserved bytes, the entry count, then the
+    /// entries: "the 16-bit unsigned integers in the range 0 to 65535 linearly map to curve values in the interval [0.0,
+    /// 1.0]", sampled evenly over the input 0–1 (1024 entries, as in both reference profiles). The curve is the sRGB decoding function (IEC 61966-2-1
     /// §5.2): a linear part below 0.04045, a 2.4 power above it.
     /// </summary>
     private static byte[] CurveType()
@@ -160,9 +168,10 @@ public static class SrgbIccProfile
         value <= 0.04045 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
 
     /// <summary>
-    /// textDescriptionType (ICC.1:2001-04 §6.5.17): signature <c>desc</c>, 4 reserved bytes, the ASCII description with
+    /// textDescriptionType (ICC.1:2001-04 §6.5.17, Table 68): signature <c>desc</c>, 4 reserved bytes, the ASCII description with
     /// its count (including the terminating zero), then an empty Unicode description (language code and count zero)
-    /// and an empty ScriptCode description (code, count, and its fixed 67 bytes).
+    /// and an empty ScriptCode description (code, count, and its fixed 67 bytes), as the clause asks when Unicode and
+    /// ScriptCode are "not native on the platform".
     /// </summary>
     private static byte[] TextDescriptionType(string text)
     {
@@ -174,19 +183,17 @@ public static class SrgbIccProfile
         return data;
     }
 
-    /// <summary>textType (ICC.1:2001-04 §6.5.18): signature <c>text</c>, 4 reserved bytes, then 7-bit ASCII ending in a zero.</summary>
+    /// <summary>textType (ICC.1:2001-04 §6.5.18, Table 70): signature <c>text</c>, 4 reserved bytes, then 7-bit ASCII ending in a zero.</summary>
     private static byte[] TextType(string text) => [.. Signature("text"), 0, 0, 0, 0, .. Encoding.ASCII.GetBytes(text + "\0")];
 
-    /// <summary>An XYZNumber (ICC.1:2001-04 §5.3.10): three s15Fixed16Numbers.</summary>
-    private static void WriteXyzNumber(Span<byte> target, (double X, double Y, double Z) value)
+    /// <summary>An XYZNumber (ICC.1:2001-04 §5.3.10, Table 6): three s15Fixed16Numbers (§5.3.3: "a fixed signed
+    /// 4-byte/32-bit quantity which has 16 fractional bits", so 1.0 is <c>00010000h</c>).</summary>
+    private static void WriteXyzNumber(Span<byte> target, (int X, int Y, int Z) value)
     {
-        BinaryPrimitives.WriteInt32BigEndian(target, S15Fixed16(value.X));
-        BinaryPrimitives.WriteInt32BigEndian(target[4..], S15Fixed16(value.Y));
-        BinaryPrimitives.WriteInt32BigEndian(target[8..], S15Fixed16(value.Z));
+        BinaryPrimitives.WriteInt32BigEndian(target, value.X);
+        BinaryPrimitives.WriteInt32BigEndian(target[4..], value.Y);
+        BinaryPrimitives.WriteInt32BigEndian(target[8..], value.Z);
     }
-
-    /// <summary>s15Fixed16Number (ICC.1:2001-04 §5.3.1): a signed number with 16 fraction bits, the value times 65536.</summary>
-    private static int S15Fixed16(double value) => (int)Math.Round(value * 65536);
 
     private static void WriteSignature(Span<byte> target, string signature) => Signature(signature).CopyTo(target);
 
