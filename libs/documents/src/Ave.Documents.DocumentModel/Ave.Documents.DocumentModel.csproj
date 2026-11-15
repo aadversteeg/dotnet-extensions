@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
   </ItemGroup>
 
 </Project>

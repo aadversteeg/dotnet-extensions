@@ -27,7 +27,15 @@ public static class FragmentText
         string.Join("\n", pages.SelectMany((page, index) => PageLines(page, index + 1))) + "\n";
 
     private static IEnumerable<string> PageLines(PageFragment page, int number) =>
-        [$"page {number} size={page.PageSize}", .. FragmentLines(page.Root, depth: 1)];
+    [
+        $"page {number} size={page.PageSize}",
+        .. AreaLines("header", page.Header),
+        .. FragmentLines(page.Root, depth: 1),
+        .. AreaLines("footer", page.Footer),
+    ];
+
+    private static IEnumerable<string> AreaLines(string name, PlacedFragment? area) =>
+        area is null ? [] : [$"  {name}", .. FragmentLines(area, depth: 2)];
 
     private static IEnumerable<string> FragmentLines(PlacedFragment placed, int depth)
     {
@@ -36,13 +44,19 @@ public static class FragmentText
         return placed.Fragment switch
         {
             BoxFragment box =>
-                [$"{indent}box {box.Box.Id} {box.Box.Role} {position}", .. box.Children.SelectMany(child => FragmentLines(child, depth + 1))],
+                [$"{indent}box {box.Box.Id} {box.Box.Role} {position}{BoxExtras(box)}", .. box.Children.SelectMany(child => FragmentLines(child, depth + 1))],
             LineFragment line =>
                 [$"{indent}line {position}", .. line.Children.SelectMany(child => FragmentLines(child, depth + 1))],
             TextFragment text =>
                 [$"{indent}text {text.Run.Id} {text.Font} {text.Run.Style.FontSize} {position} ascent={InvariantNumber.Format(text.Ascent)} "
                     + QuotedText.Quote(string.Concat(text.Glyphs.Select(glyph => glyph.Text)))],
+            ImageFragment image => [$"{indent}image {image.Image.Id} {position} {image.Image.Image.Describe()}"],
+            RuleFragment rule => [$"{indent}rule {position} {rule.Color}"],
             _ => [$"{indent}unknown {placed.Fragment.GetType().Name} {position}"],
         };
     }
+
+    /// <summary>What a box fragment adds when it is not plain: the border it paints, and the repeated flag.</summary>
+    private static string BoxExtras(BoxFragment box) =>
+        (box.Border == default ? string.Empty : $" border={box.Border}") + (box.IsRepeated ? " repeated" : string.Empty);
 }

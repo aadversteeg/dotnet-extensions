@@ -8,10 +8,10 @@ using Ave.Extensions.Functional;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// What every block-level algorithm does the same way around its content: padding, and how the box is cut at
-/// page breaks. Follows <c>box-decoration-break: slice</c>, the initial value (CSS Fragmentation 3 §5.4): the box
-/// is laid out as if unbroken and then cut, so the top padding appears only on the first fragment and the bottom
-/// padding only on the last.
+/// What every block-level algorithm does the same way around its content: border and padding, and how the box is
+/// cut at page breaks. Follows <c>box-decoration-break: slice</c>, the initial value (CSS Fragmentation 3 §5.4): the
+/// box is laid out as if unbroken and then cut, so the top border and padding appear only on the first fragment and
+/// the bottom border and padding only on the last.
 /// </summary>
 internal static class SlicedBox
 {
@@ -19,7 +19,8 @@ internal static class SlicedBox
     /// <param name="Children">The child fragments, positioned relative to the content area.</param>
     /// <param name="Height">The height the content used.</param>
     /// <param name="Continuation">Where the content resumes on the next page, or null when it is complete.</param>
-    public sealed record Content(ValueList<PlacedFragment> Children, double Height, BreakToken? Continuation);
+    /// <param name="Appeal">How good the break is that ends the content on this page.</param>
+    public sealed record Content(ValueList<PlacedFragment> Children, double Height, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect);
 
     /// <summary>
     /// Lays out an algorithm's content in a content area of the given size: the content or None when not even
@@ -31,31 +32,38 @@ internal static class SlicedBox
     /// <param name="children">The child fragments, relative to the content area.</param>
     /// <param name="height">The height the content used.</param>
     /// <param name="continuation">Where to resume on the next page, or null.</param>
+    /// <param name="appeal">How good the break is that ends the content.</param>
     /// <returns>The successful content result.</returns>
-    public static Result<Maybe<Content>, Error> Placed(ValueList<PlacedFragment> children, double height, BreakToken? continuation) =>
-        Result<Maybe<Content>, Error>.Success(Maybe.From(new Content(children, height, continuation)));
+    public static Result<Maybe<Content>, Error> Placed(
+        ValueList<PlacedFragment> children, double height, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect) =>
+        Result<Maybe<Content>, Error>.Success(Maybe.From(new Content(children, height, continuation, appeal)));
 
     /// <summary>The result "not even the first piece of content fits".</summary>
     public static Result<Maybe<Content>, Error> NothingFits => Result<Maybe<Content>, Error>.Success(Maybe<Content>.None);
 
+    /// <summary>The horizontal space border and padding take: left plus right.</summary>
+    /// <param name="style">The box's style.</param>
+    /// <returns>The inset, in points.</returns>
+    public static double HorizontalInsets(BoxStyle style) => style.Padding.Horizontal.Points + style.Border.Widths.Horizontal.Points;
+
     /// <summary>
-    /// Lays out a box: its content inside the padding, sliced at the page end.
+    /// Lays out a box: its content inside the border and padding, sliced at the page end.
     /// </summary>
     /// <remarks>
     /// <list type="bullet">
-    /// <item>The content may use all the height below the top padding: with <c>slice</c> the bottom padding is not
-    /// part of a fragment that breaks.</item>
+    /// <item>The content may use all the height below the top border and padding: with <c>slice</c> the bottom ones
+    /// are not part of a fragment that breaks.</item>
     /// <item>A fragment that breaks fills the rest of the page: "When a box breaks, its content box extends to
     /// fill any remaining fragmentainer extent" (CSS Fragmentation 3 §5.3), so its background reaches the page
     /// end.</item>
-    /// <item>When the content is complete but the bottom padding no longer fits below it, the box cannot end on
-    /// this page: the padding is not a place where a break is possible (§4.1), so the break must come earlier.
-    /// The content is laid out again with the bottom padding kept free, which moves the break to the last
-    /// breakpoint before it — what Chromium prints for this case (checked against its print output). Because a
-    /// layout call is pure, this second call is just another call; no state is kept.</item>
+    /// <item>When the content is complete but the bottom padding and border no longer fit below it, the box cannot
+    /// end on this page: they are not a place where a break is possible (§4.1), so the break must come earlier.
+    /// The content is laid out again with that space kept free, which moves the break to the last breakpoint
+    /// before it — what Chromium prints for this case (checked against its print output). Because a layout call is
+    /// pure, this second call is just another call; no state is kept.</item>
     /// <item>LIMIT: if even then nothing fits and the box is at the start of a page, it is placed anyway and its
-    /// bottom padding overflows the page area; there is no earlier page where it would fit better (§4.4 allows
-    /// a UA to overflow when no break point is left).</item>
+    /// bottom padding and border overflow the page area; there is no earlier page where it would fit better (§4.4
+    /// allows a UA to overflow when no break point is left).</item>
     /// </list>
     /// </remarks>
     /// <param name="box">The box.</param>
@@ -65,16 +73,16 @@ internal static class SlicedBox
     /// <returns>The box fragment and continuation, NoRoom, or an error.</returns>
     public static Result<LayoutResult, Error> Layout(Box box, ConstraintSpace space, BreakToken? incoming, ContentLayout layOut)
     {
-        var padding = box.Style.Padding;
-        var topInset = incoming is null ? padding.Top.Points : 0;
-        var bottomInset = padding.Bottom.Points;
+        var (padding, border) = (box.Style.Padding, box.Style.Border.Widths);
+        var topInset = incoming is null ? border.Top.Points + padding.Top.Points : 0;
+        var bottomInset = padding.Bottom.Points + border.Bottom.Points;
         if (!Fitting.Fits(topInset, space.AvailableHeight))
         {
             return LayoutResult.NothingFits(box, space);
         }
 
         // The content width never becomes negative: wider content overflows, as in CSS.
-        var contentWidth = Math.Max(0, space.AvailableWidth - padding.Horizontal.Points);
+        var contentWidth = Math.Max(0, space.AvailableWidth - HorizontalInsets(box.Style));
         var contentHeight = space.AvailableHeight - topInset;
         var first = layOut(contentWidth, contentHeight);
         if (first.IsFailure || first.Value.HasNoValue)
@@ -102,20 +110,28 @@ internal static class SlicedBox
             }
         }
 
-        return LayoutResult.Place(Wrap(box, space, topInset, bottomInset, content), content.Continuation);
+        return LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, content), content.Continuation, content.Appeal);
     }
 
     /// <summary>
-    /// The box fragment around the content: the content moved inside the padding; the height is the top inset
-    /// plus the content plus the bottom padding on the last fragment, or the whole remaining page on a fragment
-    /// that breaks (§5.3).
+    /// The box fragment around the content: the content moved inside the border and padding; the height is the top
+    /// inset plus the content plus the bottom inset on the last fragment, or the whole remaining page on a fragment
+    /// that breaks (§5.3). The fragment paints the left and right border always, the top one on the first fragment
+    /// and the bottom one on the last (slice, §5.4).
     /// </summary>
-    private static BoxFragment Wrap(Box box, ConstraintSpace space, double topInset, double bottomInset, Content content)
+    private static BoxFragment Wrap(Box box, ConstraintSpace space, bool isFirst, double topInset, double bottomInset, Content content)
     {
-        var shift = new Point(box.Style.Padding.Left.Points, topInset);
+        var style = box.Style;
+        var shift = new Point(style.Border.Widths.Left.Points + style.Padding.Left.Points, topInset);
         ValueList<PlacedFragment> children = [.. content.Children.Select(child => child with { Offset = child.Offset + shift })];
+        var isLast = content.Continuation is null;
         var used = topInset + content.Height;
-        var height = content.Continuation is null ? used + bottomInset : Math.Max(used, space.AvailableHeight);
-        return new BoxFragment(box, new Size(space.AvailableWidth, height), children);
+        var height = isLast ? used + bottomInset : Math.Max(used, space.AvailableHeight);
+        var painted = style.Border with
+        {
+            Top = isFirst ? style.Border.Top : BorderSide.None,
+            Bottom = isLast ? style.Border.Bottom : BorderSide.None,
+        };
+        return new BoxFragment(box, new Size(space.AvailableWidth, height), children, painted);
     }
 }

@@ -16,7 +16,7 @@ public class DocumentModelTextTests
             [new TextRun(new NodeId(2), "Invoice \"42\"", text with { FontSize = 22.Pt(), FontWeight = FontWeight.Bold }, Here with { Line = 11 })],
             Here with { Line = 11 });
         var note = new Box(new NodeId(3), SemanticRole.Generic, LayoutAlgorithmId.Flow,
-            new BoxStyle(Edges.Zero, Edges.All(4.Pt()), new Color(0xDD, 0xEB, 0xF7), BreakBefore.Page),
+            BoxStyle.Initial with { Margin = Edges.Zero, Padding = Edges.All(4.Pt()), Background = new Color(0xDD, 0xEB, 0xF7), BreakBefore = BreakBetween.Page },
             [new Box(new NodeId(4), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
                 [new TextRun(new NodeId(5), "Thank you.", text with { Color = new Color(0x1F, 0x4E, 0x79) }, Here with { Line = 13 })],
                 Here with { Line = 13 })],

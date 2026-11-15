@@ -111,7 +111,12 @@ public static class PdfWriter
         }
 
         var data = stream.Encoding == StreamEncoding.Flate ? Flate.Compress(stream.Data) : stream.Data;
-        PdfObject? filter = stream.Encoding == StreamEncoding.Flate ? new PdfName("FlateDecode") : null;
+        PdfObject? filter = stream.Encoding switch
+        {
+            StreamEncoding.Flate => new PdfName("FlateDecode"),
+            StreamEncoding.Dct => new PdfName("DCTDecode"),
+            _ => null,
+        };
         var entries = stream.Dictionary.Entries
             .Select(entry => (entry.Key, (PdfObject?)entry.Value))
             .Append(("Length", new PdfInteger(data.Length)))

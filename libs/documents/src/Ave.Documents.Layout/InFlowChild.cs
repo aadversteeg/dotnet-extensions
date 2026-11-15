@@ -8,14 +8,15 @@ namespace Ave.Documents.Layout;
 /// <summary>
 /// Places one child box in the block flow of its container: applies the child's horizontal margins and asks the
 /// child's own algorithm for its fragment. The vertical position (where margins collapse) is decided by the
-/// caller: <see cref="FlowLayout"/> for children, <see cref="Paginator"/> for the root box.
+/// caller: <see cref="FlowLayout"/> for children, <see cref="Paginator"/> for the root box and the page areas.
 /// </summary>
 internal static class InFlowChild
 {
     /// <summary>A child placed on the current page.</summary>
     /// <param name="Fragment">The child's fragment, positioned in the container's content area.</param>
     /// <param name="Continuation">Where the child resumes on the next page, or null when it is complete.</param>
-    public sealed record Placement(PlacedFragment Fragment, BreakToken? Continuation);
+    /// <param name="Appeal">How good the break inside the child is (see <see cref="LayoutResult.Placed"/>).</param>
+    public sealed record Placement(PlacedFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal);
 
     /// <summary>Lays out <paramref name="child"/> with the top of its BORDER box at <paramref name="top"/>.</summary>
     /// <remarks>
@@ -29,7 +30,8 @@ internal static class InFlowChild
     /// <param name="containerHeight">The height of the content area available on this page.</param>
     /// <param name="isAtPageStart">Whether nothing that could move to another page precedes the child.</param>
     /// <param name="resume">Where to resume inside the child, or null to start it.</param>
-    /// <param name="isNewFormattingContext">True only for the root box (see <see cref="ConstraintSpace.IsNewFormattingContext"/>).</param>
+    /// <param name="isNewFormattingContext">True for the root box and the page areas (see
+    /// <see cref="ConstraintSpace.IsNewFormattingContext"/>).</param>
     /// <returns>The placement; None when the child has no room on this page; or an error.</returns>
     public static Result<Maybe<Placement>, Error> Place(
         LayoutEnvironment environment,
@@ -51,7 +53,7 @@ internal static class InFlowChild
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch
         {
             LayoutResult.Placed placed => Maybe.From(new Placement(
-                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation)),
+                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation, placed.Appeal)),
             _ => Maybe<Placement>.None,
         });
     }

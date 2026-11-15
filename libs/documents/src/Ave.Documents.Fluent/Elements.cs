@@ -1,5 +1,7 @@
+using System;
 using System.Runtime.CompilerServices;
 using Ave.Documents.Core;
+using Ave.Documents.DocumentModel;
 
 namespace Ave.Documents.Fluent;
 
@@ -137,4 +139,150 @@ public static class Elements
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
         new(new SourceLocation(callerFile, callerLine));
+
+    /// <summary>
+    /// The number of the page the text lands on, as a span (CSS <c>counter(page)</c>, decimal). Usable in any
+    /// paragraph: in the body, a header or a footer.
+    /// </summary>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span PageNumber(
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(string.Empty, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { Counter = DocumentModel.PageCounter.PageNumber };
+
+    /// <summary>
+    /// The number of pages of the document, as a span (CSS <c>counter(pages)</c>). Layout runs again until the count
+    /// it shows is the count it produces, at most five times (error <c>Documents.Layout.NotConverging</c>).
+    /// </summary>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span PageCount(
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(string.Empty, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { Counter = DocumentModel.PageCounter.PageCount };
+
+    /// <summary>A page size without margins, for sizes other than <see cref="PageSetup.A4"/>.</summary>
+    /// <param name="width">The page width.</param>
+    /// <param name="height">The page height.</param>
+    /// <returns>The page setup.</returns>
+    public static PageSetup Page(Length width, Length height) => new(width, height, Edges.Zero);
+
+    /// <summary>
+    /// A table. The columns come first, then the rows: header rows (repeated on every page), body rows and row groups.
+    /// <code>
+    /// Table(Columns(3.Cm(), Fill(1), Auto),
+    ///     [
+    ///         HeaderRow([Cell("Date"), Cell("Task"), Cell("Hours")]),
+    ///         .. entries.Select(entry => TableRow([Cell(entry.Date), Cell(entry.Task), Cell(entry.Hours)])),
+    ///     ])
+    ///     .GridLines(1.Pt(), grey).CellPadding(4.Pt(), 2.Pt())
+    /// </code>
+    /// </summary>
+    /// <param name="columns">The column sizes, made with <see cref="Columns"/>.</param>
+    /// <param name="rows">The rows and row groups.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The table.</returns>
+    public static TableElement Table(
+        ValueList<TrackSize> columns,
+        ValueList<TablePart> rows,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(columns, rows, Style.Empty, Style.Empty, BoxFormat.None, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>The column sizes of a table: fixed lengths (<c>2.5.Cm()</c>), <see cref="Auto"/> (as wide as the
+    /// content needs) and <see cref="Fill"/> (a share of the width left over).</summary>
+    /// <param name="sizes">One size per column, left to right.</param>
+    /// <returns>The column list.</returns>
+    public static ValueList<TrackSize> Columns(params TrackSize[] sizes) => [.. sizes];
+
+    /// <summary>A column that takes a share of the width left over after the other columns, in proportion to its
+    /// weight (CSS Grid's <c>fr</c>); never narrower than its narrowest content.</summary>
+    /// <param name="weight">The share, a positive number; 1 by default.</param>
+    /// <returns>The column size.</returns>
+    public static TrackSize Fill(double weight = 1) => new TrackSize.Fill(weight);
+
+    /// <summary>A column as wide as its content needs, up to its widest content.</summary>
+    public static TrackSize Auto => TrackSize.Auto.Instance;
+
+    /// <summary>A header row: repeated at the top of every page the table continues on; its cells are header cells.</summary>
+    /// <param name="cells">The cells.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The row.</returns>
+    public static TableRowElement HeaderRow(
+        ValueList<CellElement> cells,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(cells, IsHeader: true, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>A body row. By default a row may break between the lines of its cells; <c>.KeepTogether()</c> moves it
+    /// to the next page whole instead.</summary>
+    /// <param name="cells">The cells.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The row.</returns>
+    public static TableRowElement TableRow(
+        ValueList<CellElement> cells,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(cells, IsHeader: false, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>A group of body rows that belong together; <c>.KeepTogether()</c> keeps them on one page.</summary>
+    /// <param name="rows">The rows.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The group.</returns>
+    public static RowGroupElement RowGroup(
+        ValueList<TableRowElement> rows,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(rows, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>A cell with one paragraph of text.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The cell.</returns>
+    public static CellElement Cell(
+        string text,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        Cell([Paragraph(text, callerFile, callerLine)], callerFile, callerLine);
+
+    /// <summary>A cell with any content, stacked vertically.</summary>
+    /// <param name="content">The content.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The cell.</returns>
+    public static CellElement Cell(
+        ValueList<Element> content,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(content, DocumentModel.CellSpan.Single, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>Elements side by side, one column each (equal shares unless <see cref="RowElement.Columns"/> is set).</summary>
+    /// <param name="items">The elements, left to right.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The row.</returns>
+    public static RowElement Row(
+        ValueList<Element> items,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(items, [], null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>An image from the bytes of a PNG or JPEG file. The bytes are checked when the document is translated.</summary>
+    /// <param name="file">The file's bytes.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The image.</returns>
+    public static ImageElement Image(
+        ReadOnlySpan<byte> file,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(new ImageFile(file), null, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
 }

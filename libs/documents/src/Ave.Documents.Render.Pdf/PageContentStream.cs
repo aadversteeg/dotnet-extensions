@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
-using Ave.Documents.Fonts;
 using Ave.Documents.PageModel;
 using Ave.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
@@ -19,19 +18,20 @@ internal static class PageContentStream
 {
     /// <summary>Builds the content stream of one page.</summary>
     /// <param name="page">The page.</param>
-    /// <param name="fonts">The used fonts, to find each glyph run's resource name.</param>
+    /// <param name="resources">The used fonts and images, to find each one's resource name.</param>
     /// <returns>The stream data, or an error for a number that is not finite.</returns>
-    public static Result<ImmutableArray<byte>, Error> Build(Page page, IReadOnlyDictionary<TrueTypeFont, UsedFont> fonts) =>
-        ContentStream.Serialize(Operations(page, fonts));
+    public static Result<ImmutableArray<byte>, Error> Build(Page page, ResourceNames resources) =>
+        ContentStream.Serialize(Operations(page, resources));
 
-    private static IEnumerable<ContentOperation> Operations(Page page, IReadOnlyDictionary<TrueTypeFont, UsedFont> fonts)
+    private static IEnumerable<ContentOperation> Operations(Page page, ResourceNames resources)
     {
         foreach (var item in page.Items)
         {
             var operations = item switch
             {
                 FillRectangle fill => Rectangle(fill, page.Size.Height),
-                GlyphRun run => Text(run, fonts[run.Font].ResourceName, page.Size.Height),
+                GlyphRun run => Text(run, resources.Fonts[run.Font].ResourceName, page.Size.Height),
+                DrawImage image => Image(image, resources.Images[image.Image].ResourceName, page.Size.Height),
 
                 // Structure markers produce no drawing. Tagged PDF (marked content and a structure tree,
                 // §14.6–§14.8) is built from them in the conformance stage.
@@ -56,6 +56,19 @@ internal static class PageContentStream
         FillColor(fill.Color),
         ContentOperators.Rectangle(fill.Area.Origin.X, pageHeight - fill.Area.Origin.Y - fill.Area.Size.Height, fill.Area.Size.Width, fill.Area.Size.Height),
         ContentOperators.Fill(),
+        ContentOperators.RestoreState(),
+    ];
+
+    /// <summary>
+    /// An image: inside q/Q, map the unit square of image space onto the image's rectangle with <c>cm</c> (§8.9.4:
+    /// "an image is mapped to … the unit square"), whose y is its BOTTOM edge in PDF space, then paint it with
+    /// <c>Do</c> (§8.8).
+    /// </summary>
+    private static ImmutableArray<ContentOperation> Image(DrawImage image, PdfName resource, double pageHeight) =>
+    [
+        ContentOperators.SaveState(),
+        ContentOperators.ConcatMatrix(image.Area.Size.Width, 0, 0, image.Area.Size.Height, image.Area.Origin.X, pageHeight - image.Area.Origin.Y - image.Area.Size.Height),
+        ContentOperators.PaintXObject(resource),
         ContentOperators.RestoreState(),
     ];
 

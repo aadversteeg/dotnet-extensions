@@ -63,15 +63,19 @@ public sealed record ParagraphElement(ValueList<Span> Spans, SemanticRole Role, 
 public sealed record PageBreakElement(SourceLocation Source) : Element(Source);
 
 /// <summary>
-/// A piece of text inside a paragraph. Made by <see cref="Elements.Text"/> and <see cref="Elements.Bold"/>.
+/// A piece of text inside a paragraph. Made by <see cref="Elements.Text"/> and <see cref="Elements.Bold"/>, or, for
+/// text that only layout knows, by <see cref="Elements.PageNumber"/> and <see cref="Elements.PageCount"/>.
 /// Only text modifiers apply to a span; a shared style with box properties is reported as an input error.
 /// </summary>
-/// <param name="Text">The text.</param>
+/// <param name="Text">The text; empty for a page counter.</param>
 /// <param name="Format">What the modifiers set on this span.</param>
 /// <param name="Style">The shared style applied with <see cref="With"/>, or <see cref="Fluent.Style.Empty"/>.</param>
 /// <param name="Source">Where the span was created.</param>
 public sealed record Span(string Text, Style Format, Style Style, SourceLocation Source) : IFormatted<Span>
 {
+    /// <summary>The page counter the span shows instead of <see cref="Text"/>, or null for literal text.</summary>
+    public DocumentModel.PageCounter? Counter { get; init; }
+
     /// <summary>Applies a shared style (its text part). The span's own modifier values still win over it.</summary>
     /// <param name="style">The style; replaces a style applied before.</param>
     /// <returns>A copy with the style.</returns>

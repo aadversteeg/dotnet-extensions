@@ -23,10 +23,38 @@ namespace Ave.Documents.Layout;
 /// picks each child's own algorithm by its id.</item>
 /// </list>
 /// </remarks>
-/// <param name="environment">The fonts and the table of algorithms.</param>
+/// <param name="environment">The fonts, the table of algorithms and the current page.</param>
 /// <param name="box">The box to lay out.</param>
 /// <param name="space">The space available on the current page.</param>
 /// <param name="incoming">Where to resume, or null to start at the beginning of the box.</param>
 /// <returns>The fragment and continuation, NoRoom, or an error.</returns>
 public delegate Result<LayoutResult, Error> LayoutAlgorithm(
     LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming);
+
+/// <summary>
+/// The second function of every algorithm (research §6.1, <c>MinMax</c>): the box's intrinsic widths, which a
+/// parent that sizes its children from their content needs — the tracks algorithm for <c>auto</c> and <c>fill</c>
+/// columns. Pure, like <see cref="LayoutAlgorithm"/>.
+/// </summary>
+/// <param name="environment">The fonts, the table of algorithms and the current page.</param>
+/// <param name="box">The box to measure.</param>
+/// <returns>The widths, or an error (for example a missing glyph).</returns>
+public delegate Result<IntrinsicWidths, Error> IntrinsicSizing(LayoutEnvironment environment, Box box);
+
+/// <summary>
+/// The intrinsic widths of a box's BORDER box (padding and border included, margins not), CSS Sizing 3 §5: the
+/// min-content width is the narrowest the box can be without its content overflowing (for text: the widest word),
+/// the max-content width the width it takes when nothing wraps.
+/// </summary>
+/// <param name="MinContent">The min-content width, in points.</param>
+/// <param name="MaxContent">The max-content width, at least <paramref name="MinContent"/>.</param>
+public sealed record IntrinsicWidths(double MinContent, double MaxContent)
+{
+    /// <summary>A box with no content and no insets.</summary>
+    public static IntrinsicWidths Zero { get; } = new(0, 0);
+
+    /// <summary>Both widths grown by the same amount (insets or margins).</summary>
+    /// <param name="amount">The amount, in points.</param>
+    /// <returns>The wider widths.</returns>
+    public IntrinsicWidths Plus(double amount) => new(MinContent + amount, MaxContent + amount);
+}

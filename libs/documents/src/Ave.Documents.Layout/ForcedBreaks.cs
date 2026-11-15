@@ -8,8 +8,8 @@ internal static class ForcedBreaks
 {
     /// <summary>
     /// True when a page break is forced before the box, either by its own <c>break-before: page</c> or by one
-    /// on its first child: "break-before … on the first child … [is] propagated to the parent" (CSS
-    /// Fragmentation 3 §3.1), because a break is only possible between siblings.
+    /// on its first child: "a break-before value on a first in-flow child box is propagated to its container" (CSS
+    /// Fragmentation 3 §3.1.1), because a break is only possible between siblings.
     /// </summary>
     /// <remarks>
     /// Flow honours a forced break only between two children of which the first is on the current page. A
@@ -18,6 +18,6 @@ internal static class ForcedBreaks
     /// where there is no earlier sibling to break after.
     /// </remarks>
     public static bool Before(Box box) =>
-        box.Style.BreakBefore == BreakBefore.Page
+        box.Style.BreakBefore == BreakBetween.Page
         || (box.Children.FirstOrDefault() is Box first && Before(first));
 }

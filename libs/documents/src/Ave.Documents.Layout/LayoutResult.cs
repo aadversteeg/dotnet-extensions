@@ -15,7 +15,9 @@ public abstract record LayoutResult
     /// <summary>The box placed (part of) its content on this page.</summary>
     /// <param name="Fragment">The box's fragment on this page.</param>
     /// <param name="Continuation">Where to resume on the next page, or null when the box is complete.</param>
-    public sealed record Placed(BoxFragment Fragment, BreakToken? Continuation) : LayoutResult;
+    /// <param name="Appeal">How good the break is that ends this fragment (<see cref="BreakAppeal.Perfect"/> when the
+    /// box is complete). A parent compares it with its own earlier breakpoints and may prefer one of those.</param>
+    public sealed record Placed(BoxFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect) : LayoutResult;
 
     /// <summary>Nothing of the box fits in the space left on this page; the parent moves it to the next page.</summary>
     public sealed record NoRoom : LayoutResult
@@ -27,9 +29,10 @@ public abstract record LayoutResult
     /// <summary>The successful result "placed this fragment, continue here".</summary>
     /// <param name="fragment">The box's fragment on this page.</param>
     /// <param name="continuation">Where to resume on the next page, or null when the box is complete.</param>
+    /// <param name="appeal">How good the break is that ends the fragment.</param>
     /// <returns>A successful <see cref="Placed"/> result.</returns>
-    public static Result<LayoutResult, Error> Place(BoxFragment fragment, BreakToken? continuation) =>
-        Result<LayoutResult, Error>.Success(new Placed(fragment, continuation));
+    public static Result<LayoutResult, Error> Place(BoxFragment fragment, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect) =>
+        Result<LayoutResult, Error>.Success(new Placed(fragment, continuation, appeal));
 
     /// <summary>
     /// The rule every algorithm applies when not even the first piece of a box fits. At the start of a page

@@ -94,6 +94,70 @@ internal static class InputChecks
             _ => System.Array.Empty<Error>(),
         });
 
+    /// <summary>Border widths: finite and not negative (CSS Backgrounds 3 §4.3: "Negative values are invalid").</summary>
+    public static IEnumerable<Error> Border(DocumentModel.Border border, SourceLocation source) =>
+        Lengths(border.Widths, "border", source, DocumentErrorCodes.Input.Invalid.Length);
+
+    /// <summary>
+    /// Column definitions: at least one; fixed widths finite and not negative; fill weights finite and positive
+    /// (CSS Grid 1 §7.2.4: "Negative values are invalid" for <c>fr</c>; zero would make a column that never grows).
+    /// </summary>
+    public static IEnumerable<Error> Columns(ValueList<DocumentModel.TrackSize> columns, SourceLocation source)
+    {
+        if (columns.Count == 0)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.Columns, "A table needs at least one column.", "0", "columns", source);
+        }
+
+        foreach (var column in columns)
+        {
+            var valid = column switch
+            {
+                DocumentModel.TrackSize.Fixed fixedWidth => fixedWidth.Width.IsFinite && fixedWidth.Width.Points >= 0,
+                DocumentModel.TrackSize.Fill fill => double.IsFinite(fill.Weight) && fill.Weight > 0,
+                _ => true,
+            };
+            if (!valid)
+            {
+                yield return Problem(DocumentErrorCodes.Input.Invalid.Columns, "A fixed column width must be zero or more and a fill weight positive.", column.ToString(), "columns", source);
+            }
+        }
+    }
+
+    /// <summary>A row of blocks with column sizes must have one size per item.</summary>
+    public static IEnumerable<Error> ColumnCount(int columns, int items, SourceLocation source) =>
+        columns == items
+            ? []
+            : [Problem(DocumentErrorCodes.Input.Invalid.Columns, $"The row has {items} items but {columns} column sizes.", columns.ToString(System.Globalization.CultureInfo.InvariantCulture), "columns", source)];
+
+    /// <summary>Cell spans are at least one column and one row.</summary>
+    public static IEnumerable<Error> Span(DocumentModel.CellSpan span, SourceLocation source) =>
+        span.Columns >= 1 && span.Rows >= 1
+            ? []
+            : [Problem(DocumentErrorCodes.Input.Invalid.Table, "A cell spans at least one column and one row.", span.ToString(), "span", source)];
+
+    /// <summary>A table's structure as the front-end sees it: header rows only at the start, not in a row group.</summary>
+    public static Error MisplacedHeaderRow(SourceLocation source) =>
+        Problem(DocumentErrorCodes.Input.Invalid.Table, "Header rows must come first in a table, outside any row group.", "HeaderRow", "rows", source);
+
+    /// <summary>A property set on a table part it does not apply to: padding on a table (the collapsing border model
+    /// has none, CSS 2.1 §17.6.2), margin or padding on a row or a row group.</summary>
+    public static IEnumerable<Error> NotApplicable(Edges edges, string property, string element, SourceLocation source) =>
+        edges == Edges.Zero
+            ? []
+            : [Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, $"A {element} has no {property}.", edges.ToString(), property, source)];
+
+    /// <summary>A page break inside a table cell or a row of blocks has no next sibling on another page to move.</summary>
+    public static IEnumerable<Error> PageBreakIn(ValueList<Element> content, string container) =>
+        content.OfType<PageBreakElement>().Select(pageBreak =>
+            Problem(DocumentErrorCodes.Input.Invalid.PageBreak, $"A page break is not allowed inside a {container}.", "PageBreak", "break-before", pageBreak.Source));
+
+    /// <summary>An image's width and height, when set, are positive finite lengths.</summary>
+    public static IEnumerable<Error> ImageSize(Length? width, Length? height, SourceLocation source) =>
+        new[] { (Value: width, Name: "width"), (Value: height, Name: "height") }
+            .Where(size => size.Value is { } length && !(length.IsFinite && length.Points > 0))
+            .Select(size => Problem(DocumentErrorCodes.Input.Invalid.ImageSize, $"An image {size.Name} must be a positive length.", size.Value.ToString()!, size.Name, source));
+
     private static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
         new Error(code, $"{message} ({source})")
             .With(ErrorMetadataKeys.Value, value)

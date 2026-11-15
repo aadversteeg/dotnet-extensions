@@ -1,5 +1,6 @@
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
+using Ave.Documents.Images;
 
 namespace Ave.Documents.PageModel;
 
@@ -9,7 +10,7 @@ namespace Ave.Documents.PageModel;
 /// <remarks>
 /// How this grows to "everything PDF can draw" without breaking existing users: new cases are ADDED next to
 /// these — a filled or stroked path with a paint (of which <see cref="FillRectangle"/> stays the common special
-/// case), an image, and a group with a transform, a clip and compositing (opacity, blend mode, soft mask) that
+/// case) and a group with a transform, a clip and compositing (opacity, blend mode, soft mask) that
 /// holds its own items. Existing cases keep their meaning; a back-end that meets a case it does not know
 /// reports it instead of skipping it.
 /// </remarks>
@@ -21,7 +22,15 @@ public abstract record DrawItem
     }
 }
 
-/// <summary>A rectangle filled with one colour (a box background).</summary>
+/// <summary>
+/// An image drawn into a rectangle, scaled to fill it exactly (the layout keeps the aspect ratio). Images are
+/// referenced as decoded data, not as a file name, like glyphs are referenced by glyph id.
+/// </summary>
+/// <param name="Area">Where the image goes on the page.</param>
+/// <param name="Image">The image.</param>
+public sealed record DrawImage(Rect Area, ImageData Image) : DrawItem;
+
+/// <summary>A rectangle filled with one colour: a box background, one side of a border, or a table grid line.</summary>
 /// <param name="Area">The rectangle.</param>
 /// <param name="Color">The fill colour.</param>
 public sealed record FillRectangle(Rect Area, Color Color) : DrawItem;

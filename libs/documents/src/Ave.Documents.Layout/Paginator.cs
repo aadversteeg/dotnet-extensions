@@ -8,23 +8,38 @@ using Ave.Extensions.Functional;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// The pagination driver: lays the root box out page after page, feeding each page's outgoing break token
-/// into the next, until no token is left (research §6.1: "the paginator calls the root algorithm once per page
-/// with the previous page's outgoing break token").
+/// The pagination driver (research §6.2, "fragmentation driver"): lays the root box out page after page, feeding each
+/// page's outgoing break token into the next, until no token is left (research §6.1: "the paginator calls the root
+/// algorithm once per page with the previous page's outgoing break token"); applies the page template of each page;
+/// and repeats the whole layout until the page count that computed content shows is the page count it produces.
 /// </summary>
 public static class Paginator
 {
+    /// <summary>The most layout passes the page-count fixpoint makes, as in Typst (research §7: "a cap (5, like
+    /// Typst)").</summary>
+    public const int MaxPasses = 5;
+
     /// <summary>
-    /// Lays out the document on as many pages as it needs. Every page is the page style's size; the root box
-    /// is laid out in the page area (the page minus its margins, CSS Paged Media 3 §3.1) as the root of the block
-    /// formatting context, with its own margins inside the page area.
+    /// Lays out the document on as many pages as it needs.
     /// </summary>
+    /// <remarks>
+    /// <para><b>Fixpoint.</b> A <see cref="CounterRun"/> for the page count needs the number of pages before the pages
+    /// exist, and its digits can change line breaks and so the number of pages. So the whole document is laid out with
+    /// an assumed count (first 1), and laid out again with the count that pass produced, until a pass produces the
+    /// count it assumed (research §7: "multi-pass fixpoint over the whole document … with a cap (5, like Typst), with
+    /// a diagnostic when it does not converge"). Such a pass is stable: layout is a pure function of the document and
+    /// the assumed count, so the next pass would repeat it exactly. Page numbers need no fixpoint: pages are laid out
+    /// in order, so each page knows its own number. A document of one page settles in one pass, any other in at least
+    /// two; a later optimisation may skip the second pass when no page count is used (research §7: "only re-lay pages
+    /// whose input changed").</para>
+    /// <para>Not settling within <see cref="MaxPasses"/> passes is <c>Documents.Layout.NotConverging</c>, with the
+    /// source location of the first page-count reference and the page count of every pass.</para>
+    /// </remarks>
     /// <param name="environment">The fonts and algorithms.</param>
     /// <param name="document">The document.</param>
     /// <returns>One fragment per page, or the first layout error.</returns>
-    /// <exception cref="InvalidOperationException">An algorithm broke the layout contract: it reported NoRoom at
-    /// the start of a page, or returned the token it was given. Without this check pagination could loop
-    /// forever.</exception>
+    /// <exception cref="InvalidOperationException">An algorithm broke the layout contract (see
+    /// <see cref="LayOutPages"/>). Without this check pagination could loop forever.</exception>
     public static Result<ValueList<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document)
     {
         var page = document.Page;
@@ -35,18 +50,61 @@ public static class Paginator
                     .With(ErrorMetadataKeys.Value, $"{page.Width}x{page.Height} margin={page.Margins}"));
         }
 
+        var counts = ImmutableArray.CreateBuilder<int>();
+        var assumedCount = 1;
+        for (var pass = 1; pass <= MaxPasses; pass++)
+        {
+            var pages = LayOutPages(environment, document, assumedCount);
+            if (pages.IsFailure || pages.Value.Count == assumedCount)
+            {
+                return pages;
+            }
+
+            counts.Add(pages.Value.Count);
+            assumedCount = pages.Value.Count;
+        }
+
+        return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.NotConverging(document, counts.ToImmutable()));
+    }
+
+    /// <summary>
+    /// One layout pass: every page with the given page count. Each page is the page style's size. Its page area (the
+    /// page minus its margins, CSS Paged Media 3 §3.1) holds, from the top, the template's header area, the body and
+    /// the footer area. The areas are laid out first (they may show the page number), and the root box goes in the
+    /// height they leave, as the root of the block formatting context, with its own margins inside.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">An algorithm reported NoRoom at the start of a page, or returned
+    /// the token it was given.</exception>
+    private static Result<ValueList<PageFragment>, Error> LayOutPages(LayoutEnvironment environment, StyledDocument document, int pageCount)
+    {
+        var page = document.Page;
         var pageSize = new Size(page.Width.Points, page.Height.Points);
-        var pageAreaOrigin = new Point(page.Margins.Left.Points, page.Margins.Top.Points);
+        var (areaWidth, areaHeight) = (page.AreaWidth.Points, page.AreaHeight.Points);
         var pages = ImmutableArray.CreateBuilder<PageFragment>();
         BreakToken? token = null;
         do
         {
+            var number = pages.Count + 1;
+            var onPage = environment.OnPage(new PageContext(number, pageCount));
+            var template = page.TemplateFor(number);
+            var areas = PageAreas.LayOut(onPage, template, areaWidth, areaHeight);
+            if (areas.IsFailure)
+            {
+                return Result<ValueList<PageFragment>, Error>.Failure(areas.Error);
+            }
+
+            var (header, footer) = areas.Value;
+            var bodyHeight = areaHeight - header.Height - footer.Height;
+            if (!(bodyHeight > 0))
+            {
+                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.NoBodyArea(template, number));
+            }
+
             // The root establishes the block formatting context, so its margins never collapse with its
             // children's (CSS 2.1 §8.3.1). Its top margin belongs to its first fragment only (slice, CSS
-            // Fragmentation 3 §5.4); on later pages the root continues at the top of the page area.
+            // Fragmentation 3 §5.4); on later pages the root continues at the top of the body area.
             var top = token is null ? document.Root.Style.Margin.Top.Points : 0;
-            var outcome = InFlowChild.Place(
-                environment, document.Root, page.AreaWidth.Points, top, page.AreaHeight.Points, isAtPageStart: true, token, isNewFormattingContext: true);
+            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: true, token, isNewFormattingContext: true);
             if (outcome.IsFailure)
             {
                 return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);
@@ -63,12 +121,18 @@ public static class Paginator
                 throw new InvalidOperationException("A layout algorithm made no progress: it returned the break token it was given.");
             }
 
-            var root = placement.Fragment with { Offset = placement.Fragment.Offset + pageAreaOrigin };
-            pages.Add(new PageFragment(pageSize, root));
+            var origin = new Point(page.Margins.Left.Points, page.Margins.Top.Points);
+            pages.Add(new PageFragment(
+                pageSize,
+                Moved(placement.Fragment, origin + new Point(0, header.Height)),
+                header.Fragment is { } headerFragment ? Moved(headerFragment, origin) : null,
+                footer.Fragment is { } footerFragment ? Moved(footerFragment, origin + new Point(0, areaHeight - footer.Height)) : null));
             token = placement.Continuation;
         }
         while (token is not null);
 
         return Result<ValueList<PageFragment>, Error>.Success(pages.ToImmutable());
     }
+
+    private static PlacedFragment Moved(PlacedFragment fragment, Point by) => fragment with { Offset = fragment.Offset + by };
 }

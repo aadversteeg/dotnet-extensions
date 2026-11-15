@@ -38,6 +38,25 @@ public static class ContentOperators
     /// <returns>The operation.</returns>
     public static ContentOperation Fill() => new("f", []);
 
+    /// <summary>
+    /// <c>cm</c>: concatenate a matrix to the current transformation matrix (§8.4.4, Table 57; §8.3.4). With
+    /// <c>w 0 0 h x y</c> the unit square of image space lands on the rectangle (x, y, w, h) (§8.9.4).
+    /// </summary>
+    /// <param name="a">Horizontal scale.</param>
+    /// <param name="b">Shear (rotation) component.</param>
+    /// <param name="c">Shear (rotation) component.</param>
+    /// <param name="d">Vertical scale.</param>
+    /// <param name="e">Horizontal translation.</param>
+    /// <param name="f">Vertical translation.</param>
+    /// <returns>The operation.</returns>
+    public static ContentOperation ConcatMatrix(double a, double b, double c, double d, double e, double f) =>
+        new("cm", [PdfNumber.From(a), PdfNumber.From(b), PdfNumber.From(c), PdfNumber.From(d), PdfNumber.From(e), PdfNumber.From(f)]);
+
+    /// <summary><c>Do</c>: paint an external object, by its name in the page's /XObject resources (§8.8, Table 87).</summary>
+    /// <param name="resourceName">The XObject's key in the page resources, for example <c>Im1</c>.</param>
+    /// <returns>The operation.</returns>
+    public static ContentOperation PaintXObject(PdfName resourceName) => new("Do", [resourceName]);
+
     /// <summary><c>BT</c>: begin a text object (§9.4.1, Table 107).</summary>
     /// <returns>The operation.</returns>
     public static ContentOperation BeginText() => new("BT", []);

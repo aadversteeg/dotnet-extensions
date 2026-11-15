@@ -127,7 +127,7 @@ public class MarginCollapsingTests
     {
         var pages = Paginate(Document(
             Paragraph(1, "One"),
-            Paragraph(2, "Two", Margins(6, 0) with { BreakBefore = BreakBefore.Page })));
+            Paragraph(2, "Two", Margins(6, 0) with { BreakBefore = BreakBetween.Page })));
 
         pages.Should().HaveCount(2);
         RootChildren(pages[1])[0].Offset.Y.Should().Be(6);

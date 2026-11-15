@@ -45,6 +45,21 @@ public static class TextModifiers
     /// <returns>A copy with weight 700.</returns>
     public static T Bold<T>(this T element) where T : IFormatted<T> => element.FontWeight(Core.FontWeight.Bold);
 
+    /// <summary>Sets the font style (CSS <c>font-style</c>): upright or italic. An italic face of the family must be in
+    /// the font set when rendering; no slanted face is synthesised.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="style">The style.</param>
+    /// <returns>A copy with the style set.</returns>
+    public static T FontStyle<T>(this T element, FontStyle style) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { FontStyle = style });
+
+    /// <summary>Sets the font style to italic; the same property as <see cref="FontStyle{T}"/>.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <returns>A copy in italic.</returns>
+    public static T Italic<T>(this T element) where T : IFormatted<T> => element.FontStyle(Core.FontStyle.Italic);
+
     /// <summary>Sets the text colour (CSS <c>color</c>).</summary>
     /// <typeparam name="T">The element or style type.</typeparam>
     /// <param name="element">The element or style.</param>

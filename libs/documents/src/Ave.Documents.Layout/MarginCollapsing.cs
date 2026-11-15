@@ -14,19 +14,22 @@ namespace Ave.Documents.Layout;
 /// <para>Which margins adjoin (§8.3.1, "Two margins are adjoining if and only if …"), in the terms of this model:</para>
 /// <list type="bullet">
 /// <item>the bottom margin of a box and the top margin of its next sibling;</item>
-/// <item>the top margin of a flow box and the top margin of its first child, when no top padding separates them;</item>
-/// <item>the bottom margin of the last child and the bottom margin of its flow parent, when no bottom padding
-/// separates them (the model has no <c>height</c> property, so every height is <c>auto</c> as the rule needs);</item>
+/// <item>the top margin of a flow box and the top margin of its first child, when no top padding and no top border
+/// separate them ("no line boxes, no clearance, no padding and no border separate them");</item>
+/// <item>the bottom margin of the last child and the bottom margin of its flow parent, when no bottom padding and no
+/// bottom border separate them (the model has no <c>height</c> property, so every height is <c>auto</c> as the rule
+/// needs);</item>
 /// <item>the top and bottom margins of an EMPTY box (<see cref="IsEmpty"/>), which therefore collapse "through" it
 /// with whatever adjoins either side.</item>
 /// </list>
 /// <para>Adjoining is transitive, so each function below folds a whole chain of adjoining margins into one value.</para>
 /// <para>LIMITS of this version, each an explicit rule rather than an omission: margins are never negative (the
 /// front-ends refuse them, error <c>Documents.Input.Unsupported.NegativeMargin</c>), so "the maximum of the
-/// adjoining margins" is the whole rule and the negative-margin arithmetic of §8.3.1 is not needed. The model has
-/// no borders, no <c>min-height</c>, no floats and therefore no clearance, so the conditions of §8.3.1 that
-/// mention them always hold; when one of those properties arrives, its condition belongs in
-/// <see cref="TopAdjoinsChildren"/>, <see cref="BottomAdjoinsChildren"/> and <see cref="IsEmpty"/>.</para>
+/// adjoining margins" is the whole rule and the negative-margin arithmetic of §8.3.1 is not needed. Borders are
+/// checked like padding (a border of zero width is no border). The model has no <c>min-height</c>, no floats and
+/// therefore no clearance, so the conditions of §8.3.1 that mention them always hold; when one of those properties
+/// arrives, its condition belongs in <see cref="TopAdjoinsChildren"/>, <see cref="BottomAdjoinsChildren"/> and
+/// <see cref="IsEmpty"/>.</para>
 /// <para>Boxes laid out by an algorithm other than Flow or Inline are treated like boxes that establish their own
 /// formatting context: their margins collapse with their siblings', never with their content's, and they are
 /// never empty (§8.3.1: "Margins of elements that establish new block formatting contexts … do not collapse with
@@ -60,28 +63,30 @@ internal static class MarginCollapsing
 
     /// <summary>
     /// True when the box's top margin adjoins its first child's (§8.3.1, "top margin of a box and top margin of
-    /// its first in-flow child"): a flow box without top padding. The caller adds the one exception the box
-    /// cannot know itself: a box that establishes a new formatting context, such as the root
+    /// its first in-flow child"): a flow box without top padding and top border. The caller adds the one exception
+    /// the box cannot know itself: a box that establishes a new formatting context, such as the root
     /// (<see cref="ConstraintSpace.IsNewFormattingContext"/>).
     /// </summary>
     public static bool TopAdjoinsChildren(Box box) =>
-        box.Layout == LayoutAlgorithmId.Flow && box.Style.Padding.Top.Points == 0;
+        box.Layout == LayoutAlgorithmId.Flow && box.Style.Padding.Top.Points == 0 && !box.Style.Border.Top.IsVisible;
 
     /// <summary>True when the box's bottom margin adjoins its last child's (§8.3.1, "bottom margin of a last in-flow
     /// child and bottom margin of its parent if the parent has 'auto' computed height"): a flow box without
-    /// bottom padding.</summary>
+    /// bottom padding and bottom border.</summary>
     public static bool BottomAdjoinsChildren(Box box) =>
-        box.Layout == LayoutAlgorithmId.Flow && box.Style.Padding.Bottom.Points == 0;
+        box.Layout == LayoutAlgorithmId.Flow && box.Style.Padding.Bottom.Points == 0 && !box.Style.Border.Bottom.IsVisible;
 
     /// <summary>
     /// True when the box's own top and bottom margins adjoin (§8.3.1, last case: a box with "zero or 'auto'
-    /// computed 'height', and no in-flow children"): no vertical padding, and either a flow box whose children
-    /// are all empty, or an inline box that makes no line boxes (CSS 2.1 §9.4.2: line boxes with no text "must be
-    /// treated as not existing for … margin collapsing").
+    /// computed 'height', and no in-flow children"): no vertical padding or border, and either a flow box whose
+    /// children are all empty, or an inline box that makes no line boxes (CSS 2.1 §9.4.2: line boxes with no text
+    /// "must be treated as not existing for … margin collapsing").
     /// </summary>
     public static bool IsEmpty(Box box) =>
         box.Style.Padding.Top.Points == 0
         && box.Style.Padding.Bottom.Points == 0
+        && !box.Style.Border.Top.IsVisible
+        && !box.Style.Border.Bottom.IsVisible
         && (box.Layout == LayoutAlgorithmId.Flow ? box.Children.All(child => child is Box inner && IsEmpty(inner))
             : box.Layout == LayoutAlgorithmId.Inline && !InlineLayout.HasLineBoxes(box));
 

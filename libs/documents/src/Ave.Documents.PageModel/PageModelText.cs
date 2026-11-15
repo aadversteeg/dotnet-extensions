@@ -41,6 +41,7 @@ public static class PageModelText
     private static string ItemLine(DrawItem item) => item switch
     {
         FillRectangle fill => $"fill {fill.Area} {fill.Color}",
+        DrawImage image => $"image {image.Area} {image.Image.Describe()} id={image.Image.Id}",
         GlyphRun run => GlyphRunLine(run),
         StructureStart start => $"start {start.Node} {start.Role}",
         StructureEnd end => $"end {end.Node}",

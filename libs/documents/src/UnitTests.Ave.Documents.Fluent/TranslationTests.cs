@@ -92,7 +92,7 @@ public class TranslationTests
         var root = Translate(Document([Paragraph("a"), PageBreak(), PageBreak(), Paragraph("b")]).FontFamily("Lato")).Root;
 
         root.Children.Should().HaveCount(2);
-        root.Children.Cast<Box>().Select(box => box.Style.BreakBefore).Should().Equal(BreakBefore.Auto, BreakBefore.Page);
+        root.Children.Cast<Box>().Select(box => box.Style.BreakBefore).Should().Equal(BreakBetween.Auto, BreakBetween.Page);
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class TranslationTests
         var box = (Box)Translate(Document(
             [Paragraph("x").MarginBottom(3.Pt()).Padding(2.Pt()).Background(Color.White)]).FontFamily("Lato")).Root.Children[0];
 
-        box.Style.Should().Be(new BoxStyle(Edges.OnlyBottom(3.Pt()), Edges.All(2.Pt()), Color.White, BreakBefore.Auto));
+        box.Style.Should().Be(BoxStyle.Initial with { Margin = Edges.OnlyBottom(3.Pt()), Padding = Edges.All(2.Pt()), Background = Color.White });
     }
 
     [Fact]

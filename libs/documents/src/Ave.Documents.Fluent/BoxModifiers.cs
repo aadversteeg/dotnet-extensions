@@ -1,9 +1,11 @@
 using Ave.Documents.Core;
+using Ave.Documents.DocumentModel;
 
 namespace Ave.Documents.Fluent;
 
 /// <summary>
-/// Modifiers for box properties, on blocks, paragraphs and headings and on <see cref="Style"/>:
+/// Modifiers for box properties, on every element with a box (blocks, paragraphs, tables, rows, cells, images) and
+/// on <see cref="Style"/>:
 /// <c>Heading(1, "…").MarginBottom(12.Pt())</c>. Each returns a new value with ONE property set.
 /// </summary>
 /// <remarks>
@@ -116,6 +118,77 @@ public static class BoxModifiers
     /// <returns>A copy with the alignment set.</returns>
     public static T TextAlign<T>(this T element, TextAlign align) where T : IBoxFormatted<T> =>
         element.WithFormat(element.Format with { Text = element.Format.Text with { TextAlign = align } });
+
+    /// <summary>Sets a solid border on all four sides (CSS <c>border</c>). A side set with <see cref="BorderTop{T}"/>
+    /// and the like wins over it.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="width">The line width; zero or more (zero is no border).</param>
+    /// <param name="color">The line colour.</param>
+    /// <returns>A copy with the border set.</returns>
+    public static T Border<T>(this T element, Length width, Color color) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { Border = new BorderSide(width, color) });
+
+    /// <summary>Sets the top border (CSS <c>border-top</c>, solid).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="width">The line width; zero or more.</param>
+    /// <param name="color">The line colour.</param>
+    /// <returns>A copy with the border set.</returns>
+    public static T BorderTop<T>(this T element, Length width, Color color) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { BorderTop = new BorderSide(width, color) });
+
+    /// <summary>Sets the right border (CSS <c>border-right</c>, solid).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="width">The line width; zero or more.</param>
+    /// <param name="color">The line colour.</param>
+    /// <returns>A copy with the border set.</returns>
+    public static T BorderRight<T>(this T element, Length width, Color color) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { BorderRight = new BorderSide(width, color) });
+
+    /// <summary>Sets the bottom border (CSS <c>border-bottom</c>, solid).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="width">The line width; zero or more.</param>
+    /// <param name="color">The line colour.</param>
+    /// <returns>A copy with the border set.</returns>
+    public static T BorderBottom<T>(this T element, Length width, Color color) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { BorderBottom = new BorderSide(width, color) });
+
+    /// <summary>Sets the left border (CSS <c>border-left</c>, solid).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="width">The line width; zero or more.</param>
+    /// <param name="color">The line colour.</param>
+    /// <returns>A copy with the border set.</returns>
+    public static T BorderLeft<T>(this T element, Length width, Color color) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { BorderLeft = new BorderSide(width, color) });
+
+    /// <summary>
+    /// Keeps the element on one page when it fits on one (CSS <c>break-inside: avoid</c>): it moves to the next page
+    /// whole rather than break. An element taller than a page still breaks, so nothing is lost.
+    /// </summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <returns>A copy that is kept together.</returns>
+    public static T KeepTogether<T>(this T element) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { KeepTogether = true });
+
+    /// <summary>Avoids a page break between this element and the next one (CSS <c>break-after: avoid</c>), for
+    /// example to keep a heading with the paragraph or table under it.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <returns>A copy that is kept with the next element.</returns>
+    public static T KeepWithNext<T>(this T element) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { KeepWithNext = true });
+
+    /// <summary>Avoids a page break between this element and the one before it (CSS <c>break-before: avoid</c>).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <returns>A copy that is kept with the previous element.</returns>
+    public static T KeepWithPrevious<T>(this T element) where T : IBoxFormatted<T> =>
+        element.WithBox(element.Format.Box with { KeepWithPrevious = true });
 
     private static T WithBox<T>(this T element, BoxFormat box) where T : IBoxFormatted<T> =>
         element.WithFormat(element.Format with { Box = box });

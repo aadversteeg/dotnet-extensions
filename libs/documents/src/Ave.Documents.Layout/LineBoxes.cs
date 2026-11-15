@@ -11,8 +11,8 @@ namespace Ave.Documents.Layout;
 /// <summary>Builds line boxes from broken lines (CSS 2.1 §10.8 "Line height calculations").</summary>
 internal static class LineBoxes
 {
-    /// <summary>A text run with its resolved font and shaped glyphs.</summary>
-    public sealed record ShapedRun(TextRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs);
+    /// <summary>An inline run with its resolved font and shaped glyphs.</summary>
+    public sealed record ShapedRun(InlineRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs);
 
     /// <summary>
     /// The vertical extent of one inline box around the baseline. With <c>line-height: normal</c> (the

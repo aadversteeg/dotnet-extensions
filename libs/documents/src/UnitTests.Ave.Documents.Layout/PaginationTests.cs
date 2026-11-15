@@ -75,7 +75,7 @@ public class PaginationTests
     [Fact]
     public void A_continued_box_has_no_top_padding_on_the_next_page_and_bottom_padding_only_at_its_end()
     {
-        var style = new BoxStyle(new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), new Edges(4.Pt(), 0.Pt(), 10.Pt(), 0.Pt()), null, BreakBefore.Auto);
+        var style = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), Padding = new Edges(4.Pt(), 0.Pt(), 10.Pt(), 0.Pt()) };
         var pages = Paginate(Document(Paragraph(1, Words(8), style)));
 
         // box-decoration-break: slice (CSS Fragmentation 3 §5.4). Page 1: 4 pt top padding, then as many lines as
@@ -92,7 +92,7 @@ public class PaginationTests
         // Six lines (72 pt) fit the 80 pt page area, but not with the 10 pt bottom padding. The padding is no
         // break point, so the box breaks before its last line, which ends the box on page 2 together with the
         // padding. This is what Chromium 157 prints for the same case (stage-1 report, A5).
-        var style = new BoxStyle(new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), new Edges(0.Pt(), 0.Pt(), 10.Pt(), 0.Pt()), null, BreakBefore.Auto);
+        var style = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), Padding = new Edges(0.Pt(), 0.Pt(), 10.Pt(), 0.Pt()) };
         var pages = Paginate(Document(Paragraph(1, Words(6), style)));
 
         pages.Select(page => LineCounts(page).Single()).Should().Equal(5, 1);
@@ -136,7 +136,7 @@ public class PaginationTests
     {
         var pages = Paginate(Document(
             Paragraph(1, "One"),
-            Paragraph(2, "Two", BoxStyle.Initial with { BreakBefore = BreakBefore.Page })));
+            Paragraph(2, "Two", BoxStyle.Initial with { BreakBefore = BreakBetween.Page })));
 
         pages.Should().HaveCount(2);
     }
@@ -144,7 +144,7 @@ public class PaginationTests
     [Fact]
     public void A_forced_break_before_the_first_box_of_the_document_makes_no_empty_page()
     {
-        var pages = Paginate(Document(Paragraph(1, "One", BoxStyle.Initial with { BreakBefore = BreakBefore.Page })));
+        var pages = Paginate(Document(Paragraph(1, "One", BoxStyle.Initial with { BreakBefore = BreakBetween.Page })));
 
         pages.Should().HaveCount(1);
     }
@@ -152,7 +152,7 @@ public class PaginationTests
     [Fact]
     public void A_forced_break_on_a_first_child_propagates_to_its_parent()
     {
-        var nested = Flow(2, [Paragraph(3, "Inner", BoxStyle.Initial with { BreakBefore = BreakBefore.Page })]);
+        var nested = Flow(2, [Paragraph(3, "Inner", BoxStyle.Initial with { BreakBefore = BreakBetween.Page })]);
         var pages = Paginate(Document(Paragraph(1, "One"), nested));
 
         pages.Should().HaveCount(2);
