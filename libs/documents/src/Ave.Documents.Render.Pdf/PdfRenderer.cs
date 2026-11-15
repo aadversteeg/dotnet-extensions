@@ -25,7 +25,8 @@ public static class PdfRenderer
     /// <remarks>
     /// The steps: refuse what the profile forbids (<see cref="ConformanceRules"/>); read every page's markers into
     /// events (<see cref="PageEvents"/>); for a tagged profile, build the structure tree from them
-    /// (<see cref="StructureTree"/>); then write every object.
+    /// (<see cref="StructureTree"/>) and refuse a structure the profile forbids (an irregular table); then write every
+    /// object.
     /// </remarks>
     /// <param name="document">The page document.</param>
     /// <param name="options">Creation date, file identifier and profile.</param>
@@ -36,7 +37,7 @@ public static class PdfRenderer
             .OnSuccessBind(checkedDocument => checkedDocument.Pages.Select((page, index) => (page, index))
                 .TraverseAll(page => PageEvents.Read(page.page, page.index + 1)))
             .OnSuccessCombine(pages => options.Profile.IsTagged
-                ? StructureTree.Build(pages).OnSuccessMap(tree => (StructureTree?)tree)
+                ? StructureTree.Build(pages).OnSuccessBind(tree => ConformanceRules.CheckStructure(tree, options.Profile)).OnSuccessMap(tree => (StructureTree?)tree)
                 : Result<StructureTree?, Error>.Success(null))
             .OnSuccessBind((pages, tree) => Write(document, options, pages, tree));
 

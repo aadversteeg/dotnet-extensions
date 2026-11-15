@@ -115,6 +115,35 @@ public class ConformanceRefusalTests
             .IsSuccess.Should().BeTrue();
 
     [Fact]
+    public void PDF_UA_refuses_a_table_row_that_does_not_fill_every_column_at_the_row()
+    {
+        var line = CurrentLine() + 3;
+        var table = Table(Columns(Fill(1), Fill(1), Fill(1)), [
+            HeaderRow([Cell("a"), Cell("b"), Cell("c")]),
+            TableRow([Cell("1"), Cell("2")]),
+            TableRow([Cell("3").ColumnSpan(2), Cell("4")]),
+        ]);
+
+        var error = Refused(Accessible([table]), PdfProfile.PdfUa1);
+
+        ShouldPointAt(error, DocumentErrorCodes.Pdf.Conformance.PdfUa1.IrregularTable, line);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be("2/3");
+        Render(Accessible([table]), PdfProfile.PdfA3a).IsSuccess.Should().BeTrue("PDF/A-3a does not have this rule");
+    }
+
+    [Fact]
+    public void Row_spans_count_as_filled_slots_in_the_rows_below()
+    {
+        var table = Table(Columns(Fill(1), Fill(1)), [
+            HeaderRow([Cell("a"), Cell("b")]),
+            TableRow([Cell("tall").RowSpan(2), Cell("1")]),
+            TableRow([Cell("2")]),
+        ]);
+
+        Render(Accessible([table]), PdfProfile.PdfUa1).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
     public void PDF_A_3_refuses_an_attachment_without_a_relationship_at_the_attachment()
     {
         var line = CurrentLine() + 1;

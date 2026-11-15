@@ -261,6 +261,11 @@ public static class DocumentErrorCodes
                 /// §7.4.2, veraPDF rule 7.4.2-1). Metadata: Node, Value (previous and this level), SourceFile,
                 /// SourceLine (the heading).</summary>
                 public static readonly ErrorCode HeadingLevelSkipped = _ / "HeadingLevelSkipped";
+
+                /// <summary>A table row that does not fill every column of its table, counting spans (ISO 14289-1 §7.2,
+                /// veraPDF rules 7.2-41 and 7.2-42: "Table rows shall have the same number of columns"). Metadata: Node,
+                /// Value (slots filled / columns), SourceFile, SourceLine (the row).</summary>
+                public static readonly ErrorCode IrregularTable = _ / "IrregularTable";
             }
         }
     }

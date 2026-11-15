@@ -4,6 +4,7 @@ using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.PageModel;
 using Ave.Documents.Pdf;
+using Ave.Documents.Render.Pdf.Tagging;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -27,6 +28,21 @@ internal static class ConformanceRules
         return violations.Count == 0
             ? Result<PageDocument, Error>.Success(document)
             : Result<PageDocument, Error>.Failure(Errors.Aggregate(violations));
+    }
+
+    /// <summary>
+    /// Checks the structure tree of a tagged file against the rules that need it: under PDF/UA-1, tables must be regular
+    /// grids (<see cref="TableRegularity"/>). All violations are reported together.
+    /// </summary>
+    /// <param name="tree">The structure tree.</param>
+    /// <param name="profile">The profile.</param>
+    /// <returns>The tree unchanged, or the violations.</returns>
+    public static Result<StructureTree, Error> CheckStructure(StructureTree tree, PdfProfile profile)
+    {
+        var violations = profile.IsPdfUa1 ? TableRegularity.Violations(tree).ToList() : [];
+        return violations.Count == 0
+            ? Result<StructureTree, Error>.Success(tree)
+            : Result<StructureTree, Error>.Failure(Errors.Aggregate(violations));
     }
 
     /// <summary>ISO 19005-3 §6.8 (veraPDF rule 6.8-3): every embedded file says how it relates to the document.</summary>
