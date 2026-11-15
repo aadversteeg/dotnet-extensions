@@ -31,7 +31,11 @@
     <PackageProjectUrl>https://github.com/aadversteeg/dotnet-extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/aadversteeg/dotnet-extensions</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <!-- Source Link comes with the .NET SDK: no package reference. A package reference would put its build-time
+         dependencies (System.Memory and others) into the netstandard2.0 compile graph of every library. -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <!-- On GitHub Actions: deterministic source paths (/_/...) in the PDBs -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -47,11 +51,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
-  <!-- Source Link for improved debugging experience -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
-  </ItemGroup>
 
   <!-- Every package carries the README of its family (libs/<family>/README.md) and the repository LICENSE -->
   <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Ave.Extensions.'))">
