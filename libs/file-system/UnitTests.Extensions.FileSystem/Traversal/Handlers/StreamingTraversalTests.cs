@@ -124,8 +124,36 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
             // streaming machinery imposes is multiplied by the size of the tree. Polling with
             // Task.Delay(1) cost one timer tick (~15.6ms on Windows) every time the consumer looked
             // before the producer wrote; 50 samples of that is hundreds of milliseconds.
+            //
+            // A busy machine (a full parallel test run, a CI runner) can only ADD time to a round:
+            // thread-pool queueing, GC pauses. It can never take away the timer tick a polling
+            // consumer pays on every sample. So the best of a few rounds is still a measurement of
+            // the implementation's floor, and a polling implementation fails every round.
             const int samples = 50;
+            const int rounds = 5;
+            var budget = TimeSpan.FromMilliseconds(100);
 
+            var measured = new List<TimeSpan>();
+            var best = TimeSpan.MaxValue;
+            for (var round = 0; round < rounds && best >= budget; round++)
+            {
+                var elapsed = await MeasureHandoffsAsync(samples);
+                measured.Add(elapsed);
+                if (elapsed < best)
+                {
+                    best = elapsed;
+                }
+            }
+
+            best.Should().BeLessThan(
+                budget,
+                "{0} hand-offs to a waiting consumer must not each cost a timer tick (rounds measured: {1})",
+                samples,
+                string.Join(", ", measured.ConvertAll(elapsed => $"{elapsed.TotalMilliseconds:F1}ms")));
+        }
+
+        private static async Task<TimeSpan> MeasureHandoffsAsync(int samples)
+        {
             var handler = new StreamingEntryHandler<FileSystemEntry>("*", includeFiles: true, includeDirectories: true);
             var context = TraversalContext.CreateInitial("/test".ToCanonicalPath());
             var observed = new SemaphoreSlim(0);
@@ -158,10 +186,7 @@ namespace UnitTests.Extensions.FileSystem.Traversal.Handlers
             await consumer;
 
             consumed.Should().Be(samples);
-            handoff.Elapsed.Should().BeLessThan(
-                TimeSpan.FromMilliseconds(100),
-                "{0} hand-offs to a waiting consumer must not each cost a timer tick",
-                samples);
+            return handoff.Elapsed;
         }
 
         [Fact(DisplayName = "STR-006: A waiting consumer still honours cancellation")]
