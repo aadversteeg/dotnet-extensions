@@ -12,7 +12,7 @@ Cross-platform filesystem operations for .NET applications with advanced path ma
 - **File system monitoring** - Real-time change notifications with reactive streams
 - **High-performance move and copy operations** - Native platform optimizations with progress reporting
 - **Dependency injection ready** - Full integration with Microsoft.Extensions.DependencyInjection
-- **NetStandard 2.1 compatible** - Works with .NET Core 3.0+ and .NET 5+
+- **netstandard2.0 and net10.0** - Works with .NET Framework 4.7.2+, .NET Core and .NET 5+; .NET 10 gets its own build
 
 ## Packages
 
@@ -410,6 +410,29 @@ dotnet build extensions.slnx
 cd libs/file-system
 dotnet test extensions.slnx
 ```
+
+Against the `netstandard2.0` build of the libraries (see the repository README):
+
+```shell
+dotnet test extensions.slnx -p:UseNs20=true
+```
+
+`UnitTests.Extensions.FileSystem.AzureFileStorage` needs no Azure account, but about half of its tests wait for
+the Azure SDK to give up on a storage account that does not exist, so the project takes about two minutes.
+
+### The netstandard2.0 build
+
+The public API is the same as on `net10.0`. One behaviour differs. The write streams of
+`Ave.Extensions.FileSystem.InMemory` and `Ave.Extensions.FileSystem.AzureFileStorage` write their content when
+they are disposed. On `net10.0` they override `Stream.DisposeAsync`. `netstandard2.0` has no `Stream.DisposeAsync`
+to override, so there they implement `IAsyncDisposable` explicitly:
+
+- disposed through `IAsyncDisposable`: the content is written asynchronously, as on `net10.0`;
+- disposed through `Stream.DisposeAsync()`, which is also what `await using` on a `Stream` variable calls, on
+  .NET Core 3.0 up to .NET 9 (they load the `netstandard2.0` build): `Stream`'s own `DisposeAsync` runs, which
+  calls `Dispose()`, so the content is written synchronously. For Azure that is a blocking upload.
+
+`Dispose()` writes synchronously on every target, as before.
 
 ### Running Benchmarks
 

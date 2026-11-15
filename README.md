@@ -12,8 +12,8 @@ released on its own.
 | `libs/fluent-contracts` | `Ave.Extensions.FluentContracts`, `.ForTesting`, `.ForValidation` | [README](libs/fluent-contracts/README.md) |
 | `libs/file-system` | `Ave.Extensions.FileSystem.Abstractions`, `Ave.Extensions.FileSystem`, `.Local`, `.InMemory`, `.AzureFileStorage`, `.MimeDetective` | [README](libs/file-system/README.md) |
 
-The libraries target `netstandard2.0` and `net10.0`. Exceptions: `Ave.Extensions.ErrorPaths.AspNetCore` targets
-`net10.0` only, and the file-system family targets `netstandard2.1` and `net10.0` for now.
+The libraries target `netstandard2.0` and `net10.0`. The one exception, `Ave.Extensions.ErrorPaths.AspNetCore`,
+targets `net10.0` only.
 
 ## Building and testing
 
@@ -30,6 +30,17 @@ One family only:
 cd libs/functional
 dotnet test extensions.slnx
 ```
+
+The test projects target `net10.0`, so by default they test the `net10.0` build of the libraries. To run the
+same tests against the `netstandard2.0` build:
+
+```shell
+dotnet test dotnet-extensions.slnx -p:UseNs20=true
+```
+
+In that mode every test project also runs test `NS20-001`, which fails unless every `Ave.Extensions` library
+the test assembly loads is the `netstandard2.0` build. `UnitTests.Extensions.ErrorPaths.AspNetCore` is left as
+it is, because its library has no `netstandard2.0` build. The switch lives in `Directory.Build.targets`.
 
 ## References between the packages
 
