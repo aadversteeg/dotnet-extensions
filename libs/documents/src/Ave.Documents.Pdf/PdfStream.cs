@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using Ave.Documents.Core;
 
 namespace Ave.Documents.Pdf;
 
@@ -24,4 +24,4 @@ public enum StreamEncoding
 /// <param name="Dictionary">The stream dictionary, without Length and Filter.</param>
 /// <param name="Data">The decoded data.</param>
 /// <param name="Encoding">How to encode the data in the file.</param>
-public sealed record PdfStream(PdfDictionary Dictionary, ImmutableArray<byte> Data, StreamEncoding Encoding);
+public sealed record PdfStream(PdfDictionary Dictionary, ValueList<byte> Data, StreamEncoding Encoding);

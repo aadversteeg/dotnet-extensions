@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using Ave.Documents.Core;
 
 namespace Ave.Documents.Pdf;
 
@@ -9,4 +9,4 @@ namespace Ave.Documents.Pdf;
 /// </summary>
 /// <param name="Operator">The operator, for example <c>rg</c>.</param>
 /// <param name="Operands">The operands, in order.</param>
-public sealed record ContentOperation(string Operator, ImmutableArray<PdfObject> Operands);
+public sealed record ContentOperation(string Operator, ValueList<PdfObject> Operands);

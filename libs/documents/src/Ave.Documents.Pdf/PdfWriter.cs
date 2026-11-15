@@ -117,7 +117,7 @@ public static class PdfWriter
     /// <summary>Encodes the data and adds /Length (required, §7.3.8.2 Table 5) and /Filter to the dictionary.</summary>
     private static (PdfDictionary Dictionary, ImmutableArray<byte> Data) Encode(PdfStream stream)
     {
-        var data = stream.Encoding == StreamEncoding.Flate ? Flate.Compress(stream.Data) : stream.Data;
+        var data = stream.Encoding == StreamEncoding.Flate ? Flate.Compress(stream.Data.Items) : stream.Data.Items;
         PdfObject? filter = stream.Encoding switch
         {
             StreamEncoding.Flate => new PdfName("FlateDecode"),
