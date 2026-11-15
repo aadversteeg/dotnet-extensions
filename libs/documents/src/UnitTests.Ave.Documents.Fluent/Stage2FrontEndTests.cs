@@ -97,7 +97,7 @@ public class Stage2FrontEndTests
 
         var box = First(Model(Doc(image)));
 
-        (box.Layout, box.Role).Should().Be((LayoutAlgorithmId.Image, SemanticRole.Figure));
+        (box.Layout, box.Role).Should().Be((LayoutAlgorithmId.Image, SemanticRole.Figure(null)));
         var node = (ImageNode)box.Children.Single();
         (node.Image.PixelWidth, node.Width, node.Height).Should().Be((7, (Length?)3.Cm(), (Length?)null));
     }

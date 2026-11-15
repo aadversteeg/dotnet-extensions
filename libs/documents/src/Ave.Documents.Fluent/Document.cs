@@ -23,6 +23,20 @@ public sealed record Document(
     string? Author,
     SourceLocation Source) : IFormatted<Document>
 {
+    /// <summary>The document's language as a language tag (for example <c>nl-NL</c>), or null.</summary>
+    public string? Language { get; init; }
+
+    /// <summary>The files embedded in the document, in the order they were attached.</summary>
+    public ValueList<Attachment> Attachments { get; init; }
+
+    /// <summary>
+    /// Embeds a file in the document, for example its data as XML. Made with <see cref="Elements.Attachment"/>;
+    /// PDF/A-3 also needs its relationship to the document (<see cref="AttachmentModifiers.WithRelationship"/>).
+    /// </summary>
+    /// <param name="attachment">The file.</param>
+    /// <returns>A copy with the file attached after the ones attached before.</returns>
+    public Document Attach(Attachment attachment) => this with { Attachments = [.. Attachments, attachment] };
+
     /// <inheritdoc/>
     Document IFormatted<Document>.WithFormat(Style format) => this with { Format = format };
 }

@@ -13,7 +13,7 @@ public class ImageRenderingTests
     private static readonly PdfRenderOptions Options = new(new DateTimeOffset(2026, 11, 15, 9, 22, 0, TimeSpan.FromHours(1)));
 
     private static PageDocument Images() => new(
-        new DocumentInfo("Images", null),
+        new DocumentMetadata("Images", null),
         [
             new Page(new Size(300, 200),
             [

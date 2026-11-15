@@ -8,12 +8,12 @@ namespace UnitTests.Ave.Documents.PageModel;
 public class PageModelTextTests
 {
     private static PageDocument Sample() => new(
-        new DocumentInfo("Letter", "Someone"),
+        new DocumentMetadata("Letter", "Someone"),
         [
             new Page(new Size(200, 100),
             [
                 new FillRectangle(new Rect(new Point(10, 10), new Size(180, 20)), new Color(0xDD, 0xEB, 0xF7)),
-                new StructureStart(new NodeId(1), SemanticRole.Paragraph),
+                new StructureStart(new NodeId(1), SemanticRole.Paragraph, default),
                 new GlyphRun(TestFonts.Regular, 10, Color.Black, new Point(10, 19.87),
                 [
                     new PositionedGlyph(new GlyphId(15), 0, "H"),

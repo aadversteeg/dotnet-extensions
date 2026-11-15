@@ -20,6 +20,25 @@ namespace Ave.Documents.Fluent;
 public sealed record ImageElement(ImageFile File, Length? SpecifiedWidth, Length? SpecifiedHeight, Style Format, Style Style, SourceLocation Source)
     : Element(Source), IBoxFormatted<ImageElement>
 {
+    /// <summary>What the image shows, in words, for readers who cannot see it; null when not given.</summary>
+    public string? AlternativeText { get; init; }
+
+    /// <summary>True when the image is decoration only and carries no information (it is then left out of the
+    /// document structure, so a screen reader skips it).</summary>
+    public bool IsDecorative { get; init; }
+
+    /// <summary>
+    /// Says what the image shows, in words (the alternative text a screen reader reads out, ISO 32000-1 §14.9.3).
+    /// Describe its meaning, not its looks: "Logo of Versteeg IT Solutions", not "blue square".
+    /// </summary>
+    /// <param name="text">The text; not empty.</param>
+    /// <returns>A copy with the alternative text.</returns>
+    public ImageElement Alt(string text) => this with { AlternativeText = text };
+
+    /// <summary>Marks the image as decoration that carries no information: a screen reader skips it.</summary>
+    /// <returns>A copy marked decorative.</returns>
+    public ImageElement Decorative() => this with { IsDecorative = true };
+
     /// <summary>Sets the image's width.</summary>
     /// <param name="width">A positive length.</param>
     /// <returns>A copy with the width.</returns>

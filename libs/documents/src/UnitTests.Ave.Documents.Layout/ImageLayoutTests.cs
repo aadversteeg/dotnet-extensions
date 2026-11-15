@@ -12,7 +12,7 @@ public class ImageLayoutTests
 {
     /// <summary>baseline-rgb.jpg: 40 × 30 pixels = 30 × 22.5 pt (1 px = 0.75 pt), aspect ratio 4:3.</summary>
     private static Box Image(int id, Length? width = null, Length? height = null, BoxStyle? style = null) =>
-        new(new NodeId(id), SemanticRole.Figure, LayoutAlgorithmId.Image, style ?? BoxStyle.Initial,
+        new(new NodeId(id), SemanticRole.Figure("A test image"), LayoutAlgorithmId.Image, style ?? BoxStyle.Initial,
             [new ImageNode(new NodeId(id + 1), TestImages.Load("baseline-rgb.jpg"), width, height, At(0))], At(0));
 
     private static Size UsedSize(Box image) =>

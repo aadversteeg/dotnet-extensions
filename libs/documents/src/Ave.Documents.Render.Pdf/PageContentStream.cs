@@ -5,6 +5,7 @@ using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.PageModel;
 using Ave.Documents.Pdf;
+using Ave.Documents.Render.Pdf.Tagging;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -16,35 +17,28 @@ namespace Ave.Documents.Render.Pdf;
 /// </summary>
 internal static class PageContentStream
 {
-    /// <summary>Builds the content stream of one page.</summary>
+    /// <summary>
+    /// Builds the content stream of one page from its events (<see cref="PageEvents"/>): each content run is drawn in
+    /// order, inside its marked-content sequence when the run is marked (tagged PDF, ISO 32000-1 §14.6 and §14.8).
+    /// </summary>
     /// <param name="page">The page.</param>
+    /// <param name="events">The page's events.</param>
+    /// <param name="marks">How each of its content runs is marked, in order.</param>
     /// <param name="resources">The used fonts and images, to find each one's resource name.</param>
     /// <returns>The stream data, or an error for a number that is not finite.</returns>
-    public static Result<ImmutableArray<byte>, Error> Build(Page page, ResourceNames resources) =>
-        ContentStream.Serialize(Operations(page, resources));
+    public static Result<ImmutableArray<byte>, Error> Build(Page page, ImmutableArray<PageEvent> events, ImmutableArray<ContentMark> marks, ResourceNames resources) =>
+        ContentStream.Serialize(events.OfType<ContentRun>().Zip(marks).SelectMany(run => Marked(run.Second, run.First.Items.SelectMany(item => Operations(item, page, resources)))));
 
-    private static IEnumerable<ContentOperation> Operations(Page page, ResourceNames resources)
+    private static IEnumerable<ContentOperation> Marked(ContentMark mark, IEnumerable<ContentOperation> operations) =>
+        mark.Begin() is { } begin ? [begin, .. operations, ContentOperators.EndMarkedContent()] : operations;
+
+    private static IEnumerable<ContentOperation> Operations(DrawItem item, Page page, ResourceNames resources) => item switch
     {
-        foreach (var item in page.Items)
-        {
-            var operations = item switch
-            {
-                FillRectangle fill => Rectangle(fill, page.Size.Height),
-                GlyphRun run => Text(run, resources.Fonts[run.Font].ResourceName, page.Size.Height),
-                DrawImage image => Image(image, resources.Images[image.Image].ResourceName, page.Size.Height),
-
-                // Structure markers produce no drawing. Tagged PDF (marked content and a structure tree,
-                // §14.6–§14.8) is built from them in the conformance stage.
-                StructureStart or StructureEnd => [],
-                _ => throw new InvalidOperationException($"The PDF back-end cannot draw a {item.GetType().Name} yet."),
-            };
-
-            foreach (var operation in operations)
-            {
-                yield return operation;
-            }
-        }
-    }
+        FillRectangle fill => Rectangle(fill, page.Size.Height),
+        GlyphRun run => Text(run, resources.Fonts[run.Font].ResourceName, page.Size.Height),
+        DrawImage image => Image(image, resources.Images[image.Image].ResourceName, page.Size.Height),
+        _ => throw new InvalidOperationException($"The PDF back-end cannot draw a {item.GetType().Name} yet."),
+    };
 
     /// <summary>
     /// A filled rectangle: set the colour, add the rectangle (whose y is its BOTTOM edge in PDF space) and fill

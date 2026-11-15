@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Ave.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 
@@ -131,7 +132,7 @@ internal static class InputChecks
             : [Problem(DocumentErrorCodes.Input.Invalid.Columns, $"The row has {items} items but {columns} column sizes.", columns.ToString(System.Globalization.CultureInfo.InvariantCulture), "columns", source)];
 
     /// <summary>Cell spans are at least one column and one row.</summary>
-    public static IEnumerable<Error> Span(DocumentModel.CellSpan span, SourceLocation source) =>
+    public static IEnumerable<Error> Span(CellSpan span, SourceLocation source) =>
         span.Columns >= 1 && span.Rows >= 1
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.Table, "A cell spans at least one column and one row.", span.ToString(), "span", source)];
@@ -157,6 +158,62 @@ internal static class InputChecks
         new[] { (Value: width, Name: "width"), (Value: height, Name: "height") }
             .Where(size => size.Value is { } length && !(length.IsFinite && length.Points > 0))
             .Select(size => Problem(DocumentErrorCodes.Input.Invalid.ImageSize, $"An image {size.Name} must be a positive length.", size.Value.ToString()!, size.Name, source));
+
+    /// <summary>
+    /// A language tag as ISO 32000-1 §14.9.2.1 asks for ("a language identifier … as defined in RFC 3066"): a primary
+    /// subtag of 1–8 letters, then subtags of 1–8 letters or digits, each after a hyphen (RFC 3066 §2.1). Whether the
+    /// subtags are registered is not checked.
+    /// </summary>
+    public static IEnumerable<Error> Language(string? language, SourceLocation source) =>
+        language is null || LanguageTag.IsMatch(language)
+            ? []
+            : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
+
+    /// <summary>
+    /// An attachment needs a file name, a media type of the form <c>type/subtype</c> (RFC 6838 §4.2, restricted names),
+    /// and a name no other attachment of the document has: the embedded-files name tree has one entry per name
+    /// (ISO 32000-1 §7.9.6).
+    /// </summary>
+    public static IEnumerable<Error> Attachments(ValueList<Attachment> attachments)
+    {
+        foreach (var attachment in attachments)
+        {
+            if (string.IsNullOrWhiteSpace(attachment.FileName))
+            {
+                yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "An attachment needs a file name.", attachment.FileName, "file-name", attachment.Source);
+            }
+
+            if (!MediaType.IsMatch(attachment.MediaType))
+            {
+                yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "The media type is not of the form type/subtype.", attachment.MediaType, "media-type", attachment.Source);
+            }
+        }
+
+        foreach (var duplicate in attachments.GroupBy(attachment => attachment.FileName).Where(group => group.Count() > 1))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "Two attachments have the same file name.", duplicate.Key, "file-name", duplicate.Last().Source);
+        }
+    }
+
+    /// <summary>An image is either described or decorative, not both; a description must say something.</summary>
+    public static IEnumerable<Error> ImageDescription(ImageElement image)
+    {
+        if (image.AlternativeText is { } text && string.IsNullOrWhiteSpace(text))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.ImageDescription, "The alternative text is empty.", text, "alt", image.Source);
+        }
+
+        if (image.AlternativeText is not null && image.IsDecorative)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.ImageDescription, "An image is either described (Alt) or decorative, not both.", image.AlternativeText, "alt", image.Source);
+        }
+    }
+
+    /// <summary>RFC 3066 §2.1: <c>1*8ALPHA *( "-" 1*8(ALPHA / DIGIT) )</c>.</summary>
+    private static readonly Regex LanguageTag = new("^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$", RegexOptions.CultureInvariant);
+
+    /// <summary>RFC 6838 §4.2: <c>type-name "/" subtype-name</c>, each a restricted name of 1–127 characters.</summary>
+    private static readonly Regex MediaType = new("^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$", RegexOptions.CultureInvariant);
 
     private static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
         new Error(code, $"{message} ({source})")

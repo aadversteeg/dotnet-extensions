@@ -1,5 +1,5 @@
 page 1 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x728.504
+  box #0 document at (56.693, 56.693) size=481.89x728.504
     box #1 paragraph at (0, 0) size=481.89x10.8
       line at (0, 0) size=258.39x10.8
         text #2 Lato-Regular 9pt at (0, 0) size=258.39x10.8 ascent=8.883 "Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town"
@@ -68,7 +68,7 @@ page 1 size=595.276x841.89
       line at (0, 13.2) size=138.391x13.2
         text #37 Lato-Regular 11pt at (0, 0) size=138.391x13.2 ascent=10.857 "paragraphs and other blocks."
 page 2 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x131.8
+  box #0 document at (56.693, 56.693) size=481.89x131.8
     box #38 heading-2 at (0, 18) size=481.89x19.8
       line at (0, 0) size=262.919x19.8
         text #39 Lato-Bold 16.5pt at (218.971, 0) size=43.948x19.8 ascent=16.285 "Terms"

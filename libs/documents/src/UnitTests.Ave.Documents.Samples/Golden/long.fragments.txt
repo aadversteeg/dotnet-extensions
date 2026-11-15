@@ -1,5 +1,5 @@
 page 1 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x728.504
+  box #0 document at (56.693, 56.693) size=481.89x728.504
     box #1 heading-1 at (0, 0) size=481.89x26.4
       line at (0, 0) size=106.711x26.4
         text #2 Lato-Bold 22pt at (0, 0) size=106.711x26.4 ascent=21.714 "A long text"
@@ -120,7 +120,7 @@ page 1 size=595.276x841.89
       line at (0, 26.4) size=481.89x13.2
         text #32 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
 page 2 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x728.504
+  box #0 document at (56.693, 56.693) size=481.89x728.504
     box #30 paragraph at (0, 0) size=481.89x39.6
       line at (0, 0) size=481.89x13.2
         text #32 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "Each fragment remembers the node it came from, and each node remembers the line of code that"
@@ -243,7 +243,7 @@ page 2 size=595.276x841.89
       line at (0, 79.2) size=133.562x13.2
         text #59 Lato-Regular 11pt at (0, 0) size=133.562x13.2 ascent=10.857 "continues on the next page."
 page 3 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x728.504
+  box #0 document at (56.693, 56.693) size=481.89x728.504
     box #60 paragraph at (0, 0) size=481.89x52.8
       line at (0, 0) size=481.89x13.2
         text #61 Lato-Bold 11pt at (0, 0) size=70.842x13.2 ascent=10.857 "Paragraph 20. "
@@ -365,7 +365,7 @@ page 3 size=595.276x841.89
       line at (0, 52.8) size=133.562x13.2
         text #89 Lato-Regular 11pt at (0, 0) size=133.562x13.2 ascent=10.857 "continues on the next page."
 page 4 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x728.504
+  box #0 document at (56.693, 56.693) size=481.89x728.504
     box #90 paragraph at (0, 0) size=481.89x66
       line at (0, 0) size=481.89x13.2
         text #91 Lato-Bold 11pt at (0, 0) size=72.161x13.2 ascent=10.857 "Paragraph 30. "
@@ -489,7 +489,7 @@ page 4 size=595.276x841.89
       line at (0, 52.8) size=481.89x13.2
         text #119 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "are measured with the advance widths from the font's hmtx table, scaled to the font size. Spaces at"
 page 5 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x78
+  box #0 document at (56.693, 56.693) size=481.89x78
     box #117 paragraph at (0, 0) size=481.89x13.2
       line at (0, 0) size=421.855x13.2
         text #119 Lato-Regular 11pt at (0, 0) size=421.855x13.2 ascent=10.857 "the start and at the end of a line are removed, as CSS prescribes for normal white space."

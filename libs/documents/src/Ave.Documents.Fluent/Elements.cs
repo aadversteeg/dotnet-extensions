@@ -38,6 +38,8 @@ public static class Elements
     /// <param name="page">The page size and margins; A4 without margins when null.</param>
     /// <param name="title">The title, or null.</param>
     /// <param name="author">The author, or null.</param>
+    /// <param name="language">The document's language as a language tag such as <c>nl-NL</c> or <c>en</c>, or null.
+    /// Screen readers use it to choose a voice; PDF/UA requires it.</param>
     /// <param name="callerFile">Filled in by the compiler.</param>
     /// <param name="callerLine">Filled in by the compiler.</param>
     /// <returns>The document.</returns>
@@ -46,9 +48,29 @@ public static class Elements
         PageSetup? page = null,
         string? title = null,
         string? author = null,
+        string? language = null,
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
-        new(body, page ?? PageSetup.A4, Style.Empty, title, author, new SourceLocation(callerFile, callerLine));
+        new(body, page ?? PageSetup.A4, Style.Empty, title, author, new SourceLocation(callerFile, callerLine)) { Language = language };
+
+    /// <summary>
+    /// A file to embed in a document with <see cref="Fluent.Document.Attach"/>. The bytes are copied. Set its
+    /// relationship to the document, description and modification date with <see cref="AttachmentModifiers"/>.
+    /// </summary>
+    /// <param name="fileName">The name readers show and save it under, for example <c>timesheet.xml</c>.</param>
+    /// <param name="content">The file's bytes.</param>
+    /// <param name="mediaType">Its MIME media type, for example <c>application/xml</c>; <c>application/octet-stream</c>
+    /// when not known.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The attachment.</returns>
+    public static Attachment Attachment(
+        string fileName,
+        ReadOnlySpan<byte> content,
+        string mediaType,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(fileName, [.. content], mediaType, new SourceLocation(callerFile, callerLine));
 
     /// <summary>A block that stacks its children vertically. Its text formatting is inherited by the children.</summary>
     /// <param name="children">The child elements.</param>
@@ -262,7 +284,7 @@ public static class Elements
         ValueList<Element> content,
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
-        new(content, DocumentModel.CellSpan.Single, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+        new(content, CellSpan.Single, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
 
     /// <summary>Elements side by side, one column each (equal shares unless <see cref="RowElement.Columns"/> is set).</summary>
     /// <param name="items">The elements, left to right.</param>
@@ -275,7 +297,11 @@ public static class Elements
         [CallerLineNumber] int callerLine = 0) =>
         new(items, [], null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
 
-    /// <summary>An image from the bytes of a PNG or JPEG file. The bytes are checked when the document is translated.</summary>
+    /// <summary>
+    /// An image from the bytes of a PNG or JPEG file. The bytes are checked when the document is translated. Say what
+    /// it shows with <see cref="ImageElement.Alt"/>, or mark it <see cref="ImageElement.Decorative"/>; PDF/UA refuses
+    /// an image with neither.
+    /// </summary>
     /// <param name="file">The file's bytes.</param>
     /// <param name="callerFile">Filled in by the compiler.</param>
     /// <param name="callerLine">Filled in by the compiler.</param>

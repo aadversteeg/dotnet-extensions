@@ -88,4 +88,18 @@ public static class ContentOperators
     /// <param name="items">Strings of glyph codes and adjustment numbers, in order.</param>
     /// <returns>The operation.</returns>
     public static ContentOperation ShowGlyphsWithAdjustments(ImmutableArray<PdfObject> items) => new("TJ", [new PdfArray(items)]);
+
+    /// <summary>
+    /// <c>BDC</c>: begin a marked-content sequence with a tag and a property list (§14.6, Table 320). Tagged PDF marks
+    /// content with its structure type and a marked-content identifier, <c>/P &lt;&lt;/MCID 0&gt;&gt; BDC</c>
+    /// (§14.7.4.2), and decoration with <c>/Artifact</c> (§14.8.2.2). The property list is written inline (§14.6.2).
+    /// </summary>
+    /// <param name="tag">The tag, for example <c>P</c> or <c>Artifact</c>.</param>
+    /// <param name="properties">The property list.</param>
+    /// <returns>The operation.</returns>
+    public static ContentOperation BeginMarkedContent(PdfName tag, PdfDictionary properties) => new("BDC", [tag, properties]);
+
+    /// <summary><c>EMC</c>: end the marked-content sequence begun by the matching <c>BDC</c> (§14.6, Table 320).</summary>
+    /// <returns>The operation.</returns>
+    public static ContentOperation EndMarkedContent() => new("EMC", []);
 }

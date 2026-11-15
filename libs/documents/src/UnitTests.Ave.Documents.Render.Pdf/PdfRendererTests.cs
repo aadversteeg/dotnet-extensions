@@ -30,7 +30,7 @@ public class PdfRendererTests
     }
 
     private static PageDocument TwoPages() => new(
-        new DocumentInfo("Test é", "Tester"),
+        new DocumentMetadata("Test é", "Tester"),
         [
             new Page(new Size(300, 200),
             [
@@ -114,7 +114,7 @@ public class PdfRendererTests
     public void A_font_whose_licence_forbids_embedding_is_an_error()
     {
         var restricted = FontParser.Parse(WithFsType(TestFonts.Bytes("Lato-Regular.ttf"), 0x0002)).Value;
-        var model = new PageDocument(new DocumentInfo(null, null), [new Page(new Size(100, 100), [Run("x", restricted, 10, new Point(0, 50))])]);
+        var model = new PageDocument(new DocumentMetadata(null, null), [new Page(new Size(100, 100), [Run("x", restricted, 10, new Point(0, 50))])]);
 
         var error = PdfRenderer.Render(model, Options).Error;
 
@@ -124,7 +124,7 @@ public class PdfRendererTests
 
     [Fact]
     public void An_empty_page_is_still_a_valid_page() =>
-        PdfReadBack.Letters(PdfRenderer.Render(new PageDocument(new DocumentInfo(null, null), [new Page(new Size(100, 100), [])]), Options).Value)
+        PdfReadBack.Letters(PdfRenderer.Render(new PageDocument(new DocumentMetadata(null, null), [new Page(new Size(100, 100), [])]), Options).Value)
             .Should().ContainSingle().Which.Should().BeEmpty();
 
     /// <summary>A copy of a font file with another OS/2 fsType (offset 8 in the table).</summary>

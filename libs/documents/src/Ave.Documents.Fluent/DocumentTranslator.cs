@@ -31,6 +31,8 @@ public static class DocumentTranslator
         var format = document.Format.Text;
         var problems = InputChecks.Page(document.Page, document.Source)
             .Concat(InputChecks.Text(format, document.Source))
+            .Concat(InputChecks.Language(document.Language, document.Source))
+            .Concat(InputChecks.Attachments(document.Attachments))
             .Concat(format.FontFamily is null ? [InputChecks.MissingFontFamily(document.Source)] : [])
             .ToImmutableArray();
 
@@ -43,12 +45,19 @@ public static class DocumentTranslator
                 format.FontStyle ?? FontStyle.Normal),
             format.TextAlign ?? TextAlign.Left);
         var root = Children(document.Body, new NodeId(1), inherited).OnSuccessMap(children =>
-            new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
+            new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
         var page = PageStyle(document.Page, new NodeId(1 + document.Body.Sum(NodeCount)), inherited);
 
         return WithProblems(problems, root.OnSuccessBind(box => page.OnSuccessMap(pageStyle => (box, pageStyle))))
-            .OnSuccessMap(parts => new StyledDocument(new DocumentMetadata(document.Title, document.Author), parts.pageStyle, parts.box));
+            .OnSuccessMap(parts => new StyledDocument(Metadata(document), parts.pageStyle, parts.box));
     }
+
+    /// <summary>The document's metadata, carried through every layer unchanged (checked in <see cref="ToModel"/>).</summary>
+    private static DocumentMetadata Metadata(Document document) => new(document.Title, document.Author)
+    {
+        Language = document.Language,
+        Attachments = document.Attachments,
+    };
 
     /// <summary>The computed values of the inherited properties that a parent passes down.</summary>
     /// <param name="Text">The text properties.</param>
@@ -195,11 +204,12 @@ public static class DocumentTranslator
         var box = Cascade.Box(image.Format, image.Style);
         var problems = BoxProblems(box, image.Source)
             .Concat(InputChecks.ImageSize(image.SpecifiedWidth, image.SpecifiedHeight, image.Source))
+            .Concat(InputChecks.ImageDescription(image))
             .ToImmutableArray();
         var decoded = ImageDecoder.Decode(image.File.Bytes.AsMemory()).MapError(error => error.WithSource(image.Source));
         return WithProblems(problems, decoded).OnSuccessMap(data => (Node)new Box(
             id,
-            SemanticRole.Figure,
+            image.IsDecorative ? SemanticRole.Decorative : SemanticRole.Figure(image.AlternativeText),
             LayoutAlgorithmId.Image,
             BoxStyleOf(box, pageBreakBefore, TextAlign.Left),
             [new ImageNode(new NodeId(id.Value + 1), data, image.SpecifiedWidth, image.SpecifiedHeight, image.Source)],

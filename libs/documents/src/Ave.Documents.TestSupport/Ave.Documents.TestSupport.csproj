@@ -11,6 +11,8 @@
     <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
     <!-- PdfPig reads our PDFs back in tests (independent, pure managed, Apache-2.0). Test-only. -->
     <PackageReference Include="PdfPig" />
+    <!-- The Docker-backed facts (reference checks that skip without Docker) derive from xunit's attributes. Test-only. -->
+    <PackageReference Include="xunit" />
   </ItemGroup>
 
   <ItemGroup>

@@ -24,12 +24,17 @@ public static class PageModelText
     /// <returns>The text, lines separated by <c>\n</c>, ending with a line feed.</returns>
     public static string Write(PageDocument document)
     {
+        var metadata = document.Metadata;
         var header = "document"
-            + (document.Info.Title is { } title ? $" title={QuotedText.Quote(title)}" : string.Empty)
-            + (document.Info.Author is { } author ? $" author={QuotedText.Quote(author)}" : string.Empty);
+            + (metadata.Title is { } title ? $" title={QuotedText.Quote(title)}" : string.Empty)
+            + (metadata.Author is { } author ? $" author={QuotedText.Quote(author)}" : string.Empty)
+            + (metadata.Language is { } language ? $" language={language}" : string.Empty);
         IEnumerable<string> lines =
         [
             header,
+            .. metadata.Attachments.Select(attachment =>
+                $"attachment {QuotedText.Quote(attachment.FileName)} {attachment.MediaType} {attachment.Content.Count} bytes"
+                + (attachment.Relationship is { } relationship ? $" relationship={relationship}" : string.Empty)),
             .. document.Pages.SelectMany((page, index) => PageLines(page, index + 1)),
         ];
         return string.Join("\n", lines) + "\n";
@@ -43,8 +48,10 @@ public static class PageModelText
         FillRectangle fill => $"fill {fill.Area} {fill.Color}",
         DrawImage image => $"image {image.Area} {image.Image.Describe()} id={image.Image.Id}",
         GlyphRun run => GlyphRunLine(run),
-        StructureStart start => $"start {start.Node} {start.Role}",
+        StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}"),
         StructureEnd end => $"end {end.Node}",
+        ArtifactStart artifact => $"artifact {artifact.Kind}",
+        ArtifactEnd => "end artifact",
         _ => $"unknown {item.GetType().Name}",
     };
 

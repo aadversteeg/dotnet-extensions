@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
+    <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>

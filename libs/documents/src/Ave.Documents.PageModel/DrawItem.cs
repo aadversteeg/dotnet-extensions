@@ -59,12 +59,50 @@ public sealed record PositionedGlyph(GlyphId Glyph, double X, string Text, doubl
 /// <summary>
 /// Starts the content of a document node with a meaning (a paragraph, a heading). Every start has a matching
 /// <see cref="StructureEnd"/> on the same page; a node split over two pages has a pair on each page, with the
-/// same id. Tagged PDF (a later stage) builds its structure tree from these markers.
+/// same id. Markers nest like the document tree, and content between a start and its end belongs to that node. Tagged
+/// PDF builds its structure tree from these markers, in their order (reading order = document order).
 /// </summary>
 /// <param name="Node">The document node.</param>
 /// <param name="Role">Its role.</param>
-public sealed record StructureStart(NodeId Node, SemanticRole Role) : DrawItem;
+/// <param name="Source">Where the node was written, so a back-end can report a structure problem (a figure without
+/// alternative text) at the author's line.</param>
+public sealed record StructureStart(NodeId Node, SemanticRole Role, SourceLocation Source) : DrawItem
+{
+    /// <summary>For a table cell, the columns and rows it covers; <see cref="CellSpan.Single"/> otherwise.</summary>
+    public CellSpan Span { get; init; } = CellSpan.Single;
+}
 
 /// <summary>Ends the content started by the <see cref="StructureStart"/> with the same node id.</summary>
 /// <param name="Node">The document node.</param>
 public sealed record StructureEnd(NodeId Node) : DrawItem;
+
+/// <summary>
+/// Starts content that is not part of the document's structure: decoration or page furniture (an "artifact", ISO
+/// 32000-1 §14.8.2.2). Ends at the next <see cref="ArtifactEnd"/>; artifacts do not nest, and contain no structure
+/// markers. Content outside every artifact belongs to the innermost open structure marker.
+/// </summary>
+/// <param name="Kind">What kind of artifact.</param>
+public sealed record ArtifactStart(ArtifactKind Kind) : DrawItem;
+
+/// <summary>Ends the artifact started by the last <see cref="ArtifactStart"/>.</summary>
+public sealed record ArtifactEnd : DrawItem
+{
+    /// <summary>The one end marker.</summary>
+    public static ArtifactEnd Instance { get; } = new();
+}
+
+/// <summary>The kinds of artifact (ISO 32000-1 §14.8.2.2.2, Table 330, the <c>/Type</c> and <c>/Subtype</c> entries).</summary>
+public enum ArtifactKind
+{
+    /// <summary>Decoration such as a background, a border or a table rule (<c>/Layout</c>).</summary>
+    Layout,
+
+    /// <summary>A running header (<c>/Pagination /Header</c>).</summary>
+    PageHeader,
+
+    /// <summary>A running footer (<c>/Pagination /Footer</c>).</summary>
+    PageFooter,
+
+    /// <summary>Other content that repeats because of page breaks, such as a table's repeated header rows (<c>/Pagination</c>).</summary>
+    Repeated,
+}
