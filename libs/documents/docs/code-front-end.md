@@ -14,6 +14,7 @@ using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using Ave.Documents.Fonts;
+using Ave.Documents.Pdf;
 using Ave.Documents.Render.Pdf;
 using static Ave.Documents.Fluent.Elements;
 
@@ -21,6 +22,9 @@ using static Ave.Documents.Fluent.Elements;
 var navy = new Color(0x1F, 0x4E, 0x79);
 var body = Style.Empty.MarginTop(6.Pt()).MarginBottom(6.Pt()).TextAlign(TextAlign.Justify);
 var note = Style.Empty.Padding(4.Mm()).Background(new Color(0xDD, 0xEB, 0xF7)).FontSize(9.Pt());
+
+// The invoice's data in machine-readable form, embedded in the PDF.
+var invoiceXml = File.ReadAllBytes("invoice.xml");
 
 // A component is a plain method that returns an element.
 ParagraphElement Line(string label, decimal amount) =>
@@ -39,14 +43,21 @@ var invoice = Document(
     ],
     page: PageSetup.A4 with { Margins = Edges.All(2.Cm()) },
     title: "Invoice 2026-042",
-    author: "Example Ltd")
-    .FontFamily("Lato").FontSize(11.Pt());
+    author: "Example Ltd",
+    language: "en")
+    .FontFamily("Lato").FontSize(11.Pt())
+    .Attach(Attachment("invoice.xml", invoiceXml, "application/xml").WithRelationship(AttachmentRelationship.Data));
 
 var fonts = new FontSet([
     FontParser.Parse(File.ReadAllBytes("Lato-Regular.ttf")).Value,
     FontParser.Parse(File.ReadAllBytes("Lato-Bold.ttf")).Value,
 ]);
-var pdf = invoice.ToPdf(fonts, new PdfRenderOptions(CreationDate: new DateTimeOffset(2026, 11, 15, 12, 0, 0, TimeSpan.Zero)));
+// PDF/A-3a + PDF/UA-1: archivable and accessible (see pdf-profiles-and-accessibility.md).
+var options = new PdfRenderOptions(CreationDate: new DateTimeOffset(2026, 11, 15, 12, 0, 0, TimeSpan.Zero))
+{
+    Profile = PdfProfile.PdfA3a.AndPdfUa1(),
+};
+var pdf = invoice.ToPdf(fonts, options);
 if (pdf.IsSuccess)
 {
     File.WriteAllBytes("invoice.pdf", [.. pdf.Value]);
@@ -64,7 +75,7 @@ or `Documents.Font.GlyphMissing` and the source file and line of the element.
 
 | Function | Makes |
 | --- | --- |
-| `Document(body, page:, title:, author:)` | the document; `page` defaults to A4 without margins |
+| `Document(body, page:, title:, author:, language:)` | the document; `page` defaults to A4 without margins; `language` is a tag such as `nl-NL` |
 | `Block(children)` | a box that stacks its children vertically |
 | `Paragraph(text)`, `Paragraph([spans])` | a paragraph of one or several spans |
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
@@ -77,7 +88,8 @@ or `Documents.Font.GlyphMissing` and the source file and line of the element.
 | `RowGroup([rows])` | rows that belong together (a row span ends at the end of its group) |
 | `Cell(text)`, `Cell([elements])` | a table cell |
 | `Row([elements])` | elements side by side, one column each (equal shares unless `.Columns(…)` is set) |
-| `Image(bytes)` | a PNG or JPEG image from the bytes of the file |
+| `Image(bytes)` | a PNG or JPEG image from the bytes of the file; `.Alt("what it shows")` or `.Decorative()` |
+| `Attachment(name, bytes, mediaType)` | a file to embed with `document.Attach(…)`; `.WithRelationship(…)`, `.WithDescription(…)`, `.WithModificationDate(…)` |
 | `PageNumber()`, `PageCount()` | spans that show the page number and the number of pages |
 
 Children are collection expressions: `[a, b, .. items.Select(Line)]`.
@@ -167,6 +179,15 @@ groups move to the next page whole when they fit on one, and break anyway when t
 
 The page count is known only after layout, so layout runs again until the count it shows is the count it produces,
 at most five times; otherwise the error is `Documents.Layout.NotConverging` at the `PageCount()` call.
+
+## PDF/A, PDF/UA and attachments
+
+The standard a file is written to is a render option, `PdfRenderOptions.Profile`: `PdfProfile.Plain` (the default),
+`PdfA3b`, `PdfA3a`, `PdfUa1`, or `PdfA3a.AndPdfUa1()` for both. A profile adds what its standard needs (metadata,
+colour profile, tagged structure) and refuses what it forbids — a document without a title or language, an image
+without `.Alt(…)` or `.Decorative()`, headings that skip a level, a table row with too few cells, an attachment
+without a relationship — with an error at your line. `docs/pdf-profiles-and-accessibility.md` explains each rule
+and what is left for you to check by hand.
 
 ## Values you can compare
 

@@ -8,7 +8,20 @@ Written from the specifications:
 
 - PDF: ISO 32000-1:2008 (PDF 1.7) — object syntax §7.3, file structure §7.5, content streams §7.8, graphics
   §8, text §9 (composite fonts §9.7, font descriptors §9.8, embedded font programs §9.9, ToUnicode §9.10.3),
-  document information §14.3, file identifiers §14.4. CMap syntax: Adobe Technical Notes #5014 and #5411.
+  document information §14.3, file identifiers §14.4, marked content §14.6, logical structure §14.7, tagged PDF
+  §14.8, accessibility §14.9, output intents §14.11.5, embedded files §7.11. CMap syntax: Adobe Technical Notes
+  #5014 and #5411.
+- Conformance: ISO 19005-3 (PDF/A-3) and ISO 14289-1 (PDF/UA-1), as their rules are worded in the veraPDF 1.30.4
+  validation profiles (PDFA-3B.xml, PDFA-3A.xml, PDFUA-1.xml, read from the veraPDF jar; rule ids such as 6.8-3 are
+  quoted in the code); ISO 32000-2 §7.11.3 and §14.13 for associated files. Matterhorn Protocol 1.1 (PDF Association)
+  for the list of human checks.
+- XMP: ISO 16684-1 (XMP Specification Part 1) for the packet and RDF serialization; the PDF/A extension schema
+  container as ISO 19005-3 §6.6.2.3 describes it.
+- Colour: the sRGB colour profile in `src/Ave.Documents.Pdf/SrgbIccProfile.cs` is written in code from the ICC
+  profile format ICC.1:2001-04 and the sRGB values of IEC 61966-2-1; no profile file was copied. Its colorant and
+  white-point numbers equal those of the ICC's `sRGB2014.icc` (and the colorants those of the HP/Microsoft `sRGB
+  IEC61966-2.1` profile), which were decoded only to confirm the values. The generated profile needs no licence of
+  its own.
 - Fonts: the OpenType specification (table directory, head, hhea, maxp, hmtx, cmap formats 4 and 12, OS/2,
   name, post, loca).
 - Layout and text: CSS 2.1 (§8.3, §9.4, §10.3.2, §10.3.3, §10.6.2, §10.8, §17 tables, Appendix E), CSS Text 3
@@ -49,12 +62,12 @@ SIL Open Font License 1.1 (`assets/fonts/lato/OFL.txt`). Used by the tests and t
 | PdfPig 0.1.16 | Apache-2.0 | tests only |
 | WebAssembly 2.1.0 (dotnet-webassembly) | Apache-2.0 | tests only: runs the reference shaper |
 | harfbuzz.wasm from harfbuzzjs 1.6.4 (HarfBuzz 15.0.0) | MIT (harfbuzzjs), Old MIT (HarfBuzz) | tests only: the reference shaper, `src/UnitTests.Ave.Documents.Typesetting/Reference/` |
-| xunit, Microsoft.NET.Test.Sdk | Apache-2.0 / MIT | tests only |
+| xunit, Microsoft.NET.Test.Sdk | Apache-2.0 / MIT | tests only (xunit also in the test-support project, for the Docker-backed facts) |
 | FluentAssertions 7.2.0 | Apache-2.0 | tests only (version 8 changed licence) |
 
-Tools used outside the build, in `tools/verify-samples.ps1` only, inside a throw-away container: qpdf
-(Apache-2.0), poppler-utils (GPL-2.0), MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They
-are run, not linked or distributed. `tools/generate-test-images.py` uses Pillow to write the image test files.
+Tools used outside the build, in `tools/verify-samples.ps1` and in the reference tests, inside throw-away
+containers: veraPDF 1.30.4 (`verapdf/cli`, GPL-3.0-or-later / MPL-2.0), qpdf (Apache-2.0), poppler-utils (GPL-2.0),
+MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They are run, not linked or distributed. `tools/generate-test-images.py` uses Pillow to write the image test files.
 
 ## Sample data
 

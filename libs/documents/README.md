@@ -3,14 +3,21 @@
 A document engine in pure managed .NET 10: a document written in C# goes in, a PDF comes out. No native
 library, no P/Invoke and no external engine or tool at run time; tools appear only in tests.
 
-This is **stage 2** of milestone M1. Stage 0 laid one thin path through every layer; stage 1 added text
-quality (Unicode line breaking, OpenType shaping, subsetting, justification, margin collapsing, box slicing).
+This is **stage 3**, the last build stage of milestone M1. Stage 0 laid one thin path through every layer; stage 1
+added text quality (Unicode line breaking, OpenType shaping, subsetting, justification, margin collapsing, box
+slicing).
 Stage 2 adds what a business document needs besides PDF conformance: tables (fixed, auto and fill columns, column
 and row spans, repeated header rows, row groups, rows that break between lines or are kept together, grid lines in
 the collapsing border model), a plain row of blocks side by side, borders, keep rules for blocks, a page template
 with header and footer (optionally different on the first page), page number and page count through a
 whole-document fixpoint, and PNG and JPEG images. The proof is the SmallBusiness timesheet, written with the code
-front-end (`samples/Ave.Documents.Samples/Timesheet/`).
+front-end (`samples/Ave.Documents.Samples/Timesheet/`). Stage 3 adds conformance: PDF/A-3b, PDF/A-3a and PDF/UA-1
+as profiles that add what each standard requires and refuse what it forbids, tagged PDF from the page model's
+structure markers, XMP metadata, an sRGB output intent and embedded files; veraPDF checks every sample. The errors-as-
+values helpers now come from the released Ave.Extensions packages.
+
+For a reviewer, start with `docs/architecture.md`. Template authors: `docs/code-front-end.md` and
+`docs/pdf-profiles-and-accessibility.md`.
 
 ## Layers
 
@@ -31,16 +38,19 @@ dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.
  Ave.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, images, structure markers)
         │  render
         ▼
- Ave.Documents.Render.Pdf     page model → PDF: subset composite fonts, ToUnicode, image XObjects, content streams
+ Ave.Documents.Render.Pdf     page model → PDF: subset composite fonts, ToUnicode, image XObjects, content streams,
+                              conformance profiles: tagging, XMP, output intent, attachments, refusals
         │
         ▼
  PDF bytes
 
  Ave.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping, justification
- Ave.Documents.Pdf            PDF objects, content operators, file writer (knows nothing about layout)
+ Ave.Documents.Pdf            PDF objects, content operators, file writer, XMP writer, sRGB ICC profile, PdfProfile
+                              (knows nothing about layout)
  Ave.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
  Ave.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and JPEG header reader (embedded as is)
- Ave.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, error codes
+ Ave.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, metadata,
+                              attachments, error codes
 ```
 
 Where the contracts are:
@@ -50,7 +60,9 @@ Where the contracts are:
   `Fragment.cs`, `LayoutEnvironment.cs` (algorithms by id, the current page).
 - Tracks algorithm: `src/Ave.Documents.Layout/Tracks/` (`TracksLayout.cs` lists the steps).
 - Document model: `src/Ave.Documents.DocumentModel/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `LayoutAlgorithmId.cs`.
-- Page model: `src/Ave.Documents.PageModel/PageDocument.cs`, `DrawItem.cs`.
+- Page model: `src/Ave.Documents.PageModel/PageDocument.cs`, `DrawItem.cs` (with structure and artifact markers).
+- Conformance: `src/Ave.Documents.Pdf/PdfProfile.cs`, `src/Ave.Documents.Render.Pdf/ConformanceRules.cs`,
+  `src/Ave.Documents.Render.Pdf/Tagging/`.
 - Error codes: `src/Ave.Documents.Core/DocumentErrorCodes.cs`.
 
 ## Writing a document
@@ -94,21 +106,28 @@ dotnet run --project ../samples/Ave.Documents.Samples -- ../out/samples
 ```
 
 The samples app writes `sample-a-letter.pdf` (two pages), `sample-b-long.pdf` (five pages) and the timesheet
-for the reporting PoC's three data sets in Dutch and English (`timesheet-{normal,long,edge}.{nl,en}.pdf`), each
-with `.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its intermediate models.
+for the reporting PoC's three data sets in Dutch and English (`timesheet-{normal,long,edge}.{nl,en}.pdf`), all as
+PDF/A-3a + PDF/UA-1, each with `.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its
+intermediate models. The timesheets embed `timesheet.xml`, also written next to them as
+`.attachment.timesheet.xml`. `dotnet run --project ../samples/Ave.Documents.Samples -- time long nl-NL 20` measures
+one timesheet (cold, then the median of 20 warm renders).
 The samples app needs culture data for the timesheet's number formats; the libraries do not.
 
 `pwsh -NoProfile -File tools/verify-samples.ps1` publishes the samples, proves the publish folder contains only
 IL-only managed assemblies, runs them, and checks the PDFs with independent tools in Docker: `qpdf --check`,
-`pdftotext`, `pdffonts`, every embedded subset font opened with fontTools, and PNG renderings by poppler and
-MuPDF in `out/samples/png`. With the reporting PoC next to this repository it also writes side-by-side PNGs of
+`pdftotext`, `pdffonts`, every embedded subset font opened with fontTools, PNG renderings by poppler and
+MuPDF in `out/samples/png`, veraPDF 1.30.4 for PDF/A-3b, PDF/A-3a and PDF/UA-1 (every failed rule listed), and the
+attachments extracted by qpdf and compared byte for byte. With the reporting PoC next to this repository it also writes side-by-side PNGs of
 every timesheet page against the PoC's Typst output to `out/samples/sbs`. `tools/generate-test-images.py` makes
 the image test files with Pillow, an independent encoder.
 
 Golden files live in `Golden/` folders next to the tests. After a deliberate change, run the tests with
 `UPDATE_GOLDEN=1`, review the diff, and commit it.
 
-Two reference gates run with the tests. Line breaking runs the official `LineBreakTest.txt` of Unicode 18.0.0
+The veraPDF and qpdf checks also run as tests with the trait `Category=Reference`; without Docker they are
+skipped with a message, and `dotnet test --filter Category!=Reference` leaves them out.
+
+Two more reference gates run with the tests. Line breaking runs the official `LineBreakTest.txt` of Unicode 18.0.0
 (`assets/unicode/`). Shaping is compared with HarfBuzz, which runs as WebAssembly inside the test process
 (`src/UnitTests.Ave.Documents.Typesetting/Reference/`); no library references it. The Unicode property table
 in `src/Ave.Documents.Typesetting/Unicode/` is generated from the committed data files; after updating them,
@@ -116,7 +135,8 @@ run the tests with `UPDATE_GENERATED=1`.
 
 ## Scope and known limits
 
-In: blocks (margin, padding, solid borders, background), paragraphs of runs (family, size, weight, italic,
+In: PDF/A-3b, PDF/A-3a and PDF/UA-1 profiles (tagged PDF, XMP, sRGB output intent, embedded files with their
+relationship), blocks (margin, padding, solid borders, background), paragraphs of runs (family, size, weight, italic,
 colour, alignment), headings, explicit page breaks, keep rules (`break-inside`/`break-before`/`break-after: avoid`,
 resolved by break appeal), CSS margin collapsing (CSS 2.1 §8.3.1) with its border conditions, margin truncation and
 box slicing at page breaks (CSS Fragmentation 3 §5.2–§5.4), tables and rows of blocks (CSS 2.1 §17 with CSS Grid
@@ -130,7 +150,9 @@ Known limits, each documented next to the code: negative margins (reported as un
 line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
 border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content,
 interlaced and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and
-other OpenType lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts, tagged PDF and PDF/A.
+other OpenType lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts. Tagging limits (no row
+headers, lists, captions, links or per-element language) and the PDF/UA checks a person must make are in
+`docs/pdf-profiles-and-accessibility.md`; all limits together are in `docs/architecture.md`.
 
 ## Conventions
 
