@@ -46,9 +46,10 @@ internal static class TablePage
 
     /// <summary>A cell on the page.</summary>
     /// <param name="Cell">The cell index.</param>
-    /// <param name="Row">The row it is drawn with: its first row on this page.</param>
+    /// <param name="TopRow">Its first row on this page: its fragment starts at that row's top. For a cell that
+    /// continues from an earlier page this is not the row it belongs to (<see cref="TableGrid.Cell.Row"/>).</param>
     /// <param name="Fragment">Its fragment, as tall as the rows it covers on this page.</param>
-    public sealed record PlacedCell(int Cell, int Row, BoxFragment Fragment);
+    public sealed record PlacedCell(int Cell, int TopRow, BoxFragment Fragment);
 
     /// <summary>A horizontal grid line on the page.</summary>
     /// <param name="Above">The row above it, or null at the top of the page's grid.</param>

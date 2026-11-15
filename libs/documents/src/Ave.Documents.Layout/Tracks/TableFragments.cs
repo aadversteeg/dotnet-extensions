@@ -32,12 +32,19 @@ internal static class TableFragments
         return new BoxFragment(table.Box, new Size(table.Width, bottom), children);
     }
 
-    /// <summary>Consecutive rows of the same group (and the same repeated flag) become one group fragment.</summary>
+    /// <summary>
+    /// Consecutive rows of the same group (and the same repeated flag) become one group fragment. Every cell is drawn
+    /// inside the row it starts in, so that the structure markers keep it a kid of that row on every page (ISO 32000-1
+    /// §14.8.4.3.4: a TD or TH is a kid of its TR). A cell that spans rows and continues from an earlier page has its
+    /// row's box on this page too: a continuation of that row, zero high at the top of the cell's part, from which the
+    /// cell reaches down over the rows it covers here — as a spanning cell reaches below its own row on the page it
+    /// starts on.
+    /// </summary>
     private static IEnumerable<PlacedFragment> Groups(TableGeometry table, TablePage.Content content)
     {
         var innerWidth = table.LineX[^1] - table.LineX[0];
         var runs = new List<List<TablePage.PlacedRow>>();
-        foreach (var row in content.Rows)
+        foreach (var row in WithContinuedRows(table.Grid, content))
         {
             var group = table.Grid.Rows[row.Row].Group;
             if (runs.Count > 0 && table.Grid.Rows[runs[^1][0].Row].Group == group && runs[^1][0].IsRepeated == row.IsRepeated)
@@ -61,13 +68,33 @@ internal static class TableFragments
         }
     }
 
-    /// <summary>A row with the cells drawn with it; a cell that spans rows reaches below the row's own box.</summary>
+    /// <summary>
+    /// The page's rows, plus a zero-high continuation of every row that is not on the page but has a cell on it (a
+    /// cell that spans rows and continues from an earlier page), at the top of that cell, in row order. A row group
+    /// holds every row a cell spans (<see cref="TableGrid"/> refuses a span past its group), so a continued row joins
+    /// the run of its group.
+    /// </summary>
+    private static IEnumerable<TablePage.PlacedRow> WithContinuedRows(TableGrid grid, TablePage.Content content)
+    {
+        var placed = content.Rows.Select(row => row.Row).ToHashSet();
+        var topOf = content.Rows.ToDictionary(row => row.Row, row => row.Top);
+        var continued = content.Cells
+            .Where(cell => !placed.Contains(grid.Cells[cell.Cell].Row))
+            .GroupBy(cell => grid.Cells[cell.Cell].Row)
+            .Select(cells => new TablePage.PlacedRow(cells.Key, cells.Min(cell => topOf[cell.TopRow]), 0, IsRepeated: false));
+        return content.Rows.Concat(continued).OrderBy(row => row.Row);
+    }
+
+    /// <summary>A row with the cells that start in it; a cell that spans rows reaches below the row's own box.</summary>
     private static BoxFragment Row(TableGeometry table, TablePage.Content content, TablePage.PlacedRow row, double innerWidth)
     {
+        var topOf = content.Rows.ToDictionary(placed => placed.Row, placed => placed.Top);
         ValueList<PlacedFragment> cells =
         [
-            .. content.Cells.Where(cell => cell.Row == row.Row)
-                .Select(cell => new PlacedFragment(new Point(table.LineX[table.Grid.Cells[cell.Cell].Column] - table.LineX[0], 0), cell.Fragment)),
+            .. content.Cells.Where(cell => table.Grid.Cells[cell.Cell].Row == row.Row)
+                .Select(cell => new PlacedFragment(
+                    new Point(table.LineX[table.Grid.Cells[cell.Cell].Column] - table.LineX[0], topOf[cell.TopRow] - row.Top),
+                    cell.Fragment)),
         ];
         return new BoxFragment(table.Grid.Rows[row.Row].Box, new Size(innerWidth, row.Height), cells);
     }
