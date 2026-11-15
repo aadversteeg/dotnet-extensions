@@ -133,4 +133,16 @@ public class OpenTypeTableTests
 
         table.LookupsFor("cyrl", new HashSet<string> { "liga" }).Should().ContainSingle().Which.Index.Should().Be(0);
     }
+
+    [Fact]
+    public void Dflt_is_preferred_to_latn_when_a_font_has_both()
+    {
+        // The lower-case 'dflt' comes before 'latn' in HarfBuzz's order, so a font with both takes 'dflt'.
+        var table = new LayoutTable(
+            [new ScriptTable("latn", new LanguageSystem(null, [1])), new ScriptTable("dflt", new LanguageSystem(null, [0]))],
+            [new FeatureTable("liga", [0]), new FeatureTable("liga", [1])],
+            [new Lookup(0, new LookupFlags(0), []), new Lookup(1, new LookupFlags(0), [])]);
+
+        table.LookupsFor("cyrl", new HashSet<string> { "liga" }).Should().ContainSingle().Which.Index.Should().Be(0);
+    }
 }
