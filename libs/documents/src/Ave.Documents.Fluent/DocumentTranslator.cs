@@ -49,8 +49,9 @@ public static class DocumentTranslator
             new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
         var page = PageStyle(document.Page, new NodeId(1 + document.Body.Sum(NodeCount)), inherited);
 
-        return WithProblems(problems, root.OnSuccessBind(box => page.OnSuccessMap(pageStyle => (box, pageStyle))))
-            .OnSuccessMap(parts => new StyledDocument(Metadata(document), parts.pageStyle, parts.box));
+        // The body and the page areas are translated independently, so the problems of both are reported together.
+        return WithProblems([.. problems, .. ProblemsOf(page)], root)
+            .OnSuccessBind(box => page.OnSuccessMap(pageStyle => new StyledDocument(Metadata(document), pageStyle, box)));
     }
 
     /// <summary>The document's metadata, carried through every layer unchanged (checked in <see cref="ToModel"/>).</summary>
@@ -130,6 +131,10 @@ public static class DocumentTranslator
             BreakInside = box.KeepTogether ? BreakInside.Avoid : BreakInside.Auto,
             TextAlign = align,
         };
+
+    /// <summary>The errors of a failed result, each part on its own; none for a success.</summary>
+    private static ImmutableArray<Error> ProblemsOf<T>(Result<T, Error> result) =>
+        result.IsFailure ? [.. result.Error.Parts()] : [];
 
     /// <summary>Fails with every problem plus every error of <paramref name="result"/>; without problems,
     /// returns the result unchanged.</summary>
