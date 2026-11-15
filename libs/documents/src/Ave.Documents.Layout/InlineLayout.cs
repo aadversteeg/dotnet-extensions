@@ -46,14 +46,8 @@ public static class InlineLayout
             _ => throw new ArgumentException($"Inline received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
         };
 
-        var frame = BoxFrame.For(box, space, incoming);
-        if (!frame.PaddingFits(space))
-        {
-            return LayoutResult.NothingFits(box, space);
-        }
-
-        return ShapeRuns(environment, [.. box.Children.Cast<TextRun>()])
-            .OnSuccessBind(runs => StackLines(box, space, frame, runs, firstLine));
+        return ShapeRuns(environment, [.. box.Children.Cast<TextRun>()]).OnSuccessBind(runs =>
+            SlicedBox.Layout(box, space, incoming, (width, height) => StackLines(runs, firstLine, width, height)));
     }
 
     /// <summary>
@@ -83,26 +77,28 @@ public static class InlineLayout
         });
     }
 
-    private static Result<LayoutResult, Error> StackLines(
-        Box box, ConstraintSpace space, BoxFrame frame, ImmutableArray<LineBoxes.ShapedRun> runs, int firstLine)
+    /// <summary>Breaks the paragraph into lines for the content width and stacks them from
+    /// <paramref name="firstLine"/> until the next one does not fit. None when not even that first line fits.</summary>
+    private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
+        ImmutableArray<LineBoxes.ShapedRun> runs, int firstLine, double contentWidth, double contentHeight)
     {
-        var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], frame.ContentWidth);
+        var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], contentWidth);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)
         {
             var line = LineBoxes.Build(lines[index], runs);
-            if (!Fitting.Fits(bottom + line.Size.Height, frame.ContentHeight))
+            if (!Fitting.Fits(bottom + line.Size.Height, contentHeight))
             {
                 return placed.Count == 0
-                    ? LayoutResult.NothingFits(box, space)
-                    : LayoutResult.Place(frame.Wrap(box, placed, bottom, isLastFragment: false), new InlineBreakToken(index));
+                    ? SlicedBox.NothingFits
+                    : SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index));
             }
 
             placed.Add(new PlacedFragment(new Point(0, bottom), line));
             bottom += line.Size.Height;
         }
 
-        return LayoutResult.Place(frame.Wrap(box, placed, bottom, isLastFragment: true), null);
+        return SlicedBox.Placed(placed.ToImmutable(), bottom, null);
     }
 }

@@ -50,13 +50,23 @@ public static class FlowLayout
             _ => throw new ArgumentException($"Flow received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
         };
 
-        var frame = BoxFrame.For(box, space, incoming);
-        if (!frame.PaddingFits(space))
-        {
-            return LayoutResult.NothingFits(box, space);
-        }
-
         var children = box.Children.Cast<Box>().ToImmutableArray();
+        return SlicedBox.Layout(box, space, incoming, (width, height) =>
+            StackChildren(environment, box, space, incoming, resume, children, width, height));
+    }
+
+    /// <summary>The loop described on <see cref="Layout"/>: stacks the children in a content area of the given
+    /// size. None when not even the first content fits.</summary>
+    private static Result<Maybe<SlicedBox.Content>, Error> StackChildren(
+        LayoutEnvironment environment,
+        Box box,
+        ConstraintSpace space,
+        BreakToken? incoming,
+        FlowBreakToken resume,
+        ImmutableArray<Box> children,
+        double contentWidth,
+        double contentHeight)
+    {
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var cursor = 0.0;
         var pending = 0.0;
@@ -68,7 +78,7 @@ public static class FlowLayout
             if (hasContent && ForcedBreaks.Before(child))
             {
                 // Margins before the break are truncated (CSS Fragmentation 3 §5.2): `pending` is dropped.
-                return LayoutResult.Place(frame.Wrap(box, placed, cursor, isLastFragment: false), new FlowBreakToken(index, null));
+                return SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null));
             }
 
             var childResume = index == resume.ChildIndex ? resume.ChildToken : null;
@@ -79,22 +89,20 @@ public static class FlowLayout
                 // A box whose margins collapse through it has no height and needs no room (§8.3.1, last bullet:
                 // its top border edge sits where it would be "if the element had a non-zero bottom border").
                 // Where its margins alone would pass the page end it is put at the end; it is invisible either way.
-                top = Math.Min(top, frame.ContentHeight);
+                top = Math.Min(top, contentHeight);
             }
 
             var outcome = InFlowChild.Place(
-                environment, child, frame.ContentWidth, top, frame.ContentHeight, space.IsAtPageStart && !hasContent, childResume);
+                environment, child, contentWidth, top, contentHeight, space.IsAtPageStart && !hasContent, childResume);
             if (outcome.IsFailure)
             {
-                return Result<LayoutResult, Error>.Failure(outcome.Error);
+                return Result<Maybe<SlicedBox.Content>, Error>.Failure(outcome.Error);
             }
 
             if (outcome.Value.HasNoValue)
             {
                 // Break before this child; the margins adjoining an unforced break are truncated (§5.2).
-                return hasContent
-                    ? LayoutResult.Place(frame.Wrap(box, placed, cursor, isLastFragment: false), new FlowBreakToken(index, null))
-                    : LayoutResult.NothingFits(box, space);
+                return hasContent ? SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null)) : SlicedBox.NothingFits;
             }
 
             var placement = outcome.Value.Value;
@@ -112,7 +120,7 @@ public static class FlowLayout
             leadingMarginsTakeNoSpace = false;
             if (placement.Continuation is { } continuation)
             {
-                return LayoutResult.Place(frame.Wrap(box, placed, cursor, isLastFragment: false), new FlowBreakToken(index, continuation));
+                return SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, continuation));
             }
         }
 
@@ -120,7 +128,7 @@ public static class FlowLayout
         // box's own bottom margin as its parent sees it (MarginCollapsing.Bottom) — or, when padding or a new
         // formatting context separates them from it, they stay inside and add to the box's height.
         var bottomAdjoins = !space.IsNewFormattingContext && MarginCollapsing.BottomAdjoinsChildren(box);
-        return LayoutResult.Place(frame.Wrap(box, placed, bottomAdjoins ? cursor : cursor + pending, isLastFragment: true), null);
+        return SlicedBox.Placed(placed.ToImmutable(), bottomAdjoins ? cursor : cursor + pending, null);
     }
 
     /// <summary>

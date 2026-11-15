@@ -1,9 +1,9 @@
 page 1 size=200x100
-  box #0 generic at (10, 10) size=180x72
+  box #0 generic at (10, 10) size=180x80
     box #1 paragraph at (0, 0) size=180x12
       line at (0, 0) size=101.255x12
         text #101 Lato-Regular 10pt at (0, 0) size=101.255x12 ascent=9.87 "A short first paragraph."
-    box #2 paragraph at (0, 12) size=40x60
+    box #2 paragraph at (0, 12) size=40x68
       line at (0, 0) size=28.565x12
         text #102 Lato-Regular 10pt at (0, 0) size=28.565x12 ascent=9.87 "word1"
       line at (0, 12) size=28.565x12

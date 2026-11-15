@@ -53,7 +53,8 @@ public class PaginationTests
         var pages = Paginate(Document(Paragraph(1, Words(14), narrow)));
 
         pages.Select(page => LineCounts(page).Single()).Should().Equal(6, 6, 2);
-        pages.Select(page => Root(page).Children[0].Fragment.Size.Height).Should().Equal(72, 72, 24);
+        pages.Select(page => Root(page).Children[0].Fragment.Size.Height).Should().Equal(
+            [80, 80, 24], "a fragment that breaks fills the rest of the page (CSS Fragmentation 3 §5.3)");
     }
 
     [Fact]
@@ -74,13 +75,39 @@ public class PaginationTests
     [Fact]
     public void A_continued_box_has_no_top_padding_on_the_next_page_and_bottom_padding_only_at_its_end()
     {
-        var style = new BoxStyle(new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), new Edges(4.Pt(), 0.Pt(), 4.Pt(), 0.Pt()), null, BreakBefore.Auto);
+        var style = new BoxStyle(new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), new Edges(4.Pt(), 0.Pt(), 10.Pt(), 0.Pt()), null, BreakBefore.Auto);
         var pages = Paginate(Document(Paragraph(1, Words(8), style)));
 
-        // Page 1: 4 pt top padding, then 6 lines (72 pt); the bottom padding stays reserved, so 4 + 72 + 4 = 80.
-        // Page 2: no top padding, 2 lines, then the bottom padding.
-        pages.Select(page => Root(page).Children[0].Fragment.Size.Height).Should().Equal(4 + 72, 24 + 4);
+        // box-decoration-break: slice (CSS Fragmentation 3 §5.4). Page 1: 4 pt top padding, then as many lines as
+        // fit in the remaining 76 pt — six, because the bottom padding is not part of a fragment that breaks — and
+        // the fragment fills the page (§5.3). Page 2: no top padding, two lines, then the 10 pt bottom padding.
+        pages.Select(page => LineCounts(page).Single()).Should().Equal(6, 2);
+        pages.Select(page => Root(page).Children[0].Fragment.Size.Height).Should().Equal(80, 24 + 10);
         ((BoxFragment)Root(pages[1]).Children[0].Fragment).Children[0].Offset.Y.Should().Be(0);
+    }
+
+    [Fact]
+    public void When_the_content_fits_but_the_bottom_padding_does_not_the_break_moves_to_the_last_line_before_it()
+    {
+        // Six lines (72 pt) fit the 80 pt page area, but not with the 10 pt bottom padding. The padding is no
+        // break point, so the box breaks before its last line, which ends the box on page 2 together with the
+        // padding. This is what Chromium 157 prints for the same case (stage-1 report, A5).
+        var style = new BoxStyle(new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), new Edges(0.Pt(), 0.Pt(), 10.Pt(), 0.Pt()), null, BreakBefore.Auto);
+        var pages = Paginate(Document(Paragraph(1, Words(6), style)));
+
+        pages.Select(page => LineCounts(page).Single()).Should().Equal(5, 1);
+        pages.Select(page => Root(page).Children[0].Fragment.Size.Height).Should().Equal(80, 12 + 10);
+    }
+
+    [Fact]
+    public void A_box_at_the_page_start_whose_bottom_padding_can_never_fit_overflows_the_page_area()
+    {
+        // Documented limit of SlicedBox: with no break point left, the padding overflows instead of failing.
+        var style = BoxStyle.Initial with { Padding = new Edges(0.Pt(), 0.Pt(), 75.Pt(), 0.Pt()) };
+        var pages = Paginate(Document(Paragraph(1, "One", style)));
+
+        pages.Should().HaveCount(1);
+        Root(pages[0]).Children[0].Fragment.Size.Height.Should().Be(LineHeight + 75);
     }
 
     [Fact]
