@@ -133,10 +133,18 @@ public class TableBreakLineTests
         // A row of a unit is kept on the page only when it fits with its share of the line below it (half the line
         // for slice, all of it for clone), and a break inside a row is taken only when it leaves content of the row
         // for the next page: a row continued on a page holds content, or lies beside a spanning cell that does.
-        // The offset sweep moves every row through the window where its content fits and its line does not.
+        // Offsets move every row through the window where its content fits and its line does not; page areas
+        // smaller than a unit make the first unit of each page break inside itself, where no break before it exists
+        // (from 20pt: the first row's one-line cell with its lines and padding takes 19pt; on a smaller page area the
+        // table does not fit at all, which is an error, not a layout).
         for (var offset = 0.0; offset < 60; offset += 0.25)
         {
             UnitsKeepEveryPartInsideThePage(offset, 120, mode);
+        }
+
+        for (var pageHeight = 20.0; pageHeight < 60; pageHeight += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode);
         }
     }
 
@@ -187,6 +195,24 @@ public class TableBreakLineTests
         table.Size.Height.Should().BeApproximately(87.5, Epsilon);
         Words(table).Should().EndWith(["b01"]);
         Words(Boxes(pages[1].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).Should().StartWith(["s02x", "s02y", "s02z", "a02", "b02"]);
+    }
+
+    [Fact]
+    public void A_cut_that_would_complete_the_row_moves_up_by_the_row_s_share_of_the_line_below()
+    {
+        // Clone, one unit, page area 27.5. Page 2 resumes inside the unit's second row: its rest ("s00y", "s00z" and
+        // "b00") with the half line below is exactly 27.5, but the table's bottom line needs 1.5 more, so the row does
+        // not fit. Cut at the page end, every cell would complete, which leaves nothing for a next page; the cut moves
+        // up 1.5 instead, and "s00z" goes on to page 3 with the bottom line. Before, the table did not fit at all.
+        var (document, _) = SpannedUnits(0, 27.5, BoxDecorationBreak.Clone, units: 1);
+
+        var pages = Paginate(document);
+
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        tables.Should().HaveCount(3);
+        tables[1].Size.Height.Should().BeApproximately(26, Epsilon);
+        Words(tables[1]).Should().Equal("s00y", "b00");
+        Words(tables[2]).Should().Equal("s00z");
     }
 
     [Theory]

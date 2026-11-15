@@ -128,15 +128,29 @@ internal static class TableBreaks
                 before, BottomLine(table, before.LastRow, breakpoint.Row, before.Bottom), new TracksBreakToken(breakpoint.Row, [], false), breakpoint.Appeal)));
         }
 
-        var inside = breakpoint.Kind == BreakKind.InsideRow;
-        return Cut(table, breakpoint.Content, segment, breakpoint.Row, inside ? height : segment.RowTop(breakpoint.Row), inside, breakpoint.Appeal);
+        var row = breakpoint.Row;
+        if (breakpoint.Kind == BreakKind.BetweenRows)
+        {
+            return Cut(table, breakpoint.Content, segment, row, segment.RowTop(row), inside: false, breakpoint.Appeal);
+        }
+
+        // A break inside the row cuts its cells at the page end. When that cut completes every cell, the row ends on
+        // this page after all, and then it needs its share of the line below it, which is what did not fit: so the cut
+        // moves up by that share, which leaves the end of the row's content for the next page (still below the line
+        // above the row).
+        var below = InsideBelow(table, row);
+        var raised = height - below;
+        return Cut(table, breakpoint.Content, segment, row, height, inside: true, breakpoint.Appeal).OnSuccessBind(atPageEnd =>
+            atPageEnd.HasValue || below <= 0 || !Fitting.Fits(segment.RowTop(row) + LineInside(table, segment, row), raised)
+                ? Result<Maybe<Outcome>, Error>.Success(atPageEnd)
+                : Cut(table, breakpoint.Content, segment, row, raised, inside: true, breakpoint.Appeal));
     }
 
     /// <summary>
     /// Takes a break inside a segment: the rows above <paramref name="cutRow"/> whole; the cells that reach past the
     /// cut laid out again in the height down to <paramref name="cutY"/> — the row's top for a break between rows, the
-    /// page end for a break inside the row (that row then fills the page). None when a break inside the row would
-    /// place nothing of it, or leave nothing of it for the next page.
+    /// page end (or just above it, see <see cref="Take"/>) for a break inside the row, which then ends the page. None
+    /// when a break inside the row would place nothing of it, or leave nothing of it for the next page.
     /// </summary>
     private static Result<Maybe<Outcome>, Error> Cut(
         TableGeometry table, Content content, TableSegments.Segment segment, int cutRow, double cutY, bool inside, BreakAppeal appeal)
