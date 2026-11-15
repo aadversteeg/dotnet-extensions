@@ -97,11 +97,12 @@ public class TableParserTests
     [Fact]
     public void Loca_short_offsets_are_stored_halved_and_must_ascend()
     {
-        var ascending = new BigEndianBuilder().UInt16(0).UInt16(5).UInt16(5).UInt16(9).ToArray();
-        var descending = new BigEndianBuilder().UInt16(0).UInt16(5).UInt16(4).UInt16(9).ToArray();
+        // Glyphs of 10, 0 and 10 bytes: each outline holds at least its 10-byte glyph header.
+        var ascending = new BigEndianBuilder().UInt16(0).UInt16(5).UInt16(5).UInt16(10).ToArray();
+        var descending = new BigEndianBuilder().UInt16(0).UInt16(5).UInt16(4).UInt16(10).ToArray();
 
-        LocaTable.Parse(ascending, longOffsets: false, glyphCount: 3, glyfLength: 18).Value.Offsets.Should().Equal(0, 10, 10, 18);
-        LocaTable.Parse(descending, longOffsets: false, glyphCount: 3, glyfLength: 18).Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
+        LocaTable.Parse(ascending, longOffsets: false, glyphCount: 3, glyfLength: 20).Value.Offsets.Should().Equal(0, 10, 10, 20);
+        LocaTable.Parse(descending, longOffsets: false, glyphCount: 3, glyfLength: 20).Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
 
     [Theory]

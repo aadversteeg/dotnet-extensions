@@ -75,6 +75,30 @@ public class FontParserTests
     }
 
     [Fact]
+    public void Reads_a_glyph_s_bounding_box_from_its_glyf_header()
+    {
+        // fontTools 4.68.0: glyf['A'] xMin 6, yMin 0, xMax 1348, yMax 1433; glyf['g'] (glyph 93) 62, -365, 996, 1030.
+        TestFonts.Regular.GlyphBounds(new GlyphId(3)).Value.Should().Be(new FontBoundingBox(6, 0, 1348, 1433));
+        TestFonts.Regular.GlyphBounds(new GlyphId(93)).Value.Should().Be(new FontBoundingBox(62, -365, 996, 1030));
+        TestFonts.Regular.GlyphBounds(new GlyphId(2)).HasValue.Should().BeFalse("the space has no outline, so no ink");
+    }
+
+    [Fact]
+    public void A_glyph_shorter_than_its_glyf_header_is_an_invalid_value()
+    {
+        // OpenType "glyf": every glyph description starts with a 10-byte header (numberOfContours, xMin, yMin, xMax, yMax).
+        // Lato's 'loca' is Offset32 at file offset 21256 (fontTools): moving loca[4] to loca[3] + 4 leaves glyph 3 with
+        // 4 bytes, while the offsets stay ascending.
+        var data = TestFonts.Bytes("Lato-Regular.ttf");
+        new BigEndianBuilder().UInt32(252 + 4).ToArray().CopyTo(data, 21256 + 4 * 4);
+
+        var error = FontParser.Parse(data).Error;
+
+        error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
+        error.Metadata![ErrorMetadataKeys.Table].Should().Be("loca");
+    }
+
+    [Fact]
     public void Identifies_the_font_by_the_digest_of_its_file()
     {
         TestFonts.Regular.Id.Digest.Should().Be("d636e4683231f931eda222d588e944d082bfd3bdba02f928bee461c0f185b251");

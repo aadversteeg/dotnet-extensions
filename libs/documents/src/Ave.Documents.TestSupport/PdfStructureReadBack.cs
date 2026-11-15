@@ -22,7 +22,10 @@ public static class PdfStructureReadBack
     /// <param name="Details">Alternative text and attributes, for example <c>Scope=Column</c>, or empty.</param>
     /// <param name="Text">The text of the content the element owns directly (not its children's).</param>
     /// <param name="Children">The child elements, in order.</param>
-    public sealed record Element(string Type, string Details, string Text, ImmutableArray<Element> Children)
+    /// <param name="BoundingBox">The <c>/BBox</c> of its layout attributes (left, bottom, right, top in default user
+    /// space), or null when it has none. Kept out of <paramref name="Details"/>, so outlines do not change with the
+    /// layout.</param>
+    public sealed record Element(string Type, string Details, string Text, ImmutableArray<Element> Children, IReadOnlyList<double>? BoundingBox = null)
     {
         /// <summary>All elements of the subtree, depth-first, this one first.</summary>
         public IEnumerable<Element> DepthFirst() => Children.SelectMany(child => child.DepthFirst()).Prepend(this);
@@ -181,18 +184,24 @@ public static class PdfStructureReadBack
                 details.Add($"Alt=\"{((StringToken)Resolve(alt)).Data}\"");
             }
 
-            if (element.TryGet(NameToken.Create("A"), out var attributes))
-            {
-                details.AddRange(Dictionary(attributes).Data
-                    .Where(entry => entry.Key != "O")
-                    .Select(entry => $"{entry.Key}={Plain(Resolve(entry.Value))}"));
-            }
+            // /A is one attribute object or an array of them (ISO 32000-1 §14.7.5).
+            var attributes = element.TryGet(NameToken.Create("A"), out var a)
+                ? (Resolve(a) is ArrayToken many ? many.Data.Select(Dictionary).ToList() : [Dictionary(a)])
+                : [];
+            details.AddRange(attributes.SelectMany(owner => owner.Data)
+                .Where(entry => entry.Key is not "O" and not "BBox")
+                .Select(entry => $"{entry.Key}={Plain(Resolve(entry.Value))}"));
+            var box = attributes
+                .Where(owner => owner.TryGet(NameToken.Create("O"), out var o) && Name(Resolve(o)) == "Layout")
+                .Select(owner => owner.TryGet(NameToken.Create("BBox"), out var bbox) ? (ArrayToken)Resolve(bbox) : null)
+                .FirstOrDefault(bbox => bbox is not null);
 
             return new Element(
                 type,
                 string.Join(" ", details),
                 string.Concat(kids.OfType<string>()),
-                [.. kids.OfType<Element>()]);
+                [.. kids.OfType<Element>()],
+                box?.Data.Select(number => ((NumericToken)Resolve(number)).Double).ToList());
         }
 
         /// <summary>The kids: child elements as <see cref="Element"/>, owned content as its text.</summary>

@@ -10,10 +10,17 @@ namespace Ave.Documents.Fonts.Tables;
 /// in 'glyf'. Glyph <c>i</c> occupies bytes <c>[Offsets[i], Offsets[i + 1])</c>; an empty range is a glyph
 /// without an outline, such as the space.
 /// </summary>
-/// <param name="Offsets">glyphCount + 1 byte offsets into 'glyf', never decreasing.</param>
+/// <param name="Offsets">glyphCount + 1 byte offsets into 'glyf', never decreasing; a glyph with an outline has at least
+/// its <see cref="GlyphHeaderLength"/>-byte header.</param>
 internal sealed record LocaTable(ImmutableArray<int> Offsets)
 {
     public const string Tag = "loca";
+
+    /// <summary>
+    /// The length of the header every glyph description starts with (OpenType spec, "glyf — Glyph data", glyph headers):
+    /// numberOfContours, xMin, yMin, xMax, yMax, each 16 bits. A glyph with fewer bytes but more than none is malformed.
+    /// </summary>
+    public const int GlyphHeaderLength = 10;
 
     /// <param name="table">The table bytes.</param>
     /// <param name="longOffsets">From 'head'.indexToLocFormat: true for Offset32, false for Offset16.</param>
@@ -42,6 +49,12 @@ internal sealed record LocaTable(ImmutableArray<int> Offsets)
             {
                 return FontParseErrors.InvalidValue<LocaTable>(
                     Tag, $"offset {index} is out of order or outside 'glyf' ({glyfLength} bytes).", offset);
+            }
+
+            if (offset > previous && offset - previous < GlyphHeaderLength)
+            {
+                return FontParseErrors.InvalidValue<LocaTable>(
+                    Tag, $"glyph {index - 1} has {offset - previous} bytes, less than the {GlyphHeaderLength}-byte glyph header.", offset - previous);
             }
 
             offsets.Add((int)offset);

@@ -99,7 +99,7 @@ public static class PdfRenderer
                     .. pageParts.SelectMany(parts => parts),
                     .. metadataParts,
                     .. plan.HasOutputIntent ? [OutputIntentProfile(plan)] : ImmutableArray<IndirectObject>.Empty,
-                    .. tree is not null ? StructureObjects.Build(tree, plan) : [],
+                    .. tree is not null ? StructureObjects.Build(tree, ElementBounds.Of(tree, pages, document.Pages), plan) : [],
                     .. attachments.SelectMany((attachment, index) => AttachmentEmbedding.Build(attachment, plan.Attachment(index))),
                 ],
                 Catalog: new PdfReference(ObjectPlan.Catalog),

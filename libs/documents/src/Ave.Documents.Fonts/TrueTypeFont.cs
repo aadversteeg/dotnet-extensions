@@ -94,6 +94,27 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
         return _glyphData[_glyphOffsets[index].._glyphOffsets[index + 1]];
     }
 
+    /// <summary>
+    /// The bounding box of a glyph's outline, from its glyph header in 'glyf' (OpenType spec, "glyf — Glyph data":
+    /// xMin, yMin, xMax, yMax, "for coordinate data"; for a composite glyph the box of the whole glyph), in design units
+    /// with y up from the baseline. None for a glyph without an outline, such as the space: it puts no ink on the page.
+    /// The parser has checked that every outline holds its header (<see cref="Tables.LocaTable.GlyphHeaderLength"/>).
+    /// </summary>
+    /// <param name="glyph">A glyph id of this font.</param>
+    /// <returns>The box, or None.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The glyph id does not belong to this font.</exception>
+    public Maybe<FontBoundingBox> GlyphBounds(GlyphId glyph)
+    {
+        var outline = GlyphOutline(glyph).Span;
+        return outline.IsEmpty
+            ? Maybe<FontBoundingBox>.None
+            : new FontBoundingBox(
+                Tables.BigEndian.Int16(outline, 2),
+                Tables.BigEndian.Int16(outline, 4),
+                Tables.BigEndian.Int16(outline, 6),
+                Tables.BigEndian.Int16(outline, 8));
+    }
+
     /// <summary>Equal when the font files are byte-identical.</summary>
     /// <param name="other">The other font.</param>
     /// <returns>Whether both are the same font file.</returns>

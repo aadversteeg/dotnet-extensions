@@ -1,3 +1,4 @@
+using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.Pdf;
 
@@ -17,6 +18,36 @@ internal static class StructureTypes
     public static PdfName? Of(SemanticRole role) => role.StandardStructureType is { } type ? new PdfName(type) : null;
 
     /// <summary>
+    /// The attributes of an element (§14.7.5, Table 323, <c>/A</c>: "a single attribute object or array of attribute
+    /// objects"): its table attributes (<see cref="TableAttributes"/>) and its layout attributes
+    /// (<see cref="LayoutAttributes"/>). Null when it has none, the object itself when it has one, an array otherwise.
+    /// </summary>
+    /// <param name="role">The role.</param>
+    /// <param name="span">The cell's span.</param>
+    /// <param name="box">The element's bounding box, or null (<see cref="ElementBounds"/>).</param>
+    /// <returns>The value of <c>/A</c>, or null.</returns>
+    public static PdfObject? Attributes(SemanticRole role, CellSpan span, UserSpaceBox? box)
+    {
+        PdfDictionary[] owners = [.. new[] { TableAttributes(role, span), LayoutAttributes(box) }.OfType<PdfDictionary>()];
+        return owners.Length switch
+        {
+            0 => null,
+            1 => owners[0],
+            _ => new PdfArray([.. owners]),
+        };
+    }
+
+    /// <summary>
+    /// The layout attribute object (§14.8.5.4, owner <c>/Layout</c>) with the element's <c>/BBox</c>: left, bottom,
+    /// right and top in default user space (§14.8.5.4.3, Table 344). Null without a box.
+    /// </summary>
+    private static PdfDictionary? LayoutAttributes(UserSpaceBox? box) => box is { } edges
+        ? PdfDictionary.Of(
+            ("O", new PdfName("Layout")),
+            ("BBox", PdfArray.OfNumbers(edges.Left, edges.Bottom, edges.Right, edges.Top)))
+        : null;
+
+    /// <summary>
     /// The attribute object of a table cell (§14.8.5.7, Table 349, owner <c>/Table</c>): a header cell's
     /// <c>/Scope /Column</c> — in this engine header cells come only from header rows, so each heads the column(s) it
     /// spans (PDF/UA: veraPDF rule 7.5-1, "TH shall have a Scope attribute"); and <c>/ColSpan</c> and <c>/RowSpan</c>
@@ -26,7 +57,7 @@ internal static class StructureTypes
     /// <param name="role">The role.</param>
     /// <param name="span">The cell's span.</param>
     /// <returns>The attribute dictionary, or null.</returns>
-    public static PdfDictionary? Attributes(SemanticRole role, CellSpan span)
+    private static PdfDictionary? TableAttributes(SemanticRole role, CellSpan span)
     {
         var isHeader = role == SemanticRole.TableHeaderCell;
         if (!isHeader && role != SemanticRole.TableCell)

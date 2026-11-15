@@ -19,13 +19,15 @@ internal static class StructureObjects
     /// <item>one structure element per node (Table 323): <c>/S</c> its type, <c>/P</c> its parent, <c>/Pg</c> its first
     /// page, <c>/K</c> its kids — child elements by reference, its content on its first page as plain MCIDs, and on
     /// other pages as marked-content references with their own <c>/Pg</c> (§14.7.4.2, Table 324) — plus <c>/Alt</c> for a
-    /// figure (§14.9.3) and <c>/A</c> for table cells (<see cref="StructureTypes.Attributes"/>).</item>
+    /// figure (§14.9.3) and <c>/A</c>, the attributes of table cells and the bounding box of figures and tables
+    /// (<see cref="StructureTypes.Attributes"/>).</item>
     /// </list>
     /// </summary>
     /// <param name="tree">The tree.</param>
+    /// <param name="bounds">Per element, its bounding box or null (<see cref="ElementBounds"/>).</param>
     /// <param name="plan">The object numbers.</param>
     /// <returns>The objects.</returns>
-    public static ImmutableArray<IndirectObject> Build(StructureTree tree, ObjectPlan plan) =>
+    public static ImmutableArray<IndirectObject> Build(StructureTree tree, ImmutableArray<UserSpaceBox?> bounds, ObjectPlan plan) =>
     [
         new IndirectValue(plan.StructureTreeRoot, PdfDictionary.Of(
             ("Type", new PdfName("StructTreeRoot")),
@@ -34,17 +36,17 @@ internal static class StructureObjects
             ("ParentTreeNextKey", new PdfInteger(tree.ParentTree.Length)))),
         new IndirectValue(plan.ParentTree, PdfTrees.NumberTree(tree.ParentTree.Select((owners, page) =>
             (page, (PdfObject)new PdfArray([.. owners.Select(index => new PdfReference(plan.StructureElement(index)))]))))),
-        .. tree.Elements.Select((element, index) => new IndirectValue(plan.StructureElement(index), Element(element, plan))),
+        .. tree.Elements.Select((element, index) => new IndirectValue(plan.StructureElement(index), Element(element, bounds[index], plan))),
     ];
 
-    private static PdfDictionary Element(StructureElement element, ObjectPlan plan) => PdfDictionary.Of(
+    private static PdfDictionary Element(StructureElement element, UserSpaceBox? box, ObjectPlan plan) => PdfDictionary.Of(
         ("Type", new PdfName("StructElem")),
         ("S", element.Type),
         ("P", new PdfReference(element.Parent is { } parent ? plan.StructureElement(parent) : plan.StructureTreeRoot)),
         ("Pg", new PdfReference(plan.Page(element.FirstPage).Page)),
         ("K", new PdfArray([.. element.Kids.Select(kid => Kid(kid, element.FirstPage, plan))])),
         ("Alt", element.Start.Role is SemanticRole.FigureRole { AlternativeText: { } text } ? PdfString.FromText(text) : null),
-        ("A", StructureTypes.Attributes(element.Start.Role, element.Start.Span)));
+        ("A", StructureTypes.Attributes(element.Start.Role, element.Start.Span, box)));
 
     private static PdfObject Kid(StructureKid kid, int elementPage, ObjectPlan plan) => kid switch
     {
