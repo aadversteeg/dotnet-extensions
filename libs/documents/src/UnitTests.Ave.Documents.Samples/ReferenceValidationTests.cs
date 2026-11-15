@@ -7,7 +7,7 @@ using Ave.Documents.TestSupport;
 namespace UnitTests.Ave.Documents.Samples;
 
 /// <summary>
-/// The reference checks of stage 3, with tools that run in Docker (skipped with a message when Docker is absent; leave
+/// The reference checks of the conformance profiles, with tools that run in Docker (skipped with a message when Docker is absent; leave
 /// them out with <c>--filter Category!=Reference</c>): veraPDF 1.30.4 on every sample for PDF/A-3b, PDF/A-3a and
 /// PDF/UA-1, a negative control that proves the validator and the profile both matter, and the attachment extracted
 /// by qpdf byte for byte. A failure message lists every failed rule with its clause and description.

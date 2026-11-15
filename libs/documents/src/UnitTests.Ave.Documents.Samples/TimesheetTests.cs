@@ -13,7 +13,7 @@ using UglyToad.PdfPig;
 namespace UnitTests.Ave.Documents.Samples;
 
 /// <summary>
-/// The timesheet sample, the stage-2 proof, end to end for the reporting PoC's three data sets in Dutch and English:
+/// The timesheet sample end to end for the reporting PoC's three data sets in Dutch and English:
 /// page counts, golden files of the three text serialisations (new fragment and page-model shapes: tables, grid lines,
 /// header and footer areas, images), the text read back with PdfPig, and byte-identical output on repeated runs.
 /// </summary>

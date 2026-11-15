@@ -1,8 +1,8 @@
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// The space a layout algorithm may use for one box on the current page (Chromium's "constraint space",
-/// research §6.1). In horizontal writing mode, the only one stage 0 has, the width is the CSS inline size and
+/// The space a layout algorithm may use for one box on the current page (Chromium LayoutNG's "constraint
+/// space", see docs/architecture.md, Background). In horizontal writing mode, the only one the engine has, the width is the CSS inline size and
 /// the height the block size.
 /// </summary>
 /// <param name="AvailableWidth">The width of the box's border box: its containing block's width minus its

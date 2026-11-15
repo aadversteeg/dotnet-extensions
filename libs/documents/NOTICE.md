@@ -23,7 +23,7 @@ Written from the specifications:
   IEC61966-2.1` profile), which were decoded only to confirm the values. The generated profile needs no licence of
   its own.
 - Fonts: the OpenType specification (table directory, head, hhea, maxp, hmtx, cmap formats 4 and 12, OS/2,
-  name, post, loca).
+  name, post, loca, glyf; GSUB, GPOS and GDEF with the common layout table formats; the old-style kern table).
 - Layout and text: CSS 2.1 (§8.3, §9.4, §10.3.2, §10.3.3, §10.6.2, §10.8, §17 tables, Appendix E), CSS Text 3
   (§4.1, §5.4, §6), CSS Fragmentation 3 (§3.1, §3.2, §4.1, §4.4, §5.2–§5.4), CSS Paged Media 3 (page box, page-margin
   boxes, `:first`, page counters), CSS Grid 1 (§7.2.4 `fr`, §11.7.1), CSS Fonts 4 (§2, §5), CSS Backgrounds 3 (§4),
@@ -33,13 +33,14 @@ Written from the specifications:
   §11.2, tRNS §11.3.2.1; JPEG: ITU-T T.81 (ISO/IEC 10918-1) Annex B, marker and frame header syntax; PDF image
   XObjects and soft masks: ISO 32000-1 §8.9, §11.6.5.3.
 - Break appeal (choosing among breakpoints by how many keep rules they violate): the idea of Chromium's
-  `BreakAppeal`, as described in the project's research notes; no Chromium code was read or used. Chromium 157 was
-  used once, through Playwright, to measure reference layouts that the tests pin as numbers.
-- Layout contract shape: Chromium LayoutNG as described in the project's research notes (pure layout function,
+  `BreakAppeal`, known from Chromium's public design documents; no Chromium code was read or used. Chromium (157,
+  then 159) was used through Playwright to measure reference layouts that the tests pin as numbers
+  (`tools/reference/chromium`).
+- Layout contract shape: Chromium LayoutNG as its public design documents describe it (pure layout function,
   constraint space, break tokens); no Chromium code was read or used.
 
 Projects that may be studied under the project rules (krilla, MIT/Apache-2.0; PdfPig, Apache-2.0; Typst,
-Apache-2.0): none of their source was used for stage 0. PdfPig is used as a test-only dependency to read the
+Apache-2.0): none of their source was used. PdfPig is used as a test-only dependency to read the
 generated PDFs back (see below).
 
 ## Unicode data

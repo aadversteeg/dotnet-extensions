@@ -4,9 +4,9 @@ namespace Ave.Documents.Core;
 /// An RGB colour with 8 bits per channel, as used by CSS (<c>#1f4e79</c>).
 /// </summary>
 /// <remarks>
-/// Stage 0 writes colours to PDF as DeviceRGB (ISO 32000-1 §8.6.4.3). Colour management (ICC-based colour
-/// spaces, the OutputIntent that PDF/A requires) arrives with the conformance stage; the page model will then
-/// carry a colour space next to the components, without changing this type's meaning.
+/// Colours are written to PDF as DeviceRGB (ISO 32000-1 §8.6.4.3). A PDF/A profile adds an sRGB output intent
+/// (ISO 19005-3 §6.2.3), which says what these device values mean; other colour spaces would be carried next to the
+/// components, without changing this type's meaning.
 /// </remarks>
 /// <param name="Red">Red channel, 0–255.</param>
 /// <param name="Green">Green channel, 0–255.</param>

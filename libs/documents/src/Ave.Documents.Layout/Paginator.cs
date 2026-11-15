@@ -8,15 +8,14 @@ using Ave.Extensions.Functional;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// The pagination driver (research §6.2, "fragmentation driver"): lays the root box out page after page, feeding each
-/// page's outgoing break token into the next, until no token is left (research §6.1: "the paginator calls the root
-/// algorithm once per page with the previous page's outgoing break token"); applies the page template of each page;
+/// The pagination driver: lays the root box out page after page — the root algorithm is called once per page with the
+/// previous page's outgoing break token — until no token is left; applies the page template of each page;
 /// and repeats the whole layout until the page count that computed content shows is the page count it produces.
 /// </summary>
 public static class Paginator
 {
-    /// <summary>The most layout passes the page-count fixpoint makes, as in Typst (research §7: "a cap (5, like
-    /// Typst)").</summary>
+    /// <summary>The most layout passes the page-count fixpoint makes: five, the cap Typst uses for the same fixpoint
+    /// (docs/architecture.md, Background).</summary>
     public const int MaxPasses = 5;
 
     /// <summary>
@@ -26,12 +25,10 @@ public static class Paginator
     /// <para><b>Fixpoint.</b> A <see cref="CounterRun"/> for the page count needs the number of pages before the pages
     /// exist, and its digits can change line breaks and so the number of pages. So the whole document is laid out with
     /// an assumed count (first 1), and laid out again with the count that pass produced, until a pass produces the
-    /// count it assumed (research §7: "multi-pass fixpoint over the whole document … with a cap (5, like Typst), with
-    /// a diagnostic when it does not converge"). Such a pass is stable: layout is a pure function of the document and
+    /// count it assumed, at most <see cref="MaxPasses"/> times. Such a pass is stable: layout is a pure function of the document and
     /// the assumed count, so the next pass would repeat it exactly. Page numbers need no fixpoint: pages are laid out
     /// in order, so each page knows its own number. A document of one page settles in one pass, any other in at least
-    /// two; a later optimisation may skip the second pass when no page count is used (research §7: "only re-lay pages
-    /// whose input changed").</para>
+    /// two.</para>
     /// <para>Not settling within <see cref="MaxPasses"/> passes is <c>Documents.Layout.NotConverging</c>, with the
     /// source location of the first page-count reference and the page count of every pass.</para>
     /// </remarks>

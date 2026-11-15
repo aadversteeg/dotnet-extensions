@@ -8,7 +8,7 @@ namespace Ave.Documents.Fluent;
 /// is changed in place.
 /// </summary>
 /// <remarks>
-/// ORDER-FREE (research §14): every modifier sets its own property, so modifiers for different properties give
+/// ORDER-FREE: every modifier sets its own property, so modifiers for different properties give
 /// the same element in any order: <c>a.FontSize(x).Color(y) == a.Color(y).FontSize(x)</c>. Setting the same
 /// property twice keeps the last value, exactly as assigning a field twice would. The values are only checked
 /// when the document is translated; an invalid one is reported with the file and line of the element.

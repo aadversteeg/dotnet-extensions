@@ -8,7 +8,7 @@ namespace Ave.Documents.Layout;
 
 /// <summary>
 /// Lays out a box that holds one image: a replaced element (CSS 2.1 §10.3.2), a leaf producer that only takes part
-/// in layout through its size (research §6.2). It is monolithic: an image never breaks across pages (CSS
+/// in layout through its size. It is monolithic: an image never breaks across pages (CSS
 /// Fragmentation 3 §4.1 lists no breakpoint inside replaced content). One that does not fit moves to the next page;
 /// one taller than an empty page is <c>Documents.Layout.DoesNotFit</c>.
 /// </summary>

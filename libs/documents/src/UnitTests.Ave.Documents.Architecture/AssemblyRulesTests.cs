@@ -8,8 +8,8 @@ namespace UnitTests.Ave.Documents.Architecture;
 
 /// <summary>
 /// Rules checked on the compiled assemblies, so they cannot be broken by accident:
-/// (1) pure managed code: no P/Invoke, no native imports, IL only, no unsafe code (Aad's rule 1, brief §1);
-/// (2) layering: each layer references only the layers below it (brief §3; architecture "v1 CONSOLIDATED").
+/// (1) pure managed code: no P/Invoke, no native imports, IL only, no unsafe code;
+/// (2) layering: each layer references only the layers below it (the layer list in docs/architecture.md).
 /// </summary>
 public class AssemblyRulesTests
 {
@@ -112,7 +112,7 @@ public class AssemblyRulesTests
     }
 
     /// <summary>Packages that may only ever be used by tests: the PDF reader and the WebAssembly runtime that runs
-    /// the reference shaper (rule B3 of the stage-1 brief; Aad's rule 1: reference engines in tests only).</summary>
+    /// the reference shaper (reference engines are allowed in tests only).</summary>
     private static readonly string[] TestOnlyAssemblies = ["UglyToad.PdfPig", "WebAssembly"];
 
     [Theory]

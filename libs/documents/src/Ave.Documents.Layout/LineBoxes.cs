@@ -33,7 +33,7 @@ internal static class LineBoxes
     /// <summary>
     /// Builds the line box for one line. All inline boxes sit on one baseline (<c>vertical-align: baseline</c>);
     /// the line box reaches from the highest top to the lowest bottom among them (CSS 2.1 §10.8: "the line box
-    /// height is the distance between the uppermost box top and the lowermost box bottom"). Stage 0 has no
+    /// height is the distance between the uppermost box top and the lowermost box bottom"). LIMIT: there is no
     /// "strut" of the paragraph's own font (§10.8.1); line height comes from the runs on the line only.
     /// </summary>
     /// <remarks>

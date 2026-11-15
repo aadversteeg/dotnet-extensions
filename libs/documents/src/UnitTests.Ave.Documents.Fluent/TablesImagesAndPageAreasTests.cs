@@ -9,10 +9,10 @@ using static Ave.Documents.Fluent.Elements;
 namespace UnitTests.Ave.Documents.Fluent;
 
 /// <summary>
-/// The stage-2 elements and modifiers of the code front-end: tables, rows of blocks, images, page header and footer,
+/// Elements and modifiers of the code front-end for tables, rows of blocks, images, page header and footer,
 /// page counters, borders and keep rules — their translation, their order-free modifiers and their input errors.
 /// </summary>
-public class Stage2FrontEndTests
+public class TablesImagesAndPageAreasTests
 {
     private static readonly Color Grey = new(0xD3, 0xD3, 0xD3);
 

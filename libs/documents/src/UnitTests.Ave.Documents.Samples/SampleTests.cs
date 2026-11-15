@@ -11,7 +11,7 @@ using Ave.Documents.TestSupport;
 namespace UnitTests.Ave.Documents.Samples;
 
 /// <summary>
-/// The two stage-0 samples end to end: golden files for the three text serialisations, byte-identical output on
+/// The letter and the long-text samples end to end: golden files for the three text serialisations, byte-identical output on
 /// repeated runs, and the text read back with an independent PDF reader (PdfPig).
 /// </summary>
 public class SampleTests
@@ -52,7 +52,7 @@ public class SampleTests
     [Fact]
     public void Two_builds_of_the_same_document_are_equal_values_at_every_stage()
     {
-        // Rule A3 of the stage-1 brief: documents, document models, fragment trees and page models are values.
+        // Documents, document models, fragment trees and page models are values: equal content, equal value.
         var first = Run(SampleDocuments.Letter());
         var second = Run(SampleDocuments.Letter());
 
@@ -77,7 +77,7 @@ public class SampleTests
     [Fact]
     public void Subsetting_keeps_both_samples_far_below_100_kilobytes()
     {
-        // Stage 0 embedded the whole fonts: 715,081 and 720,324 bytes (stage-0 report).
+        // With the whole fonts embedded the files were 715,081 and 720,324 bytes.
         Run(SampleDocuments.Letter()).Pdf.Length.Should().BeLessThan(100_000);
         Run(SampleDocuments.LongText()).Pdf.Length.Should().BeLessThan(100_000);
     }

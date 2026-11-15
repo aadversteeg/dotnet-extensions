@@ -21,7 +21,7 @@ namespace Ave.Documents.Typesetting;
 /// 'kern' table) adjusts pairs and puts marks on their bases.
 /// </summary>
 /// <remarks>
-/// <para>Stage-1 scope, for the scripts that need no reordering — Latin, Greek and Cyrillic:</para>
+/// <para>What is implemented, for the scripts that need no reordering — Latin, Greek and Cyrillic:</para>
 /// <list type="bullet">
 /// <item>GSUB features <c>ccmp</c>, <c>liga</c>, <c>clig</c>; lookup types 1 (single), 2 (multiple) and 4
 /// (ligature), reached directly or through type 7 (extension).</item>
@@ -29,15 +29,15 @@ namespace Ave.Documents.Typesetting;
 /// (mark-to-base), directly or through type 9 (extension). Without a GPOS <c>kern</c> feature, the 'kern' table
 /// is used.</item>
 /// <item>The script's default language system (OpenType spec, "ScriptList table"); language-specific systems
-/// are not used yet.</item>
+/// are not used.</item>
 /// </list>
 /// <para>DOCUMENTED SKIPS (never errors, never crashes): a subtable of any other lookup type or format inside these
 /// features is skipped — for example contextual substitution (types 5 and 6) inside <c>ccmp</c>; a lookup that
 /// uses a mark filtering set is skipped; device tables and variation data are not applied. Features outside the
 /// list, such as <c>calt</c> (contextual alternates, type 6 in Lato), are not applied at all. Text of other scripts
 /// is shaped with the same features and the font's default script, which is right for scripts without
-/// reordering or joining, and is a documented limit for the complex scripts (Arabic, Indic, …) that a later stage
-/// adds.</para>
+/// reordering or joining, and is a documented limit for the complex scripts (Arabic, Indic, …), which are not
+/// supported.</para>
 /// <para>Each script run of the text is shaped on its own (UAX #24 Script property; characters of the Common and
 /// Inherited scripts belong to the run around them), because a font's lookups are chosen per script.</para>
 /// </remarks>

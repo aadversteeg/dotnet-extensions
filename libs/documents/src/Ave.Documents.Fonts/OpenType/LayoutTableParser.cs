@@ -44,8 +44,8 @@ internal static class LayoutTableParser
     }
 
     /// <summary>Script list: "scriptCount, scriptRecords[]" of (scriptTag, scriptOffset); a script table:
-    /// "defaultLangSysOffset, langSysCount, langSysRecords[]". Language-specific systems are not read: stage 1
-    /// shapes with the default language system.</summary>
+    /// "defaultLangSysOffset, langSysCount, langSysRecords[]". Language-specific systems are not read: the
+    /// shaper uses the default language system.</summary>
     private static ValueList<ScriptTable> Scripts(TableReader reader, int list) =>
         [.. Enumerable.Range(0, reader.Count(list, list + 2, 6)).Select(index =>
         {

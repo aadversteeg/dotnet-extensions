@@ -6,7 +6,7 @@ using static Ave.Documents.Fluent.Elements;
 namespace UnitTests.Ave.Documents.Fluent;
 
 /// <summary>
-/// The modifier rules of the code front-end (stage-1 ruling A1): each modifier returns a new value with one
+/// The modifier rules of the code front-end: each modifier returns a new value with one
 /// property set, modifiers are order-free, precedence is fixed (own over style, side over all sides), and the
 /// element keeps the file and line of its factory call.
 /// </summary>

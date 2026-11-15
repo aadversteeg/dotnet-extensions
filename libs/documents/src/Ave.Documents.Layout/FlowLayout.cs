@@ -33,8 +33,8 @@ public static class FlowLayout
     /// <para>Keep rules (§3.1 <c>break-before</c>/<c>break-after: avoid</c>, §3.2 <c>break-inside: avoid</c>) give
     /// every breakpoint an appeal (<see cref="BreakAvoidance"/>). Every class-A breakpoint between two children on
     /// this page is remembered as a candidate; when the natural break of cases 2 and 3 has a LOWER appeal than the
-    /// best candidate, the page breaks at that candidate instead (the latest one of the highest appeal: "fits as
-    /// much content as possible", research §7, after Chromium). The children before a candidate are already laid
+    /// best candidate, the page breaks at that candidate instead (the latest one of the highest appeal, the one
+    /// that fits the most content, as Chromium chooses; CSS Fragmentation 3 §4.5 leaves the choice to the user agent). The children before a candidate are already laid
     /// out completely, so breaking there just keeps a prefix of the fragments; nothing is laid out again. When no
     /// better candidate exists, the natural break is taken even though it violates a keep rule — so content that is
     /// kept together but taller than a page still breaks, and pagination always ends.</para>

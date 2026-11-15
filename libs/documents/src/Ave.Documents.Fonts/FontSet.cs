@@ -26,7 +26,7 @@ public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
     /// <summary>
     /// Finds the font for a family, weight and style. The family is compared ASCII case-insensitively (CSS Fonts 4
     /// §5.1: family names are matched case-insensitively). Weight and style must match exactly: the CSS fallbacks to
-    /// the nearest weight and to a synthesised or oblique face (CSS Fonts 4 §5.2 step 4) are a later stage, so a
+    /// the nearest weight and to a synthesised or oblique face (CSS Fonts 4 §5.2 step 4) are not implemented, so a
     /// missing italic is an error rather than a silent upright substitute. When two fonts match, the first one given
     /// wins.
     /// </summary>

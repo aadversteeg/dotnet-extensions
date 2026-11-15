@@ -19,15 +19,15 @@ namespace UnitTests.Ave.Documents.Typesetting.Reference;
 /// offset; and the total advance. Absolute positions rather than raw advance/offset pairs, because they are what
 /// a page shows, and two shapers may split one kerning value differently between advance and offset (HarfBuzz
 /// splits a 'kern'-table value across the pair) without any visible difference.</para>
-/// <para>Same features on both sides: HarfBuzz applies more features by default than stage 1 implements. Those
+/// <para>Same features on both sides: HarfBuzz applies more features by default than the shaper implements. Those
 /// are switched off in HarfBuzz — the list below — so both shapers apply exactly ccmp, liga, clig, kern and mark.
 /// This is configuration of the reference, not special-casing of our shaper.</para>
 /// </remarks>
 public class HarfBuzzCorpusTests(ITestOutputHelper output)
 {
     /// <summary>HarfBuzz's default features (hb-ot-shape.cc: common, horizontal and direction features) that
-    /// stage 1 does not implement.</summary>
-    public static readonly ImmutableArray<string> FeaturesNotInStage1 =
+    /// the shaper does not implement.</summary>
+    public static readonly ImmutableArray<string> FeaturesNotImplemented =
         ["-rvrn", "-ltra", "-ltrm", "-frac", "-numr", "-dnom", "-rand", "-abvm", "-blwm", "-locl", "-mkmk", "-rlig", "-calt", "-curs", "-dist", "-rclt"];
 
     private static readonly string Circumflex = char.ConvertFromUtf32(0x0302);
@@ -70,7 +70,7 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
     /// <summary>
     /// Known differences, each explained from a rule rather than hidden: HarfBuzz first applies Unicode canonical
     /// composition (UAX #15) to a base and a combining mark when the font has a glyph for the composed character,
-    /// and then shapes ONE glyph; stage 1 has no Unicode normalization and shapes the base and the mark, and
+    /// and then shapes ONE glyph; the shaper has no Unicode normalization and shapes the base and the mark, and
     /// positions the mark with GPOS mark-to-base instead. Not part of the gate; pinned by
     /// <see cref="Known_differences_are_unicode_composition_only"/> so a change in either shaper is noticed.
     /// </summary>
@@ -87,12 +87,12 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
     {
         foreach (var (text, composed) in KnownDifferences)
         {
-            var harfbuzz = HarfBuzzReference.Instance.Shape(TestFonts.Bytes("Lato-Regular.ttf"), text, "Latn", FeaturesNotInStage1);
+            var harfbuzz = HarfBuzzReference.Instance.Shape(TestFonts.Bytes("Lato-Regular.ttf"), text, "Latn", FeaturesNotImplemented);
             var precomposed = Shaper.Shape(composed, TestFonts.Regular, 2000).Value;
             var ours = Shaper.Shape(text, TestFonts.Regular, 2000).Value;
 
             harfbuzz.Select(glyph => glyph.Glyph).Should().Equal([precomposed.Single().Glyph.Value], "HarfBuzz composes the pair");
-            ours.Should().HaveCount(2, "stage 1 keeps base and mark as two glyphs");
+            ours.Should().HaveCount(2, "the shaper keeps base and mark as two glyphs");
             output.WriteLine($"known difference: U+{char.ConvertToUtf32(text, 0):X4} U+{char.ConvertToUtf32(text, 1):X4} → HarfBuzz one glyph (U+{char.ConvertToUtf32(composed, 0):X4}), ours base + mark");
         }
     }
@@ -130,7 +130,7 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
 
     private static Line Compare(HarfBuzzReference reference, string fontName, TrueTypeFont font, byte[] fontFile, string language, string script, string text)
     {
-        var expected = reference.Shape(fontFile, text, script, FeaturesNotInStage1);
+        var expected = reference.Shape(fontFile, text, script, FeaturesNotImplemented);
         var actual = Shaper.Shape(text, font, fontSize: font.Metrics.UnitsPerEm).Value;
         var differences = new List<string>();
 

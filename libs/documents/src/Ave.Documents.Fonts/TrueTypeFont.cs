@@ -82,8 +82,8 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
 
     /// <summary>
     /// The raw outline data of a glyph from 'glyf' (located through 'loca'); empty for glyphs without an
-    /// outline, such as the space. Not interpreted yet: stage 0 embeds the whole font, and the raster back-end
-    /// (a later stage) will decode it.
+    /// outline, such as the space. Not interpreted: the subsetter copies it as it is
+    /// (<see cref="FontSubsetter"/>), and only a raster back-end would need to decode it.
     /// </summary>
     /// <param name="glyph">A glyph id of this font.</param>
     /// <returns>The glyph's bytes in 'glyf'.</returns>

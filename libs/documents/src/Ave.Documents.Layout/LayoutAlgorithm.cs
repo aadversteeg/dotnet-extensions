@@ -7,7 +7,7 @@ namespace Ave.Documents.Layout;
 /// <summary>
 /// THE LAYOUT CONTRACT. Every layout algorithm is a pure function with this shape: given a box, the space it
 /// may use and where to resume, it returns the fragment for this page and where to resume on the next one.
-/// Modelled on Chromium LayoutNG's layout algorithms (research §6.1) and the CSS Layout API.
+/// Modelled on Chromium LayoutNG's layout algorithms and the CSS Layout API (docs/architecture.md, Background).
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -32,7 +32,7 @@ public delegate Result<LayoutResult, Error> LayoutAlgorithm(
     LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming);
 
 /// <summary>
-/// The second function of every algorithm (research §6.1, <c>MinMax</c>): the box's intrinsic widths, which a
+/// The second function of every algorithm (LayoutNG's <c>MinMax</c>): the box's intrinsic widths, which a
 /// parent that sizes its children from their content needs — the tracks algorithm for <c>auto</c> and <c>fill</c>
 /// columns. Pure, like <see cref="LayoutAlgorithm"/>.
 /// </summary>

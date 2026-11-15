@@ -12,7 +12,7 @@ using static Ave.Documents.Fluent.Elements;
 namespace UnitTests.Ave.Documents.Fluent;
 
 /// <summary>
-/// Every refusal of a conformance profile (B4 of the stage-3 brief): the profile names the rule in the error code and
+/// Every refusal of a conformance profile: the profile names the rule in the error code and
 /// the author's line in the metadata; it never weakens the document. In each test the offending call is on the line
 /// right after <c>CurrentLine()</c>. Also: the front-end's checks of the new inputs (language, attachments, image
 /// descriptions).

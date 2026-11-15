@@ -29,7 +29,7 @@ public static class TestFonts
     /// <summary>Theano Didot Regular 2.0 (2048 units per em).</summary>
     public static TrueTypeFont TheanoDidot => LazyTheanoDidot.Value;
 
-    /// <summary>A font set with Regular and Bold (the stage-0 set).</summary>
+    /// <summary>A font set with Regular and Bold (the set most tests use).</summary>
     public static FontSet Set => new([Regular, Bold]);
 
     /// <summary>A font set with Regular, Bold and Italic.</summary>

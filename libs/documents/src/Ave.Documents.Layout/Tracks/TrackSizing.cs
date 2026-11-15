@@ -8,8 +8,8 @@ using Ave.Documents.DocumentModel;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// Column widths of a tracks box from its column definitions and its cells' intrinsic widths (the "track sizing"
-/// seam of research §6.3: item contributions in, track sizes out). Pure functions of numbers; no layout.
+/// Column widths of a tracks box from its column definitions and its cells' intrinsic widths (track sizing: item
+/// contributions in, track sizes out). Pure functions of numbers; no layout.
 /// </summary>
 /// <remarks>
 /// <para>Which rule each column kind follows:</para>

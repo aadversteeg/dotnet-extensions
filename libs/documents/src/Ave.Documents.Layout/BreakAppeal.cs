@@ -1,8 +1,8 @@
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// How good a place for a page break is: the common currency of keep rules (research §6.3), after Chromium's
-/// <c>BreakAppeal</c>. CSS Fragmentation 3 §4.4 lists rules that make a break "allowed"; when no allowed break is
+/// How good a place for a page break is: the common currency of keep rules, after Chromium's
+/// <c>BreakAppeal</c> (docs/architecture.md, Background). CSS Fragmentation 3 §4.4 lists rules that make a break "allowed"; when no allowed break is
 /// left the rules are relaxed rather than overflowing, and §4.5 leaves the choice among the remaining breaks to the
 /// user agent. This engine follows Chromium: break at the breakpoint with the highest appeal, and among those the
 /// one that fits the most content (the latest).

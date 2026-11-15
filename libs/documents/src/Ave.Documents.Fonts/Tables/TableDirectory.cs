@@ -17,8 +17,8 @@ internal sealed record TableDirectory(FrozenDictionary<string, ReadOnlyMemory<by
     private const int RecordLength = 16;
 
     // sfntVersion values (OpenType spec, "Table directory"): 0x00010000 for TrueType outlines; Apple also
-    // uses the tag 'true' for TrueType fonts. 'OTTO' marks CFF outlines and 'ttcf' a font collection, which a
-    // later stage reads.
+    // uses the tag 'true' for TrueType fonts. 'OTTO' marks CFF outlines and 'ttcf' a font collection; neither is
+    // read.
     private const uint TrueTypeVersion = 0x00010000;
     private const uint AppleTrueTypeTag = 0x74727565; // 'true'
     private const uint CffTag = 0x4F54544F; // 'OTTO'

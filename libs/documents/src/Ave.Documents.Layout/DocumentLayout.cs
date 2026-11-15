@@ -9,7 +9,7 @@ namespace Ave.Documents.Layout;
 /// <summary>The entry point of the layout layer: document model in, page model out.</summary>
 public static class DocumentLayout
 {
-    /// <summary>Lays out a document with the stage-0 algorithms and paints it into the page model.</summary>
+    /// <summary>Lays out a document with the engine's layout algorithms and paints it into the page model.</summary>
     /// <param name="document">The document.</param>
     /// <param name="fonts">The fonts its text may use.</param>
     /// <returns>The page document, or the layout error.</returns>

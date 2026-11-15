@@ -160,3 +160,12 @@ Each is documented next to its code as well.
 
 `dotnet test --filter Category!=Reference` leaves the Docker checks out. Golden files are updated with
 `UPDATE_GOLDEN=1` and reviewed as a diff.
+
+## Background
+
+Three ideas come from other engines, studied through their public documents, not their code. The layout contract —
+a pure function of a box, a constraint space (the space the box may use on the current page) and an incoming break
+token, returning a fragment and an outgoing break token, plus a second function for the intrinsic widths
+(`MinMax`) — follows Chromium's LayoutNG. Choosing among breakpoints by their appeal, and among the best the latest,
+follows Chromium's `BreakAppeal`; CSS Fragmentation 3 §4.5 leaves that choice to the user agent. The page-count
+fixpoint is capped at five passes, as Typst caps the same fixpoint.
