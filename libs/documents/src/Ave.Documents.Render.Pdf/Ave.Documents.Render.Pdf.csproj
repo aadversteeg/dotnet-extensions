@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The PDF back-end of the Ave.Documents engine: writes the page model as a PDF file with embedded fonts and searchable text.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Page\Ave.Documents.Page.csproj" />
+  </ItemGroup>
+
+</Project>

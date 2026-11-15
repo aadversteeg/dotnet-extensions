@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>A TrueType font reader in plain managed code: the tables a document engine needs to map text to glyphs, measure it and embed the font.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Fonts" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,10 @@
+using Ave.Documents.Core;
+
+namespace Ave.Documents.Model;
+
+/// <summary>The computed text properties of a <see cref="TextRun"/>.</summary>
+/// <param name="FontFamily">One family name (CSS Fonts 4 §2.1; a fallback list comes later).</param>
+/// <param name="FontSize">The font size (CSS Fonts 4 §2.5), positive.</param>
+/// <param name="FontWeight">The weight (CSS Fonts 4 §2.2).</param>
+/// <param name="Color">The text colour (CSS Color 4 §3.1, property <c>color</c>).</param>
+public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight FontWeight, Color Color);

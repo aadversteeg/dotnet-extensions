@@ -1,0 +1,111 @@
+using System;
+using System.Collections.Frozen;
+using System.Collections.Immutable;
+using System.Text;
+using Ave.Extensions.Functional;
+
+namespace Ave.Documents.Fonts;
+
+/// <summary>
+/// A parsed TrueType font: the original file (for embedding) plus the tables the engine needs, already
+/// validated. Immutable. Create one with <see cref="FontParser.Parse"/>.
+/// </summary>
+/// <remarks>
+/// Two instances are equal when their files are byte-identical (same <see cref="Id"/>), however they were loaded.
+/// </remarks>
+public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
+{
+    private readonly FrozenDictionary<int, GlyphId> _characterMap;
+    private readonly ImmutableArray<int> _advanceWidths;
+    private readonly ImmutableArray<int> _glyphOffsets;
+    private readonly ReadOnlyMemory<byte> _glyphData;
+
+    internal TrueTypeFont(
+        ReadOnlyMemory<byte> fileData,
+        FontNames names,
+        FontMetrics metrics,
+        EmbeddingPermissions embedding,
+        FrozenDictionary<int, GlyphId> characterMap,
+        ImmutableArray<int> advanceWidths,
+        ImmutableArray<int> glyphOffsets,
+        ReadOnlyMemory<byte> glyphData)
+    {
+        Id = FontId.Of(fileData.Span);
+        FileData = fileData;
+        Names = names;
+        Metrics = metrics;
+        Embedding = embedding;
+        _characterMap = characterMap;
+        _advanceWidths = advanceWidths;
+        _glyphOffsets = glyphOffsets;
+        _glyphData = glyphData;
+    }
+
+    /// <summary>The content digest of the font file.</summary>
+    public FontId Id { get; }
+
+    /// <summary>The complete, unmodified font file, as embedded in PDF output.</summary>
+    public ReadOnlyMemory<byte> FileData { get; }
+
+    /// <summary>The font's names.</summary>
+    public FontNames Names { get; }
+
+    /// <summary>The font-wide metrics.</summary>
+    public FontMetrics Metrics { get; }
+
+    /// <summary>What the font's licence allows for embedding.</summary>
+    public EmbeddingPermissions Embedding { get; }
+
+    /// <summary>The number of glyphs ('maxp' numGlyphs); valid glyph ids are 0 to GlyphCount − 1.</summary>
+    public int GlyphCount => _advanceWidths.Length;
+
+    /// <summary>
+    /// The glyph the font's 'cmap' assigns to a character, or None when the font has no glyph for it.
+    /// </summary>
+    /// <param name="character">The Unicode scalar value.</param>
+    /// <returns>The glyph id, or None.</returns>
+    public Maybe<GlyphId> GlyphFor(Rune character) =>
+        _characterMap.TryGetValue(character.Value, out var glyph) ? glyph : Maybe<GlyphId>.None;
+
+    /// <summary>The horizontal advance of a glyph in font design units ('hmtx').</summary>
+    /// <param name="glyph">A glyph id of this font.</param>
+    /// <returns>The advance width.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The glyph id does not belong to this font. Glyph ids come
+    /// from this font's own <see cref="GlyphFor"/>, so this is a bug in the caller.</exception>
+    public int AdvanceWidth(GlyphId glyph) => _advanceWidths[CheckedIndex(glyph)];
+
+    /// <summary>
+    /// The raw outline data of a glyph from 'glyf' (located through 'loca'); empty for glyphs without an
+    /// outline, such as the space. Not interpreted yet: stage 0 embeds the whole font, and the raster back-end
+    /// (a later stage) will decode it.
+    /// </summary>
+    /// <param name="glyph">A glyph id of this font.</param>
+    /// <returns>The glyph's bytes in 'glyf'.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The glyph id does not belong to this font.</exception>
+    public ReadOnlyMemory<byte> GlyphOutline(GlyphId glyph)
+    {
+        var index = CheckedIndex(glyph);
+        return _glyphData[_glyphOffsets[index].._glyphOffsets[index + 1]];
+    }
+
+    /// <summary>Equal when the font files are byte-identical.</summary>
+    /// <param name="other">The other font.</param>
+    /// <returns>Whether both are the same font file.</returns>
+    public bool Equals(TrueTypeFont? other) => other is not null && Id == other.Id;
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj) => obj is TrueTypeFont other && Equals(other);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => Id.GetHashCode();
+
+    /// <summary>Returns the PostScript name, for example <c>Lato-Bold</c>.</summary>
+    /// <returns>The text form.</returns>
+    public override string ToString() => Names.PostScriptName;
+
+    private int CheckedIndex(GlyphId glyph)
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(glyph.Value, GlyphCount, nameof(glyph));
+        return glyph.Value;
+    }
+}

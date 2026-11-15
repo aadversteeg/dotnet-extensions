@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The engine-neutral document model: an immutable styled box tree with CSS semantics, the contract between every front-end and layout.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+  </ItemGroup>
+
+</Project>

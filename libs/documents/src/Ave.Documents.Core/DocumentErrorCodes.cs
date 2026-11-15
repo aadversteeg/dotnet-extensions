@@ -1,0 +1,150 @@
+using Ave.Extensions.ErrorPaths;
+
+namespace Ave.Documents.Core;
+
+/// <summary>
+/// The error-code tree of the engine, defined once. Codes are paths (Ave.Extensions.ErrorPaths): a caller can
+/// match a whole branch with <c>error.Is(DocumentErrorCodes.Font._)</c> or one leaf with
+/// <c>error.Code == DocumentErrorCodes.Font.GlyphMissing</c>. Each nested class's <c>_</c> is its branch.
+/// </summary>
+/// <remarks>
+/// Which metadata each error carries is listed per code; the keys are in <see cref="ErrorMetadataKeys"/>.
+/// Errors about a document node always carry <see cref="ErrorMetadataKeys.SourceFile"/> and
+/// <see cref="ErrorMetadataKeys.SourceLine"/>.
+/// </remarks>
+public static class DocumentErrorCodes
+{
+    /// <summary>The root of every engine error: <c>Documents</c>.</summary>
+    public static readonly ErrorCode _ = new("Documents");
+
+    /// <summary>
+    /// Several independent errors reported together (<c>Documents.Multiple</c>), for example every invalid value
+    /// in a document. The individual errors are in metadata <see cref="ErrorMetadataKeys.Errors"/>.
+    /// </summary>
+    public static readonly ErrorCode Multiple = _ / "Multiple";
+
+    /// <summary>Errors in the input a front-end received from its caller.</summary>
+    public static class Input
+    {
+        /// <summary><c>Documents.Input</c>.</summary>
+        public static readonly ErrorCode _ = DocumentErrorCodes._ / "Input";
+
+        /// <summary>A value the input language forbids.</summary>
+        public static class Invalid
+        {
+            /// <summary><c>Documents.Input.Invalid</c>.</summary>
+            public static readonly ErrorCode _ = Input._ / "Invalid";
+
+            /// <summary>A length that is not a finite number, or negative where only zero or more is allowed.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Length = _ / "Length";
+
+            /// <summary>A font size that is not a positive finite number. Metadata: Value.</summary>
+            public static readonly ErrorCode FontSize = _ / "FontSize";
+
+            /// <summary>A font weight outside 1–1000 (CSS Fonts 4 §2.2). Metadata: Value.</summary>
+            public static readonly ErrorCode FontWeight = _ / "FontWeight";
+
+            /// <summary>No font family set, or an empty one.</summary>
+            public static readonly ErrorCode FontFamily = _ / "FontFamily";
+
+            /// <summary>A heading level outside 1–6. Metadata: Value.</summary>
+            public static readonly ErrorCode HeadingLevel = _ / "HeadingLevel";
+
+            /// <summary>A page whose size or margins leave no area for content. Metadata: Value.</summary>
+            public static readonly ErrorCode PageSize = _ / "PageSize";
+
+            /// <summary>A page break that has no content after it in its container.</summary>
+            public static readonly ErrorCode PageBreak = _ / "PageBreak";
+
+            /// <summary>Text that is not valid UTF-16 (an unpaired surrogate). Metadata: Offset.</summary>
+            public static readonly ErrorCode Text = _ / "Text";
+        }
+
+        /// <summary>A value the input language allows but this version of the engine does not implement yet.</summary>
+        public static class Unsupported
+        {
+            /// <summary><c>Documents.Input.Unsupported</c>.</summary>
+            public static readonly ErrorCode _ = Input._ / "Unsupported";
+
+            /// <summary>A negative margin (allowed by CSS, not implemented yet). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode NegativeMargin = _ / "NegativeMargin";
+        }
+    }
+
+    /// <summary>Errors about fonts.</summary>
+    public static class Font
+    {
+        /// <summary><c>Documents.Font</c>.</summary>
+        public static readonly ErrorCode _ = DocumentErrorCodes._ / "Font";
+
+        /// <summary>A font file that cannot be read. Metadata: SourceFile, SourceLine (the loading call).</summary>
+        public static class Parse
+        {
+            /// <summary><c>Documents.Font.Parse</c>.</summary>
+            public static readonly ErrorCode _ = Font._ / "Parse";
+
+            /// <summary>The data ends before a structure it announces. Metadata: Table, Offset.</summary>
+            public static readonly ErrorCode Truncated = _ / "Truncated";
+
+            /// <summary>Not a TrueType font file (for example a CFF-based OpenType font). Metadata: Value.</summary>
+            public static readonly ErrorCode UnsupportedFormat = _ / "UnsupportedFormat";
+
+            /// <summary>A table that this reader needs is absent. Metadata: Table.</summary>
+            public static readonly ErrorCode MissingTable = _ / "MissingTable";
+
+            /// <summary>A table contains a value that the OpenType specification does not allow.
+            /// Metadata: Table, Value.</summary>
+            public static readonly ErrorCode InvalidValue = _ / "InvalidValue";
+        }
+
+        /// <summary>
+        /// The text contains a character the font has no glyph for. Never silently dropped.
+        /// Metadata: FontName, Character, CodePoint, SourceFile, SourceLine.
+        /// </summary>
+        public static readonly ErrorCode GlyphMissing = _ / "GlyphMissing";
+
+        /// <summary>No font in the font set matches the family and weight asked for.
+        /// Metadata: FontName, Value (the weight), SourceFile, SourceLine.</summary>
+        public static readonly ErrorCode NotFound = _ / "NotFound";
+    }
+
+    /// <summary>Errors from layout.</summary>
+    public static class Layout
+    {
+        /// <summary><c>Documents.Layout</c>.</summary>
+        public static readonly ErrorCode _ = DocumentErrorCodes._ / "Layout";
+
+        /// <summary>Content that can never fit on a page, not even on an empty one, and cannot be broken.
+        /// Metadata: Node, SourceFile, SourceLine.</summary>
+        public static readonly ErrorCode DoesNotFit = _ / "DoesNotFit";
+
+        /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.
+        /// Metadata: Node, Value, SourceFile, SourceLine.</summary>
+        public static readonly ErrorCode InvalidContent = _ / "InvalidContent";
+    }
+
+    /// <summary>Errors from the PDF layer.</summary>
+    public static class Pdf
+    {
+        /// <summary><c>Documents.Pdf</c>.</summary>
+        public static readonly ErrorCode _ = DocumentErrorCodes._ / "Pdf";
+
+        /// <summary>Input that cannot be written as valid PDF.</summary>
+        public static class Write
+        {
+            /// <summary><c>Documents.Pdf.Write</c>.</summary>
+            public static readonly ErrorCode _ = Pdf._ / "Write";
+
+            /// <summary>A number that is NaN or infinite; PDF numbers are finite (ISO 32000-1 §7.3.3).
+            /// Metadata: Value.</summary>
+            public static readonly ErrorCode InvalidNumber = _ / "InvalidNumber";
+
+            /// <summary>Indirect objects not numbered 1..N without gaps or duplicates. Metadata: Value.</summary>
+            public static readonly ErrorCode InvalidObjectNumbers = _ / "InvalidObjectNumbers";
+
+            /// <summary>A font whose licence bits (OpenType OS/2 fsType) forbid embedding. Metadata: FontName.</summary>
+            public static readonly ErrorCode FontEmbeddingNotPermitted = _ / "FontEmbeddingNotPermitted";
+        }
+    }
+}
