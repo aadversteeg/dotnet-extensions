@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts.OpenType;
@@ -33,121 +34,88 @@ public static class FontParser
             .MapError(error => error.WithSource(new SourceLocation(callerFile, callerLine)));
 
     /// <summary>
-    /// Parses the tables in dependency order: 'hmtx' needs counts from 'hhea' and 'maxp', 'loca' needs the
-    /// offset format from 'head', and 'cmap' is checked against the glyph count from 'maxp'. Each step stops at
-    /// the first malformed table, because later tables cannot be checked without the earlier ones.
+    /// Parses the tables in dependency order, each step seeing the values of the steps before it: 'hmtx' needs counts
+    /// from 'hhea' and 'maxp', 'cmap' is checked against the glyph count from 'maxp', 'loca' needs the offset format
+    /// from 'head' and the length of 'glyf', and the layout tables are checked against the glyph count. The chain stops
+    /// at the first malformed table, because later tables cannot be checked without the earlier ones.
     /// </summary>
-    private static Result<TrueTypeFont, Error> ParseTables(ReadOnlyMemory<byte> fontFile, TableDirectory directory)
+    private static Result<TrueTypeFont, Error> ParseTables(ReadOnlyMemory<byte> fontFile, TableDirectory directory) =>
+        SizeTables(directory)
+            .OnSuccessCombine(size => GlyphTables(directory, size))
+            .OnSuccessCombine((_, _) => DescriptionTables(directory))
+            .OnSuccessCombine((size, _, _) => Layout(directory, size.Maxp.GlyphCount))
+            .OnSuccessMap((size, glyphs, description, layout) => new TrueTypeFont(
+                fontFile,
+                description.Names,
+                Metrics(size, description),
+                new EmbeddingPermissions(description.Os2.FsType),
+                glyphs.Cmap,
+                glyphs.Hmtx.AdvanceWidths,
+                glyphs.Loca.Offsets,
+                glyphs.Glyf,
+                layout));
+
+    /// <summary>'head', 'hhea' and 'maxp': the sizes and counts every other table is checked against.</summary>
+    private sealed record SizeTableSet(HeadTable Head, HheaTable Hhea, MaxpTable Maxp);
+
+    /// <summary>'hmtx', 'cmap', 'glyf' and 'loca': from a character to a glyph, its advance and its outline.</summary>
+    private sealed record GlyphTableSet(HmtxTable Hmtx, FrozenDictionary<int, GlyphId> Cmap, ReadOnlyMemory<byte> Glyf, LocaTable Loca);
+
+    /// <summary>'OS/2', 'name' and 'post': what the font says about itself (weight, licence, names, italic angle).</summary>
+    private sealed record DescriptionTableSet(Os2Table Os2, FontNames Names, PostTable Post);
+
+    private static Result<SizeTableSet, Error> SizeTables(TableDirectory directory) =>
+        Table(directory, HeadTable.Tag, HeadTable.Parse)
+            .OnSuccessCombine(_ => Table(directory, HheaTable.Tag, HheaTable.Parse))
+            .OnSuccessCombine((_, _) => Table(directory, MaxpTable.Tag, MaxpTable.Parse))
+            .OnSuccessMap((head, hhea, maxp) => new SizeTableSet(head, hhea, maxp));
+
+    private static Result<GlyphTableSet, Error> GlyphTables(TableDirectory directory, SizeTableSet size)
     {
-        var head = directory.Required(HeadTable.Tag).OnSuccessBind(table => HeadTable.Parse(table.Span));
-        if (head.IsFailure)
-        {
-            return Fail(head.Error);
-        }
-
-        var hhea = directory.Required(HheaTable.Tag).OnSuccessBind(table => HheaTable.Parse(table.Span));
-        if (hhea.IsFailure)
-        {
-            return Fail(hhea.Error);
-        }
-
-        var maxp = directory.Required(MaxpTable.Tag).OnSuccessBind(table => MaxpTable.Parse(table.Span));
-        if (maxp.IsFailure)
-        {
-            return Fail(maxp.Error);
-        }
-
-        var glyphCount = maxp.Value.GlyphCount;
-        var hmtx = directory.Required(HmtxTable.Tag)
-            .OnSuccessBind(table => HmtxTable.Parse(table.Span, hhea.Value.NumberOfHMetrics, glyphCount));
-        if (hmtx.IsFailure)
-        {
-            return Fail(hmtx.Error);
-        }
-
-        var cmap = directory.Required(CmapTable.Tag).OnSuccessBind(table => CmapTable.Parse(table.Span, glyphCount));
-        if (cmap.IsFailure)
-        {
-            return Fail(cmap.Error);
-        }
-
-        var os2 = directory.Required(Os2Table.Tag).OnSuccessBind(table => Os2Table.Parse(table.Span));
-        if (os2.IsFailure)
-        {
-            return Fail(os2.Error);
-        }
-
-        var names = directory.Required(NameTable.Tag).OnSuccessBind(table => NameTable.Parse(table.Span));
-        if (names.IsFailure)
-        {
-            return Fail(names.Error);
-        }
-
-        var post = directory.Required(PostTable.Tag).OnSuccessBind(table => PostTable.Parse(table.Span));
-        if (post.IsFailure)
-        {
-            return Fail(post.Error);
-        }
-
-        var glyf = directory.Required(GlyfTag);
-        if (glyf.IsFailure)
-        {
-            return Fail(glyf.Error);
-        }
-
-        var loca = directory.Required(LocaTable.Tag)
-            .OnSuccessBind(table => LocaTable.Parse(table.Span, head.Value.LongLocaOffsets, glyphCount, glyf.Value.Length));
-        if (loca.IsFailure)
-        {
-            return Fail(loca.Error);
-        }
-
-        var layout = Layout(directory, glyphCount);
-        if (layout.IsFailure)
-        {
-            return Fail(layout.Error);
-        }
-
-        var metrics = new FontMetrics(
-            UnitsPerEm: head.Value.UnitsPerEm,
-            Ascender: hhea.Value.Ascender,
-            Descender: hhea.Value.Descender,
-            LineGap: hhea.Value.LineGap,
-            CapHeight: os2.Value.CapHeight,
-            BoundingBox: head.Value.BoundingBox,
-            ItalicAngle: post.Value.ItalicAngle,
-            IsFixedPitch: post.Value.IsFixedPitch,
-            WeightClass: os2.Value.WeightClass,
-            IsItalic: os2.Value.IsItalic);
-
-        return Result<TrueTypeFont, Error>.Success(new TrueTypeFont(
-            fontFile,
-            names.Value,
-            metrics,
-            new EmbeddingPermissions(os2.Value.FsType),
-            cmap.Value,
-            hmtx.Value.AdvanceWidths,
-            loca.Value.Offsets,
-            glyf.Value,
-            layout.Value));
+        var glyphCount = size.Maxp.GlyphCount;
+        return Table(directory, HmtxTable.Tag, table => HmtxTable.Parse(table, size.Hhea.NumberOfHMetrics, glyphCount))
+            .OnSuccessCombine(_ => Table(directory, CmapTable.Tag, table => CmapTable.Parse(table, glyphCount)))
+            .OnSuccessCombine((_, _) => directory.Required(GlyfTag))
+            .OnSuccessCombine((_, _, glyf) => Table(directory, LocaTable.Tag, table => LocaTable.Parse(table, size.Head.LongLocaOffsets, glyphCount, glyf.Length)))
+            .OnSuccessMap((hmtx, cmap, glyf, loca) => new GlyphTableSet(hmtx, cmap, glyf, loca));
     }
+
+    private static Result<DescriptionTableSet, Error> DescriptionTables(TableDirectory directory) =>
+        Table(directory, Os2Table.Tag, Os2Table.Parse)
+            .OnSuccessCombine(_ => Table(directory, NameTable.Tag, NameTable.Parse))
+            .OnSuccessCombine((_, _) => Table(directory, PostTable.Tag, PostTable.Parse))
+            .OnSuccessMap((os2, names, post) => new DescriptionTableSet(os2, names, post));
+
+    private static FontMetrics Metrics(SizeTableSet size, DescriptionTableSet description) => new(
+        UnitsPerEm: size.Head.UnitsPerEm,
+        Ascender: size.Hhea.Ascender,
+        Descender: size.Hhea.Descender,
+        LineGap: size.Hhea.LineGap,
+        CapHeight: description.Os2.CapHeight,
+        BoundingBox: size.Head.BoundingBox,
+        ItalicAngle: description.Post.ItalicAngle,
+        IsFixedPitch: description.Post.IsFixedPitch,
+        WeightClass: description.Os2.WeightClass,
+        IsItalic: description.Os2.IsItalic);
+
+    /// <summary>A table the reader needs: absent is <c>Documents.Font.Parse.MissingTable</c>, present is parsed.</summary>
+    private static Result<T, Error> Table<T>(TableDirectory directory, string tag, TableParser<T> parse) =>
+        directory.Required(tag).OnSuccessBind(table => parse(table.Span));
+
+    /// <summary>A table parser: reads one table's bytes, which are only borrowed for the call.</summary>
+    private delegate Result<T, Error> TableParser<T>(ReadOnlySpan<byte> table);
 
     /// <summary>
     /// The optional advanced typography tables GSUB, GPOS, GDEF and 'kern'. A table the font does not have reads as
     /// empty; a table it has must be well formed, like every other table.
     /// </summary>
-    private static Result<OpenTypeLayout, Error> Layout(TableDirectory directory, int glyphCount)
-    {
-        var substitutions = Optional(directory, LayoutTableParser.Gsub, LayoutTable.Empty, data => LayoutTableParser.Parse(LayoutTableParser.Gsub, data, glyphCount));
-        var positions = Optional(directory, LayoutTableParser.Gpos, LayoutTable.Empty, data => LayoutTableParser.Parse(LayoutTableParser.Gpos, data, glyphCount));
-        var definitions = Optional<GlyphDefinitions?>(directory, GlyphDefinitions.Tag, null, data => GlyphDefinitions.Parse(data).OnSuccessMap(found => (GlyphDefinitions?)found));
-        var kerning = Optional(directory, LegacyKerning.Tag, LegacyKerning.None, LegacyKerning.Parse);
-        return substitutions.OnSuccessBind(gsub => positions.OnSuccessBind(gpos => definitions.OnSuccessBind(gdef => kerning.OnSuccessMap(kern =>
-            new OpenTypeLayout(gsub, gpos, gdef, kern)))));
-    }
+    private static Result<OpenTypeLayout, Error> Layout(TableDirectory directory, int glyphCount) =>
+        Optional(directory, LayoutTableParser.Gsub, LayoutTable.Empty, data => LayoutTableParser.Parse(LayoutTableParser.Gsub, data, glyphCount))
+            .OnSuccessCombine(_ => Optional(directory, LayoutTableParser.Gpos, LayoutTable.Empty, data => LayoutTableParser.Parse(LayoutTableParser.Gpos, data, glyphCount)))
+            .OnSuccessCombine((_, _) => Optional<GlyphDefinitions?>(directory, GlyphDefinitions.Tag, null, data => GlyphDefinitions.Parse(data).OnSuccessMap(found => (GlyphDefinitions?)found)))
+            .OnSuccessCombine((_, _, _) => Optional(directory, LegacyKerning.Tag, LegacyKerning.None, LegacyKerning.Parse))
+            .OnSuccessMap((gsub, gpos, gdef, kern) => new OpenTypeLayout(gsub, gpos, gdef, kern));
 
     private static Result<T, Error> Optional<T>(TableDirectory directory, string tag, T absent, Func<ReadOnlyMemory<byte>, Result<T, Error>> parse) =>
         directory.Tables.TryGetValue(tag, out var data) ? parse(data) : Result<T, Error>.Success(absent);
-
-    private static Result<TrueTypeFont, Error> Fail(Error error) => Result<TrueTypeFont, Error>.Failure(error);
 }
