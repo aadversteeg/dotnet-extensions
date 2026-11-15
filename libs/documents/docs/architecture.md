@@ -142,6 +142,21 @@ Each is documented next to its code as well.
 - **Speed:** measured, not tuned. On LAMORAK, Release, fonts parsed beforehand, PDF/A-3a + PDF/UA-1: the normal
   timesheet takes about 1.0–1.4 s cold and 110–150 ms warm, the long one 2.5–2.9 s cold and about 410 ms warm. The
   reporting PoC's Typst took 19 ms and 46 ms warm.
+- **Long tables:** a table's grid and columns are prepared once per layout pass and handed from page to page in the
+  table's break token; a page looks up the cells of its own rows through per-row indexes. Layout time now grows with
+  the number of rows. Measured on LAMORAK (Release, A4, 2 cm margins, a three-column table with a header row, 0.5 pt
+  grid lines, median of three runs after a warm-up, layout only):
+
+  | Rows | Pages | Before | After |
+  | ---: | ---: | ---: | ---: |
+  | 250 | 9 | 605 ms | 386 ms |
+  | 500 | 17 | 1993 ms | 375 ms |
+  | 1000 | 34 | 7734 ms | 529 ms |
+  | 2000 | 67 | 31005 ms | 1088 ms |
+
+  What still grows: the work per page is linear in the rows on that page, but every row is measured once more for
+  each layout pass, so a document whose page count is used in its text (two passes or more) takes that many times as
+  long. `TableScalingTests` fails when four times the rows take eight times as long.
 
 ## How each reference check is run
 

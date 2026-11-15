@@ -41,9 +41,14 @@ public static class TracksLayout
             throw new ArgumentException($"Tracks received a {incoming.GetType().Name} it did not produce.", nameof(incoming));
         }
 
-        return TableGrid.Build(box)
-            .OnSuccessBind(grid => Geometry(environment, box, grid, space.AvailableWidth))
-            .OnSuccessBind(table => TablePage.LayOut(table, space, (TracksBreakToken?)incoming));
+        var token = (TracksBreakToken?)incoming;
+        var preparation = token?.Prepared is { } prepared && prepared.AvailableWidth == space.AvailableWidth
+            ? Result<TablePreparation, Error>.Success(prepared)
+            : TableGrid.Build(box).OnSuccessBind(grid => Prepare(environment, box, grid, space.AvailableWidth));
+        return preparation.OnSuccessBind(table => TablePage.LayOut(new TableGeometry(environment, box, table), space, token)
+            .OnSuccessMap(result => result is LayoutResult.Placed { Continuation: TracksBreakToken next } placed
+                ? placed with { Continuation = next with { Prepared = table } }
+                : result));
     }
 
     /// <summary>
@@ -106,7 +111,7 @@ public static class TracksLayout
     /// its width inside the table's left edge (the table's border box holds half of the outer lines, §17.6.2), and each
     /// column (a cell's border box, from line centre to line centre) is as wide as track sizing says.
     /// </summary>
-    private static Result<TableGeometry, Error> Geometry(LayoutEnvironment environment, Box box, TableGrid grid, double availableWidth)
+    private static Result<TablePreparation, Error> Prepare(LayoutEnvironment environment, Box box, TableGrid grid, double availableWidth)
     {
         var lines = VerticalLineWidths(box, grid);
         var outer = (lines[0] + lines[^1]) / 2;
@@ -115,7 +120,7 @@ public static class TracksLayout
             var (widths, needed) = TrackSizing.Resolve(box.Style.Columns, ranges, availableWidth - outer);
             if (needed is { } width)
             {
-                return Result<TableGeometry, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, width + outer, availableWidth));
+                return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, width + outer, availableWidth));
             }
 
             var x = ImmutableArray.CreateBuilder<double>(widths.Length + 1);
@@ -126,22 +131,38 @@ public static class TracksLayout
             }
 
             var lineX = x.MoveToImmutable();
-            return Result<TableGeometry, Error>.Success(new TableGeometry(environment, box, grid, lineX, lines, lineX[^1] + lines[^1] / 2));
+            return Result<TablePreparation, Error>.Success(new TablePreparation(grid, lineX, lines, lineX[^1] + lines[^1] / 2, availableWidth));
         });
     }
 }
 
-/// <summary>A tracks box with its grid and columns placed: everything a page of it needs besides the page.</summary>
-/// <param name="Environment">The fonts, algorithms and current page.</param>
-/// <param name="Box">The tracks box.</param>
-/// <param name="Grid">Its grid.</param>
+/// <summary>What a tracks box's pages share, prepared once per layout pass: the grid and the placed columns.</summary>
+/// <param name="Grid">The grid.</param>
 /// <param name="LineX">The x of every vertical grid line's centre, from the table's left edge; column j runs from
 /// LineX[j] to LineX[j + 1].</param>
 /// <param name="LineWidths">The width of every vertical grid line.</param>
 /// <param name="Width">The table's border-box width.</param>
-internal sealed record TableGeometry(
-    LayoutEnvironment Environment, Box Box, TableGrid Grid, ImmutableArray<double> LineX, ImmutableArray<double> LineWidths, double Width)
+/// <param name="AvailableWidth">The width the columns were placed in; a page of another width prepares again.</param>
+internal sealed record TablePreparation(TableGrid Grid, ImmutableArray<double> LineX, ImmutableArray<double> LineWidths, double Width, double AvailableWidth);
+
+/// <summary>A tracks box with its grid and columns placed, on the current page: everything a page of it needs.</summary>
+/// <param name="Environment">The fonts, algorithms and current page.</param>
+/// <param name="Box">The tracks box.</param>
+/// <param name="Prepared">The grid and the columns.</param>
+internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, TablePreparation Prepared)
 {
+    /// <summary>The grid.</summary>
+    public TableGrid Grid => Prepared.Grid;
+
+    /// <summary>The x of every vertical grid line's centre.</summary>
+    public ImmutableArray<double> LineX => Prepared.LineX;
+
+    /// <summary>The width of every vertical grid line.</summary>
+    public ImmutableArray<double> LineWidths => Prepared.LineWidths;
+
+    /// <summary>The table's border-box width.</summary>
+    public double Width => Prepared.Width;
+
     /// <summary>The width of a cell's border box: its columns from line centre to line centre.</summary>
     public double CellWidth(TableGrid.Cell cell) => LineX[cell.Column + cell.ColumnSpan] - LineX[cell.Column];
 

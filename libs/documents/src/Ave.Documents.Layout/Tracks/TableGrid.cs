@@ -20,13 +20,18 @@ namespace Ave.Documents.Layout;
 /// <param name="HeaderRowCount">How many rows at the start belong to the header group.</param>
 /// <param name="Units">The row units: runs of rows that row spans join (see <see cref="Unit"/>).</param>
 /// <param name="Slots">For every row, the cell index in each column, or −1 for an empty slot.</param>
+/// <param name="CellsStartingIn">For every row, the indexes of the cells whose first row it is, in document order —
+/// so a page finds the cells of its rows without scanning the whole table.</param>
+/// <param name="UnitOfRow">For every row, the index of its unit in <paramref name="Units"/>.</param>
 internal sealed record TableGrid(
     ImmutableArray<TableGrid.Row> Rows,
     ImmutableArray<TableGrid.Cell> Cells,
     int ColumnCount,
     int HeaderRowCount,
     ImmutableArray<TableGrid.Unit> Units,
-    ImmutableArray<ImmutableArray<int>> Slots)
+    ImmutableArray<ImmutableArray<int>> Slots,
+    ImmutableArray<ImmutableArray<int>> CellsStartingIn,
+    ImmutableArray<int> UnitOfRow)
 {
     /// <summary>One row and the group it belongs to.</summary>
     /// <param name="Box">The row box.</param>
@@ -65,7 +70,14 @@ internal sealed record TableGrid(
     /// <summary>The unit a row belongs to.</summary>
     /// <param name="row">The row.</param>
     /// <returns>The unit.</returns>
-    public Unit UnitOf(int row) => Units.First(unit => unit.FirstRow <= row && row <= unit.LastRow);
+    public Unit UnitOf(int row) => Units[UnitOfRow[row]];
+
+    /// <summary>The indexes of the cells whose first row lies in <paramref name="first"/>…<paramref name="last"/>.</summary>
+    /// <param name="first">The first row.</param>
+    /// <param name="last">The last row.</param>
+    /// <returns>The cell indexes, in document order.</returns>
+    public IEnumerable<int> CellsStartingInRows(int first, int last) =>
+        Enumerable.Range(first, last - first + 1).SelectMany(row => CellsStartingIn[row]);
 
     /// <summary>
     /// Builds the grid, or reports why the tree is not a valid table:
@@ -130,20 +142,37 @@ internal sealed record TableGrid(
         var flatCells = cellBoxes.SelectMany(cells => cells).ToImmutableArray();
         var cells = grid.Cells.Select((placement, index) => new Cell(flatCells[index], placement.Row, placement.Column, placement.Span.Rows, placement.Span.Columns)).ToImmutableArray();
         var headerRows = groups.FirstOrDefault()?.Layout == LayoutAlgorithmId.TableHeaderGroup ? groupRows[0].Length : 0;
-        return Result<TableGrid, Error>.Success(new TableGrid(rows, cells, columnCount, headerRows, BuildUnits(rows, cells), grid.Slots));
+        var startingIn = rows.Select(_ => ImmutableArray.CreateBuilder<int>()).ToArray();
+        for (var index = 0; index < cells.Length; index++)
+        {
+            startingIn[cells[index].Row].Add(index);
+        }
+
+        ImmutableArray<ImmutableArray<int>> cellsStartingIn = [.. startingIn.Select(list => list.ToImmutable())];
+        var units = BuildUnits(cells, cellsStartingIn);
+        var unitOfRow = new int[rows.Length];
+        for (var unit = 0; unit < units.Length; unit++)
+        {
+            for (var row = units[unit].FirstRow; row <= units[unit].LastRow; row++)
+            {
+                unitOfRow[row] = unit;
+            }
+        }
+
+        return Result<TableGrid, Error>.Success(new TableGrid(rows, cells, columnCount, headerRows, units, grid.Slots, cellsStartingIn, [.. unitOfRow]));
     }
 
     /// <summary>Joins rows into units: a unit grows while a cell that starts inside it reaches a later row.</summary>
-    private static ImmutableArray<Unit> BuildUnits(ImmutableArray<Row> rows, ImmutableArray<Cell> cells)
+    private static ImmutableArray<Unit> BuildUnits(ImmutableArray<Cell> cells, ImmutableArray<ImmutableArray<int>> cellsStartingIn)
     {
         var units = ImmutableArray.CreateBuilder<Unit>();
         var first = 0;
-        while (first < rows.Length)
+        while (first < cellsStartingIn.Length)
         {
             var last = first;
             for (var row = first; row <= last; row++)
             {
-                last = cells.Where(cell => cell.Row == row).Select(cell => cell.LastRow).Append(last).Max();
+                last = cellsStartingIn[row].Select(cell => cells[cell].LastRow).Append(last).Max();
             }
 
             units.Add(new Unit(first, last));

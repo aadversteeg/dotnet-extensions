@@ -215,8 +215,8 @@ internal static class TablePage
         TableGeometry table, Content content, int? nextBody, CollapsedBorders.LineContext belowContext, double height, bool isRepeated)
     {
         var grid = table.Grid;
-        var cells = grid.Cells.Select((cell, index) => (cell, index)).Where(pair => pair.cell.Row < grid.HeaderRowCount)
-            .Select(pair => new ActiveCell(pair.index, pair.cell.Row, null, false)).ToImmutableArray();
+        var cells = grid.CellsStartingInRows(0, grid.HeaderRowCount - 1)
+            .Select(index => new ActiveCell(index, grid.Cells[index].Row, null, false)).ToImmutableArray();
         return Measure(table, 0, grid.HeaderRowCount - 1, cells, content.Lines[^1]).OnSuccessMap(segment =>
         {
             var below = table.HorizontalWidth(grid.HeaderRowCount - 1, nextBody, belowContext) / 2;
@@ -471,9 +471,9 @@ internal static class TablePage
     private static ImmutableArray<ActiveCell> ActiveCells(TableGrid grid, int firstRow, int lastRow, ValueList<CellBreak> continuing)
     {
         var resumed = continuing.Select(cell => new ActiveCell(cell.Cell, firstRow, cell.Token, cell.IsComplete)).ToImmutableArray();
-        var fresh = grid.Cells.Select((cell, index) => (cell, index))
-            .Where(pair => pair.cell.Row >= firstRow && pair.cell.Row <= lastRow && !continuing.Any(resume => resume.Cell == pair.index))
-            .Select(pair => new ActiveCell(pair.index, pair.cell.Row, null, false));
+        var fresh = grid.CellsStartingInRows(firstRow, lastRow)
+            .Where(index => !continuing.Any(resume => resume.Cell == index))
+            .Select(index => new ActiveCell(index, grid.Cells[index].Row, null, false));
         return [.. resumed, .. fresh];
     }
 
