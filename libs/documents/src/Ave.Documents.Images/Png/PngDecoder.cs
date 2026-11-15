@@ -32,10 +32,9 @@ internal static class PngDecoder
 
     private static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImmutableArray<PngChunk> chunks)
     {
-        // §5.6 chunk ordering: IHDR first, then PLTE (if any) before the first IDAT, the IDATs consecutive.
-        if (chunks[0].Type != "IHDR")
+        if (OrderProblem(chunks) is { } problem)
         {
-            return ImageErrors.Invalid<ImageData>("the first chunk must be IHDR.", chunks[0].Offset);
+            return ImageErrors.Invalid<ImageData>(problem.Message, problem.Offset);
         }
 
         var unknownCritical = chunks.FirstOrDefault(chunk => chunk.IsCritical && chunk.Type is not ("IHDR" or "PLTE" or "IDAT" or "IEND"));
@@ -48,6 +47,29 @@ internal static class PngDecoder
             PngPalette.Read(header, chunks).OnSuccessBind(palette =>
                 Inflate(header, chunks).OnSuccessBind(scanlines =>
                     PngSamples.Expand(ImageId.Of(file.Span), header, palette, scanlines))));
+    }
+
+    /// <summary>
+    /// The chunk ordering rules of §5.6 (Table 5.3) for the critical chunks, or null when they hold: IHDR first and only
+    /// once; PLTE at most once and before the first IDAT; the IDAT chunks consecutive ("If multiple IDAT chunks are
+    /// present, they shall appear consecutively with no other intervening chunks"). IEND ends the list
+    /// (<see cref="PngChunk.ReadAll"/> stops there).
+    /// </summary>
+    private static (string Message, long Offset)? OrderProblem(ImmutableArray<PngChunk> chunks)
+    {
+        if (chunks[0].Type != "IHDR")
+        {
+            return ("the first chunk must be IHDR.", chunks[0].Offset);
+        }
+
+        var firstData = chunks.IndexOf(chunks.FirstOrDefault(chunk => chunk.Type == "IDAT")!);
+        var lastData = chunks.LastIndexOf(chunks.LastOrDefault(chunk => chunk.Type == "IDAT")!);
+        return chunks.Skip(1).FirstOrDefault(chunk => chunk.Type == "IHDR") is { } second ? ("there is a second IHDR chunk.", second.Offset)
+            : chunks.Where(chunk => chunk.Type == "PLTE").Skip(1).FirstOrDefault() is { } palette ? ("there is a second PLTE chunk.", palette.Offset)
+            : firstData >= 0 && chunks.Skip(firstData).FirstOrDefault(chunk => chunk.Type == "PLTE") is { } late ? ("the PLTE chunk comes after image data.", late.Offset)
+            : firstData >= 0 && chunks.Skip(firstData).Take(lastData - firstData + 1).FirstOrDefault(chunk => chunk.Type != "IDAT") is { } between
+                ? ($"a {between.Type} chunk sits between the IDAT chunks, which must be consecutive.", between.Offset)
+            : null;
     }
 
     /// <summary>

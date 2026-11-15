@@ -59,7 +59,10 @@ internal static class JpegReader
 
             if (IsStartOfFrame(marker))
             {
-                return Frame(file, marker, span.Slice(offset + 3, length - 2), offset);
+                var afterFrame = offset + 1 + length;
+                return HasScan(span, afterFrame)
+                    ? Frame(file, marker, span.Slice(offset + 3, length - 2), offset)
+                    : ImageErrors.Invalid<ImageData>("the frame header is not followed by a scan (no SOS marker), so there is no image data.", afterFrame);
             }
 
             if (marker is 0xDA or 0xD9)
@@ -69,6 +72,42 @@ internal static class JpegReader
 
             offset += 1 + length;
         }
+    }
+
+    /// <summary>
+    /// True when a scan header (SOS, FF DA) follows the frame header, after any table and miscellaneous segments: a
+    /// frame is "a frame header followed by one or more scans" (T.81 §B.2.1, Figure B.2), and without a scan there is
+    /// no image data to embed.
+    /// </summary>
+    private static bool HasScan(ReadOnlySpan<byte> span, int offset)
+    {
+        while (offset < span.Length && span[offset] == MarkerPrefix)
+        {
+            while (offset < span.Length && span[offset] == MarkerPrefix)
+            {
+                offset++;
+            }
+
+            if (offset + 2 >= span.Length || span[offset] == 0xD9)
+            {
+                return false;
+            }
+
+            if (span[offset] == 0xDA)
+            {
+                return true;
+            }
+
+            var length = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 1)..]);
+            if (length < 2)
+            {
+                return false;
+            }
+
+            offset += 1 + length;
+        }
+
+        return false;
     }
 
     /// <summary>The SOFn markers, Table B.1: C0–CF except C4 (DHT), C8 (reserved, JPG) and CC (DAC).</summary>
