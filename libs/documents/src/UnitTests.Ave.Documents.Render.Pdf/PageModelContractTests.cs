@@ -194,4 +194,16 @@ public class PageModelContractTests
     public void A_profile_with_an_undefined_PDF_A_level_is_refused() =>
         Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1)), With(PdfProfile.Plain with { PdfA3 = (PdfA3Level)9 })).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidOptions);
+
+    [Fact]
+    public void PDF_UA_refuses_a_table_head_without_a_body()
+    {
+        var document = Tagged(
+            Start(1, SemanticRole.Table),
+            Start(2, SemanticRole.TableHead), Start(3, SemanticRole.TableRow), Start(4, SemanticRole.TableHeaderCell), Run("h"), End(4), End(3), End(2),
+            End(1));
+
+        Refused(document, With(PdfProfile.PdfUa1)).Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.TableHeadWithoutBody);
+        PdfRenderer.Render(document, With(PdfProfile.PdfA3a)).IsSuccess.Should().BeTrue("the rule is PDF/UA's");
+    }
 }

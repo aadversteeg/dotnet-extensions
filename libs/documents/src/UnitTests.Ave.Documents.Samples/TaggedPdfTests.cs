@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text;
 using System.Xml.Linq;
+using Ave.Documents.Fluent;
 using Ave.Documents.Samples;
 using Ave.Documents.TestSupport;
 using UglyToad.PdfPig;
@@ -29,6 +30,24 @@ public class TaggedPdfTests
         var headers = head.Children.Single().Children;
         headers.Select(cell => (cell.Type, cell.Details)).Should().AllBeEquivalentTo(("TH", "Scope=Column"));
         headers.Select(cell => cell.DepthFirst().Last().Text).Should().Equal("Uitgevoerd op", "Taak", "Titel", "Duur (uur)");
+    }
+
+    [Fact]
+    public void A_table_of_header_rows_only_is_tagged_as_a_body_of_header_cells()
+    {
+        // A table head without a body is a structure PDF/UA refuses (veraPDF rule 7.2-14); the generated-documents
+        // test found the front-end writing one for a table that has only header rows.
+        var document = Elements.Document(
+                [Elements.Table(Elements.Columns(Elements.Fill(), Elements.Fill()), [Elements.HeaderRow([Elements.Cell("a"), Elements.Cell("b")])])],
+                title: "Header only",
+                language: "en")
+            .FontFamily("Lato");
+
+        var elements = PdfStructureReadBack.Read(SampleFiles.Pdf(document)).Single().DepthFirst().ToList();
+
+        elements.Should().NotContain(element => element.Type == "THead");
+        elements.Should().ContainSingle(element => element.Type == "TBody").Which.Children.Single().Children
+            .Select(cell => cell.Type).Should().Equal("TH", "TH");
     }
 
     [Fact]

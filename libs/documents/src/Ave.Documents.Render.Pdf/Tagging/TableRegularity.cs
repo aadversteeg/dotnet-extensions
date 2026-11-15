@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -40,7 +41,15 @@ internal static class TableRegularity
                 .With(ErrorMetadataKeys.Node, found.Cell.Start.Node.ToString())
                 .With(ErrorMetadataKeys.Value, found.Cell.Start.Span.ToString())
                 .WithSource(found.Cell.Start.Source));
-        return spansPastGroup.Concat(grid.IncompleteRows.Select(index =>
+        var kidTypes = Children(tree, table).Select(kid => kid.Type.Value).ToList();
+        var headWithoutBody = kidTypes.Contains("THead") && !kidTypes.Contains("TBody")
+            ? [new Error(
+                    PdfRenderErrorCodes.Conformance.PdfUa1.TableHeadWithoutBody,
+                    $"PDF/UA-1 needs body rows in a table that has a head (veraPDF rule 7.2-14) ({table.Start.Source}).")
+                .With(ErrorMetadataKeys.Node, table.Start.Node.ToString())
+                .WithSource(table.Start.Source)]
+            : Array.Empty<Error>();
+        return headWithoutBody.Concat(spansPastGroup).Concat(grid.IncompleteRows.Select(index =>
         {
             var (row, filled) = (rows[index], grid.Slots[index].Count(slot => slot >= 0));
             return new Error(

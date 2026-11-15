@@ -144,6 +144,11 @@ public static class PdfRenderErrorCodes
             /// overlap (veraPDF rules 7.2-41, 7.2-42: "Table rows shall have the same number of columns"; 7.2-15).
             /// Metadata: Node, Value (slots filled / columns), SourceFile, SourceLine (the row).</summary>
             public static readonly ErrorCode IrregularTable = _ / "IrregularTable";
+
+            /// <summary>A table with a head (THead) and no body (TBody) (veraPDF rule 7.2-14: "If Table element contains
+            /// THead kid, Table element should contain one or more TBody kids"). Metadata: Node, SourceFile, SourceLine
+            /// (the table).</summary>
+            public static readonly ErrorCode TableHeadWithoutBody = _ / "TableHeadWithoutBody";
         }
     }
 }

@@ -153,14 +153,18 @@ internal static class TableTranslator
             next += GroupNodeCount(group);
         }
 
+        var hasBody = groups.Any(group => !group.IsHeader);
         return placed
-            .TraverseAll(item => GroupNode(item.Group, item.Id, inherited, cellDefaults, isLayoutOnly))
+            .TraverseAll(item => GroupNode(item.Group, item.Id, inherited, cellDefaults, isLayoutOnly, hasBody))
             .OnSuccessMap(nodes => nodes.ToValueList());
     }
 
     /// <summary>A row group box. An explicit group carries its own text, border, background and keep rule; it has no
-    /// margin or padding (CSS 2.1 §17.5: "Internal table elements do not have margins"; only cells have padding).</summary>
-    private static Result<Node, Error> GroupNode(Group group, NodeId id, DocumentTranslator.Inherited inherited, BoxFormat cellDefaults, bool isLayoutOnly)
+    /// margin or padding (CSS 2.1 §17.5: "Internal table elements do not have margins"; only cells have padding).
+    /// Header rows are a table head (THead) only when the table has body rows for them to head: a table head without
+    /// a body is a structure PDF/UA refuses (veraPDF rule 7.2-14). The header rows of a table that has only header rows
+    /// are its body; their cells stay header cells.</summary>
+    private static Result<Node, Error> GroupNode(Group group, NodeId id, DocumentTranslator.Inherited inherited, BoxFormat cellDefaults, bool isLayoutOnly, bool hasBody)
     {
         var (format, style, source) = group.Explicit is { } explicitGroup
             ? (explicitGroup.Format, explicitGroup.Style, explicitGroup.Source)
@@ -180,7 +184,7 @@ internal static class TableTranslator
         var children = rows
             .TraverseAll(item => RowNode(item.Row, item.Id, own, cellDefaults, isLayoutOnly))
             .OnSuccessMap(nodes => nodes.ToValueList());
-        var role = isLayoutOnly ? SemanticRole.Generic : group.IsHeader ? SemanticRole.TableHead : SemanticRole.TableBody;
+        var role = isLayoutOnly ? SemanticRole.Generic : group.IsHeader && hasBody ? SemanticRole.TableHead : SemanticRole.TableBody;
         var part = group.IsHeader ? TableDisplay.HeaderGroup : TableDisplay.RowGroup;
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes =>
             (Node)new Box(id, role, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own.Align) with { TableDisplay = part }, nodes, source));
