@@ -102,7 +102,8 @@ public class DefaultIgnorableTests
 
         var lines = GreedyLineBreaker.BreakLines([[.. glyphs]], availableWidth: Width(Shape("aa co")) + 0.1);
 
-        lines.Should().ContainSingle();
+        lines.Should().ContainSingle().Which.Segments.SelectMany(segment => segment.Glyphs).Last().IsInvisible
+            .Should().BeTrue("the paragraph's last line does not break at the soft hyphen, so no hyphen shows");
     }
 
     [Fact]
