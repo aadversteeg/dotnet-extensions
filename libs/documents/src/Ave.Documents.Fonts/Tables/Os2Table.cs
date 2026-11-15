@@ -11,7 +11,8 @@ namespace Ave.Documents.Fonts.Tables;
 /// <param name="WeightClass">usWeightClass, 1–1000.</param>
 /// <param name="FsType">fsType, the embedding licensing rights.</param>
 /// <param name="CapHeight">sCapHeight (table version 2 and later); null for older versions.</param>
-internal sealed record Os2Table(int WeightClass, ushort FsType, int? CapHeight)
+/// <param name="IsItalic">fsSelection bit 0, ITALIC: "Font contains italic or oblique glyphs".</param>
+internal sealed record Os2Table(int WeightClass, ushort FsType, int? CapHeight, bool IsItalic)
 {
     public const string Tag = "OS/2";
 
@@ -19,6 +20,10 @@ internal sealed record Os2Table(int WeightClass, ushort FsType, int? CapHeight)
     // versions 2 to 4 are 96, version 5 is 100.
     private const int Version0Length = 78;
     private const int Version2Length = 96;
+
+    // fsSelection is at byte 62 in every version; bit 0 is ITALIC.
+    private const int FsSelectionOffset = 62;
+    private const int ItalicBit = 1;
 
     public static Result<Os2Table, Error> Parse(ReadOnlySpan<byte> table)
     {
@@ -40,6 +45,7 @@ internal sealed record Os2Table(int WeightClass, ushort FsType, int? CapHeight)
         }
 
         int? capHeight = version >= 2 ? BigEndian.Int16(table, 88) : null;
-        return Result<Os2Table, Error>.Success(new Os2Table(weightClass, BigEndian.UInt16(table, 8), capHeight));
+        var isItalic = (BigEndian.UInt16(table, FsSelectionOffset) & ItalicBit) != 0;
+        return Result<Os2Table, Error>.Success(new Os2Table(weightClass, BigEndian.UInt16(table, 8), capHeight, isItalic));
     }
 }

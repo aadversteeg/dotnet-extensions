@@ -16,32 +16,45 @@ namespace Ave.Documents.Fonts;
 public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
 {
     /// <summary>
-    /// Finds the font for a family and weight. The family is compared ASCII case-insensitively (CSS Fonts 4
-    /// §5.1: family names are matched case-insensitively). The weight must match exactly: the CSS fallback to
-    /// the nearest weight (CSS Fonts 4 §5.2 step 4) is a later stage. When two fonts match, the first one given
-    /// wins.
+    /// Finds the upright font for a family and weight; see <see cref="Find(string, FontWeight, FontStyle)"/>.
     /// </summary>
     /// <param name="family">The family name, for example <c>Lato</c>.</param>
     /// <param name="weight">The weight, for example <see cref="FontWeight.Bold"/>.</param>
     /// <returns>The font, or a <see cref="DocumentErrorCodes.Font.NotFound"/> error.</returns>
-    public Result<TrueTypeFont, Error> Find(string family, FontWeight weight)
+    public Result<TrueTypeFont, Error> Find(string family, FontWeight weight) => Find(family, weight, FontStyle.Normal);
+
+    /// <summary>
+    /// Finds the font for a family, weight and style. The family is compared ASCII case-insensitively (CSS Fonts 4
+    /// §5.1: family names are matched case-insensitively). Weight and style must match exactly: the CSS fallbacks to
+    /// the nearest weight and to a synthesised or oblique face (CSS Fonts 4 §5.2 step 4) are a later stage, so a
+    /// missing italic is an error rather than a silent upright substitute. When two fonts match, the first one given
+    /// wins.
+    /// </summary>
+    /// <param name="family">The family name, for example <c>Lato</c>.</param>
+    /// <param name="weight">The weight, for example <see cref="FontWeight.Bold"/>.</param>
+    /// <param name="style">Upright or italic.</param>
+    /// <returns>The font, or a <see cref="DocumentErrorCodes.Font.NotFound"/> error.</returns>
+    public Result<TrueTypeFont, Error> Find(string family, FontWeight weight, FontStyle style)
     {
         var match = Fonts.FirstOrDefault(font =>
             string.Equals(font.Names.Family, family, StringComparison.OrdinalIgnoreCase)
-            && font.Metrics.WeightClass == weight.Value);
+            && font.Metrics.WeightClass == weight.Value
+            && font.Metrics.IsItalic == (style == FontStyle.Italic));
 
         return match is not null
             ? Result<TrueTypeFont, Error>.Success(match)
             : Result<TrueTypeFont, Error>.Failure(
                 new Error(
                         DocumentErrorCodes.Font.NotFound,
-                        $"No font for family '{family}' with weight {weight}. Available: {Describe()}.")
+                        $"No font for family '{family}' with weight {weight}{StyleSuffix(style == FontStyle.Italic)}. Available: {Describe()}.")
                     .With(ErrorMetadataKeys.FontName, family)
-                    .With(ErrorMetadataKeys.Value, weight.ToString()));
+                    .With(ErrorMetadataKeys.Value, weight + StyleSuffix(style == FontStyle.Italic)));
     }
+
+    private static string StyleSuffix(bool italic) => italic ? " italic" : string.Empty;
 
     private string Describe() =>
         Fonts.IsEmpty
             ? "none"
-            : string.Join(", ", Fonts.Select(font => $"{font.Names.Family} {font.Metrics.WeightClass}"));
+            : string.Join(", ", Fonts.Select(font => $"{font.Names.Family} {font.Metrics.WeightClass}{StyleSuffix(font.Metrics.IsItalic)}"));
 }

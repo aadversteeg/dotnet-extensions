@@ -117,7 +117,8 @@ public static class FontParser
             BoundingBox: head.Value.BoundingBox,
             ItalicAngle: post.Value.ItalicAngle,
             IsFixedPitch: post.Value.IsFixedPitch,
-            WeightClass: os2.Value.WeightClass);
+            WeightClass: os2.Value.WeightClass,
+            IsItalic: os2.Value.IsItalic);
 
         return Result<TrueTypeFont, Error>.Success(new TrueTypeFont(
             fontFile,

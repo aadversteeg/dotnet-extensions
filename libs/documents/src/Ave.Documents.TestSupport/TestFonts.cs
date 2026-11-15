@@ -5,13 +5,14 @@ using Ave.Documents.Fonts;
 namespace Ave.Documents.TestSupport;
 
 /// <summary>
-/// The test fonts: Lato 2.015 Regular and Bold (SIL Open Font License 1.1, see assets/fonts/lato/OFL.txt),
+/// The test fonts: Lato 2.015 Regular, Bold and Italic (SIL Open Font License 1.1, see assets/fonts/lato/OFL.txt),
 /// loaded once from the test output folder.
 /// </summary>
 public static class TestFonts
 {
     private static readonly Lazy<TrueTypeFont> LazyRegular = new(() => Load("Lato-Regular.ttf"));
     private static readonly Lazy<TrueTypeFont> LazyBold = new(() => Load("Lato-Bold.ttf"));
+    private static readonly Lazy<TrueTypeFont> LazyItalic = new(() => Load("Lato-Italic.ttf"));
 
     /// <summary>Lato Regular (weight 400).</summary>
     public static TrueTypeFont Regular => LazyRegular.Value;
@@ -19,8 +20,14 @@ public static class TestFonts
     /// <summary>Lato Bold (weight 700).</summary>
     public static TrueTypeFont Bold => LazyBold.Value;
 
-    /// <summary>A font set with both.</summary>
+    /// <summary>Lato Italic (weight 400, italic).</summary>
+    public static TrueTypeFont Italic => LazyItalic.Value;
+
+    /// <summary>A font set with Regular and Bold (the stage-0 set).</summary>
     public static FontSet Set => new([Regular, Bold]);
+
+    /// <summary>A font set with Regular, Bold and Italic.</summary>
+    public static FontSet SetWithItalic => new([Regular, Bold, Italic]);
 
     /// <summary>The bytes of a test font file.</summary>
     /// <param name="fileName">For example <c>Lato-Regular.ttf</c>.</param>

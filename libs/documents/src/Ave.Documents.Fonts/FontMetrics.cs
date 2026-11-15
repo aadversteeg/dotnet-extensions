@@ -13,6 +13,7 @@ namespace Ave.Documents.Fonts;
 /// <param name="ItalicAngle">Slant in degrees counter-clockwise from vertical, 0 for upright fonts ('post').</param>
 /// <param name="IsFixedPitch">True for monospaced fonts ('post').</param>
 /// <param name="WeightClass">The weight on the CSS 1–1000 scale ('OS/2' usWeightClass).</param>
+/// <param name="IsItalic">True for an italic or oblique face ('OS/2' fsSelection bit 0).</param>
 public sealed record FontMetrics(
     int UnitsPerEm,
     int Ascender,
@@ -22,7 +23,8 @@ public sealed record FontMetrics(
     FontBoundingBox BoundingBox,
     double ItalicAngle,
     bool IsFixedPitch,
-    int WeightClass)
+    int WeightClass,
+    bool IsItalic = false)
 {
     /// <summary>Converts a value in design units to points at a font size.</summary>
     /// <param name="designUnits">The value in font design units.</param>
