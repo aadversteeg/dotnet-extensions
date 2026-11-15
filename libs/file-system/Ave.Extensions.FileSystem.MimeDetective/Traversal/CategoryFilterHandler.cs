@@ -151,7 +151,7 @@ namespace Ave.Extensions.FileSystem.MimeDetective.Traversal
         /// <returns>True if the content type belongs to the category.</returns>
         public static bool BelongsToCategory(string? contentType, FileCategory category)
         {
-            if (string.IsNullOrEmpty(contentType))
+            if (contentType is null || contentType.Length == 0)
                 return false;
 
             return category switch

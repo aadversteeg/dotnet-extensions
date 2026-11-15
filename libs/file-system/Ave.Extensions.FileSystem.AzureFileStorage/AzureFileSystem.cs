@@ -33,6 +33,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         private readonly ShareClient _shareClient;
         private readonly IPathSecurity? _pathSecurity;
         private readonly IPathMapper _pathMapper;
+
+        private static readonly char[] PathSeparator = ['/'];
         
         /// <summary>
         /// Initializes a new instance of the AzureFileSystem class.
@@ -898,7 +900,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
                 if (string.IsNullOrEmpty(azurePath))
                     return Result<Unit, Error>.Success(Unit.Value);
 
-                var pathParts = azurePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var pathParts = azurePath.Split(PathSeparator, StringSplitOptions.RemoveEmptyEntries);
                 var currentPath = "";
 
                 for (int i = 0; i < pathParts.Length; i++)
@@ -942,9 +944,10 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         {
             var normalized = systemPath.Replace('\\', '/').TrimStart('/');
             
-            if (!string.IsNullOrEmpty(_options.BaseDirectory))
+            var baseDirectory = _options.BaseDirectory;
+            if (baseDirectory != null && baseDirectory.Length > 0)
             {
-                var baseDir = _options.BaseDirectory.Replace('\\', '/').TrimEnd('/');
+                var baseDir = baseDirectory.Replace('\\', '/').TrimEnd('/');
                 normalized = $"{baseDir}/{normalized}";
             }
             
@@ -953,7 +956,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
         
         private ShareFileClient GetFileClient(string azurePath)
         {
-            var segments = azurePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var segments = azurePath.Split(PathSeparator, StringSplitOptions.RemoveEmptyEntries);
             
             if (segments.Length == 0)
                 throw new ArgumentException("Invalid file path");
@@ -975,7 +978,7 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
             if (string.IsNullOrEmpty(azurePath))
                 return _shareClient.GetRootDirectoryClient();
             
-            var segments = azurePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var segments = azurePath.Split(PathSeparator, StringSplitOptions.RemoveEmptyEntries);
             ShareDirectoryClient dirClient = _shareClient.GetRootDirectoryClient();
             
             foreach (var segment in segments)

@@ -27,10 +27,13 @@ namespace Ave.Extensions.FileSystem
         /// </summary>
         private readonly int _hashCode;
 
+        private static readonly char[] SegmentSeparator = ['/'];
+        private static readonly char[] PathSeparators = ['/', '\\'];
+
         /// <summary>
         /// Gets whether this is an absolute path (starts with '/').
         /// </summary>
-        public bool IsAbsolute => Value.StartsWith('/');
+        public bool IsAbsolute => Value.Length > 0 && Value[0] == '/';
 
         /// <summary>
         /// Gets whether this is a relative path (does not start with '/').
@@ -67,7 +70,7 @@ namespace Ave.Extensions.FileSystem
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathNullOrEmpty);
             }
 
-            if (path.Contains('\\'))
+            if (path.IndexOf('\\') >= 0)
             {
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.PathContainsBackslashes);
             }
@@ -80,7 +83,7 @@ namespace Ave.Extensions.FileSystem
             // Extract segments (empty for root path)
             var segments = path == "/"
                 ? []
-                : path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                : path.Split(SegmentSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             return Result<CanonicalPath, Error>.Success(new CanonicalPath(path, segments));
         }
@@ -106,7 +109,7 @@ namespace Ave.Extensions.FileSystem
                     return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentNullOrEmpty(i));
                 }
 
-                if (segment.Contains('/') || segment.Contains('\\'))
+                if (segment.IndexOfAny(PathSeparators) >= 0)
                 {
                     return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentContainsPathSeparators(i));
                 }
@@ -151,7 +154,7 @@ namespace Ave.Extensions.FileSystem
         /// <returns>The name of the file or directory.</returns>
         public string GetName()
         {
-            return Segments.Length == 0 ? "/" : Segments[^1];
+            return Segments.Length == 0 ? "/" : Segments[Segments.Length - 1];
         }
 
         /// <summary>
@@ -263,12 +266,12 @@ namespace Ave.Extensions.FileSystem
             if (string.IsNullOrEmpty(segment))
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.AppendSegmentNullOrEmpty);
 
-            if (segment.Contains('/') || segment.Contains('\\'))
+            if (segment.IndexOfAny(PathSeparators) >= 0)
                 return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.AppendSegmentContainsPathSeparators);
 
             var newSegments = new string[Segments.Length + 1];
             Array.Copy(Segments, 0, newSegments, 0, Segments.Length);
-            newSegments[^1] = segment;
+            newSegments[newSegments.Length - 1] = segment;
 
             var prefix = IsAbsolute ? "/" : "";
             var combinedPath = prefix + string.Join("/", newSegments);
@@ -297,7 +300,7 @@ namespace Ave.Extensions.FileSystem
                     return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentNullOrEmpty(i));
                 }
 
-                if (segment.Contains('/') || segment.Contains('\\'))
+                if (segment.IndexOfAny(PathSeparators) >= 0)
                 {
                     return Result<CanonicalPath, Error>.Failure(FileSystemErrors.CanonicalPath.SegmentContainsPathSeparators(i));
                 }
@@ -444,12 +447,11 @@ namespace Ave.Extensions.FileSystem
                 return string.Empty;
 
             var invalidChars = Path.GetInvalidFileNameChars();
-            var span = name.AsSpan();
             char[]? buffer = null;
 
-            for (int i = 0; i < span.Length; i++)
+            for (int i = 0; i < name.Length; i++)
             {
-                if (Array.IndexOf(invalidChars, span[i]) >= 0)
+                if (Array.IndexOf(invalidChars, name[i]) >= 0)
                 {
                     if (buffer is null)
                     {

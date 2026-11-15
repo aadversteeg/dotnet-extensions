@@ -14,7 +14,7 @@ namespace Ave.Extensions.FileSystem
         /// <returns>True if the path is absolute; otherwise, false.</returns>
         public static bool IsAbsolute(string? systemPath)
         {
-            if (string.IsNullOrEmpty(systemPath))
+            if (systemPath is null || systemPath.Length == 0)
                 return false;
 
             // Unix absolute: /path
