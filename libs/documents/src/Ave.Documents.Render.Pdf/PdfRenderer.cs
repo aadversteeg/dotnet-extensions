@@ -141,7 +141,7 @@ public static class PdfRenderer
     private static IndirectObject Metadata(DocumentMetadata metadata, PdfRenderOptions options, ObjectPlan plan) =>
         new IndirectStream(plan.Metadata, new PdfStream(
             PdfDictionary.Of(("Type", new PdfName("Metadata")), ("Subtype", new PdfName("XML"))),
-            MetadataPacket.For(metadata, options.Profile, options).Write(),
+            MetadataPacket.For(metadata, options).Write(),
             StreamEncoding.None));
 
     /// <summary>A flat page tree (§7.7.3.2, Table 29): one node whose kids are all the pages.</summary>

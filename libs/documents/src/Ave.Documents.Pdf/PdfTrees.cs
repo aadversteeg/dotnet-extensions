@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace Ave.Documents.Pdf;
@@ -31,11 +32,11 @@ public static class PdfTrees
             .SelectMany(entry => new[] { new PdfInteger(entry.Key), entry.Value })])));
 
     /// <summary>Byte strings in the order of their bytes, the shorter first when one is a prefix of the other.</summary>
-    private sealed class ByteOrder : IComparer<System.Collections.Immutable.ImmutableArray<byte>>
+    private sealed class ByteOrder : IComparer<ImmutableArray<byte>>
     {
         public static ByteOrder Instance { get; } = new();
 
-        public int Compare(System.Collections.Immutable.ImmutableArray<byte> left, System.Collections.Immutable.ImmutableArray<byte> right) =>
+        public int Compare(ImmutableArray<byte> left, ImmutableArray<byte> right) =>
             left.AsSpan().SequenceCompareTo(right.AsSpan());
     }
 }

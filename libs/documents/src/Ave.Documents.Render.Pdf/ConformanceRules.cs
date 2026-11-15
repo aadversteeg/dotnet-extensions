@@ -72,6 +72,8 @@ internal static class ConformanceRules
             .SelectMany(page => page.Items.OfType<StructureStart>())
             .DistinctBy(start => start.Node)
             .ToList();
+        // The painter's first marker is always the root (role Document), written where the document was; a hand-made
+        // page model without markers has no location to report.
         var documentSource = nodes.Count > 0 ? nodes[0].Source : default;
 
         if (string.IsNullOrWhiteSpace(document.Metadata.Title))

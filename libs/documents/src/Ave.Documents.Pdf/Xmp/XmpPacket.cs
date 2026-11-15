@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -128,13 +129,13 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
 
                 break;
             default:
-                throw new System.InvalidOperationException($"Unknown XMP value {value.GetType().Name}.");
+                throw new InvalidOperationException($"Unknown XMP value {value.GetType().Name}.");
         }
     }
 
     /// <summary>An RDF container; each item is an <c>rdf:li</c> element whose content <paramref name="writeItem"/>
     /// writes (a structure item puts its <c>rdf:parseType</c> on the <c>rdf:li</c> itself).</summary>
-    private static void WriteArray(XmlWriter xml, string container, IEnumerable<XmpValue> items, System.Action<XmpValue> writeItem)
+    private static void WriteArray(XmlWriter xml, string container, IEnumerable<XmpValue> items, Action<XmpValue> writeItem)
     {
         xml.WriteStartElement(XmpNamespace.Rdf.Prefix, container, XmpNamespace.Rdf.Uri);
         foreach (var item in items)

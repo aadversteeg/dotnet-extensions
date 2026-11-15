@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using Ave.Documents.Core;
-using Ave.Documents.Pdf;
 using Ave.Documents.Pdf.Xmp;
 
 namespace Ave.Documents.Render.Pdf;
@@ -26,14 +25,13 @@ internal static class MetadataPacket
     /// </list>
     /// </summary>
     /// <param name="metadata">The document's metadata.</param>
-    /// <param name="profile">The profile.</param>
-    /// <param name="options">The dates.</param>
+    /// <param name="options">The dates and the profile.</param>
     /// <returns>The packet.</returns>
-    public static XmpPacket For(DocumentMetadata metadata, PdfProfile profile, PdfRenderOptions options) =>
-        new([.. Properties(metadata, profile, options)]);
+    public static XmpPacket For(DocumentMetadata metadata, PdfRenderOptions options) => new([.. Properties(metadata, options)]);
 
-    private static IEnumerable<XmpProperty> Properties(DocumentMetadata metadata, PdfProfile profile, PdfRenderOptions options)
+    private static IEnumerable<XmpProperty> Properties(DocumentMetadata metadata, PdfRenderOptions options)
     {
+        var profile = options.Profile;
         if (metadata.Title is { } title)
         {
             yield return new XmpProperty(XmpNamespace.DublinCore, "title", new XmpLanguageAlternative(title));
