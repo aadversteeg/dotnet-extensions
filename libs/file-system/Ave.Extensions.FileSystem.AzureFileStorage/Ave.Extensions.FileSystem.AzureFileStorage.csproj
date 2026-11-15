@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- netstandard2.1 until the netstandard2.0 port of file-system is done -->
     <TargetFrameworks>netstandard2.1;net10.0</TargetFrameworks>
     
     <!-- Package specific metadata -->

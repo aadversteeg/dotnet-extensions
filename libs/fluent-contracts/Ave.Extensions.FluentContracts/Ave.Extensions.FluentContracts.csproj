@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <IsPackable>true</IsPackable>
     <Description>Fluent contract conditions for .NET. Define precondition checks with a chainable API. Use with FluentContracts.ForValidation (returns Result) or FluentContracts.ForTesting (throws).</Description>

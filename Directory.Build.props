@@ -34,7 +34,11 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
-  <!-- Tests, benchmarks and samples target net10.0 -->
+  <!-- Libraries (Ave.Extensions.*) target netstandard2.0 and net10.0 unless the project overrides
+       TargetFrameworks. Everything else (tests, benchmarks, samples) targets net10.0. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Ave.Extensions.'))">
+    <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
   <PropertyGroup Condition="!$(MSBuildProjectName.StartsWith('Ave.Extensions.'))">
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>

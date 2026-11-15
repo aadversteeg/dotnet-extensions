@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <IsPackable>true</IsPackable>
     <Description>Must() entry points for Ave.Extensions.FluentContracts. Throws framework-specific exceptions on failure (xUnit, NUnit, MSTest, TUnit). Inspired by Design by Contract and RFC 2119.</Description>
