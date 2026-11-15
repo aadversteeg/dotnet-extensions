@@ -69,12 +69,12 @@ internal static class GlyphSubstitution
         switch (subtable)
         {
             // Type 1: "replace a single glyph with another".
-            case SingleSubstitution single when single.Replacements.TryGetValue(item.Glyph.Value, out var replacement):
+            case SingleSubstitution single when single.Replace(item.Glyph) is { } replacement:
                 return new Substitution([item with { Glyph = replacement, Class = filter.ClassAfterSubstitution(replacement, item.Class) }], index + 1);
 
             // Type 2: "replace a single glyph with more than one glyph". All of them show the same characters;
             // the text stays on the first, so copying the text gives it once.
-            case MultipleSubstitution multiple when multiple.Sequences.TryGetValue(item.Glyph.Value, out var sequence):
+            case MultipleSubstitution multiple when multiple.SequenceOf(item.Glyph) is { } sequence:
                 return new Substitution(
                     [.. sequence.Select((glyph, position) => item with
                     {
@@ -84,8 +84,8 @@ internal static class GlyphSubstitution
                     })],
                     index + 1);
 
-            case LigatureSubstitution ligatures when ligatures.Ligatures.TryGetValue(item.Glyph.Value, out var candidates):
-                return candidates.Select(candidate => Ligate(glyphs, index, candidate, flags, filter)).FirstOrDefault(found => found is not null);
+            case LigatureSubstitution ligatures:
+                return ligatures.CandidatesFor(item.Glyph).Select(candidate => Ligate(glyphs, index, candidate, flags, filter)).FirstOrDefault(found => found is not null);
 
             // Every other type or format: not implemented in this version; the subtable is skipped (documented on
             // the Shaper).

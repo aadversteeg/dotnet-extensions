@@ -133,10 +133,6 @@ internal static class LayoutTableParser
         };
     }
 
-    /// <summary>The covered glyphs of a coverage table, each with its coverage index.</summary>
-    private static IEnumerable<(ushort Glyph, int Index)> Covered(TableReader reader, int offset) =>
-        Coverage.Read(reader, offset).Indices.Select(entry => (entry.Key, entry.Value));
-
     /// <summary>A glyph id a substitution produces; must exist in the font.</summary>
     private static GlyphId Output(TableReader reader, int glyph, int glyphCount)
     {
@@ -150,69 +146,81 @@ internal static class LayoutTableParser
 
     /// <summary>Single substitution format 1: "coverageOffset, deltaGlyphID" — "Add to original glyph ID to get
     /// substitute glyph ID", modulo 65536. Format 2: "coverageOffset, glyphCount, substituteGlyphIDs[]", indexed by
-    /// coverage index.</summary>
+    /// coverage index. Every glyph produced must exist in the font: for format 1 that is checked per coverage range,
+    /// whose glyphs map to one run of glyph ids, so no covered glyph is visited one by one.</summary>
     private static SingleSubstitution SingleSubstitutionAt(TableReader reader, int offset, int format, int glyphCount)
     {
-        var delta = reader.Int16(offset + 4);
-        return new SingleSubstitution(Covered(reader, offset + reader.UInt16(offset + 2)).ToFrozenDictionary(
-            covered => covered.Glyph,
-            covered => Output(reader, format == 1 ? (covered.Glyph + delta) & 0xFFFF : reader.UInt16(offset + 6 + covered.Index * 2), glyphCount)));
+        var coverage = Coverage.Read(reader, offset + reader.UInt16(offset + 2));
+        if (format == 1)
+        {
+            var delta = reader.Int16(offset + 4);
+            foreach (var range in coverage.Ranges)
+            {
+                var first = (range.Start + delta) & 0xFFFF;
+                Output(reader, first + range.End - range.Start, glyphCount);
+            }
+
+            return new SingleSubstitution(coverage, delta, [], IsDelta: true);
+        }
+
+        var count = reader.Count(offset + 4, offset + 6, 2);
+        return new SingleSubstitution(coverage, 0, [.. Enumerable.Range(0, count).Select(index => Output(reader, reader.UInt16(offset + 6 + index * 2), glyphCount))], IsDelta: false);
     }
 
     /// <summary>Multiple substitution format 1: "coverageOffset, sequenceCount, sequenceOffsets[]"; a sequence:
-    /// "glyphCount, substituteGlyphIDs[]".</summary>
+    /// "glyphCount, substituteGlyphIDs[]". The sequences are indexed by coverage index.</summary>
     private static MultipleSubstitution MultipleSubstitutionAt(TableReader reader, int offset, int glyphCount) =>
-        new(Covered(reader, offset + reader.UInt16(offset + 2)).ToFrozenDictionary(
-            covered => covered.Glyph,
-            covered =>
+        new(Coverage.Read(reader, offset + reader.UInt16(offset + 2)),
+            [.. Enumerable.Range(0, reader.Count(offset + 4, offset + 6, 2)).Select(index =>
             {
-                var sequence = offset + reader.UInt16(offset + 6 + covered.Index * 2);
+                var sequence = offset + reader.UInt16(offset + 6 + index * 2);
                 return (ValueList<GlyphId>)[.. Enumerable.Range(0, reader.Count(sequence, sequence + 2, 2))
-                    .Select(index => Output(reader, reader.UInt16(sequence + 2 + index * 2), glyphCount))];
-            }));
+                    .Select(position => Output(reader, reader.UInt16(sequence + 2 + position * 2), glyphCount))];
+            })]);
 
     /// <summary>Ligature substitution format 1: "coverageOffset, ligatureSetCount, ligatureSetOffsets[]"; a ligature
     /// set: "ligatureCount, ligatureOffsets[]"; a ligature: "ligatureGlyph, componentCount,
-    /// componentGlyphIDs[componentCount − 1]".</summary>
+    /// componentGlyphIDs[componentCount − 1]". The sets are indexed by coverage index.</summary>
     private static LigatureSubstitution LigatureSubstitutionAt(TableReader reader, int offset, int glyphCount) =>
-        new(Covered(reader, offset + reader.UInt16(offset + 2)).ToFrozenDictionary(
-            covered => covered.Glyph,
-            covered =>
+        new(Coverage.Read(reader, offset + reader.UInt16(offset + 2)),
+            [.. Enumerable.Range(0, reader.Count(offset + 4, offset + 6, 2)).Select(index =>
             {
-                var set = offset + reader.UInt16(offset + 6 + covered.Index * 2);
-                return (ValueList<Ligature>)[.. Enumerable.Range(0, reader.Count(set, set + 2, 2)).Select(index =>
+                var set = offset + reader.UInt16(offset + 6 + index * 2);
+                return (ValueList<Ligature>)[.. Enumerable.Range(0, reader.Count(set, set + 2, 2)).Select(position =>
                 {
-                    var ligature = set + reader.UInt16(set + 2 + index * 2);
+                    var ligature = set + reader.UInt16(set + 2 + position * 2);
                     var components = Math.Max(0, reader.UInt16(ligature + 2) - 1);
                     components = reader.Fits(ligature + 4, components * 2L) ? components : 0;
                     return new Ligature(
                         Output(reader, reader.UInt16(ligature), glyphCount),
                         [.. Enumerable.Range(0, components).Select(component => new GlyphId(reader.UInt16(ligature + 4 + component * 2)))]);
                 })];
-            }));
+            })]);
 
     /// <summary>Pair adjustment format 1: "coverageOffset, valueFormat1, valueFormat2, pairSetCount,
     /// pairSetOffsets[]"; a pair set: "pairValueCount, pairValueRecords[]" of (secondGlyph, valueRecord1,
-    /// valueRecord2).</summary>
+    /// valueRecord2). The pair sets are indexed by coverage index; in each, the first record for a second glyph
+    /// counts.</summary>
     private static PairAdjustmentByGlyph PairByGlyphAt(TableReader reader, int offset)
     {
         var (format1, format2) = (reader.UInt16(offset + 4), reader.UInt16(offset + 6));
         var recordLength = 2 + ValueRecordLength(format1) + ValueRecordLength(format2);
-        var pairs = new Dictionary<(ushort, ushort), PairValues>();
-        foreach (var (first, index) in Covered(reader, offset + reader.UInt16(offset + 2)))
+        var sets = Enumerable.Range(0, reader.Count(offset + 8, offset + 10, 2)).Select(index =>
         {
             var set = offset + reader.UInt16(offset + 10 + index * 2);
+            var pairs = new Dictionary<ushort, PairValues>();
             var pairCount = reader.Count(set, set + 2, recordLength);
             for (var pair = 0; pair < pairCount; pair++)
             {
                 var record = set + 2 + pair * recordLength;
-                pairs.TryAdd((first, reader.UInt16(record)), new PairValues(
+                pairs.TryAdd(reader.UInt16(record), new PairValues(
                     ValueRecordAt(reader, record + 2, format1),
                     ValueRecordAt(reader, record + 2 + ValueRecordLength(format1), format2)));
             }
-        }
 
-        return new PairAdjustmentByGlyph(pairs.ToFrozenDictionary(), format2 != 0);
+            return pairs.ToFrozenDictionary();
+        });
+        return new PairAdjustmentByGlyph(Coverage.Read(reader, offset + reader.UInt16(offset + 2)), [.. sets], format2 != 0);
     }
 
     /// <summary>Pair adjustment format 2: "coverageOffset, valueFormat1, valueFormat2, classDef1Offset,
@@ -270,32 +278,29 @@ internal static class LayoutTableParser
 
     /// <summary>Mark-to-base format 1: "markCoverageOffset, baseCoverageOffset, markClassCount, markArrayOffset,
     /// baseArrayOffset". Mark array: "markCount, markRecords[]" of (markClass, markAnchorOffset); base array:
-    /// "baseCount, baseRecords[]", each "baseAnchorOffsets[markClassCount]" (0 = no anchor for that class).</summary>
+    /// "baseCount, baseRecords[]", each "baseAnchorOffsets[markClassCount]" (0 = no anchor for that class). Both
+    /// arrays are indexed by coverage index.</summary>
     private static MarkToBase MarkToBaseAt(TableReader reader, int offset)
     {
         var classCount = reader.UInt16(offset + 6);
         var markArray = offset + reader.UInt16(offset + 8);
         var baseArray = offset + reader.UInt16(offset + 10);
-        if (!reader.Fits(baseArray + 2, (long)reader.UInt16(baseArray) * classCount * 2))
+        var baseCount = classCount == 0 ? 0 : reader.Count(baseArray, baseArray + 2, classCount * 2);
+        var marks = Enumerable.Range(0, reader.Count(markArray, markArray + 2, 4)).Select(index =>
         {
-            classCount = 0;
-        }
-
-        var marks = Covered(reader, offset + reader.UInt16(offset + 2)).ToFrozenDictionary(
-            covered => covered.Glyph,
-            covered =>
-            {
-                var record = markArray + 2 + covered.Index * 4;
-                return ((int)reader.UInt16(record), AnchorAt(reader, markArray + reader.UInt16(record + 2)));
-            });
-        var bases = Covered(reader, offset + reader.UInt16(offset + 4)).ToFrozenDictionary(
-            covered => covered.Glyph,
-            covered => (ValueList<Anchor?>)[.. Enumerable.Range(0, classCount).Select(markClass =>
-            {
-                var anchor = reader.UInt16(baseArray + 2 + (covered.Index * classCount + markClass) * 2);
-                return anchor == 0 ? (Anchor?)null : AnchorAt(reader, baseArray + anchor);
-            })]);
-        return new MarkToBase(marks, bases);
+            var record = markArray + 2 + index * 4;
+            return ((int)reader.UInt16(record), AnchorAt(reader, markArray + reader.UInt16(record + 2)));
+        });
+        var bases = Enumerable.Range(0, baseCount).Select(index => (ValueList<Anchor?>)[.. Enumerable.Range(0, classCount).Select(markClass =>
+        {
+            var anchor = reader.UInt16(baseArray + 2 + (index * classCount + markClass) * 2);
+            return anchor == 0 ? (Anchor?)null : AnchorAt(reader, baseArray + anchor);
+        })]);
+        return new MarkToBase(
+            Coverage.Read(reader, offset + reader.UInt16(offset + 2)),
+            [.. marks],
+            Coverage.Read(reader, offset + reader.UInt16(offset + 4)),
+            [.. bases]);
     }
 
     /// <summary>Anchor formats 1–3 all start "anchorFormat, xCoordinate, yCoordinate".</summary>

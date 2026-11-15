@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 
 namespace Ave.Documents.Fonts.OpenType;
 
@@ -18,7 +19,9 @@ namespace Ave.Documents.Fonts.OpenType;
 /// broken, so <see cref="Count"/> returns 0 and <see cref="Fits"/> false from then on, and no further array is walked.
 /// And the parse has a work budget proportional to the table's size — the approach of HarfBuzz's sanitizer, which
 /// allows eight operations per byte: offsets that stay inside the table can still point at each other in ways
-/// that multiply the work, which no well-formed table needs.</para>
+/// that multiply the work, which no well-formed table needs. Work is charged per value read, so a range record is
+/// one record however many glyphs it covers, and a shared coverage or class table is read once
+/// (<see cref="Shared{T}"/>).</para>
 /// <para>Offsets are added in 64-bit arithmetic wherever a 32-bit value takes part, so no sum can wrap around, and
 /// the parsed form of a table is never larger than the records the table holds: a record that takes no bytes (a
 /// value record with valueFormat 0) is not stored.</para>
@@ -27,6 +30,8 @@ namespace Ave.Documents.Fonts.OpenType;
 internal sealed class TableReader(ReadOnlyMemory<byte> table)
 {
     private long _budget = Math.Max(16_384, 8L * table.Length);
+
+    private readonly Dictionary<(Type Kind, int Offset), object> _shared = [];
 
     /// <summary>The first offset that was read beyond the end of the table, or null when every read was in range.</summary>
     public int? FirstOutOfRange { get; private set; }
@@ -44,8 +49,8 @@ internal sealed class TableReader(ReadOnlyMemory<byte> table)
     public void Invalid(string description) => FirstInvalid ??= description;
 
     /// <summary>
-    /// Takes <paramref name="work"/> units from the budget (one read is one unit; expanding a range of n glyphs is
-    /// n). Returns false, and records the table as malformed, when the budget is used up.
+    /// Takes <paramref name="work"/> units from the budget (one read is one unit). Returns false, and records the table
+    /// as malformed, when the budget is used up.
     /// </summary>
     /// <param name="work">The units of work about to be done.</param>
     /// <returns>Whether the work may be done.</returns>
@@ -59,6 +64,27 @@ internal sealed class TableReader(ReadOnlyMemory<byte> table)
 
         Invalid("the table needs far more work than its size allows, so its offsets or counts are malformed");
         return false;
+    }
+
+    /// <summary>
+    /// A sub-table that several subtables may point at — a coverage table or a class definition: compiled fonts share
+    /// identical ones widely — read once per table parse and then reused, so sharing costs no work from the budget.
+    /// </summary>
+    /// <typeparam name="T">The sub-table type.</typeparam>
+    /// <param name="offset">Where it starts in the table.</param>
+    /// <param name="read">Reads it.</param>
+    /// <returns>The sub-table.</returns>
+    public T Shared<T>(int offset, Func<T> read)
+        where T : notnull
+    {
+        if (_shared.TryGetValue((typeof(T), offset), out var known))
+        {
+            return (T)known;
+        }
+
+        var value = read();
+        _shared[(typeof(T), offset)] = value;
+        return value;
     }
 
     /// <summary>Reads a uint16 at <paramref name="offset"/>.</summary>

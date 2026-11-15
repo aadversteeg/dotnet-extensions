@@ -64,7 +64,7 @@ internal static class GlyphPositioning
         subtable switch
         {
             PairAdjustmentByGlyph pairs => AdjustPair(glyphs, index, flags, filter, pairs.SecondHasValues,
-                (first, second) => pairs.Pairs.TryGetValue((first.Glyph.Value, second.Glyph.Value), out var values) ? values : null),
+                (first, second) => pairs.Find(first.Glyph, second.Glyph)),
             PairAdjustmentByClass classes => AdjustPair(glyphs, index, flags, filter, classes.SecondHasValues,
                 (first, second) => ClassPair(classes, first, second)),
             MarkToBase marks => Attach(glyphs, index, marks),
@@ -120,7 +120,7 @@ internal static class GlyphPositioning
     /// </summary>
     private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table)
     {
-        if (!table.Marks.TryGetValue(glyphs[index].Glyph.Value, out var mark))
+        if (table.MarkOf(glyphs[index].Glyph) is not { } mark)
         {
             return null;
         }
@@ -131,10 +131,7 @@ internal static class GlyphPositioning
             baseIndex--;
         }
 
-        if (baseIndex < 0
-            || !table.Bases.TryGetValue(glyphs[baseIndex].Glyph.Value, out var anchors)
-            || mark.MarkClass >= anchors.Count
-            || anchors[mark.MarkClass] is not { } baseAnchor)
+        if (baseIndex < 0 || table.BaseAnchor(glyphs[baseIndex].Glyph, mark.MarkClass) is not { } baseAnchor)
         {
             return null;
         }
