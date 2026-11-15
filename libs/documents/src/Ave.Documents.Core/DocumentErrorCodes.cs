@@ -55,7 +55,9 @@ public static class DocumentErrorCodes
             /// <summary>A page break that has no content after it in its container.</summary>
             public static readonly ErrorCode PageBreak = _ / "PageBreak";
 
-            /// <summary>Text that is not valid UTF-16 (an unpaired surrogate). Metadata: Offset.</summary>
+            /// <summary>Text with a character text cannot hold (<see cref="TextCharacters"/>): a control character
+            /// other than tab and the forced line breaks, a noncharacter, or an unpaired surrogate. Metadata: Offset,
+            /// and Value, Property, SourceFile, SourceLine when the front-end found it.</summary>
             public static readonly ErrorCode Text = _ / "Text";
 
             /// <summary>Metadata text — the title, the author, an attachment's file name or description — with a

@@ -217,6 +217,7 @@ public static class DocumentTranslator
         var problems = BoxProblems(box, image.Source)
             .Concat(InputChecks.ImageSize(image.SpecifiedWidth, image.SpecifiedHeight, image.Source))
             .Concat(InputChecks.ImageDescription(image))
+            .Concat(InputChecks.Characters(image.AlternativeText, "alt", image.Source))
             .ToImmutableArray();
         var decoded = ImageDecoder.Decode(image.File.Bytes.AsMemory()).MapError(error => error.WithSource(image.Source));
         return WithProblems(problems, decoded).OnSuccessMap(data => (Node)new Box(
@@ -284,6 +285,7 @@ public static class DocumentTranslator
     /// alignment: a span has no box and no lines of its own in this front-end, so they would be silently lost.</summary>
     private static IEnumerable<Error> SpanProblems(Span span) =>
         InputChecks.Text(Cascade.Text(span.Format, span.Style), span.Source)
+            .Concat(InputChecks.Characters(span.Text, "text", span.Source))
             .Concat(span.Style.Box.IsEmpty && span.Style.Text.TextAlign is null ? [] : [InputChecks.BoxPropertiesOnSpan(span.Source)]);
 
     /// <summary>The user-agent defaults for a heading: bold, and a size relative to the inherited one.</summary>

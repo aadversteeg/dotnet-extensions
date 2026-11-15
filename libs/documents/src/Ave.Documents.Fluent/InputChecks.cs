@@ -261,6 +261,24 @@ internal static class InputChecks
             : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
 
     /// <summary>
+    /// Text of the document (a span, an image's alternative text): only characters text may hold
+    /// (<see cref="TextCharacters"/>: no control character but tab and the forced line breaks, no noncharacter, no
+    /// unpaired surrogate). Reported at the element's line with the offset of the first such character.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="property">What the text is, for the message: "text", "alt".</param>
+    /// <param name="source">The element's source location.</param>
+    public static IEnumerable<Error> Characters(string? text, string property, SourceLocation source) =>
+        text is not null && TextCharacters.IndexOfForbidden(text) is { } offset
+            ? [Problem(DocumentErrorCodes.Input.Invalid.Text, $"The {property} holds U+{CodePointAt(text, offset):X4} at position {offset}, a character text cannot hold (a control character, a noncharacter or half of a surrogate pair).", text, property, source)
+                .With(ErrorMetadataKeys.Offset, offset)]
+            : [];
+
+    /// <summary>The code point at an offset: a surrogate pair as one, a lone surrogate as itself.</summary>
+    private static int CodePointAt(string text, int offset) =>
+        char.IsSurrogatePair(text, offset) ? char.ConvertToUtf32(text, offset) : text[offset];
+
+    /// <summary>
     /// The document's title and author: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
     /// allows (§2.2, production [2] Char; <see cref="XmlCharacters"/>). Reported at the document's line.
     /// </summary>
