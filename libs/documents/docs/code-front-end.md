@@ -1,9 +1,10 @@
 # The code front-end
 
 `Ave.Documents.Fluent` lets you write a document as C#: a document is an immutable value built from plain
-function calls, shaped with modifiers, and rendered to PDF. Nothing is drawn, measured or validated while you
-build it; `DocumentTranslator.ToModel` (or `ToPdf`) checks everything at once and reports every problem with the
-file and line of the element that caused it.
+function calls and shaped with modifiers. Nothing is drawn, measured or validated while you build it;
+`DocumentTranslator.ToModel` checks everything at once and reports every problem with the file and line of the
+element that caused it. `ToPdf` (package `Ave.Documents`, namespace `Ave.Documents`) runs the whole pipeline: it
+translates, lays out and writes the PDF. The front-end itself knows neither the layout nor any back-end.
 
 ## A complete example
 
@@ -11,6 +12,7 @@ file and line of the element that caused it.
 using System;
 using System.IO;
 using System.Linq;
+using Ave.Documents;
 using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using Ave.Documents.Fonts;

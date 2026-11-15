@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
+using Ave.Documents;
 using Ave.Documents.Fluent;
 using Ave.Documents.Render.Pdf;
 using Ave.Documents.Samples;

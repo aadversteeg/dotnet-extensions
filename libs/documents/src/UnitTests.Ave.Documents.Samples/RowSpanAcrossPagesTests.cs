@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.IO;
+using Ave.Documents;
 using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using Ave.Documents.Samples;

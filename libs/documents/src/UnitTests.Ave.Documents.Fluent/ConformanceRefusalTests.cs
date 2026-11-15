@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using Ave.Documents;
 using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using Ave.Documents.Pdf;

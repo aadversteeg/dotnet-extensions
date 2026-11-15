@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Ave.Documents.Fluent\Ave.Documents.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Ave.Documents\Ave.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

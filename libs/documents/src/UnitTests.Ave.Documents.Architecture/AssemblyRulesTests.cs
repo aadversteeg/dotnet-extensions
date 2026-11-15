@@ -25,7 +25,10 @@ public class AssemblyRulesTests
         ["Ave.Documents.PageModel"] = ["Core", "Fonts", "Images"],
         ["Ave.Documents.Layout"] = ["Core", "Fonts", "Images", "Typesetting", "DocumentModel", "PageModel"],
         ["Ave.Documents.Render.Pdf"] = ["Core", "Fonts", "Images", "Pdf", "PageModel"],
-        ["Ave.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Layout", "Render.Pdf"],
+        ["Ave.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel"],
+
+        // The composition package: the one place a front-end, the layout and a back-end meet.
+        ["Ave.Documents"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Fluent"],
     };
 
     public static TheoryData<string> Libraries => [.. AllowedReferences.Keys];
@@ -35,7 +38,7 @@ public class AssemblyRulesTests
     [Fact]
     public void Every_library_is_checked()
     {
-        var built = Directory.GetFiles(AppContext.BaseDirectory, "Ave.Documents.*.dll").Select(Path.GetFileNameWithoutExtension);
+        var built = Directory.GetFiles(AppContext.BaseDirectory, "Ave.Documents.*.dll").Append(PathOf("Ave.Documents")).Select(Path.GetFileNameWithoutExtension);
 
         built.Where(name => name != "Ave.Documents.TestSupport").Should().BeEquivalentTo(AllowedReferences.Keys);
     }
@@ -92,6 +95,15 @@ public class AssemblyRulesTests
         return findings;
     }
 
+    [Fact]
+    public void The_front_end_references_neither_the_layout_nor_a_back_end()
+    {
+        // A second back-end or a second front-end is added beside the others, joined in the composition package
+        // (Ave.Documents), never by widening the front-end.
+        AllowedReferences["Ave.Documents.Fluent"].Should().NotContain(["Layout", "PageModel", "Pdf", "Render.Pdf", "Typesetting"]);
+        File.Exists(PathOf("Ave.Documents")).Should().BeTrue();
+    }
+
     [Theory]
     [MemberData(nameof(Libraries))]
     public void Library_references_only_lower_layers_and_the_allowed_packages(string assembly)
@@ -103,6 +115,7 @@ public class AssemblyRulesTests
             .Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name))
             .ToList();
 
+        references.Should().NotContain("Ave.Documents", "only applications reference the composition package");
         references.Where(name => name.StartsWith("Ave.Documents.", StringComparison.Ordinal))
             .Select(name => name["Ave.Documents.".Length..])
             .Should().BeSubsetOf(AllowedReferences[assembly]);

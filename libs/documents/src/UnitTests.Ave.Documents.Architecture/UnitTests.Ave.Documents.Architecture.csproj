@@ -3,7 +3,7 @@
   <!-- Checks the compiled library assemblies themselves: no native code, and every layer depends only on the
        layers below it. References every library so that all of them are copied next to the tests. -->
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Fluent\Ave.Documents.Fluent.csproj" />
+    <ProjectReference Include="..\Ave.Documents\Ave.Documents.csproj" />
     <ProjectReference Include="..\Ave.Documents.Typesetting\Ave.Documents.Typesetting.csproj" />
     <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
   </ItemGroup>

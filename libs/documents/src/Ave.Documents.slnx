@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="../samples/Ave.Documents.Samples/Ave.Documents.Samples.csproj" />
+  <Project Path="Ave.Documents/Ave.Documents.csproj" />
   <Project Path="Ave.Documents.Core/Ave.Documents.Core.csproj" />
   <Project Path="Ave.Documents.Fluent/Ave.Documents.Fluent.csproj" />
   <Project Path="Ave.Documents.Fonts/Ave.Documents.Fonts.csproj" />

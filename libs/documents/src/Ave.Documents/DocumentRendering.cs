@@ -1,13 +1,18 @@
 using System.Collections.Immutable;
+using Ave.Documents.Fluent;
 using Ave.Documents.Fonts;
 using Ave.Documents.Layout;
 using Ave.Documents.Render.Pdf;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Documents;
 
-/// <summary>The whole pipeline in one call, for callers that just want the PDF.</summary>
+/// <summary>
+/// The whole pipeline in one call, for callers that just want the PDF. This composition package is the only place that
+/// joins a front-end, the layout and a back-end: the front-end knows neither of the other two, so a second front-end
+/// or a second back-end is added beside it, not into it.
+/// </summary>
 public static class DocumentRendering
 {
     /// <summary>

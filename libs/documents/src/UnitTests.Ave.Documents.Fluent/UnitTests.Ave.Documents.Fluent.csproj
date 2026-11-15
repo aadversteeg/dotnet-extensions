@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Documents.Fluent\Ave.Documents.Fluent.csproj" />
+    <!-- The refusal and metadata tests render through the composition package (ToPdf). -->
+    <ProjectReference Include="..\Ave.Documents\Ave.Documents.csproj" />
     <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
   </ItemGroup>
 

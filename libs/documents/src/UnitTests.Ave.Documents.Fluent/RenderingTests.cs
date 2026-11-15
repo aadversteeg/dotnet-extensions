@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Ave.Documents;
 using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using Ave.Documents.Render.Pdf;

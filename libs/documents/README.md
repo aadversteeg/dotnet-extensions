@@ -68,6 +68,7 @@ Where the contracts are:
 ## Writing a document
 
 ```csharp
+using Ave.Documents;          // ToPdf: the Ave.Documents package joins front-end, layout and PDF back-end
 using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using static Ave.Documents.Fluent.Elements;
