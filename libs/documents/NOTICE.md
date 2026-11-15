@@ -39,6 +39,8 @@ SIL Open Font License 1.1 (`assets/fonts/lato/OFL.txt`). Used by the tests and t
 | --- | --- | --- |
 | Ave.Extensions.Functional, Ave.Extensions.ErrorPaths | MIT | the libraries |
 | PdfPig 0.1.16 | Apache-2.0 | tests only |
+| WebAssembly 2.1.0 (dotnet-webassembly) | Apache-2.0 | tests only: runs the reference shaper |
+| harfbuzz.wasm from harfbuzzjs 1.6.4 (HarfBuzz 15.0.0) | MIT (harfbuzzjs), Old MIT (HarfBuzz) | tests only: the reference shaper, `src/UnitTests.Ave.Documents.Typesetting/Reference/` |
 | xunit, Microsoft.NET.Test.Sdk | Apache-2.0 / MIT | tests only |
 | FluentAssertions 7.2.0 | Apache-2.0 | tests only (version 8 changed licence) |
 

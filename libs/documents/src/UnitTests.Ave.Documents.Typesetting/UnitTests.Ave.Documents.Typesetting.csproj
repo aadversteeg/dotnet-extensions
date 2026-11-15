@@ -5,4 +5,10 @@
     <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The reference shaper: HarfBuzz as WebAssembly on a managed WebAssembly runtime. Test-only. -->
+    <PackageReference Include="WebAssembly" />
+    <None Include="Reference/harfbuzz.wasm" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

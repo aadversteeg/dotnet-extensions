@@ -110,6 +110,43 @@ public class AssemblyRulesTests
                 || name.StartsWith("Ave.Extensions.Functional", StringComparison.Ordinal) || name.StartsWith("Ave.Extensions.ErrorPaths", StringComparison.Ordinal));
     }
 
+    /// <summary>Packages that may only ever be used by tests: the PDF reader and the WebAssembly runtime that runs
+    /// the reference shaper (rule B3 of the stage-1 brief; Aad's rule 1: reference engines in tests only).</summary>
+    private static readonly string[] TestOnlyAssemblies = ["UglyToad.PdfPig", "WebAssembly"];
+
+    [Theory]
+    [MemberData(nameof(Libraries))]
+    public void Library_does_not_reference_a_test_only_package(string assembly)
+    {
+        using var stream = File.OpenRead(PathOf(assembly));
+        using var pe = new PEReader(stream);
+        var metadata = pe.GetMetadataReader();
+        var references = metadata.AssemblyReferences.Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name));
+
+        references.Should().NotContain(name => TestOnlyAssemblies.Any(testOnly => name.StartsWith(testOnly, StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void The_test_only_packages_are_really_used_by_the_tests()
+    {
+        // Positive control for the test above: the reference shaper's test assembly does reference WebAssembly.
+        // Same configuration and framework folders, next project: src/UnitTests.Ave.Documents.Typesetting/bin/<config>/net10.0.
+        var testAssembly = Path.Combine(
+            AppContext.BaseDirectory.Replace("UnitTests.Ave.Documents.Architecture", "UnitTests.Ave.Documents.Typesetting", StringComparison.Ordinal),
+            "UnitTests.Ave.Documents.Typesetting.dll");
+        using var stream = File.OpenRead(testAssembly);
+        using var pe = new PEReader(stream);
+        var metadata = pe.GetMetadataReader();
+
+        metadata.AssemblyReferences.Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name)).Should().Contain("WebAssembly");
+    }
+
+    [Fact]
+    public void No_webassembly_module_is_copied_next_to_the_libraries()
+    {
+        Directory.GetFiles(AppContext.BaseDirectory, "*.wasm", SearchOption.AllDirectories).Should().BeEmpty();
+    }
+
     private static string AttributeName(MetadataReader metadata, CustomAttribute attribute) =>
         attribute.Constructor.Kind == HandleKind.MemberReference
             ? metadata.GetMemberReference((MemberReferenceHandle)attribute.Constructor).Parent is { Kind: HandleKind.TypeReference } parent

@@ -17,5 +17,7 @@
     <PackageVersion Include="FluentAssertions" Version="7.2.0" />
     <!-- PdfPig (Apache-2.0, pure managed) reads our PDFs back in tests; never referenced by a library. -->
     <PackageVersion Include="PdfPig" Version="0.1.16" />
+    <!-- WebAssembly (Apache-2.0, RyanLamansky/dotnet-webassembly) runs harfbuzz.wasm, the reference shaper, in tests only. -->
+    <PackageVersion Include="WebAssembly" Version="2.1.0" />
   </ItemGroup>
 </Project>
