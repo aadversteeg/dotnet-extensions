@@ -17,29 +17,36 @@ public static class PdfSerializer
     /// <summary>Decimals written for real numbers. 0.0001 pt is far below what any device can show.</summary>
     public const int RealDecimals = 4;
 
-    /// <summary>Writes an object, after checking that every number in it is finite.</summary>
+    /// <summary>Writes an object, after checking it (<see cref="Problem"/>).</summary>
     /// <param name="value">The object.</param>
-    /// <returns>Its PDF syntax, or a <see cref="PdfErrorCodes.Write.InvalidNumber"/> error.</returns>
+    /// <returns>Its PDF syntax, or a <see cref="PdfErrorCodes.Write.InvalidNumber"/> or
+    /// <see cref="PdfErrorCodes.Write.InvalidObject"/> error.</returns>
     public static Result<string, Error> Serialize(PdfObject value) =>
-        FindNonFinite(value) is { } invalid
-            ? Result<string, Error>.Failure(InvalidNumber(invalid))
+        Problem([value]) is { } problem
+            ? Result<string, Error>.Failure(problem)
             : Result<string, Error>.Success(Write(value));
 
-    /// <summary>The first real number in an object tree that is NaN or infinite, if any.</summary>
-    /// <param name="value">The object tree.</param>
-    /// <returns>The invalid value, or null when all numbers are finite.</returns>
-    public static double? FindNonFinite(PdfObject value) => value switch
+    /// <summary>
+    /// The one check every writer of PDF syntax makes before it writes: the first problem in some object trees, or
+    /// null. A number must be finite (§7.3.3: PDF numbers are finite values), and a dictionary's keys unique (§7.3.7).
+    /// </summary>
+    /// <param name="values">The object trees.</param>
+    /// <returns>An <see cref="PdfErrorCodes.Write.InvalidNumber"/> or <see cref="PdfErrorCodes.Write.InvalidObject"/>
+    /// error, or null.</returns>
+    public static Error? Problem(IEnumerable<PdfObject> values) =>
+        values.Select(ProblemIn).FirstOrDefault(problem => problem is not null);
+
+    private static Error? ProblemIn(PdfObject value) => value switch
     {
-        PdfReal real when !double.IsFinite(real.Value) => real.Value,
-        PdfArray array => array.Items.Select(FindNonFinite).FirstOrDefault(found => found is not null),
-        PdfDictionary dictionary => dictionary.Entries.Select(entry => FindNonFinite(entry.Value)).FirstOrDefault(found => found is not null),
+        PdfReal real when !double.IsFinite(real.Value) => InvalidNumber(real.Value),
+        PdfArray array => Problem(array.Items),
+        PdfDictionary { DuplicateKey: { } key } => new Error(PdfErrorCodes.Write.InvalidObject, $"A dictionary has two entries with the key /{key}.")
+            .With(ErrorMetadataKeys.Value, key),
+        PdfDictionary dictionary => Problem(dictionary.Entries.Select(entry => entry.Value)),
         _ => null,
     };
 
-    /// <summary>The error for a non-finite number.</summary>
-    /// <param name="value">The number.</param>
-    /// <returns>The error.</returns>
-    public static Error InvalidNumber(double value) =>
+    private static Error InvalidNumber(double value) =>
         new Error(PdfErrorCodes.Write.InvalidNumber, $"PDF numbers must be finite, got {value}.")
             .With(ErrorMetadataKeys.Value, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
 

@@ -32,7 +32,7 @@ public static class PdfWriter
     /// 1 to N or a number is not finite.</returns>
     public static Result<ImmutableArray<byte>, Error> Write(PdfFile file)
     {
-        var problem = CheckNumbering(file.Objects) ?? CheckNumbers(file.Objects);
+        var problem = CheckNumbering(file.Objects) ?? CheckObjects(file.Objects);
         if (problem is { } error)
         {
             return Result<ImmutableArray<byte>, Error>.Failure(error);
@@ -69,17 +69,20 @@ public static class PdfWriter
                 .With(ErrorMetadataKeys.Value, string.Join(",", numbers));
     }
 
-    private static Error? CheckNumbers(ImmutableArray<IndirectObject> objects) =>
-        objects
-            .Select(indirect => indirect switch
-            {
-                IndirectValue value => PdfSerializer.FindNonFinite(value.Value),
-                IndirectStream stream => PdfSerializer.FindNonFinite(stream.Stream.Dictionary),
-                _ => null,
-            })
-            .FirstOrDefault(found => found is not null) is { } invalid
-            ? PdfSerializer.InvalidNumber(invalid)
-            : null;
+    /// <summary>The objects themselves (<see cref="PdfSerializer.Problem"/>), and every stream dictionary: /Length and
+    /// /Filter are the writer's to set (§7.3.8.2, Table 5).</summary>
+    private static Error? CheckObjects(ImmutableArray<IndirectObject> objects) =>
+        PdfSerializer.Problem(objects.Select(indirect => indirect switch
+        {
+            IndirectValue value => value.Value,
+            IndirectStream stream => stream.Stream.Dictionary,
+            _ => throw new InvalidOperationException($"Unknown indirect object {indirect.GetType().Name}."),
+        }))
+        ?? objects.OfType<IndirectStream>()
+            .Where(stream => stream.Stream.Dictionary.ContainsKey("Length") || stream.Stream.Dictionary.ContainsKey("Filter"))
+            .Select(stream => (Error?)new Error(PdfErrorCodes.Write.InvalidObject, $"Stream object {stream.Number} sets /Length or /Filter; the writer sets them.")
+                .With(ErrorMetadataKeys.Value, stream.Number.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+            .FirstOrDefault();
 
     /// <summary>§7.3.10: <c>N 0 obj</c>, the object, <c>endobj</c>. A stream is its dictionary, then the
     /// keyword <c>stream</c>, an end-of-line, the encoded bytes, an end-of-line and <c>endstream</c> (§7.3.8.1).</summary>
@@ -105,11 +108,6 @@ public static class PdfWriter
     /// <summary>Encodes the data and adds /Length (required, §7.3.8.2 Table 5) and /Filter to the dictionary.</summary>
     private static (PdfDictionary Dictionary, ImmutableArray<byte> Data) Encode(PdfStream stream)
     {
-        if (stream.Dictionary.ContainsKey("Length") || stream.Dictionary.ContainsKey("Filter"))
-        {
-            throw new ArgumentException("A stream dictionary must not set /Length or /Filter; the writer adds them.");
-        }
-
         var data = stream.Encoding == StreamEncoding.Flate ? Flate.Compress(stream.Data) : stream.Data;
         PdfObject? filter = stream.Encoding switch
         {

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using Ave.Documents.Core;
 using System.Linq;
 using System.Text;
 
@@ -64,7 +64,7 @@ public enum PdfStringForm
 /// <summary>A string (§7.3.4): a sequence of bytes.</summary>
 /// <param name="Bytes">The bytes.</param>
 /// <param name="Form">How to write them.</param>
-public sealed record PdfString(ImmutableArray<byte> Bytes, PdfStringForm Form) : PdfObject
+public sealed record PdfString(ValueList<byte> Bytes, PdfStringForm Form) : PdfObject
 {
     /// <summary>
     /// A text string for human-readable fields such as the document title (§7.9.2.2). Text made only of
@@ -90,7 +90,7 @@ public sealed record PdfString(ImmutableArray<byte> Bytes, PdfStringForm Form) :
 
 /// <summary>An array (§7.3.6).</summary>
 /// <param name="Items">The elements, in order.</param>
-public sealed record PdfArray(ImmutableArray<PdfObject> Items) : PdfObject
+public sealed record PdfArray(ValueList<PdfObject> Items) : PdfObject
 {
     /// <summary>An array of numbers; whole numbers become integers, others reals.</summary>
     /// <param name="numbers">The numbers.</param>
@@ -99,28 +99,16 @@ public sealed record PdfArray(ImmutableArray<PdfObject> Items) : PdfObject
 }
 
 /// <summary>
-/// A dictionary (§7.3.7). Entries keep the order they were given in, so output is the same on every run.
-/// Keys are unique: "Multiple entries in the same dictionary shall not have the same key."
+/// A dictionary (§7.3.7). Entries keep the order they were given in, so output is the same on every run. Keys must be
+/// unique ("Multiple entries in the same dictionary shall not have the same key"); the writer checks that, so a
+/// dictionary with a duplicate key is an error value when it is written (<see cref="PdfWriter"/>), not an exception
+/// when it is made.
 /// </summary>
-public sealed record PdfDictionary : PdfObject
+/// <param name="Entries">The entries, in output order.</param>
+public sealed record PdfDictionary(ValueList<KeyValuePair<PdfName, PdfObject>> Entries) : PdfObject
 {
-    /// <summary>Creates a dictionary.</summary>
-    /// <param name="entries">The entries, in output order.</param>
-    /// <exception cref="ArgumentException">Two entries have the same key; the engine builds every dictionary
-    /// itself, so a duplicate is a bug.</exception>
-    public PdfDictionary(ImmutableArray<KeyValuePair<PdfName, PdfObject>> entries)
-    {
-        var duplicate = entries.GroupBy(entry => entry.Key.Value).FirstOrDefault(group => group.Count() > 1);
-        if (duplicate is not null)
-        {
-            throw new ArgumentException($"Duplicate dictionary key /{duplicate.Key}.", nameof(entries));
-        }
-
-        Entries = entries;
-    }
-
-    /// <summary>The entries, in output order.</summary>
-    public ImmutableArray<KeyValuePair<PdfName, PdfObject>> Entries { get; }
+    /// <summary>The first key that appears twice, or null.</summary>
+    public string? DuplicateKey => Entries.GroupBy(entry => entry.Key.Value).FirstOrDefault(group => group.Count() > 1)?.Key;
 
     /// <summary>Creates a dictionary from (key, value) pairs, leaving out pairs whose value is null.</summary>
     /// <param name="entries">The entries; a null value means "this optional entry is absent".</param>

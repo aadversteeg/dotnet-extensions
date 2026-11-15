@@ -22,6 +22,11 @@ public static class PdfErrorCodes
         /// <summary>Indirect objects not numbered 1..N without gaps or duplicates. Metadata: Value.</summary>
         public static readonly ErrorCode InvalidObjectNumbers = _ / "InvalidObjectNumbers";
 
+        /// <summary>An object the writer cannot write as given: a dictionary with two entries of one key (§7.3.7:
+        /// "Multiple entries in the same dictionary shall not have the same key"), or a stream dictionary that sets
+        /// /Length or /Filter, which the writer sets itself. Metadata: Value.</summary>
+        public static readonly ErrorCode InvalidObject = _ / "InvalidObject";
+
         /// <summary>An XMP value with a character XML 1.0 does not allow (§2.2, production [2] Char). Metadata:
         /// Property (prefixed name), Offset.</summary>
         public static readonly ErrorCode InvalidText = _ / "InvalidText";

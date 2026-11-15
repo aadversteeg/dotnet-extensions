@@ -19,12 +19,9 @@ public static class ContentStream
     public static Result<ImmutableArray<byte>, Error> Serialize(IEnumerable<ContentOperation> operations)
     {
         var all = operations.ToImmutableArray();
-        var invalid = all.SelectMany(operation => operation.Operands)
-            .Select(PdfSerializer.FindNonFinite)
-            .FirstOrDefault(found => found is not null);
-        if (invalid is { } value)
+        if (PdfSerializer.Problem(all.SelectMany(operation => operation.Operands)) is { } problem)
         {
-            return Result<ImmutableArray<byte>, Error>.Failure(PdfSerializer.InvalidNumber(value));
+            return Result<ImmutableArray<byte>, Error>.Failure(problem);
         }
 
         var text = string.Concat(all.Select(WriteLine));

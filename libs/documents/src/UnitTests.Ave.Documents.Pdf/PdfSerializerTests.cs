@@ -45,10 +45,11 @@ public class PdfSerializerTests
     }
 
     [Fact]
-    public void A_duplicate_key_is_a_programming_error()
+    public void A_duplicate_key_is_an_error_value_when_written()
     {
-        var act = () => PdfDictionary.Of(("A", new PdfInteger(1)), ("A", new PdfInteger(2)));
-        act.Should().Throw<ArgumentException>();
+        var dictionary = PdfDictionary.Of(("A", new PdfInteger(1)), ("A", new PdfInteger(2)));
+
+        PdfSerializer.Serialize(dictionary).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
     }
 
     [Fact]
