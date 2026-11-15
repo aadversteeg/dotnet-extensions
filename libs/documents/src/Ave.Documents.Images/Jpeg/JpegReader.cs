@@ -24,6 +24,11 @@ internal static class JpegReader
 {
     private const byte MarkerPrefix = 0xFF;
     private const byte StartOfImage = 0xD8;
+    private const byte EndOfImage = 0xD9;
+    private const byte StartOfScan = 0xDA;
+
+    /// <summary>The shortest scan header: Ls = 6 + 2 × Ns with one component (T.81 Table B.3).</summary>
+    private const int MinimumScanHeaderLength = 8;
 
     public static bool HasSignature(ReadOnlySpan<byte> file) =>
         file.Length >= 3 && file[0] == MarkerPrefix && file[1] == StartOfImage && file[2] == MarkerPrefix;
@@ -65,7 +70,7 @@ internal static class JpegReader
                     : ImageErrors.Invalid<ImageData>("the frame header is not followed by a scan (no SOS marker), so there is no image data.", afterFrame);
             }
 
-            if (marker is 0xDA or 0xD9)
+            if (marker is StartOfScan or EndOfImage)
             {
                 return ImageErrors.Invalid<ImageData>("the scan data starts before any frame header.", offset);
             }
@@ -75,9 +80,10 @@ internal static class JpegReader
     }
 
     /// <summary>
-    /// True when a scan header (SOS, FF DA) follows the frame header, after any table and miscellaneous segments: a
-    /// frame "shall begin with a frame header and shall contain one or more scans" (T.81 §B.2.1, Figure B.2), and without a scan there is
-    /// no image data to embed.
+    /// True when a scan follows the frame header, after any table and miscellaneous segments: a frame "shall begin
+    /// with a frame header and shall contain one or more scans" (T.81 §B.2.1, Figure B.2), and without a scan there is
+    /// no image data to embed. The end-of-image marker (EOI, FF D9) ends the search: what follows it is not part of
+    /// the image.
     /// </summary>
     private static bool HasScan(ReadOnlySpan<byte> span, int offset)
     {
@@ -88,17 +94,17 @@ internal static class JpegReader
                 offset++;
             }
 
-            if (offset + 2 >= span.Length || span[offset] == 0xD9)
+            if (offset + 2 >= span.Length || span[offset] == EndOfImage)
             {
                 return false;
             }
 
-            if (span[offset] == 0xDA)
+            var length = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 1)..]);
+            if (span[offset] == StartOfScan)
             {
-                return true;
+                return IsCompleteScan(span, offset + 1, length);
             }
 
-            var length = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 1)..]);
             if (length < 2)
             {
                 return false;
@@ -109,6 +115,34 @@ internal static class JpegReader
 
         return false;
     }
+
+    /// <summary>
+    /// True when the scan header at <paramref name="offset"/> (its length field) is complete and image data follows
+    /// it. The header is Ls, Ns, then Ns component selectors of two bytes each, then Ss, Se and Ah/Al, so Ls is 6 + 2 ×
+    /// Ns, with Ns from 1 to 4 (T.81 §B.2.3, Table B.3). Our rule, beyond the syntax: the first entropy-coded segment
+    /// after the header has at least one byte, because a scan without coded data has no image to show.
+    /// </summary>
+    private static bool IsCompleteScan(ReadOnlySpan<byte> span, int offset, int length)
+    {
+        if (length < MinimumScanHeaderLength || offset + length > span.Length)
+        {
+            return false;
+        }
+
+        var components = span[offset + 2];
+        var afterHeader = offset + length;
+        return components is >= 1 and <= 4
+            && length == 6 + (2 * components)
+            && HasCodedByte(span, afterHeader);
+    }
+
+    /// <summary>
+    /// True when an entropy-coded byte starts at <paramref name="offset"/>: any byte but FF, or FF followed by the
+    /// stuffed 00 byte that marks a coded FF (byte stuffing, T.81 §F.1.2.3); any other byte after FF makes it a
+    /// marker.
+    /// </summary>
+    private static bool HasCodedByte(ReadOnlySpan<byte> span, int offset) =>
+        offset < span.Length && (span[offset] != MarkerPrefix || (offset + 1 < span.Length && span[offset + 1] == 0x00));
 
     /// <summary>The SOFn markers, Table B.1: C0–CF except C4 (DHT), C8 (reserved, JPG) and CC (DAC).</summary>
     private static bool IsStartOfFrame(byte marker) => marker is >= 0xC0 and <= 0xCF and not (0xC4 or 0xC8 or 0xCC);

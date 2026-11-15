@@ -77,4 +77,54 @@ public class ImageStructureTests
 
         ImageDecoder.Decode(jpeg).Error.Code.Should().Be(ImageErrorCodes.Invalid);
     }
+
+    /// <summary>SOI and a SOF0 frame header for a 1 x 1 greyscale image.</summary>
+    private static readonly byte[] FrameHeader = [0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x0B, 8, 0, 1, 0, 1, 1, 1, 0x11, 0];
+
+    /// <summary>A complete scan header for that frame's one component (Ns = 1, Ss = 0, Se = 63, Ah/Al = 0).</summary>
+    private static readonly byte[] ScanHeader = [0xFF, 0xDA, 0x00, 0x08, 1, 1, 0x00, 0, 63, 0];
+
+    public static TheoryData<string, byte[]> IncompleteScans => new()
+    {
+        // The 19-byte file: an SOS marker whose length counts only itself, so the header has no Ns, no components.
+        { "a scan header of length 2", [.. FrameHeader, 0xFF, 0xDA, 0x00, 0x02] },
+        { "a scan header longer than the file", [.. FrameHeader, 0xFF, 0xDA, 0x00, 0x08, 1, 1] },
+        { "a scan header whose length does not match its Ns", [.. FrameHeader, 0xFF, 0xDA, 0x00, 0x0A, 1, 1, 0x00, 0, 63, 0, 0, 0, 0x55] },
+        { "a scan header and no entropy-coded data", [.. FrameHeader, .. ScanHeader] },
+        { "a scan header and then at once the end of the image", [.. FrameHeader, .. ScanHeader, 0xFF, 0xD9] },
+    };
+
+    [Theory]
+    [MemberData(nameof(IncompleteScans))]
+    public void A_JPEG_whose_scan_header_is_incomplete_or_has_no_data_is_invalid(string _, byte[] jpeg) =>
+        ImageDecoder.Decode(jpeg).Error.Code.Should().Be(ImageErrorCodes.Invalid);
+
+    [Fact]
+    public void A_JPEG_with_a_complete_scan_header_and_data_is_read()
+    {
+        byte[] jpeg = [.. FrameHeader, .. ScanHeader, 0x55, 0xFF, 0xD9];
+        var image = ImageDecoder.Decode(jpeg);
+
+        image.IsSuccess.Should().BeTrue(image.IsFailure ? image.Error.Message : "");
+        (image.Value.PixelWidth, image.Value.PixelHeight).Should().Be((1, 1));
+    }
+
+    [Fact]
+    public void Coded_data_may_start_with_a_stuffed_FF()
+    {
+        // FF 00 is a coded FF byte, not a marker (T.81 §F.1.2.3).
+        byte[] jpeg = [.. FrameHeader, .. ScanHeader, 0xFF, 0x00, 0xFF, 0xD9];
+
+        ImageDecoder.Decode(jpeg).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Bytes_after_the_end_of_the_image_are_not_read_as_a_scan()
+    {
+        // EOI ends the image (T.81 §B.2.1): "00 02" after it is not a segment length that leads to the scan header
+        // behind it.
+        byte[] jpeg = [.. FrameHeader, 0xFF, 0xD9, 0x00, 0x02, .. ScanHeader, 0x55, 0xFF, 0xD9];
+
+        ImageDecoder.Decode(jpeg).Error.Code.Should().Be(ImageErrorCodes.Invalid);
+    }
 }
