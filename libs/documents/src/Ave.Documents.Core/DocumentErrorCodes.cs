@@ -204,6 +204,10 @@ public static class DocumentErrorCodes
             /// Property (prefixed name), Offset.</summary>
             public static readonly ErrorCode InvalidText = _ / "InvalidText";
 
+            /// <summary>A page model that breaks the back-end's contract, whoever produced it: no pages, a missing item, a
+            /// glyph the font does not have, a cell span below 1, two attachments with one file name. Metadata: Value.</summary>
+            public static readonly ErrorCode InvalidPageModel = _ / "InvalidPageModel";
+
             /// <summary>A font whose licence bits (OpenType OS/2 fsType) forbid embedding. Metadata: FontName.</summary>
             public static readonly ErrorCode FontEmbeddingNotPermitted = _ / "FontEmbeddingNotPermitted";
 

@@ -15,7 +15,7 @@ internal static class StructureTypes
     /// Figure (§14.8.4.5).</returns>
     public static PdfName? Of(SemanticRole role) => role switch
     {
-        SemanticRole.HeadingRole heading => new PdfName($"H{heading.Level}"),
+        SemanticRole.HeadingRole { Level: >= 1 and <= 6 } heading => new PdfName($"H{heading.Level}"),
         SemanticRole.ParagraphRole => new PdfName("P"),
         SemanticRole.GenericRole => new PdfName("Div"),
         SemanticRole.FigureRole => new PdfName("Figure"),

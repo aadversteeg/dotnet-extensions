@@ -266,14 +266,11 @@ internal static class InputChecks
         }
     }
 
-    /// <summary>An image is either described or decorative, not both; a description must say something.</summary>
+    /// <summary>An image is either described or decorative, not both: the two contradict each other whatever the
+    /// profile. Whether a description is required, and that a blank one counts as none, is a profile's rule
+    /// (PDF/UA-1, checked by the PDF back-end on the page model).</summary>
     public static IEnumerable<Error> ImageDescription(ImageElement image)
     {
-        if (image.AlternativeText is { } text && string.IsNullOrWhiteSpace(text))
-        {
-            yield return Problem(DocumentErrorCodes.Input.Invalid.ImageDescription, "The alternative text is empty.", text, "alt", image.Source);
-        }
-
         if (image.AlternativeText is not null && image.IsDecorative)
         {
             yield return Problem(DocumentErrorCodes.Input.Invalid.ImageDescription, "An image is either described (Alt) or decorative, not both.", image.AlternativeText, "alt", image.Source);

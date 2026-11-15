@@ -59,7 +59,8 @@ internal static class ConformanceRules
 
     /// <summary>
     /// ISO 14289-1: a title (§7.1), a language (§7.2), alternative text for every figure (§7.3), and headings that start
-    /// at H1 and never skip a level going down (§7.4.2). Each structure node is checked once, at its first marker.
+    /// at H1 and never skip a level going down (§7.4.2). Blank text is the same as none: it says nothing to a reader.
+    /// Each structure node is checked once, at its first marker.
     /// </summary>
     private static IEnumerable<Error> PdfUa1(PageDocument document, PdfProfile profile)
     {
@@ -81,12 +82,13 @@ internal static class ConformanceRules
             yield return Violation(DocumentErrorCodes.Pdf.Conformance.PdfUa1.MissingTitle, "PDF/UA-1 needs a document title (ISO 14289-1 §7.1)", documentSource);
         }
 
-        if (document.Metadata.Language is null)
+        // An empty language identifier means "unknown" (ISO 32000-1 §14.9.2.2), which PDF/UA does not accept either.
+        if (string.IsNullOrWhiteSpace(document.Metadata.Language))
         {
             yield return Violation(DocumentErrorCodes.Pdf.Conformance.PdfUa1.MissingLanguage, "PDF/UA-1 needs the document's language (ISO 14289-1 §7.2)", documentSource);
         }
 
-        foreach (var figure in nodes.Where(start => start.Role is SemanticRole.FigureRole { AlternativeText: null }))
+        foreach (var figure in nodes.Where(start => start.Role is SemanticRole.FigureRole figureRole && string.IsNullOrWhiteSpace(figureRole.AlternativeText)))
         {
             yield return Violation(
                     DocumentErrorCodes.Pdf.Conformance.PdfUa1.FigureWithoutAlternativeText,

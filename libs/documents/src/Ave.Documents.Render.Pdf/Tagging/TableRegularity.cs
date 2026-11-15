@@ -31,7 +31,16 @@ internal static class TableRegularity
         var groups = Groups(tree, table);
         var rows = groups.SelectMany(group => group).ToImmutableArray();
         var grid = TableSlots.Fill([.. groups.Select(group => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. group.Select(row => (IReadOnlyList<CellSpan>)[.. Children(tree, row).Select(cell => cell.Start.Span)])])]);
-        return grid.IncompleteRows.Select(index =>
+        var spansPastGroup = grid.Problems
+            .Where(problem => problem.Kind is TableSlots.ProblemKind.SpanPastGroup or TableSlots.ProblemKind.Overlap)
+            .Select(problem => (Row: rows[problem.Row], Cell: Children(tree, rows[problem.Row]).ElementAt(problem.Cell)))
+            .Select(found => new Error(
+                    DocumentErrorCodes.Pdf.Conformance.PdfUa1.IrregularTable,
+                    $"PDF/UA-1 needs a regular table grid; this cell's row span runs past its row group or overlaps another cell (ISO 14289-1 §7.2) ({found.Cell.Start.Source}).")
+                .With(ErrorMetadataKeys.Node, found.Cell.Start.Node.ToString())
+                .With(ErrorMetadataKeys.Value, found.Cell.Start.Span.ToString())
+                .WithSource(found.Cell.Start.Source));
+        return spansPastGroup.Concat(grid.IncompleteRows.Select(index =>
         {
             var (row, filled) = (rows[index], grid.Slots[index].Count(slot => slot >= 0));
             return new Error(
@@ -40,7 +49,7 @@ internal static class TableRegularity
                 .With(ErrorMetadataKeys.Node, row.Start.Node.ToString())
                 .With(ErrorMetadataKeys.Value, $"{filled}/{grid.ColumnCount}")
                 .WithSource(row.Start.Source);
-        });
+        }));
     }
 
     /// <summary>The table's row groups: each THead or TBody, and each run of rows directly under the table.</summary>

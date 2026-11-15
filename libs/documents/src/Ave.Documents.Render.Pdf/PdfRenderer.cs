@@ -23,7 +23,8 @@ public static class PdfRenderer
     /// byte-identical output.
     /// </summary>
     /// <remarks>
-    /// The steps: refuse what the profile forbids (<see cref="ConformanceRules"/>); read every page's markers into
+    /// The steps: refuse a page model that breaks the back-end's contract (<see cref="PageModelRules"/>); refuse what
+    /// the profile forbids (<see cref="ConformanceRules"/>); read every page's markers into
     /// events (<see cref="PageEvents"/>); for a tagged profile, build the structure tree from them
     /// (<see cref="StructureTree"/>) and refuse a structure the profile forbids (an irregular table); then write every
     /// object.
@@ -33,7 +34,8 @@ public static class PdfRenderer
     /// <returns>The PDF bytes, a <see cref="DocumentErrorCodes.Pdf.Conformance"/> error for input the profile forbids,
     /// or a <see cref="DocumentErrorCodes.Pdf.Write"/> error.</returns>
     public static Result<ImmutableArray<byte>, Error> Render(PageDocument document, PdfRenderOptions options) =>
-        ConformanceRules.Check(document, options.Profile)
+        PageModelRules.Check(document)
+            .OnSuccessBind(validDocument => ConformanceRules.Check(validDocument, options.Profile))
             .OnSuccessBind(checkedDocument => checkedDocument.Pages.Select((page, index) => (page, index))
                 .TraverseAll(page => PageEvents.Read(page.page, page.index + 1)))
             .OnSuccessCombine(pages => options.Profile.IsTagged

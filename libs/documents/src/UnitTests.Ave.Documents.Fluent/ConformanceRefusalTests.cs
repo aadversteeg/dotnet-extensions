@@ -228,17 +228,23 @@ public class ConformanceRefusalTests
     }
 
     [Fact]
-    public void An_image_is_described_or_decorative_not_both_and_a_description_is_not_empty()
+    public void An_image_is_described_or_decorative_not_both()
     {
         var line = CurrentLine() + 1;
         var both = Image(Logo).Alt("Logo").Decorative();
-        var empty = Image(Logo).Alt(" ");
 
-        var errors = DocumentTranslator.ToModel(Document([both, empty]).FontFamily("Lato")).Error.Parts();
+        var error = DocumentTranslator.ToModel(Document([both]).FontFamily("Lato")).Error;
 
-        errors.Should().HaveCount(2);
-        ShouldPointAt(errors[0], DocumentErrorCodes.Input.Invalid.ImageDescription, line);
-        ShouldPointAt(errors[1], DocumentErrorCodes.Input.Invalid.ImageDescription, line + 1);
+        ShouldPointAt(error, DocumentErrorCodes.Input.Invalid.ImageDescription, line);
+    }
+
+    [Fact]
+    public void PDF_UA_refuses_a_blank_description_at_the_image_s_line_as_it_refuses_none()
+    {
+        var line = CurrentLine() + 1;
+        var blank = Image(Logo).Alt(" ");
+
+        ShouldPointAt(Refused(Accessible([blank]), PdfProfile.PdfUa1), DocumentErrorCodes.Pdf.Conformance.PdfUa1.FigureWithoutAlternativeText, line);
     }
 
     [Fact]
