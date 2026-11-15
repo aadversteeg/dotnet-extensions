@@ -907,7 +907,7 @@ page 1 size=595.276x841.89
   fill (28.346, 764.986) 538.583x1 #d3d3d3
   end artifact
   artifact Layout
-  fill (28.346, 780.986) 538.583x0.5 #d3d3d3
+  fill (28.346, 780.986) 538.583x1 #d3d3d3
   end artifact
   artifact Layout
   fill (28.596, 156.686) 1x624.8 #d3d3d3

@@ -43,6 +43,21 @@ public sealed record TableElement(
     public TableElement CellPadding(Length vertical, Length horizontal) =>
         this with { CellDefaults = CellDefaults with { PaddingTop = vertical, PaddingBottom = vertical, PaddingLeft = horizontal, PaddingRight = horizontal } };
 
+    /// <summary>How the grid line is drawn where the table continues on the next page:
+    /// <see cref="BoxDecorationBreak.Clone"/> (the default for a table) repeats the whole line, at the end of the page
+    /// and again at the top of the next; <see cref="BoxDecorationBreak.Slice"/> splits it, half on each page.</summary>
+    public BoxDecorationBreak LinesAtBreaks { get; init; } = BoxDecorationBreak.Clone;
+
+    /// <summary>At a page break between two rows, the page ends with the whole grid line and the next page starts with
+    /// it again, as word processors print a table. This is the default.</summary>
+    /// <returns>A copy that repeats the line.</returns>
+    public TableElement RepeatLinesAtBreaks() => this with { LinesAtBreaks = BoxDecorationBreak.Clone };
+
+    /// <summary>At a page break between two rows, the grid line is split along its centre: the upper half ends the page,
+    /// the lower half starts the next, as browsers print a table (CSS <c>box-decoration-break: slice</c>).</summary>
+    /// <returns>A copy that splits the line.</returns>
+    public TableElement SplitLinesAtBreaks() => this with { LinesAtBreaks = BoxDecorationBreak.Slice };
+
     /// <inheritdoc/>
     TableElement IFormatted<TableElement>.WithFormat(Style format) => this with { Format = format };
 }

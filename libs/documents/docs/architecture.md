@@ -173,9 +173,12 @@ Each is documented next to its code as well.
   million, `Images/ImageLimits.cs`; `Documents.Image.TooLarge`), so a small file cannot claim a huge decoded size.
 - **Input size:** elements nest at most 64 deep (`Fluent/InputLimits.cs`; `Documents.Input.Invalid.TooDeep`), which
   keeps every recursive step of the engine far from the stack limit.
-- **Table breaks:** at a break between two rows, the grid line there — resolved once, from both rows — is split in
-  two halves, the upper half ending the page and the lower half starting the next (as Chromium 159 draws it); a row
-  that breaks inside itself must leave content for the next page.
+- **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
+  the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
+  lower half starting the next (as Chromium 159 draws it); `Clone`, the code front-end's default for tables, ends the
+  page with the whole line and starts the next page with it again (the engine's own rule for collapsed borders,
+  modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
+  break inside a row no line is drawn at the cut; a row that breaks inside itself must leave content for the next page.
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.

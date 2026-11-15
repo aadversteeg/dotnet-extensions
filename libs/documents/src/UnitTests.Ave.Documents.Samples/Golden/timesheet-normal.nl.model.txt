@@ -98,7 +98,7 @@ box #0 flow document @Timesheet.cs:53
               text #13 "SmallBusiness onderhoud" Lato 13pt w400 #000000 @Timesheet.cs:58
             box #14 inline paragraph margin=4,0,0,0 text-align=right @Timesheet.cs:58
               text #15 "Periode: 2026-10-01 - 2026-10-31" Lato 11pt w400 #000000 @Timesheet.cs:58
-  box #16 tracks table margin=10,0,0,0 columns=2.5fr,3fr,10fr,2fr @Timesheet.cs:121
+  box #16 tracks table margin=10,0,0,0 box-decoration-break=clone columns=2.5fr,3fr,10fr,2fr @Timesheet.cs:121
     box #17 table-header-group table-head @Timesheet.cs:124
       box #18 table-row table-row @Timesheet.cs:124
         box #19 flow table-header-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:124

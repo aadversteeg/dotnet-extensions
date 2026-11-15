@@ -126,6 +126,8 @@ properties give the same element in any order, and setting the same property twi
 | `.KeepWithNext()`, `.KeepWithPrevious()` | elements with a box, rows | `break-after: avoid`, `break-before: avoid` |
 | `.GridLines(Length, Color)` | tables | a border on every cell that sets none (one shared line between cells) |
 | `.CellPadding(Length)`, `.CellPadding(vertical, horizontal)` | tables | padding of every cell that sets none |
+| `.RepeatLinesAtBreaks()` (the default) | tables | at a page break between rows the page ends with the whole grid line and the next page starts with it again, as word processors print tables; modelled on `box-decoration-break: clone` |
+| `.SplitLinesAtBreaks()` | tables | at a page break between rows the grid line is split along its centre, half on each page, as browsers print tables (`box-decoration-break: slice`) |
 | `.ColumnSpan(n)`, `.RowSpan(n)` | cells | `colspan`, `rowspan` |
 | `.VerticalAlign(VerticalAlign)` | cells, rows of blocks | `vertical-align`: `Top` (default), `Middle`, `Bottom` |
 | `.Columns(sizes…)` | rows of blocks | one size per item |
