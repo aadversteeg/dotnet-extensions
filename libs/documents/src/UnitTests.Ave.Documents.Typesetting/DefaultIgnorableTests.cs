@@ -62,7 +62,7 @@ public class DefaultIgnorableTests
 
         narrow.Should().HaveCount(2);
         var first = narrow[0].Segments.SelectMany(segment => segment.Glyphs).ToList();
-        first.Select(glyph => glyph.Text).Should().Equal(["c", "o", "\u2010"], "the hyphen shows, and copies as, the font's hyphen character");
+        first.Select(glyph => glyph.Text).Should().Equal(["c", "o", "\u00ad"], "the hyphen shows the font's hyphen glyph and reads as the soft hyphen it stands for");
         first[^1].Glyph.Should().Be(hyphen);
         first[^1].IsInvisible.Should().BeFalse();
         first[^1].Advance.Should().BeGreaterThan(0);

@@ -34,7 +34,7 @@ internal static class PageContentStream
     private static IEnumerable<ContentOperation> Operations(DrawItem item, Page page, ResourceNames resources) => item switch
     {
         FillRectangle fill => Rectangle(fill, page.Size.Height),
-        GlyphRun run => Text(run, resources.Fonts[run.Font].ResourceName, page.Size.Height),
+        GlyphRun run => Text(run, resources.Fonts[run.Font], page.Size.Height),
         DrawImage image => Image(image, resources.Images[image.Image].ResourceName, page.Size.Height),
         _ => throw new InvalidOperationException($"The PDF back-end cannot draw a {item.GetType().Name} yet."),
     };
@@ -67,32 +67,44 @@ internal static class PageContentStream
 
     /// <summary>
     /// A glyph run: one text object (§9.4) that selects the font and size and sets the colour; then, for each
-    /// stretch of glyphs at the same height (almost always the whole run; a raised or lowered mark makes its own
-    /// stretch), it moves the text origin to the first glyph of the stretch and shows the glyphs. TJ can move the
-    /// pen only horizontally (§9.4.3), hence one positioning per height.
+    /// stretch of glyphs (<see cref="Stretches"/>), it moves the text origin to the first glyph of the stretch and shows
+    /// the glyphs. A stretch whose glyph needs its own text is enclosed in a <c>/Span</c> marked-content sequence with
+    /// an <c>/ActualText</c> entry (§14.9.4): a reader takes that text instead of the ToUnicode text of the glyph.
+    /// Marked-content operators may appear inside a text object (§8.2, Figure 9).
     /// </summary>
-    private static ImmutableArray<ContentOperation> Text(GlyphRun run, PdfName fontResource, double pageHeight) =>
+    private static ImmutableArray<ContentOperation> Text(GlyphRun run, UsedFont font, double pageHeight) =>
     [
         ContentOperators.SaveState(),
         ContentOperators.BeginText(),
-        ContentOperators.SetFont(fontResource, run.FontSize),
+        ContentOperators.SetFont(font.ResourceName, run.FontSize),
         FillColor(run.Color),
-        .. SameHeightStretches(run.Glyphs).SelectMany(stretch => new[]
+        .. Stretches(run.Glyphs, font).SelectMany(stretch => Replaced(stretch, font, new[]
         {
             ContentOperators.MoveTextTo(run.Origin.X + stretch[0].X, pageHeight - (run.Origin.Y + stretch[0].Y)),
             ContentOperators.ShowGlyphsWithAdjustments(GlyphArray(run, stretch)),
-        }),
+        })),
         ContentOperators.EndText(),
         ContentOperators.RestoreState(),
     ];
 
-    /// <summary>The glyphs split into consecutive stretches with the same <see cref="PositionedGlyph.Y"/>.</summary>
-    private static IEnumerable<ImmutableArray<PositionedGlyph>> SameHeightStretches(ValueList<PositionedGlyph> glyphs)
+    /// <summary>The operations of a stretch, inside a replacement-text span when its glyph needs one.</summary>
+    private static IEnumerable<ContentOperation> Replaced(ImmutableArray<PositionedGlyph> stretch, UsedFont font, IEnumerable<ContentOperation> operations) =>
+        font.NeedsReplacement(stretch[0])
+            ? [ContentOperators.BeginMarkedContent("Span", PdfDictionary.Of(("ActualText", PdfString.FromText(stretch[0].Text)))), .. operations, ContentOperators.EndMarkedContent()]
+            : operations;
+
+    /// <summary>
+    /// The glyphs split into consecutive stretches that can be shown with one TJ: the same <see cref="PositionedGlyph.Y"/>
+    /// (TJ moves the pen only horizontally, §9.4.3; a raised or lowered mark makes its own stretch), and no glyph that
+    /// needs replacement text, which gets a stretch of its own.
+    /// </summary>
+    private static IEnumerable<ImmutableArray<PositionedGlyph>> Stretches(ValueList<PositionedGlyph> glyphs, UsedFont font)
     {
         var stretch = ImmutableArray.CreateBuilder<PositionedGlyph>();
         foreach (var glyph in glyphs)
         {
-            if (stretch.Count > 0 && stretch[0].Y != glyph.Y)
+            var standsAlone = font.NeedsReplacement(glyph);
+            if (stretch.Count > 0 && (stretch[0].Y != glyph.Y || standsAlone || font.NeedsReplacement(stretch[0])))
             {
                 yield return stretch.ToImmutable();
                 stretch.Clear();

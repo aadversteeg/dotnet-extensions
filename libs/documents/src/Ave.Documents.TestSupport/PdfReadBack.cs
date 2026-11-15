@@ -25,15 +25,81 @@ public static class PdfReadBack
     /// <param name="PointSize">The font size.</param>
     public sealed record ReadLetter(string Value, double X, double Y, string FontName, double PointSize);
 
-    /// <summary>The letters on every page, in content-stream order.</summary>
+    /// <summary>
+    /// The letters on every page, in content-stream order, each with the text a reader gets for it: the ToUnicode text
+    /// of its glyph or, inside a marked-content sequence with an <c>/ActualText</c> entry, that replacement text for
+    /// the content the sequence encloses (ISO 32000-1 §14.9.4). The sequence's first letter carries the whole
+    /// replacement, the others none.
+    /// </summary>
     /// <param name="pdf">The PDF bytes.</param>
     /// <returns>One list of letters per page.</returns>
     public static ImmutableArray<ImmutableArray<ReadLetter>> Letters(ImmutableArray<byte> pdf)
     {
         using var document = PdfDocument.Open(pdf.ToArray());
-        return [.. document.GetPages().Select(page => page.Letters
-            .Select(letter => new ReadLetter(letter.Value, letter.StartBaseLine.X, letter.StartBaseLine.Y, letter.FontName ?? string.Empty, letter.PointSize))
+        return [.. document.GetPages().Select(page =>
+        {
+            var replacements = Replacements(page.GetMarkedContents());
+            return page.Letters
+                .Select(letter => new ReadLetter(
+                    replacements.TryGetValue(Key(letter), out var text) ? text : letter.Value,
+                    letter.StartBaseLine.X,
+                    letter.StartBaseLine.Y,
+                    letter.FontName ?? string.Empty,
+                    letter.PointSize))
+                .ToImmutableArray();
+        })];
+    }
+
+    /// <summary>The text of every page as a reader extracts it: the letters' texts (<see cref="Letters"/>) in
+    /// content-stream order, nothing added between lines.</summary>
+    /// <param name="pdf">The PDF bytes.</param>
+    /// <returns>One string per page.</returns>
+    public static ImmutableArray<string> Text(ImmutableArray<byte> pdf) =>
+        [.. Letters(pdf).Select(letters => string.Concat(letters.Select(letter => letter.Value)))];
+
+    /// <summary>Every <c>/ActualText</c> of every page's marked content, in content order.</summary>
+    /// <param name="pdf">The PDF bytes.</param>
+    /// <returns>One list of replacement texts per page.</returns>
+    public static ImmutableArray<ImmutableArray<string>> ActualTexts(ImmutableArray<byte> pdf)
+    {
+        using var document = PdfDocument.Open(pdf.ToArray());
+        return [.. document.GetPages().Select(page => Flatten(page.GetMarkedContents())
+            .Select(element => element.ActualText)
+            .OfType<string>()
             .ToImmutableArray())];
+    }
+
+    private static IEnumerable<UglyToad.PdfPig.Content.MarkedContentElement> Flatten(IEnumerable<UglyToad.PdfPig.Content.MarkedContentElement> elements) =>
+        elements.SelectMany(element => Flatten(element.Children).Prepend(element));
+
+    private static (double X, double Y, string Value) Key(UglyToad.PdfPig.Content.Letter letter) =>
+        (Math.Round(letter.StartBaseLine.X, 3), Math.Round(letter.StartBaseLine.Y, 3), letter.Value);
+
+    /// <summary>For each letter inside a sequence with ActualText, what it reads as.</summary>
+    private static Dictionary<(double X, double Y, string Value), string> Replacements(IEnumerable<UglyToad.PdfPig.Content.MarkedContentElement> elements)
+    {
+        var replacements = new Dictionary<(double X, double Y, string Value), string>();
+        var pending = new Stack<UglyToad.PdfPig.Content.MarkedContentElement>(elements);
+        while (pending.Count > 0)
+        {
+            var element = pending.Pop();
+            if (element.ActualText is { } text)
+            {
+                foreach (var (letter, index) in element.Letters.Select((letter, index) => (letter, index)))
+                {
+                    replacements[Key(letter)] = index == 0 ? text : string.Empty;
+                }
+
+                continue;
+            }
+
+            foreach (var child in element.Children)
+            {
+                pending.Push(child);
+            }
+        }
+
+        return replacements;
     }
 
     /// <summary>

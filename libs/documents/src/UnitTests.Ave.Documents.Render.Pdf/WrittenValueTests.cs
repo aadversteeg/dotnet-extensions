@@ -232,9 +232,10 @@ public class WrittenValueTests
     }
 
     [Fact]
-    public void A_glyph_that_shows_two_texts_maps_to_the_first_one()
+    public void A_glyph_that_shows_two_texts_reads_back_as_each_of_them()
     {
-        // A ToUnicode map holds one text per glyph code (ISO 32000-1 §9.10.3); the writer keeps the text of its first use.
+        // A ToUnicode map holds one text per glyph code; the other text is written as replacement text
+        // (/ActualText, ISO 32000-1 §14.9.4) around the glyph that shows it.
         var font = TestFonts.Regular;
         var glyph = Shaper.Shape("a", font, 10).Value[0];
         var page = new Page(new Size(200, 100),
@@ -245,6 +246,25 @@ public class WrittenValueTests
 
         var pdf = PdfRenderer.Render(new PageDocument(new DocumentMetadata("Map", null), [page]), Plain).Value;
 
-        PdfReadBack.Letters(pdf).Single().Select(letter => letter.Value).Should().Equal("a", "a");
+        PdfReadBack.Letters(pdf).Single().Select(letter => letter.Value).Should().Equal("a", "ª");
+    }
+
+    [Fact]
+    public void The_ToUnicode_text_of_a_glyph_is_the_text_it_shows_most_often()
+    {
+        // Two uses as "ª", one (the first) as "a": the map says "ª", and only the "a" needs replacement text.
+        var font = TestFonts.Regular;
+        var glyph = Shaper.Shape("a", font, 10).Value[0];
+        var page = new Page(new Size(200, 100),
+        [
+            new GlyphRun(font, 10, Color.Black, new Point(10, 30), [new PositionedGlyph(glyph.Glyph, 0, "a")]),
+            new GlyphRun(font, 10, Color.Black, new Point(10, 50), [new PositionedGlyph(glyph.Glyph, 0, "ª")]),
+            new GlyphRun(font, 10, Color.Black, new Point(10, 70), [new PositionedGlyph(glyph.Glyph, 0, "ª")]),
+        ]);
+
+        var pdf = PdfRenderer.Render(new PageDocument(new DocumentMetadata("Map", null), [page]), Plain).Value;
+
+        PdfReadBack.Letters(pdf).Single().Select(letter => letter.Value).Should().Equal("a", "ª", "ª");
+        PdfReadBack.ActualTexts(pdf).Single().Should().Equal(["a"], "one replacement, for the one a");
     }
 }

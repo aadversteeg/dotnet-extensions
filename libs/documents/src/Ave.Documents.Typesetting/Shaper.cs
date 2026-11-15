@@ -136,14 +136,16 @@ public static class Shaper
     /// The hyphen shown where a line breaks at a soft hyphen. UAX #14 §5.4: the soft hyphen is "an invisible format
     /// character that merely indicates a preferred intraword line break position. If the line is broken at that
     /// point, then whatever mechanism is appropriate for intraword line breaks should be invoked" (CSS Text 3 §5.3,
-    /// <c>hyphens: manual</c>, hyphenates only there). Shown as U+2010 HYPHEN when the font has it, otherwise U+002D HYPHEN-MINUS; null when it has neither,
-    /// and the break then shows nothing (a documented limit).
+    /// <c>hyphens: manual</c>, hyphenates only there). Drawn with the glyph of U+2010 HYPHEN when the font has it,
+    /// otherwise of U+002D HYPHEN-MINUS; null when it has neither, and the break then shows nothing (a documented
+    /// limit). Whatever glyph is drawn, its text is the soft hyphen it stands for, not the character whose glyph it
+    /// borrows: a reader gets the word back whole, and a hyphen-minus elsewhere in the document keeps its own text.
     /// </summary>
     private static ShapedGlyph? Hyphen(TrueTypeFont font, double fontSize) =>
         new[] { 0x2010, 0x002D }
-            .Select(codePoint => (Text: char.ConvertFromUtf32(codePoint), Glyph: font.GlyphFor(new Rune(codePoint))))
-            .Where(candidate => candidate.Glyph.HasValue)
-            .Select(candidate => new ShapedGlyph(candidate.Glyph.Value, font.Metrics.ToPoints(font.AdvanceWidth(candidate.Glyph.Value), fontSize), candidate.Text))
+            .Select(codePoint => font.GlyphFor(new Rune(codePoint)))
+            .Where(glyph => glyph.HasValue)
+            .Select(glyph => new ShapedGlyph(glyph.Value, font.Metrics.ToPoints(font.AdvanceWidth(glyph.Value), fontSize), SoftHyphen))
             .FirstOrDefault();
 
     /// <summary>
