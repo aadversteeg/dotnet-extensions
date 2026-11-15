@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
+using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.Fonts.Tables;
 using Ave.Documents.TestSupport;
@@ -32,6 +34,20 @@ public class FontSubsetterTests
         var start = (int)BinaryPrimitives.ReadUInt32BigEndian(loca[(glyph.Value * 4)..]);
         var end = (int)BinaryPrimitives.ReadUInt32BigEndian(loca[((glyph.Value + 1) * 4)..]);
         return directory.Tables["glyf"].Span[start..end].ToArray();
+    }
+
+    [Fact]
+    public void A_composite_whose_component_is_not_a_glyph_of_the_font_is_an_error()
+    {
+        // The first component record of Aacute starts after the 10-byte glyph header: flags, then glyphIndex.
+        var bytes = TestFonts.Bytes("Lato-Regular.ttf");
+        MemoryMarshal.TryGetArray(FontParser.Parse(bytes).Value.GlyphOutline(Aacute), out var outline).Should().BeTrue();
+        BinaryPrimitives.WriteUInt16BigEndian(bytes.AsSpan(outline.Offset + 12), 0xFFFF);
+
+        var result = FontSubsetter.Subset(FontParser.Parse(bytes).Value, [Aacute]);
+
+        result.IsFailure.Should().BeTrue("glyph 65535 does not exist in a font of 3023 glyphs");
+        result.Error.Code.Should().Be(DocumentErrorCodes.Font.Parse.InvalidValue);
     }
 
     [Fact]

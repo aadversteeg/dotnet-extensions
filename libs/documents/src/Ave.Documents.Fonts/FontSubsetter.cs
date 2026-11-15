@@ -72,8 +72,16 @@ public static class FontSubsetter
                 return Result<ImmutableSortedSet<GlyphId>, Error>.Failure(components.Error);
             }
 
-            foreach (var component in components.Value.Where(component => component.Value < font.GlyphCount))
+            // A component must be a glyph of the font ("glyphIndex: glyph index of component", OpenType spec, "glyf"
+            // → "Composite glyph description"); a font that names another is malformed.
+            foreach (var component in components.Value)
             {
+                if (component.Value >= font.GlyphCount)
+                {
+                    return FontParseErrors.InvalidValue<ImmutableSortedSet<GlyphId>>(
+                        "glyf", $"composite glyph {glyph} names component {component.Value}, beyond maxp.numGlyphs {font.GlyphCount}.", component.Value);
+                }
+
                 work.Push(component);
             }
         }
