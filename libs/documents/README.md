@@ -1,0 +1,108 @@
+# Ave.Documents
+
+A document engine in pure managed .NET 10: a document written in C# goes in, a PDF comes out. No native
+library, no P/Invoke and no external engine or tool at run time; tools appear only in tests.
+
+This is **stage 0** of milestone M1: one thin path through every layer, so that each contract exists and is
+tested before anything is widened. It lays out blocks and paragraphs of text over pages and writes a PDF with
+embedded fonts whose text can be selected, copied and searched.
+
+## Layers
+
+Each layer is its own project and package and depends only on the layers above it in this list. The
+dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.Architecture`.
+
+```
+ Ave.Documents.Fluent       code front-end: a document as an immutable value built from function calls
+        │  translate (cascade + validation)
+        ▼
+ Ave.Documents.Model        document model: styled box tree with CSS semantics, computed values only
+        │  lay out (pure algorithms + break tokens), paint
+        ▼
+ Ave.Documents.Layout       Flow and Inline algorithms, pagination driver, painter    ← uses Text
+        │
+        ▼
+ Ave.Documents.Page         page model: per page a display list (glyph runs, rectangles, structure markers)
+        │  render
+        ▼
+ Ave.Documents.Render.Pdf   page model → PDF: composite fonts, ToUnicode, content streams  ← uses Pdf
+        │
+        ▼
+ PDF bytes
+
+ Ave.Documents.Text         white-space collapsing, shaping (cmap + hmtx), greedy line breaking
+ Ave.Documents.Pdf          PDF objects, content operators, file writer (knows nothing about layout)
+ Ave.Documents.Fonts        TrueType reader: head, hhea, maxp, hmtx, cmap 4/12, OS/2, name, post, loca, glyf
+ Ave.Documents.Core         lengths, geometry, colour, source locations, roles, error codes
+```
+
+Where the contracts are:
+
+- Layout contract: `src/Ave.Documents.Layout/LayoutAlgorithm.cs` (the delegate and its rules),
+  `ConstraintSpace.cs`, `BreakToken.cs`, `LayoutResult.cs`, `Fragment.cs`.
+- Document model: `src/Ave.Documents.Model/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `LayoutAlgorithmId.cs`.
+- Page model: `src/Ave.Documents.Page/PageDocument.cs`, `DrawItem.cs`.
+- Error codes: `src/Ave.Documents.Core/DocumentErrorCodes.cs`.
+
+## Writing a document
+
+```csharp
+using Ave.Documents.Core;
+using Ave.Documents.Fluent;
+using static Ave.Documents.Fluent.Elements;
+
+var letter = Document(
+    [
+        Heading(1, "Invoice"),
+        Paragraph([Text("Total: "), Bold("120 EUR")]),
+        Block([Paragraph("Thank you.")], new BoxFormat(Padding: Edges.All(4.Mm()), Background: new Color(0xDD, 0xEB, 0xF7))),
+    ],
+    new TextFormat(FontFamily: "Lato", FontSize: 11.Pt()),
+    PageSetup.A4 with { Margins = Edges.All(2.Cm()) });
+
+var fonts = new FontSet([regular, bold]);   // parsed with FontParser.Parse(bytes); no system fonts
+var pdf = letter.ToPdf(fonts, new PdfRenderOptions(CreationDate: someFixedDate));
+```
+
+Every step returns `Result<T, Error>` (Ave.Extensions.Functional / ErrorPaths). Errors carry a path code such
+as `Documents.Font.GlyphMissing` or `Documents.Layout.DoesNotFit` and the file and line of the call that caused
+them. One naming trap: inside a namespace that starts with `Ave.Documents.`, the name `Text` means the namespace
+`Ave.Documents.Text`, so write documents in your own namespace (the samples use `Samples`).
+
+## Build, test, run the samples
+
+```
+cd src
+dotnet build Ave.Documents.slnx
+dotnet test Ave.Documents.slnx
+dotnet run --project ../samples/Ave.Documents.Samples -- ../out/samples
+```
+
+The samples app writes `sample-a-letter.pdf` (two pages) and `sample-b-long.pdf` (five pages), each with
+`.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its intermediate models.
+
+`pwsh -NoProfile -File tools/verify-samples.ps1` publishes the samples, proves the publish folder contains only
+IL-only managed assemblies, runs them, and checks the PDFs with independent tools in Docker: `qpdf --check`,
+`pdftotext`, and PNG renderings by poppler and MuPDF in `out/samples/png`.
+
+Golden files live in `Golden/` folders next to the tests. After a deliberate change, run the tests with
+`UPDATE_GOLDEN=1`, review the diff, and commit it.
+
+## Stage-0 scope and known differences from CSS
+
+In: blocks (margin, padding, background), paragraphs of runs (family, size, weight, colour), headings,
+explicit page breaks, greedy line breaking at spaces, pagination with break tokens, whole-font embedding,
+deterministic output.
+
+Not yet, on purpose: margin collapsing (margins add up), negative margins (reported as unsupported),
+orphans/widows, the line-height strut, kerning and ligatures, Unicode line breaking (UAX #14), font
+subsetting, tagged PDF and PDF/A, tables, images, headers and footers. Each place where stage 0 deviates
+from the specification says so in a comment next to the code.
+
+## Conventions
+
+Functional C#: immutable records, pure static functions, errors as values, exceptions only for programming
+errors. Every public member has XML documentation (a missing one fails the build), every algorithm cites the
+rule it implements, and warnings are errors (including unused usings). A closed set of cases — the PDF object
+types, the draw items, the fragments, the front-end elements — is kept together in one file so the whole union
+can be read at once; everything else is one type per file.
