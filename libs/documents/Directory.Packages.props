@@ -13,6 +13,8 @@
     <!-- Tests only. FluentAssertions stays on 7.x: version 8 changed its licence. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
+    <!-- The xunit attributes without xunit.core's build props, which would mark a helper project as a test project. -->
+    <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="FluentAssertions" Version="7.2.0" />
     <!-- PdfPig (Apache-2.0, pure managed) reads our PDFs back in tests; never referenced by a library. -->
