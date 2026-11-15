@@ -9,7 +9,7 @@ namespace Ave.Documents.Fonts.OpenType;
 // UnsupportedSubtable, so a font that uses one still loads and the shaper can say what it skipped.
 
 /// <summary>One subtable of a lookup.</summary>
-public abstract record LookupSubtable
+internal abstract record LookupSubtable
 {
     private protected LookupSubtable()
     {
@@ -23,7 +23,7 @@ public abstract record LookupSubtable
 /// <param name="Delta">Format 1: the delta; 0 for format 2.</param>
 /// <param name="Substitutes">Format 2: the substitute per coverage index; empty for format 1.</param>
 /// <param name="IsDelta">True for format 1.</param>
-public sealed record SingleSubstitution(Coverage Glyphs, short Delta, ValueList<GlyphId> Substitutes, bool IsDelta) : LookupSubtable
+internal sealed record SingleSubstitution(Coverage Glyphs, short Delta, ValueList<GlyphId> Substitutes, bool IsDelta) : LookupSubtable
 {
     /// <summary>The glyph that replaces <paramref name="glyph"/>, or null when the subtable does not cover it.</summary>
     /// <param name="glyph">The glyph.</param>
@@ -41,7 +41,7 @@ public sealed record SingleSubstitution(Coverage Glyphs, short Delta, ValueList<
 /// <c>ccmp</c>).</summary>
 /// <param name="Glyphs">The covered glyphs.</param>
 /// <param name="Sequences">The glyphs that replace each covered glyph, by coverage index.</param>
-public sealed record MultipleSubstitution(Coverage Glyphs, ValueList<ValueList<GlyphId>> Sequences) : LookupSubtable
+internal sealed record MultipleSubstitution(Coverage Glyphs, ValueList<ValueList<GlyphId>> Sequences) : LookupSubtable
 {
     /// <summary>The glyphs that replace <paramref name="glyph"/>, or null when the subtable does not cover it.</summary>
     /// <param name="glyph">The glyph.</param>
@@ -54,7 +54,7 @@ public sealed record MultipleSubstitution(Coverage Glyphs, ValueList<ValueList<G
 /// <param name="FirstGlyphs">The covered first glyphs.</param>
 /// <param name="Sets">For each coverage index, the candidate ligatures in preference order ("Ligatures with more
 /// components should be stored ahead of those with fewer components", and the first that matches is used).</param>
-public sealed record LigatureSubstitution(Coverage FirstGlyphs, ValueList<ValueList<Ligature>> Sets) : LookupSubtable
+internal sealed record LigatureSubstitution(Coverage FirstGlyphs, ValueList<ValueList<Ligature>> Sets) : LookupSubtable
 {
     /// <summary>The ligatures that start with <paramref name="glyph"/>; empty when the subtable does not cover it.</summary>
     /// <param name="glyph">The first glyph.</param>
@@ -67,7 +67,7 @@ public sealed record LigatureSubstitution(Coverage FirstGlyphs, ValueList<ValueL
 /// <param name="Glyph">The ligature glyph.</param>
 /// <param name="Components">The component glyphs AFTER the first one, in order ("componentGlyphIDs … beginning
 /// with the second component").</param>
-public sealed record Ligature(GlyphId Glyph, ValueList<GlyphId> Components);
+internal sealed record Ligature(GlyphId Glyph, ValueList<GlyphId> Components);
 
 /// <summary>GPOS lookup type 2, pair adjustment, format 1: adjustments for individual pairs of glyphs.</summary>
 /// <param name="FirstGlyphs">The covered first glyphs.</param>
@@ -75,7 +75,7 @@ public sealed record Ligature(GlyphId Glyph, ValueList<GlyphId> Components);
 /// <param name="SecondHasValues">True when valueFormat2 is not zero: then the second glyph is consumed by the
 /// pair; otherwise it can start the next pair ("If valueFormat2 is set to 0, then the second glyph of the pair is
 /// the 'first' glyph of the next pair").</param>
-public sealed record PairAdjustmentByGlyph(Coverage FirstGlyphs, ValueList<FrozenDictionary<ushort, PairValues>> Sets, bool SecondHasValues) : LookupSubtable
+internal sealed record PairAdjustmentByGlyph(Coverage FirstGlyphs, ValueList<FrozenDictionary<ushort, PairValues>> Sets, bool SecondHasValues) : LookupSubtable
 {
     /// <summary>The adjustments of a pair, or null when the subtable has none for it.</summary>
     /// <param name="first">The first glyph.</param>
@@ -93,7 +93,7 @@ public sealed record PairAdjustmentByGlyph(Coverage FirstGlyphs, ValueList<Froze
 /// <param name="FirstClassCount">class1Count.</param>
 /// <param name="SecondClassCount">class2Count.</param>
 /// <param name="SecondHasValues">As in <see cref="PairAdjustmentByGlyph.SecondHasValues"/>.</param>
-public sealed record PairAdjustmentByClass(
+internal sealed record PairAdjustmentByClass(
     Coverage FirstGlyphs,
     ClassDefinition FirstClasses,
     ClassDefinition SecondClasses,
@@ -105,7 +105,7 @@ public sealed record PairAdjustmentByClass(
 /// <summary>The adjustments of one pair: for the first and for the second glyph.</summary>
 /// <param name="First">For the first glyph.</param>
 /// <param name="Second">For the second glyph.</param>
-public readonly record struct PairValues(ValueRecord First, ValueRecord Second);
+internal readonly record struct PairValues(ValueRecord First, ValueRecord Second);
 
 /// <summary>
 /// A value record (OpenType spec, "GPOS" → "Value record"), in font design units. Device and variation tables
@@ -116,14 +116,14 @@ public readonly record struct PairValues(ValueRecord First, ValueRecord Second);
 /// <param name="YPlacement">Vertical adjustment of the glyph's position (y up).</param>
 /// <param name="XAdvance">Adjustment of the horizontal advance.</param>
 /// <param name="YAdvance">Adjustment of the vertical advance.</param>
-public readonly record struct ValueRecord(short XPlacement, short YPlacement, short XAdvance, short YAdvance);
+internal readonly record struct ValueRecord(short XPlacement, short YPlacement, short XAdvance, short YAdvance);
 
 /// <summary>GPOS lookup type 4, mark-to-base attachment, format 1: puts a mark glyph on an anchor of its base.</summary>
 /// <param name="MarkGlyphs">The covered mark glyphs.</param>
 /// <param name="Marks">For each mark coverage index: its mark class and its anchor.</param>
 /// <param name="BaseGlyphs">The covered base glyphs.</param>
 /// <param name="Bases">For each base coverage index: one anchor per mark class, null where the base has none.</param>
-public sealed record MarkToBase(
+internal sealed record MarkToBase(
     Coverage MarkGlyphs,
     ValueList<(int MarkClass, Anchor Anchor)> Marks,
     Coverage BaseGlyphs,
@@ -147,10 +147,10 @@ public sealed record MarkToBase(
 /// Format 2's contour point and format 3's device tables refine the point for hinting and are not applied.</summary>
 /// <param name="X">Horizontal coordinate.</param>
 /// <param name="Y">Vertical coordinate.</param>
-public readonly record struct Anchor(short X, short Y);
+internal readonly record struct Anchor(short X, short Y);
 
 /// <summary>A subtable of a lookup type or format this reader does not implement.</summary>
 /// <param name="Table">GSUB or GPOS.</param>
 /// <param name="LookupType">The lookup type.</param>
 /// <param name="Format">The subtable format.</param>
-public sealed record UnsupportedSubtable(string Table, int LookupType, int Format) : LookupSubtable;
+internal sealed record UnsupportedSubtable(string Table, int LookupType, int Format) : LookupSubtable;

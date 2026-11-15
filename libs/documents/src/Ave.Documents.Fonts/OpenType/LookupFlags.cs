@@ -5,7 +5,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// glyphs the lookup skips when it looks for its input sequence.
 /// </summary>
 /// <param name="Value">The raw 16-bit value.</param>
-public readonly record struct LookupFlags(ushort Value)
+internal readonly record struct LookupFlags(ushort Value)
 {
     /// <summary>"If set, skips over base glyphs" (bit 0x0002).</summary>
     public bool IgnoreBaseGlyphs => (Value & 0x0002) != 0;

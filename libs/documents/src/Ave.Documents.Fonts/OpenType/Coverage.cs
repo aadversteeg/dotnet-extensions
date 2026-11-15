@@ -14,7 +14,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// glyphs they cover.
 /// </remarks>
 /// <param name="Ranges">The covered ranges in glyph order, none overlapping.</param>
-public sealed record Coverage(ImmutableArray<Coverage.Range> Ranges)
+internal sealed record Coverage(ImmutableArray<Coverage.Range> Ranges)
 {
     /// <summary>A run of consecutive covered glyphs whose coverage indexes count up from <paramref name="StartIndex"/>.</summary>
     /// <param name="Start">The first glyph id.</param>

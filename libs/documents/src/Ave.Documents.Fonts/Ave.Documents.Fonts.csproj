@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="UnitTests.Ave.Documents.Fonts" />
+    <!-- The shaper reads the OpenType layout tables; they are internal to the font reader and the shaper. -->
+    <InternalsVisibleTo Include="Ave.Documents.Typesetting" />
+    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Typesetting" />
   </ItemGroup>
 
 </Project>

@@ -6,4 +6,4 @@ namespace Ave.Documents.Fonts.OpenType;
 /// <param name="Index">Its index in the lookup list.</param>
 /// <param name="Flags">The lookup flags: which glyphs the lookup skips.</param>
 /// <param name="Subtables">The subtables, already resolved through extension subtables.</param>
-public sealed record Lookup(int Index, LookupFlags Flags, ValueList<LookupSubtable> Subtables);
+internal sealed record Lookup(int Index, LookupFlags Flags, ValueList<LookupSubtable> Subtables);

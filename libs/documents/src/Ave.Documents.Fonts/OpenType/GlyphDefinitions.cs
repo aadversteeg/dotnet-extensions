@@ -11,7 +11,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// </summary>
 /// <param name="GlyphClasses">glyphClassDef: 1 base, 2 ligature, 3 mark, 4 component; 0 unknown.</param>
 /// <param name="MarkAttachmentClasses">markAttachClassDef, used by the MarkAttachmentType lookup flag.</param>
-public sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinition MarkAttachmentClasses)
+internal sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinition MarkAttachmentClasses)
 {
     /// <summary>The glyph class value for a mark ("3 Mark glyph (non-spacing combining glyph)").</summary>
     public const int MarkClass = 3;

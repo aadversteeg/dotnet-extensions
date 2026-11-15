@@ -13,7 +13,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// <param name="Scripts">The script list.</param>
 /// <param name="Features">The feature list, indexed by the language systems.</param>
 /// <param name="Lookups">The lookup list, indexed by the features.</param>
-public sealed record LayoutTable(ValueList<ScriptTable> Scripts, ValueList<FeatureTable> Features, ValueList<Lookup> Lookups)
+internal sealed record LayoutTable(ValueList<ScriptTable> Scripts, ValueList<FeatureTable> Features, ValueList<Lookup> Lookups)
 {
     /// <summary>The table of a font that has none: no scripts, features or lookups.</summary>
     public static LayoutTable Empty { get; } = new([], [], []);
