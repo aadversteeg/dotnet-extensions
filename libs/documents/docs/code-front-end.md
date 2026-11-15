@@ -82,6 +82,7 @@ or `Documents.Font.GlyphMissing` and the source file and line of the element.
 | `Paragraph(text)`, `Paragraph([spans])` | a paragraph of one or several spans |
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
 | `Text(text)`, `Bold(text)` | a span inside a paragraph (`Bold(text)` is `Text(text).Bold()`) |
+| `LineBreak()` | a forced line break inside a paragraph (as HTML's `br`; U+2028), used as a span: `Paragraph([Text("a"), LineBreak(), Text("b")])` |
 | `PageBreak()` | starts the next element of the same list on a new page |
 | `Table(columns, rows)` | a table; `columns` made with `Columns(…)`, `rows` a list of the three below |
 | `Columns(2.5.Cm(), Fill(1), Auto)` | the column sizes: a length is fixed, `Fill(weight)` takes a share of the width left over (CSS Grid `fr`), `Auto` is as wide as the content needs |

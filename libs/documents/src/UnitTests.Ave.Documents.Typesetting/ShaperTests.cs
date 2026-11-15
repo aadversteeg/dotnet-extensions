@@ -50,6 +50,17 @@ public class ShaperTests
     }
 
     [Fact]
+    public void A_non_breaking_hyphen_the_font_lacks_is_a_missing_glyph_not_a_hyphen()
+    {
+        // A documented limit (docs/architecture.md, Known limits, Text): Lato maps U+2010 and U+002D but not U+2011
+        // (fontTools getBestCmap), and the shaper does not substitute another hyphen for it.
+        var error = Shaper.Shape("a" + (char)0x2011 + "b", TestFonts.Regular, 10).Error;
+
+        error.Code.Should().Be(FontErrorCodes.GlyphMissing);
+        error.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+2011");
+    }
+
+    [Fact]
     public void A_surrogate_pair_is_one_character()
     {
         var error = Shaper.Shape("\U0001F600", TestFonts.Regular, 10).Error;

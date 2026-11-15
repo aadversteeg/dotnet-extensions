@@ -3,18 +3,22 @@
 A document engine in pure managed .NET 10: a document written in C# goes in, a PDF comes out. No native
 library, no P/Invoke and no external engine or tool at run time; tools appear only in tests.
 
-This is **stage 3**, the last build stage of milestone M1. Stage 0 laid one thin path through every layer; stage 1
-added text quality (Unicode line breaking, OpenType shaping, subsetting, justification, margin collapsing, box
-slicing).
-Stage 2 adds what a business document needs besides PDF conformance: tables (fixed, auto and fill columns, column
-and row spans, repeated header rows, row groups, rows that break between lines or are kept together, grid lines in
-the collapsing border model), a plain row of blocks side by side, borders, keep rules for blocks, a page template
-with header and footer (optionally different on the first page), page number and page count through a
-whole-document fixpoint, and PNG and JPEG images. The proof is the SmallBusiness timesheet, written with the code
-front-end (`samples/Ave.Documents.Samples/Timesheet/`). Stage 3 adds conformance: PDF/A-3b, PDF/A-3a and PDF/UA-1
-as profiles that add what each standard requires and refuse what it forbids, tagged PDF from the page model's
-structure markers, XMP metadata, an sRGB output intent and embedded files; veraPDF checks every sample. The errors-as-
-values helpers now come from the released Ave.Extensions packages.
+What it does (milestone M1):
+
+- **Text:** Unicode line breaking (UAX #14), OpenType shaping (GSUB, GPOS, GDEF, legacy kern), justification, soft
+  hyphens and forced line breaks, font subsetting.
+- **Blocks and pages:** block flow with margin collapsing, box slicing at page breaks, keep rules, borders, a page
+  template with header and footer (optionally different on the first page), page number and page count.
+- **Tables:** fixed, auto and fill columns, column and row spans, repeated header rows, row groups, rows that break
+  between lines or are kept together, grid lines in the collapsing border model; also a plain row of blocks side by
+  side.
+- **Images:** PNG and JPEG.
+- **PDF:** PDF/A-3b, PDF/A-3a and PDF/UA-1 as profiles that add what each standard requires and refuse what it
+  forbids: tagged PDF from the page model's structure markers, XMP metadata, an sRGB output intent and embedded
+  files. veraPDF checks every sample.
+
+Everything that can fail returns an error value (the Ave.Extensions packages), with the author's file and line. The
+proof is the SmallBusiness timesheet, written with the code front-end (`samples/Ave.Documents.Samples/Timesheet/`).
 
 For a reviewer, start with `docs/architecture.md`. Template authors: `docs/code-front-end.md` and
 `docs/pdf-profiles-and-accessibility.md`.
@@ -25,6 +29,9 @@ Each layer is its own project and package and depends only on the layers above i
 dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.Architecture`.
 
 ```
+ Ave.Documents                composition: ToPdf runs front-end, layout and PDF back-end in a row
+        │
+        ▼
  Ave.Documents.Fluent         code front-end: a document as an immutable value built from function calls
         │  translate (cascade + validation)
         ▼
@@ -144,7 +151,7 @@ box slicing at page breaks (CSS Fragmentation 3 §5.2–§5.4), tables and rows 
 `fr` columns, collapsing borders, repeated header rows, rows broken between lines), header and footer areas with a
 different first page, page number and page count (a fixpoint of at most 5 passes), PNG and JPEG images, Unicode line
 breaking (UAX #14, Unicode 18.0.0), OpenType shaping for Latin, Greek and Cyrillic, text-align and inter-word
-justification, TrueType subsetting, deterministic output. Table layout is checked against Chromium 157
+justification, TrueType subsetting, deterministic output. Table layout is checked against Chromium 157 and 159
 (`src/UnitTests.Ave.Documents.Layout/ChromiumReferenceTests.cs`).
 
 Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows, the
