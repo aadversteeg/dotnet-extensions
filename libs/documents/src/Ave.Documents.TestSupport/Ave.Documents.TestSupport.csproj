@@ -24,6 +24,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The pinned reference tools image (qpdf, poppler, MuPDF, fontTools), built by ReferenceTools from this file. -->
+    <None Include="$(RepositoryRoot)tools/reference/tools.Dockerfile" Link="tools/tools.Dockerfile" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The image test files (made by tools/generate-test-images.py), for layout and PDF tests. -->
     <None Include="$(RepositoryRoot)src/UnitTests.Ave.Documents.Images/Assets/*" Link="images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -19,12 +19,15 @@ public static class Docker
     /// <summary>Runs <c>docker</c> with the arguments and waits for it.</summary>
     /// <param name="arguments">The arguments, each passed as is (no shell).</param>
     /// <param name="timeout">How long to wait.</param>
+    /// <param name="standardInput">Text for the command's standard input (a Dockerfile for <c>docker build -</c>), or
+    /// null for none.</param>
     /// <returns>The exit code and standard output; standard error is appended after a marker line.</returns>
     /// <exception cref="TimeoutException">The command did not finish in time.</exception>
-    public static (int ExitCode, string Output) Run(IEnumerable<string> arguments, TimeSpan timeout)
+    public static (int ExitCode, string Output) Run(IEnumerable<string> arguments, TimeSpan timeout, string? standardInput = null)
     {
         var start = new ProcessStartInfo("docker")
         {
+            RedirectStandardInput = standardInput is not null,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -35,6 +38,12 @@ public static class Docker
         }
 
         using var process = Process.Start(start) ?? throw new InvalidOperationException("docker did not start.");
+        if (standardInput is not null)
+        {
+            process.StandardInput.Write(standardInput);
+            process.StandardInput.Close();
+        }
+
         var output = process.StandardOutput.ReadToEndAsync();
         var error = process.StandardError.ReadToEndAsync();
         if (!process.WaitForExit(timeout))

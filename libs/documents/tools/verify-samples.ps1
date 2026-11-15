@@ -7,7 +7,7 @@
     2. Scans the publish folder: every .dll must be an IL-only managed assembly; no other binaries may exist.
     3. Runs the samples app, which writes the sample PDFs (letter, long text, and the timesheet for three data sets in
        Dutch and English) and their text serialisations to out/samples.
-    4. In a throw-away Alpine container: qpdf --check on every PDF, pdftotext for the text, pdffonts for the
+    4. In a throw-away container of the reference tools image: qpdf --check on every PDF, pdftotext for the text, pdffonts for the
        embedded subset fonts, pdfimages -list for the embedded images (and their soft masks), every embedded font
        program extracted (mutool extract) and opened with fontTools, and PNG renderings with two independent renderers
        (poppler's pdftoppm and MuPDF's mutool) to out/samples/png.
@@ -18,13 +18,14 @@
     6. When the reporting PoC's PDFs are found (-PocPdfs, default ../reporting-poc/out next to this repository):
        side-by-side PNGs of every timesheet page, ours on the left and the PoC's Typst page on the right, both rendered
        by poppler at 100 dpi, to out/samples/sbs.
-    Tools run in Docker only; nothing here is part of the engine. Needs Docker and network access for apk.
+    Tools run in Docker only; nothing here is part of the engine. Needs Docker, and network access the first time the
+    tools image is built.
 
-.PARAMETER ToolImage
-    The Alpine image the independent checks run in, pinned by digest (Alpine 3.22.8), with the tool packages pinned
-    to their versions in it (qpdf 12.2.0, poppler 25.04.0, MuPDF 1.25.6, fontTools 4.58.0): a check never runs with
-    another tool than the one it was written for. A pinned package that the repository no longer has fails the
-    script instead of falling back to another version.
+    The independent checks run in the reference tools image, built from tools/reference/tools.Dockerfile: Debian 13
+    pinned by digest, packages from snapshot.debian.org at a fixed date, each tool at its exact version (qpdf 12.2.0,
+    poppler 25.03.0, MuPDF 1.25.1, fontTools 4.57.0, Pillow 11.1.0), so a check never runs with another tool than
+    the one it was written for. The tag is the first 12 hex digits of the Dockerfile's SHA-256, the same image the
+    reference tests use (TestSupport/ReferenceTools.cs).
 
 .PARAMETER VeraPdfImage
     The veraPDF image; pinned to 1.30.4 by digest, the same as the reference tests (TestSupport/VeraPdf.cs).
@@ -37,7 +38,6 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$ToolImage = 'alpine@sha256:49340b346798875b5592e5d420241f2f9cfba5f47e62ebb1446a1b34734e898f',
     [string]$VeraPdfImage = 'verapdf/cli@sha256:f085855d442ad415e79fabbabcdd1803c2db4ee097cd5b94506c95ecdcfa1728',
     [string]$PocPdfs = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'reporting-poc/out')
 )
@@ -46,6 +46,13 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $publish = Join-Path $root 'out/publish'
 $samples = Join-Path $root 'out/samples'
+
+Write-Host '== 0. the reference tools image'
+$dockerfile = Join-Path $root 'tools/reference/tools.Dockerfile'
+$ToolImage = 'ave-documents-tools:' + (Get-FileHash $dockerfile -Algorithm SHA256).Hash.ToLowerInvariant().Substring(0, 12)
+Get-Content -Raw $dockerfile | docker build -q -t $ToolImage -
+if ($LASTEXITCODE -ne 0) { throw "building $ToolImage failed" }
+Write-Host "   $ToolImage"
 
 Write-Host '== 1. publish'
 dotnet publish (Join-Path $root 'samples/Ave.Documents.Samples') -c Release -o $publish -nologo -v q
@@ -81,7 +88,6 @@ if ($LASTEXITCODE -ne 0) { throw 'samples failed' }
 Write-Host '== 4. independent checks in Docker'
 $script = @'
 set -eu -o pipefail
-apk add -q --no-cache qpdf=12.2.0-r0 poppler-utils=25.04.0-r0 mupdf-tools=1.25.6-r1 py3-fonttools=4.58.0-r0 >/dev/null
 echo "qpdf $(qpdf --version | head -1 | cut -d' ' -f3), $(pdftoppm -v 2>&1 | head -1), mutool $(mutool -v 2>&1 | head -1 | cut -d' ' -f3), fontTools $(python3 -c 'import fontTools; print(fontTools.version)')"
 mkdir -p /work/png /work/fonts
 for f in /work/*.pdf; do
@@ -99,7 +105,7 @@ for f in /work/*.pdf; do
 done
 ls /work/png | sed 's|^|   png: |'
 '@
-docker run --rm -v "${samples}:/work" $ToolImage sh -c $script
+docker run --rm -v "${samples}:/work" $ToolImage bash -c $script
 if ($LASTEXITCODE -ne 0) { throw 'independent checks failed' }
 
 Write-Host "== 5. veraPDF $VeraPdfImage"
@@ -130,21 +136,19 @@ if ($failed.Count -gt 0) { throw "veraPDF: not compliant: $($failed -join ', ')"
 
 $extract = @'
 set -eu -o pipefail
-apk add -q --no-cache qpdf=12.2.0-r0 >/dev/null
 for f in /work/timesheet-*.pdf; do
   name=$(basename "$f" .pdf)
   qpdf --show-attachment=timesheet.xml "$f" > "/tmp/$name.xml"
   if cmp -s "/tmp/$name.xml" "/work/$name.attachment.timesheet.xml"; then echo "   attachment $name: byte-identical ($(wc -c < "/tmp/$name.xml") bytes)"; else echo "   attachment $name: DIFFERS"; exit 1; fi
 done
 '@
-docker run --rm -v "${samples}:/work:ro" $ToolImage sh -c $extract
+docker run --rm -v "${samples}:/work:ro" $ToolImage bash -c $extract
 if ($LASTEXITCODE -ne 0) { throw 'attachment round trip failed' }
 
 if (Test-Path $PocPdfs) {
     Write-Host "== 6. side by side with the PoC's Typst output ($PocPdfs)"
     $compose = @'
 set -eu -o pipefail
-apk add -q --no-cache poppler-utils=25.04.0-r0 py3-pillow=11.2.1-r0 >/dev/null
 mkdir -p /work/sbs /tmp/poc
 for f in /poc/sample-*.typst.pdf; do pdftoppm -r 100 -png "$f" "/tmp/poc/$(basename "$f" .pdf)"; done
 python3 - <<'PY'
@@ -166,7 +170,7 @@ for set_ in ("normal", "long", "edge"):
             print("   side by side:", os.path.basename(path), "ours" if left else "-", "| typst" if right else "| -")
 PY
 '@
-    docker run --rm -v "${samples}:/work" -v "${PocPdfs}:/poc:ro" $ToolImage sh -c $compose
+    docker run --rm -v "${samples}:/work" -v "${PocPdfs}:/poc:ro" $ToolImage bash -c $compose
     if ($LASTEXITCODE -ne 0) { throw 'side-by-side rendering failed' }
 }
 else {

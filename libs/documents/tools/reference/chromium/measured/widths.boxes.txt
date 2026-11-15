@@ -9,4 +9,11 @@ td 99.996 16.734 fixed
 td 31.547 16.734 short
 td 104.004 16.734 somewhat longer text
 div 300.000 12.000 w3
+div 52.922 12.000 one
+div 105.867 12.000 two words
+div 141.211 12.000 Supercalifragilisticexpi
 div 300.000 12.000 w4
+div 42.094 12.000 a
+div 50.520 12.000 b
+div 168.410 12.000 c
+div 38.977 12.000 Duration
