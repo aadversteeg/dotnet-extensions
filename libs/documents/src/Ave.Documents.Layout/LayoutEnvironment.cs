@@ -8,9 +8,10 @@ namespace Ave.Documents.Layout;
 
 /// <summary>
 /// What every layout call can see besides its own arguments: the fonts, the table that maps a layout algorithm id
-/// (<see cref="Box.Layout"/>) to its functions, and the page being laid out. Immutable; a front-end with its own
-/// algorithm adds it with <see cref="WithAlgorithm(LayoutAlgorithmId, LayoutAlgorithm, IntrinsicSizing)"/>, and the
-/// paginator gives each page its own <see cref="Page"/>.
+/// (<see cref="Box.Layout"/>) to its functions, and the page being laid out. Immutable; the paginator gives each page
+/// its own <see cref="Page"/>. The table holds the four algorithms the engine ships; adding one
+/// (<see cref="WithAlgorithm(LayoutAlgorithmId, LayoutAlgorithm, IntrinsicSizing)"/>) is internal until a front-end
+/// needs it (docs/architecture.md, "The layout contract").
 /// </summary>
 /// <param name="Fonts">The fonts text may use.</param>
 /// <param name="Algorithms">The layout algorithms by id.</param>
@@ -34,7 +35,7 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
     /// <param name="algorithm">The layout function.</param>
     /// <param name="measure">Its intrinsic widths.</param>
     /// <returns>A new environment.</returns>
-    public LayoutEnvironment WithAlgorithm(LayoutAlgorithmId id, LayoutAlgorithm algorithm, IntrinsicSizing measure) =>
+    internal LayoutEnvironment WithAlgorithm(LayoutAlgorithmId id, LayoutAlgorithm algorithm, IntrinsicSizing measure) =>
         this with { Algorithms = Algorithms.SetItem(id, new RegisteredAlgorithm(algorithm, measure)) };
 
     /// <summary>Adds or replaces an algorithm that cannot be measured: putting one of its boxes in an <c>auto</c> or
@@ -42,7 +43,7 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
     /// <param name="id">The algorithm id boxes name.</param>
     /// <param name="algorithm">The layout function.</param>
     /// <returns>A new environment.</returns>
-    public LayoutEnvironment WithAlgorithm(LayoutAlgorithmId id, LayoutAlgorithm algorithm) =>
+    internal LayoutEnvironment WithAlgorithm(LayoutAlgorithmId id, LayoutAlgorithm algorithm) =>
         WithAlgorithm(id, algorithm, (_, box) =>
             Result<IntrinsicWidths, Error>.Failure(LayoutErrors.InvalidContent(box, "this algorithm has no intrinsic widths, so its boxes cannot be sized from content.")));
 

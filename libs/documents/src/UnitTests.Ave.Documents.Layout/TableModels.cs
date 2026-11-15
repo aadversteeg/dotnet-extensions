@@ -39,17 +39,17 @@ internal sealed class TableModels
     }
 
     public Box Row(BoxStyle? style, params Box[] cells) =>
-        new(Next(), SemanticRole.TableRow, LayoutAlgorithmId.TableRow, style ?? BoxStyle.Initial, [.. cells], Models.At(0));
+        new(Next(), SemanticRole.TableRow, LayoutAlgorithmId.Tracks, (style ?? BoxStyle.Initial) with { TableDisplay = TableDisplay.Row }, [.. cells], Models.At(0));
 
     public Box Row(params Box[] cells) => Row(null, cells);
 
     public Box Body(BoxStyle? style, params Box[] rows) =>
-        new(Next(), SemanticRole.TableBody, LayoutAlgorithmId.TableRowGroup, style ?? BoxStyle.Initial, [.. rows], Models.At(0));
+        new(Next(), SemanticRole.TableBody, LayoutAlgorithmId.Tracks, (style ?? BoxStyle.Initial) with { TableDisplay = TableDisplay.RowGroup }, [.. rows], Models.At(0));
 
     public Box Body(params Box[] rows) => Body(null, rows);
 
     public Box Head(params Box[] rows) =>
-        new(Next(), SemanticRole.TableHead, LayoutAlgorithmId.TableHeaderGroup, BoxStyle.Initial, [.. rows], Models.At(0));
+        new(Next(), SemanticRole.TableHead, LayoutAlgorithmId.Tracks, BoxStyle.Initial with { TableDisplay = TableDisplay.HeaderGroup }, [.. rows], Models.At(0));
 
     public Box Table(ValueList<TrackSize> columns, params Box[] groups) =>
         new(Next(), SemanticRole.Table, LayoutAlgorithmId.Tracks, BoxStyle.Initial with { Columns = columns }, [.. groups], Models.At(0));

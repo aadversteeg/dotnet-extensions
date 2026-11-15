@@ -68,7 +68,13 @@ public static class DocumentModelText
         [
             "box",
             box.Id.ToString(),
-            box.Layout.ToString(),
+            box.Style.TableDisplay switch
+            {
+                TableDisplay.HeaderGroup => "table-header-group",
+                TableDisplay.RowGroup => "table-row-group",
+                TableDisplay.Row => "table-row",
+                _ => box.Layout.ToString(),
+            },
             box.Role.ToString(),
             style.Margin != initial.Margin ? $"margin={style.Margin}" : null,
             style.Padding != initial.Padding ? $"padding={style.Padding}" : null,

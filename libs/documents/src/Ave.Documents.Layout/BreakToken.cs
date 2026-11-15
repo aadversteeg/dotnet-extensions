@@ -4,12 +4,19 @@ using Ave.Documents.Core;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// Where a box was broken at the end of a page, so its layout can continue on the next page (research §7:
-/// "break tokens are the only pagination state; layout stays pure"). Each algorithm defines its own token type
-/// and only ever receives tokens it produced itself. Open, so that algorithms outside this assembly can define
-/// theirs. Tokens are values: two tokens for the same position are equal.
+/// Where a box was broken at the end of a page, so its layout can continue on the next page. Break tokens are the
+/// only state pagination carries from page to page, so every layout call stays a pure function. Each of the four
+/// algorithms defines its own token type and only ever receives tokens it produced itself. Tokens are values: two
+/// tokens for the same position are equal.
 /// </summary>
-public abstract record BreakToken;
+public abstract record BreakToken
+{
+    // Only the algorithms of this assembly define tokens (one type each); a token an algorithm did not produce is a
+    // programming error, never input.
+    private protected BreakToken()
+    {
+    }
+}
 
 /// <summary>The break token of <see cref="FlowLayout"/>: which child to resume at, and where inside it.</summary>
 /// <param name="ChildIndex">The index of the child that continues on the next page.</param>

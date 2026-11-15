@@ -181,9 +181,9 @@ internal static class TableTranslator
             .TraverseAll(item => RowNode(item.Row, item.Id, own, cellDefaults, isLayoutOnly))
             .OnSuccessMap(nodes => nodes.ToValueList());
         var role = isLayoutOnly ? SemanticRole.Generic : group.IsHeader ? SemanticRole.TableHead : SemanticRole.TableBody;
-        var layout = group.IsHeader ? LayoutAlgorithmId.TableHeaderGroup : LayoutAlgorithmId.TableRowGroup;
+        var part = group.IsHeader ? TableDisplay.HeaderGroup : TableDisplay.RowGroup;
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes =>
-            (Node)new Box(id, role, layout, DocumentTranslator.BoxStyleOf(box, false, own.Align), nodes, source));
+            (Node)new Box(id, role, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own.Align) with { TableDisplay = part }, nodes, source));
     }
 
     /// <summary>A row box with its cells; the row's text values are inherited by its cells.</summary>
@@ -206,7 +206,7 @@ internal static class TableTranslator
             .TraverseAll(item => CellNode(item.Cell, item.Id, own, cellDefaults, role))
             .OnSuccessMap(nodes => nodes.ToValueList());
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes => (Node)new Box(
-            id, isLayoutOnly ? SemanticRole.Generic : SemanticRole.TableRow, LayoutAlgorithmId.TableRow, DocumentTranslator.BoxStyleOf(box, false, own.Align), nodes, row.Source));
+            id, isLayoutOnly ? SemanticRole.Generic : SemanticRole.TableRow, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own.Align) with { TableDisplay = TableDisplay.Row }, nodes, row.Source));
     }
 
     /// <summary>A cell box: a flow box with the cell's content; padding and border fall back to the table's cell

@@ -66,6 +66,13 @@ says where to continue; `LayoutResult.cs` and `BreakAppeal.cs` carry the result 
 paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with the previous page's token until no token
 is left, and repeats the whole document until the page count settles (at most 5 passes).
 
+**The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
+and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
+engine ships four algorithms (flow, inline, tracks, image) and registering another is internal
+(`LayoutEnvironment.WithAlgorithm`); `BreakToken` can only be derived inside the layout assembly, and the parts of a
+table are a display type (`TableDisplay`), not algorithms. When a front-end needs an algorithm of its own, these are
+the three places to open, with that front-end as their first user.
+
 ## Where the policies and whole algorithms are
 
 | What | Where | Rule it implements |

@@ -12,4 +12,9 @@
     <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The tests register small algorithms of their own (WithAlgorithm is internal). -->
+    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Layout" />
+  </ItemGroup>
+
 </Project>

@@ -100,12 +100,12 @@ internal sealed record TableGrid(
 
         var groups = table.Children.OfType<Box>().ToImmutableArray();
         if (groups.Length != table.Children.Count
-            || groups.Any(group => group.Layout != LayoutAlgorithmId.TableHeaderGroup && group.Layout != LayoutAlgorithmId.TableRowGroup))
+            || groups.Any(group => group.Style.TableDisplay is not (TableDisplay.HeaderGroup or TableDisplay.RowGroup)))
         {
             return Invalid(table, "the children of a tracks box must be row groups.");
         }
 
-        if (groups.Skip(1).Any(group => group.Layout == LayoutAlgorithmId.TableHeaderGroup))
+        if (groups.Skip(1).Any(group => group.Style.TableDisplay == TableDisplay.HeaderGroup))
         {
             return Invalid(table, "a header row group may only be the first group.");
         }
@@ -113,7 +113,7 @@ internal sealed record TableGrid(
         var groupRows = groups.Select(group => group.Children.OfType<Box>().ToImmutableArray()).ToImmutableArray();
         for (var index = 0; index < groups.Length; index++)
         {
-            if (groupRows[index].Length != groups[index].Children.Count || groupRows[index].Any(row => row.Layout != LayoutAlgorithmId.TableRow))
+            if (groupRows[index].Length != groups[index].Children.Count || groupRows[index].Any(row => row.Style.TableDisplay != TableDisplay.Row))
             {
                 return Invalid(groups[index], "the children of a row group must be rows.");
             }
@@ -141,7 +141,7 @@ internal sealed record TableGrid(
         var rows = groupRows.SelectMany((rows, group) => rows.Select((row, index) => new Row(row, groups[group], index == 0, index == rows.Length - 1))).ToImmutableArray();
         var flatCells = cellBoxes.SelectMany(cells => cells).ToImmutableArray();
         var cells = grid.Cells.Select((placement, index) => new Cell(flatCells[index], placement.Row, placement.Column, placement.Span.Rows, placement.Span.Columns)).ToImmutableArray();
-        var headerRows = groups.FirstOrDefault()?.Layout == LayoutAlgorithmId.TableHeaderGroup ? groupRows[0].Length : 0;
+        var headerRows = groups.FirstOrDefault()?.Style.TableDisplay == TableDisplay.HeaderGroup ? groupRows[0].Length : 0;
         var startingIn = rows.Select(_ => ImmutableArray.CreateBuilder<int>()).ToArray();
         for (var index = 0; index < cells.Length; index++)
         {

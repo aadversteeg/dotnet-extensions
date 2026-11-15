@@ -46,6 +46,10 @@ public sealed record BoxStyle
     /// <c>grid-template-columns</c>); empty for every other box.</summary>
     public ValueList<TrackSize> Columns { get; init; } = [];
 
+    /// <summary>The table part this box is (CSS Display 3 §2.4), or <see cref="TableDisplay.None"/>: a row group or a row
+    /// of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>.</summary>
+    public TableDisplay TableDisplay { get; init; }
+
     /// <summary>How many columns and rows a table cell covers (HTML <c>colspan</c> / <c>rowspan</c>, CSS 2.1 §17.2.1);
     /// <see cref="CellSpan.Single"/> for every other box.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;

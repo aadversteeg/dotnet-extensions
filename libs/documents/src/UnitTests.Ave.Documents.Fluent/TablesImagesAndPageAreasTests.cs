@@ -52,10 +52,10 @@ public class TablesImagesAndPageAreasTests
         (box.Layout, box.Role).Should().Be((LayoutAlgorithmId.Tracks, SemanticRole.Table));
         box.Style.Columns.Should().Equal(new TrackSize.Fixed(2.Cm()), new TrackSize.Fill(1), TrackSize.Auto.Instance);
         var groups = box.Children.Cast<Box>().ToArray();
-        groups.Select(group => (group.Layout, group.Role)).Should().Equal(
-            (LayoutAlgorithmId.TableHeaderGroup, SemanticRole.TableHead),
-            (LayoutAlgorithmId.TableRowGroup, SemanticRole.TableBody),
-            (LayoutAlgorithmId.TableRowGroup, SemanticRole.TableBody));
+        groups.Select(group => (group.Style.TableDisplay, group.Role)).Should().Equal(
+            (TableDisplay.HeaderGroup, SemanticRole.TableHead),
+            (TableDisplay.RowGroup, SemanticRole.TableBody),
+            (TableDisplay.RowGroup, SemanticRole.TableBody));
         groups[2].Style.BreakInside.Should().Be(BreakInside.Avoid);
         var headerCell = (Box)((Box)groups[0].Children[0]).Children[0];
         headerCell.Role.Should().Be(SemanticRole.TableHeaderCell);
