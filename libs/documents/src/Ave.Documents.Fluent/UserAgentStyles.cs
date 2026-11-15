@@ -14,8 +14,9 @@ public static class UserAgentStyles
     /// <summary>
     /// Heading font size as a multiple of the inherited size, from the HTML Standard's rendering section
     /// ("Sections and headings": h1 2em, h2 1.5em, h3 1.17em, h4 1em, h5 0.83em, h6 0.67em). Headings are also
-    /// bold there. The HTML margins (h1 0.67em …) are NOT applied: they assume CSS margin collapsing, which
-    /// stage 0 does not do, and would give double gaps.
+    /// bold there. The HTML margins (h1 0.67em, p 1em …) are NOT applied: this front-end is not HTML, and spacing
+    /// between blocks is the author's choice, set with the margin modifiers (adjoining margins collapse, CSS 2.1
+    /// §8.3.1).
     /// </summary>
     /// <param name="level">The heading level, 1–6.</param>
     /// <returns>The factor.</returns>

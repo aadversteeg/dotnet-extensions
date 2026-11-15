@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 
 namespace Ave.Documents.Typesetting;
@@ -50,6 +51,14 @@ public static class WhiteSpaceCollapsing
 
         return result.MoveToImmutable();
     }
+
+    /// <summary>
+    /// True when the text is nothing but collapsible white space (or empty): after collapsing and trimming at
+    /// line ends nothing of it is left, so on its own it makes no line box (CSS Text 3 §4.1.2, CSS 2.1 §9.4.2).
+    /// </summary>
+    /// <param name="text">The text of a run.</param>
+    /// <returns>Whether only collapsible white space is in it.</returns>
+    public static bool IsAllCollapsible(string text) => text.All(IsCollapsible);
 
     private static bool IsCollapsible(char character) => character is ' ' or '\t' or '\n' or '\r';
 }

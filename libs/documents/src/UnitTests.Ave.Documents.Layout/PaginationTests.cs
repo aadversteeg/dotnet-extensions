@@ -32,7 +32,7 @@ public class PaginationTests
         var children = Root(pages[0]).Children;
         children[0].Offset.Should().Be(new Point(5, 2), "left and top margin");
         children[0].Fragment.Size.Should().Be(new Size(175, LineHeight), "the width is the page area minus the left margin");
-        children[1].Offset.Should().Be(new Point(0, 2 + LineHeight + 3), "below the first block's bottom margin; margins do not collapse");
+        children[1].Offset.Should().Be(new Point(0, 2 + LineHeight + 3), "one collapsed margin, max(3, 0), below the first block");
     }
 
     [Fact]

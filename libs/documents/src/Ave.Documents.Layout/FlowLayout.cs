@@ -9,22 +9,27 @@ namespace Ave.Documents.Layout;
 
 /// <summary>
 /// Block flow: stacks child boxes from top to bottom in a block formatting context ("boxes are laid out one
-/// after the other, vertically, beginning at the top of a containing block", CSS 2.1 §9.4.1), breaking across
-/// pages where the next child does not fit.
+/// after the other, vertically, beginning at the top of a containing block", CSS 2.1 §9.4.1), collapses their
+/// adjoining margins (§8.3.1, <see cref="MarginCollapsing"/>), and breaks across pages where the next child does
+/// not fit.
 /// </summary>
 public static class FlowLayout
 {
     /// <summary>The Flow algorithm; see <see cref="LayoutAlgorithm"/> for the contract.</summary>
     /// <remarks>
-    /// Children are placed in order. The content stops on this page, and a <see cref="FlowBreakToken"/> says
-    /// where to resume, in three cases (the class-A and nested breakpoints of CSS Fragmentation 3 §4.1):
+    /// <para>Children are placed in order. The vertical distance between two children is ONE collapsed margin:
+    /// "Vertical margins between adjacent block-level boxes in a block formatting context collapse" (§9.4.1). The
+    /// loop keeps the bottom of the content placed so far (<c>cursor</c>) and the margins waiting below it
+    /// (<c>pending</c>); the next child goes at <c>cursor + Collapse(pending, its top margin)</c>.</para>
+    /// <para>The content stops on this page, and a <see cref="FlowBreakToken"/> says where to resume, in three
+    /// cases (the class-A and nested breakpoints of CSS Fragmentation 3 §4.1):</para>
     /// <list type="number">
     /// <item>a page break is forced before the next child (<see cref="ForcedBreaks"/>);</item>
     /// <item>the next child has no room left on this page: it moves whole to the next page;</item>
     /// <item>a child broke inside itself: the rest of it continues on the next page.</item>
     /// </list>
-    /// When even the FIRST child of this fragment has no room, nothing of this box fits, and the box reports
-    /// that to its own parent instead of leaving an empty fragment behind (<see cref="LayoutResult.NothingFits"/>).
+    /// <para>When even the FIRST content of this fragment has no room, nothing of this box fits, and the box reports
+    /// that to its own parent instead of leaving an empty fragment behind (<see cref="LayoutResult.NothingFits"/>).</para>
     /// </remarks>
     /// <param name="environment">The fonts and algorithms.</param>
     /// <param name="box">A box whose children are all boxes.</param>
@@ -53,19 +58,32 @@ public static class FlowLayout
 
         var children = box.Children.Cast<Box>().ToImmutableArray();
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
-        var bottom = 0.0;
+        var cursor = 0.0;
+        var pending = 0.0;
+        var hasContent = false;
+        var leadingMarginsTakeNoSpace = LeadingMarginsTakeNoSpace(box, space, incoming, resume, children);
         for (var index = resume.ChildIndex; index < children.Length; index++)
         {
             var child = children[index];
-            var isFirstOnPage = placed.Count == 0;
-            if (!isFirstOnPage && ForcedBreaks.Before(child))
+            if (hasContent && ForcedBreaks.Before(child))
             {
-                return LayoutResult.Place(frame.Wrap(box, placed, bottom, isLastFragment: false), new FlowBreakToken(index, null));
+                // Margins before the break are truncated (CSS Fragmentation 3 §5.2): `pending` is dropped.
+                return LayoutResult.Place(frame.Wrap(box, placed, cursor, isLastFragment: false), new FlowBreakToken(index, null));
             }
 
             var childResume = index == resume.ChildIndex ? resume.ChildToken : null;
+            var isEmpty = MarginCollapsing.IsEmpty(child);
+            var top = cursor + Gap(child, pending, isEmpty, leadingMarginsTakeNoSpace || childResume is not null);
+            if (isEmpty)
+            {
+                // A box whose margins collapse through it has no height and needs no room (§8.3.1, last bullet:
+                // its top border edge sits where it would be "if the element had a non-zero bottom border").
+                // Where its margins alone would pass the page end it is put at the end; it is invisible either way.
+                top = Math.Min(top, frame.ContentHeight);
+            }
+
             var outcome = InFlowChild.Place(
-                environment, child, frame.ContentWidth, bottom, frame.ContentHeight, space.IsAtPageStart && isFirstOnPage, childResume);
+                environment, child, frame.ContentWidth, top, frame.ContentHeight, space.IsAtPageStart && !hasContent, childResume);
             if (outcome.IsFailure)
             {
                 return Result<LayoutResult, Error>.Failure(outcome.Error);
@@ -73,20 +91,63 @@ public static class FlowLayout
 
             if (outcome.Value.HasNoValue)
             {
-                return isFirstOnPage
-                    ? LayoutResult.NothingFits(box, space)
-                    : LayoutResult.Place(frame.Wrap(box, placed, bottom, isLastFragment: false), new FlowBreakToken(index, null));
+                // Break before this child; the margins adjoining an unforced break are truncated (§5.2).
+                return hasContent
+                    ? LayoutResult.Place(frame.Wrap(box, placed, cursor, isLastFragment: false), new FlowBreakToken(index, null))
+                    : LayoutResult.NothingFits(box, space);
             }
 
             var placement = outcome.Value.Value;
             placed.Add(placement.Fragment);
-            bottom = placement.Bottom;
+            if (isEmpty)
+            {
+                // Its margins join the ones waiting for the next content, unless they are absorbed or truncated.
+                pending = leadingMarginsTakeNoSpace ? 0 : MarginCollapsing.Collapse(pending, MarginCollapsing.All(child));
+                continue;
+            }
+
+            cursor = top + placement.Fragment.Fragment.Size.Height;
+            pending = MarginCollapsing.Bottom(child);
+            hasContent = true;
+            leadingMarginsTakeNoSpace = false;
             if (placement.Continuation is { } continuation)
             {
-                return LayoutResult.Place(frame.Wrap(box, placed, bottom, isLastFragment: false), new FlowBreakToken(index, continuation));
+                return LayoutResult.Place(frame.Wrap(box, placed, cursor, isLastFragment: false), new FlowBreakToken(index, continuation));
             }
         }
 
-        return LayoutResult.Place(frame.Wrap(box, placed, bottom, isLastFragment: true), null);
+        // The margins after the last child either leave the box through its bottom edge — they are part of the
+        // box's own bottom margin as its parent sees it (MarginCollapsing.Bottom) — or, when padding or a new
+        // formatting context separates them from it, they stay inside and add to the box's height.
+        var bottomAdjoins = !space.IsNewFormattingContext && MarginCollapsing.BottomAdjoinsChildren(box);
+        return LayoutResult.Place(frame.Wrap(box, placed, bottomAdjoins ? cursor : cursor + pending, isLastFragment: true), null);
     }
+
+    /// <summary>
+    /// The space above a child: the collapsed margin between the content above (<paramref name="pending"/>) and the
+    /// child's top margin (which already includes the margins collapsing through from inside it), or zero when
+    /// those margins take no space here.
+    /// </summary>
+    private static double Gap(Box child, double pending, bool isEmpty, bool marginsTakeNoSpace) =>
+        marginsTakeNoSpace ? 0 : MarginCollapsing.Collapse(pending, isEmpty ? MarginCollapsing.All(child) : MarginCollapsing.Top(child));
+
+    /// <summary>
+    /// Whether the margins at the start of this fragment's content (up to the first non-empty child) take no space
+    /// inside the box. Three cases:
+    /// <list type="bullet">
+    /// <item>First fragment, top margin adjoining the first child (§8.3.1): those margins collapsed with the box's
+    /// own top margin, and the parent already put the box below the collapsed margin
+    /// (<see cref="MarginCollapsing.Top"/>). Not for a new formatting context such as the root.</item>
+    /// <item>Continuing after an UNFORCED break between two children: "any margins adjoining the break are
+    /// truncated to zero" (CSS Fragmentation 3 §5.2).</item>
+    /// <item>Continuing after a FORCED break: "margins after the break are preserved" — they DO take space.</item>
+    /// </list>
+    /// A child that continues inside itself starts at the top of the page without any margin; that case is
+    /// handled where the child is placed.
+    /// </summary>
+    private static bool LeadingMarginsTakeNoSpace(
+        Box box, ConstraintSpace space, BreakToken? incoming, FlowBreakToken resume, ImmutableArray<Box> children) =>
+        incoming is null
+            ? !space.IsNewFormattingContext && MarginCollapsing.TopAdjoinsChildren(box)
+            : resume.ChildToken is null && resume.ChildIndex < children.Length && !ForcedBreaks.Before(children[resume.ChildIndex]);
 }

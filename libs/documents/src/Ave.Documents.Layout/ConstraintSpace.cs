@@ -12,4 +12,7 @@ namespace Ave.Documents.Layout;
 /// <param name="IsAtPageStart">True when nothing that could move to a later page comes before this box on
 /// the current page. Then a break before the box would make no progress, so a box that does not fit here does
 /// not fit on any page.</param>
-public sealed record ConstraintSpace(double AvailableWidth, double AvailableHeight, bool IsAtPageStart);
+/// <param name="IsNewFormattingContext">True when the box is the root of a new block formatting context (CSS 2.1
+/// §9.4.1), as the document's root box is. Its margins then do not collapse with its children's (§8.3.1: "Margins
+/// of the root element's box do not collapse"). Every box inside the flow gets false.</param>
+public sealed record ConstraintSpace(double AvailableWidth, double AvailableHeight, bool IsAtPageStart, bool IsNewFormattingContext = false);

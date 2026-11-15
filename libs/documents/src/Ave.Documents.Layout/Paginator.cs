@@ -16,8 +16,8 @@ public static class Paginator
 {
     /// <summary>
     /// Lays out the document on as many pages as it needs. Every page is the page style's size; the root box
-    /// is laid out in the page area (the page minus its margins, CSS Paged Media 3 §3.1), with its own margins
-    /// applied like those of any other block.
+    /// is laid out in the page area (the page minus its margins, CSS Paged Media 3 §3.1) as the root of the block
+    /// formatting context, with its own margins inside the page area.
     /// </summary>
     /// <param name="environment">The fonts and algorithms.</param>
     /// <param name="document">The document.</param>
@@ -41,8 +41,12 @@ public static class Paginator
         BreakToken? token = null;
         do
         {
+            // The root establishes the block formatting context, so its margins never collapse with its
+            // children's (CSS 2.1 §8.3.1). Its top margin belongs to its first fragment only (slice, CSS
+            // Fragmentation 3 §5.4); on later pages the root continues at the top of the page area.
+            var top = token is null ? document.Root.Style.Margin.Top.Points : 0;
             var outcome = InFlowChild.Place(
-                environment, document.Root, page.AreaWidth.Points, top: 0, page.AreaHeight.Points, isAtPageStart: true, token);
+                environment, document.Root, page.AreaWidth.Points, top, page.AreaHeight.Points, isAtPageStart: true, token, isNewFormattingContext: true);
             if (outcome.IsFailure)
             {
                 return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);

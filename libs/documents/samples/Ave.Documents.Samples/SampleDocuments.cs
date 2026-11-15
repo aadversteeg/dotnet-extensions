@@ -17,8 +17,9 @@ public static class SampleDocuments
     private static readonly Color Grey = new(0x59, 0x59, 0x59);
 
     private static readonly PageSetup Page = PageSetup.A4 with { Margins = Edges.All(2.Cm()) };
-    /// <summary>Space below each paragraph: the stage-0 way to separate paragraphs (no margin collapsing yet).</summary>
-    private static readonly Style ParagraphSpacing = Style.Empty.MarginBottom(8.Pt());
+    /// <summary>Paragraph spacing: a margin above and below. Between two paragraphs the two collapse into one
+    /// 6 pt gap (CSS 2.1 §8.3.1); next to a heading the larger margin wins.</summary>
+    private static readonly Style ParagraphSpacing = Style.Empty.MarginTop(6.Pt()).MarginBottom(6.Pt());
 
     /// <summary>
     /// Sample A: a two-page letter with a heading, paragraphs in regular and bold, and a coloured block.
@@ -30,7 +31,7 @@ public static class SampleDocuments
             [
                 Paragraph("Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town")
                     .MarginBottom(24.Pt()).FontSize(9.Pt()).Color(Grey),
-                Heading(1, "Quotation for document rendering").MarginBottom(12.Pt()).Color(Navy),
+                Heading(1, "Quotation for document rendering").MarginTop(6.Pt()).MarginBottom(12.Pt()).Color(Navy),
                 Para("Dear reader,"),
                 Para([
                     Text("Thank you for your interest in our document engine. This letter was written in C# through the "),
@@ -54,7 +55,7 @@ public static class SampleDocuments
                     Text(" and padding on all four sides. Blocks can hold paragraphs and other blocks."),
                 ]),
                 PageBreak(),
-                Heading(2, "Terms").MarginBottom(10.Pt()).Color(Navy),
+                Heading(2, "Terms").MarginTop(18.Pt()).MarginBottom(10.Pt()).Color(Navy),
                 Para("This second page starts with an explicit page break. A page break is not an element of its own in "
                     + "the document model: it sets break-before: page on the element that follows it, as in CSS."),
                 Para([Bold("Validity. "), Text("This quotation is an example and is valid for no time at all.")]),
@@ -85,8 +86,8 @@ public static class SampleDocuments
     /// <summary>A component: a pale-blue block with one bold label and a description per line.</summary>
     private static BlockElement Summary(ImmutableArray<(string Label, string Description)> rows) =>
         Block(
-            [.. rows.Select(row => (Element)Paragraph([Bold(row.Label + ": "), Text(row.Description)]).MarginBottom(3.Pt()))])
-            .MarginBottom(12.Pt()).Padding(4.Mm()).Background(PaleBlue);
+            [.. rows.Select(row => (Element)Paragraph([Bold(row.Label + ": "), Text(row.Description)]).MarginTop(3.Pt()).MarginBottom(3.Pt()))])
+            .MarginTop(12.Pt()).MarginBottom(12.Pt()).Padding(4.Mm()).Background(PaleBlue);
 
     private static ParagraphElement Numbered(int number) =>
         Para([

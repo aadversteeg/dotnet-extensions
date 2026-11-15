@@ -57,6 +57,16 @@ public static class InlineLayout
     }
 
     /// <summary>
+    /// True when the box's text makes at least one line box: some text is left after white-space collapsing.
+    /// A paragraph of only spaces has no line boxes (CSS 2.1 §9.4.2), which makes it an empty box for margin
+    /// collapsing (<see cref="MarginCollapsing.IsEmpty"/>).
+    /// </summary>
+    /// <param name="box">An inline box.</param>
+    /// <returns>Whether it has line boxes.</returns>
+    public static bool HasLineBoxes(Box box) =>
+        !box.Children.OfType<TextRun>().All(run => WhiteSpaceCollapsing.IsAllCollapsible(run.Text));
+
+    /// <summary>
     /// Collapses white space over the whole paragraph, then resolves and shapes every run. Errors from all runs
     /// are reported together, each with the location of the run that caused it.
     /// </summary>

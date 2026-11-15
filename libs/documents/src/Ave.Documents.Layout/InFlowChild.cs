@@ -6,34 +6,30 @@ using Ave.Extensions.Functional;
 namespace Ave.Documents.Layout;
 
 /// <summary>
-/// Places one child box in the block flow of its container: applies the child's margins and asks the child's
-/// own algorithm for its fragment. Used by <see cref="FlowLayout"/> for each child and by
-/// <see cref="Paginator"/> for the root box, whose container is the page area.
+/// Places one child box in the block flow of its container: applies the child's horizontal margins and asks the
+/// child's own algorithm for its fragment. The vertical position (where margins collapse) is decided by the
+/// caller: <see cref="FlowLayout"/> for children, <see cref="Paginator"/> for the root box.
 /// </summary>
 internal static class InFlowChild
 {
     /// <summary>A child placed on the current page.</summary>
     /// <param name="Fragment">The child's fragment, positioned in the container's content area.</param>
-    /// <param name="Bottom">Where the next sibling's margin box starts: below this child's bottom margin.</param>
     /// <param name="Continuation">Where the child resumes on the next page, or null when it is complete.</param>
-    public sealed record Placement(PlacedFragment Fragment, double Bottom, BreakToken? Continuation);
+    public sealed record Placement(PlacedFragment Fragment, BreakToken? Continuation);
 
-    /// <summary>
-    /// Lays out <paramref name="child"/> with the top of its margin box at <paramref name="top"/>.
-    /// </summary>
+    /// <summary>Lays out <paramref name="child"/> with the top of its BORDER box at <paramref name="top"/>.</summary>
     /// <remarks>
-    /// Margins follow CSS 2.1 §8.3 except that stage 0 does NOT collapse adjoining margins (§8.3.1): the
-    /// space between two siblings is the first one's bottom margin plus the second one's top margin. At a page
-    /// break margins are sliced like padding: a child that continues from the previous page has no top margin,
-    /// and its bottom margin only counts on its last fragment.
+    /// Horizontally the child's border box spans the container's content width minus its left and right margins
+    /// (CSS 2.1 §10.3.3, <c>width: auto</c>); horizontal margins never collapse (§8.3.1).
     /// </remarks>
     /// <param name="environment">The layout environment.</param>
     /// <param name="child">The child box.</param>
     /// <param name="containerWidth">The width of the container's content area.</param>
-    /// <param name="top">Where the child's margin box starts, from the top of the content area.</param>
+    /// <param name="top">Where the child's border box starts, from the top of the content area.</param>
     /// <param name="containerHeight">The height of the content area available on this page.</param>
     /// <param name="isAtPageStart">Whether nothing that could move to another page precedes the child.</param>
     /// <param name="resume">Where to resume inside the child, or null to start it.</param>
+    /// <param name="isNewFormattingContext">True only for the root box (see <see cref="ConstraintSpace.IsNewFormattingContext"/>).</param>
     /// <returns>The placement; None when the child has no room on this page; or an error.</returns>
     public static Result<Maybe<Placement>, Error> Place(
         LayoutEnvironment environment,
@@ -42,21 +38,20 @@ internal static class InFlowChild
         double top,
         double containerHeight,
         bool isAtPageStart,
-        BreakToken? resume)
+        BreakToken? resume,
+        bool isNewFormattingContext = false)
     {
         var margin = child.Style.Margin;
-        var marginTop = resume is null ? margin.Top.Points : 0;
         var space = new ConstraintSpace(
             AvailableWidth: containerWidth - margin.Horizontal.Points,
-            AvailableHeight: containerHeight - top - marginTop,
-            IsAtPageStart: isAtPageStart);
+            AvailableHeight: containerHeight - top,
+            IsAtPageStart: isAtPageStart,
+            IsNewFormattingContext: isNewFormattingContext);
 
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch
         {
             LayoutResult.Placed placed => Maybe.From(new Placement(
-                new PlacedFragment(new Point(margin.Left.Points, top + marginTop), placed.Fragment),
-                Bottom: top + marginTop + placed.Fragment.Size.Height + (placed.Continuation is null ? margin.Bottom.Points : 0),
-                placed.Continuation)),
+                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation)),
             _ => Maybe<Placement>.None,
         });
     }

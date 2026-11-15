@@ -1,5 +1,5 @@
 page 1 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x717.6
+  box #0 generic at (56.693, 56.693) size=481.89x726
     box #1 heading-1 at (0, 0) size=481.89x26.4
       line at (0, 0) size=107.701x26.4
         text #2 Lato-Bold 22pt at (0, 0) size=107.701x26.4 ascent=21.714 "A long text"
@@ -13,7 +13,7 @@ page 1 size=595.276x841.89
         text #5 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 39.6) size=472.466x13.2
         text #5 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #6 paragraph at (0, 99.2) size=481.89x79.2
+    box #6 paragraph at (0, 97.2) size=481.89x79.2
       line at (0, 0) size=476.074x13.2
         text #7 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 2. "
         text #8 Lato-Regular 11pt at (64.361, 0) size=411.713x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden state."
@@ -27,7 +27,7 @@ page 1 size=595.276x841.89
         text #8 Lato-Regular 11pt at (0, 0) size=477.834x13.2 ascent=10.857 "created it. When something cannot be laid out, the error names that line instead of showing a stack"
       line at (0, 66) size=27.071x13.2
         text #8 Lato-Regular 11pt at (0, 0) size=27.071x13.2 ascent=10.857 "trace."
-    box #9 paragraph at (0, 186.4) size=481.89x92.4
+    box #9 paragraph at (0, 182.4) size=481.89x92.4
       line at (0, 0) size=481.723x13.2
         text #10 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 3. "
         text #11 Lato-Regular 11pt at (64.361, 0) size=417.362x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the"
@@ -43,7 +43,7 @@ page 1 size=595.276x841.89
         text #11 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 79.2) size=133.705x13.2
         text #11 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #12 paragraph at (0, 286.8) size=481.89x52.8
+    box #12 paragraph at (0, 280.8) size=481.89x52.8
       line at (0, 0) size=473.973x13.2
         text #13 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 4. "
         text #14 Lato-Regular 11pt at (64.361, 0) size=409.612x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal"
@@ -53,7 +53,7 @@ page 1 size=595.276x841.89
         text #14 Lato-Regular 11pt at (0, 0) size=460.119x13.2 ascent=10.857 "of code that created it. When something cannot be laid out, the error names that line instead of"
       line at (0, 39.6) size=106.277x13.2
         text #14 Lato-Regular 11pt at (0, 0) size=106.277x13.2 ascent=10.857 "showing a stack trace."
-    box #15 paragraph at (0, 347.6) size=481.89x66
+    box #15 paragraph at (0, 339.6) size=481.89x66
       line at (0, 0) size=472.939x13.2
         text #16 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 5. "
         text #17 Lato-Regular 11pt at (64.361, 0) size=408.578x13.2 ascent=10.857 "Each fragment remembers the node it came from, and each node remembers the line"
@@ -65,7 +65,7 @@ page 1 size=595.276x841.89
         text #17 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 52.8) size=133.705x13.2
         text #17 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #18 paragraph at (0, 421.6) size=481.89x66
+    box #18 paragraph at (0, 411.6) size=481.89x66
       line at (0, 0) size=463.111x13.2
         text #19 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 6. "
         text #20 Lato-Regular 11pt at (64.361, 0) size=398.75x13.2 ascent=10.857 "When something cannot be laid out, the error names that line instead of showing a"
@@ -77,7 +77,7 @@ page 1 size=595.276x841.89
         text #20 Lato-Regular 11pt at (0, 0) size=471.872x13.2 ascent=10.857 "next page. The layout of each page starts from the break token that the previous page left behind."
       line at (0, 52.8) size=411.713x13.2
         text #20 Lato-Regular 11pt at (0, 0) size=411.713x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden state."
-    box #21 paragraph at (0, 495.6) size=481.89x79.2
+    box #21 paragraph at (0, 483.6) size=481.89x79.2
       line at (0, 0) size=458.821x13.2
         text #22 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 7. "
         text #23 Lato-Regular 11pt at (64.361, 0) size=394.46x13.2 ascent=10.857 "The PDF writer numbers its objects in a fixed order, so two runs produce identical"
@@ -91,7 +91,7 @@ page 1 size=595.276x841.89
         text #23 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 66) size=472.466x13.2
         text #23 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #24 paragraph at (0, 582.8) size=481.89x52.8
+    box #24 paragraph at (0, 568.8) size=481.89x52.8
       line at (0, 0) size=451.693x13.2
         text #25 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 8. "
         text #26 Lato-Regular 11pt at (64.361, 0) size=387.332x13.2 ascent=10.857 "A page break may fall between any two lines of a paragraph, so a long paragraph"
@@ -101,7 +101,7 @@ page 1 size=595.276x841.89
         text #26 Lato-Regular 11pt at (0, 0) size=465.828x13.2 ascent=10.857 "page left behind. Break tokens are plain values, which keeps every layout function free of hidden"
       line at (0, 39.6) size=26.521x13.2
         text #26 Lato-Regular 11pt at (0, 0) size=26.521x13.2 ascent=10.857 "state."
-    box #27 paragraph at (0, 643.6) size=481.89x52.8
+    box #27 paragraph at (0, 627.6) size=481.89x52.8
       line at (0, 0) size=445.021x13.2
         text #28 Lato-Bold 11pt at (0, 0) size=64.361x13.2 ascent=10.857 "Paragraph 9. "
         text #29 Lato-Regular 11pt at (64.361, 0) size=380.66x13.2 ascent=10.857 "The layout of each page starts from the break token that the previous page left"
@@ -111,24 +111,24 @@ page 1 size=595.276x841.89
         text #29 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 39.6) size=472.466x13.2
         text #29 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #30 paragraph at (0, 704.4) size=481.89x13.2
+    box #30 paragraph at (0, 686.4) size=481.89x39.6
       line at (0, 0) size=453.117x13.2
         text #31 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 10. "
         text #32 Lato-Regular 11pt at (70.741, 0) size=382.376x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden"
-page 2 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x718.8
-    box #30 paragraph at (0, 0) size=481.89x66
-      line at (0, 0) size=469.689x13.2
+      line at (0, 13.2) size=469.689x13.2
         text #32 Lato-Regular 11pt at (0, 0) size=469.689x13.2 ascent=10.857 "state. Words are measured with the advance widths from the font's hmtx table, scaled to the font"
-      line at (0, 13.2) size=463.193x13.2
+      line at (0, 26.4) size=463.193x13.2
         text #32 Lato-Regular 11pt at (0, 0) size=463.193x13.2 ascent=10.857 "size. Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white"
-      line at (0, 26.4) size=480.628x13.2
+page 2 size=595.276x841.89
+  box #0 generic at (56.693, 56.693) size=481.89x727.2
+    box #30 paragraph at (0, 0) size=481.89x39.6
+      line at (0, 0) size=480.628x13.2
         text #32 Lato-Regular 11pt at (0, 0) size=480.628x13.2 ascent=10.857 "space. Each fragment remembers the node it came from, and each node remembers the line of code"
-      line at (0, 39.6) size=472.312x13.2
+      line at (0, 13.2) size=472.312x13.2
         text #32 Lato-Regular 11pt at (0, 0) size=472.312x13.2 ascent=10.857 "that created it. When something cannot be laid out, the error names that line instead of showing a"
-      line at (0, 52.8) size=54.901x13.2
+      line at (0, 26.4) size=54.901x13.2
         text #32 Lato-Regular 11pt at (0, 0) size=54.901x13.2 ascent=10.857 "stack trace."
-    box #33 paragraph at (0, 74) size=481.89x92.4
+    box #33 paragraph at (0, 45.6) size=481.89x92.4
       line at (0, 0) size=469.397x13.2
         text #34 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 11. "
         text #35 Lato-Regular 11pt at (70.741, 0) size=398.656x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to"
@@ -144,7 +144,7 @@ page 2 size=595.276x841.89
         text #35 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 79.2) size=133.705x13.2
         text #35 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #36 paragraph at (0, 174.4) size=481.89x52.8
+    box #36 paragraph at (0, 144) size=481.89x52.8
       line at (0, 0) size=480.353x13.2
         text #37 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 12. "
         text #38 Lato-Regular 11pt at (70.741, 0) size=409.612x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal"
@@ -154,7 +154,7 @@ page 2 size=595.276x841.89
         text #38 Lato-Regular 11pt at (0, 0) size=460.119x13.2 ascent=10.857 "of code that created it. When something cannot be laid out, the error names that line instead of"
       line at (0, 39.6) size=106.277x13.2
         text #38 Lato-Regular 11pt at (0, 0) size=106.277x13.2 ascent=10.857 "showing a stack trace."
-    box #39 paragraph at (0, 235.2) size=481.89x66
+    box #39 paragraph at (0, 202.8) size=481.89x66
       line at (0, 0) size=479.319x13.2
         text #40 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 13. "
         text #41 Lato-Regular 11pt at (70.741, 0) size=408.578x13.2 ascent=10.857 "Each fragment remembers the node it came from, and each node remembers the line"
@@ -166,7 +166,7 @@ page 2 size=595.276x841.89
         text #41 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 52.8) size=133.705x13.2
         text #41 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #42 paragraph at (0, 309.2) size=481.89x66
+    box #42 paragraph at (0, 274.8) size=481.89x66
       line at (0, 0) size=469.491x13.2
         text #43 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 14. "
         text #44 Lato-Regular 11pt at (70.741, 0) size=398.75x13.2 ascent=10.857 "When something cannot be laid out, the error names that line instead of showing a"
@@ -178,7 +178,7 @@ page 2 size=595.276x841.89
         text #44 Lato-Regular 11pt at (0, 0) size=471.872x13.2 ascent=10.857 "next page. The layout of each page starts from the break token that the previous page left behind."
       line at (0, 52.8) size=411.713x13.2
         text #44 Lato-Regular 11pt at (0, 0) size=411.713x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden state."
-    box #45 paragraph at (0, 383.2) size=481.89x79.2
+    box #45 paragraph at (0, 346.8) size=481.89x79.2
       line at (0, 0) size=465.201x13.2
         text #46 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 15. "
         text #47 Lato-Regular 11pt at (70.741, 0) size=394.46x13.2 ascent=10.857 "The PDF writer numbers its objects in a fixed order, so two runs produce identical"
@@ -192,7 +192,7 @@ page 2 size=595.276x841.89
         text #47 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 66) size=472.466x13.2
         text #47 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #48 paragraph at (0, 470.4) size=481.89x52.8
+    box #48 paragraph at (0, 432) size=481.89x52.8
       line at (0, 0) size=458.073x13.2
         text #49 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 16. "
         text #50 Lato-Regular 11pt at (70.741, 0) size=387.332x13.2 ascent=10.857 "A page break may fall between any two lines of a paragraph, so a long paragraph"
@@ -202,7 +202,7 @@ page 2 size=595.276x841.89
         text #50 Lato-Regular 11pt at (0, 0) size=465.828x13.2 ascent=10.857 "page left behind. Break tokens are plain values, which keeps every layout function free of hidden"
       line at (0, 39.6) size=26.521x13.2
         text #50 Lato-Regular 11pt at (0, 0) size=26.521x13.2 ascent=10.857 "state."
-    box #51 paragraph at (0, 531.2) size=481.89x52.8
+    box #51 paragraph at (0, 490.8) size=481.89x52.8
       line at (0, 0) size=451.401x13.2
         text #52 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 17. "
         text #53 Lato-Regular 11pt at (70.741, 0) size=380.66x13.2 ascent=10.857 "The layout of each page starts from the break token that the previous page left"
@@ -212,7 +212,7 @@ page 2 size=595.276x841.89
         text #53 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 39.6) size=472.466x13.2
         text #53 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #54 paragraph at (0, 592) size=481.89x79.2
+    box #54 paragraph at (0, 549.6) size=481.89x79.2
       line at (0, 0) size=453.117x13.2
         text #55 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 18. "
         text #56 Lato-Regular 11pt at (70.741, 0) size=382.376x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden"
@@ -226,7 +226,7 @@ page 2 size=595.276x841.89
         text #56 Lato-Regular 11pt at (0, 0) size=472.312x13.2 ascent=10.857 "that created it. When something cannot be laid out, the error names that line instead of showing a"
       line at (0, 66) size=54.901x13.2
         text #56 Lato-Regular 11pt at (0, 0) size=54.901x13.2 ascent=10.857 "stack trace."
-    box #57 paragraph at (0, 679.2) size=481.89x39.6
+    box #57 paragraph at (0, 634.8) size=481.89x92.4
       line at (0, 0) size=469.397x13.2
         text #58 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 19. "
         text #59 Lato-Regular 11pt at (70.741, 0) size=398.656x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to"
@@ -234,18 +234,17 @@ page 2 size=595.276x841.89
         text #59 Lato-Regular 11pt at (0, 0) size=474.903x13.2 ascent=10.857 "the font size. Spaces at the start and at the end of a line are removed, as CSS prescribes for normal"
       line at (0, 26.4) size=471.432x13.2
         text #59 Lato-Regular 11pt at (0, 0) size=471.432x13.2 ascent=10.857 "white space. Each fragment remembers the node it came from, and each node remembers the line"
-page 3 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x726.8
-    box #57 paragraph at (0, 0) size=481.89x52.8
-      line at (0, 0) size=460.119x13.2
+      line at (0, 39.6) size=460.119x13.2
         text #59 Lato-Regular 11pt at (0, 0) size=460.119x13.2 ascent=10.857 "of code that created it. When something cannot be laid out, the error names that line instead of"
-      line at (0, 13.2) size=460.091x13.2
+      line at (0, 52.8) size=460.091x13.2
         text #59 Lato-Regular 11pt at (0, 0) size=460.091x13.2 ascent=10.857 "showing a stack trace. The PDF writer numbers its objects in a fixed order, so two runs produce"
-      line at (0, 26.4) size=455.867x13.2
+      line at (0, 66) size=455.867x13.2
         text #59 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
-      line at (0, 39.6) size=133.705x13.2
+      line at (0, 79.2) size=133.705x13.2
         text #59 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #60 paragraph at (0, 60.8) size=481.89x52.8
+page 3 size=595.276x841.89
+  box #0 generic at (56.693, 56.693) size=481.89x714
+    box #60 paragraph at (0, 0) size=481.89x52.8
       line at (0, 0) size=480.353x13.2
         text #61 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 20. "
         text #62 Lato-Regular 11pt at (70.741, 0) size=409.612x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal"
@@ -255,7 +254,7 @@ page 3 size=595.276x841.89
         text #62 Lato-Regular 11pt at (0, 0) size=460.119x13.2 ascent=10.857 "of code that created it. When something cannot be laid out, the error names that line instead of"
       line at (0, 39.6) size=106.277x13.2
         text #62 Lato-Regular 11pt at (0, 0) size=106.277x13.2 ascent=10.857 "showing a stack trace."
-    box #63 paragraph at (0, 121.6) size=481.89x66
+    box #63 paragraph at (0, 58.8) size=481.89x66
       line at (0, 0) size=479.319x13.2
         text #64 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 21. "
         text #65 Lato-Regular 11pt at (70.741, 0) size=408.578x13.2 ascent=10.857 "Each fragment remembers the node it came from, and each node remembers the line"
@@ -267,7 +266,7 @@ page 3 size=595.276x841.89
         text #65 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 52.8) size=133.705x13.2
         text #65 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #66 paragraph at (0, 195.6) size=481.89x66
+    box #66 paragraph at (0, 130.8) size=481.89x66
       line at (0, 0) size=469.491x13.2
         text #67 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 22. "
         text #68 Lato-Regular 11pt at (70.741, 0) size=398.75x13.2 ascent=10.857 "When something cannot be laid out, the error names that line instead of showing a"
@@ -279,7 +278,7 @@ page 3 size=595.276x841.89
         text #68 Lato-Regular 11pt at (0, 0) size=471.872x13.2 ascent=10.857 "next page. The layout of each page starts from the break token that the previous page left behind."
       line at (0, 52.8) size=411.713x13.2
         text #68 Lato-Regular 11pt at (0, 0) size=411.713x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden state."
-    box #69 paragraph at (0, 269.6) size=481.89x79.2
+    box #69 paragraph at (0, 202.8) size=481.89x79.2
       line at (0, 0) size=465.201x13.2
         text #70 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 23. "
         text #71 Lato-Regular 11pt at (70.741, 0) size=394.46x13.2 ascent=10.857 "The PDF writer numbers its objects in a fixed order, so two runs produce identical"
@@ -293,7 +292,7 @@ page 3 size=595.276x841.89
         text #71 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 66) size=472.466x13.2
         text #71 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #72 paragraph at (0, 356.8) size=481.89x52.8
+    box #72 paragraph at (0, 288) size=481.89x52.8
       line at (0, 0) size=458.073x13.2
         text #73 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 24. "
         text #74 Lato-Regular 11pt at (70.741, 0) size=387.332x13.2 ascent=10.857 "A page break may fall between any two lines of a paragraph, so a long paragraph"
@@ -303,7 +302,7 @@ page 3 size=595.276x841.89
         text #74 Lato-Regular 11pt at (0, 0) size=465.828x13.2 ascent=10.857 "page left behind. Break tokens are plain values, which keeps every layout function free of hidden"
       line at (0, 39.6) size=26.521x13.2
         text #74 Lato-Regular 11pt at (0, 0) size=26.521x13.2 ascent=10.857 "state."
-    box #75 paragraph at (0, 417.6) size=481.89x52.8
+    box #75 paragraph at (0, 346.8) size=481.89x52.8
       line at (0, 0) size=451.401x13.2
         text #76 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 25. "
         text #77 Lato-Regular 11pt at (70.741, 0) size=380.66x13.2 ascent=10.857 "The layout of each page starts from the break token that the previous page left"
@@ -313,7 +312,7 @@ page 3 size=595.276x841.89
         text #77 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 39.6) size=472.466x13.2
         text #77 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #78 paragraph at (0, 478.4) size=481.89x79.2
+    box #78 paragraph at (0, 405.6) size=481.89x79.2
       line at (0, 0) size=453.117x13.2
         text #79 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 26. "
         text #80 Lato-Regular 11pt at (70.741, 0) size=382.376x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden"
@@ -327,7 +326,7 @@ page 3 size=595.276x841.89
         text #80 Lato-Regular 11pt at (0, 0) size=472.312x13.2 ascent=10.857 "that created it. When something cannot be laid out, the error names that line instead of showing a"
       line at (0, 66) size=54.901x13.2
         text #80 Lato-Regular 11pt at (0, 0) size=54.901x13.2 ascent=10.857 "stack trace."
-    box #81 paragraph at (0, 565.6) size=481.89x92.4
+    box #81 paragraph at (0, 490.8) size=481.89x92.4
       line at (0, 0) size=469.397x13.2
         text #82 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 27. "
         text #83 Lato-Regular 11pt at (70.741, 0) size=398.656x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to"
@@ -343,7 +342,7 @@ page 3 size=595.276x841.89
         text #83 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 79.2) size=133.705x13.2
         text #83 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #84 paragraph at (0, 666) size=481.89x52.8
+    box #84 paragraph at (0, 589.2) size=481.89x52.8
       line at (0, 0) size=480.353x13.2
         text #85 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 28. "
         text #86 Lato-Regular 11pt at (70.741, 0) size=409.612x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal"
@@ -353,9 +352,7 @@ page 3 size=595.276x841.89
         text #86 Lato-Regular 11pt at (0, 0) size=460.119x13.2 ascent=10.857 "of code that created it. When something cannot be laid out, the error names that line instead of"
       line at (0, 39.6) size=106.277x13.2
         text #86 Lato-Regular 11pt at (0, 0) size=106.277x13.2 ascent=10.857 "showing a stack trace."
-page 4 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x718.8
-    box #87 paragraph at (0, 0) size=481.89x66
+    box #87 paragraph at (0, 648) size=481.89x66
       line at (0, 0) size=479.319x13.2
         text #88 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 29. "
         text #89 Lato-Regular 11pt at (70.741, 0) size=408.578x13.2 ascent=10.857 "Each fragment remembers the node it came from, and each node remembers the line"
@@ -367,7 +364,9 @@ page 4 size=595.276x841.89
         text #89 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 52.8) size=133.705x13.2
         text #89 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #90 paragraph at (0, 74) size=481.89x66
+page 4 size=595.276x841.89
+  box #0 generic at (56.693, 56.693) size=481.89x727.2
+    box #90 paragraph at (0, 0) size=481.89x66
       line at (0, 0) size=469.491x13.2
         text #91 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 30. "
         text #92 Lato-Regular 11pt at (70.741, 0) size=398.75x13.2 ascent=10.857 "When something cannot be laid out, the error names that line instead of showing a"
@@ -379,7 +378,7 @@ page 4 size=595.276x841.89
         text #92 Lato-Regular 11pt at (0, 0) size=471.872x13.2 ascent=10.857 "next page. The layout of each page starts from the break token that the previous page left behind."
       line at (0, 52.8) size=411.713x13.2
         text #92 Lato-Regular 11pt at (0, 0) size=411.713x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden state."
-    box #93 paragraph at (0, 148) size=481.89x79.2
+    box #93 paragraph at (0, 72) size=481.89x79.2
       line at (0, 0) size=465.201x13.2
         text #94 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 31. "
         text #95 Lato-Regular 11pt at (70.741, 0) size=394.46x13.2 ascent=10.857 "The PDF writer numbers its objects in a fixed order, so two runs produce identical"
@@ -393,7 +392,7 @@ page 4 size=595.276x841.89
         text #95 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 66) size=472.466x13.2
         text #95 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #96 paragraph at (0, 235.2) size=481.89x52.8
+    box #96 paragraph at (0, 157.2) size=481.89x52.8
       line at (0, 0) size=458.073x13.2
         text #97 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 32. "
         text #98 Lato-Regular 11pt at (70.741, 0) size=387.332x13.2 ascent=10.857 "A page break may fall between any two lines of a paragraph, so a long paragraph"
@@ -403,7 +402,7 @@ page 4 size=595.276x841.89
         text #98 Lato-Regular 11pt at (0, 0) size=465.828x13.2 ascent=10.857 "page left behind. Break tokens are plain values, which keeps every layout function free of hidden"
       line at (0, 39.6) size=26.521x13.2
         text #98 Lato-Regular 11pt at (0, 0) size=26.521x13.2 ascent=10.857 "state."
-    box #99 paragraph at (0, 296) size=481.89x52.8
+    box #99 paragraph at (0, 216) size=481.89x52.8
       line at (0, 0) size=451.401x13.2
         text #100 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 33. "
         text #101 Lato-Regular 11pt at (70.741, 0) size=380.66x13.2 ascent=10.857 "The layout of each page starts from the break token that the previous page left"
@@ -413,7 +412,7 @@ page 4 size=595.276x841.89
         text #101 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
       line at (0, 39.6) size=472.466x13.2
         text #101 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #102 paragraph at (0, 356.8) size=481.89x79.2
+    box #102 paragraph at (0, 274.8) size=481.89x79.2
       line at (0, 0) size=453.117x13.2
         text #103 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 34. "
         text #104 Lato-Regular 11pt at (70.741, 0) size=382.376x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden"
@@ -427,7 +426,7 @@ page 4 size=595.276x841.89
         text #104 Lato-Regular 11pt at (0, 0) size=472.312x13.2 ascent=10.857 "that created it. When something cannot be laid out, the error names that line instead of showing a"
       line at (0, 66) size=54.901x13.2
         text #104 Lato-Regular 11pt at (0, 0) size=54.901x13.2 ascent=10.857 "stack trace."
-    box #105 paragraph at (0, 444) size=481.89x92.4
+    box #105 paragraph at (0, 360) size=481.89x92.4
       line at (0, 0) size=469.397x13.2
         text #106 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 35. "
         text #107 Lato-Regular 11pt at (70.741, 0) size=398.656x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to"
@@ -443,7 +442,7 @@ page 4 size=595.276x841.89
         text #107 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 79.2) size=133.705x13.2
         text #107 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #108 paragraph at (0, 544.4) size=481.89x52.8
+    box #108 paragraph at (0, 458.4) size=481.89x52.8
       line at (0, 0) size=480.353x13.2
         text #109 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 36. "
         text #110 Lato-Regular 11pt at (70.741, 0) size=409.612x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal"
@@ -453,7 +452,7 @@ page 4 size=595.276x841.89
         text #110 Lato-Regular 11pt at (0, 0) size=460.119x13.2 ascent=10.857 "of code that created it. When something cannot be laid out, the error names that line instead of"
       line at (0, 39.6) size=106.277x13.2
         text #110 Lato-Regular 11pt at (0, 0) size=106.277x13.2 ascent=10.857 "showing a stack trace."
-    box #111 paragraph at (0, 605.2) size=481.89x66
+    box #111 paragraph at (0, 517.2) size=481.89x66
       line at (0, 0) size=479.319x13.2
         text #112 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 37. "
         text #113 Lato-Regular 11pt at (70.741, 0) size=408.578x13.2 ascent=10.857 "Each fragment remembers the node it came from, and each node remembers the line"
@@ -465,7 +464,7 @@ page 4 size=595.276x841.89
         text #113 Lato-Regular 11pt at (0, 0) size=455.867x13.2 ascent=10.857 "identical files. A page break may fall between any two lines of a paragraph, so a long paragraph"
       line at (0, 52.8) size=133.705x13.2
         text #113 Lato-Regular 11pt at (0, 0) size=133.705x13.2 ascent=10.857 "continues on the next page."
-    box #114 paragraph at (0, 679.2) size=481.89x39.6
+    box #114 paragraph at (0, 589.2) size=481.89x66
       line at (0, 0) size=469.491x13.2
         text #115 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 38. "
         text #116 Lato-Regular 11pt at (70.741, 0) size=398.75x13.2 ascent=10.857 "When something cannot be laid out, the error names that line instead of showing a"
@@ -473,14 +472,11 @@ page 4 size=595.276x841.89
         text #116 Lato-Regular 11pt at (0, 0) size=477.251x13.2 ascent=10.857 "stack trace. The PDF writer numbers its objects in a fixed order, so two runs produce identical files."
       line at (0, 26.4) size=471.097x13.2
         text #116 Lato-Regular 11pt at (0, 0) size=471.097x13.2 ascent=10.857 "A page break may fall between any two lines of a paragraph, so a long paragraph continues on the"
-page 5 size=595.276x841.89
-  box #0 generic at (56.693, 56.693) size=481.89x182.4
-    box #114 paragraph at (0, 0) size=481.89x26.4
-      line at (0, 0) size=471.872x13.2
+      line at (0, 39.6) size=471.872x13.2
         text #116 Lato-Regular 11pt at (0, 0) size=471.872x13.2 ascent=10.857 "next page. The layout of each page starts from the break token that the previous page left behind."
-      line at (0, 13.2) size=411.713x13.2
+      line at (0, 52.8) size=411.713x13.2
         text #116 Lato-Regular 11pt at (0, 0) size=411.713x13.2 ascent=10.857 "Break tokens are plain values, which keeps every layout function free of hidden state."
-    box #117 paragraph at (0, 34.4) size=481.89x79.2
+    box #117 paragraph at (0, 661.2) size=481.89x66
       line at (0, 0) size=465.201x13.2
         text #118 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 39. "
         text #119 Lato-Regular 11pt at (70.741, 0) size=394.46x13.2 ascent=10.857 "The PDF writer numbers its objects in a fixed order, so two runs produce identical"
@@ -492,9 +488,12 @@ page 5 size=595.276x841.89
         text #119 Lato-Regular 11pt at (0, 0) size=450.169x13.2 ascent=10.857 "behind. Break tokens are plain values, which keeps every layout function free of hidden state."
       line at (0, 52.8) size=463.947x13.2
         text #119 Lato-Regular 11pt at (0, 0) size=463.947x13.2 ascent=10.857 "Words are measured with the advance widths from the font's hmtx table, scaled to the font size."
-      line at (0, 66) size=472.466x13.2
+page 5 size=595.276x841.89
+  box #0 generic at (56.693, 56.693) size=481.89x78
+    box #117 paragraph at (0, 0) size=481.89x13.2
+      line at (0, 0) size=472.466x13.2
         text #119 Lato-Regular 11pt at (0, 0) size=472.466x13.2 ascent=10.857 "Spaces at the start and at the end of a line are removed, as CSS prescribes for normal white space."
-    box #120 paragraph at (0, 121.6) size=481.89x52.8
+    box #120 paragraph at (0, 19.2) size=481.89x52.8
       line at (0, 0) size=458.073x13.2
         text #121 Lato-Bold 11pt at (0, 0) size=70.741x13.2 ascent=10.857 "Paragraph 40. "
         text #122 Lato-Regular 11pt at (70.741, 0) size=387.332x13.2 ascent=10.857 "A page break may fall between any two lines of a paragraph, so a long paragraph"
