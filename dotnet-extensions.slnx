@@ -28,7 +28,6 @@
     <Project Path="libs/fluent-contracts/UnitTests.Extensions.FluentContracts.ForValidation/UnitTests.Extensions.FluentContracts.ForValidation.csproj" />
   </Folder>
   <Folder Name="/file-system/">
-    <!-- UnitTests.Extensions.FileSystem.AzureFileStorage is left out on purpose: it does not compile today (CS7036, the constructor now needs a pathMapper). Known debt, fixed with the netstandard2.0 port. -->
     <Project Path="libs/file-system/Ave.Extensions.FileSystem/Ave.Extensions.FileSystem.csproj" />
     <Project Path="libs/file-system/Ave.Extensions.FileSystem.Abstractions/Ave.Extensions.FileSystem.Abstractions.csproj" />
     <Project Path="libs/file-system/Ave.Extensions.FileSystem.AzureFileStorage/Ave.Extensions.FileSystem.AzureFileStorage.csproj" />
@@ -37,6 +36,7 @@
     <Project Path="libs/file-system/Ave.Extensions.FileSystem.MimeDetective/Ave.Extensions.FileSystem.MimeDetective.csproj" />
     <Project Path="libs/file-system/UnitTests.Extensions.FileSystem/UnitTests.Extensions.FileSystem.csproj" />
     <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.Abstractions/UnitTests.Extensions.FileSystem.Abstractions.csproj" />
+    <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.AzureFileStorage/UnitTests.Extensions.FileSystem.AzureFileStorage.csproj" />
     <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.InMemory/UnitTests.Extensions.FileSystem.InMemory.csproj" />
     <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.Local/UnitTests.Extensions.FileSystem.Local.csproj" />
     <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.MimeDetective/UnitTests.Extensions.FileSystem.MimeDetective.csproj" />

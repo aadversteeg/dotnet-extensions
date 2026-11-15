@@ -3,6 +3,7 @@ using Ave.Extensions.FileSystem;
 using Ave.Extensions.FileSystem.Abstractions;
 using Ave.Extensions.FileSystem.AzureFileStorage;
 using Ave.Extensions.FileSystem.AzureFileStorage.Configuration;
+using Ave.Extensions.FileSystem.Local.PathMappers;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -34,7 +35,8 @@ namespace UnitTests.Extensions.FileSystem.AzureFileStorage
             };
             
             var options = Options.Create(_options);
-            _fileSystem = new AzureFileSystem(_mockLogger.Object, options);
+            // Canonical paths map to themselves, as Azure File Share paths use forward slashes
+            _fileSystem = new AzureFileSystem(_mockLogger.Object, options, new UnixPathMapper());
         }
         
         [Fact(DisplayName = "AZFS-015: MoveAsync should handle Azure SDK exceptions gracefully")]
