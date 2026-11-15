@@ -948,18 +948,17 @@ namespace UnitTests.Extensions.FileSystem.Abstractions
             act.Should().Throw<ArgumentNullException>().WithParameterName("name");
         }
 
-        [Fact(DisplayName = "CP-077: SanitizeFileName handles platform-specific invalid chars")]
+        [Fact(DisplayName = "CP-077: SanitizeFileName replaces the Windows invalid chars on every platform")]
         public void CP077()
         {
-            // Arrange - use chars from Path.GetInvalidFileNameChars() to be platform-aware
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var input = $"file{invalidChars[0]}name";
+            // Arrange - the Windows set: control characters and " < > | : * ? \ /
+            var input = "\"<>|:*?\\/\u0001\u001f";
 
             // Act
             var result = CanonicalPath.SanitizeFileName(input);
 
             // Assert
-            result.Should().Be("file_name");
+            result.Should().Be(new string('_', input.Length));
         }
     }
 }

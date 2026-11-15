@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -29,6 +28,11 @@ namespace Ave.Extensions.FileSystem
 
         private static readonly char[] SegmentSeparator = ['/'];
         private static readonly char[] PathSeparators = ['/', '\\'];
+
+        // The characters Windows does not allow in a file name: control characters and " < > | : * ? \ /.
+        // They include the Unix ones ('\0' and '/'), so a sanitized name is valid on every platform and on an
+        // Azure File Share, whatever platform it was sanitized on.
+        private static readonly char[] InvalidFileNameChars = CreateInvalidFileNameChars();
 
         /// <summary>
         /// Gets whether this is an absolute path (starts with '/').
@@ -432,7 +436,8 @@ namespace Ave.Extensions.FileSystem
         public override string ToString() => Value;
 
         /// <summary>
-        /// Replaces characters that are invalid in file names with the specified replacement character.
+        /// Replaces characters that are invalid in file names on any supported platform with the specified
+        /// replacement character. The result does not depend on the platform the code runs on.
         /// </summary>
         /// <param name="name">The file name to sanitize.</param>
         /// <param name="replacement">The character to substitute for invalid characters. Defaults to '_'.</param>
@@ -446,7 +451,7 @@ namespace Ave.Extensions.FileSystem
             if (name.Length == 0)
                 return string.Empty;
 
-            var invalidChars = Path.GetInvalidFileNameChars();
+            var invalidChars = InvalidFileNameChars;
             char[]? buffer = null;
 
             for (int i = 0; i < name.Length; i++)
@@ -462,6 +467,17 @@ namespace Ave.Extensions.FileSystem
             }
 
             return buffer is null ? name : new string(buffer);
+        }
+
+        private static char[] CreateInvalidFileNameChars()
+        {
+            var chars = new List<char> { '"', '<', '>', '|', ':', '*', '?', '\\', '/' };
+            for (var c = '\0'; c < ' '; c++)
+            {
+                chars.Add(c);
+            }
+
+            return chars.ToArray();
         }
 
     }
