@@ -60,14 +60,23 @@ The workflow starts when a tag `*/*` is pushed. It has three jobs.
      framework, the dependencies on our own packages at exactly their minimum versions, no development version,
      the assemblies and XML documentation per target framework, README and LICENSE, the repository URL and
      commit, and the symbols package.
-2. **GitHub release** (`github-release`): creates the GitHub release for the tag with the `.nupkg` and `.snupkg`
-   attached.
-3. **Publish to nuget.org** (`publish`): runs in the GitHub environment `nuget`, so it waits for approval. It logs
+2. **Publish to nuget.org** (`publish`): runs in the GitHub environment `nuget`, so it waits for approval. It logs
    in with `NuGet/login` (trusted publishing: the GitHub OIDC token is exchanged for an API key that is valid for a
    short time) and pushes the package; the symbols package goes with it.
+3. **GitHub release** (`github-release`): runs only after the publish succeeded, and creates the GitHub release for
+   the tag with the `.nupkg` and `.snupkg` attached.
 
-If the build job fails, nothing is released. If only the publish job fails, run that job again: the push uses
-`--skip-duplicate`, so a version that already reached nuget.org does not fail the rerun.
+The GitHub release comes last on purpose. Until the approval is given and the package is on nuget.org, only the tag
+exists: there is no GitHub release for a version that is not on nuget.org.
+
+What to do when a job fails:
+
+- `build` fails: nothing was released. Fix the problem (see below for the tag).
+- The approval is refused, or `publish` fails (for example at the nuget.org login): nothing was released. Fix the
+  cause, then run the failed jobs again ("Re-run failed jobs"); the package from the `build` job is reused. The push
+  uses `--skip-duplicate`, so a version that already reached nuget.org does not fail the rerun.
+- Only `github-release` fails: the package is on nuget.org. Run that job again; do not delete or move the tag, the
+  version cannot be used again.
 
 ## Release one package
 
@@ -81,9 +90,9 @@ If the build job fails, nothing is released. If only the publish job fails, run 
    git push origin functional-core/0.1.0-preview.4
    ```
 
-4. Watch the workflow run in GitHub Actions. When the build job and the GitHub release are done, approve the
-   publish job (environment `nuget`).
-5. Check the package on nuget.org. Indexing can take a few minutes.
+4. Watch the workflow run in GitHub Actions. When the build job is done, approve the publish job (environment
+   `nuget`). The GitHub release follows the publish.
+5. Check the package on nuget.org and the GitHub release. Indexing on nuget.org can take a few minutes.
 
 If the build job fails, fix the problem on `main`, delete the tag (`git push origin :refs/tags/<tag>` and
 `git tag -d <tag>`) and tag the fixed commit again. Do that only for a version that was not published.
@@ -119,10 +128,7 @@ The first wave therefore goes in dependency order, raising the minimum after eac
    `file-system-mime-detective`;
 4. raise `Ave.Extensions.FileSystem.Local`, then release `file-system-azure-file-storage`.
 
-All file-system minimums rise in this wave. Before step 1, two tests must be settled: CP-071 and CP-075 in
-`UnitTests.Extensions.FileSystem.Abstractions` fail on Linux (`SanitizeFileName` uses the platform's list of
-invalid file name characters), and the release workflow runs on Linux, so the release of
-`file-system-abstractions` stops at its tests until that is decided.
+All file-system minimums rise in this wave.
 
 The functional, error-paths and fluent-contracts minimums are versions that are on nuget.org today, so those
 packages can be released in any order.
@@ -151,13 +157,19 @@ policy for GitHub Actions (nuget.org documentation:
 | Workflow file | `release.yml` (the file name only, without `.github/workflows/`) |
 | Environment | `nuget` |
 
-nuget.org may also ask for a policy name, the package owner and the scope of the keys it hands out; choose the
-account that owns the packages and a scope that allows pushing new versions of the `Ave.Extensions.*` packages (and
-new packages, for a package that is not on nuget.org yet).
+nuget.org also asks for a policy name and the package owner (the account that owns the packages), and it requires
+scopes when a policy is created: the scope says what the keys it hands out may do, and for which packages.
+
+| scope field | value |
+|---|---|
+| Scope | push new packages and new versions (`package:push`) |
+| Packages | glob `Ave.Extensions.*` |
+
+`package:push` and not only "push new versions": the first release of a package that is not on nuget.org yet needs
+it. Check the scopes again after editing a policy; editing it in the nuget.org web page can reset them.
 
 `NuGet/login` asks for the API key in the name of a nuget.org user: the `NUGET_USER` value at the top of
-`release.yml`. It must be the user name of the account that created the policy (not an organization). The value in
-the workflow is `ahmverst` and still has to be confirmed.
+`release.yml`, `ahmverst`. It must be the user name of the account that created the policy (not an organization).
 
 While the repository is private, nuget.org cannot read the repository and owner ids from GitHub. The policy is then
 temporary for 7 days, and becomes permanent at the first successful login from the workflow. For a public
