@@ -6,4 +6,4 @@ namespace Ave.Documents.Fonts.OpenType;
 /// <param name="RequiredFeature">The index of the feature that is always applied, or null ("if no
 /// required features, set to 0xFFFF").</param>
 /// <param name="FeatureIndices">The indices of its features in the feature list.</param>
-internal sealed record LanguageSystem(int? RequiredFeature, ValueList<int> FeatureIndices);
+public sealed record LanguageSystem(int? RequiredFeature, ValueList<int> FeatureIndices);

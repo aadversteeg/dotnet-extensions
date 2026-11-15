@@ -15,7 +15,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// a class to tens of thousands of glyphs (Malgun Gothic: 28 215 glyphs in a GDEF of 30 bytes).
 /// </remarks>
 /// <param name="Ranges">The ranges of glyphs with a class other than 0, in glyph order, none overlapping.</param>
-internal sealed record ClassDefinition(ImmutableArray<ClassDefinition.Range> Ranges)
+public sealed record ClassDefinition(ImmutableArray<ClassDefinition.Range> Ranges)
 {
     /// <summary>Consecutive glyphs that share a class.</summary>
     /// <param name="Start">The first glyph id.</param>

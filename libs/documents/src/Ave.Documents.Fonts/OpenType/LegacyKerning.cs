@@ -13,7 +13,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// "minimum" and not cross-stream.
 /// </summary>
 /// <param name="Subtables">The kept subtables, in table order.</param>
-internal sealed record LegacyKerning(ValueList<KerningSubtable> Subtables)
+public sealed record LegacyKerning(ValueList<KerningSubtable> Subtables)
 {
     /// <summary>A font without a 'kern' table.</summary>
     public static LegacyKerning None { get; } = new([]);

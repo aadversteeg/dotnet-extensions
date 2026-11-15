@@ -20,7 +20,7 @@ public class PositioningRuleTests
         var pairs = new PairAdjustmentByGlyph(
             new Coverage([new Coverage.Range(1, 1, 0)]),
             [new Dictionary<ushort, PairValues> { [2] = new PairValues(new ValueRecord(15, 120, -30, 0), default) }.ToFrozenDictionary()],
-            SecondHasValues: false);
+            secondHasValues: false);
         ImmutableArray<GlyphItem> glyphs =
         [
             new(new GlyphId(1), "A", GlyphClass.Base, XAdvance: 600),

@@ -99,9 +99,30 @@ public class AssemblyRulesTests
     public void The_front_end_references_neither_the_layout_nor_a_back_end()
     {
         // A second back-end or a second front-end is added beside the others, joined in the composition package
-        // (Ave.Documents), never by widening the front-end.
-        AllowedReferences["Ave.Documents.Fluent"].Should().NotContain(["Layout", "PageModel", "Pdf", "Render.Pdf", "Typesetting"]);
-        File.Exists(PathOf("Ave.Documents")).Should().BeTrue();
+        // (Ave.Documents), never by widening the front-end. Read from the compiled front-end itself.
+        using var stream = File.OpenRead(PathOf("Ave.Documents.Fluent"));
+        using var pe = new PEReader(stream);
+        var metadata = pe.GetMetadataReader();
+        var references = metadata.AssemblyReferences.Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name)).ToList();
+
+        references.Should().Contain("Ave.Documents.DocumentModel", "the scan reads real references");
+        references.Should().NotContain(["Ave.Documents.Layout", "Ave.Documents.PageModel", "Ave.Documents.Pdf", "Ave.Documents.Render.Pdf", "Ave.Documents.Typesetting"]);
+    }
+
+    /// <summary>
+    /// No friend assemblies between product packages: the packages ship separately, so an internal member one of them
+    /// used from another would be an unversioned contract. A library opens its internals to its own test project only;
+    /// what another library needs is public, documented API.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Libraries))]
+    public void Library_shows_its_internals_to_test_projects_only(string assembly)
+    {
+        var friends = Assembly.LoadFrom(PathOf(assembly)).GetCustomAttributes<System.Runtime.CompilerServices.InternalsVisibleToAttribute>()
+            .Select(attribute => attribute.AssemblyName)
+            .ToList();
+
+        friends.Where(name => !name.StartsWith("UnitTests.", StringComparison.Ordinal)).Should().BeEmpty();
     }
 
     [Theory]

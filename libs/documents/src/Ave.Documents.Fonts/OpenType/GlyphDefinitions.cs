@@ -11,7 +11,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// </summary>
 /// <param name="GlyphClasses">glyphClassDef: 1 base, 2 ligature, 3 mark, 4 component; 0 unknown.</param>
 /// <param name="MarkAttachmentClasses">markAttachClassDef, used by the MarkAttachmentType lookup flag.</param>
-internal sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinition MarkAttachmentClasses)
+public sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinition MarkAttachmentClasses)
 {
     /// <summary>True when the table has a glyph class definition (glyphClassDefOffset is not 0). A GDEF table may hold
     /// only other parts (mark attachment classes, ligature carets); then it says nothing about glyph classes.</summary>

@@ -62,7 +62,7 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
     public EmbeddingPermissions Embedding { get; }
 
     /// <summary>The advanced typography tables (GSUB, GPOS, GDEF, 'kern') that shaping uses.</summary>
-    internal OpenTypeLayout Layout { get; }
+    public OpenTypeLayout Layout { get; }
 
     /// <summary>The number of glyphs ('maxp' numGlyphs); valid glyph ids are 0 to GlyphCount − 1.</summary>
     public int GlyphCount => _advanceWidths.Length;

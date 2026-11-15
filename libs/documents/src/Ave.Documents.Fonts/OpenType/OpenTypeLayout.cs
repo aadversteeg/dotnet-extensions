@@ -9,7 +9,7 @@ namespace Ave.Documents.Fonts.OpenType;
 /// <param name="Positions">The GPOS table, or <see cref="LayoutTable.Empty"/>.</param>
 /// <param name="Definitions">The GDEF table, or null when the font has none.</param>
 /// <param name="Kerning">The 'kern' table, or <see cref="LegacyKerning.None"/>.</param>
-internal sealed record OpenTypeLayout(LayoutTable Substitutions, LayoutTable Positions, GlyphDefinitions? Definitions, LegacyKerning Kerning)
+public sealed record OpenTypeLayout(LayoutTable Substitutions, LayoutTable Positions, GlyphDefinitions? Definitions, LegacyKerning Kerning)
 {
     /// <summary>A font with none of these tables.</summary>
     public static OpenTypeLayout None { get; } = new(LayoutTable.Empty, LayoutTable.Empty, null, LegacyKerning.None);
