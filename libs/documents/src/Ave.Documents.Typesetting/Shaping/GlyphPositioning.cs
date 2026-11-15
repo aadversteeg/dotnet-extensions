@@ -7,13 +7,27 @@ namespace Ave.Documents.Typesetting.Shaping;
 
 /// <summary>
 /// Applies GPOS lookups to the shaping buffer (OpenType spec, "GPOS — Glyph positioning table"), or the old
-/// 'kern' table when the font has no GPOS kerning, and finally resolves mark attachments into offsets.
+/// 'kern' table when the font has no GPOS kerning, zeroes the advances of marks, and finally resolves mark attachments
+/// into offsets.
 /// </summary>
 internal static class GlyphPositioning
 {
-    /// <summary>Applies the lookups in order, then resolves mark attachments.</summary>
+    /// <summary>Applies the lookups in order, then takes the advance of every mark away, then resolves mark
+    /// attachments.</summary>
     public static ImmutableArray<GlyphItem> Apply(ImmutableArray<GlyphItem> buffer, IEnumerable<Lookup> lookups, GlyphFilter filter) =>
-        ResolveAttachments(lookups.Aggregate(buffer, (glyphs, lookup) => ApplyLookup(glyphs, lookup, filter)));
+        ResolveAttachments(ZeroMarkAdvances(lookups.Aggregate(buffer, (glyphs, lookup) => ApplyLookup(glyphs, lookup, filter))));
+
+    /// <summary>
+    /// A mark takes no horizontal space: its advance becomes 0 once GPOS is applied, whatever 'hmtx' and the lookups
+    /// gave it. The OpenType specification leaves advances alone ("Advance widths are not affected", GPOS mark-to-base
+    /// and mark-to-mark); this is HarfBuzz's convention, which the engine follows where the specification is silent
+    /// (hb-ot-shape.cc <c>zero_mark_widths_by_gdef</c>, mode <c>BY_GDEF_LATE</c> of the default shaper). A glyph is a
+    /// mark by its GDEF class, or, in a font without GDEF, by its character (<see cref="GlyphFilter.ClassOf"/>, as
+    /// HarfBuzz synthesises the classes). Without that, every accent of a font whose marks have an advance — Consolas,
+    /// Courier New, Theano Didot's U+0314 — leaves a gap after it.
+    /// </summary>
+    private static ImmutableArray<GlyphItem> ZeroMarkAdvances(ImmutableArray<GlyphItem> glyphs) =>
+        [.. glyphs.Select(item => item.Class == GlyphClass.Mark ? item with { XAdvance = 0 } : item)];
 
     /// <summary>
     /// Kerning from the 'kern' table: each pair of adjacent glyphs, skipping marks (a mark sits on its base and

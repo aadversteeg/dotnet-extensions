@@ -8,8 +8,9 @@ namespace UnitTests.Ave.Documents.Typesetting.Reference;
 
 /// <summary>
 /// The gate of rule B3: our shaper against HarfBuzz on a corpus of English, Dutch, German, French, Greek and
-/// Russian text plus ligature, kerning and mark stress words, in Lato Regular and Bold. Every line must give the
-/// same glyphs, the same text per glyph, the same glyph positions and the same total advance.
+/// Russian text plus ligature, kerning and mark stress words, in Lato Regular and Bold and in Theano Didot (a GDEF
+/// table, a mark with a non-zero advance, stacked marks). Every line must give the same glyphs, the same text per
+/// glyph, the same glyph positions and the same total advance.
 /// </summary>
 /// <remarks>
 /// <para>What is compared: glyph ids; the characters each glyph shows (derived from HarfBuzz's clusters, with
@@ -33,6 +34,8 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
     private static readonly string Tilde = char.ConvertFromUtf32(0x0303);
     private static readonly string Diaeresis = char.ConvertFromUtf32(0x0308);
     private static readonly string Cedilla = char.ConvertFromUtf32(0x0327);
+    private static readonly string Acute = char.ConvertFromUtf32(0x0301);
+    private static readonly string ReversedCommaAbove = char.ConvertFromUtf32(0x0314);
 
     /// <summary>The corpus: (language, ISO 15924 script, text).</summary>
     public static readonly ImmutableArray<(string Language, string Script, string Text)> Corpus =
@@ -51,6 +54,17 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
         ("Russian", "Cyrl", "Съешь же ещё этих мягких французских булок, да выпей чаю."),
         ("Russian", "Cyrl", "ТАКСИ, ГЛАВА, Учитель, ЧУВСТВО, Тыква, Ёжик."),
         ("Marks", "Latn", $"x{Circumflex} q{Tilde} x{Circumflex}x{Tilde} q{Circumflex}"),
+    ];
+
+    /// <summary>More lines for Theano Didot only: U+0314 COMBINING REVERSED COMMA ABOVE has an advance of 420 units in
+    /// it (HarfBuzz zeroes the advance of a mark), alone, after another mark and between letters — on letters without
+    /// a precomposed form, so Unicode composition (see <see cref="KnownDifferences"/>) plays no part; and its kerning
+    /// pairs. Not Greek with marks: there Theano's <c>ccmp</c> swaps the marks for Greek forms with contextual
+    /// substitutions (GSUB type 5, lookups 1–4), a lookup type the shaper skips (documented on the Shaper).</summary>
+    public static readonly ImmutableArray<(string Language, string Script, string Text)> TheanoCorpus =
+    [
+        ("Marks", "Latn", $"e{ReversedCommaAbove} a{ReversedCommaAbove}b x{Acute}{ReversedCommaAbove} v{ReversedCommaAbove}{Acute}w"),
+        ("Kerning", "Latn", "AVATAR To Yo AT Ty VA LT Wo"),
     ];
 
     /// <summary>
@@ -89,13 +103,18 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
     public void Our_shaper_matches_harfbuzz_on_the_corpus()
     {
         var reference = HarfBuzzReference.Instance;
-        var fonts = new[] { ("Lato-Regular", TestFonts.Regular, TestFonts.Bytes("Lato-Regular.ttf")), ("Lato-Bold", TestFonts.Bold, TestFonts.Bytes("Lato-Bold.ttf")) };
+        var fonts = new[]
+        {
+            ("Lato-Regular", TestFonts.Regular, TestFonts.Bytes("Lato-Regular.ttf"), Corpus),
+            ("Lato-Bold", TestFonts.Bold, TestFonts.Bytes("Lato-Bold.ttf"), Corpus),
+            ("TheanoDidot-Regular", TestFonts.TheanoDidot, TestFonts.Bytes("TheanoDidot-Regular.ttf"), [.. Corpus, .. TheanoCorpus]),
+        };
         var lines = fonts
-            .SelectMany(font => Corpus.Select(entry => Compare(reference, font.Item1, font.Item2, font.Item3, entry.Language, entry.Script, entry.Text)))
+            .SelectMany(font => font.Item4.Select(entry => Compare(reference, font.Item1, font.Item2, font.Item3, entry.Language, entry.Script, entry.Text)))
             .ToList();
 
         var failed = lines.Where(line => line.Differences.Count > 0).ToList();
-        output.WriteLine($"HarfBuzz {reference.Version}: {lines.Count} lines ({Corpus.Length} corpus lines × {fonts.Length} fonts), "
+        output.WriteLine($"HarfBuzz {reference.Version}: {lines.Count} lines ({Corpus.Length} corpus lines × {fonts.Length} fonts, {TheanoCorpus.Length} more in Theano Didot), "
             + $"{lines.Sum(line => line.Glyphs)} glyphs; {lines.Count - failed.Count} lines identical, {failed.Count} differ, 0 skipped.");
         foreach (var line in failed)
         {

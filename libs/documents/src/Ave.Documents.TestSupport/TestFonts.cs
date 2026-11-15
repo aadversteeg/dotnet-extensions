@@ -5,14 +5,17 @@ using Ave.Documents.Fonts;
 namespace Ave.Documents.TestSupport;
 
 /// <summary>
-/// The test fonts: Lato 2.015 Regular, Bold and Italic (SIL Open Font License 1.1, see assets/fonts/lato/OFL.txt),
-/// loaded once from the test output folder.
+/// The test fonts, loaded once from the test output folder: Lato 2.015 Regular, Bold and Italic (SIL Open Font License
+/// 1.1, see assets/fonts/lato/OFL.txt), and Theano Didot 2.0 (SIL Open Font License 1.1, see
+/// assets/fonts/theano/OFL.txt), a font with what Lato lacks: a GDEF table, a <c>mkmk</c> feature, an old-style
+/// 'kern' table, a combining mark with a non-zero advance (U+0314, 420 units) and a non-zero line gap (560 of 2048).
 /// </summary>
 public static class TestFonts
 {
     private static readonly Lazy<TrueTypeFont> LazyRegular = new(() => Load("Lato-Regular.ttf"));
     private static readonly Lazy<TrueTypeFont> LazyBold = new(() => Load("Lato-Bold.ttf"));
     private static readonly Lazy<TrueTypeFont> LazyItalic = new(() => Load("Lato-Italic.ttf"));
+    private static readonly Lazy<TrueTypeFont> LazyTheanoDidot = new(() => Load("TheanoDidot-Regular.ttf"));
 
     /// <summary>Lato Regular (weight 400).</summary>
     public static TrueTypeFont Regular => LazyRegular.Value;
@@ -22,6 +25,9 @@ public static class TestFonts
 
     /// <summary>Lato Italic (weight 400, italic).</summary>
     public static TrueTypeFont Italic => LazyItalic.Value;
+
+    /// <summary>Theano Didot Regular 2.0 (2048 units per em).</summary>
+    public static TrueTypeFont TheanoDidot => LazyTheanoDidot.Value;
 
     /// <summary>A font set with Regular and Bold (the stage-0 set).</summary>
     public static FontSet Set => new([Regular, Bold]);

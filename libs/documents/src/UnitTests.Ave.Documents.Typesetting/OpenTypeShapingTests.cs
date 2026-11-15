@@ -88,4 +88,18 @@ public class OpenTypeShapingTests
         new LegacyKerning([Subtable(-10, false), Subtable(-20, false)]).Adjustment(new GlyphId(1), new GlyphId(2)).Should().Be(-30);
         new LegacyKerning([Subtable(-10, false), Subtable(-20, true)]).Adjustment(new GlyphId(1), new GlyphId(2)).Should().Be(-20);
     }
+
+    [Fact]
+    public void A_mark_with_an_advance_in_hmtx_takes_no_space()
+    {
+        // Theano Didot: U+0314 COMBINING REVERSED COMMA ABOVE is GDEF class 3 (mark) with an hmtx advance of 420 units;
+        // e is 962 units. HarfBuzz zeroes a mark's advance after GPOS (hb-ot-shape.cc, zero_mark_widths_by_gdef).
+        var font = TestFonts.TheanoDidot;
+
+        var glyphs = Shaper.Shape("e" + char.ConvertFromUtf32(0x0314), font, fontSize: font.Metrics.UnitsPerEm).Value;
+
+        glyphs.Should().HaveCount(2);
+        glyphs[1].Advance.Should().Be(0);
+        glyphs.Sum(glyph => glyph.Advance).Should().Be(962);
+    }
 }
