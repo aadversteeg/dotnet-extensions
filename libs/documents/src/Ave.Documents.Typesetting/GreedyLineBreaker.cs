@@ -46,9 +46,14 @@ public static class GreedyLineBreaker
         var lines = ImmutableArray.CreateBuilder<TextLine>();
         var line = new List<BreakableSegments.RunGlyph>();
         var lineWidth = 0.0;
-        foreach (var segment in BreakableSegments.Split(runs))
+        var segments = BreakableSegments.Split(runs);
+        for (var index = 0; index < segments.Length; index++)
         {
-            if (line.Count > 0 && !Fitting.Fits(lineWidth + segment.WidthWithoutTrailingSpaces + segment.HyphenWidth, availableWidth))
+            // A segment that ends in a soft hyphen needs room for the hyphen only if the line may break after it: not
+            // at the end of the paragraph or before a forced break, where no hyphen shows.
+            var segment = segments[index];
+            var hyphenWidth = segment.EndsWithMandatoryBreak || index == segments.Length - 1 ? 0 : segment.HyphenWidth;
+            if (line.Count > 0 && !Fitting.Fits(lineWidth + segment.WidthWithoutTrailingSpaces + hyphenWidth, availableWidth))
             {
                 AddLine(lines, line, endsWithForcedBreak: false, breaksHere: true);
                 line.Clear();
@@ -91,7 +96,9 @@ public static class GreedyLineBreaker
             return;
         }
 
-        if (breaksHere && glyphs[^1].Glyph.BreakHyphen is { } hyphen)
+        // The hyphen shows only when the line breaks AT the soft hyphen: it is the line's last glyph, with no space or
+        // forced break after it. Broken at a later space ("foo\u00AD bar"), the soft hyphen stays invisible.
+        if (breaksHere && breaks == 0 && spaces == 0 && glyphs[^1].Glyph.BreakHyphen is { } hyphen)
         {
             glyphs[^1] = glyphs[^1] with { Glyph = hyphen };
         }

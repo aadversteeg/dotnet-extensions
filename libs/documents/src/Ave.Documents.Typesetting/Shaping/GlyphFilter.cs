@@ -11,13 +11,15 @@ namespace Ave.Documents.Typesetting.Shaping;
 internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
 {
     /// <summary>
-    /// The class of a glyph. With a GDEF table, its glyphClassDef decides. Without one, the font says nothing, and
-    /// the character decides: a glyph for a nonspacing mark (General_Category Mn) is a mark, every other glyph a
-    /// base. This is what HarfBuzz does for such fonts, and it is the only way a mark-to-base lookup can find the
-    /// base in a font without GDEF (Lato has none).
+    /// The class of a glyph. When GDEF has a glyph class definition, it decides. Otherwise (no GDEF, or a GDEF that
+    /// holds only other parts) the font says nothing, and the character decides: a glyph for a nonspacing mark
+    /// (General_Category Mn) is a mark, every other glyph a base. HarfBuzz does the same for such fonts: it
+    /// synthesises glyph classes when the font has none (hb-ot-shape.cc, under the condition
+    /// <c>!hb_ot_layout_has_glyph_classes</c>). It is also the only way a mark-to-base lookup can find the base in a
+    /// font without GDEF (Lato has none).
     /// </summary>
     public GlyphClass ClassOf(GlyphId glyph, bool isNonspacingMarkCharacter) =>
-        Definitions is { } definitions
+        Definitions is { HasGlyphClasses: true } definitions
             ? definitions.GlyphClasses.ClassOf(glyph) switch
             {
                 GlyphDefinitions.MarkClass => GlyphClass.Mark,
@@ -29,17 +31,34 @@ internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
     /// <summary>The class of a glyph a substitution produced: from GDEF when present; otherwise the class it
     /// replaces, or Ligature for a ligature.</summary>
     public GlyphClass ClassAfterSubstitution(GlyphId glyph, GlyphClass previous) =>
-        Definitions is null ? previous : ClassOf(glyph, isNonspacingMarkCharacter: false);
+        Definitions is { HasGlyphClasses: true } ? ClassOf(glyph, isNonspacingMarkCharacter: false) : previous;
 
     /// <summary>
-    /// True when a substitution lookup with these flags skips the glyph while matching: as <see cref="Skips"/>, and
-    /// always the zero width joiner, which therefore does not stop a ligature. Every other default-ignorable
-    /// character is matched, so a zero width non-joiner between two letters stops their ligature ("ZWNJ … the
-    /// characters are not to be connected", the Unicode Standard §23.2). This is HarfBuzz's rule (hb-ot-layout:
-    /// GSUB matching ignores ZWJ, GPOS matching ignores ZWJ and ZWNJ, and both skip hidden default ignorables when
-    /// positioning).
+    /// True when a substitution lookup with these flags skips the glyph while matching: as <see cref="Skips"/>, and a
+    /// default-ignorable character, so that it does not stop a ligature (glyphs the match skips are kept after the
+    /// ligature). HarfBuzz skips every default ignorable but the zero width non-joiner while matching GSUB
+    /// (hb-ot-layout-gsubgpos.hh, the skipping iterator), and its output for "f", an ignorable and "i" in Lato is the
+    /// fi ligature followed by the invisible glyph; the reference tests compare. Two exceptions:
+    /// <list type="bullet">
+    /// <item>The zero width non-joiner is matched, so it stops a ligature: it is "intended to break both cursive
+    /// connections and ligatures" (the Unicode Standard §23.2). HarfBuzz does the same.</item>
+    /// <item>The soft hyphen and the zero width space are matched too, so they stop a ligature. Here the engine does not
+    /// do what HarfBuzz does, on purpose: they are line break opportunities, and the engine does not shape a line
+    /// again where it breaks (HarfBuzz leaves that to its caller). A ligature across one would keep both letters on
+    /// one line whichever way the line breaks.</item>
+    /// </list>
     /// </summary>
-    public bool SkipsInSubstitution(LookupFlags flags, GlyphItem item) => item.Text == GlyphItem.ZeroWidthJoiner || Skips(flags, item);
+    public bool SkipsInSubstitution(LookupFlags flags, GlyphItem item) =>
+        (item.IsDefaultIgnorable && !item.IsLineBreak && item.Text is not (ZeroWidthNonJoiner or SoftHyphen or ZeroWidthSpace)) || Skips(flags, item);
+
+    /// <summary>U+200C ZERO WIDTH NON-JOINER.</summary>
+    private const string ZeroWidthNonJoiner = "\u200C";
+
+    /// <summary>U+00AD SOFT HYPHEN.</summary>
+    private const string SoftHyphen = "\u00AD";
+
+    /// <summary>U+200B ZERO WIDTH SPACE.</summary>
+    private const string ZeroWidthSpace = "\u200B";
 
     /// <summary>True when a positioning lookup with these flags skips the glyph: as <see cref="Skips"/>, and every
     /// default-ignorable character, which takes no space and so has no place in a kerning pair or under a mark.</summary>

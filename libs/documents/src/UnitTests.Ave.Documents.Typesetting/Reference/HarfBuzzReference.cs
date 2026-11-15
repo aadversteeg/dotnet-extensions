@@ -73,7 +73,19 @@ public sealed class HarfBuzzReference
     /// <param name="script">The ISO 15924 script, for example <c>Latn</c>.</param>
     /// <param name="features">HarfBuzz feature strings, for example <c>-calt</c>.</param>
     /// <returns>The glyphs in visual (= logical) order.</returns>
+    /// <remarks>The module has one linear memory and one allocator, and test classes run in parallel: every call holds
+    /// <see cref="_gate"/>, so two shapings never use the module at once.</remarks>
     public ImmutableArray<ReferenceGlyph> Shape(byte[] font, string text, string script, IEnumerable<string> features)
+    {
+        lock (_gate)
+        {
+            return ShapeAlone(font, text, script, features);
+        }
+    }
+
+    private readonly System.Threading.Lock _gate = new();
+
+    private ImmutableArray<ReferenceGlyph> ShapeAlone(byte[] font, string text, string script, IEnumerable<string> features)
     {
         var hbFont = FontFor(font);
         var codePoints = text.EnumerateRunes().Select(rune => rune.Value).ToArray();

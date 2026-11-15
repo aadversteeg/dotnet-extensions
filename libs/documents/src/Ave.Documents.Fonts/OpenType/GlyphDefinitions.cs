@@ -13,6 +13,10 @@ namespace Ave.Documents.Fonts.OpenType;
 /// <param name="MarkAttachmentClasses">markAttachClassDef, used by the MarkAttachmentType lookup flag.</param>
 internal sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinition MarkAttachmentClasses)
 {
+    /// <summary>True when the table has a glyph class definition (glyphClassDefOffset is not 0). A GDEF table may hold
+    /// only other parts (mark attachment classes, ligature carets); then it says nothing about glyph classes.</summary>
+    public bool HasGlyphClasses { get; init; }
+
     /// <summary>The glyph class value for a mark ("3 Mark glyph (non-spacing combining glyph)").</summary>
     public const int MarkClass = 3;
 
@@ -37,9 +41,13 @@ internal sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefin
             reader.Invalid($"majorVersion {reader.UInt16(0)}");
         }
 
+        var glyphClasses = reader.UInt16(4);
         var definitions = new GlyphDefinitions(
-            ClassDefinition.Read(reader, 0, reader.UInt16(4)),
-            ClassDefinition.Read(reader, 0, reader.UInt16(10)));
+            ClassDefinition.Read(reader, 0, glyphClasses),
+            ClassDefinition.Read(reader, 0, reader.UInt16(10)))
+        {
+            HasGlyphClasses = glyphClasses != 0,
+        };
         return reader.Finish(Tag, definitions);
     }
 }

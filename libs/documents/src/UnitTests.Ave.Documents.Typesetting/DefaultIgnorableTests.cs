@@ -79,4 +79,46 @@ public class DefaultIgnorableTests
 
         string.Concat(lines[0].Segments.SelectMany(segment => segment.Glyphs).Select(glyph => glyph.Text)).Should().Be("aa");
     }
+
+    [Fact]
+    public void A_line_broken_at_a_space_after_a_soft_hyphen_shows_no_hyphen()
+    {
+        // "foo", soft hyphen, space, "bar" in a width for "foo" only: the line breaks at the space, not at the soft
+        // hyphen, so no hyphen shows and the line is as wide as "foo".
+        var glyphs = Shape(WithInvisible("foo", 0x00AD, " bar"));
+
+        var lines = GreedyLineBreaker.BreakLines([[.. glyphs]], availableWidth: Width(Shape("foo")) + 0.5);
+
+        lines.Should().HaveCount(2);
+        lines[0].Segments.SelectMany(segment => segment.Glyphs).Should().OnlyContain(glyph => glyph.Text != "­" || glyph.IsInvisible);
+        lines[0].Width.Should().BeApproximately(Width(Shape("foo")), 1e-9);
+    }
+
+    [Fact]
+    public void A_soft_hyphen_at_the_end_of_a_paragraph_needs_no_room()
+    {
+        // "aa co" + soft hyphen ends the paragraph: no line breaks there, so no hyphen is reserved and "co" stays on the line.
+        var glyphs = Shape(WithInvisible("aa co", 0x00AD, string.Empty));
+
+        var lines = GreedyLineBreaker.BreakLines([[.. glyphs]], availableWidth: Width(Shape("aa co")) + 0.1);
+
+        lines.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void Without_glyph_classes_in_GDEF_a_mark_is_a_mark()
+    {
+        // A GDEF table with only a mark attachment class definition (glyphClassDef offset 0): the font says nothing
+        // about glyph classes, so they come from the characters, as without GDEF.
+        var gdef = new BigEndianBuilder()
+            .UInt16(1).UInt16(0).UInt16(0).UInt16(0).UInt16(0).UInt16(12)   // version 1.0, no glyphClassDef, markAttachClassDef at 12
+            .UInt16(2).UInt16(0)                                             // class definition format 2, no ranges
+            .ToArray();
+        var definitions = global::Ave.Documents.Fonts.OpenType.GlyphDefinitions.Parse(gdef).Value;
+        var filter = new global::Ave.Documents.Typesetting.Shaping.GlyphFilter(definitions);
+
+        definitions.HasGlyphClasses.Should().BeFalse();
+        filter.ClassOf(new GlyphId(7), isNonspacingMarkCharacter: true).Should().Be(global::Ave.Documents.Typesetting.Shaping.GlyphClass.Mark);
+        filter.ClassOf(new GlyphId(7), isNonspacingMarkCharacter: false).Should().Be(global::Ave.Documents.Typesetting.Shaping.GlyphClass.Base);
+    }
 }
