@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net10.0</TargetFrameworks>
+    
+    <!-- Package specific metadata -->
+    <Description>Abstractions for file system operations across platforms.</Description>
+    <PackageTags>filesystem;io;abstractions</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ave.Extensions.ErrorPaths" />
+    <PackageReference Include="Ave.Extensions.Functional" />
+    <PackageReference Include="System.Reactive" />
+  </ItemGroup>
+
+</Project>

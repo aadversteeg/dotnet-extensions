@@ -1,0 +1,287 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.FileSystem;
+using Ave.Extensions.FileSystem.Mapping;
+using Ave.Extensions.FileSystem.Models;
+using Ave.Extensions.FileSystem.Traversal;
+using Ave.Extensions.FileSystem.Traversal.Handlers;
+using Ave.Extensions.Functional;
+using FluentAssertions;
+using Moq;
+using UnitTests.Extensions.FileSystem.TestHelpers;
+
+namespace UnitTests.Extensions.FileSystem
+{
+    public class ReadOnlyFileSystemWrapperTests
+    {
+        [Fact(DisplayName = "RFSW-001: Wrapper delegates FileExistsAsync to underlying filesystem")]
+        public async Task RFSW001()
+        {
+            // Arrange
+            var expectedResult = Result<bool, Error>.Success(true);
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.FileExistsAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var result = await wrapper.FileExistsAsync("/test.txt".ToCanonicalPath());
+            
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeTrue();
+            mockFileSystem.Verify(fs => fs.FileExistsAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+        
+        [Fact(DisplayName = "RFSW-002: Wrapper delegates DirectoryExistsAsync to underlying filesystem")]
+        public async Task RFSW002()
+        {
+            // Arrange
+            var expectedResult = Result<bool, Error>.Success(true);
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.DirectoryExistsAsync("/test".ToCanonicalPath(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var result = await wrapper.DirectoryExistsAsync("/test".ToCanonicalPath());
+            
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeTrue();
+            mockFileSystem.Verify(fs => fs.DirectoryExistsAsync("/test".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+        
+        [Fact(DisplayName = "RFSW-003: Wrapper delegates ReadAllTextAsync to underlying filesystem")]
+        public async Task RFSW003()
+        {
+            // Arrange
+            const string expectedContent = "file content";
+            var expectedResult = Result<string, Error>.Success(expectedContent);
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.ReadAllTextAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var result = await wrapper.ReadAllTextAsync("/test.txt".ToCanonicalPath());
+            
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().Be(expectedContent);
+            mockFileSystem.Verify(fs => fs.ReadAllTextAsync("/test.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+        
+        [Fact(DisplayName = "RFSW-004: Wrapper delegates GetFilesAsync to underlying filesystem")]
+        public async Task RFSW004()
+        {
+            // Arrange - use real InMemoryFileSystem instead of mocking with reflection
+            var fileSystem = new Ave.Extensions.FileSystem.InMemory.InMemoryFileSystem();
+            await fileSystem.CreateDirectoryAsync("/test".ToCanonicalPath());
+            await fileSystem.WriteAllTextAsync("/test/file1.txt".ToCanonicalPath(), "content1");
+            await fileSystem.WriteAllTextAsync("/test/file2.txt".ToCanonicalPath(), "content2");
+
+            var wrapper = fileSystem.AsReadOnly();
+
+            // Act
+            var result = await wrapper.GetFilesAsync("/test".ToCanonicalPath(), "*.txt", recursive: false);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().HaveCount(2);
+            result.Value.Should().Contain("/test/file1.txt".ToCanonicalPath());
+            result.Value.Should().Contain("/test/file2.txt".ToCanonicalPath());
+        }
+
+        [Fact(DisplayName = "RFSW-005: Wrapper delegates GetDirectoriesAsync to underlying filesystem")]
+        public async Task RFSW005()
+        {
+            // Arrange - use real InMemoryFileSystem instead of mocking with reflection
+            var fileSystem = new Ave.Extensions.FileSystem.InMemory.InMemoryFileSystem();
+            await fileSystem.CreateDirectoryAsync("/test".ToCanonicalPath());
+            await fileSystem.CreateDirectoryAsync("/test/dir1".ToCanonicalPath());
+            await fileSystem.CreateDirectoryAsync("/test/dir2".ToCanonicalPath());
+
+            var wrapper = fileSystem.AsReadOnly();
+
+            // Act
+            var result = await wrapper.GetDirectoriesAsync("/test".ToCanonicalPath(), "*", recursive: false);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().HaveCount(2);
+            result.Value.Should().Contain("/test/dir1".ToCanonicalPath());
+            result.Value.Should().Contain("/test/dir2".ToCanonicalPath());
+        }
+
+        [Fact(DisplayName = "RFSW-006: Wrapper delegates GetEntryAsync to underlying filesystem for files")]
+        public async Task RFSW006()
+        {
+            // Arrange
+            var entry = new FileSystemEntry(
+                path: "/test/file.txt".ToCanonicalPath(),
+                isDirectory: false,
+                size: 1024,
+                extension: ".txt",
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Normal);
+            var expectedResult = Result<FileSystemEntry, Error>.Success(entry);
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var result = await wrapper.GetEntryAsync("/test/file.txt".ToCanonicalPath(), IdentityMapper.Instance);
+            
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeEquivalentTo(entry);
+            mockFileSystem.Verify(fs => fs.GetEntryAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact(DisplayName = "RFSW-007: Wrapper delegates GetEntryAsync to underlying filesystem for directories")]
+        public async Task RFSW007()
+        {
+            // Arrange
+            var entry = new FileSystemEntry(
+                path: "/test/dir".ToCanonicalPath(),
+                isDirectory: true,
+                size: null,
+                extension: null,
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.UtcNow,
+                lastAccessUtc: DateTime.UtcNow,
+                attributes: FileAttributes.Directory);
+            var expectedResult = Result<FileSystemEntry, Error>.Success(entry);
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.GetEntryAsync("/test/dir".ToCanonicalPath(), It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var result = await wrapper.GetEntryAsync("/test/dir".ToCanonicalPath(), IdentityMapper.Instance);
+            
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeEquivalentTo(entry);
+            mockFileSystem.Verify(fs => fs.GetEntryAsync("/test/dir".ToCanonicalPath(), It.IsAny<IFileSystemEntryMapper<FileSystemEntry>>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact(DisplayName = "RFSW-008: Wrapper delegates OpenReadAsync to underlying filesystem")]
+        public async Task RFSW008()
+        {
+            // Arrange
+            var stream = new MemoryStream();
+            var expectedResult = Result<Stream, Error>.Success(stream);
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.OpenReadAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var result = await wrapper.OpenReadAsync("/test/file.txt".ToCanonicalPath());
+            
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeSameAs(stream);
+            mockFileSystem.Verify(fs => fs.OpenReadAsync("/test/file.txt".ToCanonicalPath(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+        
+        [Fact(DisplayName = "RFSW-009: Wrapper protects against write operations")]
+        public void RFSW009()
+        {
+            // Arrange
+            var mockFileSystem = new Mock<IFileSystem>();
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var wrapperType = wrapper.GetType();
+            
+            // Assert
+            // Verify the wrapper doesn't expose any methods from the IFileSystem interface
+            // that aren't in IReadOnlyFileSystem
+            var writeMethodNames = new[] {
+                "WriteAllTextAsync",
+                "DeleteFileAsync", 
+                "CreateDirectoryAsync",
+                "DeleteDirectoryAsync",
+                "OpenWriteAsync",
+                "OpenAsync"
+            };
+            
+            foreach (var methodName in writeMethodNames)
+            {
+                // Check if the wrapper type declares this method (it shouldn't)
+                var methods = wrapperType.GetMethods()
+                    .Where(m => m.Name == methodName)
+                    .ToList();
+                
+                methods.Should().BeEmpty($"Wrapper should not expose {methodName}");
+            }
+            
+            // Verify the wrapper only implements IReadOnlyFileSystem (not IFileSystem)
+            wrapperType.GetInterfaces().Should().Contain(typeof(IReadOnlyFileSystem));
+            wrapperType.GetInterfaces().Should().NotContain(typeof(IFileSystem));
+        }
+
+        [Fact(DisplayName = "RFSW-011: Info property returns read-only characteristics")]
+        public void RFSW011()
+        {
+            // Arrange
+            var mockFileSystemInfo = new Ave.Extensions.FileSystem.FileSystemInfo(
+                isDurable: true,
+                supportsMonitoring: false,
+                isReadOnly: false  // Original file system is not read-only
+            );
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.Info).Returns(mockFileSystemInfo);
+            
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+            
+            // Act
+            var info = wrapper.Info;
+            
+            // Assert
+            info.IsDurable.Should().Be(mockFileSystemInfo.IsDurable, "durability should be preserved from underlying file system");
+            info.SupportsMonitoring.Should().Be(mockFileSystemInfo.SupportsMonitoring, "monitoring support should be preserved from underlying file system");
+            info.IsReadOnly.Should().BeTrue("wrapper should always be read-only regardless of underlying file system");
+        }
+
+        [Fact(DisplayName = "RFSW-012: Wrapper delegates CreateMonitoringSessionAsync to underlying filesystem")]
+        public async Task RFSW012()
+        {
+            // Arrange
+            var mockSession = new Mock<IMonitoringSession>();
+            var expectedResult = Result<IMonitoringSession, Error>.Success(mockSession.Object);
+            var options = MonitoringOptions.ForPath("/test".ToCanonicalPath());
+            
+            var mockFileSystem = new Mock<IFileSystem>();
+            mockFileSystem.Setup(fs => fs.CreateMonitoringSessionAsync(options, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            var wrapper = mockFileSystem.Object.AsReadOnly();
+
+            // Act
+            var result = await wrapper.CreateMonitoringSessionAsync(options);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeSameAs(mockSession.Object);
+            mockFileSystem.Verify(fs => fs.CreateMonitoringSessionAsync(options, It.IsAny<CancellationToken>()), Times.Once);
+        }
+    }
+}

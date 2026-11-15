@@ -1,0 +1,74 @@
+using System;
+
+namespace Ave.Extensions.FileSystem.Models
+{
+    /// <summary>
+    /// Provides options for file system monitoring operations.
+    /// </summary>
+    public class MonitoringOptions
+    {
+        /// <summary>
+        /// Gets or sets the canonical path to monitor.
+        /// </summary>
+        public CanonicalPath Path { get; set; } = CanonicalPath.Root;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to monitor subdirectories.
+        /// </summary>
+        public bool IncludeSubdirectories { get; set; }
+
+        /// <summary>
+        /// Gets or sets the file system changes to monitor.
+        /// </summary>
+        public FileSystemNotifyFilters NotifyFilters { get; set; } = FileSystemNotifyFilters.All;
+
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to include hidden files.
+        /// </summary>
+        public bool IncludeHidden { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to include system files.
+        /// </summary>
+        public bool IncludeSystem { get; set; }
+
+        /// <summary>
+        /// Gets or sets the buffer size for file system events.
+        /// </summary>
+        public int BufferSize { get; set; } = 8192;
+
+        /// <summary>
+        /// Gets or sets a custom filter function for file changes.
+        /// </summary>
+        public Func<FileSystemChangedEvent, bool>? CustomFilter { get; set; }
+
+        /// <summary>
+        /// Gets default monitoring options for a path.
+        /// </summary>
+        /// <param name="path">The canonical path to monitor.</param>
+        /// <returns>Default monitoring options.</returns>
+        public static MonitoringOptions ForPath(CanonicalPath path) => new MonitoringOptions
+        {
+            Path = path,
+            IncludeSubdirectories = false,
+            NotifyFilters = FileSystemNotifyFilters.All,
+            IncludeHidden = false,
+            IncludeSystem = false
+        };
+
+        /// <summary>
+        /// Creates monitoring options for recursive monitoring.
+        /// </summary>
+        /// <param name="path">The canonical path to monitor.</param>
+        /// <returns>Monitoring options configured for recursive monitoring.</returns>
+        public static MonitoringOptions Recursive(CanonicalPath path) => new MonitoringOptions
+        {
+            Path = path,
+            IncludeSubdirectories = true,
+            NotifyFilters = FileSystemNotifyFilters.All,
+            IncludeHidden = false,
+            IncludeSystem = false
+        };
+    }
+}
