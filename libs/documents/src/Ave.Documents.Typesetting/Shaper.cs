@@ -102,9 +102,10 @@ public static class Shaper
         var filter = new GlyphFilter(font.Layout.Definitions);
         var properties = UnicodeProperties.Of(character.Value);
         var traits = properties.Traits;
-        if ((traits & CharacterTraits.DefaultIgnorable) != 0 || properties.Class is LineBreakClass.BK or LineBreakClass.CR or LineBreakClass.LF or LineBreakClass.NL)
+        var isLineBreak = IsMandatoryBreak(character);
+        if ((traits & CharacterTraits.DefaultIgnorable) != 0 || isLineBreak)
         {
-            return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), character.ToString(), GlyphClass.Base) { IsDefaultIgnorable = true });
+            return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), character.ToString(), GlyphClass.Base) { IsDefaultIgnorable = true, IsLineBreak = isLineBreak });
         }
 
         var isNonspacingMark = (traits & CharacterTraits.NonspacingMark) != 0;
@@ -116,6 +117,7 @@ public static class Shaper
     {
         var hyphen = Hyphen(font, fontSize);
         return ScriptRuns(characters)
+            .SelectMany(run => SplitAfterLineBreaks(characters, run))
             .TraverseAll(run => ShapeRun([.. glyphs.Skip(run.Start).Take(run.Length)], run.Tag, font))
             .OnSuccessMap(runs => runs.SelectMany(run => run).Select(glyph => new ShapedGlyph(
                     glyph.Glyph,
@@ -125,6 +127,7 @@ public static class Shaper
                     font.Metrics.ToPoints(glyph.YOffset, fontSize))
                 {
                     IsInvisible = glyph.IsDefaultIgnorable,
+                    IsLineBreak = glyph.IsLineBreak,
                     BreakHyphen = glyph.Text == SoftHyphen ? hyphen : null,
                 })
                 .ToImmutableArray());
@@ -178,6 +181,34 @@ public static class Shaper
 
     /// <summary>A run of characters of one script, with the OpenType script tag its lookups are chosen by.</summary>
     private sealed record ScriptRun(int Start, int Length, string Tag);
+
+    /// <summary>A mandatory line break: UAX #14 classes BK, CR, LF and NL.</summary>
+    private static bool IsMandatoryBreak(Rune character) =>
+        UnicodeProperties.Of(character.Value).Class is LineBreakClass.BK or LineBreakClass.CR or LineBreakClass.LF or LineBreakClass.NL;
+
+    /// <summary>
+    /// A script run cut after every mandatory line break in it. A forced break ends its line as a wrap does, so the
+    /// glyphs on either side are on different lines and must not be shaped together: no kerning pair, ligature or
+    /// mark attachment may join them. Each piece is shaped on its own.
+    /// </summary>
+    private static IEnumerable<ScriptRun> SplitAfterLineBreaks(ImmutableArray<Rune> characters, ScriptRun run)
+    {
+        var start = run.Start;
+        var end = run.Start + run.Length;
+        for (var index = run.Start; index < end; index++)
+        {
+            if (IsMandatoryBreak(characters[index]))
+            {
+                yield return run with { Start = start, Length = index + 1 - start };
+                start = index + 1;
+            }
+        }
+
+        if (start < end)
+        {
+            yield return run with { Start = start, Length = end - start };
+        }
+    }
 
     /// <summary>
     /// Splits the text where its script changes (UAX #24 Script property). Characters of the Common and Inherited

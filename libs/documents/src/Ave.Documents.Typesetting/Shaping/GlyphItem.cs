@@ -30,4 +30,8 @@ internal sealed record GlyphItem(
     /// <summary>True for a default-ignorable character (Unicode Default_Ignorable_Code_Point): it takes no space and
     /// draws nothing; see <see cref="GlyphFilter"/> for how lookups treat it.</summary>
     public bool IsDefaultIgnorable { get; init; }
+
+    /// <summary>True for a mandatory line break (UAX #14 classes BK, CR, LF, NL): it ends the line, draws nothing, and
+    /// ends the shaping run it is in.</summary>
+    public bool IsLineBreak { get; init; }
 }

@@ -197,12 +197,19 @@ public static class DocumentTranslator
         }
 
         var own = (inherited with { Text = WithRoleDefaults(inherited.Text, paragraph.Role) }).With(text);
+        // A span of only forced line breaks (LineBreak()) draws nothing and has no text style of its own: it takes the
+        // paragraph's, so a size set on it cannot make its line taller.
         var runs = paragraph.Spans
-            .Select((span, index) => Run(span, new NodeId(id.Value + 1 + index), own.With(Cascade.Text(span.Format, span.Style)).Text))
+            .Select((span, index) => Run(span, new NodeId(id.Value + 1 + index), IsLineBreaks(span) ? own.Text : own.With(Cascade.Text(span.Format, span.Style)).Text))
             .ToImmutableArray();
         return Result<Node, Error>.Success(new Box(
             id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own.Align), runs, paragraph.Source));
     }
+
+    /// <summary>A span whose text is one or more forced line breaks: the line separator U+2028 that LineBreak() writes,
+    /// or another mandatory break character that white-space collapsing keeps.</summary>
+    private static bool IsLineBreaks(Span span) =>
+        span.Counter is null && span.Text.Length > 0 && span.Text.All(character => character is '\u2028' or '\n' or '\r' or '\v' or '\f' or '\u0085');
 
     private static Node Run(Span span, NodeId id, TextStyle style) =>
         span.Counter is { } counter ? new CounterRun(id, counter, style, span.Source) : new TextRun(id, span.Text, style, span.Source);

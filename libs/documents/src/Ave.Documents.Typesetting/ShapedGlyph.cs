@@ -26,6 +26,10 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// property.</summary>
     public bool IsInvisible { get; init; }
 
+    /// <summary>True for a forced line break (a mandatory break of UAX #14, such as the U+2028 that <c>LineBreak()</c>
+    /// writes): invisible, and the end of its line; the collapsible spaces before it are removed as at any line end.</summary>
+    public bool IsLineBreak { get; init; }
+
     /// <summary>For a soft hyphen: the visible hyphen that replaces it when a line breaks after it (UAX #14 §5.4;
     /// CSS Text 3 §5.3, <c>hyphens: manual</c>); null for every other glyph, and for a soft hyphen in a font without a hyphen.</summary>
     public ShapedGlyph? BreakHyphen { get; init; }

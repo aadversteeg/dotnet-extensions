@@ -1,3 +1,4 @@
+using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using Ave.Extensions.Functional;
 using Ave.Documents.Layout;
@@ -35,5 +36,25 @@ public class LineBreakTests
         var twice = Pages(Text("a"), LineBreak(), LineBreak(), Text("b")).Pages.Single().Items.OfType<GlyphRun>().ToList();
 
         (twice[1].Origin.Y - twice[0].Origin.Y).Should().BeGreaterThan(once[1].Origin.Y - once[0].Origin.Y);
+    }
+
+    [Fact]
+    public void A_line_break_has_no_font_size_of_its_own()
+    {
+        // LineBreak().FontSize(30) made its line 36pt high although it draws nothing. A forced break takes the text
+        // style of its paragraph, so the lines are as high as without the size.
+        var plain = Pages(Text("a"), LineBreak(), Text("b")).Pages.Single().Items.OfType<GlyphRun>().ToList();
+        var sized = Pages(Text("a"), LineBreak().FontSize(30.Pt()), Text("b")).Pages.Single().Items.OfType<GlyphRun>().ToList();
+
+        sized.Select(run => run.Origin.Y).Should().Equal(plain.Select(run => run.Origin.Y));
+    }
+
+    [Fact]
+    public void The_line_break_run_in_the_model_has_the_paragraph_s_text_style()
+    {
+        var model = DocumentTranslator.ToModel(Document([Paragraph([Text("a"), LineBreak().FontSize(30.Pt()).Bold(), Text("b")])]).FontFamily("Lato")).Value;
+
+        var runs = model.Root.Children.OfType<global::Ave.Documents.DocumentModel.Box>().Single().Children.OfType<global::Ave.Documents.DocumentModel.TextRun>().ToList();
+        runs[1].Style.Should().Be(runs[0].Style);
     }
 }

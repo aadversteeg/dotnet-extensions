@@ -80,7 +80,12 @@ public static class GreedyLineBreaker
     /// line ends in a soft hyphen, the hyphen shows. Nothing is added when no glyph is left.</summary>
     private static void AddLine(ImmutableArray<TextLine>.Builder lines, List<BreakableSegments.RunGlyph> line, bool endsWithForcedBreak, bool breaksHere)
     {
-        var glyphs = line.Take(line.Count - line.AsEnumerable().Reverse().TakeWhile(glyph => glyph.Glyph.IsSpace).Count()).ToList();
+        // The spaces at the end of a line are removed (CSS Text 3 §4.1.2), also before a forced break: the break
+        // itself stays, so that a line of only a break still makes an empty line.
+        var breaks = line.AsEnumerable().Reverse().TakeWhile(glyph => glyph.Glyph.IsLineBreak).Count();
+        var body = line.Take(line.Count - breaks).ToList();
+        var spaces = body.AsEnumerable().Reverse().TakeWhile(glyph => glyph.Glyph.IsSpace).Count();
+        var glyphs = body.Take(body.Count - spaces).Concat(line.Skip(line.Count - breaks)).ToList();
         if (glyphs.Count == 0)
         {
             return;
