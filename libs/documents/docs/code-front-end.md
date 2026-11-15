@@ -70,8 +70,21 @@ or `Documents.Font.GlyphMissing` and the source file and line of the element.
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
 | `Text(text)`, `Bold(text)` | a span inside a paragraph (`Bold(text)` is `Text(text).Bold()`) |
 | `PageBreak()` | starts the next element of the same list on a new page |
+| `Table(columns, rows)` | a table; `columns` made with `Columns(…)`, `rows` a list of the three below |
+| `Columns(2.5.Cm(), Fill(1), Auto)` | the column sizes: a length is fixed, `Fill(weight)` takes a share of the width left over (CSS Grid `fr`), `Auto` is as wide as the content needs |
+| `HeaderRow([cells])` | a header row: repeated at the top of every page the table continues on |
+| `TableRow([cells])` | a body row; it may break between the lines of its cells unless kept together |
+| `RowGroup([rows])` | rows that belong together (a row span ends at the end of its group) |
+| `Cell(text)`, `Cell([elements])` | a table cell |
+| `Row([elements])` | elements side by side, one column each (equal shares unless `.Columns(…)` is set) |
+| `Image(bytes)` | a PNG or JPEG image from the bytes of the file |
+| `PageNumber()`, `PageCount()` | spans that show the page number and the number of pages |
 
-Children are collection expressions: `[a, b, .. items.Select(Row)]`.
+Children are collection expressions: `[a, b, .. items.Select(Line)]`.
+
+The page is a value too: `PageSetup.A4.Margin(1.Cm()).Header(header).Footer(footer)`; `Page(width, height)` makes
+another size. Header and footer take their height from the page area (from their content, or a fixed height as the
+second argument); `.FirstPageHeader(…)` and `.FirstPageFooter(…)` replace them on page 1 (`Block([])` for none).
 
 ## Modifiers
 
@@ -90,7 +103,22 @@ properties give the same element in any order, and setting the same property twi
 | `.Padding(Length)` | blocks, paragraphs, `Style` | `padding` on all four sides |
 | `.PaddingTop/Right/Bottom/Left(Length)` | blocks, paragraphs, `Style` | `padding-top` … |
 | `.Background(Color)` | blocks, paragraphs, `Style` | `background-color` |
-| `.With(Style)` | blocks, paragraphs, spans | applies a reusable style |
+| `.With(Style)` | every element, spans | applies a reusable style |
+| `.FontStyle(FontStyle)`, `.Italic()` | every element, `Style` | `font-style` (an italic face must be in the font set) |
+| `.Border(Length, Color)` | elements with a box, `Style` | `border` on all four sides, solid |
+| `.BorderTop/Right/Bottom/Left(Length, Color)` | elements with a box, `Style` | `border-top` … |
+| `.KeepTogether()` | elements with a box, rows, row groups | `break-inside: avoid` |
+| `.KeepWithNext()`, `.KeepWithPrevious()` | elements with a box, rows | `break-after: avoid`, `break-before: avoid` |
+| `.GridLines(Length, Color)` | tables | a border on every cell that sets none (one shared line between cells) |
+| `.CellPadding(Length)`, `.CellPadding(vertical, horizontal)` | tables | padding of every cell that sets none |
+| `.ColumnSpan(n)`, `.RowSpan(n)` | cells | `colspan`, `rowspan` |
+| `.VerticalAlign(VerticalAlign)` | cells, rows of blocks | `vertical-align`: `Top` (default), `Middle`, `Bottom` |
+| `.Columns(sizes…)` | rows of blocks | one size per item |
+| `.Width(Length)`, `.Height(Length)` | images | the size; one alone keeps the aspect ratio, both fit the image inside them |
+
+"Elements with a box" are blocks, paragraphs, tables, rows of blocks, cells and images. A table has no padding (the
+collapsing border model has none) and rows and row groups have no margin or padding: setting them is reported as
+`Documents.Input.Invalid.NotApplicable`. A page break is not allowed inside a cell or a row of blocks.
 
 Lengths are typed: `12.Pt()`, `4.Mm()`, `2.Cm()`.
 
@@ -105,6 +133,40 @@ vertical margins collapse as in CSS (CSS 2.1 §8.3.1): between two paragraphs wi
 
 A span has no box and no lines: a style with box properties or a text alignment applied to a span is reported
 as `Documents.Input.Invalid.NotApplicable`.
+
+## Tables, page templates and page numbers
+
+```csharp
+var grey = new Color(0xD3, 0xD3, 0xD3);
+var page = PageSetup.A4.Margin(1.Cm())
+    .Header(Row([Image(logo).Width(2.5.Cm()), Paragraph("Timesheet").FontSize(24.Pt()).Bold()]).Columns(2.5.Cm(), Fill(1)))
+    .Footer(Paragraph([Text("Page "), PageNumber(), Text(" of "), PageCount()]).TextAlign(TextAlign.Right));
+
+var entries = Table(
+        Columns(Fill(2.5), Fill(3), Fill(10), Fill(2)),
+        [
+            HeaderRow([Cell("Date"), Cell("Task"), Cell("Title"), Cell("Hours").TextAlign(TextAlign.Right)]).Bold(),
+            .. items.Select(item => (TablePart)RowGroup(
+                [
+                    TableRow([Cell(item.Date).RowSpan(2), Cell(item.Task), Cell(item.Title), Cell(item.Hours).RowSpan(2)]),
+                    TableRow([Cell(item.Description).ColumnSpan(2).Italic().FontSize(8.Pt())]),
+                ]).KeepTogether()),
+        ])
+    .GridLines(1.Pt(), grey)
+    .CellPadding(4.Pt(), 2.Pt());
+```
+
+The full timesheet is `samples/Ave.Documents.Samples/Timesheet/Timesheet.cs`.
+
+How tables lay out: fixed columns keep their width; auto columns get between their narrowest and widest content;
+fill columns share what is left, never narrower than their narrowest content. Columns that cannot fit are the
+error `Documents.Layout.ColumnsDoNotFit`. A row is as tall as its tallest cell. Between two cells there is one
+grid line; where two borders meet, the wider one wins, then a cell's over a row's, then the upper or left one (CSS
+2.1 §17.6.2.1). A page breaks between rows, or inside a row between the lines of its cells; kept-together rows and
+groups move to the next page whole when they fit on one, and break anyway when they do not.
+
+The page count is known only after layout, so layout runs again until the count it shows is the count it produces,
+at most five times; otherwise the error is `Documents.Layout.NotConverging` at the `PageCount()` call.
 
 ## Values you can compare
 

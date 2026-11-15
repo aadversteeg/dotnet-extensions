@@ -3,11 +3,14 @@
 A document engine in pure managed .NET 10: a document written in C# goes in, a PDF comes out. No native
 library, no P/Invoke and no external engine or tool at run time; tools appear only in tests.
 
-This is **stage 1** of milestone M1. Stage 0 laid one thin path through every layer; stage 1 adds text
-quality: Unicode line breaking (UAX #14), OpenType shaping (ligatures, kerning, mark positioning), font
-subsetting, text alignment and justification, CSS margin collapsing and box slicing at page breaks, and an
-order-free modifier API for the code front-end. It lays out blocks and paragraphs of text over pages and writes a
-PDF with subset fonts whose text can be selected, copied and searched.
+This is **stage 2** of milestone M1. Stage 0 laid one thin path through every layer; stage 1 added text
+quality (Unicode line breaking, OpenType shaping, subsetting, justification, margin collapsing, box slicing).
+Stage 2 adds what a business document needs besides PDF conformance: tables (fixed, auto and fill columns, column
+and row spans, repeated header rows, row groups, rows that break between lines or are kept together, grid lines in
+the collapsing border model), a plain row of blocks side by side, borders, keep rules for blocks, a page template
+with header and footer (optionally different on the first page), page number and page count through a
+whole-document fixpoint, and PNG and JPEG images. The proof is the SmallBusiness timesheet, written with the code
+front-end (`samples/Ave.Documents.Samples/Timesheet/`).
 
 ## Layers
 
@@ -21,13 +24,14 @@ dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.
  Ave.Documents.DocumentModel  document model: styled box tree with CSS semantics, computed values only
         │  lay out (pure algorithms + break tokens), paint
         ▼
- Ave.Documents.Layout         Flow and Inline algorithms, pagination driver, painter    ← uses Typesetting
+ Ave.Documents.Layout         Flow, Inline, Tracks and Image algorithms; pagination driver with page templates
+                              and the page-count fixpoint; painter                     ← uses Typesetting
         │
         ▼
- Ave.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, structure markers)
+ Ave.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, images, structure markers)
         │  render
         ▼
- Ave.Documents.Render.Pdf     page model → PDF: subset composite fonts, ToUnicode, content streams  ← uses Pdf
+ Ave.Documents.Render.Pdf     page model → PDF: subset composite fonts, ToUnicode, image XObjects, content streams
         │
         ▼
  PDF bytes
@@ -35,13 +39,16 @@ dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.
  Ave.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping, justification
  Ave.Documents.Pdf            PDF objects, content operators, file writer (knows nothing about layout)
  Ave.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
+ Ave.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and JPEG header reader (embedded as is)
  Ave.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, error codes
 ```
 
 Where the contracts are:
 
-- Layout contract: `src/Ave.Documents.Layout/LayoutAlgorithm.cs` (the delegate and its rules),
-  `ConstraintSpace.cs`, `BreakToken.cs`, `LayoutResult.cs`, `Fragment.cs`.
+- Layout contract: `src/Ave.Documents.Layout/LayoutAlgorithm.cs` (the layout delegate and its rules, and the
+  intrinsic-widths delegate), `ConstraintSpace.cs`, `BreakToken.cs`, `LayoutResult.cs` (with the break appeal),
+  `Fragment.cs`, `LayoutEnvironment.cs` (algorithms by id, the current page).
+- Tracks algorithm: `src/Ave.Documents.Layout/Tracks/` (`TracksLayout.cs` lists the steps).
 - Document model: `src/Ave.Documents.DocumentModel/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `LayoutAlgorithmId.cs`.
 - Page model: `src/Ave.Documents.PageModel/PageDocument.cs`, `DrawItem.cs`.
 - Error codes: `src/Ave.Documents.Core/DocumentErrorCodes.cs`.
@@ -86,13 +93,17 @@ dotnet test Ave.Documents.slnx
 dotnet run --project ../samples/Ave.Documents.Samples -- ../out/samples
 ```
 
-The samples app writes `sample-a-letter.pdf` (two pages) and `sample-b-long.pdf` (five pages), each with
-`.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its intermediate models.
+The samples app writes `sample-a-letter.pdf` (two pages), `sample-b-long.pdf` (five pages) and the timesheet
+for the reporting PoC's three data sets in Dutch and English (`timesheet-{normal,long,edge}.{nl,en}.pdf`), each
+with `.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its intermediate models.
+The samples app needs culture data for the timesheet's number formats; the libraries do not.
 
 `pwsh -NoProfile -File tools/verify-samples.ps1` publishes the samples, proves the publish folder contains only
 IL-only managed assemblies, runs them, and checks the PDFs with independent tools in Docker: `qpdf --check`,
 `pdftotext`, `pdffonts`, every embedded subset font opened with fontTools, and PNG renderings by poppler and
-MuPDF in `out/samples/png`.
+MuPDF in `out/samples/png`. With the reporting PoC next to this repository it also writes side-by-side PNGs of
+every timesheet page against the PoC's Typst output to `out/samples/sbs`. `tools/generate-test-images.py` makes
+the image test files with Pillow, an independent encoder.
 
 Golden files live in `Golden/` folders next to the tests. After a deliberate change, run the tests with
 `UPDATE_GOLDEN=1`, review the diff, and commit it.
@@ -103,18 +114,23 @@ Two reference gates run with the tests. Line breaking runs the official `LineBre
 in `src/Ave.Documents.Typesetting/Unicode/` is generated from the committed data files; after updating them,
 run the tests with `UPDATE_GENERATED=1`.
 
-## Stage-1 scope and known limits
+## Scope and known limits
 
-In: blocks (margin, padding, background), paragraphs of runs (family, size, weight, colour, alignment),
-headings, explicit page breaks, CSS margin collapsing (CSS 2.1 §8.3.1), margin truncation and box slicing at
-page breaks (CSS Fragmentation 3 §5.2–§5.4), Unicode line breaking (UAX #14, Unicode 18.0.0), OpenType shaping
-for Latin, Greek and Cyrillic (GSUB ccmp/liga/clig, GPOS kern/mark, the legacy kern table), text-align and
-inter-word justification, TrueType subsetting, deterministic output.
+In: blocks (margin, padding, solid borders, background), paragraphs of runs (family, size, weight, italic,
+colour, alignment), headings, explicit page breaks, keep rules (`break-inside`/`break-before`/`break-after: avoid`,
+resolved by break appeal), CSS margin collapsing (CSS 2.1 §8.3.1) with its border conditions, margin truncation and
+box slicing at page breaks (CSS Fragmentation 3 §5.2–§5.4), tables and rows of blocks (CSS 2.1 §17 with CSS Grid
+`fr` columns, collapsing borders, repeated header rows, rows broken between lines), header and footer areas with a
+different first page, page number and page count (a fixpoint of at most 5 passes), PNG and JPEG images, Unicode line
+breaking (UAX #14, Unicode 18.0.0), OpenType shaping for Latin, Greek and Cyrillic, text-align and inter-word
+justification, TrueType subsetting, deterministic output. Table layout is checked against Chromium 157
+(`src/UnitTests.Ave.Documents.Layout/ChromiumReferenceTests.cs`).
 
-Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows,
-the line-height strut, Unicode normalization before shaping, contextual and other OpenType lookup types
-(skipped), language-specific OpenType systems, complex scripts, bidi, hyphenation, CFF fonts, tagged PDF and
-PDF/A, tables, images, headers and footers.
+Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows, the
+line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
+border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content,
+interlaced and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and
+other OpenType lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts, tagged PDF and PDF/A.
 
 ## Conventions
 
