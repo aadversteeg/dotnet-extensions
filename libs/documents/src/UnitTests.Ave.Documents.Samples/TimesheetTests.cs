@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Globalization;
-using System.IO;
 using Ave.Documents.Core;
 using Ave.Documents.DocumentModel;
 using Ave.Documents.Fluent;
@@ -20,17 +19,13 @@ namespace UnitTests.Ave.Documents.Samples;
 /// </summary>
 public class TimesheetTests
 {
-    private static readonly PdfRenderOptions Options = new(new DateTimeOffset(2026, 11, 15, 9, 22, 0, TimeSpan.FromHours(1)));
-
-    private static readonly Brand Brand = Brand.Poc([.. File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "assets", "logo.png"))]);
+    private static readonly PdfRenderOptions Options = SampleOutput.Options;
 
     private sealed record Stages(StyledDocument Model, ValueList<PageFragment> Fragments, PageDocument Pages, ImmutableArray<byte> Pdf);
 
     private static Stages Run(string dataSet, string culture)
     {
-        var data = TimesheetData.Load(Path.Combine(AppContext.BaseDirectory, "data", $"sample-{dataSet}.json"))
-            .WithCleanText(FontCoverage.Displayable(TestFonts.Regular));
-        var model = DocumentTranslator.ToModel(Timesheets.Timesheet(data, Brand, CultureInfo.GetCultureInfo(culture))).Value;
+        var model = DocumentTranslator.ToModel(SampleFiles.Timesheet(dataSet, culture)).Value;
         var fragments = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model).Value;
         var pages = PagePainter.Paint(model.Metadata, fragments);
         return new Stages(model, fragments, pages, PdfRenderer.Render(pages, Options).Value);
@@ -39,14 +34,14 @@ public class TimesheetTests
     [Theory]
     [InlineData("normal", "nl-NL", 2)]
     [InlineData("normal", "en-US", 2)]
-    [InlineData("long", "nl-NL", 7)]
-    [InlineData("long", "en-US", 7)]
+    [InlineData("long", "nl-NL", 5)]
+    [InlineData("long", "en-US", 5)]
     [InlineData("edge", "nl-NL", 1)]
     [InlineData("edge", "en-US", 1)]
     public void Every_data_set_renders_with_the_expected_page_count(string dataSet, string culture, int pages)
     {
-        // The PoC's Typst output has 2, 5 and 1 pages. The long set differs by design of the line box: see the
-        // stage-2 report (CSS line-height: normal is 1.2 em for Lato; Typst sets a line from cap height to baseline).
+        // The PoC's Typst output has 2, 5 and 1 pages. The long set matches after the sample's row-density choice
+        // (Timesheets.EntryPaddingVertical); the engine was not changed for it.
         Run(dataSet, culture).Pages.Pages.Should().HaveCount(pages);
     }
 

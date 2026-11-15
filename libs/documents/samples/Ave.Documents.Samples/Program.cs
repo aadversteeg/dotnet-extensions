@@ -12,15 +12,24 @@ using Ave.Documents.Samples;
 using Ave.Extensions.Functional;
 
 // Writes the samples to the folder given as the first argument (default: ./out), each as a PDF plus the three text
-// serialisations of its intermediate models: <name>.model.txt, <name>.fragments.txt, <name>.page.txt.
+// serialisations of its intermediate models: <name>.model.txt, <name>.fragments.txt, <name>.page.txt, and every
+// embedded file as <name>.attachment.<file name>.
 // Samples: the letter (A), the long text (B), and the timesheet for the PoC's three data sets in Dutch and English.
-var output = args.Length > 0 ? args[0] : "out";
-Directory.CreateDirectory(output);
+// With "time <data set> <culture> [warm runs]" it measures one timesheet instead (see Timing).
 
 var regular = LoadFont("Lato-Regular.ttf");
 var fonts = new FontSet([regular, LoadFont("Lato-Bold.ttf"), LoadFont("Lato-Italic.ttf")]);
-var options = new PdfRenderOptions(CreationDate: new DateTimeOffset(2026, 11, 15, 9, 22, 0, TimeSpan.FromHours(1)));
+var options = SampleOutput.Options;
 var brand = Brand.Poc([.. File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "assets", "logo.png"))]);
+
+if (args.Length >= 3 && args[0] == "time")
+{
+    var warmRuns = args.Length > 3 ? int.Parse(args[3], CultureInfo.InvariantCulture) : 20;
+    return Timing.Measure($"timesheet-{args[1]}.{args[2]}", () => Timesheet(args[1], args[2]), fonts, warmRuns) ? 0 : 1;
+}
+
+var output = args.Length > 0 ? args[0] : "out";
+Directory.CreateDirectory(output);
 
 var timesheets = new[] { "normal", "long", "edge" }.SelectMany(dataSet => new[] { "nl-NL", "en-US" }
     .Select(culture => (Name: $"timesheet-{dataSet}.{culture[..2]}", Document: Timesheet(dataSet, culture))));
@@ -50,6 +59,12 @@ bool Write(string name, Document document)
             File.WriteAllText(Path.Combine(output, $"{name}.model.txt"), DocumentModelText.Write(model));
             File.WriteAllText(Path.Combine(output, $"{name}.fragments.txt"), FragmentText.Write(fragments));
             File.WriteAllText(Path.Combine(output, $"{name}.page.txt"), PageModelText.Write(pages));
+            foreach (var attachment in model.Metadata.Attachments)
+            {
+                // The embedded file as it went in, so tools can compare it with what they extract from the PDF.
+                File.WriteAllBytes(Path.Combine(output, $"{name}.attachment.{attachment.FileName}"), [.. attachment.Content]);
+            }
+
             return PdfRenderer.Render(pages, options).OnSuccessMap(pdf => (Pdf: pdf, PageCount: pages.Pages.Count));
         }));
 

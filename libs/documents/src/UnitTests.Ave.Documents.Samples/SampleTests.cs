@@ -16,7 +16,7 @@ namespace UnitTests.Ave.Documents.Samples;
 /// </summary>
 public class SampleTests
 {
-    private static readonly PdfRenderOptions Options = new(new DateTimeOffset(2026, 11, 15, 9, 22, 0, TimeSpan.FromHours(1)));
+    private static readonly PdfRenderOptions Options = SampleOutput.Options;
 
     private sealed record Stages(StyledDocument Model, ValueList<PageFragment> Fragments, PageDocument Pages, ImmutableArray<byte> Pdf);
 

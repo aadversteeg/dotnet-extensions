@@ -75,7 +75,8 @@ public static class SampleDocuments
             ],
             Page,
             title: "Quotation for document rendering",
-            author: "Ave.Documents samples")
+            author: "Ave.Documents samples",
+            language: "en")
             .FontFamily("Lato").FontSize(11.Pt());
 
     /// <summary>Sample B: a long text that runs over several pages, with paragraphs split between pages.</summary>
@@ -87,7 +88,8 @@ public static class SampleDocuments
                 .. Enumerable.Range(1, paragraphs).Select(number => (Element)Numbered(number)),
             ],
             Page,
-            title: "A long text")
+            title: "A long text",
+            language: "en")
             .FontFamily("Lato").FontSize(11.Pt());
 
     private static ParagraphElement Para(string text) => Paragraph(text).With(BodyParagraph);

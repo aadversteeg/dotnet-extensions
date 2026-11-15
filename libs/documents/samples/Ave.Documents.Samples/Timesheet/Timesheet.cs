@@ -23,6 +23,15 @@ public static class Timesheets
     /// a row with 1pt grey lines would be drawn grey; the wider border wins instead.</summary>
     private static readonly Length TotalLine = 1.5.Pt();
 
+    /// <summary>
+    /// The top and bottom padding of the entry cells: 1.5pt where the PoC's Typst template has 4pt. The PoC's rows are
+    /// denser for another reason than padding: Typst sets a line from cap height to baseline (about 7.2pt for 10pt
+    /// Lato), CSS from the line box of <c>line-height: normal</c> (1.2 em = 12pt), and this engine has no line-height
+    /// property yet. With 1.5pt a text row is 12 + 3 + 1 = 16pt (Typst about 15.2pt) and a description row 9.6 + 3 + 1 =
+    /// 13.6pt (Typst about 13.7pt), so the long month takes 5 pages, as in the PoC. A template choice, not an engine one.
+    /// </summary>
+    private static readonly Length EntryPaddingVertical = 1.5.Pt();
+
     /// <summary>The timesheet as a document.</summary>
     /// <param name="data">The report data; its text must already be limited to what the fonts can show.</param>
     /// <param name="brand">The brand kit.</param>
@@ -52,9 +61,11 @@ public static class Timesheets
                     EntriesTable(data, brand, labels, culture).MarginTop(10.Pt()),
                 ],
                 page,
-                title: $"{labels.Title} {data.CustomerName} {period}")
+                title: $"{labels.Title} {data.CustomerName} {period}",
+                language: culture.Name)
             .FontFamily(brand.FontFamily)
-            .FontSize(10.Pt());
+            .FontSize(10.Pt())
+            .Attach(TimesheetXml.For(data, new DateTimeOffset(data.ReportDate, TimeSpan.Zero)));
     }
 
     /// <summary>
@@ -100,7 +111,7 @@ public static class Timesheets
     private static Element Band(Brand brand) => Block([]).BorderBottom(3.Pt(), brand.Accent);
 
     /// <summary>
-    /// The entries: four fill columns (2.5 : 3 : 10 : 2) with light-grey grid lines and 2pt × 4pt cell padding, a bold
+    /// The entries: four fill columns (2.5 : 3 : 10 : 2) with light-grey grid lines and 1.5pt × 2pt cell padding, a bold
     /// header row repeated on every page, and per entry either one row or — with a description — a group of two rows
     /// in which the date and the hours span both rows, kept together on one page. Then the total row.
     /// </summary>
@@ -120,7 +131,7 @@ public static class Timesheets
                         .Bold(),
                 ])
             .GridLines(1.Pt(), brand.GridLine)
-            .CellPadding(4.Pt(), 2.Pt());
+            .CellPadding(EntryPaddingVertical, 2.Pt());
     }
 
     /// <summary>One entry: a single row, or a kept-together group of the entry row and its description row.</summary>

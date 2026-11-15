@@ -11,10 +11,17 @@
        embedded subset fonts, pdfimages -list for the embedded images (and their soft masks), every embedded font
        program extracted (mutool extract) and opened with fontTools, and PNG renderings with two independent renderers
        (poppler's pdftoppm and MuPDF's mutool) to out/samples/png.
-    5. When the reporting PoC's PDFs are found (-PocPdfs, default ../reporting-poc/out next to this repository):
+    5. veraPDF 1.30.4 (Docker image pinned by digest) on every sample for PDF/A-3b, PDF/A-3a and PDF/UA-1. The gate:
+       PDF/A-3b must pass for every sample; a failing PDF/A-3a or PDF/UA-1 rule is listed rule by rule and also fails
+       the script, because the samples claim all three. Then qpdf extracts every timesheet's XML attachment, and the
+       bytes are compared with the file the samples app wrote next to the PDF.
+    6. When the reporting PoC's PDFs are found (-PocPdfs, default ../reporting-poc/out next to this repository):
        side-by-side PNGs of every timesheet page, ours on the left and the PoC's Typst page on the right, both rendered
        by poppler at 100 dpi, to out/samples/sbs.
     Tools run in Docker only; nothing here is part of the engine. Needs Docker and network access for apk.
+
+.PARAMETER VeraPdfImage
+    The veraPDF image; pinned to 1.30.4 by digest, the same as the reference tests (TestSupport/VeraPdf.cs).
 
 .PARAMETER PocPdfs
     The folder with the PoC's sample-{normal,long,edge}.{nl,en}.typst.pdf files.
@@ -24,6 +31,7 @@
 #>
 [CmdletBinding()]
 param(
+    [string]$VeraPdfImage = 'verapdf/cli@sha256:f085855d442ad415e79fabbabcdd1803c2db4ee097cd5b94506c95ecdcfa1728',
     [string]$PocPdfs = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'reporting-poc/out')
 )
 
@@ -87,8 +95,39 @@ ls /work/png | sed 's|^|   png: |'
 docker run --rm -v "${samples}:/work" alpine:latest sh -c $script
 if ($LASTEXITCODE -ne 0) { throw 'independent checks failed' }
 
+Write-Host "== 5. veraPDF $VeraPdfImage"
+$pdfs = Get-ChildItem $samples -Filter *.pdf | Sort-Object Name | ForEach-Object { "/data/$($_.Name)" }
+$failed = @()
+foreach ($flavour in '3b', '3a', 'ua1') {
+    $report = [xml]((docker run --rm -v "${samples}:/data:ro" $VeraPdfImage --flavour $flavour --format mrr @pdfs) -join "`n")
+    foreach ($job in $report.report.jobs.job) {
+        $name = Split-Path -Leaf $job.item.name
+        $validation = $job.validationReport
+        $verdict = if ($validation.isCompliant -eq 'true') { 'PASS' } else { 'FAIL' }
+        Write-Host ("   {0} {1,-28} {2,-3} rules passed {3}, failed {4}, checks passed {5}, failed {6}" -f $verdict, $name, $flavour,
+            $validation.details.passedRules, $validation.details.failedRules, $validation.details.passedChecks, $validation.details.failedChecks)
+        foreach ($rule in @($validation.details.rule) | Where-Object { $_ -and $_.status -eq 'failed' }) {
+            Write-Host ("      {0}-{1} ({2} checks): {3}" -f $rule.clause, $rule.testNumber, $rule.failedChecks, $rule.description)
+        }
+        if ($verdict -eq 'FAIL') { $failed += "$name $flavour" }
+    }
+}
+if ($failed.Count -gt 0) { throw "veraPDF: not compliant: $($failed -join ', ')" }
+
+$extract = @'
+set -e
+apk add -q --no-cache qpdf >/dev/null
+for f in /work/timesheet-*.pdf; do
+  name=$(basename "$f" .pdf)
+  qpdf --show-attachment=timesheet.xml "$f" > "/tmp/$name.xml"
+  if cmp -s "/tmp/$name.xml" "/work/$name.attachment.timesheet.xml"; then echo "   attachment $name: byte-identical ($(wc -c < "/tmp/$name.xml") bytes)"; else echo "   attachment $name: DIFFERS"; exit 1; fi
+done
+'@
+docker run --rm -v "${samples}:/work:ro" alpine:latest sh -c $extract
+if ($LASTEXITCODE -ne 0) { throw 'attachment round trip failed' }
+
 if (Test-Path $PocPdfs) {
-    Write-Host "== 5. side by side with the PoC's Typst output ($PocPdfs)"
+    Write-Host "== 6. side by side with the PoC's Typst output ($PocPdfs)"
     $compose = @'
 set -e
 apk add -q --no-cache poppler-utils py3-pillow >/dev/null
@@ -117,7 +156,7 @@ PY
     if ($LASTEXITCODE -ne 0) { throw 'side-by-side rendering failed' }
 }
 else {
-    Write-Host "== 5. skipped: no PoC PDFs at $PocPdfs"
+    Write-Host "== 6. skipped: no PoC PDFs at $PocPdfs"
 }
 
 Write-Host "Done. PDFs, text and PNGs are in $samples"
