@@ -1,0 +1,29 @@
+<Project>
+  <!--
+    Prints the release tag name of every package and fails when two packages share a name.
+
+      dotnet msbuild eng/release-tags.proj -nologo
+
+    A release tag is <tag name>/<version>, e.g. functional-core/0.1.0-preview.4. The tag name is derived
+    from the package id by the GetReleaseTag target in Directory.Build.targets; a project can override it
+    with <ReleaseTagName>.
+  -->
+  <ItemGroup>
+    <_Library Include="$(MSBuildThisFileDirectory)../libs/*/Ave.Extensions.*/Ave.Extensions.*.csproj" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MSBuild Projects="@(_Library)" Targets="GetReleaseTag">
+      <Output TaskParameter="TargetOutputs" ItemName="_ReleaseTag" />
+    </MSBuild>
+
+    <RemoveDuplicates Inputs="@(_ReleaseTag)">
+      <Output TaskParameter="HadAnyDuplicates" PropertyName="_HasDuplicateTags" />
+    </RemoveDuplicates>
+
+    <Message Importance="high" Text="%(_ReleaseTag.Identity) -> %(_ReleaseTag.PackageId)" />
+    <Message Importance="high" Text="@(_ReleaseTag->Count()) packages" />
+    <Error Condition="'$(_HasDuplicateTags)' == 'true'"
+           Text="Two packages share a release tag name. Set a unique ReleaseTagName in one of them." />
+  </Target>
+</Project>

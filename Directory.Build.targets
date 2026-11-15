@@ -27,4 +27,23 @@
     <_AveRepoPackageNotReferenced Remove="@(_AveRepoPackageNotReferenced)" />
     <_AveRepoPackageReferenced Remove="@(_AveRepoPackageReferenced)" />
   </ItemGroup>
+
+  <!--
+    Release tag name of a package: <tag name>/<version>, e.g. functional-core/0.1.0-preview.4.
+    Rule: the package id without "Ave.Extensions.", lower case, words split by hyphens
+    (Ave.Extensions.ErrorPaths.AspNetCore -> error-paths-asp-net-core).
+    A project can override it with <ReleaseTagName>. eng/release-tags.proj prints the table and checks
+    that every name is unique.
+  -->
+  <Target Name="GetReleaseTag" Returns="@(_AveReleaseTag)" Condition="'$(IsPackable)' == 'true'">
+    <PropertyGroup>
+      <_AveReleaseTagBase>$(PackageId)</_AveReleaseTagBase>
+      <_AveReleaseTagBase Condition="$(_AveReleaseTagBase.StartsWith('Ave.Extensions.'))">$(_AveReleaseTagBase.Substring(15))</_AveReleaseTagBase>
+      <_AveReleaseTagName>$(ReleaseTagName)</_AveReleaseTagName>
+      <_AveReleaseTagName Condition="'$(_AveReleaseTagName)' == ''">$([System.Text.RegularExpressions.Regex]::Replace($(_AveReleaseTagBase), '(?&lt;=[a-z0-9])(?=[A-Z])|(?&lt;=[A-Z])(?=[A-Z][a-z])', '-').Replace('.', '-').ToLowerInvariant())</_AveReleaseTagName>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AveReleaseTag Include="$(_AveReleaseTagName)" PackageId="$(PackageId)" ProjectPath="$(MSBuildProjectFullPath)" />
+    </ItemGroup>
+  </Target>
 </Project>
