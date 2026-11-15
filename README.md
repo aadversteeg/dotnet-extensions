@@ -42,6 +42,10 @@ In that mode every test project also runs test `NS20-001`, which fails unless ev
 the test assembly loads is the `netstandard2.0` build. `UnitTests.Extensions.ErrorPaths.AspNetCore` is left as
 it is, because its library has no `netstandard2.0` build. The switch lives in `Directory.Build.targets`.
 
+Delete the `bin` and `obj` folders before you switch between the two modes in the same working tree. The two
+builds of a library can have the same file size and time stamp, and then the build does not copy the new one: the
+test project keeps the library file of the other mode, and `NS20-001` fails.
+
 After a Release build, this check reads the assembly references of every `netstandard2.0` build and fails when
 one references an assembly, or a version of it, that the package's declared dependencies do not give a consumer:
 
