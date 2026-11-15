@@ -53,7 +53,9 @@ internal sealed record PngHeader(int Width, int Height, int BitDepth, PngColorTy
     /// <list type="bullet">
     /// <item>bit depth 8 for greyscale, truecolour and the alpha types; 1, 2, 4 or 8 for indexed colour;</item>
     /// <item>compression method 0 (zlib deflate, §10) and filter method 0 (§9) — the only ones defined;</item>
-    /// <item>interlace method 0: Adam7 interlacing (§8.2) is not decoded.</item>
+    /// <item>interlace method 0: Adam7 interlacing (§8.2) is not decoded;</item>
+    /// <item>at most <see cref="ImageLimits.MaxPixels"/> pixels, checked in 64-bit arithmetic before anything is
+    /// allocated, so every size computed from the header later fits.</item>
     /// </list>
     /// </summary>
     public static Result<PngHeader, Error> Parse(PngChunk chunk)
@@ -81,6 +83,11 @@ internal sealed record PngHeader(int Width, int Height, int BitDepth, PngColorTy
         if (data[10] != 0 || data[11] != 0)
         {
             return ImageErrors.Invalid<PngHeader>("compression method and filter method must be 0.", chunk.Offset);
+        }
+
+        if ((long)width * height > ImageLimits.MaxPixels)
+        {
+            return ImageErrors.TooLarge<PngHeader>(width, height);
         }
 
         var header = new PngHeader((int)width, (int)height, bitDepth, (PngColorType)colorType);

@@ -151,6 +151,10 @@ public static class DocumentErrorCodes
         /// example <c>PNG interlaced (Adam7)</c> or <c>JPEG arithmetic coding</c>), or a format that is neither PNG
         /// nor JPEG.</summary>
         public static readonly ErrorCode Unsupported = _ / "Unsupported";
+
+        /// <summary>An image with more pixels than the engine decodes (<c>ImageLimits.MaxPixels</c>, 2^26). Metadata:
+        /// Value (width x height).</summary>
+        public static readonly ErrorCode TooLarge = _ / "TooLarge";
     }
 
     /// <summary>Errors from layout.</summary>

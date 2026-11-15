@@ -25,12 +25,6 @@ internal static class PngDecoder
     /// <summary>The PNG signature, §5.2: 137 80 78 71 13 10 26 10.</summary>
     private static readonly byte[] Signature = [137, 80, 78, 71, 13, 10, 26, 10];
 
-    /// <summary>
-    /// The largest decoded image accepted, 512 MiB of filtered scanlines. A PNG header may announce 2^31 × 2^31
-    /// pixels; without a limit a few bytes of input could ask for terabytes of memory.
-    /// </summary>
-    private const long MaxDecodedBytes = 512L * 1024 * 1024;
-
     public static bool HasSignature(ReadOnlySpan<byte> file) => file.StartsWith(Signature);
 
     public static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file) =>
@@ -69,12 +63,9 @@ internal static class PngDecoder
             return ImageErrors.Invalid<byte[]>("there is no IDAT chunk.", chunks[^1].Offset);
         }
 
+        // The header holds at most ImageLimits.MaxPixels pixels of at most 4 bytes, so this is at most 256 MiB plus a
+        // filter byte per row (PngHeader.Parse).
         var expected = header.Height * (header.Stride + 1);
-        if (expected > MaxDecodedBytes)
-        {
-            return ImageErrors.Unsupported<byte[]>($"PNG of {header.Width}x{header.Height} pixels (more than {MaxDecodedBytes / (1024 * 1024)} MiB decoded)");
-        }
-
         var compressed = idat.SelectMany(chunk => chunk.Data.ToArray()).ToArray();
         var scanlines = new byte[expected];
         int read;

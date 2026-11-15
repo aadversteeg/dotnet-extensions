@@ -19,6 +19,9 @@ namespace Ave.Documents.Fonts.OpenType;
 /// And the parse has a work budget proportional to the table's size — the approach of HarfBuzz's sanitizer, which
 /// allows eight operations per byte: offsets that stay inside the table can still point at each other in ways
 /// that multiply the work, which no well-formed table needs.</para>
+/// <para>Offsets are added in 64-bit arithmetic wherever a 32-bit value takes part, so no sum can wrap around, and
+/// the parsed form of a table is never larger than the records the table holds: a record that takes no bytes (a
+/// value record with valueFormat 0) is not stored.</para>
 /// <para>The reader holds the state of ONE table parse; it is created for it and never shared.</para>
 /// </remarks>
 internal sealed class TableReader(ReadOnlyMemory<byte> table)
@@ -101,18 +104,20 @@ internal sealed class TableReader(ReadOnlyMemory<byte> table)
             return false;
         }
 
-        if (offset >= 0 && offset + length <= table.Length)
+        if (offset >= 0 && length >= 0 && (long)offset + length <= table.Length)
         {
             return true;
         }
 
-        FirstOutOfRange ??= (int)Math.Min(offset + length, int.MaxValue);
+        FirstOutOfRange ??= (int)Math.Clamp((long)offset + length, 0, int.MaxValue);
         return false;
     }
 
+    /// <summary>A read of <paramref name="size"/> bytes at <paramref name="offset"/>; the sum is taken in 64 bits, so an
+    /// offset near the end of the 32-bit range cannot wrap around into the table.</summary>
     private bool InRange(int offset, int size)
     {
-        if (offset >= 0 && offset + size <= table.Length && Spend(1))
+        if (offset >= 0 && (long)offset + size <= table.Length && Spend(1))
         {
             return true;
         }

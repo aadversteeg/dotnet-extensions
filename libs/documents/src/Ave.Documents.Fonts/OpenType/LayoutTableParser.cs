@@ -106,7 +106,12 @@ internal static class LayoutTableParser
         {
             var target = offset + (long)reader.UInt32(offset + 4);
             var innerType = reader.UInt16(offset + 2);
-            if (innerType == type || target > int.MaxValue)
+            if (!reader.Fits(0, target))
+            {
+                return new UnsupportedSubtable(tag, type, reader.UInt16(offset));
+            }
+
+            if (innerType == type)
             {
                 reader.Invalid($"extension subtable at {offset}");
                 return new UnsupportedSubtable(tag, type, reader.UInt16(offset));
@@ -212,18 +217,19 @@ internal static class LayoutTableParser
 
     /// <summary>Pair adjustment format 2: "coverageOffset, valueFormat1, valueFormat2, classDef1Offset,
     /// classDef2Offset, class1Count, class2Count, class1Records[class1Count]", each holding class2Count pairs of
-    /// value records.</summary>
+    /// value records. When both value formats are 0 the records take no bytes and adjust nothing, so none is stored
+    /// (the counts alone could otherwise ask for 65535 × 65535 records from a few bytes); otherwise every record lies
+    /// inside the table, so their number is bounded by its size.</summary>
     private static PairAdjustmentByClass PairByClassAt(TableReader reader, int offset)
     {
         var (format1, format2) = (reader.UInt16(offset + 4), reader.UInt16(offset + 6));
         var (class1Count, class2Count) = (reader.UInt16(offset + 12), reader.UInt16(offset + 14));
         var pairLength = ValueRecordLength(format1) + ValueRecordLength(format2);
-        if (!reader.Fits(offset + 16, (long)class1Count * class2Count * pairLength))
-        {
-            (class1Count, class2Count) = ((ushort)0, (ushort)0);
-        }
+        var records = pairLength == 0 || !reader.Fits(offset + 16, (long)class1Count * class2Count * pairLength)
+            ? 0
+            : class1Count * class2Count;
 
-        var values = Enumerable.Range(0, class1Count * class2Count).Select(index =>
+        var values = Enumerable.Range(0, records).Select(index =>
         {
             var record = offset + 16 + index * pairLength;
             return new PairValues(ValueRecordAt(reader, record, format1), ValueRecordAt(reader, record + ValueRecordLength(format1), format2));
@@ -233,8 +239,8 @@ internal static class LayoutTableParser
             ClassDefinition.Read(reader, offset + reader.UInt16(offset + 8)),
             ClassDefinition.Read(reader, offset + reader.UInt16(offset + 10)),
             [.. values],
-            class1Count,
-            class2Count,
+            records == 0 ? 0 : class1Count,
+            records == 0 ? 0 : class2Count,
             format2 != 0);
     }
 
