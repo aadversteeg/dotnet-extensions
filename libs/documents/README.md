@@ -13,35 +13,35 @@ Each layer is its own project and package and depends only on the layers above i
 dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.Architecture`.
 
 ```
- Ave.Documents.Fluent       code front-end: a document as an immutable value built from function calls
+ Ave.Documents.Fluent         code front-end: a document as an immutable value built from function calls
         │  translate (cascade + validation)
         ▼
- Ave.Documents.Model        document model: styled box tree with CSS semantics, computed values only
+ Ave.Documents.DocumentModel  document model: styled box tree with CSS semantics, computed values only
         │  lay out (pure algorithms + break tokens), paint
         ▼
- Ave.Documents.Layout       Flow and Inline algorithms, pagination driver, painter    ← uses Text
+ Ave.Documents.Layout         Flow and Inline algorithms, pagination driver, painter    ← uses Typesetting
         │
         ▼
- Ave.Documents.Page         page model: per page a display list (glyph runs, rectangles, structure markers)
+ Ave.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, structure markers)
         │  render
         ▼
- Ave.Documents.Render.Pdf   page model → PDF: composite fonts, ToUnicode, content streams  ← uses Pdf
+ Ave.Documents.Render.Pdf     page model → PDF: composite fonts, ToUnicode, content streams  ← uses Pdf
         │
         ▼
  PDF bytes
 
- Ave.Documents.Text         white-space collapsing, shaping (cmap + hmtx), greedy line breaking
- Ave.Documents.Pdf          PDF objects, content operators, file writer (knows nothing about layout)
- Ave.Documents.Fonts        TrueType reader: head, hhea, maxp, hmtx, cmap 4/12, OS/2, name, post, loca, glyf
- Ave.Documents.Core         lengths, geometry, colour, source locations, roles, error codes
+ Ave.Documents.Typesetting    white-space collapsing, shaping (cmap + hmtx), greedy line breaking
+ Ave.Documents.Pdf            PDF objects, content operators, file writer (knows nothing about layout)
+ Ave.Documents.Fonts          TrueType reader: head, hhea, maxp, hmtx, cmap 4/12, OS/2, name, post, loca, glyf
+ Ave.Documents.Core           lengths, geometry, colour, source locations, roles, error codes
 ```
 
 Where the contracts are:
 
 - Layout contract: `src/Ave.Documents.Layout/LayoutAlgorithm.cs` (the delegate and its rules),
   `ConstraintSpace.cs`, `BreakToken.cs`, `LayoutResult.cs`, `Fragment.cs`.
-- Document model: `src/Ave.Documents.Model/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `LayoutAlgorithmId.cs`.
-- Page model: `src/Ave.Documents.Page/PageDocument.cs`, `DrawItem.cs`.
+- Document model: `src/Ave.Documents.DocumentModel/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `LayoutAlgorithmId.cs`.
+- Page model: `src/Ave.Documents.PageModel/PageDocument.cs`, `DrawItem.cs`.
 - Error codes: `src/Ave.Documents.Core/DocumentErrorCodes.cs`.
 
 ## Writing a document
@@ -66,8 +66,9 @@ var pdf = letter.ToPdf(fonts, new PdfRenderOptions(CreationDate: someFixedDate))
 
 Every step returns `Result<T, Error>` (Ave.Extensions.Functional / ErrorPaths). Errors carry a path code such
 as `Documents.Font.GlyphMissing` or `Documents.Layout.DoesNotFit` and the file and line of the call that caused
-them. One naming trap: inside a namespace that starts with `Ave.Documents.`, the name `Text` means the namespace
-`Ave.Documents.Text`, so write documents in your own namespace (the samples use `Samples`).
+them. The layer namespaces (`Typesetting`, `DocumentModel`, `PageModel`, …) are named so that they never hide the
+front-end's functions (`Text`, `Paragraph`, …) or the page model's `Page`, so documents can be written in any
+namespace, including one under `Ave.Documents`.
 
 ## Build, test, run the samples
 

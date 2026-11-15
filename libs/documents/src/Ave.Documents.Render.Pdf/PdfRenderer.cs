@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
-using Ave.Documents.Page;
+using Ave.Documents.PageModel;
 using Ave.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -69,7 +69,7 @@ public static class PdfRenderer
     /// uses. MediaBox is the page size in points with the origin at the bottom-left.
     /// </summary>
     private static Result<ImmutableArray<IndirectObject>, Error> PageObjects(
-        PageContent page, ObjectPlan plan, int pageIndex, ImmutableArray<UsedFont> fonts, IReadOnlyDictionary<TrueTypeFont, UsedFont> fontsByFont)
+        Page page, ObjectPlan plan, int pageIndex, ImmutableArray<UsedFont> fonts, IReadOnlyDictionary<TrueTypeFont, UsedFont> fontsByFont)
     {
         var numbers = plan.Page(pageIndex);
         var usedHere = page.Items.OfType<GlyphRun>().Select(run => run.Font).ToHashSet();

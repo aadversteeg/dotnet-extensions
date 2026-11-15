@@ -1,6 +1,6 @@
-using Ave.Documents.Text;
+using Ave.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Text;
+namespace UnitTests.Ave.Documents.Typesetting;
 
 public class WhiteSpaceCollapsingTests
 {

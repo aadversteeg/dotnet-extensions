@@ -1,5 +1,5 @@
 using System.Linq;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 
 namespace Ave.Documents.Layout;
 

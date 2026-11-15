@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
-using Ave.Documents.Page;
+using Ave.Documents.PageModel;
 using Ave.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -20,10 +20,10 @@ internal static class PageContentStream
     /// <param name="page">The page.</param>
     /// <param name="fonts">The used fonts, to find each glyph run's resource name.</param>
     /// <returns>The stream data, or an error for a number that is not finite.</returns>
-    public static Result<ImmutableArray<byte>, Error> Build(PageContent page, IReadOnlyDictionary<TrueTypeFont, UsedFont> fonts) =>
+    public static Result<ImmutableArray<byte>, Error> Build(Page page, IReadOnlyDictionary<TrueTypeFont, UsedFont> fonts) =>
         ContentStream.Serialize(Operations(page, fonts));
 
-    private static IEnumerable<ContentOperation> Operations(PageContent page, IReadOnlyDictionary<TrueTypeFont, UsedFont> fonts)
+    private static IEnumerable<ContentOperation> Operations(Page page, IReadOnlyDictionary<TrueTypeFont, UsedFont> fonts)
     {
         foreach (var item in page.Items)
         {

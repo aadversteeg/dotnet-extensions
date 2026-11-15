@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
-using Ave.Documents.Model;
-using Ave.Documents.Page;
+using Ave.Documents.DocumentModel;
+using Ave.Documents.PageModel;
 
 namespace Ave.Documents.Layout;
 
@@ -20,7 +20,7 @@ public static class PagePainter
     public static PageDocument Paint(DocumentMetadata metadata, ImmutableArray<PageFragment> pages) =>
         new(new DocumentInfo(metadata.Title, metadata.Author), [.. pages.Select(PaintPage)]);
 
-    private static PageContent PaintPage(PageFragment page) =>
+    private static Page PaintPage(PageFragment page) =>
         new(page.PageSize, [.. Items(page.Root.Fragment, page.Root.Offset)]);
 
     /// <summary>

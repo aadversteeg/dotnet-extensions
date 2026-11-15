@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ave.Documents.Core;
 
-namespace Ave.Documents.Page;
+namespace Ave.Documents.PageModel;
 
 /// <summary>
 /// Writes a page document as stable, human-readable text: one line per draw item, grouped by page. Used for
@@ -35,7 +35,7 @@ public static class PageModelText
         return string.Join("\n", lines) + "\n";
     }
 
-    private static IEnumerable<string> PageLines(PageContent page, int number) =>
+    private static IEnumerable<string> PageLines(Page page, int number) =>
         [$"page {number} size={page.Size}", .. page.Items.Select(item => "  " + ItemLine(item))];
 
     private static string ItemLine(DrawItem item) => item switch

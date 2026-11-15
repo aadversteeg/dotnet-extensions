@@ -4,9 +4,7 @@ using Ave.Documents.Core;
 using Ave.Documents.Fluent;
 using static Ave.Documents.Fluent.Elements;
 
-// Not under the Ave.Documents namespace on purpose: inside it, the name Text would resolve to the namespace
-// Ave.Documents.Text before the imported Elements.Text function.
-namespace Samples;
+namespace Ave.Documents.Samples;
 
 /// <summary>
 /// The stage-0 sample documents, written through the code front-end. Components are plain methods that

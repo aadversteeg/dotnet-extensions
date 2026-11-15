@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using Ave.Documents.Core;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 
 namespace UnitTests.Ave.Documents.Layout;
 
@@ -26,7 +26,7 @@ internal static class Models
         int id, ImmutableArray<Node> children, BoxStyle? style = null, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0) =>
         new(new NodeId(id), SemanticRole.Generic, LayoutAlgorithmId.Flow, style ?? BoxStyle.Initial, children, new SourceLocation(file, line));
 
-    public static DocumentModel Document(params Node[] children) =>
+    public static StyledDocument Document(params Node[] children) =>
         new(new DocumentMetadata("Test", null), new PageStyle(200.Pt(), 100.Pt(), Edges.All(10.Pt())), Flow(0, [.. children]));
 
     /// <summary>A paragraph of n words "w1 w2 …" that each take a line of their own in a 20 pt wide box.</summary>

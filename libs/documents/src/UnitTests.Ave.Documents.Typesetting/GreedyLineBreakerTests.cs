@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
 using Ave.Documents.Fonts;
 using Ave.Documents.TestSupport;
-using Ave.Documents.Text;
+using Ave.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Text;
+namespace UnitTests.Ave.Documents.Typesetting;
 
 public class GreedyLineBreakerTests
 {

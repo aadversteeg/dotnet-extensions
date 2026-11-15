@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.Layout;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using Ave.Documents.TestSupport;
 using static UnitTests.Ave.Documents.Layout.Models;
 
@@ -9,7 +9,7 @@ namespace UnitTests.Ave.Documents.Layout;
 
 public class PaginationTests
 {
-    private static ImmutableArray<PageFragment> Paginate(DocumentModel document)
+    private static ImmutableArray<PageFragment> Paginate(StyledDocument document)
     {
         var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
@@ -119,9 +119,9 @@ public class PaginationTests
 
         var page = DocumentLayout.Run(model, TestFonts.Set).Value.Pages.Single();
 
-        var fill = page.Items.OfType<global::Ave.Documents.Page.FillRectangle>().Single();
+        var fill = page.Items.OfType<global::Ave.Documents.PageModel.FillRectangle>().Single();
         fill.Area.Should().Be(new Rect(new Point(10, 10), new Size(180, LineHeight)));
-        var run = page.Items.OfType<global::Ave.Documents.Page.GlyphRun>().Single();
+        var run = page.Items.OfType<global::Ave.Documents.PageModel.GlyphRun>().Single();
         run.Origin.X.Should().Be(10);
         run.Origin.Y.Should().BeApproximately(10 + Ascent, 1e-9);
         run.Glyphs.Select(glyph => glyph.X).Should().Equal(0, 1527 * 10 / 2000.0);
@@ -135,8 +135,8 @@ public class PaginationTests
 
         document.Pages.Should().HaveCount(2).And.AllSatisfy(page =>
         {
-            page.Items.OfType<global::Ave.Documents.Page.StructureStart>().Select(start => start.Node.Value).Should().Equal(0, 1);
-            page.Items.OfType<global::Ave.Documents.Page.StructureEnd>().Select(end => end.Node.Value).Should().Equal(1, 0);
+            page.Items.OfType<global::Ave.Documents.PageModel.StructureStart>().Select(start => start.Node.Value).Should().Equal(0, 1);
+            page.Items.OfType<global::Ave.Documents.PageModel.StructureEnd>().Select(end => end.Node.Value).Should().Equal(1, 0);
         });
     }
 

@@ -1,4 +1,4 @@
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 

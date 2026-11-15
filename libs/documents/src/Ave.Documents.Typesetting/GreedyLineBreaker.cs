@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
 
-namespace Ave.Documents.Text;
+namespace Ave.Documents.Typesetting;
 
 /// <summary>
 /// Breaks a paragraph into lines with the greedy ("first fit") method browsers use for CSS text: fill each

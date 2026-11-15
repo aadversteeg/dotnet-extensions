@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Page\Ave.Documents.Page.csproj" />
+    <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
     <!-- PdfPig reads our PDFs back in tests (independent, pure managed, Apache-2.0). Test-only. -->
     <PackageReference Include="PdfPig" />
   </ItemGroup>

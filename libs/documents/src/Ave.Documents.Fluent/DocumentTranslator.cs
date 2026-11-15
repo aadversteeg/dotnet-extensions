@@ -2,14 +2,14 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Fluent;
 
 /// <summary>
-/// Translates a code-front-end <see cref="Fluent.Document"/> into the engine's <see cref="DocumentModel"/>. This
+/// Translates a code-front-end <see cref="Fluent.Document"/> into the engine's <see cref="StyledDocument"/>. This
 /// is the front-end's cascade: specified values become computed values (CSS Cascade 4 §4), and every value is
 /// validated. The front-end contains no layout code.
 /// </summary>
@@ -23,7 +23,7 @@ public static class DocumentTranslator
     /// </summary>
     /// <param name="document">The document.</param>
     /// <returns>The document model, or the <see cref="DocumentErrorCodes.Input"/> errors.</returns>
-    public static Result<DocumentModel, Error> ToModel(Document document)
+    public static Result<StyledDocument, Error> ToModel(Document document)
     {
         var problems = InputChecks.Page(document.Page, document.Source)
             .Concat(InputChecks.Text(document.Format, document.Source))
@@ -38,7 +38,7 @@ public static class DocumentTranslator
         var root = Children(document.Body, new NodeId(1), rootStyle).OnSuccessMap(children =>
             new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
 
-        return WithProblems(problems, root).OnSuccessMap(box => new DocumentModel(
+        return WithProblems(problems, root).OnSuccessMap(box => new StyledDocument(
             new DocumentMetadata(document.Title, document.Author),
             new PageStyle(document.Page.Width, document.Page.Height, document.Page.Margins),
             box));

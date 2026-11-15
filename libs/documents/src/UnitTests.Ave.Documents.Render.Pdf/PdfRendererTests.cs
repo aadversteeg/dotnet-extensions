@@ -3,10 +3,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
-using Ave.Documents.Page;
+using Ave.Documents.PageModel;
 using Ave.Documents.Render.Pdf;
 using Ave.Documents.TestSupport;
-using Ave.Documents.Text;
+using Ave.Documents.Typesetting;
 
 namespace UnitTests.Ave.Documents.Render.Pdf;
 
@@ -32,13 +32,13 @@ public class PdfRendererTests
     private static PageDocument TwoPages() => new(
         new DocumentInfo("Test é", "Tester"),
         [
-            new PageContent(new Size(300, 200),
+            new Page(new Size(300, 200),
             [
                 new FillRectangle(new Rect(new Point(20, 20), new Size(100, 30)), new Color(255, 0, 0)),
                 Run("Hello, world", TestFonts.Regular, 12, new Point(20, 40)),
                 Run("Bold €", TestFonts.Bold, 14, new Point(20, 80)),
             ]),
-            new PageContent(new Size(300, 200), [Run("Page two", TestFonts.Regular, 10, new Point(30, 30))]),
+            new Page(new Size(300, 200), [Run("Page two", TestFonts.Regular, 10, new Point(30, 30))]),
         ]);
 
     private static string Latin1(ImmutableArray<byte> pdf) => Encoding.Latin1.GetString(pdf.AsSpan());
@@ -114,7 +114,7 @@ public class PdfRendererTests
     public void A_font_whose_licence_forbids_embedding_is_an_error()
     {
         var restricted = FontParser.Parse(WithFsType(TestFonts.Bytes("Lato-Regular.ttf"), 0x0002)).Value;
-        var model = new PageDocument(new DocumentInfo(null, null), [new PageContent(new Size(100, 100), [Run("x", restricted, 10, new Point(0, 50))])]);
+        var model = new PageDocument(new DocumentInfo(null, null), [new Page(new Size(100, 100), [Run("x", restricted, 10, new Point(0, 50))])]);
 
         var error = PdfRenderer.Render(model, Options).Error;
 
@@ -124,7 +124,7 @@ public class PdfRendererTests
 
     [Fact]
     public void An_empty_page_is_still_a_valid_page() =>
-        PdfReadBack.Letters(PdfRenderer.Render(new PageDocument(new DocumentInfo(null, null), [new PageContent(new Size(100, 100), [])]), Options).Value)
+        PdfReadBack.Letters(PdfRenderer.Render(new PageDocument(new DocumentInfo(null, null), [new Page(new Size(100, 100), [])]), Options).Value)
             .Should().ContainSingle().Which.Should().BeEmpty();
 
     /// <summary>A copy of a font file with another OS/2 fsType (offset 8 in the table).</summary>

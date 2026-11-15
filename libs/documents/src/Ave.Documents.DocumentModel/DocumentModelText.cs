@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ave.Documents.Core;
 
-namespace Ave.Documents.Model;
+namespace Ave.Documents.DocumentModel;
 
 /// <summary>
 /// Writes a document model as stable, human-readable text: one line per node, children indented by two spaces.
@@ -23,7 +23,7 @@ public static class DocumentModelText
     /// <summary>Writes the document.</summary>
     /// <param name="document">The document.</param>
     /// <returns>The text, lines separated by <c>\n</c>, ending with a line feed.</returns>
-    public static string Write(DocumentModel document)
+    public static string Write(StyledDocument document)
     {
         IEnumerable<string> lines =
         [

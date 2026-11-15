@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 
-namespace Ave.Documents.Page;
+namespace Ave.Documents.PageModel;
 
 /// <summary>
 /// One entry of a page's display list. Coordinates are page coordinates in points: origin top-left, y down.

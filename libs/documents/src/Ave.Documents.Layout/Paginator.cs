@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using Ave.Documents.Core;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -25,7 +25,7 @@ public static class Paginator
     /// <exception cref="InvalidOperationException">An algorithm broke the layout contract: it reported NoRoom at
     /// the start of a page, or returned the token it was given. Without this check pagination could loop
     /// forever.</exception>
-    public static Result<ImmutableArray<PageFragment>, Error> Paginate(LayoutEnvironment environment, DocumentModel document)
+    public static Result<ImmutableArray<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document)
     {
         var page = document.Page;
         if (!(page.AreaWidth.Points > 0 && page.AreaHeight.Points > 0))

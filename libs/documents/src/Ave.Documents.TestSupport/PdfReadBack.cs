@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Page;
+using Ave.Documents.PageModel;
 using UglyToad.PdfPig;
 
 namespace Ave.Documents.TestSupport;
@@ -55,7 +55,7 @@ public static class PdfReadBack
         return [.. model.Pages.SelectMany((page, index) => PageDifferences(page, pages[index], index + 1))];
     }
 
-    private static IEnumerable<string> PageDifferences(PageContent page, ImmutableArray<ReadLetter> letters, int number)
+    private static IEnumerable<string> PageDifferences(Page page, ImmutableArray<ReadLetter> letters, int number)
     {
         var expected = page.Items.OfType<GlyphRun>()
             .SelectMany(run => run.Glyphs.Select(glyph => new ReadLetter(

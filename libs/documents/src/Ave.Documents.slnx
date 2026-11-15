@@ -4,21 +4,21 @@
   <Project Path="Ave.Documents.Fluent/Ave.Documents.Fluent.csproj" />
   <Project Path="Ave.Documents.Fonts/Ave.Documents.Fonts.csproj" />
   <Project Path="Ave.Documents.Layout/Ave.Documents.Layout.csproj" />
-  <Project Path="Ave.Documents.Model/Ave.Documents.Model.csproj" />
-  <Project Path="Ave.Documents.Page/Ave.Documents.Page.csproj" />
+  <Project Path="Ave.Documents.DocumentModel/Ave.Documents.DocumentModel.csproj" />
+  <Project Path="Ave.Documents.PageModel/Ave.Documents.PageModel.csproj" />
   <Project Path="Ave.Documents.Pdf/Ave.Documents.Pdf.csproj" />
   <Project Path="Ave.Documents.Render.Pdf/Ave.Documents.Render.Pdf.csproj" />
   <Project Path="Ave.Documents.TestSupport/Ave.Documents.TestSupport.csproj" />
-  <Project Path="Ave.Documents.Text/Ave.Documents.Text.csproj" />
+  <Project Path="Ave.Documents.Typesetting/Ave.Documents.Typesetting.csproj" />
   <Project Path="UnitTests.Ave.Documents.Architecture/UnitTests.Ave.Documents.Architecture.csproj" />
   <Project Path="UnitTests.Ave.Documents.Core/UnitTests.Ave.Documents.Core.csproj" />
   <Project Path="UnitTests.Ave.Documents.Fluent/UnitTests.Ave.Documents.Fluent.csproj" />
   <Project Path="UnitTests.Ave.Documents.Fonts/UnitTests.Ave.Documents.Fonts.csproj" />
   <Project Path="UnitTests.Ave.Documents.Layout/UnitTests.Ave.Documents.Layout.csproj" />
-  <Project Path="UnitTests.Ave.Documents.Model/UnitTests.Ave.Documents.Model.csproj" />
-  <Project Path="UnitTests.Ave.Documents.Page/UnitTests.Ave.Documents.Page.csproj" />
+  <Project Path="UnitTests.Ave.Documents.DocumentModel/UnitTests.Ave.Documents.DocumentModel.csproj" />
+  <Project Path="UnitTests.Ave.Documents.PageModel/UnitTests.Ave.Documents.PageModel.csproj" />
   <Project Path="UnitTests.Ave.Documents.Pdf/UnitTests.Ave.Documents.Pdf.csproj" />
   <Project Path="UnitTests.Ave.Documents.Render.Pdf/UnitTests.Ave.Documents.Render.Pdf.csproj" />
   <Project Path="UnitTests.Ave.Documents.Samples/UnitTests.Ave.Documents.Samples.csproj" />
-  <Project Path="UnitTests.Ave.Documents.Text/UnitTests.Ave.Documents.Text.csproj" />
+  <Project Path="UnitTests.Ave.Documents.Typesetting/UnitTests.Ave.Documents.Typesetting.csproj" />
 </Solution>

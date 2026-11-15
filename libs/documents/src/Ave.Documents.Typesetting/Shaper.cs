@@ -7,7 +7,7 @@ using Ave.Documents.Fonts;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Text;
+namespace Ave.Documents.Typesetting;
 
 /// <summary>
 /// Turns text into glyphs. Stage 0 shaping: one glyph per Unicode character, chosen through the font's 'cmap';

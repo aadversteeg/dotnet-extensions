@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace Ave.Documents.Text;
+namespace Ave.Documents.Typesetting;
 
 /// <summary>
 /// White-space processing for <c>white-space: normal</c>, the CSS initial value (CSS Text 3 §4.1.1, "Phase I:

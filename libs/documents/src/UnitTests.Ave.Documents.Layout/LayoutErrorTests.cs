@@ -1,6 +1,6 @@
 using Ave.Documents.Core;
 using Ave.Documents.Layout;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using Ave.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using static UnitTests.Ave.Documents.Layout.Models;
@@ -9,7 +9,7 @@ namespace UnitTests.Ave.Documents.Layout;
 
 public class LayoutErrorTests
 {
-    private static Error Fail(DocumentModel document)
+    private static Error Fail(StyledDocument document)
     {
         var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
         result.IsFailure.Should().BeTrue();

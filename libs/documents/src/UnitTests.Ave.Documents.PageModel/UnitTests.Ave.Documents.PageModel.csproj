@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Page\Ave.Documents.Page.csproj" />
+    <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
     <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
   </ItemGroup>
 

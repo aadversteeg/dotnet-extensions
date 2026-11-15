@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 

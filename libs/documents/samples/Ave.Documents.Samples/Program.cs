@@ -4,11 +4,11 @@ using System.Linq;
 using Ave.Documents.Fluent;
 using Ave.Documents.Fonts;
 using Ave.Documents.Layout;
-using Ave.Documents.Model;
-using Ave.Documents.Page;
+using Ave.Documents.DocumentModel;
+using Ave.Documents.PageModel;
 using Ave.Documents.Render.Pdf;
 using Ave.Extensions.Functional;
-using Samples;
+using Ave.Documents.Samples;
 
 // Writes the stage-0 samples to the folder given as the first argument (default: ./out), each as a PDF plus the
 // three text serialisations of its intermediate models: <name>.model.txt, <name>.fragments.txt, <name>.page.txt.

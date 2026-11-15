@@ -1,4 +1,4 @@
-namespace Ave.Documents.Model;
+namespace Ave.Documents.DocumentModel;
 
 /// <summary>
 /// Names the layout algorithm of a box. OPEN on purpose: a front-end may name an algorithm the engine does not

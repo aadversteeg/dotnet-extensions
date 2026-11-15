@@ -1,4 +1,4 @@
-namespace Ave.Documents.Model;
+namespace Ave.Documents.DocumentModel;
 
 /// <summary>
 /// A whole document as every front-end hands it to layout: metadata, the page style and one root box.
@@ -8,7 +8,7 @@ namespace Ave.Documents.Model;
 /// <param name="Metadata">Title and author.</param>
 /// <param name="Page">The size and margins of every page.</param>
 /// <param name="Root">The root box; laid out in the page area of each page.</param>
-public sealed record DocumentModel(DocumentMetadata Metadata, PageStyle Page, Box Root);
+public sealed record StyledDocument(DocumentMetadata Metadata, PageStyle Page, Box Root);
 
 /// <summary>Descriptive information about a document, carried into the PDF document information.</summary>
 /// <param name="Title">The title, or null.</param>

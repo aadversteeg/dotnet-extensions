@@ -1,6 +1,6 @@
 using Ave.Documents.Core;
 
-namespace Ave.Documents.Model;
+namespace Ave.Documents.DocumentModel;
 
 /// <summary>The computed box properties of a <see cref="Box"/> that stage 0 implements.</summary>
 /// <param name="Margin">Space outside the border edge (CSS Box Model 3 §4). Not negative in stage 0.</param>

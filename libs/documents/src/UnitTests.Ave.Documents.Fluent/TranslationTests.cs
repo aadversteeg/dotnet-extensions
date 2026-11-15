@@ -1,6 +1,6 @@
 using Ave.Documents.Core;
 using Ave.Documents.Fluent;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using static Ave.Documents.Fluent.Elements;
 
 namespace UnitTests.Ave.Documents.Fluent;
@@ -9,7 +9,7 @@ public class TranslationTests
 {
     private static readonly TextFormat Lato = new(FontFamily: "Lato");
 
-    private static DocumentModel Translate(Document document)
+    private static StyledDocument Translate(Document document)
     {
         var result = DocumentTranslator.ToModel(document);
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);

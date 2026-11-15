@@ -1,6 +1,6 @@
 using Ave.Documents.Fonts;
-using Ave.Documents.Model;
-using Ave.Documents.Page;
+using Ave.Documents.DocumentModel;
+using Ave.Documents.PageModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -13,13 +13,13 @@ public static class DocumentLayout
     /// <param name="document">The document.</param>
     /// <param name="fonts">The fonts its text may use.</param>
     /// <returns>The page document, or the layout error.</returns>
-    public static Result<PageDocument, Error> Run(DocumentModel document, FontSet fonts) =>
+    public static Result<PageDocument, Error> Run(StyledDocument document, FontSet fonts) =>
         Run(document, LayoutEnvironment.Create(fonts));
 
     /// <summary>Lays out a document with the given environment (for front-ends that add algorithms).</summary>
     /// <param name="document">The document.</param>
     /// <param name="environment">The fonts and algorithms.</param>
     /// <returns>The page document, or the layout error.</returns>
-    public static Result<PageDocument, Error> Run(DocumentModel document, LayoutEnvironment environment) =>
+    public static Result<PageDocument, Error> Run(StyledDocument document, LayoutEnvironment environment) =>
         Paginator.Paginate(environment, document).OnSuccessMap(pages => PagePainter.Paint(document.Metadata, pages));
 }

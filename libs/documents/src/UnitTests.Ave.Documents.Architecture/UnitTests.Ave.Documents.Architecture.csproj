@@ -4,7 +4,7 @@
        layers below it. References every library so that all of them are copied next to the tests. -->
   <ItemGroup>
     <ProjectReference Include="..\Ave.Documents.Fluent\Ave.Documents.Fluent.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Text\Ave.Documents.Text.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Typesetting\Ave.Documents.Typesetting.csproj" />
     <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
   </ItemGroup>
 

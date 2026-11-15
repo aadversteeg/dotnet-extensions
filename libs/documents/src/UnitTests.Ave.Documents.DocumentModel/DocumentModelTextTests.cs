@@ -1,14 +1,14 @@
 using Ave.Documents.Core;
-using Ave.Documents.Model;
+using Ave.Documents.DocumentModel;
 using Ave.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Model;
+namespace UnitTests.Ave.Documents.DocumentModel;
 
 public class DocumentModelTextTests
 {
     private static readonly SourceLocation Here = new("/src/Letter.cs", 10);
 
-    private static DocumentModel Sample()
+    private static StyledDocument Sample()
     {
         var text = new TextStyle("Lato", 11.Pt(), FontWeight.Regular, Color.Black);
         var heading = new Box(new NodeId(1), SemanticRole.Heading(1), LayoutAlgorithmId.Inline,
@@ -22,7 +22,7 @@ public class DocumentModelTextTests
                 Here with { Line = 13 })],
             Here with { Line = 12 });
         var root = new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [heading, note], Here);
-        return new DocumentModel(new DocumentMetadata("Letter", null), new PageStyle(210.Mm(), 297.Mm(), Edges.All(2.Cm())), root);
+        return new StyledDocument(new DocumentMetadata("Letter", null), new PageStyle(210.Mm(), 297.Mm(), Edges.All(2.Cm())), root);
     }
 
     [Fact]

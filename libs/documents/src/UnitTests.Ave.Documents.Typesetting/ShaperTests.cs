@@ -1,9 +1,9 @@
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
 using Ave.Documents.TestSupport;
-using Ave.Documents.Text;
+using Ave.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Text;
+namespace UnitTests.Ave.Documents.Typesetting;
 
 /// <summary>
 /// Glyph ids and advance widths from Lato Regular's cmap and hmtx (values read with fontTools 4.68.0):

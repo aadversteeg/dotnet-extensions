@@ -8,7 +8,7 @@
     <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
     <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
     <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Page\Ave.Documents.Page.csproj" />
+    <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
   </ItemGroup>
 
 </Project>

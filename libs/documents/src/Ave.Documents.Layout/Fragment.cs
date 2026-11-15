@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
 using Ave.Documents.Core;
 using Ave.Documents.Fonts;
-using Ave.Documents.Model;
-using Ave.Documents.Text;
+using Ave.Documents.DocumentModel;
+using Ave.Documents.Typesetting;
 
 namespace Ave.Documents.Layout;
 

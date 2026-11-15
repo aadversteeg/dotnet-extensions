@@ -1,11 +1,11 @@
 using System.Collections.Immutable;
 using Ave.Documents.Fluent;
 using Ave.Documents.Layout;
-using Ave.Documents.Model;
-using Ave.Documents.Page;
+using Ave.Documents.DocumentModel;
+using Ave.Documents.PageModel;
 using Ave.Documents.Render.Pdf;
 using Ave.Documents.TestSupport;
-using Samples;
+using Ave.Documents.Samples;
 
 namespace UnitTests.Ave.Documents.Samples;
 
@@ -17,7 +17,7 @@ public class SampleTests
 {
     private static readonly PdfRenderOptions Options = new(new DateTimeOffset(2026, 11, 15, 9, 22, 0, TimeSpan.FromHours(1)));
 
-    private sealed record Stages(DocumentModel Model, ImmutableArray<PageFragment> Fragments, PageDocument Pages, ImmutableArray<byte> Pdf);
+    private sealed record Stages(StyledDocument Model, ImmutableArray<PageFragment> Fragments, PageDocument Pages, ImmutableArray<byte> Pdf);
 
     private static Stages Run(Document document)
     {

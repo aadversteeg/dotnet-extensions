@@ -1,6 +1,6 @@
 using Ave.Documents.Core;
 
-namespace Ave.Documents.Model;
+namespace Ave.Documents.DocumentModel;
 
 /// <summary>The computed text properties of a <see cref="TextRun"/>.</summary>
 /// <param name="FontFamily">One family name (CSS Fonts 4 §2.1; a fallback list comes later).</param>

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Text\Ave.Documents.Text.csproj" />
+    <ProjectReference Include="..\Ave.Documents.DocumentModel\Ave.Documents.DocumentModel.csproj" />
     <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
   </ItemGroup>
 

@@ -1,6 +1,6 @@
 using Ave.Documents.Fonts;
 
-namespace Ave.Documents.Text;
+namespace Ave.Documents.Typesetting;
 
 /// <summary>
 /// One glyph produced by shaping: which glyph, how far it advances the pen, and which source text it shows.

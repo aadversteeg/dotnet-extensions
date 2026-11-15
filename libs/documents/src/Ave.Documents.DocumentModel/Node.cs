@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using Ave.Documents.Core;
 
-namespace Ave.Documents.Model;
+namespace Ave.Documents.DocumentModel;
 
 /// <summary>
 /// A node of the document tree: a <see cref="Box"/> or a <see cref="TextRun"/>. Every node has an id (its
