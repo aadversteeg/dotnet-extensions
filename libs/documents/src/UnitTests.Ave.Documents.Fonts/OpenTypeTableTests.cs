@@ -67,8 +67,8 @@ public class OpenTypeTableTests
     [Fact]
     public void A_kern_table_that_runs_out_of_its_work_budget_is_an_error()
     {
-        // The sub-review's probe P7: 65535 subtables announced, ONE real one whose length is 0, so every
-        // "next" subtable is the same one; the parse used to look only at reads past the end and accepted it.
+        // 65535 subtables announced and ONE real one whose length is 0, so every "next" subtable is the same one; the
+        // parse used to look only at reads past the end and accepted it.
         var table = new BigEndianBuilder()
             .UInt16(0).UInt16(65535)
             .UInt16(0).UInt16(0).UInt16(0x0001)

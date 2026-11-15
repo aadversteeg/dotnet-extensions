@@ -17,8 +17,8 @@ using Ave.Documents.Typesetting;
 namespace UnitTests.Ave.Documents.Render.Pdf;
 
 /// <summary>
-/// Values the back-end writes that only a reader of the file sees: no other test read them back, so the mutation run
-/// could change each of them without a test failing. Each test reads the value from the written file — with PdfPig,
+/// Values the back-end writes that only a reader of the file sees: no other test reads them back, so only these tests
+/// notice a change to them. Each test reads the value from the written file — with PdfPig,
 /// or from the file's own objects — and compares it with what the specification asks for.
 /// </summary>
 public class WrittenValueTests

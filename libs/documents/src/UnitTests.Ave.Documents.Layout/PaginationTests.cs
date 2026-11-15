@@ -164,7 +164,7 @@ public class PaginationTests
     [InlineData("")]
     public void A_forced_break_after_empty_content_in_a_box_that_follows_content_on_the_page_is_honoured(string empty)
     {
-        // The reviewer's probe B: [A, Block([" ", PageBreak, B])]. The forced break falls between two children of
+        // [A, Block([" ", PageBreak, B])]: The forced break falls between two children of
         // the block; nothing of the block is visible before it, but "A" is on the page, so the break is not at the
         // start of the page and must be taken (CSS Fragmentation 3 §3.1).
         var block = Flow(2, [Paragraph(3, empty), Paragraph(4, "B", BoxStyle.Initial with { BreakBefore = BreakBetween.Page })]);

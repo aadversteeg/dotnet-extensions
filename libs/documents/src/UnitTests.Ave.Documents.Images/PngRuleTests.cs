@@ -8,8 +8,7 @@ using Ave.Documents.Images.Png;
 namespace UnitTests.Ave.Documents.Images;
 
 /// <summary>
-/// PNG rules that the Pillow-made test files never reach: the mutation run changed each of them without a test
-/// failing. The files are built here, byte by byte, so each one hits exactly the case the rule is about.
+/// PNG rules that the Pillow-made test files never reach, so no test of those files would notice a change to them. The files are built here, byte by byte, so each one hits exactly the case the rule is about.
 /// </summary>
 public class PngRuleTests
 {

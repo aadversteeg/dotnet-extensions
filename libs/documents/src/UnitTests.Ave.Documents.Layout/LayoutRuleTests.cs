@@ -9,7 +9,7 @@ using static UnitTests.Ave.Documents.Layout.Models;
 namespace UnitTests.Ave.Documents.Layout;
 
 /// <summary>
-/// Rules that no other test pinned: the review's mutation run changed each of them without a test failing.
+/// Rules that no other test pins: each test changes exactly the value its rule is about.
 /// </summary>
 public class LayoutRuleTests
 {

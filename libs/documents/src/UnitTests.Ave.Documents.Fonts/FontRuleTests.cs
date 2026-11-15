@@ -9,8 +9,8 @@ namespace UnitTests.Ave.Documents.Fonts;
 
 /// <summary>
 /// Font rules that Lato never exercises — it has no 2×2 component transforms, no 'kern' table and only US English
-/// names — so the mutation run could change each of them without a test failing. The tables are built or patched
-/// here to hit exactly the case the rule is about.
+/// names — so no test of a real font would notice a change to them. The tables are built or patched here to hit
+/// exactly the case the rule is about.
 /// </summary>
 public class FontRuleTests
 {

@@ -134,7 +134,8 @@ public class TableParserTests
     [Fact]
     public void The_sub_review_s_8000_overlapping_format_4_segments_are_refused_quickly()
     {
-        // Probe P4: 8000 segments of 0x0000–0xFFFE (64 KB) took 4.4 s. Their endCodes do not increase ("The segments
+        // 8000 segments of 0x0000–0xFFFE (64 KB) made the parse slow, because every segment was expanded. Their
+        // endCodes do not increase ("The segments
         // are sorted in order of increasing endCode values"), so the table is malformed.
         const int Segments = 8000;
         var builder = new BigEndianBuilder().UInt16(4).UInt16(16 + Segments * 8).UInt16(0).UInt16(Segments * 2).UInt16(0).UInt16(0).UInt16(0);

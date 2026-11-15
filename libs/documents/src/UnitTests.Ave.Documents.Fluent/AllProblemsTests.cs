@@ -14,8 +14,8 @@ public class AllProblemsTests
     [Fact]
     public void Problems_in_the_body_the_header_and_the_footer_are_reported_together()
     {
-        // The reviewer's probe Q1: four bad font sizes, two reported; the header and footer ones were hidden until
-        // the body was clean.
+        // Four bad font sizes, in the body, the header, the footer and the first-page header: all four are reported, the
+        // ones in the page areas too, which used to wait until the body was clean.
         var line = CurrentLine() + 2;
         var page = PageSetup.A4.Margin(20.Pt())
             .Footer(Paragraph("footer").FontSize((-1).Pt()))

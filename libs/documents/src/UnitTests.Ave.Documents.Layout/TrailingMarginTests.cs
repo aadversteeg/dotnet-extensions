@@ -50,7 +50,7 @@ public class TrailingMarginTests
     [Fact]
     public void A_padded_box_whose_last_child_has_a_large_bottom_margin_moves_to_the_next_page()
     {
-        // The reviewer's probe L: five 12pt lines, then a block with 6pt padding around a paragraph with a 40pt bottom
+        // Five 12pt lines, then a block with 6pt padding around a paragraph with a 40pt bottom
         // margin. 165.6pt page area: the block would end at 72 + 6 + 14.4 + 40 + 6 = 138.4 — it fits; with seven lines
         // above it, at 100.8 + 66.4 = 167.2, it does not and must move whole.
         ValueList<Node> lines = [.. Enumerable.Range(1, 7).Select(i => (Node)Paragraph(i, $"filler {i}", size: 12))];
@@ -58,7 +58,7 @@ public class TrailingMarginTests
 
         var pages = Paginate(OnPage(165.6, [.. lines, block]));
 
-        EveryBoxEndsInsideThePageArea(pages, 165.6, "probe L");
+        EveryBoxEndsInsideThePageArea(pages, 165.6, "a padded block after seven lines");
         pages.Should().HaveCount(2);
         pages[1].Root.Fragment.Should().BeOfType<BoxFragment>().Which.Children.Should().ContainSingle()
             .Which.Fragment.Should().BeOfType<BoxFragment>().Which.Size.Height.Should().BeApproximately(6 + 14.4 + 40 + 6, Epsilon);
@@ -67,7 +67,7 @@ public class TrailingMarginTests
     [Fact]
     public void No_start_offset_lets_a_note_box_run_past_the_page_area()
     {
-        // The reviewer's probe P4: note boxes (4mm padding, two paragraphs with a 6pt bottom margin, 8pt between the
+        // Note boxes (4mm padding, two paragraphs with a 6pt bottom margin, 8pt between the
         // boxes) down a page, moved by an introduction whose bottom margin is 0 to 72pt in 0.5pt steps.
         const double Area = 760;
         var note = Padded(Length.FromMillimetres(4).Points);

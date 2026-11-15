@@ -7,8 +7,8 @@ using Ave.Documents.Typesetting.Shaping;
 namespace UnitTests.Ave.Documents.Typesetting;
 
 /// <summary>
-/// GPOS rules that Lato never exercises (its pair kerning only changes advances), so the mutation run could change
-/// them without a test failing. The lookups are built here.
+/// GPOS rules that Lato never exercises (its pair kerning only changes advances), so no test of a real font would
+/// notice a change to them. The lookups are built here.
 /// </summary>
 public class PositioningRuleTests
 {

@@ -116,7 +116,7 @@ public class GreedyLineBreakerTests
     [Fact]
     public void The_glyphs_of_one_character_are_never_split_over_two_lines()
     {
-        // The sub-review's probe T3: a one-to-many substitution gives the later glyphs of a character an empty text.
+        // A one-to-many substitution gives the later glyphs of a character an empty text.
         // "xä—y" may break before the em dash; the two glyphs of the decomposed ä must stay on one line.
         ValueList<ShapedGlyph> glyphs =
         [

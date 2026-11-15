@@ -9,7 +9,8 @@ namespace UnitTests.Ave.Documents.Images;
 
 /// <summary>
 /// The structure rules of the two formats, beyond their checksums: the PNG chunk order (PNG §5.6) and a JPEG frame
-/// followed by its scan (T.81 §B.2.1). The cases are the sub-review's probe I4 and its 15-byte JPEG.
+/// followed by its scan (T.81 §B.2.1): a PNG whose chunks are out of order, and a 15-byte JPEG of a frame header
+/// without a scan.
 /// </summary>
 public class ImageStructureTests
 {

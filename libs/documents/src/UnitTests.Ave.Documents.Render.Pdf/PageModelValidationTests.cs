@@ -15,7 +15,7 @@ namespace UnitTests.Ave.Documents.Render.Pdf;
 /// The PDF back-end is a public library: other producers than this engine's layout may hand it a page model. It
 /// validates what it is given — the page-model contract for every profile, and everything a profile requires — and
 /// answers bad input with an error value. It never throws for it, and never writes a file that claims a conformance
-/// level it does not meet. The cases are the ones sub-review B made by hand.
+/// level it does not meet. The page models are made by hand.
 /// </summary>
 public class PageModelValidationTests
 {
