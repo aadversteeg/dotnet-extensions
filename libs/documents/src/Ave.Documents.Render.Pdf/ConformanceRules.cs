@@ -52,7 +52,7 @@ internal static class ConformanceRules
             : document.Metadata.Attachments
                 .Where(attachment => attachment.Relationship is null)
                 .Select(attachment => new Error(
-                        PdfErrorCodes.Conformance.PdfA3.AttachmentWithoutRelationship,
+                        PdfRenderErrorCodes.Conformance.PdfA3.AttachmentWithoutRelationship,
                         $"{profile} needs the relationship of attachment '{attachment.FileName}' to the document (ISO 19005-3 §6.8) ({attachment.Source}).")
                     .With(ErrorMetadataKeys.Value, attachment.FileName)
                     .WithSource(attachment.Source));
@@ -79,19 +79,19 @@ internal static class ConformanceRules
 
         if (string.IsNullOrWhiteSpace(document.Metadata.Title))
         {
-            yield return Violation(PdfErrorCodes.Conformance.PdfUa1.MissingTitle, "PDF/UA-1 needs a document title (ISO 14289-1 §7.1)", documentSource);
+            yield return Violation(PdfRenderErrorCodes.Conformance.PdfUa1.MissingTitle, "PDF/UA-1 needs a document title (ISO 14289-1 §7.1)", documentSource);
         }
 
         // An empty language identifier means "unknown" (ISO 32000-1 §14.9.2.2), which PDF/UA does not accept either.
         if (string.IsNullOrWhiteSpace(document.Metadata.Language))
         {
-            yield return Violation(PdfErrorCodes.Conformance.PdfUa1.MissingLanguage, "PDF/UA-1 needs the document's language (ISO 14289-1 §7.2)", documentSource);
+            yield return Violation(PdfRenderErrorCodes.Conformance.PdfUa1.MissingLanguage, "PDF/UA-1 needs the document's language (ISO 14289-1 §7.2)", documentSource);
         }
 
         foreach (var figure in nodes.Where(start => start.Role is SemanticRole.FigureRole figureRole && string.IsNullOrWhiteSpace(figureRole.AlternativeText)))
         {
             yield return Violation(
-                    PdfErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText,
+                    PdfRenderErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText,
                     "PDF/UA-1 needs alternative text for every image that is not decorative: use .Alt(...) or .Decorative() (ISO 14289-1 §7.3)",
                     figure.Source)
                 .With(ErrorMetadataKeys.Node, figure.Node.ToString());
@@ -115,13 +115,13 @@ internal static class ConformanceRules
             var level = ((SemanticRole.HeadingRole)heading.Role).Level;
             if (previous == 0 && level != 1)
             {
-                yield return Violation(PdfErrorCodes.Conformance.PdfUa1.FirstHeadingNotH1, $"PDF/UA-1 needs the first heading to be level 1, not {level} (ISO 14289-1 §7.4.2)", heading.Source)
+                yield return Violation(PdfRenderErrorCodes.Conformance.PdfUa1.FirstHeadingNotH1, $"PDF/UA-1 needs the first heading to be level 1, not {level} (ISO 14289-1 §7.4.2)", heading.Source)
                     .With(ErrorMetadataKeys.Node, heading.Node.ToString())
                     .With(ErrorMetadataKeys.Value, level.ToString(CultureInfo.InvariantCulture));
             }
             else if (previous != 0 && level > previous + 1)
             {
-                yield return Violation(PdfErrorCodes.Conformance.PdfUa1.HeadingLevelSkipped, $"PDF/UA-1 does not allow a level-{level} heading right after a level-{previous} heading (ISO 14289-1 §7.4.2)", heading.Source)
+                yield return Violation(PdfRenderErrorCodes.Conformance.PdfUa1.HeadingLevelSkipped, $"PDF/UA-1 does not allow a level-{level} heading right after a level-{previous} heading (ISO 14289-1 §7.4.2)", heading.Source)
                     .With(ErrorMetadataKeys.Node, heading.Node.ToString())
                     .With(ErrorMetadataKeys.Value, $"{previous}->{level}");
             }

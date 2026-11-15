@@ -64,13 +64,13 @@ public class PageModelValidationTests
     [Theory]
     [MemberData(nameof(Profiles))]
     public void A_document_without_pages_is_an_error(string profile) =>
-        Refused(new PageDocument(Accessible, []), ProfileNamed(profile)).Code.Should().Be(PdfErrorCodes.Write.InvalidPageModel);
+        Refused(new PageDocument(Accessible, []), ProfileNamed(profile)).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
 
     [Theory]
     [MemberData(nameof(Profiles))]
     public void A_missing_item_is_an_error(string profile) =>
         Refused(new PageDocument(Accessible, [new Page(new Size(200, 100), [Run("x"), null!])]), ProfileNamed(profile)).Code
-            .Should().Be(PdfErrorCodes.Write.InvalidPageModel);
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
 
     [Theory]
     [MemberData(nameof(Profiles))]
@@ -80,14 +80,14 @@ public class PageModelValidationTests
 
         var error = Refused(new PageDocument(Accessible, [new Page(new Size(200, 100), [Start(0, SemanticRole.Document), run, End(0)])]), ProfileNamed(profile));
 
-        error.Code.Should().Be(PdfErrorCodes.Write.InvalidPageModel);
+        error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
         error.Message.Should().Contain("60000");
     }
 
     [Fact]
     public void A_cell_span_below_one_is_an_error() =>
         Refused(Tagged(Accessible, Start(1, SemanticRole.Table), Start(2, SemanticRole.TableRow), Start(3, SemanticRole.TableCell) with { Span = new CellSpan(-1, 1) }, Run("x"), End(3), End(2), End(1)), PdfProfile.PdfA3a)
-            .Code.Should().Be(PdfErrorCodes.Write.InvalidPageModel);
+            .Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
 
     [Theory]
     [MemberData(nameof(Profiles))]
@@ -97,7 +97,7 @@ public class PageModelValidationTests
         var metadata = Accessible with { Attachments = [attachment, attachment with { Content = [.. "<b/>"u8] }] };
 
         Refused(Tagged(metadata, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), ProfileNamed(profile)).Code
-            .Should().Be(PdfErrorCodes.Write.InvalidPageModel);
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
     }
 
     [Theory]
@@ -105,14 +105,14 @@ public class PageModelValidationTests
     [InlineData(0)]
     public void A_heading_level_outside_1_to_6_has_no_structure_type_and_is_refused_when_tagged(int level) =>
         Refused(Tagged(Accessible, Start(1, SemanticRole.Heading(level)), Run("x"), End(1)), PdfProfile.PdfA3a).Code
-            .Should().Be(PdfErrorCodes.Write.InvalidStructure);
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
 
     [Theory]
     [InlineData("")]
     [InlineData("  ")]
     public void PDF_UA_refuses_an_empty_language(string language) =>
         Refused(Tagged(Accessible with { Language = language }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), PdfProfile.PdfUa1).Code
-            .Should().Be(PdfErrorCodes.Conformance.PdfUa1.MissingLanguage);
+            .Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.MissingLanguage);
 
     [Theory]
     [InlineData("")]
@@ -122,7 +122,7 @@ public class PageModelValidationTests
         var image = new DrawImage(new Rect(new Point(10, 10), new Size(20, 20)), TestImages.Load("rgb8.png"));
 
         Refused(Tagged(Accessible, Start(1, SemanticRole.Figure(text)), image, End(1)), PdfProfile.PdfUa1).Code
-            .Should().Be(PdfErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText);
+            .Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.FigureWithoutAlternativeText);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class PageModelValidationTests
                 End(2), End(1)),
             PdfProfile.PdfUa1);
 
-        error.Code.Should().Be(PdfErrorCodes.Conformance.PdfUa1.IrregularTable);
+        error.Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable);
     }
 
     [Fact]

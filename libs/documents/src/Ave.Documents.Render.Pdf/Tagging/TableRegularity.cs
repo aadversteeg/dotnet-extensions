@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
-using Ave.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Documents.Render.Pdf.Tagging;
@@ -36,7 +35,7 @@ internal static class TableRegularity
             .Where(problem => problem.Kind is TableSlots.ProblemKind.SpanPastGroup or TableSlots.ProblemKind.Overlap)
             .Select(problem => (Row: rows[problem.Row], Cell: Children(tree, rows[problem.Row]).ElementAt(problem.Cell)))
             .Select(found => new Error(
-                    PdfErrorCodes.Conformance.PdfUa1.IrregularTable,
+                    PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable,
                     $"PDF/UA-1 needs a regular table grid; this cell's row span runs past its row group or overlaps another cell (ISO 14289-1 §7.2) ({found.Cell.Start.Source}).")
                 .With(ErrorMetadataKeys.Node, found.Cell.Start.Node.ToString())
                 .With(ErrorMetadataKeys.Value, found.Cell.Start.Span.ToString())
@@ -45,7 +44,7 @@ internal static class TableRegularity
         {
             var (row, filled) = (rows[index], grid.Slots[index].Count(slot => slot >= 0));
             return new Error(
-                    PdfErrorCodes.Conformance.PdfUa1.IrregularTable,
+                    PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable,
                     $"PDF/UA-1 needs every table row to fill all {grid.ColumnCount} columns; this row fills {filled} (ISO 14289-1 §7.2) ({row.Start.Source}).")
                 .With(ErrorMetadataKeys.Node, row.Start.Node.ToString())
                 .With(ErrorMetadataKeys.Value, $"{filled}/{grid.ColumnCount}")

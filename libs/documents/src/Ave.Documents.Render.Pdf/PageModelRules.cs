@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -91,5 +90,5 @@ internal static class PageModelRules
     private static string Number(int number) => number.ToString(CultureInfo.InvariantCulture);
 
     private static Error Invalid(string message, string value) =>
-        new Error(PdfErrorCodes.Write.InvalidPageModel, message).With(ErrorMetadataKeys.Value, value);
+        new Error(PdfRenderErrorCodes.Write.InvalidPageModel, message).With(ErrorMetadataKeys.Value, value);
 }

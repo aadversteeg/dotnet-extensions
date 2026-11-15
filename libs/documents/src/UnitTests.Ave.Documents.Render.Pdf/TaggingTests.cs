@@ -80,7 +80,7 @@ public class TaggingTests
     {
         var document = Document(Page(Run("loose", new Point(10, 50))));
 
-        PdfRenderer.Render(document, Tagged).Error.Code.Should().Be(PdfErrorCodes.Conformance.Tagged.UnmarkedContent);
+        PdfRenderer.Render(document, Tagged).Error.Code.Should().Be(PdfRenderErrorCodes.Conformance.Tagged.UnmarkedContent);
         PdfRenderer.Render(document, Tagged with { Profile = PdfProfile.Plain }).IsSuccess.Should().BeTrue();
     }
 
@@ -100,7 +100,7 @@ public class TaggingTests
         };
 
         PdfRenderer.Render(Document(Page(items)), Tagged with { Profile = PdfProfile.Plain }).Error.Code
-            .Should().Be(PdfErrorCodes.Write.InvalidStructure);
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class TaggingTests
 
         var error = PdfRenderer.Render(document, Tagged).Error;
 
-        error.Code.Should().Be(PdfErrorCodes.Write.InvalidStructure);
+        error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
         error.Metadata![ErrorMetadataKeys.Node].Should().Be("#1");
     }
 

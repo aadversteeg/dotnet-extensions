@@ -94,7 +94,7 @@ public class WrittenValueTests
         var document = OnePage(new DocumentMetadata(title, null) { Language = "en" },
             Start(0, SemanticRole.Document), Start(1, SemanticRole.Paragraph), Run("x", TestFonts.Regular, new Point(10, 50)), End(1), End(0));
 
-        PdfRenderer.Render(document, Plain with { Profile = PdfProfile.PdfUa1 }).Error.Code.Should().Be(PdfErrorCodes.Conformance.PdfUa1.MissingTitle);
+        PdfRenderer.Render(document, Plain with { Profile = PdfProfile.PdfUa1 }).Error.Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.MissingTitle);
     }
 
     [Fact]

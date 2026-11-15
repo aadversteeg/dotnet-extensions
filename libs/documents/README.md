@@ -70,7 +70,10 @@ Where the contracts are:
 - Page model: `src/Ave.Documents.PageModel/PageDocument.cs`, `DrawItem.cs` (with structure and artifact markers).
 - Conformance: `src/Ave.Documents.Pdf/PdfProfile.cs`, `src/Ave.Documents.Render.Pdf/ConformanceRules.cs`,
   `src/Ave.Documents.Render.Pdf/Tagging/`.
-- Error codes: `src/Ave.Documents.Core/DocumentErrorCodes.cs`.
+- Error codes: each library defines the codes it raises in its own `*ErrorCodes.cs` (`Core/DocumentErrorCodes.cs`
+  holds the root and the input codes every front-end shares; `Fonts`, `Images`, `Layout`, `Pdf` and `Render.Pdf`
+  have their own). `UnitTests.Ave.Documents.Architecture/ErrorCodeTests.cs` checks that no library raises another
+  library's codes.
 
 ## Writing a document
 

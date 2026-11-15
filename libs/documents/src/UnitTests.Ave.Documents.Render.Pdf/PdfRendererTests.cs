@@ -7,7 +7,6 @@ using Ave.Documents.PageModel;
 using Ave.Documents.Render.Pdf;
 using Ave.Documents.TestSupport;
 using Ave.Documents.Typesetting;
-using Ave.Documents.Pdf;
 
 namespace UnitTests.Ave.Documents.Render.Pdf;
 
@@ -122,7 +121,7 @@ public class PdfRendererTests
 
         var error = PdfRenderer.Render(model, Options).Error;
 
-        error.Code.Should().Be(PdfErrorCodes.Write.FontEmbeddingNotPermitted);
+        error.Code.Should().Be(PdfRenderErrorCodes.Write.FontEmbeddingNotPermitted);
         error.Metadata![ErrorMetadataKeys.FontName].Should().Be("Lato-Regular");
     }
 
