@@ -173,11 +173,12 @@ Each is documented next to its code as well.
   million, `Images/ImageLimits.cs`; `Documents.Image.TooLarge`), so a small file cannot claim a huge decoded size.
 - **Input size:** elements nest at most 64 deep (`Fluent/InputLimits.cs`; `Documents.Input.Invalid.TooDeep`), which
   keeps every recursive step of the engine far from the stack limit.
-- **Table breaks:** when a table breaks inside a row, the grid line at the break is split in two halves, the upper
-  half ending the page and the lower half starting the next (as Chromium 159 draws it); a row that breaks must leave
-  content for the next page.
+- **Table breaks:** at a break between two rows, the grid line there — resolved once, from both rows — is split in
+  two halves, the upper half ending the page and the lower half starting the next (as Chromium 159 draws it); a row
+  that breaks inside itself must leave content for the next page.
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
-  text per glyph in a ToUnicode map (the first use wins).
+  text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
+  replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
   language, no Span, Link, List, Caption, Note, Formula, TOC or bookmarks; no ActualText; empty structure elements are

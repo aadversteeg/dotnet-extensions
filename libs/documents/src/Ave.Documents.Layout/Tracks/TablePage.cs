@@ -140,13 +140,14 @@ internal static class TablePage
 
         // The top line lies inside the table's border box, so its centre — the top of the first row — is half its width
         // down. A page that continues after a break between rows starts with the lower half of the line at the break,
-        // so its first row starts at the top (see remarks).
+        // so its first row starts at the top (see remarks). That line is the one between the last row of the previous
+        // page and this page's first row, resolved with both rows exactly as the upper half was: the two halves are
+        // halves of one line, and a row group's own top border takes part only above the group's first row.
         var continuesAfterBreak = !isFirst && !includeHeader && !resume.RowIsSplit;
-        var top = continuesAfterBreak ? 0 : table.HorizontalWidth(null, firstRow, topContext) / 2;
-        var content = Empty(top) with
-        {
-            Lines = [new LineAt(null, firstRow, topContext, top, continuesAfterBreak ? LinePart.LowerHalf : LinePart.Whole)],
-        };
+        var firstLine = continuesAfterBreak
+            ? new LineAt(firstRow - 1, firstRow, new CollapsedBorders.LineContext(false, false, resumeCut), 0, LinePart.LowerHalf)
+            : new LineAt(null, firstRow, topContext, table.HorizontalWidth(null, firstRow, topContext) / 2);
+        var content = Empty(firstLine.Y) with { Lines = [firstLine] };
         if (includeHeader)
         {
             var header = PlaceHeader(table, content, nextBody, resumeContext, height, isRepeated: !isFirst);

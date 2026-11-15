@@ -114,4 +114,41 @@ public class TableBreakLineTests
         var firstRowTop = (Func<BoxFragment, double>)(table => Boxes(table, new Point(0, 0), SemanticRole.TableRow).First().At.Y);
         (firstRowTop(tables[0]) - firstRowTop(tables[1])).Should().BeApproximately(Line / 2, Epsilon);
     }
+
+    /// <summary>
+    /// Rows with different borders at the break: every cell has a 1pt grey border, every row a 6pt black bottom border,
+    /// and the body group a 4pt red top border. Between two rows the resolved line is the 6pt black one (§17.6.2.1:
+    /// the widest wins). The two halves at a break are halves of that same line: page 1 ends with 3pt black, and page 2
+    /// starts with 3pt black, not with the grey or red border the first row on page 2 would have at the table's top.
+    /// The group's top border belongs to the group's first row only.
+    /// </summary>
+    [Fact]
+    public void The_two_halves_at_a_break_are_halves_of_the_same_resolved_line()
+    {
+        var t = new TableModels();
+        var grey = new BorderSide(1.Pt(), new Color(0x80, 0x80, 0x80));
+        var black = new BorderSide(6.Pt(), Color.Black);
+        var red = new BorderSide(4.Pt(), new Color(0xFF, 0, 0));
+        var cell = BoxStyle.Initial with { Border = Border.All(grey) };
+        var row = BoxStyle.Initial with { Border = Border.All(BorderSide.None) with { Bottom = black } };
+        Box Cell(string text) => new(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, cell,
+            [new Box(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(t.Next(), text, Models.Text(12), Models.At(0))], Models.At(0))],
+            Models.At(0));
+        var body = t.Body(BoxStyle.Initial with { Border = Border.All(BorderSide.None) with { Top = red } }, [.. Enumerable.Range(0, 20).Select(i => t.Row(row, Cell($"row{i:00}"), Cell("value")))]);
+        var document = TableModels.Page(280, 150, t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], body));
+
+        var pages = Paginate(document);
+
+        pages.Count.Should().BeGreaterThan(1);
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        var pageEnd = (RuleFragment)Wide(tables[0]).MaxBy(child => child.Offset.Y)!.Fragment;
+        pageEnd.Color.Should().Be(Color.Black);
+        pageEnd.Size.Height.Should().BeApproximately(3, Epsilon);
+        var pageStart = (RuleFragment)Wide(tables[1]).MinBy(child => child.Offset.Y)!.Fragment;
+        pageStart.Color.Should().Be(Color.Black, "the lower half of the same 6pt black line, not the group's red top border");
+        pageStart.Size.Height.Should().BeApproximately(3, Epsilon);
+        var first = (RuleFragment)Wide(tables[0]).MinBy(child => child.Offset.Y)!.Fragment;
+        first.Color.Should().Be(new Color(0xFF, 0, 0), "on page 1 the group's top border is the table's first line");
+    }
 }
