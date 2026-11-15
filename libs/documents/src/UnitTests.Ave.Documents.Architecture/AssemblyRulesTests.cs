@@ -18,13 +18,14 @@ public class AssemblyRulesTests
     {
         ["Ave.Documents.Core"] = [],
         ["Ave.Documents.Fonts"] = ["Core"],
+        ["Ave.Documents.Images"] = ["Core"],
         ["Ave.Documents.Pdf"] = ["Core"],
         ["Ave.Documents.Typesetting"] = ["Core", "Fonts"],
-        ["Ave.Documents.DocumentModel"] = ["Core"],
-        ["Ave.Documents.PageModel"] = ["Core", "Fonts"],
-        ["Ave.Documents.Layout"] = ["Core", "Fonts", "Typesetting", "DocumentModel", "PageModel"],
-        ["Ave.Documents.Render.Pdf"] = ["Core", "Fonts", "Pdf", "PageModel"],
-        ["Ave.Documents.Fluent"] = ["Core", "Fonts", "DocumentModel", "PageModel", "Layout", "Render.Pdf"],
+        ["Ave.Documents.DocumentModel"] = ["Core", "Images"],
+        ["Ave.Documents.PageModel"] = ["Core", "Fonts", "Images"],
+        ["Ave.Documents.Layout"] = ["Core", "Fonts", "Images", "Typesetting", "DocumentModel", "PageModel"],
+        ["Ave.Documents.Render.Pdf"] = ["Core", "Fonts", "Images", "Pdf", "PageModel"],
+        ["Ave.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Layout", "Render.Pdf"],
     };
 
     public static TheoryData<string> Libraries => [.. AllowedReferences.Keys];

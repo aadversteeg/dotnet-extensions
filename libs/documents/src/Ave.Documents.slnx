@@ -3,6 +3,7 @@
   <Project Path="Ave.Documents.Core/Ave.Documents.Core.csproj" />
   <Project Path="Ave.Documents.Fluent/Ave.Documents.Fluent.csproj" />
   <Project Path="Ave.Documents.Fonts/Ave.Documents.Fonts.csproj" />
+  <Project Path="Ave.Documents.Images/Ave.Documents.Images.csproj" />
   <Project Path="Ave.Documents.Layout/Ave.Documents.Layout.csproj" />
   <Project Path="Ave.Documents.DocumentModel/Ave.Documents.DocumentModel.csproj" />
   <Project Path="Ave.Documents.PageModel/Ave.Documents.PageModel.csproj" />
@@ -14,6 +15,7 @@
   <Project Path="UnitTests.Ave.Documents.Core/UnitTests.Ave.Documents.Core.csproj" />
   <Project Path="UnitTests.Ave.Documents.Fluent/UnitTests.Ave.Documents.Fluent.csproj" />
   <Project Path="UnitTests.Ave.Documents.Fonts/UnitTests.Ave.Documents.Fonts.csproj" />
+  <Project Path="UnitTests.Ave.Documents.Images/UnitTests.Ave.Documents.Images.csproj" />
   <Project Path="UnitTests.Ave.Documents.Layout/UnitTests.Ave.Documents.Layout.csproj" />
   <Project Path="UnitTests.Ave.Documents.DocumentModel/UnitTests.Ave.Documents.DocumentModel.csproj" />
   <Project Path="UnitTests.Ave.Documents.PageModel/UnitTests.Ave.Documents.PageModel.csproj" />

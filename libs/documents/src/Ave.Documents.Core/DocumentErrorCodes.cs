@@ -63,6 +63,18 @@ public static class DocumentErrorCodes
             /// <summary>A property set on an element it does not apply to, for example box properties in the
             /// style of a text span. Metadata: Value, Property.</summary>
             public static readonly ErrorCode NotApplicable = _ / "NotApplicable";
+
+            /// <summary>Column definitions that are not valid: none at all, a fill weight that is not a positive
+            /// number, or a negative or non-finite fixed width. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Columns = _ / "Columns";
+
+            /// <summary>A table whose rows do not fit its columns: a cell span below 1, more cells than columns, a
+            /// row span past the end of its row group, header rows after body rows, or a row without cells.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Table = _ / "Table";
+
+            /// <summary>An image size that is not a positive finite length. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode ImageSize = _ / "ImageSize";
         }
 
         /// <summary>A value the input language allows but this version of the engine does not implement yet.</summary>
@@ -113,6 +125,22 @@ public static class DocumentErrorCodes
         public static readonly ErrorCode NotFound = _ / "NotFound";
     }
 
+    /// <summary>Errors about images (decoding the bytes a caller passed in).</summary>
+    public static class Image
+    {
+        /// <summary><c>Documents.Image</c>.</summary>
+        public static readonly ErrorCode _ = DocumentErrorCodes._ / "Image";
+
+        /// <summary>Bytes that are not a well-formed PNG or JPEG file: data ends early, a checksum or a value is
+        /// wrong. Metadata: Value, Offset.</summary>
+        public static readonly ErrorCode Invalid = _ / "Invalid";
+
+        /// <summary>A well-formed image in a variant this version does not decode, named in metadata Value (for
+        /// example <c>PNG interlaced (Adam7)</c> or <c>JPEG arithmetic coding</c>), or a format that is neither PNG
+        /// nor JPEG.</summary>
+        public static readonly ErrorCode Unsupported = _ / "Unsupported";
+    }
+
     /// <summary>Errors from layout.</summary>
     public static class Layout
     {
@@ -126,6 +154,15 @@ public static class DocumentErrorCodes
         /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.
         /// Metadata: Node, Value, SourceFile, SourceLine.</summary>
         public static readonly ErrorCode InvalidContent = _ / "InvalidContent";
+
+        /// <summary>Table columns whose fixed widths and minimum content widths together are wider than the
+        /// space the table has. Metadata: Node, Value (needed and available width), SourceFile, SourceLine.</summary>
+        public static readonly ErrorCode ColumnsDoNotFit = _ / "ColumnsDoNotFit";
+
+        /// <summary>Computed content (the page count) that does not settle: every layout pass gives a different
+        /// number of pages, up to the pass limit. Metadata: Node, Value (the page counts per pass), SourceFile,
+        /// SourceLine of the first page-count reference.</summary>
+        public static readonly ErrorCode NotConverging = _ / "NotConverging";
     }
 
     /// <summary>Errors from the PDF layer.</summary>
