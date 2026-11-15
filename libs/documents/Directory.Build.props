@@ -20,7 +20,7 @@
     <Authors>Aad Versteeg</Authors>
     <Company>Versteeg IT Solutions</Company>
     <VersionPrefix>0.0.1</VersionPrefix>
-    <VersionSuffix>stage0</VersionSuffix>
+    <VersionSuffix>stage1</VersionSuffix>
 
     <!-- Root of the repository, used to find shared assets such as the test fonts. -->
     <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>

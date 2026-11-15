@@ -3,9 +3,11 @@
 A document engine in pure managed .NET 10: a document written in C# goes in, a PDF comes out. No native
 library, no P/Invoke and no external engine or tool at run time; tools appear only in tests.
 
-This is **stage 0** of milestone M1: one thin path through every layer, so that each contract exists and is
-tested before anything is widened. It lays out blocks and paragraphs of text over pages and writes a PDF with
-embedded fonts whose text can be selected, copied and searched.
+This is **stage 1** of milestone M1. Stage 0 laid one thin path through every layer; stage 1 adds text
+quality: Unicode line breaking (UAX #14), OpenType shaping (ligatures, kerning, mark positioning), font
+subsetting, text alignment and justification, CSS margin collapsing and box slicing at page breaks, and an
+order-free modifier API for the code front-end. It lays out blocks and paragraphs of text over pages and writes a
+PDF with subset fonts whose text can be selected, copied and searched.
 
 ## Layers
 
@@ -25,15 +27,15 @@ dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.
  Ave.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, structure markers)
         │  render
         ▼
- Ave.Documents.Render.Pdf     page model → PDF: composite fonts, ToUnicode, content streams  ← uses Pdf
+ Ave.Documents.Render.Pdf     page model → PDF: subset composite fonts, ToUnicode, content streams  ← uses Pdf
         │
         ▼
  PDF bytes
 
- Ave.Documents.Typesetting    white-space collapsing, shaping (cmap + hmtx), greedy line breaking
+ Ave.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping, justification
  Ave.Documents.Pdf            PDF objects, content operators, file writer (knows nothing about layout)
- Ave.Documents.Fonts          TrueType reader: head, hhea, maxp, hmtx, cmap 4/12, OS/2, name, post, loca, glyf
- Ave.Documents.Core           lengths, geometry, colour, source locations, roles, error codes
+ Ave.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
+ Ave.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, error codes
 ```
 
 Where the contracts are:
@@ -89,21 +91,30 @@ The samples app writes `sample-a-letter.pdf` (two pages) and `sample-b-long.pdf`
 
 `pwsh -NoProfile -File tools/verify-samples.ps1` publishes the samples, proves the publish folder contains only
 IL-only managed assemblies, runs them, and checks the PDFs with independent tools in Docker: `qpdf --check`,
-`pdftotext`, and PNG renderings by poppler and MuPDF in `out/samples/png`.
+`pdftotext`, `pdffonts`, every embedded subset font opened with fontTools, and PNG renderings by poppler and
+MuPDF in `out/samples/png`.
 
 Golden files live in `Golden/` folders next to the tests. After a deliberate change, run the tests with
 `UPDATE_GOLDEN=1`, review the diff, and commit it.
 
-## Stage-0 scope and known differences from CSS
+Two reference gates run with the tests. Line breaking runs the official `LineBreakTest.txt` of Unicode 18.0.0
+(`assets/unicode/`). Shaping is compared with HarfBuzz, which runs as WebAssembly inside the test process
+(`src/UnitTests.Ave.Documents.Typesetting/Reference/`); no library references it. The Unicode property table
+in `src/Ave.Documents.Typesetting/Unicode/` is generated from the committed data files; after updating them,
+run the tests with `UPDATE_GENERATED=1`.
 
-In: blocks (margin, padding, background), paragraphs of runs (family, size, weight, colour), headings,
-explicit page breaks, greedy line breaking at spaces, pagination with break tokens, whole-font embedding,
-deterministic output.
+## Stage-1 scope and known limits
 
-Not yet, on purpose: margin collapsing (margins add up), negative margins (reported as unsupported),
-orphans/widows, the line-height strut, kerning and ligatures, Unicode line breaking (UAX #14), font
-subsetting, tagged PDF and PDF/A, tables, images, headers and footers. Each place where stage 0 deviates
-from the specification says so in a comment next to the code.
+In: blocks (margin, padding, background), paragraphs of runs (family, size, weight, colour, alignment),
+headings, explicit page breaks, CSS margin collapsing (CSS 2.1 §8.3.1), margin truncation and box slicing at
+page breaks (CSS Fragmentation 3 §5.2–§5.4), Unicode line breaking (UAX #14, Unicode 18.0.0), OpenType shaping
+for Latin, Greek and Cyrillic (GSUB ccmp/liga/clig, GPOS kern/mark, the legacy kern table), text-align and
+inter-word justification, TrueType subsetting, deterministic output.
+
+Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows,
+the line-height strut, Unicode normalization before shaping, contextual and other OpenType lookup types
+(skipped), language-specific OpenType systems, complex scripts, bidi, hyphenation, CFF fonts, tagged PDF and
+PDF/A, tables, images, headers and footers.
 
 ## Conventions
 
