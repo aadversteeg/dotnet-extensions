@@ -1,0 +1,12 @@
+div 300.000 29.484 w1
+table 300.000 29.484 t1
+td 94.852 28.734 alpha beta gamma delta e
+td 35.590 28.734 one two
+td 168.809 28.734 a much longer piece of t
+div 399.996 17.484 w2
+table 236.297 17.484 t2
+td 99.996 16.734 fixed
+td 31.547 16.734 short
+td 104.004 16.734 somewhat longer text
+div 300.000 12.000 w3
+div 300.000 12.000 w4

@@ -1,0 +1,2 @@
+chromium 159.0.8154.6
+pdftotext version 25.04.0

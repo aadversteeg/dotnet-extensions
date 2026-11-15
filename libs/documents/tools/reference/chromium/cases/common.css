@@ -1,0 +1,7 @@
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10pt; line-height: normal; font-kerning: normal; }
+table { border-collapse: collapse; border-spacing: 0; }
+td, th { border: 0.75pt solid #000; padding: 2pt 4pt; vertical-align: top; text-align: left; font-weight: 400; }
+p { margin: 0; }

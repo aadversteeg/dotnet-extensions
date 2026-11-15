@@ -6,9 +6,9 @@ using Ave.Documents.TestSupport;
 namespace UnitTests.Ave.Documents.Layout;
 
 /// <summary>
-/// The tracks algorithm against Chromium 157's own layout of the same tables (reference values measured once with
-/// Playwright and pinned here; the HTML, the print PDFs and the raw word positions are kept in
-/// <c>/d/tmp/docs-stage2-chromium/</c> on LAMORAK, see the stage-2 report). All cells: Lato 10 pt,
+/// The tracks algorithm against Chromium's own layout of the same tables. The HTML cases and the script that prints
+/// and measures them are in <c>tools/reference/chromium</c> (README there: how to run it, which case each test uses);
+/// measured with Chromium 157 and again with Chromium 159, same numbers. All cells: Lato 10 pt,
 /// <c>border-collapse: collapse; border: 0.75pt solid; padding: 2pt 4pt; vertical-align: top</c>. The border is
 /// 0.75pt because Chromium draws a 1pt border as one device pixel (0.75pt at 96 dpi) and lays out with that width.
 /// Chromium snaps positions to 1/64 px; widths agree within <see cref="Tolerance"/>, row positions exactly in rows per
