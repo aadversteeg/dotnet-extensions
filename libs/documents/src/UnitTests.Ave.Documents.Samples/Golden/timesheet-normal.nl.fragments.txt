@@ -35,7 +35,7 @@ page 1 size=595.276x841.89
               box #14 paragraph at (0, 19.6) size=269.291x13.2
                 line at (0, 0) size=269.291x13.2
                   text #15 Lato-Regular 11pt at (98.61, 0) size=170.681x13.2 ascent=10.857 "Periode: 2026-10-01 - 2026-10-31"
-    box #16 table at (0, 42.8) size=538.583x625.8
+    box #16 table at (0, 42.8) size=538.583x625.3
       box #17 table-head at (0.75, 0.5) size=537.083x16
         box #18 table-row at (0, 0) size=537.083x16
           box #19 table-header-cell at (0, 0) size=76.726x16
@@ -639,7 +639,7 @@ page 1 size=595.276x841.89
       rule at (0, 576.8) size=538.583x1 #d3d3d3
       rule at (0, 592.8) size=538.583x1 #d3d3d3
       rule at (0, 608.8) size=538.583x1 #d3d3d3
-      rule at (0, 624.8) size=538.583x1 #d3d3d3
+      rule at (0, 624.8) size=538.583x0.5 #d3d3d3
       rule at (0.25, 0.5) size=1x624.8 #d3d3d3
       rule at (76.976, 0.5) size=1x624.8 #d3d3d3
       rule at (169.047, 0.5) size=1x48 #d3d3d3

@@ -22,7 +22,7 @@ internal static class TableFragments
     {
         var content = outcome.Content;
         var lines = outcome.BottomLine is { } bottomLine ? content.Lines.Add(bottomLine) : content.Lines;
-        var bottom = content.Bottom + (outcome.BottomLine is { } line ? table.HorizontalWidth(line.Above, line.Below, line.Context) / 2 : 0);
+        var bottom = content.Bottom + (outcome.BottomLine is { Part: TablePage.LinePart.Whole } line ? table.HorizontalWidth(line.Above, line.Below, line.Context) / 2 : 0);
         ValueList<PlacedFragment> children =
         [
             .. Groups(table, content),
@@ -101,7 +101,8 @@ internal static class TableFragments
 
     /// <summary>
     /// The horizontal lines: per line, runs of columns with the same resolved border become one rectangle, centred on
-    /// the line and reaching half the width of the vertical lines at both ends so that the corners are filled.
+    /// the line (or, at a break between rows, its half on this page) and reaching half the width of the vertical lines
+    /// at both ends so that the corners are filled.
     /// </summary>
     private static IEnumerable<PlacedFragment> HorizontalRules(TableGeometry table, ImmutableList<TablePage.LineAt> lines)
     {
@@ -115,7 +116,13 @@ internal static class TableFragments
                 var left = table.LineX[first] - table.LineWidths[first] / 2;
                 var right = table.LineX[last + 1] + table.LineWidths[last + 1] / 2;
                 var width = side.Width.Points;
-                yield return new PlacedFragment(new Point(left, line.Y - width / 2), new RuleFragment(side.Color, new Size(right - left, width)));
+                var (top, height) = line.Part switch
+                {
+                    TablePage.LinePart.UpperHalf => (line.Y - width / 2, width / 2),
+                    TablePage.LinePart.LowerHalf => (line.Y, width / 2),
+                    _ => (line.Y - width / 2, width),
+                };
+                yield return new PlacedFragment(new Point(left, top), new RuleFragment(side.Color, new Size(right - left, height)));
             }
         }
     }

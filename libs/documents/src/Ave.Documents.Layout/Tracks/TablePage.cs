@@ -29,6 +29,14 @@ namespace Ave.Documents.Layout;
 /// a row group marked <c>break-inside: avoid</c> violates it, so does a break between two rows of a unit (it cuts a
 /// spanning cell) and a break at <c>break-before</c>/<c>break-after: avoid</c>. The page breaks at the latest
 /// breakpoint of the highest appeal (research §7), as in <see cref="FlowLayout"/>.</para>
+/// <para><b>The grid line at a break between rows</b> is split along its centre: its upper half ends this page's
+/// fragment and its lower half starts the next one. In the collapsing border model half of a line lies in the cells on
+/// each side of it (CSS 2.1 §17.6.2), and a box cut by a break gets no border at the cut (CSS Fragmentation 3 §5.4,
+/// <c>box-decoration-break: slice</c>), so each page keeps the half that belongs to its own rows — Chromium draws a
+/// broken table the same way. A row therefore fits when it fits down to the centre of the line below it; only the
+/// last row of the table also needs the half of the table's bottom border that lies inside the table. A break inside a
+/// row is a breakpoint only when it cuts content: a row whose cells all end on this page is never split into a full
+/// row and an empty one.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every
 /// later fragment. They never break. A break right after the header rows, with no body row on the page, is not a
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
@@ -56,7 +64,21 @@ internal static class TablePage
     /// <param name="Below">The row below it, or null at the bottom.</param>
     /// <param name="Context">Table edge and cut cells, for resolving the line.</param>
     /// <param name="Y">Its centre, from the table's top edge.</param>
-    public sealed record LineAt(int? Above, int? Below, CollapsedBorders.LineContext Context, double Y);
+    /// <param name="Part">Which part of the line this page draws: all of it, or one half at a break.</param>
+    public sealed record LineAt(int? Above, int? Below, CollapsedBorders.LineContext Context, double Y, LinePart Part = LinePart.Whole);
+
+    /// <summary>Which part of a grid line a page draws (see remarks: a line at a break between rows is split).</summary>
+    public enum LinePart
+    {
+        /// <summary>The whole line, centred on its position.</summary>
+        Whole,
+
+        /// <summary>The half above the centre: the line at the end of a page.</summary>
+        UpperHalf,
+
+        /// <summary>The half below the centre: the line at the start of the next page.</summary>
+        LowerHalf,
+    }
 
     /// <summary>What is on the page so far: an immutable snapshot, so that a breakpoint can keep it.</summary>
     /// <param name="Rows">The rows.</param>
@@ -150,9 +172,15 @@ internal static class TablePage
             return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, Empty(0))));
         }
 
-        // The top line lies inside the table's border box, so its centre — the top of the first row — is half its width down.
-        var top = table.HorizontalWidth(null, firstRow, topContext) / 2;
-        var content = Empty(top) with { Lines = [new LineAt(null, firstRow, topContext, top)] };
+        // The top line lies inside the table's border box, so its centre — the top of the first row — is half its width
+        // down. A page that continues after a break between rows starts with the lower half of the line at the break,
+        // so its first row starts at the top (see remarks).
+        var continuesAfterBreak = !isFirst && !includeHeader && !resume.RowIsSplit;
+        var top = continuesAfterBreak ? 0 : table.HorizontalWidth(null, firstRow, topContext) / 2;
+        var content = Empty(top) with
+        {
+            Lines = [new LineAt(null, firstRow, topContext, top, continuesAfterBreak ? LinePart.LowerHalf : LinePart.Whole)],
+        };
         if (includeHeader)
         {
             var header = PlaceHeader(table, content, nextBody, resumeContext, height, isRepeated: !isFirst);
@@ -225,8 +253,7 @@ internal static class TablePage
                     new Outcome(before, BottomLine(table, before.LastRow, next, before.Bottom), new TracksBreakToken(next, [], false), appeal)))));
             }
 
-            var lineBelow = table.HorizontalWidth(unit.LastRow, Next(grid, unit.LastRow), EdgeContext(grid, unit.LastRow)) / 2;
-            if (!Fitting.Fits(segment.Top + segment.Height + lineBelow, height))
+            if (!Fitting.Fits(segment.Top + segment.Height + InsideBelow(table, unit.LastRow), height))
             {
                 candidates.AddRange(InnerCandidates(table, content, segment, height));
                 return Best(candidates);
@@ -254,12 +281,12 @@ internal static class TablePage
         {
             var top = segment.RowTop(row);
             var cutRow = row;
-            if (row > segment.FirstRow && Fitting.Fits(top + table.HorizontalWidth(row - 1, row, CollapsedBorders.LineContext.Interior) / 2, height))
+            if (row > segment.FirstRow && Fitting.Fits(top, height))
             {
                 yield return new Candidate(2 * row, BreakAppeal.ViolatesAvoid, () => Cut(table, content, segment, cutRow, top, inside: false, BreakAppeal.ViolatesAvoid));
             }
 
-            if (!Fitting.Fits(top + segment.Heights[row - segment.FirstRow], height) || row == segment.LastRow)
+            if (!Fitting.Fits(top + segment.Heights[row - segment.FirstRow] + InsideBelow(table, row), height) || row == segment.LastRow)
             {
                 var appeal = InsideAppeal(grid, row);
                 yield return new Candidate(2 * row + 1, appeal, () => Cut(table, content, segment, cutRow, height, inside: true, appeal));
@@ -287,7 +314,7 @@ internal static class TablePage
     /// Takes a break inside a segment: the rows above <paramref name="cutRow"/> whole; the cells that reach past the
     /// cut laid out again in the height down to <paramref name="cutY"/> — the row's top for a break between rows, the
     /// page end for a break inside the row (that row then fills the page). None when a break inside the row would
-    /// place nothing of it.
+    /// place nothing of it, or leave nothing of it for the next page.
     /// </summary>
     private static Result<Maybe<Outcome>, Error> Cut(
         TableGeometry table, Content content, Segment segment, int cutRow, double cutY, bool inside, BreakAppeal appeal)
@@ -307,6 +334,7 @@ internal static class TablePage
         var cells = content.Cells;
         var continuing = ImmutableArray.CreateBuilder<CellBreak>();
         var placedInRow = false;
+        var leftForNextPage = false;
         foreach (var cell in segment.Cells)
         {
             var info = grid.Cells[cell.Cell];
@@ -330,11 +358,12 @@ internal static class TablePage
 
             var (fragment, next) = sliced.Value;
             placedInRow |= !cell.IsComplete && (next.IsComplete || next.Token != cell.Token);
+            leftForNextPage |= !next.IsComplete;
             cells = cells.Add(new PlacedCell(cell.Cell, cell.StartRow, fragment));
             continuing.Add(next);
         }
 
-        if (inside && !placedInRow)
+        if (inside && !(placedInRow && leftForNextPage))
         {
             return Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
         }
@@ -506,8 +535,14 @@ internal static class TablePage
     private static CollapsedBorders.LineContext EdgeContext(TableGrid grid, int row) =>
         row == grid.Rows.Length - 1 ? new CollapsedBorders.LineContext(true, false, new HashSet<int>()) : CollapsedBorders.LineContext.Interior;
 
+    /// <summary>The line that ends a page at a break between rows: its upper half (see remarks).</summary>
     private static LineAt? BottomLine(TableGeometry table, int? above, int? below, double y) =>
-        above is null ? null : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y);
+        above is null ? null : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, LinePart.UpperHalf);
+
+    /// <summary>What a row needs below its bottom edge on this page: for the table's last row, the half of the table's
+    /// bottom border inside the table; for any other row nothing, because a break below it splits the line there.</summary>
+    private static double InsideBelow(TableGeometry table, int row) =>
+        row == table.Grid.Rows.Length - 1 ? table.HorizontalWidth(row, null, EdgeContext(table.Grid, row)) / 2 : 0;
 
     private static Content Empty(double top) => new([], [], [], top, false);
 
