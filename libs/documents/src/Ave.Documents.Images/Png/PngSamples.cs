@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -53,8 +54,15 @@ internal static class PngSamples
             }
         }
 
+        // The arrays are handed over, not copied: nothing else holds them, and a copy would double the memory
+        // ImageLimits promises (at the limit 192 MiB of samples and 64 MiB of alpha).
         return Result<ImageData, Error>.Success(new RasterImage(
-            id, width, height, gray ? ImageColorSpace.Gray : ImageColorSpace.Rgb, [.. samples], alpha is null ? null : [.. alpha]));
+            id,
+            width,
+            height,
+            gray ? ImageColorSpace.Gray : ImageColorSpace.Rgb,
+            ImmutableCollectionsMarshal.AsImmutableArray(samples),
+            alpha is null ? null : ImmutableCollectionsMarshal.AsImmutableArray(alpha)));
     }
 
     /// <summary>Copies one pixel's colour samples; returns its opacity.</summary>

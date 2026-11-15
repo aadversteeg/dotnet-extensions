@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Fonts.OpenType;
+using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Typesetting.Shaping;
 
@@ -12,20 +14,48 @@ namespace Ave.Documents.Typesetting.Shaping;
 /// </summary>
 internal static class GlyphSubstitution
 {
-    /// <summary>Applies the lookups in order.</summary>
+    /// <summary>How many glyphs one input glyph may become, counting every lookup: a decomposition adds a few glyphs per
+    /// character, so 64 is far beyond any real font.</summary>
+    public const int MaxGrowthFactor = 64;
+
+    /// <summary>The fewest glyphs any text may become, so a short text is not held to 64 times its length.</summary>
+    public const int MinGlyphLimit = 16384;
+
+    /// <summary>The most glyphs the substitutions may produce from <paramref name="inputLength"/> glyphs. One-to-many
+    /// substitutions may feed each other (sixteen one-to-two lookups turn one glyph into 65 536); this bound keeps the
+    /// buffer, and the work of every later lookup, proportional to the text.</summary>
+    /// <param name="inputLength">The glyphs before substitution.</param>
+    /// <returns>The limit.</returns>
+    public static long MaxGlyphs(int inputLength) => Math.Max(MinGlyphLimit, (long)MaxGrowthFactor * inputLength);
+
+    /// <summary>Applies the lookups in order; None when the buffer would grow past <see cref="MaxGlyphs"/>.</summary>
     /// <param name="buffer">The glyphs.</param>
     /// <param name="lookups">The lookups, in lookup-list order.</param>
     /// <param name="filter">Glyph classes and lookup-flag skipping.</param>
-    /// <returns>The glyphs after all substitutions.</returns>
-    public static ImmutableArray<GlyphItem> Apply(ImmutableArray<GlyphItem> buffer, IEnumerable<Lookup> lookups, GlyphFilter filter) =>
-        lookups.Aggregate(buffer, (glyphs, lookup) => ApplyLookup(glyphs, lookup, filter));
+    /// <returns>The glyphs after all substitutions, or None.</returns>
+    public static Maybe<ImmutableArray<GlyphItem>> Apply(ImmutableArray<GlyphItem> buffer, IEnumerable<Lookup> lookups, GlyphFilter filter)
+    {
+        var limit = MaxGlyphs(buffer.Length);
+        var glyphs = buffer;
+        foreach (var lookup in lookups)
+        {
+            if (ApplyLookup(glyphs, lookup, filter, limit) is not { } next)
+            {
+                return Maybe<ImmutableArray<GlyphItem>>.None;
+            }
+
+            glyphs = next;
+        }
+
+        return Maybe.From(glyphs);
+    }
 
     /// <summary>
     /// One lookup over the whole buffer. A glyph the lookup skips (its flags) is passed through unchanged. A
     /// lookup that uses a mark filtering set is not applied at all: mark filtering sets are not implemented in
     /// this version, and applying the lookup without its set could substitute the wrong glyphs.
     /// </summary>
-    private static ImmutableArray<GlyphItem> ApplyLookup(ImmutableArray<GlyphItem> glyphs, Lookup lookup, GlyphFilter filter)
+    private static ImmutableArray<GlyphItem>? ApplyLookup(ImmutableArray<GlyphItem> glyphs, Lookup lookup, GlyphFilter filter, long limit)
     {
         if (lookup.Flags.UsesMarkFilteringSet)
         {
@@ -47,6 +77,11 @@ internal static class GlyphSubstitution
                 .FirstOrDefault(result => result is not null);
             if (applied is { } result)
             {
+                if (output.Count + result.Replacement.Length + (glyphs.Length - result.Next) > limit)
+                {
+                    return null;
+                }
+
                 output.AddRange(result.Replacement);
                 index = result.Next;
             }

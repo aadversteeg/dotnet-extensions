@@ -30,7 +30,12 @@ internal static class NameTable
     private const int WindowsPlatform = 3;
     private const int WindowsEnglishUnitedStates = 0x0409;
 
-    private sealed record NameRecord(int PlatformId, int EncodingId, int LanguageId, int NameId, string Text);
+    /// <summary>The name IDs the engine reads; every other record is skipped unread.</summary>
+    private static readonly int[] UsedIds = [FamilyId, SubfamilyId, FullNameId, PostScriptNameId, TypographicFamilyId, TypographicSubfamilyId];
+
+    /// <summary>A record's place in the table; its text is decoded only for the record chosen per name ID, so the
+    /// strings decoded are at most one per used ID, however many records point at the same bytes.</summary>
+    private sealed record NameRecord(int PlatformId, int LanguageId, int NameId, int Start, int Length);
 
     public static Result<FontNames, Error> Parse(ReadOnlySpan<byte> table)
     {
@@ -65,12 +70,17 @@ internal static class NameTable
                 return FontParseErrors.Truncated<FontNames>(Tag, start + length, table.Length);
             }
 
-            var text = Encoding.BigEndianUnicode.GetString(table.Slice((int)start, length));
-            records.Add(new NameRecord(platform, encoding, BigEndian.UInt16(table, record + 4), BigEndian.UInt16(table, record + 6), text));
+            int nameId = BigEndian.UInt16(table, record + 6);
+            if (UsedIds.Contains(nameId))
+            {
+                records.Add(new NameRecord(platform, BigEndian.UInt16(table, record + 4), nameId, (int)start, length));
+            }
         }
 
-        var family = Find(records, TypographicFamilyId) ?? Find(records, FamilyId);
-        var postScriptName = Find(records, PostScriptNameId);
+        var names = table.ToArray();
+        string? Find(int nameId) => FindIn(records, nameId, names);
+        var family = Find(TypographicFamilyId) ?? Find(FamilyId);
+        var postScriptName = Find(PostScriptNameId);
         if (family is null || postScriptName is null)
         {
             // The PDF writer needs the PostScript name (BaseFont, ISO 32000-1 §9.6.2.1) and the font set needs
@@ -79,8 +89,8 @@ internal static class NameTable
                 Tag, "the font has no Unicode family name (ID 1 or 16) or PostScript name (ID 6).", "missing");
         }
 
-        var subfamily = Find(records, TypographicSubfamilyId) ?? Find(records, SubfamilyId) ?? string.Empty;
-        var fullName = Find(records, FullNameId) ?? $"{family} {subfamily}".Trim();
+        var subfamily = Find(TypographicSubfamilyId) ?? Find(SubfamilyId) ?? string.Empty;
+        var fullName = Find(FullNameId) ?? $"{family} {subfamily}".Trim();
         return Result<FontNames, Error>.Success(new FontNames(family, subfamily, fullName, postScriptName));
     }
 
@@ -92,11 +102,11 @@ internal static class NameTable
     /// for Windows), then any other Windows record, then a Unicode-platform record. Within a rank the first
     /// record in the table wins, so the choice is deterministic.
     /// </summary>
-    private static string? Find(IReadOnlyList<NameRecord> records, int nameId) =>
+    private static string? FindIn(IReadOnlyList<NameRecord> records, int nameId, byte[] table) =>
         records
-            .Where(record => record.NameId == nameId && record.Text.Length > 0)
+            .Where(record => record.NameId == nameId && record.Length >= 2)
             .OrderBy(Rank)
-            .Select(record => record.Text)
+            .Select(record => Encoding.BigEndianUnicode.GetString(table, record.Start, record.Length))
             .FirstOrDefault();
 
     private static int Rank(NameRecord record) => record switch

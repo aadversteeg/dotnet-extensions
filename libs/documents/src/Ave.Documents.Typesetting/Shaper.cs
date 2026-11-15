@@ -63,7 +63,7 @@ public static class Shaper
         Characters(text).OnSuccessBind(characters =>
             characters.Select((character, index) => (character, index))
                 .TraverseAll(item => InitialGlyph(item.character, item.index, font))
-                .OnSuccessMap(glyphs => ShapeScriptRuns(characters, [.. glyphs], font, fontSize)));
+                .OnSuccessBind(glyphs => ShapeScriptRuns(characters, [.. glyphs], font, fontSize)));
 
     /// <summary>
     /// Splits text into Unicode scalar values, joining surrogate pairs. An unpaired surrogate is not a
@@ -112,20 +112,22 @@ public static class Shaper
             .OnSuccessMap(glyph => new GlyphItem(glyph, character.ToString(), filter.ClassOf(glyph, isNonspacingMark)));
     }
 
-    private static ImmutableArray<ShapedGlyph> ShapeScriptRuns(ImmutableArray<Rune> characters, ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, double fontSize)
+    private static Result<ImmutableArray<ShapedGlyph>, Error> ShapeScriptRuns(ImmutableArray<Rune> characters, ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, double fontSize)
     {
         var hyphen = Hyphen(font, fontSize);
-        return [.. ScriptRuns(characters).SelectMany(run => ShapeRun([.. glyphs.Skip(run.Start).Take(run.Length)], run.Tag, font)
-            .Select(glyph => new ShapedGlyph(
-                glyph.Glyph,
-                font.Metrics.ToPoints(glyph.XAdvance, fontSize),
-                glyph.Text,
-                font.Metrics.ToPoints(glyph.XOffset, fontSize),
-                font.Metrics.ToPoints(glyph.YOffset, fontSize))
-            {
-                IsInvisible = glyph.IsDefaultIgnorable,
-                BreakHyphen = glyph.Text == SoftHyphen ? hyphen : null,
-            }))];
+        return ScriptRuns(characters)
+            .TraverseAll(run => ShapeRun([.. glyphs.Skip(run.Start).Take(run.Length)], run.Tag, font))
+            .OnSuccessMap(runs => runs.SelectMany(run => run).Select(glyph => new ShapedGlyph(
+                    glyph.Glyph,
+                    font.Metrics.ToPoints(glyph.XAdvance, fontSize),
+                    glyph.Text,
+                    font.Metrics.ToPoints(glyph.XOffset, fontSize),
+                    font.Metrics.ToPoints(glyph.YOffset, fontSize))
+                {
+                    IsInvisible = glyph.IsDefaultIgnorable,
+                    BreakHyphen = glyph.Text == SoftHyphen ? hyphen : null,
+                })
+                .ToImmutableArray());
     }
 
     /// <summary>The soft hyphen U+00AD.</summary>
@@ -151,17 +153,27 @@ public static class Shaper
     /// The shaping steps for one script run, all in font design units: GSUB lookups; the 'hmtx' advance of every
     /// resulting glyph; then the old 'kern' table if GPOS has no kerning, and the GPOS lookups.
     /// </summary>
-    private static ImmutableArray<GlyphItem> ShapeRun(ImmutableArray<GlyphItem> glyphs, string script, TrueTypeFont font)
+    private static Result<ImmutableArray<GlyphItem>, Error> ShapeRun(ImmutableArray<GlyphItem> glyphs, string script, TrueTypeFont font)
     {
         var layout = font.Layout;
         var filter = new GlyphFilter(layout.Definitions);
-        var substituted = GlyphSubstitution.Apply(glyphs, layout.Substitutions.LookupsFor(script, SubstitutionFeatures), filter);
+        var applied = GlyphSubstitution.Apply(glyphs, layout.Substitutions.LookupsFor(script, SubstitutionFeatures), filter);
+        if (applied.HasNoValue)
+        {
+            var limit = GlyphSubstitution.MaxGlyphs(glyphs.Length);
+            return Result<ImmutableArray<GlyphItem>, Error>.Failure(
+                new Error(TypesettingErrorCodes.TooManyGlyphs, $"Font '{font.Names.PostScriptName}' turns {glyphs.Length} glyphs into more than {limit}; its substitutions do not end.")
+                    .With(ErrorMetadataKeys.FontName, font.Names.PostScriptName)
+                    .With(ErrorMetadataKeys.Value, limit.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
+        var substituted = applied.Value;
         var withAdvances = substituted.Select(glyph => glyph with { XAdvance = glyph.IsDefaultIgnorable ? 0 : font.AdvanceWidth(glyph.Glyph) }).ToImmutableArray();
 
         // "kern" in GPOS wins over the 'kern' table: the table is used only when no GPOS feature is called kern.
         var hasGposKerning = layout.Positions.Features.Any(feature => feature.Tag == "kern");
         var kerned = hasGposKerning ? withAdvances : GlyphPositioning.ApplyLegacyKerning(withAdvances, layout.Kerning);
-        return GlyphPositioning.Apply(kerned, layout.Positions.LookupsFor(script, PositioningFeatures), filter);
+        return Result<ImmutableArray<GlyphItem>, Error>.Success(GlyphPositioning.Apply(kerned, layout.Positions.LookupsFor(script, PositioningFeatures), filter));
     }
 
     /// <summary>A run of characters of one script, with the OpenType script tag its lookups are chosen by.</summary>

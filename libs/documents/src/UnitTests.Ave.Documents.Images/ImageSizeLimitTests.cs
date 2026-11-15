@@ -87,4 +87,24 @@ public class ImageSizeLimitTests
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         ((RasterImage)result.Value).PixelWidth.Should().Be(side);
     }
+
+    [Fact]
+    public void Decoding_takes_the_memory_ImageLimits_states_and_no_copy_of_it()
+    {
+        // 4096 × 4096 pixels, 1 bit indexed with a transparent palette entry: a 2 KB file. The decoded image is 3 bytes
+        // of RGB and 1 byte of alpha per pixel (64 MiB), the inflated scanlines 2 MiB. The samples used to be copied
+        // once more at the end, which took twice the stated memory.
+        const int Side = 4096;
+        var file = Png(Header(Side, Side, 1, 3), Chunk("PLTE", [1, 2, 3]), Chunk("tRNS", [0]), Chunk("IDAT", Deflate((long)Side * (Side / 8 + 1))), Chunk("IEND", []));
+        var decoded = 4L * Side * Side;
+        var scanlines = (long)Side * (Side / 8 + 1);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var result = ImageDecoder.Decode(file);
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        ((RasterImage)result.Value).Alpha.Should().NotBeNull();
+        allocated.Should().BeLessThan(decoded + scanlines + 4L * 1024 * 1024);
+    }
 }

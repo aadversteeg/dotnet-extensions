@@ -1,5 +1,6 @@
 using Ave.Documents.Fonts;
 using Ave.Documents.Fonts.Tables;
+using Ave.Documents.TestSupport;
 
 namespace UnitTests.Ave.Documents.Fonts;
 

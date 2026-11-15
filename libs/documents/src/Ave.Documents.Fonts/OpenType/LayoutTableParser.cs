@@ -141,15 +141,25 @@ internal static class LayoutTableParser
 
     /// <summary>Single substitution format 1: "coverageOffset, deltaGlyphID" — "Add to original glyph ID to get
     /// substitute glyph ID", modulo 65536. Format 2: "coverageOffset, glyphCount, substituteGlyphIDs[]", indexed by
-    /// coverage index. Every glyph produced must exist in the font: for format 1 that is checked per coverage range,
-    /// whose glyphs map to one run of glyph ids, so no covered glyph is visited one by one.</summary>
+    /// coverage index. Every glyph produced must exist in the font. For format 1 the coverage's ranges are in glyph
+    /// order, so when the first covered glyph plus the delta is at least 0 and the last one plus the delta is below the
+    /// glyph count, every output lies between them and the check is one step. Only otherwise (the delta wraps around
+    /// 65536, or an output is too large) is every range checked; a coverage may be shared by many subtables and was read
+    /// once, so that walk is not paid by any read and is charged to the budget.</summary>
     private static SingleSubstitution SingleSubstitutionAt(TableReader reader, int offset, int format, int glyphCount)
     {
         var coverage = Coverage.Read(reader, offset + reader.UInt16(offset + 2));
         if (format == 1)
         {
             var delta = reader.Int16(offset + 4);
-            foreach (var range in coverage.Ranges)
+            var ranges = coverage.Ranges;
+            var withoutWrap = ranges.IsEmpty || (ranges[0].Start + delta >= 0 && ranges[^1].End + delta < glyphCount);
+            if (withoutWrap || !reader.Spend(ranges.Length))
+            {
+                return new SingleSubstitution(coverage, delta, [], IsDelta: true);
+            }
+
+            foreach (var range in ranges)
             {
                 var first = (range.Start + delta) & 0xFFFF;
                 Output(reader, first + range.End - range.Start, glyphCount);

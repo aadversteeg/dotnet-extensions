@@ -20,11 +20,11 @@ namespace Ave.Documents.Fonts.OpenType;
 /// layouts.</para>
 /// <para>Two rules keep malformed data from making the parse slow. Once a problem is recorded the table is known to be
 /// broken, so <see cref="Count"/> returns 0 and <see cref="Fits"/> false from then on, and no further array is walked.
-/// And the parse has a work budget proportional to the table's size — the approach of HarfBuzz's sanitizer, which
-/// allows eight operations per byte: offsets that stay inside the table can still point at each other in ways
-/// that multiply the work, which no well-formed table needs. Work is charged per value read, so a range record is
-/// one record however many glyphs it covers, and a shared coverage or class table is read once
-/// (<see cref="Shared{T}"/>).</para>
+/// And the parse has a work budget proportional to the table's size (<see cref="WorkPerByte"/>,
+/// <see cref="MinimumWork"/>), as HarfBuzz's sanitizer has: offsets that stay inside the table can still point at each
+/// other in ways that multiply the work, which no well-formed table needs. Work is charged per value read, so a range
+/// record is one record however many glyphs it covers, and a shared coverage or class table is read once
+/// (<see cref="Shared{T}"/>); a parser that walks parsed data again charges that walk with <see cref="Spend"/>.</para>
 /// <para>Offsets are added in 64-bit arithmetic wherever a 32-bit value takes part, so no sum can wrap around, and
 /// the parsed form of a table is never larger than the records the table holds: a record that takes no bytes (a
 /// value record with valueFormat 0) is not stored.</para>
@@ -32,7 +32,14 @@ namespace Ave.Documents.Fonts.OpenType;
 /// </remarks>
 internal sealed class TableReader(ReadOnlyMemory<byte> table)
 {
-    private long _budget = Math.Max(16_384, 8L * table.Length);
+    /// <summary>Units of work the parse may spend per byte of the table. A well-formed table reads each value about
+    /// once; eight per byte leaves room for shared sub-tables and still bounds the parse by the table's size.</summary>
+    public const int WorkPerByte = 8;
+
+    /// <summary>The smallest budget, so that a tiny table is not refused for a constant amount of work.</summary>
+    public const int MinimumWork = 16_384;
+
+    private long _budget = Math.Max(MinimumWork, (long)WorkPerByte * table.Length);
 
     private readonly Dictionary<(Type Kind, int Offset), object> _shared = [];
 
