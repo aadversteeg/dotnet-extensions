@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="Ave.Extensions.ErrorPaths/Ave.Extensions.ErrorPaths.csproj" />
+  <Project Path="Ave.Extensions.ErrorPaths.AspNetCore/Ave.Extensions.ErrorPaths.AspNetCore.csproj" />
+  <Project Path="Ave.Extensions.ErrorPaths.FluentAssertions/Ave.Extensions.ErrorPaths.FluentAssertions.csproj" />
+  <Project Path="Ave.Extensions.ErrorPaths.Functional/Ave.Extensions.ErrorPaths.Functional.csproj" />
+  <Project Path="Ave.Extensions.ErrorPaths.Serialization/Ave.Extensions.ErrorPaths.Serialization.csproj" />
+  <Project Path="UnitTests.Extensions.ErrorPaths/UnitTests.Extensions.ErrorPaths.csproj" />
+  <Project Path="UnitTests.Extensions.ErrorPaths.AspNetCore/UnitTests.Extensions.ErrorPaths.AspNetCore.csproj" />
+  <Project Path="UnitTests.Extensions.ErrorPaths.FluentAssertions/UnitTests.Extensions.ErrorPaths.FluentAssertions.csproj" />
+  <Project Path="UnitTests.Extensions.ErrorPaths.Functional/UnitTests.Extensions.ErrorPaths.Functional.csproj" />
+  <Project Path="UnitTests.Extensions.ErrorPaths.Serialization/UnitTests.Extensions.ErrorPaths.Serialization.csproj" />
+</Solution>

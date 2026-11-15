@@ -1,0 +1,52 @@
+<Solution>
+  <Folder Name="/functional/">
+    <Project Path="libs/functional/Ave.Extensions.Functional/Ave.Extensions.Functional.csproj" />
+    <Project Path="libs/functional/Ave.Extensions.Functional.Core/Ave.Extensions.Functional.Core.csproj" />
+    <Project Path="libs/functional/Ave.Extensions.Functional.FluentAssertions/Ave.Extensions.Functional.FluentAssertions.csproj" />
+    <Project Path="libs/functional/UnitTests.Extensions.Functional/UnitTests.Extensions.Functional.csproj" />
+    <Project Path="libs/functional/UnitTests.Extensions.Functional.Core/UnitTests.Extensions.Functional.Core.csproj" />
+    <Project Path="libs/functional/UnitTests.Extensions.Functional.FluentAssertions/UnitTests.Extensions.Functional.FluentAssertions.csproj" />
+  </Folder>
+  <Folder Name="/error-paths/">
+    <Project Path="libs/error-paths/Ave.Extensions.ErrorPaths/Ave.Extensions.ErrorPaths.csproj" />
+    <Project Path="libs/error-paths/Ave.Extensions.ErrorPaths.AspNetCore/Ave.Extensions.ErrorPaths.AspNetCore.csproj" />
+    <Project Path="libs/error-paths/Ave.Extensions.ErrorPaths.FluentAssertions/Ave.Extensions.ErrorPaths.FluentAssertions.csproj" />
+    <Project Path="libs/error-paths/Ave.Extensions.ErrorPaths.Functional/Ave.Extensions.ErrorPaths.Functional.csproj" />
+    <Project Path="libs/error-paths/Ave.Extensions.ErrorPaths.Serialization/Ave.Extensions.ErrorPaths.Serialization.csproj" />
+    <Project Path="libs/error-paths/UnitTests.Extensions.ErrorPaths/UnitTests.Extensions.ErrorPaths.csproj" />
+    <Project Path="libs/error-paths/UnitTests.Extensions.ErrorPaths.AspNetCore/UnitTests.Extensions.ErrorPaths.AspNetCore.csproj" />
+    <Project Path="libs/error-paths/UnitTests.Extensions.ErrorPaths.FluentAssertions/UnitTests.Extensions.ErrorPaths.FluentAssertions.csproj" />
+    <Project Path="libs/error-paths/UnitTests.Extensions.ErrorPaths.Functional/UnitTests.Extensions.ErrorPaths.Functional.csproj" />
+    <Project Path="libs/error-paths/UnitTests.Extensions.ErrorPaths.Serialization/UnitTests.Extensions.ErrorPaths.Serialization.csproj" />
+  </Folder>
+  <Folder Name="/fluent-contracts/">
+    <Project Path="libs/fluent-contracts/Ave.Extensions.FluentContracts/Ave.Extensions.FluentContracts.csproj" />
+    <Project Path="libs/fluent-contracts/Ave.Extensions.FluentContracts.ForTesting/Ave.Extensions.FluentContracts.ForTesting.csproj" />
+    <Project Path="libs/fluent-contracts/Ave.Extensions.FluentContracts.ForValidation/Ave.Extensions.FluentContracts.ForValidation.csproj" />
+    <Project Path="libs/fluent-contracts/UnitTests.Extensions.FluentContracts/UnitTests.Extensions.FluentContracts.csproj" />
+    <Project Path="libs/fluent-contracts/UnitTests.Extensions.FluentContracts.ForTesting/UnitTests.Extensions.FluentContracts.ForTesting.csproj" />
+    <Project Path="libs/fluent-contracts/UnitTests.Extensions.FluentContracts.ForValidation/UnitTests.Extensions.FluentContracts.ForValidation.csproj" />
+  </Folder>
+  <Folder Name="/file-system/">
+    <!-- UnitTests.Extensions.FileSystem.AzureFileStorage is left out on purpose: it does not compile today (CS7036, the constructor now needs a pathMapper). Known debt, fixed with the netstandard2.0 port. -->
+    <Project Path="libs/file-system/Ave.Extensions.FileSystem/Ave.Extensions.FileSystem.csproj" />
+    <Project Path="libs/file-system/Ave.Extensions.FileSystem.Abstractions/Ave.Extensions.FileSystem.Abstractions.csproj" />
+    <Project Path="libs/file-system/Ave.Extensions.FileSystem.AzureFileStorage/Ave.Extensions.FileSystem.AzureFileStorage.csproj" />
+    <Project Path="libs/file-system/Ave.Extensions.FileSystem.InMemory/Ave.Extensions.FileSystem.InMemory.csproj" />
+    <Project Path="libs/file-system/Ave.Extensions.FileSystem.Local/Ave.Extensions.FileSystem.Local.csproj" />
+    <Project Path="libs/file-system/Ave.Extensions.FileSystem.MimeDetective/Ave.Extensions.FileSystem.MimeDetective.csproj" />
+    <Project Path="libs/file-system/UnitTests.Extensions.FileSystem/UnitTests.Extensions.FileSystem.csproj" />
+    <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.Abstractions/UnitTests.Extensions.FileSystem.Abstractions.csproj" />
+    <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.InMemory/UnitTests.Extensions.FileSystem.InMemory.csproj" />
+    <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.Local/UnitTests.Extensions.FileSystem.Local.csproj" />
+    <Project Path="libs/file-system/UnitTests.Extensions.FileSystem.MimeDetective/UnitTests.Extensions.FileSystem.MimeDetective.csproj" />
+  </Folder>
+  <Folder Name="/file-system/integration-tests/">
+    <Project Path="libs/file-system/integration-tests/IntegrationTests.AzureFileStorage/IntegrationTests.AzureFileStorage.csproj" />
+    <Project Path="libs/file-system/integration-tests/IntegrationTests.Local/IntegrationTests.Local.csproj" />
+    <Project Path="libs/file-system/integration-tests/PlatformTests.Local/PlatformTests.Local.csproj" />
+  </Folder>
+  <Folder Name="/file-system/benchmarks/">
+    <Project Path="libs/file-system/benchmarks/Benchmarks/Benchmarks.csproj" />
+  </Folder>
+</Solution>

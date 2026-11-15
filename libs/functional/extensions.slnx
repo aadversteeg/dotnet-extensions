@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Ave.Extensions.Functional/Ave.Extensions.Functional.csproj" />
+  <Project Path="Ave.Extensions.Functional.Core/Ave.Extensions.Functional.Core.csproj" />
+  <Project Path="Ave.Extensions.Functional.FluentAssertions/Ave.Extensions.Functional.FluentAssertions.csproj" />
+  <Project Path="UnitTests.Extensions.Functional/UnitTests.Extensions.Functional.csproj" />
+  <Project Path="UnitTests.Extensions.Functional.Core/UnitTests.Extensions.Functional.Core.csproj" />
+  <Project Path="UnitTests.Extensions.Functional.FluentAssertions/UnitTests.Extensions.Functional.FluentAssertions.csproj" />
+</Solution>
