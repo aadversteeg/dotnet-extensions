@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Ave.Documents.Core;
 using Ave.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
@@ -27,8 +29,8 @@ public static class Paginator
     /// an assumed count (first 1), and laid out again with the count that pass produced, until a pass produces the
     /// count it assumed, at most <see cref="MaxPasses"/> times. Such a pass is stable: layout is a pure function of the document and
     /// the assumed count, so the next pass would repeat it exactly. Page numbers need no fixpoint: pages are laid out
-    /// in order, so each page knows its own number. A document of one page settles in one pass, any other in at least
-    /// two.</para>
+    /// in order, so each page knows its own number. A document that shows no page count is laid out once; one that does
+    /// settles in one pass when it has one page, otherwise in at least two.</para>
     /// <para>Not settling within <see cref="MaxPasses"/> passes is <c>Documents.Layout.NotConverging</c>, with the
     /// source location of the first page-count reference and the page count of every pass.</para>
     /// </remarks>
@@ -47,6 +49,12 @@ public static class Paginator
                     .With(ErrorMetadataKeys.Value, $"{page.Width}x{page.Height} margin={page.Margins}"));
         }
 
+        // Without a page count shown anywhere, no pass can change what an earlier one laid out: one pass is final.
+        if (!PageCountReferences(document).Any())
+        {
+            return LayOutPages(environment, document, pageCount: 1);
+        }
+
         var counts = ImmutableArray.CreateBuilder<int>();
         var assumedCount = 1;
         for (var pass = 1; pass <= MaxPasses; pass++)
@@ -63,6 +71,23 @@ public static class Paginator
 
         return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.NotConverging(document, counts.ToImmutable()));
     }
+
+    /// <summary>The page-count references of a document, in the header and footer areas first, then the body: what
+    /// makes the fixpoint necessary.</summary>
+    /// <param name="document">The document.</param>
+    /// <returns>The references, in that order.</returns>
+    internal static IEnumerable<CounterRun> PageCountReferences(StyledDocument document) =>
+        new[] { document.Page.FirstPage, document.Page.Template }
+            .SelectMany(template => new[] { template?.Header, template?.Footer })
+            .Select(area => area?.Content)
+            .OfType<Box>()
+            .Append(document.Root)
+            .SelectMany(Descendants)
+            .OfType<CounterRun>()
+            .Where(run => run.Counter == PageCounter.PageCount);
+
+    private static IEnumerable<Node> Descendants(Node node) =>
+        node is Box box ? [box, .. box.Children.SelectMany(Descendants)] : [node];
 
     /// <summary>
     /// One layout pass: every page with the given page count. Each page is the page style's size. Its page area (the

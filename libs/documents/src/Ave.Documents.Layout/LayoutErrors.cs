@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Documents.Core;
@@ -54,12 +53,7 @@ internal static class LayoutErrors
     /// </summary>
     public static Error NotConverging(StyledDocument document, ImmutableArray<int> counts)
     {
-        var areas = new[] { document.Page.FirstPage, document.Page.Template }
-            .SelectMany(template => new[] { template?.Header, template?.Footer })
-            .Select(area => area?.Content)
-            .OfType<Box>();
-        var reference = areas.Append(document.Root).SelectMany(Descendants).OfType<CounterRun>()
-            .FirstOrDefault(run => run.Counter == PageCounter.PageCount);
+        var reference = Paginator.PageCountReferences(document).FirstOrDefault();
         var (node, source) = reference is null ? (document.Root.Id, document.Root.Source) : (reference.Id, reference.Source);
         return new Error(
                 LayoutErrorCodes.NotConverging,
@@ -69,6 +63,4 @@ internal static class LayoutErrors
             .WithSource(source);
     }
 
-    private static IEnumerable<Node> Descendants(Node node) =>
-        node is Box box ? [box, .. box.Children.SelectMany(Descendants)] : [node];
 }
