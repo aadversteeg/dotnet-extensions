@@ -12,8 +12,9 @@ released on its own.
 | `libs/fluent-contracts` | `Ave.Extensions.FluentContracts`, `.ForTesting`, `.ForValidation` | [README](libs/fluent-contracts/README.md) |
 | `libs/file-system` | `Ave.Extensions.FileSystem.Abstractions`, `Ave.Extensions.FileSystem`, `.Local`, `.InMemory`, `.AzureFileStorage`, `.MimeDetective` | [README](libs/file-system/README.md) |
 
-The libraries target `netstandard2.0` and `net10.0`. The one exception, `Ave.Extensions.ErrorPaths.AspNetCore`,
-targets `net10.0` only.
+The libraries target `netstandard2.0` and `net10.0`, with two differences: `Ave.Extensions.FileSystem.InMemory` and
+`Ave.Extensions.FileSystem.AzureFileStorage` also target `netstandard2.1` (see the file-system README), and
+`Ave.Extensions.ErrorPaths.AspNetCore` targets `net10.0` only.
 
 ## Building and testing
 

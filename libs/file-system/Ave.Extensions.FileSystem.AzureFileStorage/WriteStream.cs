@@ -49,9 +49,8 @@ namespace Ave.Extensions.FileSystem.AzureFileStorage
 
 #if NETSTANDARD2_0
         // netstandard2.0's Stream has no DisposeAsync to override. Implementing IAsyncDisposable explicitly
-        // keeps the write asynchronous for every caller that disposes through IAsyncDisposable. A call to
-        // Stream.DisposeAsync on a runtime that loads this asset (.NET Core 3.0 up to .NET 9) still reaches
-        // Stream's own DisposeAsync, which calls the synchronous Dispose.
+        // keeps the write asynchronous for every caller that disposes through IAsyncDisposable. .NET Core 3.0
+        // up to .NET 9 load the netstandard2.1 asset, which overrides Stream.DisposeAsync.
         async ValueTask IAsyncDisposable.DisposeAsync()
         {
             await UploadContentOnDisposeAsync();

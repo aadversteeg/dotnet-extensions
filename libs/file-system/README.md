@@ -427,23 +427,26 @@ dotnet test extensions.slnx --filter "Category!=Network"
 
 ### Supported runtimes
 
-The packages target `netstandard2.0` and `net10.0`. What is tested: the test projects run on .NET 10, against
-the `net10.0` build and, with `-p:UseNs20=true`, against the `netstandard2.0` build. No test runs on a .NET
-Framework runtime, so this repository makes no promise about a particular .NET Framework version.
+The packages target `netstandard2.0` and `net10.0`. `Ave.Extensions.FileSystem.InMemory` and
+`Ave.Extensions.FileSystem.AzureFileStorage` also target `netstandard2.1` (see below). What is tested: the test
+projects run on .NET 10, against the `net10.0` build and, with `-p:UseNs20=true`, against the `netstandard2.0`
+build. No test project runs against the `netstandard2.1` build. No test runs on a .NET Framework runtime, so this
+repository makes no promise about a particular .NET Framework version.
 
 ### The netstandard2.0 build
 
 The public API is the same as on `net10.0`. One behaviour differs. The write streams of
 `Ave.Extensions.FileSystem.InMemory` and `Ave.Extensions.FileSystem.AzureFileStorage` write their content when
-they are disposed. On `net10.0` they override `Stream.DisposeAsync`. `netstandard2.0` has no `Stream.DisposeAsync`
-to override, so there they implement `IAsyncDisposable` explicitly:
+they are disposed. On `net10.0` and `netstandard2.1` they override `Stream.DisposeAsync`, so `DisposeAsync()` and
+`await using` write the content asynchronously. `netstandard2.0` has no `Stream.DisposeAsync` to override, so there
+they implement `IAsyncDisposable` explicitly: disposed through `IAsyncDisposable`, the content is written
+asynchronously, as on `net10.0`.
 
-- disposed through `IAsyncDisposable`: the content is written asynchronously, as on `net10.0`;
-- disposed through `Stream.DisposeAsync()`, which is also what `await using` on a `Stream` variable calls, on
-  .NET Core 3.0 up to .NET 9 (they load the `netstandard2.0` build): `Stream`'s own `DisposeAsync` runs, which
-  calls `Dispose()`, so the content is written synchronously. For Azure that is a blocking upload.
+That is why these two packages have a `netstandard2.1` build: .NET Core 3.0 up to .NET 9 load it, so there
+`Stream.DisposeAsync()` writes asynchronously as well. Runtimes that support only .NET Standard 2.0, such as .NET
+Framework, load the `netstandard2.0` build.
 
-`Dispose()` writes synchronously on every target, as before.
+`Dispose()` writes synchronously on every target, as before. For Azure that is a blocking upload.
 
 ### Running Benchmarks
 

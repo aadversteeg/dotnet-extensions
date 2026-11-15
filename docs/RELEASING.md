@@ -114,10 +114,11 @@ and the CI job "Release mode (main only)" shows that as an error.
 
 The file-system packages were developed past the versions on nuget.org: nuget.org has `0.6.0-preview.1`, which
 targets `netstandard2.1` and `net10.0`, and the source is past `0.7.0-preview.9` and targets `netstandard2.0` and
-`net10.0`. So the file-system minimum versions in `Directory.Packages.props` (`0.6.0-preview.1`) cannot be used for
-a release from this repository: in release mode `.Local`, `.InMemory`, `.MimeDetective`, `.AzureFileStorage` and
-`Ave.Extensions.FileSystem` do not restore (the published packages have no `netstandard2.0` build), and the CI job
-"Release mode (main only)" is red for file-system until this wave is done.
+`net10.0` (`.InMemory` and `.AzureFileStorage` also `netstandard2.1`). So the file-system minimum versions in
+`Directory.Packages.props` (`0.6.0-preview.1`) cannot be used for a release from this repository: in release mode
+`.Local`, `.InMemory`, `.MimeDetective`, `.AzureFileStorage` and `Ave.Extensions.FileSystem` do not restore (the
+published packages have no `netstandard2.0` build), and the CI job "Release mode (main only)" is red for file-system
+until this wave is done.
 
 The first wave therefore goes in dependency order, raising the minimum after each step:
 
