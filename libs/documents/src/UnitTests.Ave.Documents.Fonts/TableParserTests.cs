@@ -132,11 +132,11 @@ public class TableParserTests
     }
 
     [Fact]
-    public void The_sub_review_s_8000_overlapping_format_4_segments_are_refused_quickly()
+    public void Eight_thousand_overlapping_format_4_segments_are_refused_without_being_expanded()
     {
-        // 8000 segments of 0x0000–0xFFFE (64 KB) made the parse slow, because every segment was expanded. Their
-        // endCodes do not increase ("The segments
-        // are sorted in order of increasing endCode values"), so the table is malformed.
+        // 8000 segments of 0x0000–0xFFFE (64 KB) made the parse slow, because every segment was expanded: 8000 × 65535
+        // entries. Their endCodes do not increase ("The segments are sorted in order of increasing endCode values"), so
+        // the table is malformed and is refused before any segment is expanded. Counted in memory, not time.
         const int Segments = 8000;
         var builder = new BigEndianBuilder().UInt16(4).UInt16(16 + Segments * 8).UInt16(0).UInt16(Segments * 2).UInt16(0).UInt16(0).UInt16(0);
         for (var index = 0; index < Segments; index++) { builder.UInt16(index == Segments - 1 ? 0xFFFF : 0xFFFE); }
@@ -145,11 +145,11 @@ public class TableParserTests
         for (var index = 0; index < Segments; index++) { builder.UInt16(index == Segments - 1 ? 1 : 0); }
         for (var index = 0; index < Segments; index++) { builder.UInt16(0); }
         var cmap = new BigEndianBuilder().UInt16(0).UInt16(1).UInt16(3).UInt16(1).UInt32(12).Bytes(builder.ToArray()).ToArray();
-        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
 
         var result = CmapTable.Parse(cmap, glyphCount: 65535);
 
-        watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(1));
+        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(4L * 1024 * 1024, "no segment is expanded into its 65 535 code points");
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
     }
