@@ -24,7 +24,9 @@ internal static class PageModelRules
     /// <item>metadata and at least one page: a PDF without a page has nothing to show and is not useful to write;</item>
     /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
-    /// glyphs, and stands for some text, which its ToUnicode entry needs; every font size is a positive finite number;</item>
+    /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
+    /// the one before it, as the later glyphs of a one-to-many substitution do); every font size is a positive finite
+    /// number;</item>
     /// <item>every artifact kind and attachment relationship is a value of its enum;</item>
     /// <item>a table cell spans at least one column and one row, and no more than the table model allows
     /// (<see cref="TableSlots.MaxColumnSpan"/>, <see cref="TableSlots.MaxRowSpan"/>), so no grid is ever sized by one
@@ -88,8 +90,8 @@ internal static class PageModelRules
         GlyphRun run when run.Glyphs.Any(glyph => glyph is null) => Invalid($"A glyph run on page {number} has a missing glyph.", Number(number)),
         GlyphRun run when run.Glyphs.FirstOrDefault(glyph => glyph.Glyph.Value >= run.Font.GlyphCount) is { } glyph =>
             Invalid($"Page {number} draws glyph {glyph.Glyph.Value} of font '{run.Font.Names.PostScriptName}', which has {run.Font.GlyphCount} glyphs.", glyph.Glyph.Value.ToString(CultureInfo.InvariantCulture)),
-        GlyphRun run when run.Glyphs.Any(glyph => string.IsNullOrEmpty(glyph.Text)) =>
-            Invalid($"A glyph on page {number} stands for no text; every shown glyph needs one for its ToUnicode entry.", Number(number)),
+        GlyphRun run when run.Glyphs.Any(glyph => glyph.Text is null) =>
+            Invalid($"A glyph on page {number} has no text; every shown glyph needs one for its ToUnicode entry (empty for a glyph that continues the text of the glyph before it).", Number(number)),
         DrawImage { Image: null } => Invalid($"An image on page {number} has no image data.", Number(number)),
         StructureStart { Role: null } start => Invalid($"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
         StructureStart start when start.Span.Columns < 1 || start.Span.Rows < 1 || start.Span.Columns > TableSlots.MaxColumnSpan || start.Span.Rows > TableSlots.MaxRowSpan =>

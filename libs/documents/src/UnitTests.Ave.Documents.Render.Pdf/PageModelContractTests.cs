@@ -132,10 +132,11 @@ public class PageModelContractTests
     [MemberData(nameof(Profiles))]
     public void A_glyph_without_text_is_refused(string profile)
     {
-        // A ToUnicode map gives every shown glyph a text; a glyph that stands for nothing cannot be mapped.
+        // A ToUnicode map gives every shown glyph a text; a glyph without one cannot be mapped. (The empty text is a
+        // text: the later glyphs of a one-to-many substitution carry it.)
         var run = Run("x");
 
-        Refused(Tagged(Start(1, SemanticRole.Paragraph), run with { Glyphs = [run.Glyphs[0] with { Text = string.Empty }] }, End(1)), profile).Code
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), run with { Glyphs = [run.Glyphs[0] with { Text = null! }] }, End(1)), profile).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
     }
 
