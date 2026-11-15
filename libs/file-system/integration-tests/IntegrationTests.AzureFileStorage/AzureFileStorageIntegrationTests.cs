@@ -198,7 +198,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             }
         }
 
-        [Fact(DisplayName = "AFSIT-001: FileExistsAsync returns true for existing file")]
+        [SkippableFact(DisplayName = "AFSIT-001: FileExistsAsync returns true for existing file")]
         public async Task AFSIT001()
         {
             // Arrange
@@ -224,7 +224,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             azureFileExists.Should().BeTrue("File should exist in Azure File Share");
         }
 
-        [Fact(DisplayName = "AFSIT-002: FileExistsAsync returns false for non-existent file")]
+        [SkippableFact(DisplayName = "AFSIT-002: FileExistsAsync returns false for non-existent file")]
         public async Task AFSIT002()
         {
             // Arrange
@@ -241,7 +241,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             result.Value.Should().BeFalse();
         }
 
-        [Fact(DisplayName = "AFSIT-003: DirectoryExistsAsync returns true for existing directory")]
+        [SkippableFact(DisplayName = "AFSIT-003: DirectoryExistsAsync returns true for existing directory")]
         public async Task AFSIT003()
         {
             // Arrange
@@ -265,7 +265,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             azureDirectoryExists.Should().BeTrue("Directory should exist in Azure File Share");
         }
 
-        [Fact(DisplayName = "AFSIT-004: WriteAllTextAsync creates file with content")]
+        [SkippableFact(DisplayName = "AFSIT-004: WriteAllTextAsync creates file with content")]
         public async Task AFSIT004()
         {
             // Arrange
@@ -293,7 +293,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             azureContent.Should().Be(content, "File content should match what was written");
         }
 
-        [Fact(DisplayName = "AFSIT-005: ReadAllTextAsync returns correct content")]
+        [SkippableFact(DisplayName = "AFSIT-005: ReadAllTextAsync returns correct content")]
         public async Task AFSIT005()
         {
             // Arrange
@@ -314,7 +314,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             result.Value.Should().Be(expectedContent);
         }
 
-        [Fact(DisplayName = "AFSIT-006: ReadAllTextAsync returns error for non-existent file")]
+        [SkippableFact(DisplayName = "AFSIT-006: ReadAllTextAsync returns error for non-existent file")]
         public async Task AFSIT006()
         {
             // Arrange
@@ -331,7 +331,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             result.Error.Code.Should().Be(FileSystemErrorCodes.NotFound.File);
         }
 
-        [Fact(DisplayName = "AFSIT-007: CreateDirectoryAsync creates nested directory structure")]
+        [SkippableFact(DisplayName = "AFSIT-007: CreateDirectoryAsync creates nested directory structure")]
         public async Task AFSIT007()
         {
             // Arrange
@@ -359,7 +359,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             azureDirectoryExists.Should().BeTrue("Directory should exist in Azure File Share");
         }
 
-        [Fact(DisplayName = "AFSIT-008: GetFilesAsync returns files in directory")]
+        [SkippableFact(DisplayName = "AFSIT-008: GetFilesAsync returns files in directory")]
         public async Task AFSIT008()
         {
             // Arrange
@@ -392,7 +392,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             result.Value.Should().Contain(path => path.Value.EndsWith("file2.txt"));
         }
 
-        [Fact(DisplayName = "AFSIT-009: GetDirectoriesAsync returns directories")]
+        [SkippableFact(DisplayName = "AFSIT-009: GetDirectoriesAsync returns directories")]
         public async Task AFSIT009()
         {
             // Arrange
@@ -425,7 +425,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             result.Value.Should().Contain(path => path.Value.EndsWith("nested2"));
         }
 
-        [Fact(DisplayName = "AFSIT-010: OpenReadAsync and OpenWriteAsync work with streams")]
+        [SkippableFact(DisplayName = "AFSIT-010: OpenReadAsync and OpenWriteAsync work with streams")]
         public async Task AFSIT010()
         {
             // Arrange
@@ -459,7 +459,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             readContent.Should().Be(content);
         }
 
-        [Fact(DisplayName = "AFSIT-011: GetEntryAsync returns correct metadata")]
+        [SkippableFact(DisplayName = "AFSIT-011: GetEntryAsync returns correct metadata")]
         public async Task AFSIT011()
         {
             // Arrange
@@ -488,7 +488,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
         }
 
 
-        [Fact(DisplayName = "AFSIT-013: DeleteFileAsync removes file")]
+        [SkippableFact(DisplayName = "AFSIT-013: DeleteFileAsync removes file")]
         public async Task AFSIT013()
         {
             // Arrange
@@ -516,7 +516,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             stillExistsResult.Value.Should().BeFalse();
         }
 
-        [Fact(DisplayName = "AFSIT-014: DeleteDirectoryAsync removes directory")]
+        [SkippableFact(DisplayName = "AFSIT-014: DeleteDirectoryAsync removes directory")]
         public async Task AFSIT014()
         {
             // Arrange
@@ -544,7 +544,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             stillExistsResult.Value.Should().BeFalse();
         }
 
-        [Fact(DisplayName = "AFSIT-015: Large file operations work correctly")]
+        [SkippableFact(DisplayName = "AFSIT-015: Large file operations work correctly")]
         public async Task AFSIT015()
         {
             // Arrange
@@ -567,7 +567,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             readResult.Value.Length.Should().BeGreaterThan(100000);
         }
 
-        [Fact(DisplayName = "AFSIT-016: Unicode content is handled correctly")]
+        [SkippableFact(DisplayName = "AFSIT-016: Unicode content is handled correctly")]
         public async Task AFSIT016()
         {
             // Arrange
@@ -589,7 +589,7 @@ namespace IntegrationTests.Extensions.FileSystem.AzureFileStorage
             readResult.Value.Should().Be(unicodeContent);
         }
 
-        [Fact(DisplayName = "AFSIT-017: Empty file operations work correctly")]
+        [SkippableFact(DisplayName = "AFSIT-017: Empty file operations work correctly")]
         public async Task AFSIT017()
         {
             // Arrange
