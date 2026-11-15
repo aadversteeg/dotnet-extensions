@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Repository check, not a package: every netstandard2.0 build of our libraries may reference only assemblies,
+    at versions, that its declared package dependencies guarantee. Program.cs describes how to run it;
+    .github/workflows/ci.yml runs it after the build.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+</Project>

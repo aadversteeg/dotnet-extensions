@@ -42,6 +42,15 @@ In that mode every test project also runs test `NS20-001`, which fails unless ev
 the test assembly loads is the `netstandard2.0` build. `UnitTests.Extensions.ErrorPaths.AspNetCore` is left as
 it is, because its library has no `netstandard2.0` build. The switch lives in `Directory.Build.targets`.
 
+After a Release build, this check reads the assembly references of every `netstandard2.0` build and fails when
+one references an assembly, or a version of it, that the package's declared dependencies do not give a consumer:
+
+```shell
+dotnet run --project eng/Ns20ReferenceCheck -c Release -- --configuration Release
+```
+
+Such a reference compiles fine but fails to load on .NET Framework.
+
 ## References between the packages
 
 A library references another package of this repository as a NuGet package:
