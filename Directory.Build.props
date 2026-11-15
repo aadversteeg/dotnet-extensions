@@ -15,9 +15,12 @@
          The switch itself lives in Directory.Build.targets. -->
     <UseRepoProjectReferences Condition="'$(UseRepoProjectReferences)' == ''">true</UseRepoProjectReferences>
 
-    <!-- Test switch: -p:UseNs20=true runs the net10.0 test projects against the netstandard2.0 asset of our
-         libraries instead of the net10.0 one. The switch itself lives in Directory.Build.targets. -->
+    <!-- Test switches: -p:UseNs20=true runs the net10.0 test projects against the netstandard2.0 asset of our
+         libraries instead of the net10.0 one. -p:UseNs21=true runs them against the netstandard2.1 asset where
+         a library has one, otherwise the netstandard2.0 asset. Use one at a time. The switches themselves live
+         in Directory.Build.targets. -->
     <UseNs20 Condition="'$(UseNs20)' == ''">false</UseNs20>
+    <UseNs21 Condition="'$(UseNs21)' == ''">false</UseNs21>
 
     <!-- The version comes from the release tag (-p:Version); local builds are 0.0.0-dev -->
     <VersionPrefix>0.0.0</VersionPrefix>

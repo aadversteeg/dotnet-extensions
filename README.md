@@ -40,12 +40,28 @@ dotnet test dotnet-extensions.slnx -p:UseNs20=true
 ```
 
 In that mode every test project also runs test `NS20-001`, which fails unless every `Ave.Extensions` library
-the test assembly loads is the `netstandard2.0` build. `UnitTests.Extensions.ErrorPaths.AspNetCore` is left as
-it is, because its library has no `netstandard2.0` build. The switch lives in `Directory.Build.targets`.
+the test assembly loads is the `netstandard2.0` build.
 
-Delete the `bin` and `obj` folders before you switch between the two modes in the same working tree. The two
-builds of a library can have the same file size and time stamp, and then the build does not copy the new one: the
-test project keeps the library file of the other mode, and `NS20-001` fails.
+To run them against the `netstandard2.1` build of the libraries that have one, and the `netstandard2.0` build of
+the others (what an application on .NET Core 3.0 up to .NET 9 gets):
+
+```shell
+dotnet test dotnet-extensions.slnx -p:UseNs21=true
+```
+
+In that mode every test project runs test `NS21-001` instead, which fails unless every `Ave.Extensions` library
+the test assembly loads is that build. Only `Ave.Extensions.FileSystem.InMemory` and
+`Ave.Extensions.FileSystem.AzureFileStorage` have a `netstandard2.1` build, so for the other families this mode
+tests the same as `-p:UseNs20=true`.
+
+Use one switch at a time; together they stop the build with an error. `UnitTests.Extensions.ErrorPaths.AspNetCore`
+is left as it is in both modes, because its library has no `netstandard2.0` build. The switches live in
+`Directory.Build.targets`.
+
+Delete the `bin` and `obj` folders before you switch between the three modes (the default and the two switches)
+in the same working tree. Two builds of a library can have the same file size and time stamp, and then the build
+does not copy the new one: the test project keeps the library file of the other mode, and `NS20-001` or
+`NS21-001` fails.
 
 After a Release build, this check reads the assembly references of every `netstandard2.0` build and fails when
 one references an assembly, or a version of it, that the package's declared dependencies do not give a consumer:

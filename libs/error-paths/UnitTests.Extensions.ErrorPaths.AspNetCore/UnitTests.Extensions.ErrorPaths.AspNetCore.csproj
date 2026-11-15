@@ -6,7 +6,7 @@
     <LangVersion>latest</LangVersion>
     <!-- Suppress XML documentation warnings for test projects -->
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <!-- Ave.Extensions.ErrorPaths.AspNetCore targets net10.0 only: -p:UseNs20=true does not apply here -->
+    <!-- Ave.Extensions.ErrorPaths.AspNetCore targets net10.0 only: -p:UseNs20=true and -p:UseNs21=true do not apply here -->
     <Ns20AssetUnderTest>false</Ns20AssetUnderTest>
   </PropertyGroup>
 

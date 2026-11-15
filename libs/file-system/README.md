@@ -417,6 +417,15 @@ Against the `netstandard2.0` build of the libraries (see the repository README):
 dotnet test extensions.slnx -p:UseNs20=true
 ```
 
+Against the `netstandard2.1` build of `.InMemory` and `.AzureFileStorage`, with the `netstandard2.0` build of the
+other libraries:
+
+```shell
+dotnet test extensions.slnx -p:UseNs21=true
+```
+
+Delete the `bin` and `obj` folders before you switch between these modes (see the repository README).
+
 `UnitTests.Extensions.FileSystem.AzureFileStorage` needs no Azure account, but 9 of its tests call the Azure SDK
 against a storage account host name that does not exist and wait for the SDK to give up, so the project takes
 about two minutes. Those tests have the trait `Category=Network`; CI leaves them out. To do the same locally:
@@ -429,9 +438,16 @@ dotnet test extensions.slnx --filter "Category!=Network"
 
 The packages target `netstandard2.0` and `net10.0`. `Ave.Extensions.FileSystem.InMemory` and
 `Ave.Extensions.FileSystem.AzureFileStorage` also target `netstandard2.1` (see below). What is tested: the test
-projects run on .NET 10, against the `net10.0` build and, with `-p:UseNs20=true`, against the `netstandard2.0`
-build. No test project runs against the `netstandard2.1` build. No test runs on a .NET Framework runtime, so this
-repository makes no promise about a particular .NET Framework version.
+projects run on .NET 10, in three modes:
+
+- by default, against the `net10.0` build;
+- with `-p:UseNs20=true`, against the `netstandard2.0` build of every library;
+- with `-p:UseNs21=true`, against the `netstandard2.1` build of `.InMemory` and `.AzureFileStorage` and the
+  `netstandard2.0` build of the other libraries. That is the combination an application on .NET Core 3.0 up to
+  .NET 9 gets.
+
+No test runs on a .NET Framework runtime or on .NET Core 3.0 up to .NET 9 itself, so this repository makes no
+promise about a particular version of those runtimes.
 
 ### The netstandard2.0 build
 

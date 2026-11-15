@@ -29,34 +29,52 @@
   </ItemGroup>
 
   <!--
-    Test switch: run the net10.0 test projects against the netstandard2.0 asset (-p:UseNs20=true).
+    Test switches: run the net10.0 test projects against the netstandard builds of the libraries.
+
+    -p:UseNs20=true: every library is the netstandard2.0 asset.
+    -p:UseNs21=true: every library is the netstandard2.1 asset where it has one, otherwise the netstandard2.0
+    asset. That is the choice NuGet makes for an application on .NET Core 3.0 up to .NET 9.
+    The two switches cannot be combined.
 
     Applies to UnitTests.*, IntegrationTests.* and PlatformTests.* projects, unless the project sets
     <Ns20AssetUnderTest>false</Ns20AssetUnderTest> because the library it tests has no netstandard2.0 asset.
+    That property covers both switches.
 
     Every project reference (direct or transitive) that targets netstandard2.0 gets
-    SetTargetFramework=TargetFramework=netstandard2.0, so the test builds and runs against that asset.
+    SetTargetFramework=TargetFramework=netstandard2.0; with UseNs21, one that targets netstandard2.1 gets
+    SetTargetFramework=TargetFramework=netstandard2.1 instead. So the test builds and runs against that asset.
     NuGet restore does not see SetTargetFramework: it restores the net10.0 dependencies of the referenced
     projects. Packages that only the netstandard2.0 asset needs, and that are not part of the net10.0 shared
     framework, are therefore added to the test project here.
 
-    eng/Ns20AssetCheck.cs is compiled into the test project: test NS20-001 fails unless every Ave.Extensions
-    library the test assembly loads is the netstandard2.0 asset.
+    eng/AssetCheck.cs is compiled into the test project. With UseNs20, test NS20-001 fails unless every
+    Ave.Extensions library the test assembly loads is the netstandard2.0 asset. With UseNs21, test NS21-001 fails
+    unless every one is the asset described above; the target frameworks of each referenced project reach that
+    test as AssemblyMetadata attributes of the test assembly, written below.
   -->
   <PropertyGroup>
     <_AveIsTestProject Condition="$(MSBuildProjectName.StartsWith('UnitTests.')) or $(MSBuildProjectName.StartsWith('IntegrationTests.')) or $(MSBuildProjectName.StartsWith('PlatformTests.'))">true</_AveIsTestProject>
     <_AveTestOnNs20 Condition="'$(UseNs20)' == 'true' and '$(_AveIsTestProject)' == 'true' and '$(Ns20AssetUnderTest)' != 'false'">true</_AveTestOnNs20>
+    <_AveTestOnNs21 Condition="'$(UseNs21)' == 'true' and '$(_AveIsTestProject)' == 'true' and '$(Ns20AssetUnderTest)' != 'false'">true</_AveTestOnNs21>
+    <DefineConstants Condition="'$(_AveTestOnNs21)' == 'true'">$(DefineConstants);AVE_TEST_ON_NS21</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_AveTestOnNs20)' == 'true'">
-    <!-- Referenced by the netstandard2.0 assets of the file-system family (IAsyncDisposable) -->
+  <ItemGroup Condition="'$(_AveTestOnNs20)' == 'true' or '$(_AveTestOnNs21)' == 'true'">
+    <!-- Referenced by the netstandard2.0 assets of the file-system family (IAsyncDisposable). With UseNs21,
+         Ave.Extensions.FileSystem is still the netstandard2.0 asset. -->
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
-    <Compile Include="$(MSBuildThisFileDirectory)eng/Ns20AssetCheck.cs" Link="Ns20AssetCheck.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)eng/AssetCheck.cs" Link="AssetCheck.cs" />
   </ItemGroup>
 
-  <Target Name="_AveUseNetStandard20Assets"
+  <Target Name="_AveRejectBothTestSwitches"
+          BeforeTargets="_CheckForInvalidConfigurationAndPlatform"
+          Condition="'$(UseNs20)' == 'true' and '$(UseNs21)' == 'true'">
+    <Error Text="UseNs20=true and UseNs21=true cannot be combined: choose one test mode (see README.md)." />
+  </Target>
+
+  <Target Name="_AveUseNetStandardAssets"
           BeforeTargets="_GetProjectReferenceTargetFrameworkProperties"
-          Condition="'$(_AveTestOnNs20)' == 'true' and '@(_MSBuildProjectReferenceExistent)' != ''">
+          Condition="('$(_AveTestOnNs20)' == 'true' or '$(_AveTestOnNs21)' == 'true') and '@(_MSBuildProjectReferenceExistent)' != ''">
     <MSBuild Projects="@(_MSBuildProjectReferenceExistent)"
              Targets="GetTargetFrameworks"
              BuildInParallel="$(BuildInParallel)"
@@ -68,16 +86,31 @@
     <ItemGroup>
       <_AveNs20Reference Include="@(_AveReferenceTargetFrameworks)"
                          Condition="$([System.String]::Copy(';%(_AveReferenceTargetFrameworks.TargetFrameworks);').Contains(';netstandard2.0;'))" />
+      <_AveNs21Reference Include="@(_AveReferenceTargetFrameworks)"
+                         Condition="'$(_AveTestOnNs21)' == 'true' and $([System.String]::Copy(';%(_AveReferenceTargetFrameworks.TargetFrameworks);').Contains(';netstandard2.1;'))" />
     </ItemGroup>
     <PropertyGroup>
       <_AveNs20ReferencePaths>;@(_AveNs20Reference->'%(FullPath)');</_AveNs20ReferencePaths>
+      <_AveNs21ReferencePaths>;@(_AveNs21Reference->'%(FullPath)');</_AveNs21ReferencePaths>
     </PropertyGroup>
     <ItemGroup>
+      <!-- netstandard2.0 where the project has it; with UseNs21, netstandard2.1 wins where the project has that -->
       <_MSBuildProjectReferenceExistent Condition="$(_AveNs20ReferencePaths.Contains(';%(_MSBuildProjectReferenceExistent.FullPath);'))">
         <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
       </_MSBuildProjectReferenceExistent>
+      <_MSBuildProjectReferenceExistent Condition="$(_AveNs21ReferencePaths.Contains(';%(_MSBuildProjectReferenceExistent.FullPath);'))">
+        <SetTargetFramework>TargetFramework=netstandard2.1</SetTargetFramework>
+      </_MSBuildProjectReferenceExistent>
+
+      <!-- For NS21-001: [assembly: AssemblyMetadata("AveTargetFrameworks:<project>", "<its TargetFrameworks>")] -->
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute" Condition="'$(_AveTestOnNs21)' == 'true'">
+        <_Parameter1>AveTargetFrameworks:%(_AveReferenceTargetFrameworks.Filename)</_Parameter1>
+        <_Parameter2>%(_AveReferenceTargetFrameworks.TargetFrameworks)</_Parameter2>
+      </AssemblyAttribute>
+
       <_AveReferenceTargetFrameworks Remove="@(_AveReferenceTargetFrameworks)" />
       <_AveNs20Reference Remove="@(_AveNs20Reference)" />
+      <_AveNs21Reference Remove="@(_AveNs21Reference)" />
     </ItemGroup>
   </Target>
 
