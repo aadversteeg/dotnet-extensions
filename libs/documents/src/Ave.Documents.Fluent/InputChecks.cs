@@ -317,9 +317,9 @@ internal static class InputChecks
                 yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "An attachment needs a file name.", attachment.FileName, "file-name", attachment.Source);
             }
 
-            if (!MediaType.IsMatch(attachment.MediaType))
+            if (attachment.MediaType is null || !MediaType.IsMatch(attachment.MediaType))
             {
-                yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "The media type is not of the form type/subtype.", attachment.MediaType, "media-type", attachment.Source);
+                yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "The media type is not of the form type/subtype.", attachment.MediaType ?? "null", "media-type", attachment.Source);
             }
 
             foreach (var problem in MetadataText(attachment.FileName, "file-name", attachment.Source)

@@ -205,10 +205,12 @@ public class ConformanceRefusalTests
     [InlineData("", "application/xml", "file-name")]
     [InlineData("data.xml", "xml", "media-type")]
     [InlineData("data.xml", "application/", "media-type")]
-    public void An_attachment_needs_a_name_and_a_media_type(string fileName, string mediaType, string property)
+    [InlineData("data.xml", null, "media-type")]
+    [InlineData(null, "application/xml", "file-name")]
+    public void An_attachment_needs_a_name_and_a_media_type(string? fileName, string? mediaType, string property)
     {
         var line = CurrentLine() + 1;
-        var attachment = Attachment(fileName, "<a/>"u8, mediaType).WithRelationship(AttachmentRelationship.Data);
+        var attachment = Attachment(fileName!, "<a/>"u8, mediaType!).WithRelationship(AttachmentRelationship.Data);
 
         var error = DocumentTranslator.ToModel(Document([Paragraph("x")]).FontFamily("Lato").Attach(attachment)).Error;
 
