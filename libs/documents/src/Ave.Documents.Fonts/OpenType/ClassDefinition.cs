@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Ave.Documents.Core;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Fonts.OpenType;
 
@@ -14,37 +17,31 @@ namespace Ave.Documents.Fonts.OpenType;
 /// Kept as ranges and searched, never expanded glyph by glyph: in the fonts of large scripts one range record gives
 /// a class to tens of thousands of glyphs (Malgun Gothic: 28 215 glyphs in a GDEF of 30 bytes).
 /// </remarks>
-/// <param name="Ranges">The ranges of glyphs with a class other than 0, in glyph order, none overlapping (see
-/// <see cref="Ranges"/>).</param>
-public sealed record ClassDefinition(ImmutableArray<ClassDefinition.Range> Ranges)
+public sealed record ClassDefinition
 {
-    private readonly ImmutableArray<Range> _ranges = Checked(Ranges);
+    // Made only by Of (ranges checked) or by the parser (which checks them itself, see Read): the binary search needs
+    // the ranges in glyph order, and there is no other way to set them.
+    private ClassDefinition(ImmutableArray<Range> ranges) => Ranges = ranges;
 
-    /// <summary>The ranges in glyph order, none overlapping and none ending before it starts, which the binary search of
-    /// <see cref="ClassOf"/> needs; checked whenever they are set (an <see cref="ArgumentException"/> for ranges that
-    /// break it, a programming error: the parser never makes such). An unset array is no ranges.</summary>
-    public ImmutableArray<Range> Ranges
+    /// <summary>The ranges in glyph order, none overlapping and none ending before it starts.</summary>
+    public ImmutableArray<Range> Ranges { get; }
+
+    /// <summary>Makes a class definition from ranges, which must be in glyph order, none overlapping and none ending before it
+    /// starts ("in startGlyphID order"), as the binary search needs.</summary>
+    /// <param name="ranges">The ranges; an unset array is no ranges.</param>
+    /// <returns>The value, or a <see cref="FontErrorCodes.InvalidRanges"/> error naming the first range that breaks the
+    /// order.</returns>
+    public static Result<ClassDefinition, Error> Of(ImmutableArray<Range> ranges)
     {
-        get => _ranges;
-        init => _ranges = Checked(value);
-    }
-
-    private static ImmutableArray<Range> Checked(ImmutableArray<Range> ranges)
-    {
-        if (ranges.IsDefault)
-        {
-            return [];
-        }
-
-        for (var index = 0; index < ranges.Length; index++)
-        {
-            if (ranges[index].End < ranges[index].Start || (index > 0 && ranges[index].Start <= ranges[index - 1].End))
-            {
-                throw new ArgumentException($"Class ranges must be in glyph order and not overlap; range {index} ({ranges[index].Start}–{ranges[index].End}) is not.", nameof(Ranges));
-            }
-        }
-
-        return ranges;
+        ImmutableArray<Range> all = ranges.IsDefault ? [] : ranges;
+        var broken = Enumerable.Range(0, all.Length)
+            .FirstOrDefault(index => all[index].End < all[index].Start || (index > 0 && all[index].Start <= all[index - 1].End), -1);
+        return broken < 0
+            ? Result<ClassDefinition, Error>.Success(new ClassDefinition(all))
+            : Result<ClassDefinition, Error>.Failure(new Error(
+                    FontErrorCodes.InvalidRanges,
+                    $"Class ranges must be in glyph order and not overlap; range {broken} ({all[broken].Start}–{all[broken].End}) is not.")
+                .With(ErrorMetadataKeys.Value, broken.ToString(System.Globalization.CultureInfo.InvariantCulture)));
     }
 
     /// <summary>Consecutive glyphs that share a class.</summary>

@@ -18,7 +18,7 @@ public class PositioningRuleTests
         // OpenType GPOS, ValueRecord: "yPlacement: vertical adjustment for placement, in design units"; it moves the
         // glyph without changing the pen movement. Pair (1, 2) gives the first glyph yPlacement 120 and xAdvance −30.
         var pairs = new PairAdjustmentByGlyph(
-            new Coverage([new Coverage.Range(1, 1, 0)]),
+            Coverage.Of([new Coverage.Range(1, 1, 0)]).Value,
             [new Dictionary<ushort, PairValues> { [2] = new PairValues(new ValueRecord(15, 120, -30, 0), default) }.ToFrozenDictionary()],
             secondHasValues: false);
         ImmutableArray<GlyphItem> glyphs =
@@ -41,7 +41,7 @@ public class PositioningRuleTests
         // HarfBuzz skips default-ignorables when it matches GPOS input (hb-ot-layout-gsubgpos.hh, the skipping
         // iterator), so "A", ZWJ, "V" is kerned as "AV": the pair's second glyph is the next one that is not skipped.
         var pairs = new PairAdjustmentByGlyph(
-            new Coverage([new Coverage.Range(1, 1, 0)]),
+            Coverage.Of([new Coverage.Range(1, 1, 0)]).Value,
             [new Dictionary<ushort, PairValues> { [2] = new PairValues(new ValueRecord(0, 0, -30, 0), default) }.ToFrozenDictionary()],
             secondHasValues: false);
         ImmutableArray<GlyphItem> glyphs =
@@ -62,9 +62,9 @@ public class PositioningRuleTests
         // Base glyph 1 has an anchor at (100, 500) for mark class 0; the mark, glyph 5, has its anchor at (0, 0). A ZWJ
         // between them is not a base: the mark goes on glyph 1, 100 units right and 500 up of glyph 1's origin.
         var marks = new MarkToBase(
-            new Coverage([new Coverage.Range(5, 5, 0)]),
+            Coverage.Of([new Coverage.Range(5, 5, 0)]).Value,
             [(0, new Anchor(0, 0))],
-            new Coverage([new Coverage.Range(1, 1, 0)]),
+            Coverage.Of([new Coverage.Range(1, 1, 0)]).Value,
             [[new Anchor(100, 500)]]);
         ImmutableArray<GlyphItem> glyphs =
         [

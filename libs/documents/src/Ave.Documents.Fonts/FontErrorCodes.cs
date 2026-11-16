@@ -29,6 +29,10 @@ public static class FontErrorCodes
         public static readonly ErrorCode InvalidValue = _ / "InvalidValue";
     }
 
+    /// <summary>Ranges given for a coverage or a class definition that are not in glyph order, overlap, or end before
+    /// they start. Metadata: Value (the index of the first such range).</summary>
+    public static readonly ErrorCode InvalidRanges = _ / "InvalidRanges";
+
     /// <summary>
     /// The text contains a character the font has no glyph for. Never silently dropped.
     /// Metadata: FontName, Character, CodePoint, SourceFile, SourceLine.

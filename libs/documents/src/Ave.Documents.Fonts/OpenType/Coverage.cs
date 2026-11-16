@@ -1,7 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Ave.Documents.Core;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Documents.Fonts.OpenType;
 
@@ -14,36 +16,31 @@ namespace Ave.Documents.Fonts.OpenType;
 /// record may cover tens of thousands of glyphs, so the work and the memory are those of the records, not of the
 /// glyphs they cover.
 /// </remarks>
-/// <param name="Ranges">The covered ranges in glyph order, none overlapping (see <see cref="Ranges"/>).</param>
-public sealed record Coverage(ImmutableArray<Coverage.Range> Ranges)
+public sealed record Coverage
 {
-    private readonly ImmutableArray<Range> _ranges = Checked(Ranges);
+    // Made only by Of (ranges checked) or by the parser (which checks them itself, see Read): the binary search needs
+    // the ranges in glyph order, and there is no other way to set them.
+    private Coverage(ImmutableArray<Range> ranges) => Ranges = ranges;
 
-    /// <summary>The covered ranges in glyph order, none overlapping and none ending before it starts, which the binary
-    /// search of <see cref="IndexOf"/> needs; checked whenever they are set (an <see cref="ArgumentException"/> for
-    /// ranges that break it, a programming error: the parser never makes such). An unset array is no ranges.</summary>
-    public ImmutableArray<Range> Ranges
+    /// <summary>The covered ranges in glyph order, none overlapping and none ending before it starts.</summary>
+    public ImmutableArray<Range> Ranges { get; }
+
+    /// <summary>Makes a coverage from ranges, which must be in glyph order, none overlapping and none ending before it
+    /// starts ("in startGlyphID order"), as the binary search needs.</summary>
+    /// <param name="ranges">The ranges; an unset array is no ranges.</param>
+    /// <returns>The value, or a <see cref="FontErrorCodes.InvalidRanges"/> error naming the first range that breaks the
+    /// order.</returns>
+    public static Result<Coverage, Error> Of(ImmutableArray<Range> ranges)
     {
-        get => _ranges;
-        init => _ranges = Checked(value);
-    }
-
-    private static ImmutableArray<Range> Checked(ImmutableArray<Range> ranges)
-    {
-        if (ranges.IsDefault)
-        {
-            return [];
-        }
-
-        for (var index = 0; index < ranges.Length; index++)
-        {
-            if (ranges[index].End < ranges[index].Start || (index > 0 && ranges[index].Start <= ranges[index - 1].End))
-            {
-                throw new ArgumentException($"Coverage ranges must be in glyph order and not overlap; range {index} ({ranges[index].Start}–{ranges[index].End}) is not.", nameof(Ranges));
-            }
-        }
-
-        return ranges;
+        ImmutableArray<Range> all = ranges.IsDefault ? [] : ranges;
+        var broken = Enumerable.Range(0, all.Length)
+            .FirstOrDefault(index => all[index].End < all[index].Start || (index > 0 && all[index].Start <= all[index - 1].End), -1);
+        return broken < 0
+            ? Result<Coverage, Error>.Success(new Coverage(all))
+            : Result<Coverage, Error>.Failure(new Error(
+                    FontErrorCodes.InvalidRanges,
+                    $"Coverage ranges must be in glyph order and not overlap; range {broken} ({all[broken].Start}–{all[broken].End}) is not.")
+                .With(ErrorMetadataKeys.Value, broken.ToString(System.Globalization.CultureInfo.InvariantCulture)));
     }
 
     /// <summary>A run of consecutive covered glyphs whose coverage indexes count up from <paramref name="StartIndex"/>.</summary>

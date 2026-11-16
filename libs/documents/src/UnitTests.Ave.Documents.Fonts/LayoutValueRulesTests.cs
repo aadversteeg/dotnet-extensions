@@ -6,9 +6,10 @@ namespace UnitTests.Ave.Documents.Fonts;
 /// <summary>
 /// The public layout values hold what their binary searches need, whoever makes them: a coverage and a class definition
 /// take ranges in glyph order, none overlapping and none ending before it starts ("in startGlyphID order", OpenType
-/// "OpenType Layout Common Table Formats"); a range list that breaks this is a programming error and is refused when the
-/// value is made, not answered with wrong classes later. A glyph definition table has glyph classes exactly when it
-/// is given a glyph class definition.
+/// "OpenType Layout Common Table Formats"). They are made only by a factory that answers ranges breaking this with an
+/// error value (<c>Documents.Font.InvalidRanges</c>), never with an exception or with wrong classes later; there is no
+/// other way to set the ranges. A glyph definition table has glyph classes exactly when it is given a glyph class
+/// definition.
 /// </summary>
 public class LayoutValueRulesTests
 {
@@ -21,13 +22,12 @@ public class LayoutValueRulesTests
 
     [Theory]
     [MemberData(nameof(BadCoverages))]
-    public void A_coverage_of_ranges_out_of_glyph_order_is_refused_when_made(string what, Coverage.Range[] ranges)
+    public void A_coverage_of_ranges_out_of_glyph_order_is_an_error_value(string what, Coverage.Range[] ranges)
     {
-        var make = () => new Coverage([.. ranges]);
+        var made = Coverage.Of([.. ranges]);
 
-        make.Should().Throw<ArgumentException>(what);
-        var changed = () => Coverage.Empty with { Ranges = [.. ranges] };
-        changed.Should().Throw<ArgumentException>(what + ", also through with");
+        made.Error.Code.Should().Be(FontErrorCodes.InvalidRanges, what);
+        made.Error.Metadata![global::Ave.Documents.Core.ErrorMetadataKeys.Value].Should().Be(what == "out of order" || what == "overlapping" ? "1" : "0", what + ": the first range that breaks the order");
     }
 
     public static TheoryData<string, ClassDefinition.Range[]> BadClassDefinitions => new()
@@ -39,24 +39,27 @@ public class LayoutValueRulesTests
 
     [Theory]
     [MemberData(nameof(BadClassDefinitions))]
-    public void A_class_definition_of_ranges_out_of_glyph_order_is_refused_when_made(string what, ClassDefinition.Range[] ranges)
-    {
-        var make = () => new ClassDefinition([.. ranges]);
+    public void A_class_definition_of_ranges_out_of_glyph_order_is_an_error_value(string what, ClassDefinition.Range[] ranges) =>
+        ClassDefinition.Of([.. ranges]).Error.Code.Should().Be(FontErrorCodes.InvalidRanges, what);
 
-        make.Should().Throw<ArgumentException>(what);
+    [Fact]
+    public void Ranges_in_glyph_order_make_a_value_that_finds_them()
+    {
+        Coverage.Of([new(1, 3, 0), new(7, 7, 3)]).Value.IndexOf(new GlyphId(7)).Should().Be(3);
+        ClassDefinition.Of([new(1, 3, 2), new(4, 4, 5)]).Value.ClassOf(new GlyphId(4)).Should().Be(5);
     }
 
     [Fact]
     public void An_unset_range_list_is_no_ranges()
     {
-        new Coverage(default).IndexOf(new GlyphId(1)).Should().BeNull();
-        new ClassDefinition(default).ClassOf(new GlyphId(1)).Should().Be(0);
+        Coverage.Of(default).Value.IndexOf(new GlyphId(1)).Should().BeNull();
+        ClassDefinition.Of(default).Value.ClassOf(new GlyphId(1)).Should().Be(0);
     }
 
     [Fact]
     public void Glyph_definitions_have_glyph_classes_exactly_when_given_a_glyph_class_definition()
     {
-        var classes = new ClassDefinition([new ClassDefinition.Range(1, 1, GlyphDefinitions.MarkClass)]);
+        var classes = ClassDefinition.Of([new ClassDefinition.Range(1, 1, GlyphDefinitions.MarkClass)]).Value;
 
         new GlyphDefinitions(classes, ClassDefinition.Empty).HasGlyphClasses.Should().BeTrue();
         new GlyphDefinitions(null, ClassDefinition.Empty).HasGlyphClasses.Should().BeFalse();
