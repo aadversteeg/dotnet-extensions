@@ -48,8 +48,8 @@ internal static class GlyphPositioning
         [.. glyphs.Select(item => item.Class == GlyphClass.Mark ? item with { XAdvance = 0 } : item)];
 
     /// <summary>
-    /// Kerning from the 'kern' table: each pair of adjacent glyphs, skipping marks (a mark sits on its base and
-    /// does not separate a pair), gets the table's adjustment added to the first glyph's advance. The OpenType spec
+    /// Kerning from the 'kern' table: each pair of adjacent glyphs, skipping marks and invisible characters
+    /// (<see cref="IsSkippedByKerning"/>: neither separates a pair), gets the table's adjustment added to the first glyph's advance. The OpenType spec
     /// ('kern', format 0) only says "If this value is greater than zero, the characters will be moved apart. If this
     /// value is less than zero, the character will be moved closer together"; putting the whole value on the first
     /// glyph's advance is the engine's convention (the positions on the page are the same either way).
@@ -68,7 +68,7 @@ internal static class GlyphPositioning
                 return null;
             }
 
-            if (glyphs[index].Class == GlyphClass.Mark || NextIndex(glyphs, index, item => item.Class == GlyphClass.Mark, budget) is not { } next)
+            if (IsSkippedByKerning(glyphs[index]) || NextIndex(glyphs, index, IsSkippedByKerning, budget) is not { } next)
             {
                 continue;
             }
@@ -79,6 +79,10 @@ internal static class GlyphPositioning
 
         return budget.Exceeded is null ? [.. glyphs] : null;
     }
+
+    /// <summary>A glyph the 'kern' table passes over: a mark, which sits on its base, and an invisible character (a
+    /// default ignorable), which takes no space; as the GPOS path skips them (<see cref="GlyphFilter.SkipsInPositioning"/>).</summary>
+    private static bool IsSkippedByKerning(GlyphItem item) => item.Class == GlyphClass.Mark || item.IsDefaultIgnorable;
 
     /// <summary>One lookup over the whole buffer (lookups with a mark filtering set are skipped, as in GSUB); null once
     /// the budget is used up. Each position costs an operation, and each glyph a search steps over another.</summary>

@@ -70,7 +70,25 @@ public class OpenTypeShapingTests
         ImmutableArray<GlyphItem> glyphs =
         [
             new(new GlyphId(1), "A", GlyphClass.Base, XAdvance: 600),
-            new(new GlyphId(9), "́", GlyphClass.Mark, XAdvance: 0),
+            new(new GlyphId(9), "\u0301", GlyphClass.Mark, XAdvance: 0),
+            new(new GlyphId(2), "V", GlyphClass.Base, XAdvance: 600),
+        ];
+
+        var kerned = GlyphPositioning.ApplyLegacyKerning(glyphs, kerning, new ShapingBudget(glyphs.Length))!.Value;
+
+        kerned.Select(glyph => glyph.XAdvance).Should().Equal(550, 0, 600);
+    }
+
+    [Fact]
+    public void The_legacy_kern_table_skips_an_invisible_character_between_a_pair_as_GPOS_does()
+    {
+        // A, U+2060 WORD JOINER (default ignorable: no glyph, no width), V: the pair A V is kerned through it, as the GPOS
+        // path's skipping does (PositioningRuleTests).
+        var kerning = new LegacyKerning([new KerningSubtable(new Dictionary<(ushort, ushort), short> { [(1, 2)] = -50 }.ToFrozenDictionary(), false)]);
+        ImmutableArray<GlyphItem> glyphs =
+        [
+            new(new GlyphId(1), "A", GlyphClass.Base, XAdvance: 600),
+            new(new GlyphId(0), "\u2060", GlyphClass.Base, XAdvance: 0) { IsDefaultIgnorable = true },
             new(new GlyphId(2), "V", GlyphClass.Base, XAdvance: 600),
         ];
 
