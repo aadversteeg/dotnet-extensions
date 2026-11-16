@@ -135,14 +135,15 @@ public class TableBreakLineTests
         // for the next page: a row continued on a page holds content, or lies beside a spanning cell that does.
         // Offsets move every row through the window where its content fits and its line does not; page areas
         // smaller than a unit make the first unit of each page break inside itself, where no break before it exists
-        // (from 20pt: the first row's one-line cell with its lines and padding takes 19pt; on a smaller page area the
-        // table does not fit at all, which is an error, not a layout).
+        // (from 20pt with slice, which lays the table out from 19pt; with clone from 22pt, one line width more: the
+        // cut ends the page with the whole 3pt line below it, and the cut content keeps clear of that line. On a smaller
+        // page area the table does not fit at all, which is an error, not a layout).
         for (var offset = 0.0; offset < 60; offset += 0.25)
         {
             UnitsKeepEveryPartInsideThePage(offset, 120, mode);
         }
 
-        for (var pageHeight = 20.0; pageHeight < 60; pageHeight += 0.25)
+        for (var pageHeight = mode == BoxDecorationBreak.Clone ? 22.0 : 20.0; pageHeight < 60; pageHeight += 0.25)
         {
             UnitsKeepEveryPartInsideThePage(0, pageHeight, mode);
         }
@@ -204,21 +205,24 @@ public class TableBreakLineTests
     }
 
     [Fact]
-    public void A_cut_that_would_complete_the_row_moves_up_by_the_row_s_share_of_the_line_below()
+    public void With_clone_a_cut_inside_a_row_lies_the_lower_half_of_the_line_below_it_above_the_page_end()
     {
-        // Clone, one unit, page area 27.5. Page 2 resumes inside the unit's second row: its rest ("s00y", "s00z" and
-        // "b00") with the half line below is exactly 27.5, but the table's bottom line needs 1.5 more, so the row does
-        // not fit. Cut at the page end, every cell would complete, which leaves nothing for a next page; the cut moves
-        // up 1.5 instead, and "s00z" goes on to page 3 with the bottom line. Before, the table did not fit at all.
+        // Clone, one unit, page area 27.5. Page 2 resumes inside the unit's second row, the table's last: its rest
+        // ("s00y", "s00z" and "b00") with the half line below is exactly 27.5, but the table's bottom line needs 1.5
+        // more, so the row does not fit. The cut ends the page with the whole bottom line (3pt), so it lies 1.5 above
+        // the page end, at 26: "s00z" no longer fits above it and goes on to page 3, and page 2 is closed by the line
+        // from 24.5 to 27.5, as page 3 is.
         var (document, _) = SpannedUnits(0, 27.5, BoxDecorationBreak.Clone, units: 1);
 
         var pages = Paginate(document);
 
         var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
         tables.Should().HaveCount(3);
-        tables[1].Size.Height.Should().BeApproximately(26, Epsilon);
+        tables[1].Size.Height.Should().BeApproximately(27.5, Epsilon);
         Words(tables[1]).Should().Equal("s00y", "b00");
         Words(tables[2]).Should().Equal("s00z");
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        Wide(tables[1]).Select(rule => (rule.Offset.Y, rule.Fragment.Size.Height)).Should().Equal((0.0, 3.0), (24.5, 3.0));
     }
 
     [Theory]

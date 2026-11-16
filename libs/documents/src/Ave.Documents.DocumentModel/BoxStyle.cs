@@ -54,7 +54,7 @@ public sealed record BoxStyle
     /// <see cref="CellSpan.Single"/> for every other box.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;
 
-    /// <summary>How a table's grid lines are drawn where the table breaks between two rows, named after CSS
+    /// <summary>How a table's grid lines are drawn where the table breaks, between two rows or inside one, named after CSS
     /// <c>box-decoration-break</c> (CSS Fragmentation 3 §5.4); <see cref="BoxDecorationBreak.Slice"/>, the CSS initial
     /// value, unless set. Used by the tracks algorithm for a table; every other box is sliced.</summary>
     public BoxDecorationBreak DecorationBreak { get; init; }
@@ -62,16 +62,18 @@ public sealed record BoxStyle
 
 /// <summary>
 /// The values of <see cref="BoxStyle.DecorationBreak"/>, named after <c>box-decoration-break</c> (CSS Fragmentation 3
-/// §5.4), for the grid line of a table at a break between two rows.
+/// §5.4), for the grid lines of a table at a break between two rows or inside one.
 /// </summary>
 public enum BoxDecorationBreak
 {
     /// <summary>The line is cut along its centre: its upper half ends the page and its lower half starts the next, as
-    /// Chromium prints collapsed table borders. A row fits when it fits down to the centre of the line below it.</summary>
+    /// Chromium prints collapsed table borders. A row fits when it fits down to the centre of the line below it. A row
+    /// cut inside itself gets no line at the cut.</summary>
     Slice,
 
     /// <summary>Each fragment of the table is closed by a whole line: the page ends with the whole line and the next
-    /// page starts with it again, as word processors print tables. For collapsed table borders this is the engine's
+    /// page starts with it again, as word processors print tables; a row cut inside itself ends the page with the whole
+    /// line below it and goes on under the whole line above it. For collapsed table borders this is the engine's
     /// rule, modelled on <c>clone</c> (which gives each fragment its own complete border); no specification defines it,
     /// and Chromium does not implement it for collapsed borders (it paints half the line on each side of a break).
     /// A row fits when it fits with the whole line below it.</summary>

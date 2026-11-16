@@ -44,8 +44,15 @@ namespace Ave.Documents.Layout;
 /// </list>
 /// <para>Only the last row of the table needs the half of the table's bottom border that lies inside the table. A break
 /// inside a row is a breakpoint only when it cuts content: a row whose cells all end on this page is never split into a
-/// full row and an empty one. LIMIT: at a break inside a row no line is drawn at the cut, whatever the table's
-/// decoration break.</para>
+/// full row and an empty one.</para>
+/// <para><b>The grid lines at a break inside a row</b> follow the same decoration break. <see cref="BoxDecorationBreak.Slice"/>
+/// draws nothing at the cut: the row's cells are boxes cut by a break, which get no border there (CSS Fragmentation 3
+/// §5.4). <see cref="BoxDecorationBreak.Clone"/> closes the table on both pages, as word processors do: the page ends
+/// with the whole line below the cut row (the table's bottom border when it is the last row), centred so that its lower
+/// edge is the page end, and the next page starts with the whole line above the row, as at the top of a table. Each cut
+/// cell that ends in the row keeps clear of the line below it by half the line's width, and each cut cell that starts in
+/// the row starts its rest half the line's width below the line above it, as whole cells do. A cell that spans past the
+/// cut row has no line at the cut in its columns, as at a break between two rows that it spans.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every
 /// later fragment. They never break. A break right after the header rows, with no body row on the page, is not a
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
@@ -153,8 +160,16 @@ internal static class TablePage
         // down. A page that continues after a break between rows starts with the lower half of the line at the break,
         // so its first row starts at the top (see remarks). That line is the one between the last row of the previous
         // page and this page's first row, resolved with both rows exactly as the upper half was: the two halves are
-        // halves of one line, and a row group's own top border takes part only above the group's first row.
-        var continuesAfterBreak = !isFirst && !includeHeader && !resume.RowIsSplit;
+        // halves of one line, and a row group's own top border takes part only above the group's first row. With clone a
+        // row cut inside itself starts again under the whole line above it, which is resolved as on the page it started
+        // on (see remarks); the line between a repeated header and the row is that line too.
+        var reopensCutRow = !isFirst && resume.RowIsSplit && IsCloned(table);
+        if (reopensCutRow)
+        {
+            resumeContext = CollapsedBorders.LineContext.Interior;
+        }
+
+        var continuesAfterBreak = !isFirst && !includeHeader && (!resume.RowIsSplit || reopensCutRow);
         var firstLine = continuesAfterBreak
             ? ContinuationLine(table, firstRow.Value, new CollapsedBorders.LineContext(false, false, resumeCut))
             : new LineAt(null, firstRow, topContext, table.HorizontalWidth(null, firstRow, topContext) / 2);
@@ -259,11 +274,20 @@ internal static class TablePage
         above is null ? null : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, IsCloned(table) ? LinePart.Whole : LinePart.UpperHalf);
 
     /// <summary>The line that starts a page after a break between rows, resolved from the row before the break and the
-    /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down.</summary>
-    private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context) =>
-        IsCloned(table)
-            ? new LineAt(firstRow - 1, firstRow, context, table.HorizontalWidth(firstRow - 1, firstRow, context) / 2)
-            : new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
+    /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down. With
+    /// clone after a cut inside the table's first row there is no row before: the line is the table's top line.</summary>
+    private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context)
+    {
+        if (!IsCloned(table))
+        {
+            return new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
+        }
+
+        var (above, lineContext) = firstRow == 0
+            ? ((int?)null, new CollapsedBorders.LineContext(true, false, new HashSet<int>()))
+            : (firstRow - 1, context);
+        return new LineAt(above, firstRow, lineContext, table.HorizontalWidth(above, firstRow, lineContext) / 2);
+    }
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,
     /// the half of the table's bottom border inside the table; for any other row, with clone the half of the line below

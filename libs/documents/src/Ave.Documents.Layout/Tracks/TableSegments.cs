@@ -44,9 +44,16 @@ internal static class TableSegments
         public double Height => Heights.Sum();
     }
 
-    /// <summary>A cut cell: its content laid out in the slice height; an empty slice when it is complete or nothing
-    /// of it fits. Returns the fragment, stretched to the slice, and where the cell continues.</summary>
-    internal static Result<(BoxFragment Fragment, CellBreak Next), Error> Slice(TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight)
+    /// <summary>
+    /// A cut cell: its content laid out in the slice height less its <see cref="ReopenedInset"/> at the top; an empty
+    /// slice when it is complete or nothing of it fits. A cell whose content goes on past the cut keeps
+    /// <paramref name="clearance"/> free above the cut (clone keeps it clear of the line drawn there,
+    /// <see cref="TablePage"/>); a cell that ends in the slice needs no clearance, since its own box already holds the half
+    /// of the line below it (<see cref="CellLayoutBox"/>). So the cell is laid out in the whole slice first, and only when
+    /// it does not end there again, without the clearance. Returns the fragment, stretched to the slice, and where the
+    /// cell continues.
+    /// </summary>
+    internal static Result<(BoxFragment Fragment, CellBreak Next), Error> Slice(TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0)
     {
         var info = table.Grid.Cells[cell.Cell];
         var box = CellLayoutBox(table, segment, cell);
@@ -56,14 +63,40 @@ internal static class TableSegments
             return Result<(BoxFragment, CellBreak), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true)));
         }
 
-        var space = new ConstraintSpace(width, sliceHeight, IsAtPageStart: false, IsNewFormattingContext: true);
-        return table.Environment.Layout(box, space, cell.Token).OnSuccessMap(result => result switch
-        {
-            LayoutResult.Placed placed => (Stretch(placed.Fragment, sliceHeight, VerticalAlign.Top),
-                new CellBreak(cell.Cell, placed.Continuation, placed.Continuation is null)),
-            _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false)),
-        });
+        var inset = ReopenedInset(table, segment, cell);
+        Result<LayoutResult, Error> LayOutIn(double height) =>
+            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: false, IsNewFormattingContext: true), cell.Token);
+        return LayOutIn(sliceHeight)
+            .OnSuccessBind(whole => clearance <= 0 || whole is LayoutResult.Placed { Continuation: null } ? Result<LayoutResult, Error>.Success(whole) : LayOutIn(sliceHeight - clearance))
+            .OnSuccessMap(result => result switch
+            {
+                LayoutResult.Placed placed => (Stretch(Lowered(placed.Fragment, inset), sliceHeight, VerticalAlign.Top),
+                    new CellBreak(cell.Cell, placed.Continuation, placed.Continuation is null)),
+                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false)),
+            });
     }
+
+    /// <summary>
+    /// With clone, the rest of a cell cut inside its own row starts under the whole line that starts the page (see
+    /// <see cref="TablePage"/>): half that line's width lies in the cell, as for a whole cell (<see cref="CellLayoutBox"/>),
+    /// but the cell's own layout gives a continued box no top inset, so the rest is lowered by it here. 0 for every other
+    /// cell, and with slice.
+    /// </summary>
+    internal static double ReopenedInset(TableGeometry table, Segment segment, ActiveCell cell) =>
+        TablePage.IsCloned(table) && cell.Token is not null && table.Grid.Cells[cell.Cell].Row == segment.FirstRow
+            ? table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2
+            : 0;
+
+    /// <summary>A fragment moved <paramref name="inset"/> down inside itself, and that much taller.</summary>
+    private static BoxFragment Lowered(BoxFragment fragment, double inset) =>
+        inset <= 0
+            ? fragment
+            : new BoxFragment(
+                fragment.Box,
+                new Size(fragment.Size.Width, fragment.Size.Height + inset),
+                [.. fragment.Children.Select(child => child with { Offset = child.Offset + new Point(0, inset) })],
+                fragment.Border,
+                fragment.IsRepeated);
 
     /// <summary>Places a measured segment whole: its rows at their heights, every cell as tall as its rows.</summary>
     internal static Content PlaceWhole(TableGeometry table, Content content, Segment segment, bool isRepeated)
@@ -98,7 +131,7 @@ internal static class TableSegments
             .TraverseAll(cell => table.Environment
                 .Layout(CellLayoutBox(table, shell, cell), new ConstraintSpace(table.CellWidth(table.Grid.Cells[cell.Cell]), double.PositiveInfinity, false, true), cell.Token)
                 .OnSuccessBind(result => result is LayoutResult.Placed { Continuation: null } placed
-                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, placed.Fragment))
+                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell))))
                     : Result<KeyValuePair<int, BoxFragment>, Error>.Failure(
                         LayoutErrors.InvalidContent(table.Grid.Cells[cell.Cell].Box, "a table cell cannot hold a forced page break."))))
             .OnSuccessMap(natural =>

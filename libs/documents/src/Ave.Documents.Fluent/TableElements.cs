@@ -43,18 +43,22 @@ public sealed record TableElement(
     public TableElement CellPadding(Length vertical, Length horizontal) =>
         this with { CellDefaults = CellDefaults with { PaddingTop = vertical, PaddingBottom = vertical, PaddingLeft = horizontal, PaddingRight = horizontal } };
 
-    /// <summary>How the grid line is drawn where the table continues on the next page:
-    /// <see cref="BoxDecorationBreak.Clone"/> (the default for a table) repeats the whole line, at the end of the page
-    /// and again at the top of the next; <see cref="BoxDecorationBreak.Slice"/> splits it, half on each page.</summary>
+    /// <summary>How the grid lines are drawn where the table continues on the next page:
+    /// <see cref="BoxDecorationBreak.Clone"/> (the default for a table) closes the table on both pages with whole lines —
+    /// at a break between rows the line there ends the page and starts the next, at a cut inside a row the line below it
+    /// ends the page and the line above it starts the next; <see cref="BoxDecorationBreak.Slice"/> splits the line at a
+    /// break between rows, half on each page, and draws none at a cut inside a row.</summary>
     public BoxDecorationBreak LinesAtBreaks { get; init; } = BoxDecorationBreak.Clone;
 
     /// <summary>At a page break between two rows, the page ends with the whole grid line and the next page starts with
-    /// it again, as word processors print a table. This is the default.</summary>
+    /// it again; a row cut inside itself ends the page with the whole line below it and goes on under the whole line
+    /// above it: the table is closed on both pages, as word processors print a table. This is the default.</summary>
     /// <returns>A copy that repeats the line.</returns>
     public TableElement RepeatLinesAtBreaks() => this with { LinesAtBreaks = BoxDecorationBreak.Clone };
 
     /// <summary>At a page break between two rows, the grid line is split along its centre: the upper half ends the page,
-    /// the lower half starts the next, as browsers print a table (CSS <c>box-decoration-break: slice</c>).</summary>
+    /// the lower half starts the next; a row cut inside itself gets no line at the cut; as browsers print a table (CSS
+    /// <c>box-decoration-break: slice</c>).</summary>
     /// <returns>A copy that splits the line.</returns>
     public TableElement SplitLinesAtBreaks() => this with { LinesAtBreaks = BoxDecorationBreak.Slice };
 

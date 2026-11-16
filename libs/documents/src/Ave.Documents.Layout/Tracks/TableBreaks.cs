@@ -71,8 +71,9 @@ internal static class TableBreaks
             if (!Fitting.Fits(top + segment.Heights[row - segment.FirstRow] + InsideBelow(table, row), height) || row == segment.LastRow)
             {
                 // A break inside the row ends the page inside the row's cells, below the whole line above the row: the
-                // page must reach the bottom of that line, or its lower half would be cut off at the page end.
-                if (Fitting.Fits(top + LineInside(table, segment, row), height))
+                // page must reach the bottom of that line, or its lower half would be cut off at the page end. With
+                // clone the cut also needs the half of the line below the row that lies under the cut (see Take).
+                if (Fitting.Fits(top + LineInside(table, segment, row) + CutLineBelow(table, row), height))
                 {
                     yield return new Breakpoint(BreakKind.InsideRow, row, InsideAppeal(table.Grid, row), content, segment);
                 }
@@ -81,6 +82,10 @@ internal static class TableBreaks
             }
         }
     }
+
+    /// <summary>What a cut inside <paramref name="row"/> needs below it: with clone, the lower half of the whole line
+    /// below the row that ends the page (<see cref="InsideBelow"/>); with slice nothing, as no line is drawn there.</summary>
+    private static double CutLineBelow(TableGeometry table, int row) => IsCloned(table) ? InsideBelow(table, row) : 0;
 
     /// <summary>
     /// How far the line above <paramref name="row"/> reaches below the row's top: half its width. A row's top is the
@@ -134,6 +139,16 @@ internal static class TableBreaks
             return Cut(table, breakpoint.Content, segment, row, segment.RowTop(row), inside: false, breakpoint.Appeal);
         }
 
+        // With clone the cut ends the page with the whole line below the row (see TablePage), so it lies that line's
+        // lower half above the page end.
+        if (IsCloned(table))
+        {
+            var cut = height - CutLineBelow(table, row);
+            return Fitting.Fits(segment.RowTop(row) + LineInside(table, segment, row), cut)
+                ? Cut(table, breakpoint.Content, segment, row, cut, inside: true, breakpoint.Appeal)
+                : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
+        }
+
         // A break inside the row cuts its cells at the page end. When that cut completes every cell, the row ends on
         // this page after all, and then it needs its share of the line below it, which is what did not fit: so the cut
         // moves up by that share, which leaves the end of the row's content for the next page (still below the line
@@ -185,8 +200,10 @@ internal static class TableBreaks
                 continue;
             }
 
+            // With clone a cut cell that ends in the cut row keeps clear of the line drawn below the cut (see TablePage).
             var top = segment.RowTop(cell.StartRow);
-            var sliced = TableSegments.Slice(table, segment, cell, cutY - top);
+            var clearance = inside && IsCloned(table) && info.LastRow == cutRow ? CutLineBelow(table, cutRow) : 0;
+            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance);
             if (sliced.IsFailure)
             {
                 return Result<Maybe<Outcome>, Error>.Failure(sliced.Error);
@@ -212,7 +229,9 @@ internal static class TableBreaks
 
         var bottom = inside ? cutY : segment.RowTop(cutRow);
         var placed = new Content(rows, cells, lines, bottom, HasBody: rows.Count > content.Rows.Count || content.HasBody);
-        var bottomLine = inside ? null : BottomLine(table, cutRow - 1, cutRow, bottom);
+        var bottomLine = !inside ? BottomLine(table, cutRow - 1, cutRow, bottom)
+            : IsCloned(table) ? new LineAt(cutRow, Next(grid, cutRow), EdgeContext(grid, cutRow), bottom)
+            : null;
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), appeal)));
     }
 

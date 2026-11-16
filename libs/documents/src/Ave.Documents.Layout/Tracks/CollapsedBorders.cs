@@ -126,7 +126,8 @@ internal static class CollapsedBorders
     /// <summary>
     /// What a horizontal line needs to know about the page: whether the table's border joins an edge, and which cells
     /// and row continue from the previous page (their border at the cut is sliced away). Only lines at the top of a
-    /// continued part need the second: at the bottom of a page cut inside a row no line is drawn at all.
+    /// continued part need the second (with slice; with clone a row cut inside itself is closed by whole lines, resolved as
+    /// between whole rows, see <see cref="TablePage"/>).
     /// </summary>
     /// <param name="IncludesTable">True when the table's top (or bottom) border takes part at this edge.</param>
     /// <param name="RowBelowIsCut">True when the row below the line continues from the previous page.</param>
