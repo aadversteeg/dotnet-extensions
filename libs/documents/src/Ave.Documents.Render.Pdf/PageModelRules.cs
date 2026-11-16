@@ -181,14 +181,15 @@ internal static class PageModelRules
 
 /// <summary>
 /// How tagged PDF's table structure nests (ISO 32000-1 §14.8.4.3.4, table elements, Table 337): a row (TR) is a child of a table or
-/// of one of its row groups (THead, TBody, TFoot); a header or data cell (TH, TD) is a child of a row; a row group is a
-/// child of a table. Seen from the parent, a table holds only rows and row groups, a row group only rows, a row only
-/// cells. veraPDF checks the same for PDF/UA-1 (rules 7.2-3 to 7.2-10, 7.2-36 to 7.2-38). Parent here means the nearest
-/// enclosing node that has a structure type; a decorative node (an artifact) is not one.
+/// of one of its row groups; a header or data cell (TH, TD) is a child of a row; a row group is a child of a table.
+/// Seen from the parent, a table holds only rows and row groups, a row group only rows, a row only cells. veraPDF
+/// checks the same for PDF/UA-1 (rules 7.2-3 to 7.2-10, 7.2-36 to 7.2-38). Parent here means the nearest enclosing node
+/// that has a structure type; a decorative node (an artifact) is not one. The row groups are THead and TBody: there is no
+/// role for a table footer (TFoot, Core SemanticRole), so the rules have no case for it.
 /// </summary>
 internal static class StructureNesting
 {
-    private static readonly ImmutableHashSet<string> RowParents = ["Table", "THead", "TBody", "TFoot"];
+    private static readonly ImmutableHashSet<string> RowParents = ["Table", "THead", "TBody"];
 
     private static readonly ImmutableDictionary<string, ImmutableHashSet<string>> AllowedParents = new Dictionary<string, ImmutableHashSet<string>>
     {
@@ -197,15 +198,13 @@ internal static class StructureNesting
         ["TD"] = ["TR"],
         ["THead"] = ["Table"],
         ["TBody"] = ["Table"],
-        ["TFoot"] = ["Table"],
     }.ToImmutableDictionary();
 
     private static readonly ImmutableDictionary<string, ImmutableHashSet<string>> AllowedChildren = new Dictionary<string, ImmutableHashSet<string>>
     {
-        ["Table"] = ["TR", "THead", "TBody", "TFoot"],
+        ["Table"] = ["TR", "THead", "TBody"],
         ["THead"] = ["TR"],
         ["TBody"] = ["TR"],
-        ["TFoot"] = ["TR"],
         ["TR"] = ["TH", "TD"],
     }.ToImmutableDictionary();
 
@@ -241,10 +240,9 @@ internal static class StructureNesting
     /// Table 337 says a table "contains either one or more table rows (structure type TR) as children; or an optional
     /// table head (structure type THead) followed by one or more table body elements (structure type TBody) and an
     /// optional table footer (structure type TFoot)". (It may also have a caption as its first or last child; there is
-    /// no caption role.) So a table
-    /// holds rows or row groups, not both; at most one THead, which comes first; at most one TFoot, which comes last.
-    /// veraPDF checks the counts for PDF/UA-1 (rules 7.2-11 and 7.2-12). Whether a head needs a body is a profile's rule
-    /// (PDF/UA-1, rule 7.2-14). Linear in the number of structure markers, whatever their shape.
+    /// no caption role, and no footer role either.) So a table holds rows or row groups, not both, and at most one THead,
+    /// which comes first. veraPDF checks the count for PDF/UA-1 (rule 7.2-11). Whether a head needs a body is a profile's
+    /// rule (PDF/UA-1, rule 7.2-14). Linear in the number of structure markers, whatever their shape.
     /// </summary>
     /// <param name="pages">The pages; missing pages are reported elsewhere and skipped here.</param>
     /// <returns>One breach per table that has one.</returns>
@@ -260,7 +258,7 @@ internal static class StructureNesting
                 if (item is StructureStart start)
                 {
                     var type = start.Role?.StandardStructureType;
-                    if (type is "TR" or "THead" or "TBody" or "TFoot"
+                    if (type is "TR" or "THead" or "TBody"
                         && open.FirstOrDefault(entry => entry.Type is not null) is { Type: "Table" } table
                         && seen.Add((table.Node, start.Node)))
                     {
@@ -286,9 +284,7 @@ internal static class StructureNesting
         var reason =
             types.Contains("TR") && types.Exists(type => type != "TR") ? "holds rows beside row groups; it holds one or the other"
             : types.Count(type => type == "THead") > 1 ? "has more than one THead; it has at most one"
-            : types.Count(type => type == "TFoot") > 1 ? "has more than one TFoot; it has at most one"
             : types.IndexOf("THead") > 0 ? "has its THead after another row group; the head comes first"
-            : types.Contains("TFoot") && types[^1] != "TFoot" ? "has a row group after its TFoot; the footer comes last"
             : null;
         return reason is null
             ? null
