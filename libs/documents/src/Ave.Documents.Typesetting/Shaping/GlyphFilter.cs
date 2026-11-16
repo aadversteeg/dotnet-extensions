@@ -48,8 +48,11 @@ internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
     /// one line whichever way the line breaks.</item>
     /// </list>
     /// </summary>
+    /// <remarks>A forced line break counts as a default ignorable here too: the shaper cuts the text after every one
+    /// (<see cref="Shaper"/>), so it is the last glyph of its piece and nothing follows it that a match could join to it,
+    /// and as a glyph the lookup skips it is not substituted either.</remarks>
     public bool SkipsInSubstitution(LookupFlags flags, GlyphItem item) =>
-        (item.IsDefaultIgnorable && !item.IsLineBreak && item.Text is not (ZeroWidthNonJoiner or SoftHyphen or ZeroWidthSpace)) || Skips(flags, item);
+        (item.IsDefaultIgnorable && item.Text is not (ZeroWidthNonJoiner or SoftHyphen or ZeroWidthSpace)) || Skips(flags, item);
 
     /// <summary>U+200C ZERO WIDTH NON-JOINER.</summary>
     private const string ZeroWidthNonJoiner = "\u200C";
