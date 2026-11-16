@@ -34,6 +34,22 @@ public class ForcedLineBreakTests
     }
 
     [Theory]
+    [InlineData("xx ab |cd")]
+    [InlineData("xx ab  |cd")]
+    public void The_space_before_a_forced_break_does_not_count_in_the_fit_test(string text)
+    {
+        // The line is as wide as "xx ab" and half a space: "xx ab" fits and the space before the break is removed, so
+        // the line holds "xx ab" and the break; counting the space would wrap "ab" onto a line of its own.
+        var width = Width(Shape("xx ab")) + Width(Shape(" ")) / 2;
+
+        var lines = GreedyLineBreaker.BreakLines([[.. Shape(WithBreaks(text))]], availableWidth: width);
+
+        lines.Should().HaveCount(2);
+        lines[0].Width.Should().BeApproximately(Width(Shape("xx ab")), 1e-9);
+        lines[0].EndsWithForcedBreak.Should().BeTrue();
+    }
+
+    [Theory]
     [InlineData(0x000B)]
     [InlineData(0x000C)]
     [InlineData(0x0085)]

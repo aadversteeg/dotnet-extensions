@@ -26,10 +26,12 @@ internal static class BreakableSegments
 
         /// <summary>
         /// The width without the spaces at its end: those spaces "hang" when the line ends after this segment
-        /// and are removed (CSS Text 3 §4.1.2), so they do not count when testing whether the segment fits.
+        /// and are removed (CSS Text 3 §4.1.2), so they do not count when testing whether the segment fits. A segment that
+        /// ends in a forced line break ends its line there, and the spaces before the break are removed as well, so the
+        /// break and those spaces are left out together.
         /// </summary>
         public double WidthWithoutTrailingSpaces =>
-            Glyphs.Reverse().SkipWhile(glyph => glyph.Glyph.IsSpace).Sum(glyph => glyph.Glyph.Advance);
+            Glyphs.Reverse().SkipWhile(glyph => glyph.Glyph.IsLineBreak).SkipWhile(glyph => glyph.Glyph.IsSpace).Sum(glyph => glyph.Glyph.Advance);
     }
 
     /// <summary>
