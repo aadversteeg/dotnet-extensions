@@ -47,7 +47,7 @@ public class FontParserTests
     [InlineData('a', 45, 994)]
     [InlineData('W', 41, 2071)]
     [InlineData(' ', 2, 512)]
-    [InlineData(' ', 2, 512)]
+    [InlineData('\u00A0', 2, 512)]
     [InlineData('€', 360, 1160)]
     [InlineData('é', 2256, 1056)]
     public void Maps_characters_to_glyphs_and_advances(char character, int glyph, int advance)

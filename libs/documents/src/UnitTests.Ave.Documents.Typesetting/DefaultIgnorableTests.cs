@@ -90,7 +90,7 @@ public class DefaultIgnorableTests
         var lines = GreedyLineBreaker.BreakLines([[.. glyphs]], availableWidth: Width(Shape("foo")) + 0.5);
 
         lines.Should().HaveCount(2);
-        lines[0].Segments.SelectMany(segment => segment.Glyphs).Should().OnlyContain(glyph => glyph.Text != "­" || glyph.IsInvisible);
+        lines[0].Segments.SelectMany(segment => segment.Glyphs).Should().OnlyContain(glyph => glyph.Text != "\u00AD" || glyph.IsInvisible);
         lines[0].Width.Should().BeApproximately(Width(Shape("foo")), 1e-9);
     }
 

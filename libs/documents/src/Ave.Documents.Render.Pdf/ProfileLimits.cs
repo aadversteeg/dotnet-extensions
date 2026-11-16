@@ -94,7 +94,7 @@ internal static class ProfileLimits
                     .With(ErrorMetadataKeys.Value, Number(page.Number)))
             : [];
         var unmappable = profile.IsTagged
-            ? pages.Where(page => page.Glyphs.Any(glyph => glyph.Text.Contains('\0') || glyph.Text.Contains('﻿') || glyph.Text.Contains('￾')))
+            ? pages.Where(page => page.Glyphs.Any(glyph => glyph.Text.Contains('\0') || glyph.Text.Contains('\uFEFF') || glyph.Text.Contains('\uFFFE')))
                 .Select(page => new Error(PdfRenderErrorCodes.Conformance.Tagged.UnmappableText, $"{profile} does not allow U+0000, U+FEFF or U+FFFE as the text of a glyph, which page {page.Number} has (veraPDF rules 6.2.11.7.2-2, 7.21.7-2).")
                     .With(ErrorMetadataKeys.Value, Number(page.Number)))
             : [];

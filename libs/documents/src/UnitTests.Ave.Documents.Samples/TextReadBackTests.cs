@@ -42,10 +42,10 @@ public class TextReadBackTests
     [MemberData(nameof(Profiles))]
     public void Hyphens_after_a_soft_hyphen_break_still_read_as_hyphen_minus(string profile)
     {
-        var text = TextOf(Narrow(Paragraph("an extra­ordinary thing"), Paragraph("2026-01-15 a-b"), Paragraph("-12.50")), profile);
+        var text = TextOf(Narrow(Paragraph("an extra\u00ADordinary thing"), Paragraph("2026-01-15 a-b"), Paragraph("-12.50")), profile);
 
         text.Should().ContainSingle();
-        text[0].Replace(" ", string.Empty).Should().Be("anextra­ordinarything2026-01-15a-b-12.50",
+        text[0].Replace(" ", string.Empty).Should().Be("anextra\u00ADordinarything2026-01-15a-b-12.50",
             "the break hyphen reads as the soft hyphen, every hyphen-minus as hyphen-minus");
     }
 
@@ -54,18 +54,18 @@ public class TextReadBackTests
     public void A_hyphen_before_a_soft_hyphen_break_reads_as_hyphen_minus_too(string profile)
     {
         // The first use of the shared glyph is a hyphen-minus; the break hyphen comes after it.
-        var text = TextOf(Narrow(Paragraph("x-y"), Paragraph("an extra­ordinary thing")), profile);
+        var text = TextOf(Narrow(Paragraph("x-y"), Paragraph("an extra\u00ADordinary thing")), profile);
 
-        text[0].Replace(" ", string.Empty).Should().Be("x-yanextra­ordinarything");
+        text[0].Replace(" ", string.Empty).Should().Be("x-yanextra\u00ADordinarything");
     }
 
     [Theory]
     [MemberData(nameof(Profiles))]
     public void A_no_break_space_reads_as_a_no_break_space(string profile)
     {
-        var text = TextOf(Narrow(Paragraph("a b c d e")), profile);
+        var text = TextOf(Narrow(Paragraph("a\u00A0b c d\u00A0e")), profile);
 
-        text.Should().Equal("a b c d e");
+        text.Should().Equal("a\u00A0b c d\u00A0e");
     }
 
     [DockerTheory]
@@ -77,7 +77,7 @@ public class TextReadBackTests
         var folder = Directory.CreateTempSubdirectory("ave-documents-actualtext-").FullName;
         try
         {
-            var document = Narrow(Paragraph("x-y"), Paragraph("an extra­ordinary thing"), Paragraph("a b c"));
+            var document = Narrow(Paragraph("x-y"), Paragraph("an extra\u00ADordinary thing"), Paragraph("a\u00A0b c"));
             File.WriteAllBytes(Path.Combine(folder, "actualtext.pdf"), [.. SampleFiles.Pdf(document)]);
 
             var results = VeraPdf.Validate(folder, flavour);

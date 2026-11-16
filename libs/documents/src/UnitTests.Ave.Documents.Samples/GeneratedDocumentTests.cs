@@ -97,7 +97,7 @@ public sealed class GeneratedDocumentTests
     {
         var description = new StringBuilder();
         var body = Enumerable.Range(0, random.Next(1, 8)).Select(_ => Element(random, description)).ToList();
-        var title = Pick(random, ["Report", "Zeitnachweis 2026-01", "Report", null, new string('t', 33000), "Title­with soft hyphen", " private"]);
+        var title = Pick(random, ["Report", "Zeitnachweis 2026-01", "Report", null, new string('t', 33000), "Title\u00ADwith soft hyphen", "\uE000 private"]);
         var language = Pick(random, ["en", "nl-NL", "de-DE-1901", "en", null]);
         var page = Pick(random, [PageSetup.A4.Margin(1.Cm()), Page(300.Pt(), 200.Pt()).Margin(10.Pt()), Page(15000.Pt(), 400.Pt()), Page(14400.Pt(), 14400.Pt()).Margin(1.Cm())]);
         description.Append($" title={Describe(title)} language={Describe(language)} page={page.Width}x{page.Height}");
@@ -148,16 +148,16 @@ public sealed class GeneratedDocumentTests
     /// <summary>Words of the kinds that went wrong before, joined by spaces and no-break spaces. One word in four hundred is
     /// one the front-end or a profile refuses, so most documents are written and some are refused.</summary>
     private static string Words(Random random) =>
-        string.Join(random.Next(4) == 0 ? " " : " ", Enumerable.Range(0, random.Next(1, 30)).Select(_ => random.Next(400) == 0 ? Pick(random, Refusable) : Pick(random, Vocabulary)));
+        string.Join(random.Next(4) == 0 ? "\u00A0" : " ", Enumerable.Range(0, random.Next(1, 30)).Select(_ => random.Next(400) == 0 ? Pick(random, Refusable) : Pick(random, Vocabulary)));
 
     private static readonly string[] Vocabulary =
     [
-        "time", "2026-01-15", "-12.50", "extra­ordinary", "co­operate", "a-b", "naïve", "œuvre", "fine", "office",
-        "x​y", "é", "word", "€", "‐dash", "ß", "hours", "Zeit­nachweis",
+        "time", "2026-01-15", "-12.50", "extra\u00ADordinary", "co\u00ADoperate", "a-b", "naïve", "œuvre", "fine", "office",
+        "x\u200By", "e\u0301", "word", "€", "‐dash", "ß", "hours", "Zeit\u00ADnachweis",
     ];
 
     /// <summary>A control character, a Private Use character, and a character Lato has no glyph for.</summary>
-    private static readonly string[] Refusable = ["a\u0001b", "", "一"];
+    private static readonly string[] Refusable = ["a\u0001b", "\uE001", "一"];
 
     private static T Pick<T>(Random random, T[] values) => values[random.Next(values.Length)];
 

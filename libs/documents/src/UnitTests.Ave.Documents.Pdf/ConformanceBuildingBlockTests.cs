@@ -31,7 +31,7 @@ public class ConformanceBuildingBlockTests
         var bytes = Sample().Write().Value;
         var text = Encoding.UTF8.GetString(bytes.AsSpan());
 
-        text.Should().StartWith("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>");
+        text.Should().StartWith("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>");
         text.Should().NotContain("bytes=").And.NotContain("encoding=");
         text.TrimEnd().Should().EndWith("<?xpacket end=\"w\"?>");
         var xml = XDocument.Parse(text);

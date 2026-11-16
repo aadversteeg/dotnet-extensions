@@ -14,7 +14,7 @@ public class WhiteSpaceCollapsingTests
 
     [Fact]
     public void The_no_break_space_is_not_collapsible() =>
-        WhiteSpaceCollapsing.Collapse(["a  b"]).Should().Equal("a  b");
+        WhiteSpaceCollapsing.Collapse(["a\u00A0\u00A0b"]).Should().Equal("a\u00A0\u00A0b");
 
     [Fact]
     public void Leading_and_trailing_spaces_stay_for_line_breaking_to_remove() =>

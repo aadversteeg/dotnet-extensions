@@ -103,9 +103,9 @@ public class ForcedLineBreakTests
     [Fact]
     public void A_mark_after_a_forced_break_does_not_attach_to_the_letter_before_it()
     {
-        var mark = Shape("a" + Break + "́").Last();
+        var mark = Shape("a" + Break + "\u0301").Last();
 
-        mark.XOffset.Should().Be(Shape("́").Single().XOffset);
-        mark.YOffset.Should().Be(Shape("́").Single().YOffset);
+        mark.XOffset.Should().Be(Shape("\u0301").Single().XOffset);
+        mark.YOffset.Should().Be(Shape("\u0301").Single().YOffset);
     }
 }
