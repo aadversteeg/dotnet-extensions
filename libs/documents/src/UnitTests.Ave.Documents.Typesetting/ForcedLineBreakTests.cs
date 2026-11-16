@@ -13,8 +13,10 @@ public class ForcedLineBreakTests
     /// <summary>U+2028 LINE SEPARATOR, written as "|" in the test data.</summary>
     private static readonly string Break = char.ConvertFromUtf32(0x2028);
 
-    /// <summary>The test data with "|" as the line separator and "~" as the no-break space U+00A0.</summary>
-    private static string WithBreaks(string text) => text.Replace("|", Break, StringComparison.Ordinal).Replace("~", "\u00A0", StringComparison.Ordinal);
+    /// <summary>The test data with "|" as the line separator, "~" as the no-break space U+00A0, and "{SHY}", "{ZWSP}" and
+    /// "{WJ}" as the invisible characters soft hyphen U+00AD, zero width space U+200B and word joiner U+2060.</summary>
+    private static string WithBreaks(string text) => text.Replace("|", Break, StringComparison.Ordinal).Replace("~", "\u00A0", StringComparison.Ordinal)
+        .Replace("{SHY}", "\u00AD", StringComparison.Ordinal).Replace("{ZWSP}", "\u200B", StringComparison.Ordinal).Replace("{WJ}", "\u2060", StringComparison.Ordinal);
 
     private static ShapedGlyph[] Shape(string text) => [.. Shaper.Shape(text, TestFonts.Regular, 10).Value];
 
@@ -36,6 +38,10 @@ public class ForcedLineBreakTests
     [Theory]
     [InlineData("xx ab |cd")]
     [InlineData("xx ab  |cd")]
+    [InlineData("xx ab {SHY}|cd")]
+    [InlineData("xx ab {ZWSP}|cd")]
+    [InlineData("xx ab {WJ}|cd")]
+    [InlineData("xx ab {SHY}{ZWSP} |cd")]
     public void The_space_before_a_forced_break_does_not_count_in_the_fit_test(string text)
     {
         // The line is as wide as "xx ab" and half a space: "xx ab" fits and the space before the break is removed, so
@@ -48,6 +54,42 @@ public class ForcedLineBreakTests
         lines[0].Width.Should().BeApproximately(Width(Shape("xx ab")), 1e-9);
         lines[0].EndsWithForcedBreak.Should().BeTrue();
     }
+
+    /// <summary>
+    /// Spot check of fix round 3, SC-5. Invisible characters (soft hyphen, zero width space, word joiner) between the
+    /// spaces and a forced break, or after the last spaces of a paragraph, change nothing: the lines are the same as
+    /// without them, as wide and as many, and no line holds only invisible characters. At a line end the spaces and the
+    /// invisible characters among them are removed together; the invisible characters stay on the line as text, without
+    /// width.
+    /// </summary>
+    [Theory]
+    [InlineData("xx ab |cd")]
+    [InlineData("xx ab  |cd")]
+    [InlineData("xx ab ")]
+    [InlineData("xx ab |")]
+    [InlineData("a | |b")]
+    [InlineData("xx ab cd |ef")]
+    public void Invisible_characters_before_a_forced_break_or_the_paragraph_end_change_no_line(string text)
+    {
+        var width = Width(Shape("xx ab")) + Width(Shape(" ")) / 2;
+        var plain = GreedyLineBreaker.BreakLines([[.. Shape(WithBreaks(text))]], availableWidth: width);
+        foreach (var invisible in new[] { "{SHY}", "{ZWSP}", "{WJ}", "{SHY}{WJ}" })
+        {
+            // Before every forced break, and at the end when the text ends in a space.
+            var marked = text.Replace(" |", " " + invisible + "|", StringComparison.Ordinal);
+            marked = marked.EndsWith(' ') ? marked + invisible : marked;
+
+            var lines = GreedyLineBreaker.BreakLines([[.. Shape(WithBreaks(marked))]], availableWidth: width);
+
+            var because = $"'{marked}' against '{text}'";
+            lines.Select(line => (line.Width, line.EndsWithForcedBreak)).Should().Equal(plain.Select(line => (line.Width, line.EndsWithForcedBreak)), because);
+            lines.Select(Visible).Should().Equal(plain.Select(Visible), because + ": the same text on each line");
+        }
+    }
+
+    /// <summary>The text of a line without its invisible characters and spaces at either end.</summary>
+    private static string Visible(TextLine line) =>
+        string.Concat(line.Segments.SelectMany(segment => segment.Glyphs).Where(glyph => !glyph.IsInvisible).Select(glyph => glyph.Text)).Trim();
 
     [Theory]
     [InlineData(0x000B)]

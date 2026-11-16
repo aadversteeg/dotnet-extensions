@@ -15,6 +15,16 @@ internal static class BreakableSegments
     /// <summary>A glyph with the index of the run it came from.</summary>
     public sealed record RunGlyph(int Run, ShapedGlyph Glyph);
 
+    /// <summary>
+    /// True for a glyph that a line end removes or that has no width there: a collapsible space (removed, CSS Text 3
+    /// §4.1.2), an invisible character (default ignorable, without advance: a soft hyphen, a zero width space, a word
+    /// joiner), or a forced break. At a line end the spaces and the invisible characters among them go together, so
+    /// invisible characters between the last word and the end change nothing.
+    /// </summary>
+    /// <param name="glyph">The glyph.</param>
+    /// <returns>Whether it is blank at a line end.</returns>
+    public static bool IsBlank(ShapedGlyph glyph) => glyph.IsSpace || glyph.IsInvisible || glyph.IsLineBreak;
+
     /// <summary>The glyphs between two break opportunities.</summary>
     /// <param name="Glyphs">The glyphs, in order.</param>
     /// <param name="EndsWithMandatoryBreak">True when a line must end after this segment (UAX #14 "!").</param>
@@ -25,13 +35,17 @@ internal static class BreakableSegments
         public double HyphenWidth => Glyphs.IsEmpty ? 0 : Glyphs[^1].Glyph.BreakHyphen?.Advance ?? 0;
 
         /// <summary>
-        /// The width without the spaces at its end: those spaces "hang" when the line ends after this segment
-        /// and are removed (CSS Text 3 §4.1.2), so they do not count when testing whether the segment fits. A segment that
-        /// ends in a forced line break ends its line there, and the spaces before the break are removed as well, so the
-        /// break and those spaces are left out together.
+        /// The width when a line ends after this segment: without the blank glyphs at its end (<see cref="IsBlank"/>).
+        /// The spaces there "hang" and are removed (CSS Text 3 §4.1.2), so they do not count when testing whether the
+        /// segment fits; a forced break ends the line, and the spaces before it go as well; invisible characters among
+        /// them have no width and do not keep them.
         /// </summary>
-        public double WidthWithoutTrailingSpaces =>
-            Glyphs.Reverse().SkipWhile(glyph => glyph.Glyph.IsLineBreak).SkipWhile(glyph => glyph.Glyph.IsSpace).Sum(glyph => glyph.Glyph.Advance);
+        public double WidthAtLineEnd =>
+            Glyphs.Reverse().SkipWhile(glyph => IsBlank(glyph.Glyph)).Sum(glyph => glyph.Glyph.Advance);
+
+        /// <summary>True when the segment holds nothing that shows: only spaces, invisible characters and a forced
+        /// break (<see cref="IsBlank"/>).</summary>
+        public bool IsBlank => Glyphs.All(glyph => BreakableSegments.IsBlank(glyph.Glyph));
     }
 
     /// <summary>
