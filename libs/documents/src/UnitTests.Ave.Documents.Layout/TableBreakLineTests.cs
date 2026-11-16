@@ -143,9 +143,16 @@ public class TableBreakLineTests
             UnitsKeepEveryPartInsideThePage(offset, 120, mode);
         }
 
-        for (var pageHeight = mode == BoxDecorationBreak.Clone ? 22.0 : 20.0; pageHeight < 60; pageHeight += 0.25)
+        var smallest = mode == BoxDecorationBreak.Clone ? 22.0 : 20.0;
+        for (var pageHeight = smallest; pageHeight < 60; pageHeight += 0.25)
         {
             UnitsKeepEveryPartInsideThePage(0, pageHeight, mode);
+        }
+
+        // Below that the layout may refuse the table, but never with a page whose row or line runs past its end.
+        for (var pageHeight = 10.0; pageHeight < smallest; pageHeight += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, mayNotFit: true);
         }
 
         // One unit alone: its last row is the table's last, which needs the inner half of the table's bottom border in
@@ -156,17 +163,28 @@ public class TableBreakLineTests
         }
     }
 
-    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12)
+    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, bool mayNotFit = false)
     {
         var (document, expected) = SpannedUnits(offset, pageHeight, mode, units);
-        var pages = Paginate(document);
-
         var because = $"{mode}, {units} units, offset {offset}, page area {pageHeight}";
+        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
+        if (mayNotFit && result.IsFailure)
+        {
+            result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit, because);
+            return;
+        }
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
+        var pages = result.Value;
+
         var words = new List<string>();
-        foreach (var page in pages)
+        foreach (var (page, number) in pages.Select((page, index) => (page, index + 1)))
         {
             var (table, at) = Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single();
             (at.Y + table.Size.Height).Should().BeLessThanOrEqualTo(pageHeight + Epsilon, because + ": the table's part fits the page area");
+
+            // A break inside a row leaves content of it for the next page: no page holds only lines of the table.
+            Words(table).Should().NotBeEmpty(because + $": the table's part on page {number} holds content");
             foreach (var rule in table.Children.Where(child => child.Fragment is RuleFragment))
             {
                 (rule.Offset.Y + rule.Fragment.Size.Height).Should().BeLessThanOrEqualTo(table.Size.Height + Epsilon, because + ": no rule outside the table's box");

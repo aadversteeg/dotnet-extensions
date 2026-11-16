@@ -126,6 +126,49 @@ public class MalformedLayoutTableTests
         TestFonts.TheanoDidot.Layout.Definitions!.HasGlyphClasses.Should().BeTrue();
     }
 
+    /// <summary>
+    /// A GPOS table of one pair-adjustment lookup with <paramref name="subtables"/> subtable offsets that all point at
+    /// one glyph-pair subtable (format 1) whose one pair set holds <paramref name="pairs"/> records of a second glyph and
+    /// a value record of only an X placement device offset (0x0010): four bytes a record, one value read (the second
+    /// glyph), because device offsets are skipped. The coverage (format 1) has no glyphs.
+    /// </summary>
+    private static byte[] SharedDeviceOnlyGlyphPairs(int subtables, int pairs)
+    {
+        const int Lookup = 18;
+        var subtable = Lookup + 6 + subtables * 2;
+        var builder = new BigEndianBuilder()
+            .UInt16(1).UInt16(0).UInt16(10).UInt16(12).UInt16(14) // version 1.0, script, feature and lookup lists
+            .UInt16(0)                                              // no scripts
+            .UInt16(0)                                              // no features
+            .UInt16(1).UInt16(Lookup - 14)                          // one lookup
+            .UInt16(2).UInt16(0).UInt16(subtables);                 // pair adjustment, no flags, the subtables
+        for (var index = 0; index < subtables; index++)
+        {
+            builder.UInt16(subtable - Lookup);
+        }
+
+        builder.UInt16(1).UInt16(12).UInt16(0x0010).UInt16(0).UInt16(1).UInt16(16); // format 1, coverage, formats, one set
+        builder.UInt16(1).UInt16(0);                                                  // the coverage: no glyphs
+        return builder.UInt16(pairs).Bytes(new byte[pairs * 4]).ToArray();
+    }
+
+    [Theory]
+    [InlineData(12, true)]
+    [InlineData(24, false)]
+    public void A_record_counted_by_its_array_costs_one_unit_on_top_of_what_it_reads(int subtables, bool parses)
+    {
+        // The table is about 8 KB, so its budget is about 64 500 units. Each subtable walks the 2 000 records of the
+        // shared pair set: one read and one record each, 4 000 units. Twelve subtables (48 000) fit; twenty-four
+        // (96 000) do not, and would fit (48 000) if only the reads were charged.
+        var result = LayoutTableParser.Parse(LayoutTableParser.Gpos, SharedDeviceOnlyGlyphPairs(subtables, pairs: 2_000), glyphCount: 100);
+
+        result.IsSuccess.Should().Be(parses, result.IsFailure ? result.Error.ToString() : "the table parsed");
+        if (!parses)
+        {
+            result.Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
+        }
+    }
+
     [Theory]
     [InlineData(0x7FFFFFFEL)]
     [InlineData(0x7FFFFFE4L)]

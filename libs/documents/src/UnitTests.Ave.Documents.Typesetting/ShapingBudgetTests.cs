@@ -93,6 +93,51 @@ public class ShapingBudgetTests
         shaped.Error.Metadata![global::Ave.Documents.Core.ErrorMetadataKeys.FontName].Should().Be(font.Names.PostScriptName);
     }
 
+    /// <summary>
+    /// Lato with a GPOS of one script (DFLT) and one feature (kern) whose one lookup holds <paramref name="subtables"/>
+    /// offsets to ONE pair-adjustment subtable (format 1) that covers no glyph. Each subtable first looks for the second
+    /// glyph of a pair, stepping over the invisible characters after the first, and only then finds no pair.
+    /// </summary>
+    private static TrueTypeFont FontWithRepeatedPairSubtables(int subtables)
+    {
+        const int ScriptList = 10, Script = 18, FeatureList = 30, Feature = 38, LookupList = 44, Lookup = 48;
+        var gpos = new BigEndianBuilder()
+            .UInt16(1).UInt16(0).UInt16(ScriptList).UInt16(FeatureList).UInt16(LookupList)
+            .UInt16(1).Bytes("DFLT"u8.ToArray()).UInt16(Script - ScriptList)       // one script, DFLT
+            .UInt16(4).UInt16(0)                                                   // its default language system at +4
+            .UInt16(0).UInt16(0xFFFF).UInt16(1).UInt16(0)                          // no required feature; feature 0
+            .UInt16(1).Bytes("kern"u8.ToArray()).UInt16(Feature - FeatureList)     // one feature, kern
+            .UInt16(0).UInt16(1).UInt16(0)                                         // lookup 0
+            .UInt16(1).UInt16(Lookup - LookupList)                                 // one lookup
+            .UInt16(2).UInt16(0).UInt16(subtables);                                // pair adjustment, no flags
+        for (var index = 0; index < subtables; index++)
+        {
+            gpos.UInt16(6 + 2 * subtables);
+        }
+
+        gpos.UInt16(1).UInt16(10).UInt16(0x0004).UInt16(0).UInt16(0)               // format 1, coverage at +10, no sets
+            .UInt16(1).UInt16(0);                                                  // coverage: no glyphs
+
+        var font = FontParser.Parse(FontFiles.WithTable(Lato, "GPOS", gpos.ToArray()));
+        font.IsSuccess.Should().BeTrue(font.IsFailure ? font.Error.ToString() : string.Empty);
+        return font.Value;
+    }
+
+    [Fact]
+    public void Each_glyph_a_search_for_a_pair_s_second_glyph_steps_over_is_an_operation()
+    {
+        // One a and 1 000 word joiners (U+2060, default ignorable, skipped in positioning): a budget of 1 024 × 1 001
+        // operations. Each of the 2 000 subtables steps over the 1 000 joiners after the a before it finds no pair: two
+        // million operations, though the walk over the buffer itself costs only 1 001.
+        var text = "a" + new string((char)0x2060, 1_000);
+
+        Shaper.Shape(text, FontWithRepeatedPairSubtables(1), 10).IsSuccess.Should().BeTrue("one subtable steps over 1 000");
+        var shaped = Shaper.Shape(text, FontWithRepeatedPairSubtables(2_000), 10);
+
+        shaped.IsFailure.Should().BeTrue("the searches cost two million operations");
+        shaped.Error.Code.Should().Be(TypesettingErrorCodes.TooMuchWork);
+    }
+
     [Fact]
     public void A_text_may_grow_to_exactly_its_glyph_limit()
     {
