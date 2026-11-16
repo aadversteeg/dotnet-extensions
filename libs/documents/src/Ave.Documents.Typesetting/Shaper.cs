@@ -182,15 +182,20 @@ public static class Shaper
         return kerned is { } ready ? GlyphPositioning.Apply(ready, layout.Positions.LookupsFor(script, PositioningFeatures), filter, budget) : null;
     }
 
-    /// <summary>The error for the limit of <paramref name="budget"/> that the text reached.</summary>
+    /// <summary>The error for the limit of <paramref name="budget"/> that the text reached: which limit, how it follows
+    /// from the text's length, and what spent it. Only the font's substitutions make glyphs, and only its lookups spend
+    /// more than a fixed few operations per glyph (see <see cref="ShapingBudget"/>), so the message names the font.</summary>
     private static Error LimitReached(TrueTypeFont font, ShapingBudget budget, ShapingLimit limit)
     {
         var name = font.Names.PostScriptName;
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
         var error = limit == ShapingLimit.Glyphs
-            ? new Error(TypesettingErrorCodes.TooManyGlyphs, $"Font '{name}' turns the text into more than {budget.GlyphLimit} glyphs; its substitutions do not end.")
-                .With(ErrorMetadataKeys.Value, budget.GlyphLimit.ToString(System.Globalization.CultureInfo.InvariantCulture))
-            : new Error(TypesettingErrorCodes.TooMuchWork, $"Font '{name}' needs more than {budget.OperationLimit} operations to shape the text; its lookups repeat without end.")
-                .With(ErrorMetadataKeys.Value, budget.OperationLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            ? new Error(TypesettingErrorCodes.TooManyGlyphs, string.Create(culture,
+                    $"Font '{name}' turns a text of {budget.InputLength} glyphs into more than {budget.GlyphLimit} glyphs ({GlyphSubstitution.MaxGrowthFactor} per glyph, at least {GlyphSubstitution.MinGlyphLimit}): its substitutions make more glyphs than any real font needs."))
+                .With(ErrorMetadataKeys.Value, budget.GlyphLimit.ToString(culture))
+            : new Error(TypesettingErrorCodes.TooMuchWork, string.Create(culture,
+                    $"Font '{name}' needs more than {budget.OperationLimit} operations to shape a text of {budget.InputLength} glyphs ({ShapingBudget.OperationsPerGlyph} per glyph, at least {ShapingBudget.MinOperations}): its lookups look at each glyph more often than any real font needs."))
+                .With(ErrorMetadataKeys.Value, budget.OperationLimit.ToString(culture));
         return error.With(ErrorMetadataKeys.FontName, name);
     }
 

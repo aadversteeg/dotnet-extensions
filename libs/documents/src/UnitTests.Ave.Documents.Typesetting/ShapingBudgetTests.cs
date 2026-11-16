@@ -2,6 +2,7 @@ using System.Text;
 using Ave.Documents.Fonts;
 using Ave.Documents.TestSupport;
 using Ave.Documents.Typesetting;
+using Ave.Documents.Typesetting.Shaping;
 
 namespace UnitTests.Ave.Documents.Typesetting;
 
@@ -136,6 +137,90 @@ public class ShapingBudgetTests
 
         shaped.IsFailure.Should().BeTrue("the searches cost two million operations");
         shaped.Error.Code.Should().Be(TypesettingErrorCodes.TooMuchWork);
+    }
+
+    /// <summary>
+    /// Lato with a GSUB of one script (DFLT) and one feature (liga) whose one lookup holds <paramref name="subtables"/>
+    /// offsets to ONE single substitution (format 1) that covers no glyph, and a GPOS without lookups. Every subtable
+    /// looks up its coverage at every position and finds nothing.
+    /// </summary>
+    private static TrueTypeFont FontWithUncoveringSubtables(int subtables)
+    {
+        const int ScriptList = 10, Script = 18, FeatureList = 30, Feature = 38, LookupList = 44, Lookup = 48;
+        var gsub = new BigEndianBuilder()
+            .UInt16(1).UInt16(0).UInt16(ScriptList).UInt16(FeatureList).UInt16(LookupList)
+            .UInt16(1).Bytes("DFLT"u8.ToArray()).UInt16(Script - ScriptList)       // one script, DFLT
+            .UInt16(4).UInt16(0)                                                   // its default language system at +4
+            .UInt16(0).UInt16(0xFFFF).UInt16(1).UInt16(0)                          // no required feature; feature 0
+            .UInt16(1).Bytes("liga"u8.ToArray()).UInt16(Feature - FeatureList)     // one feature, liga
+            .UInt16(0).UInt16(1).UInt16(0)                                         // lookup 0
+            .UInt16(1).UInt16(Lookup - LookupList)                                 // one lookup
+            .UInt16(1).UInt16(0).UInt16(subtables);                                // single substitution, no flags
+        for (var index = 0; index < subtables; index++)
+        {
+            gsub.UInt16(6 + 2 * subtables);
+        }
+
+        gsub.UInt16(1).UInt16(6).UInt16(0)                                         // format 1: coverage at +6, delta 0
+            .UInt16(1).UInt16(0);                                                  // coverage: no glyphs
+
+        var emptyGpos = new BigEndianBuilder().UInt16(1).UInt16(0).UInt16(10).UInt16(12).UInt16(14).UInt16(0).UInt16(0).UInt16(0).ToArray();
+        var font = FontParser.Parse(FontFiles.WithTable(FontFiles.WithTable(Lato, "GSUB", gsub.ToArray()), "GPOS", emptyGpos));
+        font.IsSuccess.Should().BeTrue(font.IsFailure ? font.Error.ToString() : string.Empty);
+        return font.Value;
+    }
+
+    [Fact]
+    public void Each_subtable_a_lookup_tries_is_an_operation_whether_it_covers_the_glyph_or_not()
+    {
+        // 100 a's: a budget of 102 400 operations. One subtable costs 100 positions and 100 coverage lookups; 2 000
+        // subtables cost 100 positions and 200 000 coverage lookups, although none of them covers a glyph.
+        var text = new string('a', 100);
+
+        Shaper.Shape(text, FontWithUncoveringSubtables(1), 10).IsSuccess.Should().BeTrue();
+        var shaped = Shaper.Shape(text, FontWithUncoveringSubtables(2_000), 10);
+
+        shaped.IsFailure.Should().BeTrue("2 000 subtables at 100 positions cost 200 000 operations");
+        shaped.Error.Code.Should().Be(TypesettingErrorCodes.TooMuchWork);
+    }
+
+    [Fact]
+    public void The_operations_error_says_what_was_exceeded_and_what_spent_it()
+    {
+        // Spot check of fix round 3, SC-4: the message names the limit, its rate per glyph and the text's length, and
+        // says the font's lookups spent the operations (the text's own shape costs a fixed few per glyph per lookup).
+        var shaped = Shaper.Shape(new string('a', 100), FontWithUncoveringSubtables(2_000), 10);
+
+        shaped.Error.Message.Should().Contain("102400 operations").And.Contain("100 glyphs").And.Contain($"{ShapingBudget.OperationsPerGlyph} per glyph")
+            .And.Contain("lookups").And.NotContain("without end");
+    }
+
+    [Theory]
+    [InlineData(2_000)]
+    [InlineData(6_000)]
+    public void A_long_run_of_combining_marks_on_one_base_is_shaped_in_work_linear_in_its_length(int marks)
+    {
+        // Spot check of fix round 3, SC-4: one base letter and thousands of combining marks is legitimate text. Each
+        // mark finds its base in one step (the bases are found in one pass over the buffer), so the work grows with the
+        // number of marks, not with its square, and every mark sits on the base's anchor as a single mark does.
+        var single = Shaper.Shape("x" + char.ConvertFromUtf32(0x0302), TestFonts.Regular, 10).Value[1];
+
+        var shaped = Shaper.Shape("x" + string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x0302), marks)), TestFonts.Regular, 10);
+
+        shaped.IsSuccess.Should().BeTrue(shaped.IsFailure ? shaped.Error.Message : string.Empty);
+        shaped.Value.Should().HaveCount(marks + 1);
+        shaped.Value.Skip(1).Should().OnlyContain(glyph => glyph.XOffset == single.XOffset && glyph.YOffset == single.YOffset);
+    }
+
+    [Fact]
+    public void A_text_may_spend_exactly_its_operations_limit()
+    {
+        var budget = new ShapingBudget(100);
+
+        budget.Spend(budget.OperationLimit).Should().BeTrue("the limit itself may be spent");
+        budget.Exceeded.Should().BeNull();
+        budget.Spend(1).Should().BeFalse("one operation more is refused");
+        budget.Exceeded.Should().Be(ShapingLimit.Operations);
     }
 
     [Fact]

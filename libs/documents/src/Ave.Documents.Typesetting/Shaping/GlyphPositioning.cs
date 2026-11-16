@@ -22,9 +22,16 @@ internal static class GlyphPositioning
     public static ImmutableArray<GlyphItem>? Apply(ImmutableArray<GlyphItem> buffer, IEnumerable<Lookup> lookups, GlyphFilter filter, ShapingBudget budget)
     {
         var glyphs = buffer;
-        foreach (var lookup in lookups)
+        var all = lookups.ToImmutableArray();
+        var bases = all.Any(lookup => lookup.Subtables.Any(subtable => subtable is MarkToBase)) ? Bases(glyphs, budget) : [];
+        if (bases is null)
         {
-            if (ApplyLookup(glyphs, lookup, filter, budget) is not { } next)
+            return null;
+        }
+
+        foreach (var lookup in all)
+        {
+            if (ApplyLookup(glyphs, lookup, filter, budget, bases) is not { } next)
             {
                 return null;
             }
@@ -84,9 +91,35 @@ internal static class GlyphPositioning
     /// default ignorable), which takes no space; as the GPOS path skips them (<see cref="GlyphFilter.SkipsInPositioning"/>).</summary>
     private static bool IsSkippedByKerning(GlyphItem item) => item.Class == GlyphClass.Mark || item.IsDefaultIgnorable;
 
+    /// <summary>
+    /// For each position, the base a mark there attaches to: the nearest glyph before it that is not a mark and not
+    /// default ignorable, or -1. Found in one pass, one operation per glyph, when a lookup holds a mark-to-base subtable,
+    /// and shared by every lookup: positioning changes no glyph and no class. So a mark finds its base in one step, and a long run of marks on one base costs
+    /// work in proportion to its length, not to its square (each mark would otherwise step back over all the marks
+    /// before it). Null when the budget is used up.
+    /// </summary>
+    private static int[]? Bases(ImmutableArray<GlyphItem> glyphs, ShapingBudget budget)
+    {
+        if (!budget.Spend(glyphs.Length))
+        {
+            return null;
+        }
+
+        var bases = new int[glyphs.Length];
+        var last = -1;
+        for (var index = 0; index < glyphs.Length; index++)
+        {
+            bases[index] = last;
+            last = glyphs[index].Class == GlyphClass.Mark || glyphs[index].IsDefaultIgnorable ? last : index;
+        }
+
+        return bases;
+    }
+
     /// <summary>One lookup over the whole buffer (lookups with a mark filtering set are skipped, as in GSUB); null once
-    /// the budget is used up. Each position costs an operation, and each glyph a search steps over another.</summary>
-    private static ImmutableArray<GlyphItem>? ApplyLookup(ImmutableArray<GlyphItem> buffer, Lookup lookup, GlyphFilter filter, ShapingBudget budget)
+    /// the budget is used up. Each position costs an operation, each subtable tried there another, and each glyph a
+    /// search steps over another.</summary>
+    private static ImmutableArray<GlyphItem>? ApplyLookup(ImmutableArray<GlyphItem> buffer, Lookup lookup, GlyphFilter filter, ShapingBudget budget, int[] bases)
     {
         if (lookup.Flags.UsesMarkFilteringSet)
         {
@@ -102,25 +135,44 @@ internal static class GlyphPositioning
                 return null;
             }
 
-            var next = filter.SkipsInPositioning(lookup.Flags, glyphs[index])
-                ? null
-                : lookup.Subtables.Select(subtable => Position(glyphs, index, subtable, lookup.Flags, filter, budget)).FirstOrDefault(found => found is not null);
+            var next = filter.SkipsInPositioning(lookup.Flags, glyphs[index]) ? null : FirstApplying(glyphs, index, lookup, filter, budget, bases);
             index = next ?? index + 1;
         }
 
         return budget.Exceeded is null ? [.. glyphs] : null;
     }
 
+    /// <summary>Where to continue after the first subtable of the lookup that applies at <paramref name="index"/>, or
+    /// null when none does. Each subtable tried costs one operation, the lookup of its coverage, whether it covers the
+    /// glyph or not: a lookup of many subtables pays for each of them.</summary>
+    private static int? FirstApplying(GlyphItem[] glyphs, int index, Lookup lookup, GlyphFilter filter, ShapingBudget budget, int[] bases)
+    {
+        foreach (var subtable in lookup.Subtables)
+        {
+            if (!budget.Spend(1))
+            {
+                return null;
+            }
+
+            if (Position(glyphs, index, subtable, lookup.Flags, filter, budget, bases) is { } next)
+            {
+                return next;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Tries one subtable at <paramref name="index"/>, changing <paramref name="glyphs"/>; returns where
     /// to continue, or null when the subtable does not apply there.</summary>
-    private static int? Position(GlyphItem[] glyphs, int index, LookupSubtable subtable, LookupFlags flags, GlyphFilter filter, ShapingBudget budget) =>
+    private static int? Position(GlyphItem[] glyphs, int index, LookupSubtable subtable, LookupFlags flags, GlyphFilter filter, ShapingBudget budget, int[] bases) =>
         subtable switch
         {
             PairAdjustmentByGlyph pairs => AdjustPair(glyphs, index, flags, filter, pairs.SecondHasValues,
                 (first, second) => pairs.Find(first.Glyph, second.Glyph), budget),
             PairAdjustmentByClass classes => AdjustPair(glyphs, index, flags, filter, classes.SecondHasValues,
                 (first, second) => ClassPair(classes, first, second), budget),
-            MarkToBase marks => Attach(glyphs, index, marks, budget),
+            MarkToBase marks => Attach(glyphs, index, marks, bases, budget),
 
             // Every other type or format: not implemented in this version; skipped (documented on the Shaper).
             _ => null,
@@ -169,22 +221,17 @@ internal static class GlyphPositioning
     /// Type 4, mark-to-base: a covered mark is attached to the nearest glyph before it that is not a mark (its
     /// base), when the base is covered and has an anchor for the mark's class; "the mark anchor is aligned with the
     /// base anchor for the applicable mark class". The offset is recorded relative to the base and resolved at the end, when all
-    /// advances are final.
+    /// advances are final. The base is looked up in <paramref name="bases"/> (see <see cref="Bases"/>): one operation.
     /// </summary>
-    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, ShapingBudget budget)
+    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, int[] bases, ShapingBudget budget)
     {
         if (table.MarkOf(glyphs[index].Glyph) is not { } mark)
         {
             return null;
         }
 
-        var baseIndex = index - 1;
-        while (baseIndex >= 0 && (glyphs[baseIndex].Class == GlyphClass.Mark || glyphs[baseIndex].IsDefaultIgnorable))
-        {
-            baseIndex--;
-        }
-
-        if (!budget.Spend(index - baseIndex) || baseIndex < 0 || table.BaseAnchor(glyphs[baseIndex].Glyph, mark.MarkClass) is not { } baseAnchor)
+        var baseIndex = bases[index];
+        if (!budget.Spend(1) || baseIndex < 0 || table.BaseAnchor(glyphs[baseIndex].Glyph, mark.MarkClass) is not { } baseAnchor)
         {
             return null;
         }

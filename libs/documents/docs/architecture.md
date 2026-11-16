@@ -138,7 +138,8 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
    charges it for every value read AND every record created (`TableReader.Records`, which `Count` calls): a record
    that reads nothing still costs memory. A structure that many offsets may point at is parsed once and shared
    (`TableReader.Shared`); walking parsed data again is charged too (`TableReader.Spend`). Shaping spends operations
-   the same way: every glyph a lookup looks at (`Shaping/ShapingBudget.cs`).
+   the same way: every glyph a lookup looks at and every subtable it tries (`Shaping/ShapingBudget.cs`); every search
+   in the shaper is linear in the text, so the budget, a number per glyph, refuses only a font's work.
 2. **Check a count against the bytes that must hold it** before allocating for it (`TableReader.Count` and `Fits`; a
    PNG header's size against `ImageLimits` before anything is inflated; a JPEG is embedded without being decoded).
 3. **Name a limit where a number decides the size** — decoded pixels, glyphs made by substitutions, lookup operations,

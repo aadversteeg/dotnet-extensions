@@ -19,11 +19,16 @@ internal enum ShapingLimit
 /// <item>glyphs: the substitutions may turn the text's glyphs into at most <see cref="GlyphSubstitution.MaxGlyphs"/>,
 /// counted over all pieces;</item>
 /// <item>operations: every glyph a lookup looks at costs one operation — each position of each lookup's walk over the
-/// buffer, and each glyph that a search for a ligature's next component, a pair's second glyph or a mark's base steps
-/// over — and the text may spend at most <see cref="MaxOperations"/>.</item>
+/// buffer, each subtable tried at a position (the lookup of its coverage, whether it covers the glyph or not), each
+/// glyph that a search for a ligature's next component or a pair's second glyph steps over, and the one step to a
+/// mark's base — and the text may spend at most <see cref="MaxOperations"/>.</item>
 /// </list>
-/// The glyph limit alone does not bound the work: a lookup list may hold one lookup thousands of times, and every one of
-/// them walks the whole buffer. A font that reaches a limit is malformed or hostile; the text is refused
+/// The text's own shape costs a fixed few operations per glyph per lookup: every search steps over a run of skipped
+/// glyphs at most once per subtable, and a mark finds its base in one step (the bases are found in one pass), so a
+/// long run of marks costs in proportion to its length. Spending more than <see cref="OperationsPerGlyph"/> per glyph
+/// therefore takes a font whose lookups look at each glyph more often than any real font does: one lookup thousands
+/// of times in the lookup list, thousands of subtables in a lookup, or lookups that walk a buffer their own
+/// substitutions grew. A font that reaches a limit is malformed or hostile; the text is refused
 /// (<see cref="TypesettingErrorCodes.TooManyGlyphs"/>, <see cref="TypesettingErrorCodes.TooMuchWork"/>) instead of
 /// costing time and memory without bound. HarfBuzz likewise bounds a buffer by a length limit and an operations limit
 /// (hb-limits.hh, applied in <c>hb_buffer_t::enter</c>); it counts its operations its own way, so the numbers below bound
@@ -33,8 +38,9 @@ internal enum ShapingLimit
 internal sealed class ShapingBudget
 {
     /// <summary>Operations a text may spend per glyph it starts with: room for each glyph to be looked at by a thousand
-    /// lookups, far more than the features the shaper applies hold in any real font. HarfBuzz's HB_BUFFER_MAX_OPS_FACTOR
-    /// from version 2.7.3 to 11.4.1 (4 096 since 11.4.2).</summary>
+    /// lookups or subtables, far more than the features the shaper applies hold in any real font, while the text itself
+    /// costs a fixed few per glyph per lookup (see the class remarks); so the budget grows with the text and refuses
+    /// only the font's work. HarfBuzz's HB_BUFFER_MAX_OPS_FACTOR from version 2.7.3 to 11.4.1 (4 096 since 11.4.2).</summary>
     public const int OperationsPerGlyph = 1024;
 
     /// <summary>The fewest operations any text may spend, so that a short text is not held to 1 024 per glyph: one glyph
@@ -50,6 +56,7 @@ internal sealed class ShapingBudget
     public ShapingBudget(int inputLength)
     {
         _glyphs = inputLength;
+        InputLength = inputLength;
         GlyphLimit = GlyphSubstitution.MaxGlyphs(inputLength);
         OperationLimit = MaxOperations(inputLength);
         _operationsLeft = OperationLimit;
@@ -59,6 +66,9 @@ internal sealed class ShapingBudget
     /// <param name="inputLength">The glyphs before substitution.</param>
     /// <returns>The limit, computed in long.</returns>
     public static long MaxOperations(int inputLength) => Math.Max(MinOperations, (long)OperationsPerGlyph * inputLength);
+
+    /// <summary>The glyphs of the whole text before substitution.</summary>
+    public int InputLength { get; }
 
     /// <summary>The glyph limit of this text.</summary>
     public long GlyphLimit { get; }

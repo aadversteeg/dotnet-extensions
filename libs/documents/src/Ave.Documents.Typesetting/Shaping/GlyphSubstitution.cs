@@ -80,9 +80,7 @@ internal static class GlyphSubstitution
                 continue;
             }
 
-            var applied = lookup.Subtables
-                .Select(subtable => Substitute(glyphs, index, subtable, lookup.Flags, filter, budget))
-                .FirstOrDefault(result => result is not null);
+            var applied = FirstApplying(glyphs, index, lookup, filter, budget);
             if (budget.Exceeded is not null)
             {
                 return null;
@@ -105,6 +103,27 @@ internal static class GlyphSubstitution
         }
 
         return output.ToImmutable();
+    }
+
+    /// <summary>What the first subtable of the lookup that applies at <paramref name="index"/> does there, or null when
+    /// none does. Each subtable tried costs one operation, the lookup of its coverage, whether it covers the glyph or
+    /// not: a lookup of many subtables pays for each of them.</summary>
+    private static Substitution? FirstApplying(ImmutableArray<GlyphItem> glyphs, int index, Lookup lookup, GlyphFilter filter, ShapingBudget budget)
+    {
+        foreach (var subtable in lookup.Subtables)
+        {
+            if (!budget.Spend(1))
+            {
+                return null;
+            }
+
+            if (Substitute(glyphs, index, subtable, lookup.Flags, filter, budget) is { } result)
+            {
+                return result;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>What a subtable did at one position: the glyphs that replace the input, and where to continue.</summary>
