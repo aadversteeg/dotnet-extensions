@@ -55,7 +55,32 @@ names the rule and points at your line of code. The engine never invents a value
 | tables whose rows fill every column (spans count) | as many cells (or spans) as columns | PDF/UA | `…PdfUa1.IrregularTable` |
 | the relationship of each attachment | `.WithRelationship(AttachmentRelationship.Data)` | PDF/A-3 | `Documents.Pdf.Conformance.PdfA3.AttachmentWithoutRelationship` |
 
-All problems are reported at once. Plain PDF refuses none of them.
+A profile also refuses what it cannot carry, however it was given:
+
+| Refused | Profile | Error |
+| --- | --- | --- |
+| a page side below 3 or above 14 400 units (veraPDF rule 6.1.13-11) | PDF/A-3 | `Documents.Pdf.Conformance.PdfA3.PageSize` |
+| a title, author, language, attachment name or description, alternative text or replacement text longer than 32 767 bytes as a PDF string (6.1.13-3) | PDF/A-3 | `…PdfA3.TextTooLong` |
+| a media type or font name longer than 127 bytes as a PDF name (6.1.13-4) | PDF/A-3 | `…PdfA3.NameTooLong` |
+| a media type outside veraPDF's pattern, letters, digits and `_ - + .` on both sides of the slash (6.8-1) | PDF/A-3 | `…PdfA3.MediaType` |
+| text in the Private Use Area (6.2.11.7.3-1) | PDF/A-3a | `…PdfA3.PrivateUseText` |
+| more than 8 388 607 objects (6.1.13-7) | PDF/A-3 | `…PdfA3.TooManyObjects` |
+| a document language that is not a language tag (6.7.4-1, 7.2-29) | PDF/A-3a, PDF/UA | `Documents.Pdf.Conformance.Tagged.InvalidLanguage` |
+| glyph text with U+0000, U+FEFF or U+FFFE (6.2.11.7.2-2, 7.21.7-2) | PDF/A-3a, PDF/UA | `…Tagged.UnmappableText` |
+| content outside every structure element and artifact (7.1-3) | PDF/A-3a, PDF/UA | `…Tagged.UnmarkedContent` |
+| the .notdef glyph (6.2.11.8-1, 7.21.8-1) | PDF/A-3, PDF/UA | `Documents.Pdf.Conformance.Glyphs.NotdefGlyph` |
+| a table head without body rows (7.2-14) | PDF/UA | `…PdfUa1.TableHeadWithoutBody` |
+| a table whose grid has more than 4 194 304 slots, too large to check for regularity | PDF/UA | `…PdfUa1.TableTooLarge` |
+
+With the code front-end, four of these cannot happen, because it refuses or prevents them earlier: a language that
+is not a tag (`Documents.Input.Invalid.Language`), the .notdef glyph (`Documents.Font.GlyphMissing`), unmarked content
+and a table head without body rows. A page model made by another program can hit them.
+
+The problems are reported in stages, each stage all together: first the input (the front-end's checks, then the
+back-end's contract for page models), then the profile's refusals above, then the checks that need the structure
+tree (irregular tables, a table head without a body, a table too large). A later stage runs only when the earlier ones
+found nothing, so a missing title hides a table problem until the title is given. Plain PDF refuses none of the
+profile's problems.
 
 Some values are checked in every profile, because they would be wrong in any PDF: a language that is not a language
 tag such as `nl-NL` (`Documents.Input.Invalid.Language`); an attachment without a file name, with a media type that
@@ -115,7 +140,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. |
 | 13-002 | a link with a meaningful background | Not possible: no links yet. |
 | 13-003 | a caption not tagged as Caption | **Open:** there is no caption element; a caption is a paragraph. |
-| 13-005 | ActualText used where Alt fits better | Met: only Alt is written. |
+| 13-005 | ActualText used where Alt fits better | Met: images and figures get Alt. ActualText is written only on the marked content of a glyph whose text differs from its ToUnicode entry (a ligature, a shared hyphen glyph), to give that glyph's own text, where Alt does not apply. |
 | 13-006 | a graphic that means something only in its group, tagged alone | Not possible: an image is always one picture. |
 | 13-007 | a more accessible form is not used | **Your part.** |
 | 13-008 | an image of text without ActualText | **Open:** an image that shows words (a logo with a name) gets only Alt; there is no ActualText option yet. |

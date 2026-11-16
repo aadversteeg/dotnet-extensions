@@ -165,7 +165,7 @@ CLASSIFICATION = {
     "7.2-18": (NEVER, "No list roles."),
     "7.2-19": (NEVER, "No list roles."),
     "7.2-20": (NEVER, "No list roles."),
-    "7.2-21": (CHECKED, "PDF/UA-1 requires the catalog /Lang: `Pdf.Conformance.PdfUa1.MissingLanguage` (" + UA + ")."),
+    "7.2-21": (NEVER, "No /ActualText on structure elements; replacement text is written on marked-content spans only (7.2-30)."),
     "7.2-22": (CHECKED, "As 7.2-21: alternative text takes the catalog's language."),
     "7.2-23": (NEVER, "No /E entries."),
     "7.2-24": (NEVER, "No annotations."),

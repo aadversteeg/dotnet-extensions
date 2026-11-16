@@ -13,7 +13,7 @@ A rule that PDF/A-3a adds to PDF/A-3b lists only PDF/A-3a. The generated-documen
 (`UnitTests.Ave.Documents.Samples/GeneratedDocumentTests.cs`) checks the whole matrix at once: documents drawn from a
 fixed seed are refused or pass veraPDF.
 
-109 rules by construction, 43 checked, 109 cannot occur (261 rules).
+109 rules by construction, 42 checked, 110 cannot occur (261 rules).
 
 | Rule | Profiles | veraPDF rule text | Class | How |
 | --- | --- | --- | --- | --- |
@@ -210,7 +210,7 @@ fixed seed are refused or pass veraPDF.
 | 7.2-18 | PDF/UA-1 | LBody element should be contained in LI element | cannot occur | No list roles. |
 | 7.2-19 | PDF/UA-1 | L element may contain only L, LI and Caption elements | cannot occur | No list roles. |
 | 7.2-20 | PDF/UA-1 | LI element may contain only Lbl and LBody elements | cannot occur | No list roles. |
-| 7.2-21 | PDF/UA-1 | Natural language for text in ActualText attribute shall be determined | checked | PDF/UA-1 requires the catalog /Lang: `Pdf.Conformance.PdfUa1.MissingLanguage` (Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests). |
+| 7.2-21 | PDF/UA-1 | Natural language for text in ActualText attribute shall be determined | cannot occur | No /ActualText on structure elements; replacement text is written on marked-content spans only (7.2-30). |
 | 7.2-22 | PDF/UA-1 | Natural language for text in Alt attribute shall be determined | checked | As 7.2-21: alternative text takes the catalog's language. |
 | 7.2-23 | PDF/UA-1 | Natural language for text in E attribute shall be determined | cannot occur | No /E entries. |
 | 7.2-24 | PDF/UA-1 | Natural language in the Contents entry for annotations shall be determined | cannot occur | No annotations. |
