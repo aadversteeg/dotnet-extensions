@@ -184,6 +184,55 @@ public class ShapingBudgetTests
         shaped.Error.Code.Should().Be(TypesettingErrorCodes.TooMuchWork);
     }
 
+    /// <summary>
+    /// Lato with a GSUB of one script (DFLT) and one feature (liga) whose one lookup, ignoring marks, holds
+    /// <paramref name="subtables"/> offsets to ONE ligature substitution "a b → a". Every subtable looks for the b after
+    /// an a, stepping over the marks between them.
+    /// </summary>
+    private static TrueTypeFont FontWithRepeatedLigatureSubtables(int subtables)
+    {
+        const int ScriptList = 10, Script = 18, FeatureList = 30, Feature = 38, LookupList = 44, Lookup = 48;
+        var b = TestFonts.Regular.GlyphFor(new Rune('b'))!.Value.Value;
+        var gsub = new BigEndianBuilder()
+            .UInt16(1).UInt16(0).UInt16(ScriptList).UInt16(FeatureList).UInt16(LookupList)
+            .UInt16(1).Bytes("DFLT"u8.ToArray()).UInt16(Script - ScriptList)       // one script, DFLT
+            .UInt16(4).UInt16(0)                                                   // its default language system at +4
+            .UInt16(0).UInt16(0xFFFF).UInt16(1).UInt16(0)                          // no required feature; feature 0
+            .UInt16(1).Bytes("liga"u8.ToArray()).UInt16(Feature - FeatureList)     // one feature, liga
+            .UInt16(0).UInt16(1).UInt16(0)                                         // lookup 0
+            .UInt16(1).UInt16(Lookup - LookupList)                                 // one lookup
+            .UInt16(4).UInt16(0x0008).UInt16(subtables);                           // ligature substitution, ignore marks
+        for (var index = 0; index < subtables; index++)
+        {
+            gsub.UInt16(6 + 2 * subtables);
+        }
+
+        gsub.UInt16(1).UInt16(18).UInt16(1).UInt16(8)                              // format 1: coverage at +18, one set at +8
+            .UInt16(1).UInt16(4)                                                   // the set: one ligature at +4
+            .UInt16(A).UInt16(2).UInt16(b)                                         // the ligature: a, from a b
+            .UInt16(1).UInt16(1).UInt16(A);                                        // coverage: a
+
+        var emptyGpos = new BigEndianBuilder().UInt16(1).UInt16(0).UInt16(10).UInt16(12).UInt16(14).UInt16(0).UInt16(0).UInt16(0).ToArray();
+        var font = FontParser.Parse(FontFiles.WithTable(FontFiles.WithTable(Lato, "GSUB", gsub.ToArray()), "GPOS", emptyGpos));
+        font.IsSuccess.Should().BeTrue(font.IsFailure ? font.Error.ToString() : string.Empty);
+        return font.Value;
+    }
+
+    [Fact]
+    public void Each_glyph_a_search_for_a_ligature_s_next_component_steps_over_is_an_operation()
+    {
+        // An a, 1 000 combining marks and another a: a budget of 1 024 x 1 002 operations. Each of the 1 100 subtables
+        // steps over the 1 000 marks after the first a before it finds an a, not the b of its ligature: 1.1 million
+        // operations, though the walk and the subtables tried cost only some 3 000.
+        var text = "a" + string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x0302), 1_000)) + "a";
+
+        Shaper.Shape(text, FontWithRepeatedLigatureSubtables(1), 10).IsSuccess.Should().BeTrue("one subtable steps over 1 000");
+        var shaped = Shaper.Shape(text, FontWithRepeatedLigatureSubtables(1_100), 10);
+
+        shaped.IsFailure.Should().BeTrue("the searches cost 1.1 million operations");
+        shaped.Error.Code.Should().Be(TypesettingErrorCodes.TooMuchWork);
+    }
+
     [Fact]
     public void The_operations_error_says_what_was_exceeded_and_what_spent_it()
     {

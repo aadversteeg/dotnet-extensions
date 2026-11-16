@@ -166,7 +166,26 @@ public class TableRowCutLineTests
         var rules = WideRules(tables[0]);
         rules[^1].Bottom.Should().BeApproximately(tables[0].Size.Height, Epsilon);
         WideRules(tables[1])[0].Should().Be((0.0, Line), "page 2 starts with the whole line above the long row");
-        Words(tables[1], 0).First().Top.Should().BeGreaterThanOrEqualTo(Line, "the rest of the row starts below that line");
+        Words(tables[1], 0).First().Top.Should().BeApproximately(Line, Epsilon,
+            "the rest of the row starts right under the whole line: half of it lies in the cell, as for a whole cell, and the cell's own top padding went with its first part");
+    }
+
+    [Fact]
+    public void With_clone_a_cut_inside_the_last_row_ends_the_page_with_the_table_s_bottom_border()
+    {
+        // The long row is the table's last; the table's bottom border is 4 pt, the cells' lines 2 pt. The line below a
+        // cut last row is the table's bottom edge, so it is resolved with the table's border: 4 pt (the widest wins).
+        var t = new TableModels();
+        Box Cell(params string[] lines) => t.Lines(lines) with { Style = Lined };
+        var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body(t.Row(Cell("a"), Cell("b")), t.Row(Cell(LongWords), Cell("x"))));
+        table = table with { Style = table.Style with { DecorationBreak = BoxDecorationBreak.Clone, Border = Border.None with { Bottom = new BorderSide(4.Pt(), Color.Black) } } };
+
+        var tables = Tables(TableModels.Page(280, PageHeight, table));
+
+        tables.Should().HaveCountGreaterThan(1);
+        var end = WideRules(tables[0])[^1];
+        (end.Bottom - end.Top).Should().BeApproximately(4, Epsilon, "the table's bottom border closes the cut last row");
+        end.Bottom.Should().BeApproximately(tables[0].Size.Height, Epsilon);
     }
 
     /// <summary>The horizontal rules of a table part, each as its left edge, width, height and colour.</summary>

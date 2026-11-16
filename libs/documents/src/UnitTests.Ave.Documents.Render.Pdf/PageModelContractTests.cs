@@ -132,6 +132,28 @@ public class PageModelContractTests
 
     [Theory]
     [MemberData(nameof(Profiles))]
+    public void A_table_head_inside_a_decorative_node_of_the_table_counts_as_a_kid_of_the_table(string profile)
+    {
+        // A decorative node has no structure type, so it is no parent in the structure tree: the THead inside it is the
+        // table's kid, and with the THead beside it the table has two (the nearest node WITH a type is the table).
+        var document = Tagged(
+        [
+            Start(1, SemanticRole.Table),
+            Start(10, SemanticRole.TableHead), Start(11, SemanticRole.TableRow), Start(12, SemanticRole.TableCell), Run("x"), End(12), End(11), End(10),
+            Start(20, SemanticRole.Decorative),
+            Start(21, SemanticRole.TableHead), Start(22, SemanticRole.TableRow), Start(23, SemanticRole.TableCell), Run("x"), End(23), End(22), End(21),
+            End(20),
+            Start(30, SemanticRole.TableBody), Start(31, SemanticRole.TableRow), Start(32, SemanticRole.TableCell), Run("x"), End(32), End(31), End(30),
+            End(1),
+        ]);
+
+        var error = Refused(document, profile);
+
+        error.Parts().Should().Contain(part => part.Code == PdfRenderErrorCodes.Write.InvalidPageModel && part.Message.Contains("more than one THead", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
     public void A_table_head_after_a_body_is_refused(string profile) =>
         Refused(TableOf(SemanticRole.TableBody, SemanticRole.TableHead), profile).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
@@ -312,6 +334,54 @@ public class PageModelContractTests
 
         (GC.GetAllocatedBytesForCurrentThread() - before).Should().BeLessThan(64L * 1024 * 1024, "the grid is as wide as the first row");
         error.Parts().Select(part => part.Code).Should().OnlyContain(code => code == PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable);
+    }
+
+    /// <summary>A table whose first row covers 1 024 columns (two cells of 1 000 and 24) and <paramref name="rows"/> - 1
+    /// rows of one cell of 1 000 columns follow: irregular, as the later rows leave 24 columns free.</summary>
+    private static PageDocument WideTable(int rows)
+    {
+        var first = new DrawItem[]
+        {
+            Start(3, SemanticRole.TableRow),
+            Start(4, SemanticRole.TableCell) with { Span = new CellSpan(1_000, 1) }, Run("x"), End(4),
+            Start(5, SemanticRole.TableCell) with { Span = new CellSpan(24, 1) }, Run("x"), End(5),
+            End(3),
+        };
+        var later = Enumerable.Range(0, rows - 1).SelectMany(row => new DrawItem[]
+        {
+            Start(100 + 2 * row, SemanticRole.TableRow), Start(101 + 2 * row, SemanticRole.TableCell) with { Span = new CellSpan(1_000, 1) },
+            Run("x"), End(101 + 2 * row), End(100 + 2 * row),
+        });
+        return Tagged([Start(1, SemanticRole.Table), Start(2, SemanticRole.TableBody), .. first, .. later, End(2), End(1)]);
+    }
+
+    [Fact]
+    public void A_table_of_exactly_the_slots_the_check_fills_is_checked_and_one_row_more_is_refused()
+    {
+        // 1 024 columns x 4 096 rows = 4 194 304 slots, the limit itself: the grid is filled and its rows are checked.
+        Refused(WideTable(4_096), With(PdfProfile.PdfUa1)).Parts().Select(part => part.Code).Distinct()
+            .Should().Equal([PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable], "at the limit the table is checked, not refused as too large");
+
+        Refused(WideTable(4_097), With(PdfProfile.PdfUa1)).Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.TableTooLarge);
+    }
+
+    [Fact]
+    public void A_later_row_wider_than_the_first_is_irregular_at_its_extra_cell()
+    {
+        // The first row covers two columns; the second has three cells. The third reaches past the last column.
+        var document = Tagged(
+        [
+            Start(1, SemanticRole.Table), Start(2, SemanticRole.TableBody),
+            Start(10, SemanticRole.TableRow), Start(11, SemanticRole.TableCell), Run("a"), End(11), Start(12, SemanticRole.TableCell), Run("b"), End(12), End(10),
+            Start(20, SemanticRole.TableRow), Start(21, SemanticRole.TableCell), Run("c"), End(21), Start(22, SemanticRole.TableCell), Run("d"), End(22),
+            Start(23, SemanticRole.TableCell), Run("e"), End(23), End(20),
+            End(2), End(1),
+        ]);
+
+        var error = Refused(document, With(PdfProfile.PdfUa1));
+
+        error.Parts().Should().ContainSingle().Which.Should().Match<Error>(part =>
+            part.Code == PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable && (string)part.Metadata![ErrorMetadataKeys.Node] == new NodeId(23).ToString());
     }
 
     [Fact]

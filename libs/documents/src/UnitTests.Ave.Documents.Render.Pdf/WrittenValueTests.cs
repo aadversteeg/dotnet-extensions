@@ -284,4 +284,18 @@ public class WrittenValueTests
         strings.Sum().Should().Be(2 * 40_000, "every glyph is shown once");
         PdfReadBack.Text(PdfRenderer.Render(OnePage(new DocumentMetadata("Long", null), run), Plain).Value).Single().Should().Be(new string('i', 40_000));
     }
+
+    [Theory]
+    [InlineData(PageContentStream.MaxGlyphsPerString, 1)]
+    [InlineData(PageContentStream.MaxGlyphsPerString + 1, 2)]
+    public void A_string_holds_as_many_glyphs_as_fit_in_32767_bytes_and_no_more(int glyphs, int strings)
+    {
+        // 16 383 two-byte codes are 32 766 bytes, the most whole glyphs a string of 32 767 bytes holds: such a run is
+        // one string, and one glyph more starts a second.
+        var run = Run(new string('i', glyphs), TestFonts.Regular, new Point(0, 50));
+        var file = Latin1(PdfRenderer.Render(OnePage(new DocumentMetadata("Long", null), run), Plain).Value);
+
+        var content = Encoding.ASCII.GetString(StreamData(file, Reference(file, "Contents")));
+        Regex.Matches(content, "<([0-9A-F]*)>").Should().HaveCount(strings);
+    }
 }

@@ -150,4 +150,28 @@ public class PageAndTableRuleTests
 
         pages.Select(page => Boxes(page, box => box.Role == SemanticRole.TableRow).Count()).Should().Equal(1, 2);
     }
+
+    /// <summary>
+    /// A forced break before a box's first child is a break before the box itself: "a break-before value on a first
+    /// in-flow child box is propagated to its container" (CSS Fragmentation 3 §3.1.1), and a flow breaks only between
+    /// its children, never before the first one of a fragment. The first cell of a table's first row passes it on up
+    /// to the table (each is its container's first child), which then moves to the next page; any other cell is no
+    /// first child, and the break meets no flow that could honour it (cells of a row are side by side). So a hand-made
+    /// second cell whose first paragraph has <c>break-before: page</c> is laid out as without it (round-2 mutant N15).
+    /// </summary>
+    [Fact]
+    public void A_forced_break_before_the_first_child_of_a_later_cell_is_the_cell_s_own_and_breaks_nothing()
+    {
+        var t = new TableModels();
+        var paragraph = new Box(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial with { BreakBefore = BreakBetween.Page },
+            [new TextRun(t.Next(), "second", Models.Text(), Models.At(0))], Models.At(0));
+        var broken = new Box(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, TableModels.ReferenceCell, [paragraph], Models.At(0));
+        var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body(t.Row(t.Cell("first"), broken)));
+        var before = Models.Paragraph(90, "before", BoxStyle.Initial);
+
+        var pages = Paginate(TableModels.Page(280, 150, before, table));
+
+        pages.Should().ContainSingle("the cell's break has nothing to break between");
+        Lines(pages[0].Root.Fragment, new Point(0, 0)).Select(line => TextOf(line.Line)).Should().Equal("before", "first", "second");
+    }
 }
