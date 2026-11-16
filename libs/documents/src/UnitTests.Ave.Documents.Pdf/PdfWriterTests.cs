@@ -84,7 +84,7 @@ public class PdfWriterTests
     [Fact]
     public void Object_numbers_with_a_gap_are_an_error()
     {
-        var file = MinimalFile() with { Objects = MinimalFile().Objects.RemoveAt(1) };
+        var file = MinimalFile() with { Objects = MinimalFile().Objects.Items.RemoveAt(1) };
 
         PdfWriter.Write(file).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObjectNumbers);
     }
@@ -92,7 +92,7 @@ public class PdfWriterTests
     [Fact]
     public void A_non_finite_number_is_an_error()
     {
-        var file = MinimalFile() with { Objects = MinimalFile().Objects.SetItem(2, new IndirectValue(3, new PdfReal(double.PositiveInfinity))) };
+        var file = MinimalFile() with { Objects = MinimalFile().Objects.Items.SetItem(2, new IndirectValue(3, new PdfReal(double.PositiveInfinity))) };
 
         PdfWriter.Write(file).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
     }

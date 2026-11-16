@@ -127,7 +127,7 @@ public class PdfObjectRulesTests
         PdfWriter.Write(null).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
         PdfWriter.Write(file with { Objects = default }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
         PdfWriter.Write(file with { Catalog = null! }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
-        PdfWriter.Write(file with { Objects = file.Objects.Add(null!) }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+        PdfWriter.Write(file with { Objects = [.. file.Objects, null!] }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
         ContentStream.Serialize(null).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
         ContentStream.Serialize([null]).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
     }

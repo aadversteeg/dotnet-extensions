@@ -54,7 +54,7 @@ public static class PdfWriter
             WriteIndirectObject(output, indirect);
         }
 
-        var identifier = file.FileIdentifier ?? IdentifierFromContent(output.WrittenSpan);
+        var identifier = file.FileIdentifier?.Items ?? IdentifierFromContent(output.WrittenSpan);
         var crossReferenceOffset = output.WrittenCount;
         WriteAscii(output, CrossReferenceTable(offsets));
         WriteAscii(output, Trailer(file, offsets.Count + 1, identifier, crossReferenceOffset));
@@ -62,9 +62,10 @@ public static class PdfWriter
     }
 
     /// <summary>A file to write: present, with its list of objects (none of them missing, every stream with its stream)
-    /// and a catalog, the trailer's /Root (§7.5.5).</summary>
+    /// and a catalog, the trailer's /Root (§7.5.5), that is one of them.</summary>
     private static Error? CheckFile(PdfFile file) =>
-        file.Objects.IsDefault || file.Catalog is null || file.Objects.Any(indirect => indirect is null or IndirectStream { Stream: null })
+        file.Catalog is null || file.Objects.Any(indirect => indirect is null or IndirectStream { Stream: null })
+        || !file.Objects.Any(indirect => indirect.Number == file.Catalog.ObjectNumber)
             ? IncompleteFile
             : null;
 
@@ -78,33 +79,31 @@ public static class PdfWriter
     public const int MaxFileIdentifierLength = 32_767;
 
     /// <summary>A given file identifier is a byte string with content: the trailer's /ID holds it twice (§14.4), and
-    /// PDF/A refuses an empty one (veraPDF rule 6.1.3-1). An unset (default) array is refused too instead of failing
-    /// when it is read, and so is one longer than <see cref="MaxFileIdentifierLength"/>.</summary>
-    private static Error? CheckIdentifier(ImmutableArray<byte>? identifier)
+    /// PDF/A refuses an empty one (veraPDF rule 6.1.3-1); one longer than <see cref="MaxFileIdentifierLength"/> is refused too.</summary>
+    private static Error? CheckIdentifier(ValueList<byte>? identifier)
     {
         if (identifier is not { } bytes)
         {
             return null;
         }
 
-        // Asked first: every other member of an unset array throws.
-        if (bytes.IsDefault || bytes.IsEmpty)
+        if (bytes.IsEmpty)
         {
             return new Error(PdfErrorCodes.Write.InvalidFileIdentifier, "The file identifier is empty; give one of at least one byte, or none to derive it from the content.");
         }
 
-        return bytes.Length > MaxFileIdentifierLength
-            ? new Error(PdfErrorCodes.Write.InvalidFileIdentifier, $"The file identifier has {bytes.Length} bytes; a PDF string holds at most {MaxFileIdentifierLength}.")
-                .With(ErrorMetadataKeys.Value, bytes.Length.ToString(CultureInfo.InvariantCulture))
+        return bytes.Count > MaxFileIdentifierLength
+            ? new Error(PdfErrorCodes.Write.InvalidFileIdentifier, $"The file identifier has {bytes.Count} bytes; a PDF string holds at most {MaxFileIdentifierLength}.")
+                .With(ErrorMetadataKeys.Value, bytes.Count.ToString(CultureInfo.InvariantCulture))
             : null;
     }
 
     /// <summary>The writer's own rule: objects are numbered 1..N without gaps, so the cross-reference table (§7.5.4)
     /// is one subsection from 0.</summary>
-    private static Error? CheckNumbering(ImmutableArray<IndirectObject> objects)
+    private static Error? CheckNumbering(ValueList<IndirectObject> objects)
     {
         var numbers = objects.Select(indirect => indirect.Number).Order().ToImmutableArray();
-        var expected = Enumerable.Range(1, objects.Length);
+        var expected = Enumerable.Range(1, objects.Count);
         return numbers.SequenceEqual(expected)
             ? null
             : new Error(
@@ -115,7 +114,7 @@ public static class PdfWriter
 
     /// <summary>The objects themselves (<see cref="PdfSerializer.Problem"/>), and every stream dictionary: /Length and
     /// /Filter are the writer's to set (§7.3.8.2, Table 5).</summary>
-    private static Error? CheckObjects(ImmutableArray<IndirectObject> objects) =>
+    private static Error? CheckObjects(ValueList<IndirectObject> objects) =>
         PdfSerializer.Problem(objects.Select(indirect => indirect switch
         {
             IndirectValue value => value.Value,
