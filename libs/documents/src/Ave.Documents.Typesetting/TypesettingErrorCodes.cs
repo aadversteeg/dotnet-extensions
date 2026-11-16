@@ -14,4 +14,10 @@ public static class TypesettingErrorCodes
     /// needs it; a malformed or hostile one would otherwise make shaping allocate without bound. Metadata: FontName,
     /// Value (the limit).</summary>
     public static readonly ErrorCode TooManyGlyphs = _ / "TooManyGlyphs";
+
+    /// <summary>A font whose lookups need more operations for a text than the shaper allows
+    /// (ShapingBudget.MaxOperations): lookups that repeat, or walk a buffer their own substitutions
+    /// grew. No real font needs it; a malformed or hostile one would otherwise make shaping take time and memory without
+    /// bound. Metadata: FontName, Value (the limit).</summary>
+    public static readonly ErrorCode TooMuchWork = _ / "TooMuchWork";
 }

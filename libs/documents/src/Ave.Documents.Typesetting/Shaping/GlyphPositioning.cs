@@ -13,9 +13,27 @@ namespace Ave.Documents.Typesetting.Shaping;
 internal static class GlyphPositioning
 {
     /// <summary>Applies the lookups in order, then takes the advance of every mark away, then resolves mark
-    /// attachments.</summary>
-    public static ImmutableArray<GlyphItem> Apply(ImmutableArray<GlyphItem> buffer, IEnumerable<Lookup> lookups, GlyphFilter filter) =>
-        ResolveAttachments(ZeroMarkAdvances(lookups.Aggregate(buffer, (glyphs, lookup) => ApplyLookup(glyphs, lookup, filter))));
+    /// attachments. Null when the text reaches the operations limit of its <paramref name="budget"/>.</summary>
+    /// <param name="buffer">The glyphs.</param>
+    /// <param name="lookups">The lookups, in lookup-list order.</param>
+    /// <param name="filter">Glyph classes and lookup-flag skipping.</param>
+    /// <param name="budget">The limits of the text this buffer is part of.</param>
+    /// <returns>The positioned glyphs, or null.</returns>
+    public static ImmutableArray<GlyphItem>? Apply(ImmutableArray<GlyphItem> buffer, IEnumerable<Lookup> lookups, GlyphFilter filter, ShapingBudget budget)
+    {
+        var glyphs = buffer;
+        foreach (var lookup in lookups)
+        {
+            if (ApplyLookup(glyphs, lookup, filter, budget) is not { } next)
+            {
+                return null;
+            }
+
+            glyphs = next;
+        }
+
+        return ResolveAttachments(ZeroMarkAdvances(glyphs));
+    }
 
     /// <summary>
     /// A mark takes no horizontal space: its advance becomes 0 once GPOS is applied, whatever 'hmtx' and the lookups
@@ -36,12 +54,21 @@ internal static class GlyphPositioning
     /// value is less than zero, the character will be moved closer together"; putting the whole value on the first
     /// glyph's advance is the engine's convention (the positions on the page are the same either way).
     /// </summary>
-    public static ImmutableArray<GlyphItem> ApplyLegacyKerning(ImmutableArray<GlyphItem> buffer, LegacyKerning kerning)
+    /// <param name="buffer">The glyphs.</param>
+    /// <param name="kerning">The 'kern' table.</param>
+    /// <param name="budget">The limits of the text; each glyph looked at is an operation.</param>
+    /// <returns>The kerned glyphs, or null when the budget is used up.</returns>
+    public static ImmutableArray<GlyphItem>? ApplyLegacyKerning(ImmutableArray<GlyphItem> buffer, LegacyKerning kerning, ShapingBudget budget)
     {
         var glyphs = buffer.ToArray();
         for (var index = 0; index < glyphs.Length; index++)
         {
-            if (glyphs[index].Class == GlyphClass.Mark || NextIndex(glyphs, index, item => item.Class == GlyphClass.Mark) is not { } next)
+            if (!budget.Spend(1))
+            {
+                return null;
+            }
+
+            if (glyphs[index].Class == GlyphClass.Mark || NextIndex(glyphs, index, item => item.Class == GlyphClass.Mark, budget) is not { } next)
             {
                 continue;
             }
@@ -50,11 +77,12 @@ internal static class GlyphPositioning
             glyphs[index] = glyphs[index] with { XAdvance = glyphs[index].XAdvance + adjustment };
         }
 
-        return [.. glyphs];
+        return budget.Exceeded is null ? [.. glyphs] : null;
     }
 
-    /// <summary>One lookup over the whole buffer (lookups with a mark filtering set are skipped, as in GSUB).</summary>
-    private static ImmutableArray<GlyphItem> ApplyLookup(ImmutableArray<GlyphItem> buffer, Lookup lookup, GlyphFilter filter)
+    /// <summary>One lookup over the whole buffer (lookups with a mark filtering set are skipped, as in GSUB); null once
+    /// the budget is used up. Each position costs an operation, and each glyph a search steps over another.</summary>
+    private static ImmutableArray<GlyphItem>? ApplyLookup(ImmutableArray<GlyphItem> buffer, Lookup lookup, GlyphFilter filter, ShapingBudget budget)
     {
         if (lookup.Flags.UsesMarkFilteringSet)
         {
@@ -65,25 +93,30 @@ internal static class GlyphPositioning
         var index = 0;
         while (index < glyphs.Length)
         {
+            if (!budget.Spend(1))
+            {
+                return null;
+            }
+
             var next = filter.SkipsInPositioning(lookup.Flags, glyphs[index])
                 ? null
-                : lookup.Subtables.Select(subtable => Position(glyphs, index, subtable, lookup.Flags, filter)).FirstOrDefault(found => found is not null);
+                : lookup.Subtables.Select(subtable => Position(glyphs, index, subtable, lookup.Flags, filter, budget)).FirstOrDefault(found => found is not null);
             index = next ?? index + 1;
         }
 
-        return [.. glyphs];
+        return budget.Exceeded is null ? [.. glyphs] : null;
     }
 
     /// <summary>Tries one subtable at <paramref name="index"/>, changing <paramref name="glyphs"/>; returns where
     /// to continue, or null when the subtable does not apply there.</summary>
-    private static int? Position(GlyphItem[] glyphs, int index, LookupSubtable subtable, LookupFlags flags, GlyphFilter filter) =>
+    private static int? Position(GlyphItem[] glyphs, int index, LookupSubtable subtable, LookupFlags flags, GlyphFilter filter, ShapingBudget budget) =>
         subtable switch
         {
             PairAdjustmentByGlyph pairs => AdjustPair(glyphs, index, flags, filter, pairs.SecondHasValues,
-                (first, second) => pairs.Find(first.Glyph, second.Glyph)),
+                (first, second) => pairs.Find(first.Glyph, second.Glyph), budget),
             PairAdjustmentByClass classes => AdjustPair(glyphs, index, flags, filter, classes.SecondHasValues,
-                (first, second) => ClassPair(classes, first, second)),
-            MarkToBase marks => Attach(glyphs, index, marks),
+                (first, second) => ClassPair(classes, first, second), budget),
+            MarkToBase marks => Attach(glyphs, index, marks, budget),
 
             // Every other type or format: not implemented in this version; skipped (documented on the Shaper).
             _ => null,
@@ -95,9 +128,9 @@ internal static class GlyphPositioning
     /// glyph of the pair is the 'first' glyph of the next pair"; otherwise the next pair starts after it.
     /// </summary>
     private static int? AdjustPair(
-        GlyphItem[] glyphs, int index, LookupFlags flags, GlyphFilter filter, bool secondHasValues, System.Func<GlyphItem, GlyphItem, PairValues?> find)
+        GlyphItem[] glyphs, int index, LookupFlags flags, GlyphFilter filter, bool secondHasValues, System.Func<GlyphItem, GlyphItem, PairValues?> find, ShapingBudget budget)
     {
-        if (NextIndex(glyphs, index, item => filter.SkipsInPositioning(flags, item)) is not { } second || find(glyphs[index], glyphs[second]) is not { } values)
+        if (NextIndex(glyphs, index, item => filter.SkipsInPositioning(flags, item), budget) is not { } second || find(glyphs[index], glyphs[second]) is not { } values)
         {
             return null;
         }
@@ -134,7 +167,7 @@ internal static class GlyphPositioning
     /// with the base's anchor point". The offset is recorded relative to the base and resolved at the end, when all
     /// advances are final.
     /// </summary>
-    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table)
+    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, ShapingBudget budget)
     {
         if (table.MarkOf(glyphs[index].Glyph) is not { } mark)
         {
@@ -147,7 +180,7 @@ internal static class GlyphPositioning
             baseIndex--;
         }
 
-        if (baseIndex < 0 || table.BaseAnchor(glyphs[baseIndex].Glyph, mark.MarkClass) is not { } baseAnchor)
+        if (!budget.Spend(index - baseIndex) || baseIndex < 0 || table.BaseAnchor(glyphs[baseIndex].Glyph, mark.MarkClass) is not { } baseAnchor)
         {
             return null;
         }
@@ -159,21 +192,33 @@ internal static class GlyphPositioning
     /// <summary>
     /// Turns each mark attachment into offsets from the pen position of the mark: the mark is drawn where the base
     /// is drawn plus the anchor difference, so the advances of the glyphs from the base up to the mark are taken
-    /// back (text runs left to right).
+    /// back (text runs left to right). The advances between the two are a difference of running sums, so a long run of
+    /// marks on one base costs no more than its length.
     /// </summary>
-    private static ImmutableArray<GlyphItem> ResolveAttachments(ImmutableArray<GlyphItem> glyphs) =>
-        [.. glyphs.Select((item, index) => item.Attachment is not { } attachment
+    private static ImmutableArray<GlyphItem> ResolveAttachments(ImmutableArray<GlyphItem> glyphs)
+    {
+        // pens[i]: the pen position before glyph i, the sum of the advances before it.
+        var pens = new long[glyphs.Length + 1];
+        for (var index = 0; index < glyphs.Length; index++)
+        {
+            pens[index + 1] = pens[index] + glyphs[index].XAdvance;
+        }
+
+        return [.. glyphs.Select((item, index) => item.Attachment is not { } attachment
             ? item
             : item with
             {
-                XOffset = attachment.X + glyphs[attachment.BaseIndex].XOffset - glyphs.Skip(attachment.BaseIndex).Take(index - attachment.BaseIndex).Sum(glyph => glyph.XAdvance),
+                XOffset = (int)(attachment.X + glyphs[attachment.BaseIndex].XOffset - (pens[index] - pens[attachment.BaseIndex])),
                 YOffset = attachment.Y + glyphs[attachment.BaseIndex].YOffset,
                 Attachment = null,
             })];
+    }
 
-    private static int? NextIndex(IReadOnlyList<GlyphItem> glyphs, int index, System.Func<GlyphItem, bool> skip)
+    /// <summary>The first glyph after <paramref name="index"/> that is not skipped, or null; each glyph looked at is an
+    /// operation of the budget, and the search gives up once it is used up.</summary>
+    private static int? NextIndex(IReadOnlyList<GlyphItem> glyphs, int index, System.Func<GlyphItem, bool> skip, ShapingBudget budget)
     {
-        for (var next = index + 1; next < glyphs.Count; next++)
+        for (var next = index + 1; next < glyphs.Count && budget.Spend(1); next++)
         {
             if (!skip(glyphs[next]))
             {

@@ -113,13 +113,20 @@ public static class Shaper
             .OnSuccessMap(glyph => new GlyphItem(glyph, character.ToString(), filter.ClassOf(glyph, isNonspacingMark)));
     }
 
+    /// <summary>Shapes each piece of the text (a script run, cut after every forced line break) on its own, under ONE
+    /// budget for the whole text (<see cref="ShapingBudget"/>), so the pieces share its limits. Once a limit is reached
+    /// the later pieces stop at their first step, and the text gets the one error of that limit.</summary>
     private static Result<ImmutableArray<ShapedGlyph>, Error> ShapeScriptRuns(ImmutableArray<Rune> characters, ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, double fontSize)
     {
         var hyphen = Hyphen(font, fontSize);
-        return ScriptRuns(characters)
+        var budget = new ShapingBudget(glyphs.Length);
+        var pieces = ScriptRuns(characters)
             .SelectMany(run => SplitAfterLineBreaks(characters, run))
-            .TraverseAll(run => ShapeRun([.. glyphs.Skip(run.Start).Take(run.Length)], run.Tag, font))
-            .OnSuccessMap(runs => runs.SelectMany(run => run).Select(glyph => new ShapedGlyph(
+            .Select(run => ShapeRun([.. glyphs.Skip(run.Start).Take(run.Length)], run.Tag, font, budget))
+            .ToList();
+        return budget.Exceeded is { } limit
+            ? Result<ImmutableArray<ShapedGlyph>, Error>.Failure(LimitReached(font, budget, limit))
+            : Result<ImmutableArray<ShapedGlyph>, Error>.Success([.. pieces.SelectMany(piece => piece!.Value).Select(glyph => new ShapedGlyph(
                     glyph.Glyph,
                     font.Metrics.ToPoints(glyph.XAdvance, fontSize),
                     glyph.Text,
@@ -129,8 +136,7 @@ public static class Shaper
                     IsInvisible = glyph.IsDefaultIgnorable,
                     IsLineBreak = glyph.IsLineBreak,
                     BreakHyphen = glyph.Text == SoftHyphen ? hyphen : null,
-                })
-                .ToImmutableArray());
+                })]);
     }
 
     /// <summary>The soft hyphen U+00AD.</summary>
@@ -156,29 +162,36 @@ public static class Shaper
 
     /// <summary>
     /// The shaping steps for one script run, all in font design units: GSUB lookups; the 'hmtx' advance of every
-    /// resulting glyph; then the old 'kern' table if GPOS has no kerning, and the GPOS lookups.
+    /// resulting glyph; then the old 'kern' table if GPOS has no kerning, and the GPOS lookups. Each step spends from the
+    /// text's <paramref name="budget"/>; null when one reaches a limit.
     /// </summary>
-    private static Result<ImmutableArray<GlyphItem>, Error> ShapeRun(ImmutableArray<GlyphItem> glyphs, string script, TrueTypeFont font)
+    private static ImmutableArray<GlyphItem>? ShapeRun(ImmutableArray<GlyphItem> glyphs, string script, TrueTypeFont font, ShapingBudget budget)
     {
         var layout = font.Layout;
         var filter = new GlyphFilter(layout.Definitions);
-        var applied = GlyphSubstitution.Apply(glyphs, layout.Substitutions.LookupsFor(script, SubstitutionFeatures), filter);
-        if (applied.HasNoValue)
+        if (GlyphSubstitution.Apply(glyphs, layout.Substitutions.LookupsFor(script, SubstitutionFeatures), filter, budget) is not { } substituted)
         {
-            var limit = GlyphSubstitution.MaxGlyphs(glyphs.Length);
-            return Result<ImmutableArray<GlyphItem>, Error>.Failure(
-                new Error(TypesettingErrorCodes.TooManyGlyphs, $"Font '{font.Names.PostScriptName}' turns {glyphs.Length} glyphs into more than {limit}; its substitutions do not end.")
-                    .With(ErrorMetadataKeys.FontName, font.Names.PostScriptName)
-                    .With(ErrorMetadataKeys.Value, limit.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            return null;
         }
 
-        var substituted = applied.Value;
         var withAdvances = substituted.Select(glyph => glyph with { XAdvance = glyph.IsDefaultIgnorable ? 0 : font.AdvanceWidth(glyph.Glyph) }).ToImmutableArray();
 
         // "kern" in GPOS wins over the 'kern' table: the table is used only when no GPOS feature is called kern.
         var hasGposKerning = layout.Positions.Features.Any(feature => feature.Tag == "kern");
-        var kerned = hasGposKerning ? withAdvances : GlyphPositioning.ApplyLegacyKerning(withAdvances, layout.Kerning);
-        return Result<ImmutableArray<GlyphItem>, Error>.Success(GlyphPositioning.Apply(kerned, layout.Positions.LookupsFor(script, PositioningFeatures), filter));
+        var kerned = hasGposKerning ? withAdvances : GlyphPositioning.ApplyLegacyKerning(withAdvances, layout.Kerning, budget);
+        return kerned is { } ready ? GlyphPositioning.Apply(ready, layout.Positions.LookupsFor(script, PositioningFeatures), filter, budget) : null;
+    }
+
+    /// <summary>The error for the limit of <paramref name="budget"/> that the text reached.</summary>
+    private static Error LimitReached(TrueTypeFont font, ShapingBudget budget, ShapingLimit limit)
+    {
+        var name = font.Names.PostScriptName;
+        var error = limit == ShapingLimit.Glyphs
+            ? new Error(TypesettingErrorCodes.TooManyGlyphs, $"Font '{name}' turns the text into more than {budget.GlyphLimit} glyphs; its substitutions do not end.")
+                .With(ErrorMetadataKeys.Value, budget.GlyphLimit.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            : new Error(TypesettingErrorCodes.TooMuchWork, $"Font '{name}' needs more than {budget.OperationLimit} operations to shape the text; its lookups repeat without end.")
+                .With(ErrorMetadataKeys.Value, budget.OperationLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return error.With(ErrorMetadataKeys.FontName, name);
     }
 
     /// <summary>A run of characters of one script, with the OpenType script tag its lookups are chosen by.</summary>

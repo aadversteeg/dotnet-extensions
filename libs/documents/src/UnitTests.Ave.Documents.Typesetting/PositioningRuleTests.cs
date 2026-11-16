@@ -27,7 +27,7 @@ public class PositioningRuleTests
             new(new GlyphId(2), "V", GlyphClass.Base, XAdvance: 600),
         ];
 
-        var positioned = GlyphPositioning.Apply(glyphs, [new Lookup(0, new LookupFlags(0), [pairs])], new GlyphFilter(null));
+        var positioned = GlyphPositioning.Apply(glyphs, [new Lookup(0, new LookupFlags(0), [pairs])], new GlyphFilter(null), new ShapingBudget(glyphs.Length))!.Value;
 
         positioned.Select(glyph => (glyph.XOffset, glyph.YOffset, glyph.XAdvance)).Should().Equal((15, 120, 570), (0, 0, 600));
     }
@@ -51,7 +51,7 @@ public class PositioningRuleTests
             new(new GlyphId(2), "V", GlyphClass.Base, XAdvance: 600),
         ];
 
-        var positioned = GlyphPositioning.Apply(glyphs, [new Lookup(0, new LookupFlags(0), [pairs])], new GlyphFilter(null));
+        var positioned = GlyphPositioning.Apply(glyphs, [new Lookup(0, new LookupFlags(0), [pairs])], new GlyphFilter(null), new ShapingBudget(glyphs.Length))!.Value;
 
         positioned.Select(glyph => glyph.XAdvance).Should().Equal(570, 0, 600);
     }
@@ -73,7 +73,7 @@ public class PositioningRuleTests
             new(new GlyphId(5), "\u0301", GlyphClass.Mark),
         ];
 
-        var positioned = GlyphPositioning.Apply(glyphs, [new Lookup(0, new LookupFlags(0), [marks])], new GlyphFilter(null));
+        var positioned = GlyphPositioning.Apply(glyphs, [new Lookup(0, new LookupFlags(0), [marks])], new GlyphFilter(null), new ShapingBudget(glyphs.Length))!.Value;
 
         positioned[2].YOffset.Should().Be(500, "the mark sits on the base's anchor");
     }

@@ -74,7 +74,7 @@ public class OpenTypeShapingTests
             new(new GlyphId(2), "V", GlyphClass.Base, XAdvance: 600),
         ];
 
-        var kerned = GlyphPositioning.ApplyLegacyKerning(glyphs, kerning);
+        var kerned = GlyphPositioning.ApplyLegacyKerning(glyphs, kerning, new ShapingBudget(glyphs.Length))!.Value;
 
         kerned.Select(glyph => glyph.XAdvance).Should().Equal(550, 0, 600);
     }

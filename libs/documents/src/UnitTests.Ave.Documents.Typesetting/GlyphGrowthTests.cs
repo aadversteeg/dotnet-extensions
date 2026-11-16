@@ -44,10 +44,10 @@ public class GlyphGrowthTests
     [Fact]
     public void Ten_doubling_lookups_give_1024_glyphs()
     {
-        var result = GlyphSubstitution.Apply(One, Doubling(10).Lookups, new GlyphFilter(null));
+        var result = GlyphSubstitution.Apply(One, Doubling(10).Lookups, new GlyphFilter(null), new ShapingBudget(1));
 
-        result.HasValue.Should().BeTrue();
-        result.Value.Should().HaveCount(1024);
+        result.Should().NotBeNull();
+        result!.Value.Should().HaveCount(1024);
     }
 
     [Fact]
@@ -55,9 +55,12 @@ public class GlyphGrowthTests
     {
         GlyphSubstitution.MaxGlyphs(1).Should().Be(GlyphSubstitution.MinGlyphLimit);
 
-        var result = GlyphSubstitution.Apply(One, Doubling(16).Lookups, new GlyphFilter(null));
+        var budget = new ShapingBudget(1);
 
-        result.HasValue.Should().BeFalse("2^16 glyphs from one is past the limit of 16 384");
+        var result = GlyphSubstitution.Apply(One, Doubling(16).Lookups, new GlyphFilter(null), budget);
+
+        result.Should().BeNull("2^16 glyphs from one is past the limit of 16 384");
+        budget.Exceeded.Should().Be(ShapingLimit.Glyphs);
     }
 
     [Fact]
