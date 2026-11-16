@@ -26,14 +26,18 @@ public class TableRowCutLineTests
     /// <summary>The words of the long row's cell: "l00" … "l39".</summary>
     private static readonly string[] LongWords = [.. Enumerable.Range(0, 40).Select(index => $"l{index:00}")];
 
-    private static StyledDocument Document(BoxDecorationBreak mode, double offset, bool header)
+    /// <summary>With <paramref name="empty"/> set, every row has a third cell, without content of that kind
+    /// (<see cref="TableModels.EmptyKinds"/>).</summary>
+    private static StyledDocument Document(BoxDecorationBreak mode, double offset, bool header, string? empty = null)
     {
         var t = new TableModels();
         Box Cell(params string[] lines) => t.Lines(lines) with { Style = Lined };
-        var body = t.Body(t.Row(Cell("a"), Cell("b")), t.Row(Cell(LongWords), Cell("x")), t.Row(Cell("c"), Cell("d")));
+        Box Row(params Box[] cells) => empty is null ? t.Row(cells) : t.Row([.. cells, t.Empty(empty, Lined)]);
+        ValueList<TrackSize> columns = empty is null ? [new TrackSize.Fill(1), new TrackSize.Fill(1)] : [new TrackSize.Fill(1), new TrackSize.Fill(1), new TrackSize.Fill(1)];
+        var body = t.Body(Row(Cell("a"), Cell("b")), Row(Cell(LongWords), Cell("x")), Row(Cell("c"), Cell("d")));
         var table = header
-            ? t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Head(t.Row(Cell("h1"), Cell("h2"))), body)
-            : t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], body);
+            ? t.Table(columns, t.Head(Row(Cell("h1"), Cell("h2"))), body)
+            : t.Table(columns, body);
         var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
         return TableModels.Page(280, PageHeight, spacer, table with { Style = table.Style with { DecorationBreak = mode } });
     }
@@ -71,12 +75,37 @@ public class TableRowCutLineTests
     [InlineData(BoxDecorationBreak.Clone, true)]
     [InlineData(BoxDecorationBreak.Slice, false)]
     [InlineData(BoxDecorationBreak.Slice, true)]
-    public void A_cut_inside_a_row_closes_the_table_on_both_pages_with_clone_and_draws_nothing_with_slice(BoxDecorationBreak mode, bool header)
+    public void A_cut_inside_a_row_closes_the_table_on_both_pages_with_clone_and_draws_nothing_with_slice(BoxDecorationBreak mode, bool header) =>
+        LinesAtTheCut(mode, header, empty: null);
+
+    /// <summary>The same sweep with a cell without content in every row (spot check of fix round 3, SC-1): the lines
+    /// at the cut are the same, and no row part on a page is an empty strip.</summary>
+    [Theory]
+    [MemberData(nameof(EmptyCellCases))]
+    public void A_cut_inside_a_row_beside_an_empty_cell_closes_the_table_and_leaves_no_empty_strip(string empty, BoxDecorationBreak mode, bool header) =>
+        LinesAtTheCut(mode, header, empty);
+
+    public static TheoryData<string, BoxDecorationBreak, bool> EmptyCellCases()
+    {
+        var cases = new TheoryData<string, BoxDecorationBreak, bool>();
+        foreach (var empty in TableModels.EmptyKinds)
+        {
+            foreach (var mode in new[] { BoxDecorationBreak.Clone, BoxDecorationBreak.Slice })
+            {
+                cases.Add(empty, mode, false);
+                cases.Add(empty, mode, true);
+            }
+        }
+
+        return cases;
+    }
+
+    private static void LinesAtTheCut(BoxDecorationBreak mode, bool header, string? empty)
     {
         for (var offset = 0.0; offset < 40; offset += 0.25)
         {
-            var because = $"{mode}, header {header}, offset {offset}";
-            var tables = Tables(Document(mode, offset, header));
+            var because = $"{mode}, header {header}, empty cell {empty ?? "none"}, offset {offset}";
+            var tables = Tables(Document(mode, offset, header, empty));
             var words = tables.Select(table => Words(table, 0).ToList()).ToList();
             var all = words.SelectMany(page => page.Select(word => word.Word)).ToList();
             all.Where(word => !word.StartsWith('h')).Should().BeEquivalentTo(["a", "b", .. LongWords, "x", "c", "d"], because + ": every word once");
@@ -115,6 +144,11 @@ public class TableRowCutLineTests
 
             foreach (var table in tables)
             {
+                foreach (var (row, rowAt) in Boxes(table, new Point(0, 0), SemanticRole.TableRow).Where(row => row.Box.Size.Height > Epsilon))
+                {
+                    Words(row, 0).Should().NotBeEmpty(because + $": the row part at {rowAt.Y} ({row.Size.Height} high) shows text");
+                }
+
                 WideRules(table).Where(rule => rule.Top < -Epsilon || rule.Bottom > table.Size.Height + Epsilon).Should().BeEmpty(because + ": no rule outside the table's box");
                 table.Size.Height.Should().BeLessThanOrEqualTo(PageHeight + Epsilon, because + ": the table's part fits the page area");
             }

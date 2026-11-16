@@ -20,7 +20,9 @@ public class TableBreakLineTests
 
     /// <summary>A two-column table of 30 one-line rows, every line <paramref name="lineWidth"/> wide, after an empty
     /// block whose margin moves the table <paramref name="offset"/> down.</summary>
-    private static StyledDocument Rows(double lineWidth, double offset, double pageHeight, int count = 30, double fontSize = 10, BoxDecorationBreak mode = BoxDecorationBreak.Slice)
+    /// <summary>With <paramref name="empty"/> set, every row has a third cell, without content of that kind
+    /// (<see cref="TableModels.EmptyKinds"/>).</summary>
+    private static StyledDocument Rows(double lineWidth, double offset, double pageHeight, int count = 30, double fontSize = 10, BoxDecorationBreak mode = BoxDecorationBreak.Slice, string? empty = null)
     {
         var t = new TableModels();
         var cell = Lined(lineWidth);
@@ -28,7 +30,9 @@ public class TableBreakLineTests
             [new Box(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(t.Next(), text, Models.Text(fontSize), Models.At(0))], Models.At(0))],
             Models.At(0));
         var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
-        var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body([.. Enumerable.Range(0, count).Select(i => t.Row(Cell($"row{i:00}"), Cell("value")))]));
+        Box[] Cells(int i) => empty is null ? [Cell($"row{i:00}"), Cell("value")] : [Cell($"row{i:00}"), Cell("value"), t.Empty(empty, cell)];
+        ValueList<TrackSize> columns = empty is null ? [new TrackSize.Fill(1), new TrackSize.Fill(1)] : [new TrackSize.Fill(1), new TrackSize.Fill(1), new TrackSize.Fill(1)];
+        var table = t.Table(columns, t.Body([.. Enumerable.Range(0, count).Select(i => t.Row(Cells(i)))]));
         return TableModels.Page(280, pageHeight, spacer, table with { Style = table.Style with { DecorationBreak = mode } });
     }
 
@@ -60,14 +64,39 @@ public class TableBreakLineTests
     [InlineData(4.0, BoxDecorationBreak.Clone)]
     [InlineData(1.0, BoxDecorationBreak.Clone)]
     [InlineData(0.5, BoxDecorationBreak.Clone)]
-    public void No_start_offset_leaves_a_row_without_content_or_a_line_outside_the_table(double lineWidth, BoxDecorationBreak mode)
+    public void No_start_offset_leaves_a_row_without_content_or_a_line_outside_the_table(double lineWidth, BoxDecorationBreak mode) =>
+        EveryRowWholeOnePerPage(lineWidth, mode, empty: null);
+
+    /// <summary>The same sweep with a cell without content in every row, with and without grid lines: a cell without
+    /// content places nothing, so a row that does not fit is never cut into an empty strip and a whole row.</summary>
+    [Theory]
+    [MemberData(nameof(EmptyCellCases))]
+    public void No_start_offset_cuts_a_row_with_an_empty_cell_into_an_empty_strip(string empty, double lineWidth, BoxDecorationBreak mode) =>
+        EveryRowWholeOnePerPage(lineWidth, mode, empty);
+
+    public static TheoryData<string, double, BoxDecorationBreak> EmptyCellCases()
+    {
+        var cases = new TheoryData<string, double, BoxDecorationBreak>();
+        foreach (var empty in TableModels.EmptyKinds)
+        {
+            foreach (var lineWidth in new[] { 0.0, 1.0 })
+            {
+                cases.Add(empty, lineWidth, BoxDecorationBreak.Clone);
+                cases.Add(empty, lineWidth, BoxDecorationBreak.Slice);
+            }
+        }
+
+        return cases;
+    }
+
+    private static void EveryRowWholeOnePerPage(double lineWidth, BoxDecorationBreak mode, string? empty)
     {
         const double PageHeight = 150;
         for (var offset = 0.0; offset < 40; offset += 0.25)
         {
-            var pages = Paginate(Rows(lineWidth, offset, PageHeight, mode: mode));
+            var pages = Paginate(Rows(lineWidth, offset, PageHeight, mode: mode, empty: empty));
 
-            var because = $"{mode}, line width {lineWidth}, offset {offset}";
+            var because = $"{mode}, line width {lineWidth}, empty cell {empty ?? "none"}, offset {offset}";
             var rows = new List<string>();
             foreach (var page in pages)
             {
@@ -102,12 +131,13 @@ public class TableBreakLineTests
 
     /// <summary>
     /// Twelve units of two rows tied by a cell spanning both, three lines high, next to two one-line cells; every line
-    /// 3pt wide. A unit that does not fit is broken between its rows or inside a row.
+    /// 3pt wide. A unit that does not fit is broken between its rows or inside a row. With <paramref name="empty"/> set,
+    /// every row has a third cell, without content of that kind (<see cref="TableModels.EmptyKinds"/>).
     /// </summary>
-    private static (StyledDocument Document, string[] Words) SpannedUnits(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12)
+    private static (StyledDocument Document, string[] Words) SpannedUnits(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, string? empty = null, double line = 3)
     {
         var t = new TableModels();
-        var style = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(3.Pt(), Color.Black)) };
+        var style = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(line.Pt(), Color.Black)) };
         var words = new List<string>();
         Box Cell(int span, params string[] lines)
         {
@@ -115,13 +145,15 @@ public class TableBreakLineTests
             return t.Lines(lines) with { Style = style with { Span = new CellSpan(1, span) } };
         }
 
+        Box[] WithEmpty(params Box[] cells) => empty is null ? cells : [.. cells, t.Empty(empty, style)];
         var rows = Enumerable.Range(0, units).SelectMany(unit => new[]
         {
-            t.Row(Cell(2, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(1, $"a{unit:00}")),
-            t.Row(Cell(1, $"b{unit:00}")),
+            t.Row(WithEmpty(Cell(2, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(1, $"a{unit:00}"))),
+            t.Row(WithEmpty(Cell(1, $"b{unit:00}"))),
         }).ToArray();
         var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
-        var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body(rows));
+        ValueList<TrackSize> columns = empty is null ? [new TrackSize.Fill(1), new TrackSize.Fill(1)] : [new TrackSize.Fill(1), new TrackSize.Fill(1), new TrackSize.Fill(1)];
+        var table = t.Table(columns, t.Body(rows));
         return (TableModels.Page(280, pageHeight, spacer, table with { Style = table.Style with { DecorationBreak = mode } }), [.. words]);
     }
 
@@ -163,10 +195,29 @@ public class TableBreakLineTests
         }
     }
 
-    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, bool mayNotFit = false)
+    /// <summary>The same sweep with a cell without content in every row, with and without grid lines: the empty cell
+    /// never makes a break inside a row whose cells with content place nothing, so no row part on a page is an empty
+    /// strip (spot check of fix round 3, SC-1). Page areas from 10 pt: an error or a valid layout.</summary>
+    [Theory]
+    [MemberData(nameof(EmptyCellCases))]
+    public void Units_with_an_empty_cell_keep_every_part_inside_the_page_and_no_empty_strip(string empty, double lineWidth, BoxDecorationBreak mode)
     {
-        var (document, expected) = SpannedUnits(offset, pageHeight, mode, units);
-        var because = $"{mode}, {units} units, offset {offset}, page area {pageHeight}";
+        for (var offset = 0.0; offset < 60; offset += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(offset, 120, mode, empty: empty, line: lineWidth);
+        }
+
+        for (var pageHeight = 10.0; pageHeight < 60; pageHeight += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, mayNotFit: true, empty: empty, line: lineWidth);
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, units: 1, mayNotFit: true, empty: empty, line: lineWidth);
+        }
+    }
+
+    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, bool mayNotFit = false, string? empty = null, double line = 3)
+    {
+        var (document, expected) = SpannedUnits(offset, pageHeight, mode, units, empty, line);
+        var because = $"{mode}, {units} units, offset {offset}, page area {pageHeight}, empty cell {empty ?? "none"}, line {line}";
         var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
         if (mayNotFit && result.IsFailure)
         {

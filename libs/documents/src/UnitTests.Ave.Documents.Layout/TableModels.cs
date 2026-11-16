@@ -38,6 +38,24 @@ internal sealed class TableModels
         return new Box(id, SemanticRole.TableCell, LayoutAlgorithmId.Flow, ReferenceCell, paragraphs, new SourceLocation(file, line));
     }
 
+    /// <summary>The ways a cell can be without content, for the table sweeps (spot check of fix round 3, SC-1).</summary>
+    public static IReadOnlyList<string> EmptyKinds { get; } = ["no children", "empty text", "only spaces", "empty block"];
+
+    /// <summary>A cell without content of the given kind (<see cref="EmptyKinds"/>), in the given style.</summary>
+    public Box Empty(string kind, BoxStyle style)
+    {
+        Box Paragraph(string text) => new(Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(Next(), text, Models.Text(), Models.At(0))], Models.At(0));
+        ValueList<Node> children = kind switch
+        {
+            "no children" => [],
+            "empty text" => [Paragraph(string.Empty)],
+            "only spaces" => [Paragraph("   ")],
+            "empty block" => [new Box(Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [], Models.At(0))],
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not an empty cell kind"),
+        };
+        return new Box(Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, style, children, Models.At(0));
+    }
+
     public Box Row(BoxStyle? style, params Box[] cells) =>
         new(Next(), SemanticRole.TableRow, LayoutAlgorithmId.Tracks, (style ?? BoxStyle.Initial) with { TableDisplay = TableDisplay.Row }, [.. cells], Models.At(0));
 

@@ -167,7 +167,8 @@ internal static class TableBreaks
     /// Takes a break inside a segment: the rows above <paramref name="cutRow"/> whole; the cells that reach past the
     /// cut laid out again in the height down to <paramref name="cutY"/> — the row's top for a break between rows, the
     /// page end (or just above it, see <see cref="Take"/>) for a break inside the row, which then ends the page. None
-    /// when a break inside the row would place nothing of it, or leave nothing of it for the next page.
+    /// when a break inside the row would place nothing of it, or leave nothing of it for the next page; a cell without
+    /// content places nothing (<see cref="MarginCollapsing.HoldsNoContent"/>).
     /// </summary>
     private static Result<Maybe<Outcome>, Error> Cut(
         TableGeometry table, Content content, TableSegments.Segment segment, int cutRow, double cutY, bool inside, BreakAppeal appeal)
@@ -211,8 +212,11 @@ internal static class TableBreaks
                 return Result<Maybe<Outcome>, Error>.Failure(sliced.Error);
             }
 
+            // A cell places part of the row here when it goes on or ends on this page; a cell without content does not
+            // count, although its layout completes in any height (see TablePage: a row is cut inside itself only when a
+            // cell with content places part of it here and leaves part for the next page).
             var (fragment, next) = sliced.Value;
-            placedInRow |= !cell.IsComplete && (next.IsComplete || next.Token != cell.Token);
+            placedInRow |= !MarginCollapsing.HoldsNoContent(info.Box) && !cell.IsComplete && (next.IsComplete || next.Token != cell.Token);
             leftForNextPage |= !next.IsComplete;
             cells = cells.Add(new PlacedCell(cell.Cell, cell.StartRow, fragment));
             continuing.Add(next);

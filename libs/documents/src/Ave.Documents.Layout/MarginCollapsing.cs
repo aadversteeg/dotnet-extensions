@@ -88,8 +88,17 @@ internal static class MarginCollapsing
         && box.Style.Padding.Bottom.Points == 0
         && !box.Style.Border.Top.IsVisible
         && !box.Style.Border.Bottom.IsVisible
-        && (box.Layout == LayoutAlgorithmId.Flow ? box.Children.All(child => child is Box inner && IsEmpty(inner))
-            : box.Layout == LayoutAlgorithmId.Inline && !InlineLayout.HasLineBoxes(box));
+        && HoldsNoContent(box);
+
+    /// <summary>
+    /// True when the box holds no in-flow content, whatever its own padding and border: a flow box whose children are
+    /// all empty (<see cref="IsEmpty"/>), or an inline box that makes no line boxes. A box laid out by another
+    /// algorithm (a table, an image) always holds content. A table cell without content places nothing on a page, so
+    /// it never counts as content placed in a row cut by a page break (<see cref="TablePage"/>).
+    /// </summary>
+    public static bool HoldsNoContent(Box box) =>
+        box.Layout == LayoutAlgorithmId.Flow ? box.Children.All(child => child is Box inner && IsEmpty(inner))
+            : box.Layout == LayoutAlgorithmId.Inline && !InlineLayout.HasLineBoxes(box);
 
     /// <summary>Every margin of an empty box and of its (empty) descendants: they all adjoin one another.</summary>
     public static double All(Box box) =>
