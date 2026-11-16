@@ -100,4 +100,35 @@ public class PdfObjectRulesTests
         PdfDictionary.Of(("A", new PdfInteger(1))).Should().Be(PdfDictionary.Of(("A", new PdfInteger(1))));
         PdfDictionary.Of(("A", new PdfInteger(1))).GetHashCode().Should().Be(PdfDictionary.Of(("A", new PdfInteger(1))).GetHashCode());
     }
+
+    public static TheoryData<string, PdfObject> MissingParts => new()
+    {
+        { "an array item", new PdfArray([null!]) },
+        { "a name's text", new PdfName(null!) },
+        { "a dictionary key", new PdfDictionary([KeyValuePair.Create<PdfName, PdfObject>(null!, new PdfInteger(1))]) },
+        { "a dictionary value", new PdfDictionary([KeyValuePair.Create<PdfName, PdfObject>("A", null!)]) },
+        { "a string form", new PdfString([], (PdfStringForm)7) },
+        { "an object number", new PdfReference(0) },
+    };
+
+    [Theory]
+    [MemberData(nameof(MissingParts))]
+    public void A_missing_or_undefined_part_of_an_object_is_an_error_value_wherever_it_is(string what, PdfObject value)
+    {
+        PdfSerializer.Serialize(value).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject, what);
+        PdfWriter.Write(FileWith(new PdfArray([value]))).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject, what);
+    }
+
+    [Fact]
+    public void A_missing_file_object_list_or_catalog_is_an_error_value()
+    {
+        var file = FileWith(new PdfInteger(0));
+
+        PdfWriter.Write(null).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+        PdfWriter.Write(file with { Objects = default }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+        PdfWriter.Write(file with { Catalog = null! }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+        PdfWriter.Write(file with { Objects = file.Objects.Add(null!) }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+        ContentStream.Serialize(null).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+        ContentStream.Serialize([null]).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+    }
 }

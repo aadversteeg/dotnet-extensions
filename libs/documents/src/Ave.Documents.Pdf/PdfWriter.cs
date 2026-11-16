@@ -30,8 +30,13 @@ public static class PdfWriter
     /// <param name="file">The objects and trailer entries.</param>
     /// <returns>The PDF bytes, or a <see cref="PdfErrorCodes.Write"/> error when objects are not numbered
     /// 1 to N or a number is not finite.</returns>
-    public static Result<ImmutableArray<byte>, Error> Write(PdfFile file)
+    public static Result<ImmutableArray<byte>, Error> Write(PdfFile? file)
     {
+        if (file is null || CheckFile(file) is not null)
+        {
+            return Result<ImmutableArray<byte>, Error>.Failure(IncompleteFile);
+        }
+
         var problem = CheckIdentifier(file.FileIdentifier) ?? CheckNumbering(file.Objects) ?? CheckObjects(file.Objects);
         if (problem is { } error)
         {
@@ -55,6 +60,16 @@ public static class PdfWriter
         WriteAscii(output, Trailer(file, offsets.Count + 1, identifier, crossReferenceOffset));
         return Result<ImmutableArray<byte>, Error>.Success([.. output.WrittenSpan]);
     }
+
+    /// <summary>A file to write: present, with its list of objects (none of them missing, every stream with its stream)
+    /// and a catalog, the trailer's /Root (§7.5.5).</summary>
+    private static Error? CheckFile(PdfFile file) =>
+        file.Objects.IsDefault || file.Catalog is null || file.Objects.Any(indirect => indirect is null or IndirectStream { Stream: null })
+            ? IncompleteFile
+            : null;
+
+    private static Error IncompleteFile =>
+        new Error(PdfErrorCodes.Write.InvalidObject, "A PDF file needs its objects, none of them missing, and a catalog.").With(ErrorMetadataKeys.Value, "null");
 
     /// <summary>
     /// The longest file identifier: 32 767 bytes, the most a string may hold (ISO 32000-1 Annex C, Table C.1; veraPDF

@@ -96,6 +96,32 @@ public class ConformanceBuildingBlockTests
         new XmpPacket([null!]).Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
     }
 
+    public static TheoryData<string, XmpPacket> UnwritableNamespaces => new()
+    {
+        { "a value without text", new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, "title", new XmpText(null!))]) },
+        { "a language alternative without text", new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, "title", new XmpLanguageAlternative(null!))]) },
+        { "a namespace URI with U+0001", new XmpPacket([new XmpProperty(new XmpNamespace("a", "urn:a" + (char)1), "b", new XmpText("x"))]) },
+        { "the prefix xmlns", new XmpPacket([new XmpProperty(new XmpNamespace("xmlns", "urn:a"), "b", new XmpText("x"))]) },
+        { "the prefix xml", new XmpPacket([new XmpProperty(new XmpNamespace("xml", "urn:a"), "b", new XmpText("x"))]) },
+        { "rdf with another URI", new XmpPacket([new XmpProperty(new XmpNamespace("rdf", "urn:a"), "b", new XmpText("x"))]) },
+        {
+            "a prefix bound again inside a structure",
+            new XmpPacket([new XmpProperty(new XmpNamespace("a", "urn:a"), "s", new XmpStructure([new XmpProperty(new XmpNamespace("a", "urn:b"), "f", new XmpText("x"))]))])
+        },
+    };
+
+    [Theory]
+    [MemberData(nameof(UnwritableNamespaces))]
+    public void A_packet_no_XML_writer_can_write_is_an_error_value_not_an_exception(string what, XmpPacket packet)
+    {
+        // XML Namespaces 1.0 §3: the prefixes xml and xmlns are bound by definition; one prefix names one URI.
+        global::Ave.Extensions.Functional.Result<System.Collections.Immutable.ImmutableArray<byte>, global::Ave.Extensions.ErrorPaths.Error>? result = null;
+        var write = () => result = packet.Write();
+
+        write.Should().NotThrow(what);
+        result!.Value.Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName, what);
+    }
+
     [Theory]
     [InlineData(0, "2026-11-15T09:22:00Z")]
     [InlineData(1, "2026-11-15T09:22:00+01:00")]

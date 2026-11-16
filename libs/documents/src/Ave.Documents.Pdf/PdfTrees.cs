@@ -17,18 +17,19 @@ public static class PdfTrees
     /// A name tree: <c>&lt;&lt; /Names [key1 value1 key2 value2 …] &gt;&gt;</c>. §7.9.6: "the keys shall be sorted in
     /// lexical order", which for byte strings is the order of their bytes.
     /// </summary>
-    /// <param name="entries">The keys and values; keys unique.</param>
+    /// <param name="entries">The keys and values; keys unique. Null is read as no entries; a missing key or value is
+    /// kept, and refused when the tree is written (<see cref="PdfSerializer.Problem"/>).</param>
     /// <returns>The root node.</returns>
-    public static PdfDictionary NameTree(IEnumerable<(PdfString Key, PdfObject Value)> entries) =>
-        PdfDictionary.Of(("Names", new PdfArray([.. entries
-            .OrderBy(entry => entry.Key.Bytes, ByteOrder.Instance)
+    public static PdfDictionary NameTree(IEnumerable<(PdfString Key, PdfObject Value)>? entries) =>
+        PdfDictionary.Of(("Names", new PdfArray([.. (entries ?? [])
+            .OrderBy(entry => entry.Key?.Bytes ?? default, ByteOrder.Instance)
             .SelectMany(entry => new[] { entry.Key, entry.Value })])));
 
     /// <summary>A number tree: <c>&lt;&lt; /Nums [0 value0 1 value1 …] &gt;&gt;</c>, keys in ascending order (§7.9.7).</summary>
-    /// <param name="entries">The keys and values; keys unique.</param>
+    /// <param name="entries">The keys and values; keys unique. Null is read as no entries.</param>
     /// <returns>The root node.</returns>
-    public static PdfDictionary NumberTree(IEnumerable<(int Key, PdfObject Value)> entries) =>
-        PdfDictionary.Of(("Nums", new PdfArray([.. entries
+    public static PdfDictionary NumberTree(IEnumerable<(int Key, PdfObject Value)>? entries) =>
+        PdfDictionary.Of(("Nums", new PdfArray([.. (entries ?? [])
             .OrderBy(entry => entry.Key)
             .SelectMany(entry => new[] { new PdfInteger(entry.Key), entry.Value })])));
 

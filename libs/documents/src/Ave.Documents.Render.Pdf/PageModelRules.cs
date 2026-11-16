@@ -47,8 +47,14 @@ internal static class PageModelRules
             : Result<PageDocument, Error>.Failure(Errors.Aggregate(problems));
     }
 
-    private static IEnumerable<Error> Problems(PageDocument document)
+    private static IEnumerable<Error> Problems(PageDocument? document)
     {
+        if (document is null)
+        {
+            yield return Invalid("There is no page document.", "null");
+            yield break;
+        }
+
         if (document.Metadata is null)
         {
             yield return Invalid("The page document has no metadata.", "metadata");

@@ -63,6 +63,21 @@ public class PageModelValidationTests
 
     [Theory]
     [MemberData(nameof(Profiles))]
+    public void A_missing_page_document_is_an_error(string profile) =>
+        Refused(null!, ProfileNamed(profile)).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Fact]
+    public void Missing_options_are_an_error()
+    {
+        Result<ImmutableArray<byte>, Error>? result = null;
+        var render = () => result = PdfRenderer.Render(Tagged(Accessible, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), null!);
+
+        render.Should().NotThrow();
+        result!.Value.Error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidOptions);
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
     public void A_document_without_pages_is_an_error(string profile) =>
         Refused(new PageDocument(Accessible, []), ProfileNamed(profile)).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
 

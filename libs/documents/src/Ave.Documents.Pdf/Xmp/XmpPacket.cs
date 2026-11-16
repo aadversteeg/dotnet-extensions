@@ -32,11 +32,14 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     /// </summary>
     /// <returns>The packet bytes; <c>Documents.Pdf.Write.InvalidPropertyName</c> for every property or field whose name,
     /// namespace or value is missing or whose name or prefix is not an XML name (an NCName, which an element name must
-    /// be); <c>Documents.Pdf.Write.InvalidText</c> for every value with a character XML 1.0 does not allow (§2.2,
+    /// be), and for namespaces no XML writer can declare (<see cref="NamespaceProblems"/>);
+    /// <c>Documents.Pdf.Write.InvalidText</c> for every value with a character XML 1.0 does not allow (§2.2,
     /// production [2] Char). No XML writer can write either.</returns>
     public Result<ImmutableArray<byte>, Error> Write()
     {
-        var nameProblems = Properties.SelectMany(NameProblems).ToImmutableArray();
+        var properties = Properties.ToImmutableArray();
+        var nameProblems = properties.SelectMany(NameProblems).ToImmutableArray();
+        nameProblems = nameProblems.IsEmpty ? NamespaceProblems(properties).ToImmutableArray() : nameProblems;
         var problems = nameProblems.IsEmpty
             ? Properties.SelectMany(property => Problems(property, Prefixed(property))).ToImmutableArray()
             : nameProblems;
@@ -89,6 +92,7 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
 
     private static IEnumerable<Error> ValueNameProblems(XmpValue? value, string name) => value switch
     {
+        XmpText { Text: null } or XmpLanguageAlternative { Text: null } => [InvalidName($"the property {name} without a text")],
         XmpText or XmpLanguageAlternative => [],
         XmpOrderedArray array => array.Items.SelectMany(item => ValueNameProblems(item, name)),
         XmpUnorderedArray array => array.Items.SelectMany(item => ValueNameProblems(item, name)),
@@ -96,6 +100,33 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
         null => [InvalidName($"the property {name} without a value")],
         _ => [InvalidName($"the property {name}, whose value is a {value.GetType().Name}, which XMP does not know")],
     };
+
+    /// <summary>The XML namespace's own URI, which the prefix <c>xml</c> is bound to by definition.</summary>
+    private const string XmlNamespaceUri = "http://www.w3.org/XML/1998/namespace";
+
+    /// <summary>
+    /// The namespaces of the packet as an XML writer must declare them (Namespaces in XML 1.0, §3): "The prefix xml is
+    /// by definition bound to the namespace name http://www.w3.org/XML/1998/namespace" and "The prefix xmlns is used only
+    /// to declare namespace bindings and is by definition bound to the namespace name http://www.w3.org/2000/xmlns/. It
+    /// MUST NOT be declared." So neither may name a property's namespace; the packet itself uses rdf and x, which keep
+    /// their URIs; and every namespace is declared on one element (<see cref="WriteDescription"/>), where one prefix can
+    /// name one URI only, so a prefix names the same URI wherever it is used. A URI is an attribute value: only characters
+    /// XML allows.
+    /// </summary>
+    private static IEnumerable<Error> NamespaceProblems(ImmutableArray<XmpProperty> properties)
+    {
+        var used = properties.SelectMany(NamespacesOf).Distinct().ToList();
+        var reserved = used.Where(space => space.Prefix is "xml" or "xmlns")
+            .Select(space => InvalidName($"the namespace prefix {space.Prefix}, which XML binds by definition (xml to {XmlNamespaceUri})"));
+        var badUris = used.Where(space => XmlCharacters.IndexOfForbidden(space.Uri) is not null)
+            .Select(space => InvalidName($"the namespace URI of {space.Prefix}, which holds a character XML does not allow"));
+        var bound = used.Concat([XmpNamespace.Rdf, XmpNamespace.Meta])
+            .Where(space => space.Prefix is not ("xml" or "xmlns"))
+            .GroupBy(space => space.Prefix)
+            .Where(group => group.Select(space => space.Uri).Distinct().Count() > 1)
+            .Select(group => InvalidName($"the namespace prefix {group.Key} for more than one URI ({string.Join(", ", group.Select(space => space.Uri).Distinct())})"));
+        return reserved.Concat(badUris).Concat(bound);
+    }
 
     private static bool IsNcName(string? name) =>
         !string.IsNullOrEmpty(name) && XmlConvert.IsStartNCNameChar(name[0]) && name.All(XmlConvert.IsNCNameChar);

@@ -16,14 +16,14 @@ namespace Ave.Documents.Pdf;
 public static class Flate
 {
     /// <summary>Compresses data in zlib format with a fixed compression level.</summary>
-    /// <param name="data">The data.</param>
+    /// <param name="data">The data; an unset array is read as no data.</param>
     /// <returns>The compressed data.</returns>
     public static ImmutableArray<byte> Compress(ImmutableArray<byte> data)
     {
         using var output = new MemoryStream();
         using (var zlib = new ZLibStream(output, CompressionLevel.Optimal, leaveOpen: true))
         {
-            zlib.Write(data.AsSpan());
+            zlib.Write(data.IsDefault ? [] : data.AsSpan());
         }
 
         return [.. output.ToArray()];

@@ -26,30 +26,40 @@ public static class PdfSerializer
     /// <param name="value">The object.</param>
     /// <returns>Its PDF syntax, or a <see cref="PdfErrorCodes.Write.InvalidNumber"/> or
     /// <see cref="PdfErrorCodes.Write.InvalidObject"/> error.</returns>
-    public static Result<string, Error> Serialize(PdfObject value) =>
+    public static Result<string, Error> Serialize(PdfObject? value) =>
         Problem([value]) is { } problem
             ? Result<string, Error>.Failure(problem)
-            : Result<string, Error>.Success(Write(value));
+            : Result<string, Error>.Success(Write(value!));
 
     /// <summary>
     /// The one check every writer of PDF syntax makes before it writes: the first problem in some object trees, or
     /// null. A number must be finite (§7.3.3: PDF numbers are finite values), and a dictionary's keys unique (§7.3.7).
+    /// Nothing may be missing: an object, a name's text, a dictionary key; a string has a form the serializer knows, and a
+    /// reference an object number of 1 or more (the writer numbers objects from 1).
     /// </summary>
     /// <param name="values">The object trees.</param>
     /// <returns>An <see cref="PdfErrorCodes.Write.InvalidNumber"/> or <see cref="PdfErrorCodes.Write.InvalidObject"/>
     /// error, or null.</returns>
-    public static Error? Problem(IEnumerable<PdfObject> values) =>
-        values.Select(ProblemIn).FirstOrDefault(problem => problem is not null);
+    public static Error? Problem(IEnumerable<PdfObject?>? values) =>
+        values is null ? Invalid("No objects were given.", "null") : values.Select(ProblemIn).FirstOrDefault(problem => problem is not null);
 
-    private static Error? ProblemIn(PdfObject value) => value switch
+    private static Error? ProblemIn(PdfObject? value) => value switch
     {
+        null => Invalid("An object is missing.", "null"),
         PdfReal real when !double.IsFinite(real.Value) || Math.Abs(real.Value) > MaxReal => InvalidNumber(real.Value),
+        PdfName { Value: null } => Invalid("A name has no text.", "null"),
+        PdfString { Form: var form } when !Enum.IsDefined(form) => Invalid($"A string has the form {(int)form}, which is not a form.", ((int)form).ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        PdfReference { ObjectNumber: < 1 } reference => Invalid($"A reference names object {reference.ObjectNumber}; objects are numbered from 1.", reference.ObjectNumber.ToString(System.Globalization.CultureInfo.InvariantCulture)),
         PdfArray array => Problem(array.Items),
+        PdfDictionary dictionary when dictionary.Entries.Any(entry => entry.Key?.Value is null) => Invalid("A dictionary has an entry without a key.", "null"),
         PdfDictionary { DuplicateKey: { } key } => new Error(PdfErrorCodes.Write.InvalidObject, $"A dictionary has two entries with the key /{key}.")
             .With(ErrorMetadataKeys.Value, key),
         PdfDictionary dictionary => Problem(dictionary.Entries.Select(entry => entry.Value)),
         _ => null,
     };
+
+    private static Error Invalid(string message, string value) =>
+        new Error(PdfErrorCodes.Write.InvalidObject, message).With(ErrorMetadataKeys.Value, value);
 
     private static Error InvalidNumber(double value) =>
         new Error(PdfErrorCodes.Write.InvalidNumber, $"PDF numbers must be finite and within ±{MaxReal}, got {value}.")

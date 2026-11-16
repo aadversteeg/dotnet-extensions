@@ -74,10 +74,11 @@ public sealed record PdfString(ValueList<byte> Bytes, PdfStringForm Form) : PdfO
     /// printable ASCII is written as those bytes (PDFDocEncoding equals ASCII in that range); anything else is
     /// written as UTF-16BE with the byte order mark FE FF, as the section prescribes.
     /// </summary>
-    /// <param name="text">The text.</param>
+    /// <param name="text">The text; null is read as the empty text.</param>
     /// <returns>The string.</returns>
-    public static PdfString FromText(string text)
+    public static PdfString FromText(string? text)
     {
+        text ??= string.Empty;
         var isPrintableAscii = text.All(character => character is >= ' ' and <= '~');
         var bytes = isPrintableAscii
             ? Encoding.ASCII.GetBytes(text)
@@ -86,9 +87,9 @@ public sealed record PdfString(ValueList<byte> Bytes, PdfStringForm Form) : PdfO
     }
 
     /// <summary>Binary data, written as a hexadecimal string.</summary>
-    /// <param name="bytes">The bytes.</param>
+    /// <param name="bytes">The bytes; null is read as no bytes.</param>
     /// <returns>The string.</returns>
-    public static PdfString FromBytes(IEnumerable<byte> bytes) => new([.. bytes], PdfStringForm.Hex);
+    public static PdfString FromBytes(IEnumerable<byte>? bytes) => new([.. bytes ?? []], PdfStringForm.Hex);
 }
 
 /// <summary>An array (§7.3.6).</summary>
@@ -96,9 +97,9 @@ public sealed record PdfString(ValueList<byte> Bytes, PdfStringForm Form) : PdfO
 public sealed record PdfArray(ValueList<PdfObject> Items) : PdfObject
 {
     /// <summary>An array of numbers; whole numbers become integers, others reals.</summary>
-    /// <param name="numbers">The numbers.</param>
+    /// <param name="numbers">The numbers; null is read as none.</param>
     /// <returns>The array.</returns>
-    public static PdfArray OfNumbers(params IEnumerable<double> numbers) => new([.. numbers.Select(PdfNumber.From)]);
+    public static PdfArray OfNumbers(params IEnumerable<double>? numbers) => new([.. (numbers ?? []).Select(PdfNumber.From)]);
 }
 
 /// <summary>
@@ -110,14 +111,17 @@ public sealed record PdfArray(ValueList<PdfObject> Items) : PdfObject
 /// <param name="Entries">The entries, in output order.</param>
 public sealed record PdfDictionary(ValueList<KeyValuePair<PdfName, PdfObject>> Entries) : PdfObject
 {
-    /// <summary>The first key that appears twice, or null.</summary>
-    public string? DuplicateKey => Entries.GroupBy(entry => entry.Key.Value).FirstOrDefault(group => group.Count() > 1)?.Key;
+    /// <summary>The first key that appears twice, or null. Missing keys are not compared: the writer refuses them
+    /// (<see cref="PdfSerializer.Problem"/>).</summary>
+    public string? DuplicateKey => Entries.Where(entry => entry.Key?.Value is not null)
+        .GroupBy(entry => entry.Key.Value).FirstOrDefault(group => group.Count() > 1)?.Key;
 
     /// <summary>Creates a dictionary from (key, value) pairs, leaving out pairs whose value is null.</summary>
-    /// <param name="entries">The entries; a null value means "this optional entry is absent".</param>
+    /// <param name="entries">The entries; a null value means "this optional entry is absent"; null is read as no
+    /// entries.</param>
     /// <returns>The dictionary.</returns>
-    public static PdfDictionary Of(params IEnumerable<(PdfName Key, PdfObject? Value)> entries) =>
-        new([.. entries
+    public static PdfDictionary Of(params IEnumerable<(PdfName Key, PdfObject? Value)>? entries) =>
+        new([.. (entries ?? [])
             .Where(entry => entry.Value is not null)
             .Select(entry => KeyValuePair.Create(entry.Key, entry.Value!))]);
 
