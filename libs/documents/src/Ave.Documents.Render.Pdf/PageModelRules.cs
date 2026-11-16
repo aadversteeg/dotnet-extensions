@@ -90,12 +90,18 @@ internal static class PageModelRules
         }
     }
 
-    /// <summary>A page is a rectangle of positive, finite width and height: its /MediaBox (ISO 32000-1 §14.11.2). A page
-    /// of no area shows nothing; the PDF/A profiles narrow the sides further (<see cref="ProfileLimits"/>).</summary>
+    /// <summary>The smallest page side in every profile: the smallest length the writer writes as more than 0, since it
+    /// writes <see cref="Ave.Documents.Pdf.PdfSerializer.RealDecimals"/> decimals; a smaller side would make a /MediaBox without area. The
+    /// PDF/A profiles require 3 units (<see cref="ProfileLimits.MinPageSide"/>).</summary>
+    public const double MinPageSide = 0.0001;
+
+    /// <summary>A page is a rectangle of finite width and height, each at least <see cref="MinPageSide"/>: its /MediaBox
+    /// (ISO 32000-1 §14.11.2). A page of no area shows nothing; the PDF/A profiles narrow the sides further
+    /// (<see cref="ProfileLimits"/>).</summary>
     private static IEnumerable<Error> SizeProblems(Page page, int number) =>
-        page.Size is { Width: > 0 and < double.PositiveInfinity, Height: > 0 and < double.PositiveInfinity }
+        page.Size is { Width: >= MinPageSide and < double.PositiveInfinity, Height: >= MinPageSide and < double.PositiveInfinity }
             ? []
-            : [Invalid($"Page {number} is {Number(page.Size.Width)} x {Number(page.Size.Height)}; a page has a positive, finite width and height.", $"{Number(page.Size.Width)}x{Number(page.Size.Height)}")];
+            : [Invalid($"Page {number} is {Number(page.Size.Width)} x {Number(page.Size.Height)}; a page has a finite width and height of at least {Number(MinPageSide)}.", $"{Number(page.Size.Width)}x{Number(page.Size.Height)}")];
 
     private static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
 

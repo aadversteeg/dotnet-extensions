@@ -230,13 +230,30 @@ public class PageModelContractTests
     public void A_page_without_a_positive_finite_size_is_refused(string profile)
     {
         // A page's /MediaBox is a rectangle (ISO 32000-1 §14.11.2): a page of no area, or of negative or infinite size,
-        // shows nothing any reader can lay out, whatever the profile.
-        foreach (var size in new[] { new Size(0, 0), new Size(-100, 100), new Size(100, -1), new Size(double.PositiveInfinity, 100), new Size(100, double.NaN) })
+        // shows nothing any reader can lay out, whatever the profile; nor does a side below the smallest the writer
+        // writes as more than 0 (it would be written as 0).
+        foreach (var size in new[]
+                 {
+                     new Size(0, 0), new Size(-100, 100), new Size(100, -1), new Size(double.PositiveInfinity, 100), new Size(100, double.PositiveInfinity),
+                     new Size(100, double.NaN), new Size(1e-7, 1e-7), new Size(100, 0.00009), new Size(0.00009, 100),
+                 })
         {
             var document = new PageDocument(Accessible, [new Page(size, [Start(0, SemanticRole.Document), Start(1, SemanticRole.Paragraph), Run("x"), End(1), End(0)])]);
 
             Refused(document, profile).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel, $"{size}");
         }
+    }
+
+    [Fact]
+    public void A_page_of_the_smallest_side_is_written_with_that_side()
+    {
+        var side = PageModelRules.MinPageSide;
+        var document = new PageDocument(Accessible, [new Page(new Size(side, side), [Start(0, SemanticRole.Document), End(0)])]);
+
+        var written = PdfRenderer.Render(document, With(PdfProfile.Plain));
+
+        written.IsSuccess.Should().BeTrue(written.IsFailure ? written.Error.ToString() : string.Empty);
+        System.Text.Encoding.ASCII.GetString([.. written.Value]).Should().Contain("/MediaBox [0 0 0.0001 0.0001]");
     }
 
     [Theory]
