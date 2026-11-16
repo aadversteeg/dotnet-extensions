@@ -137,6 +137,53 @@ public class TrailingMarginTests
         EveryBoxEndsInsideThePageArea(pages, 130, "padded root");
     }
 
+    /// <summary>
+    /// The rule is general (CSS Fragmentation 3 §5.2: margins adjoining an unforced break are truncated): it holds in
+    /// every box without a bottom inset, a table cell included, not only in the page root. Spot check of fix round 3,
+    /// mutant R3N1c: a cell with two paragraphs, each with a 10 pt bottom margin, beside a long cell; no grid lines and no
+    /// cell padding, so nothing of the cell follows the second paragraph's margin. When the page ends inside the row,
+    /// that margin adjoins the break and is cut off there: the paragraph stays on its page. With bottom padding in the
+    /// cell the margin cannot be cut (the padding must end on the page with the cell), and the paragraph moves on.
+    /// </summary>
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(2.0)]
+    public void A_table_cell_without_a_bottom_inset_truncates_its_last_margin_at_the_page_end(double padding)
+    {
+        for (var area = 36.0; area <= 46; area += 0.5)
+        {
+            var t = new TableModels();
+            Box P(string text, double margin) => new(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, MarginBottom(margin), [new TextRun(t.Next(), text, Text(), At(0))], At(0));
+            var style = BoxStyle.Initial with { Padding = new Edges(0.Pt(), 0.Pt(), padding.Pt(), 0.Pt()) };
+            Box Cell(params Box[] paragraphs) => new(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, style, [.. paragraphs], At(0));
+            var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)],
+                t.Body(t.Row(Cell(P("p1", 10), P("p2", 10)), Cell([.. Enumerable.Range(0, 40).Select(i => P($"l{i:00}", 0))]))));
+
+            var pages = Paginate(TableModels.Page(280, area, table));
+
+            // p1 (12 pt line) and its 10 pt margin end at 22, p2's line at 34: from a 36 pt page area p2's text fits.
+            var first = Words(pages[0].Root.Fragment).ToList();
+            if (padding == 0)
+            {
+                first.Should().Contain("p2", $"page area {area}: the margin after p2 adjoins the break and is truncated");
+            }
+            else if (area < 34 + 10 + padding)
+            {
+                first.Should().NotContain("p2", $"page area {area}: the cell's bottom padding follows p2's margin, which then does not fit");
+            }
+
+            EveryBoxEndsInsideThePageArea(pages, area, $"page area {area}, padding {padding}");
+        }
+    }
+
+    private static IEnumerable<string> Words(Fragment fragment) => fragment switch
+    {
+        BoxFragment box => box.Children.SelectMany(child => Words(child.Fragment)),
+        LineFragment line => line.Children.SelectMany(child => Words(child.Fragment)),
+        TextFragment text => [string.Concat(text.Glyphs.Select(glyph => glyph.Text))],
+        _ => [],
+    };
+
     [Fact]
     public void At_the_start_of_a_page_a_margin_that_cannot_fit_anywhere_is_truncated_at_the_page_end()
     {

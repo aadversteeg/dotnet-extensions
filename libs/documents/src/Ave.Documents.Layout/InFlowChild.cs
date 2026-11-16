@@ -31,8 +31,7 @@ internal static class InFlowChild
     /// <param name="isAtPageStart">Whether nothing that could move to another page precedes the child.</param>
     /// <param name="resume">Where to resume inside the child, or null to start it.</param>
     /// <param name="isPageRoot">True for the root box and the page areas: the child is the root of a new formatting
-    /// context and of the page (see <see cref="ConstraintSpace.IsNewFormattingContext"/>,
-    /// <see cref="ConstraintSpace.IsPageRoot"/>).</param>
+    /// context (see <see cref="ConstraintSpace.IsNewFormattingContext"/>).</param>
     /// <returns>The placement; None when the child has no room on this page; or an error.</returns>
     public static Result<Maybe<Placement>, Error> Place(
         LayoutEnvironment environment,
@@ -49,8 +48,7 @@ internal static class InFlowChild
             AvailableWidth: containerWidth - margin.Horizontal.Points,
             AvailableHeight: containerHeight - top,
             IsAtPageStart: isAtPageStart,
-            IsNewFormattingContext: isPageRoot,
-            IsPageRoot: isPageRoot);
+            IsNewFormattingContext: isPageRoot);
 
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch
         {

@@ -109,11 +109,12 @@ public static class FlowLayout
     /// margin's room kept free, as <see cref="SlicedBox"/> does for the bottom padding. When no earlier break exists,
     /// the box does not fit here and moves on — except at the start of an empty page, where moving on gains nothing:
     /// there the margin is truncated at the page end.</item>
-    /// <item>Nothing, in the root of the page body or of a page area (<see cref="ConstraintSpace.IsPageRoot"/>) without
-    /// bottom padding or border: the margin is the last thing on the page, so it adjoins the end of the page as a
-    /// margin adjoins a break, and it is truncated there as §5.2 truncates the margins adjoining an unforced break. It
-    /// never moves content to another page. A table cell is not such a box: its row's grid line and the
-    /// rest of the table follow it, so it is treated like a box with a bottom inset.</item>
+    /// <item>Nothing: no bottom padding and no border. Then the margin is the last thing of the box, so where it passes
+    /// the end of the content area it adjoins the break there, and it is truncated as §5.2 truncates the margins
+    /// adjoining an unforced break ("any margins adjoining the break are truncated to zero"). It never moves content to
+    /// another page. One rule for every box whose last margin stays inside it: the root of the page body, the root of a
+    /// page area, and a table cell (a new formatting context), whose cut at a page break inside its row is such a
+    /// break.</item>
     /// </list>
     /// None when not even the first content fits.
     /// </summary>
@@ -134,7 +135,7 @@ public static class FlowLayout
         }
 
         var complete = first.Value.Value;
-        if (space.IsPageRoot && !SlicedBox.HasBottomInset(box.Style))
+        if (!SlicedBox.HasBottomInset(box.Style))
         {
             return Truncated(complete, contentHeight);
         }
