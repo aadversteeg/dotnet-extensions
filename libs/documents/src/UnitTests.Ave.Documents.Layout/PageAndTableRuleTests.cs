@@ -174,4 +174,41 @@ public class PageAndTableRuleTests
         pages.Should().ContainSingle("the cell's break has nothing to break between");
         Lines(pages[0].Root.Fragment, new Point(0, 0)).Select(line => TextOf(line.Line)).Should().Equal("before", "first", "second");
     }
+
+    /// <summary>
+    /// An empty block with padding is content: its margins do not collapse through it, it takes room and shows its
+    /// background (<see cref="MarginCollapsing.IsEmpty"/>). So a cell that holds only such a block is a cell with content,
+    /// and a row whose text cell places nothing yet is still cut where that block fits: the page ends with the 6 pt
+    /// coloured block, and the text and the rest of the row go on to the next page (spot check of fix round 3, SC-1:
+    /// only a cell WITHOUT content places nothing).
+    /// </summary>
+    [Fact]
+    public void A_cell_holding_only_a_padded_coloured_block_places_it_where_the_text_beside_it_does_not_fit()
+    {
+        var blue = new Color(0x20, 0x40, 0xC0);
+        var split = 0;
+        for (var offset = 120.0; offset < 150; offset += 0.5)
+        {
+            var t = new TableModels();
+            var block = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow,
+                BoxStyle.Initial with { Padding = new Edges(3.Pt(), 0.Pt(), 3.Pt(), 0.Pt()), Background = blue }, [], Models.At(0));
+            var cells = new Box(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, BoxStyle.Initial, [block], Models.At(0));
+            var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body(t.Row(t.Cell("x", BoxStyle.Initial), cells)));
+            // A paragraph before the table, its bottom margin moving the table down (as the spot check's probes do).
+            var intro = Models.Paragraph(900, "intro", BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), (offset - 12).Pt(), 0.Pt()) });
+
+            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), TableModels.Page(280, 150, intro, table));
+            result.IsSuccess.Should().BeTrue($"offset {offset}: " + (result.IsFailure ? result.Error.ToString() : string.Empty));
+            var pages = result.Value;
+
+            var first = Boxes(pages[0], box => box.Id == block.Id).ToList();
+            var text = Lines(pages[0].Root.Fragment, new Point(0, 0)).Any(line => TextOf(line.Line) == "x");
+            if (first.Count == 1 && first[0].Box.Size.Height > 0 && !text)
+            {
+                split++;
+            }
+        }
+
+        split.Should().BePositive("where the text line does not fit yet, the coloured block is still placed on the page");
+    }
 }

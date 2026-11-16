@@ -23,15 +23,25 @@ public class TableSpanCloneTests
     /// side), beside a one-line cell in each row (2 pt borders); optionally a header row repeated on every page; after an
     /// empty block that moves the table <paramref name="offset"/> down.
     /// </summary>
-    private static StyledDocument Document(double offset, double pageHeight, bool header, double spanLine)
+    private static StyledDocument Document(double offset, double pageHeight, bool header, double spanLine, double? spanTop = null, double? spanBottom = null, bool shortSpan = false, int units = 12)
     {
         var t = new TableModels();
         var thin = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(2.Pt(), Color.Black)) };
-        var thick = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(spanLine.Pt(), Color.Black)), Span = new CellSpan(1, 2) };
-        Box Cell(BoxStyle style, params string[] lines) => t.Lines(lines) with { Style = style };
-        var rows = Enumerable.Range(0, 12).SelectMany(unit => new[]
+        var thick = TableModels.ReferenceCell with
         {
-            t.Row(Cell(thick, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(thin, $"a{unit:00}")),
+            Border = Border.All(new BorderSide(spanLine.Pt(), Color.Black)) with
+            {
+                Top = new BorderSide((spanTop ?? spanLine).Pt(), Color.Black),
+                Bottom = new BorderSide((spanBottom ?? spanLine).Pt(), Color.Black),
+            },
+            Span = new CellSpan(1, 2),
+        };
+        Box Cell(BoxStyle style, params string[] lines) => t.Lines(lines) with { Style = style };
+        var rows = Enumerable.Range(0, units).SelectMany(unit => new[]
+        {
+            shortSpan
+                ? t.Row(Cell(thick, $"s{unit:00}x"), Cell(thin, $"a{unit:00}w", $"a{unit:00}x", $"a{unit:00}y", $"a{unit:00}z"))
+                : t.Row(Cell(thick, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(thin, $"a{unit:00}")),
             t.Row(Cell(thin, $"b{unit:00}")),
         }).ToArray();
         var columns = (ValueList<TrackSize>)[new TrackSize.Fixed(80.Pt()), new TrackSize.Fill(1)];
@@ -86,19 +96,23 @@ public class TableSpanCloneTests
     }
 
     [Theory]
-    [InlineData(false, 2.0)]
-    [InlineData(true, 2.0)]
-    [InlineData(false, 4.0)]
-    [InlineData(true, 4.0)]
-    public void With_clone_every_break_closes_the_table_across_its_full_width_on_both_pages(bool header, double spanLine)
+    [InlineData(false, 2.0, false)]
+    [InlineData(true, 2.0, false)]
+    [InlineData(false, 4.0, false)]
+    [InlineData(true, 4.0, false)]
+    [InlineData(false, 2.0, true)]
+    [InlineData(true, 4.0, true)]
+    public void With_clone_every_break_closes_the_table_across_its_full_width_on_both_pages(bool header, double spanLine, bool shortSpan)
     {
-        // Offsets move every break through every position in a unit: before it, between its rows (the spanning cell is
-        // cut), inside its first row (the spanning cell crosses the line below that row) and inside its second row.
+        // Offsets move every break through every position in a unit: before it, inside its first row (the spanning cell
+        // crosses the line below that row) and inside its second row. With a short spanning cell (one line, beside four
+        // in the first row) the second row's one line has nothing beside it that could be cut, so where it does not fit
+        // the page breaks between the unit's rows, across the spanning cell that goes on covering the second row.
         var breaks = 0;
         for (var offset = 0.0; offset < 60; offset += 0.5)
         {
-            var because = $"header {header}, spanning cell's border {spanLine}, offset {offset}";
-            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(offset, 120, header, spanLine));
+            var because = $"header {header}, spanning cell's border {spanLine}, short spanning cell {shortSpan}, offset {offset}";
+            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(offset, 120, header, spanLine, shortSpan: shortSpan));
             result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
             var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
             for (var page = 0; page < tables.Count; page++)
@@ -133,13 +147,66 @@ public class TableSpanCloneTests
         breaks.Should().BeGreaterThan(100, "the sweep crosses many breaks");
     }
 
-    [Fact]
-    public void A_spanning_cell_cut_by_a_break_is_closed_by_its_own_borders()
+    /// <summary>
+    /// One unit alone, on page areas from 10 pt up in quarter points: the unit is the page's first content, so no break
+    /// before it exists, and every page end steps through the lines of the unit, among them the narrow window in which
+    /// the second row cannot be cut and the page breaks between the rows across the spanning cell with text left. Every
+    /// page is closed across its full width at both ends, no text lies under a line, or the table does not fit at all.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void With_clone_a_unit_broken_anywhere_on_small_pages_is_closed_and_keeps_its_text_clear(bool header)
     {
-        // The spanning cell's border is 4 pt, the other cells' 2 pt: in its column the closing lines are 4 pt, so the
-        // line that ends the page and the line that starts the next are the spanning cell's own bottom and top border.
-        // Offset 0, page area 120: find a break that cuts a spanning cell (its words on both pages).
-        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(0, 120, header: false, spanLine: 4));
+        for (var pageHeight = 10.0; pageHeight < 80; pageHeight += 0.25)
+        {
+            var because = $"header {header}, page area {pageHeight}";
+            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(0, pageHeight, header, 4, units: 1));
+            if (result.IsFailure)
+            {
+                result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit, because);
+                continue;
+            }
+
+            var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+            for (var page = 0; page < tables.Count; page++)
+            {
+                var table = tables[page];
+                if (page + 1 < tables.Count)
+                {
+                    var last = Rules(table).OrderByDescending(rule => rule.Bottom - rule.Top).First(rule => Math.Abs(rule.Bottom - table.Size.Height) < Epsilon);
+                    ClosedAt(table, (last.Top + last.Bottom) / 2).Should().BeTrue(because + $": page {page + 1} ends with a line across the whole table");
+                }
+
+                if (page > 0)
+                {
+                    // A page too small for the header and some body content goes on without the header (TablePage).
+                    var hasHeader = Boxes(table, new Point(0, 0), SemanticRole.TableHead).Any();
+                    var centre = hasHeader ? HeaderBottom(table) : Rules(table).Where(rule => Math.Abs(rule.Top) < Epsilon).Max(rule => rule.Bottom) / 2;
+                    ClosedAt(table, centre).Should().BeTrue(because + $": page {page + 1} starts its body under a line across the whole table");
+                }
+
+                foreach (var line in TextLines(table, new Point(0, 0)))
+                {
+                    Rules(table).Where(rule => rule.Left < line.Right - Epsilon && line.Left < rule.Right - Epsilon && rule.Top < line.Bottom - Epsilon && line.Top < rule.Bottom - Epsilon)
+                        .Should().BeEmpty(because + $": page {page + 1}, no line over the text at {line.Top:0.##}");
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(4.0, 4.0)]
+    [InlineData(4.0, 1.0)]
+    [InlineData(1.0, 4.0)]
+    public void A_spanning_cell_cut_by_a_break_is_closed_by_its_own_borders(double top, double bottom)
+    {
+        // The other cells' borders are 2 pt. In the spanning cell's column the line at the break is resolved as a line
+        // between the part of the cell above it and the part below: the cell's bottom and top border compete as two
+        // cells' borders do, and the wider wins (§17.6.2.1), on both pages, since the line at a break is resolved once.
+        // So the closing lines in its column are 4 pt whichever side is the wide one. Offset 0, page area 120: find a
+        // break that cuts a spanning cell (its words on both pages).
+        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(0, 120, header: false, spanLine: 4, spanTop: top, spanBottom: bottom));
         result.IsSuccess.Should().BeTrue();
         var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
         static IEnumerable<string> Words(Fragment fragment) => fragment switch
@@ -161,9 +228,9 @@ public class TableSpanCloneTests
 
             cuts++;
             var end = Rules(tables[page]).Where(rule => rule.Left < 80 && Math.Abs(rule.Bottom - tables[page].Size.Height) < Epsilon).ToList();
-            end.Should().ContainSingle().Which.Should().Match<(double Left, double Top, double Right, double Bottom)>(rule => Math.Abs(rule.Bottom - rule.Top - 4) < Epsilon, "the spanning cell's 4 pt bottom border ends the page in its column");
+            end.Should().ContainSingle().Which.Should().Match<(double Left, double Top, double Right, double Bottom)>(rule => Math.Abs(rule.Bottom - rule.Top - 4) < Epsilon, "the wider of the spanning cell's own borders ends the page in its column");
             var start = Rules(tables[page + 1]).Where(rule => rule.Left < 80 && Math.Abs(rule.Top) < Epsilon).ToList();
-            start.Should().ContainSingle().Which.Should().Match<(double Left, double Top, double Right, double Bottom)>(rule => Math.Abs(rule.Bottom - rule.Top - 4) < Epsilon, "its 4 pt top border starts the next page in its column");
+            start.Should().ContainSingle().Which.Should().Match<(double Left, double Top, double Right, double Bottom)>(rule => Math.Abs(rule.Bottom - rule.Top - 4) < Epsilon, "and starts the next page in its column");
         }
 
         cuts.Should().BePositive("some break cuts a spanning cell");

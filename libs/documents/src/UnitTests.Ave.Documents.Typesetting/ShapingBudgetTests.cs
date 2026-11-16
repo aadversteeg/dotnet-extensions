@@ -170,6 +170,51 @@ public class ShapingBudgetTests
         return font.Value;
     }
 
+    /// <summary>
+    /// Lato with its GSUB and a GPOS of one script (DFLT) and one feature (mark) whose one lookup holds
+    /// <paramref name="subtables"/> offsets to ONE mark-to-base subtable that covers no mark and no base.
+    /// </summary>
+    private static TrueTypeFont FontWithUncoveringPositioningSubtables(int subtables)
+    {
+        const int ScriptList = 10, Script = 18, FeatureList = 30, Feature = 38, LookupList = 44, Lookup = 48;
+        var gpos = new BigEndianBuilder()
+            .UInt16(1).UInt16(0).UInt16(ScriptList).UInt16(FeatureList).UInt16(LookupList)
+            .UInt16(1).Bytes("DFLT"u8.ToArray()).UInt16(Script - ScriptList)       // one script, DFLT
+            .UInt16(4).UInt16(0)                                                   // its default language system at +4
+            .UInt16(0).UInt16(0xFFFF).UInt16(1).UInt16(0)                          // no required feature; feature 0
+            .UInt16(1).Bytes("mark"u8.ToArray()).UInt16(Feature - FeatureList)     // one feature, mark
+            .UInt16(0).UInt16(1).UInt16(0)                                         // lookup 0
+            .UInt16(1).UInt16(Lookup - LookupList)                                 // one lookup
+            .UInt16(4).UInt16(0).UInt16(subtables);                                // mark-to-base, no flags
+        for (var index = 0; index < subtables; index++)
+        {
+            gpos.UInt16(6 + 2 * subtables);
+        }
+
+        gpos.UInt16(1).UInt16(12).UInt16(16).UInt16(1).UInt16(20).UInt16(22)     // format 1: coverages, 1 class, arrays
+            .UInt16(1).UInt16(0)                                                   // mark coverage: no glyphs
+            .UInt16(1).UInt16(0)                                                   // base coverage: no glyphs
+            .UInt16(0)                                                             // mark array: no marks
+            .UInt16(0);                                                            // base array: no bases
+
+        var font = FontParser.Parse(FontFiles.WithTable(Lato, "GPOS", gpos.ToArray()));
+        font.IsSuccess.Should().BeTrue(font.IsFailure ? font.Error.ToString() : string.Empty);
+        return font.Value;
+    }
+
+    [Fact]
+    public void Each_positioning_subtable_a_lookup_tries_is_an_operation_whether_it_covers_the_glyph_or_not()
+    {
+        // As for substitution: 100 a's, 2 000 mark-to-base subtables that cover nothing, 200 000 coverage lookups.
+        var text = new string('a', 100);
+
+        Shaper.Shape(text, FontWithUncoveringPositioningSubtables(1), 10).IsSuccess.Should().BeTrue();
+        var shaped = Shaper.Shape(text, FontWithUncoveringPositioningSubtables(2_000), 10);
+
+        shaped.IsFailure.Should().BeTrue("2 000 subtables at 100 positions cost 200 000 operations");
+        shaped.Error.Code.Should().Be(TypesettingErrorCodes.TooMuchWork);
+    }
+
     [Fact]
     public void Each_subtable_a_lookup_tries_is_an_operation_whether_it_covers_the_glyph_or_not()
     {

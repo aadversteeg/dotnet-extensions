@@ -56,9 +56,11 @@ namespace Ave.Documents.Layout;
 /// edge is the page end, and the next page starts with the whole line above the row, as at the top of a table.</para>
 /// <para><b>With clone the table is closed across its full width on both pages</b>, at a break between rows and inside a
 /// row alike: the line that ends the page and the line that starts the next also run over the column of a cell that
-/// spans rows and continues over the break. Such a cell is closed by its own bottom border at the page end and its own
-/// top border at the start of the next page (<see cref="CollapsedBorders.LineContext.ClonedBreak"/>), as clone gives
-/// every fragment of a box its whole border (CSS Fragmentation 3 §5.4). Every cut cell keeps clear of the line that ends
+/// spans rows and continues over the break. Such a cell is closed there by its own borders, as clone gives every
+/// fragment of a box its whole border (CSS Fragmentation 3 §5.4): the line in its column is resolved as a line between
+/// the part of the cell above it and the part below, so the cell's bottom and top border compete as two cells' borders
+/// do, and like every line at a break it is resolved once, the same on both pages
+/// (<see cref="CollapsedBorders.LineContext.ClonedBreak"/>). Every cut cell keeps clear of the line that ends
 /// the page by half the line's width, and every cell that continues starts its rest half the line's width below the line
 /// that starts the next page, as whole cells do.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every

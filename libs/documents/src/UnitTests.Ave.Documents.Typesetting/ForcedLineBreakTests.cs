@@ -69,6 +69,7 @@ public class ForcedLineBreakTests
     [InlineData("xx ab |")]
     [InlineData("a | |b")]
     [InlineData("xx ab cd |ef")]
+    [InlineData("a | ")]
     public void Invisible_characters_before_a_forced_break_or_the_paragraph_end_change_no_line(string text)
     {
         var width = Width(Shape("xx ab")) + Width(Shape(" ")) / 2;

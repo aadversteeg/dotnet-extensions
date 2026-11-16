@@ -286,8 +286,8 @@ public class WrittenValueTests
     }
 
     [Theory]
-    [InlineData(PageContentStream.MaxGlyphsPerString, 1)]
-    [InlineData(PageContentStream.MaxGlyphsPerString + 1, 2)]
+    [InlineData(16_383, 1)]
+    [InlineData(16_384, 2)]
     public void A_string_holds_as_many_glyphs_as_fit_in_32767_bytes_and_no_more(int glyphs, int strings)
     {
         // 16 383 two-byte codes are 32 766 bytes, the most whole glyphs a string of 32 767 bytes holds: such a run is

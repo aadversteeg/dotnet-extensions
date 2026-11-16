@@ -225,7 +225,8 @@ Each is documented next to its code as well.
   table on both pages: the page ends with the whole line below the cut row (the table's bottom border for the last
   row), and the next page starts with the whole line above it; the cut content keeps clear of both. With `Clone` the
   table is closed across its full width on both pages, at every break: a cell that spans rows and continues over the
-  break is closed by its own bottom border at the page end and its own top border on the next page. A row that breaks
+  break is closed there by its own borders: its bottom and top border compete as two cells' do, and the line is the
+  same on both pages. A row that breaks
   inside itself must leave content for the next page. With `Clone` such a cut needs one line width more room than
   with `Slice`, so on a very small page area a table may not fit with `Clone` that fits with `Slice`.
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
