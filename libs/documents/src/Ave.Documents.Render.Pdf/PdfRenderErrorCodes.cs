@@ -150,6 +150,11 @@ public static class PdfRenderErrorCodes
             /// THead kid, Table element should contain one or more TBody kids"). Metadata: Node, SourceFile, SourceLine
             /// (the table).</summary>
             public static readonly ErrorCode TableHeadWithoutBody = _ / "TableHeadWithoutBody";
+
+            /// <summary>A table whose grid, as wide as its first row and as long as its rows, has more slots than the
+            /// regularity check fills (<c>TableRegularity.MaxGridSlots</c>, 4 194 304: a thousand columns of four thousand
+            /// rows). Metadata: Node, Value (columns x rows), SourceFile, SourceLine (the table).</summary>
+            public static readonly ErrorCode TableTooLarge = _ / "TableTooLarge";
         }
     }
 }

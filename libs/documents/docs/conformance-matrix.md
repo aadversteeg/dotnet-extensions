@@ -229,7 +229,7 @@ fixed seed are refused or pass veraPDF.
 | 7.2-38 | PDF/UA-1 | TFoot element may contain only TR elements | cannot occur | No TFoot role. |
 | 7.2-39 | PDF/UA-1 | Table element may contain only one Caption element | cannot occur | No Caption role. |
 | 7.2-40 | PDF/UA-1 | L element may contain a Caption element only as its first kid | cannot occur | No list roles. |
-| 7.2-41 | PDF/UA-1 | Table columns shall have the same number of rows (taking into account row spans) | checked | Irregular grid: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests). |
+| 7.2-41 | PDF/UA-1 | Table columns shall have the same number of rows (taking into account row spans) | checked | Irregular grid, filled as wide as the first row: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests); a grid of more than 4 194 304 slots is not filled: `Pdf.Conformance.PdfUa1.TableTooLarge` (Render.Pdf PageModelContractTests). |
 | 7.2-42 | PDF/UA-1 | Table rows shall have the same number of columns (taking into account column spans) | checked | As 7.2-41. |
 | 7.2-43 | PDF/UA-1 | Table rows shall have the same number of columns (taking into account column spans) | checked | As 7.2-41. |
 | 7.3-1 | PDF/UA-1 | Figure tags shall include an alternative representation or replacement text that represents the contents marked with the Figure tag as … | checked | A figure without alternative text: `Pdf.Conformance.PdfUa1.FigureWithoutAlternativeText` (Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests). |

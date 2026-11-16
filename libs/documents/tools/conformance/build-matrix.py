@@ -184,7 +184,7 @@ CLASSIFICATION = {
     "7.2-38": (NEVER, "No TFoot role."),
     "7.2-39": (NEVER, "No Caption role."),
     "7.2-40": (NEVER, "No list roles."),
-    "7.2-41": (CHECKED, "Irregular grid: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; " + UA + ")."),
+    "7.2-41": (CHECKED, "Irregular grid, filled as wide as the first row: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; " + UA + "); a grid of more than 4 194 304 slots is not filled: `Pdf.Conformance.PdfUa1.TableTooLarge` (" + CONTRACT + ")."),
     "7.2-42": (CHECKED, "As 7.2-41."),
     "7.2-43": (CHECKED, "As 7.2-41."),
     "7.3-1": (CHECKED, "A figure without alternative text: `Pdf.Conformance.PdfUa1.FigureWithoutAlternativeText` (" + UA + ")."),

@@ -232,6 +232,51 @@ public class PageModelContractTests
     }
 
     [Theory]
+    [InlineData(200)]
+    [InlineData(2000)]
+    public void Rows_of_spans_at_the_limits_take_a_grid_no_wider_than_the_first_row(int count)
+    {
+        // Each row holds one cell spanning 1000 columns and 65 534 rows: valid spans. Each cell starts right of the cells
+        // from the rows above, so a grid as wide as the widest row grows with the square of the rows. A regular grid
+        // has the first row's width, so the check fills no wider grid than that.
+        var rows = Enumerable.Range(0, count).SelectMany(row => new DrawItem[]
+        {
+            Start(10 + 2 * row, SemanticRole.TableRow),
+            Start(11 + 2 * row, SemanticRole.TableCell) with { Span = new CellSpan(TableSlots.MaxColumnSpan, TableSlots.MaxRowSpan) },
+            Run("x"), End(11 + 2 * row), End(10 + 2 * row),
+        });
+        var document = Tagged([Start(1, SemanticRole.Table), Start(2, SemanticRole.TableBody), .. rows, End(2), End(1)]);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var error = Refused(document, With(PdfProfile.PdfUa1));
+
+        (GC.GetAllocatedBytesForCurrentThread() - before).Should().BeLessThan(64L * 1024 * 1024, "the grid is as wide as the first row");
+        error.Parts().Select(part => part.Code).Should().OnlyContain(code => code == PdfRenderErrorCodes.Conformance.PdfUa1.IrregularTable);
+    }
+
+    [Fact]
+    public void A_table_whose_grid_has_more_slots_than_the_check_fills_is_refused_without_filling_it()
+    {
+        // The first row covers 5 x 1000 columns, and 1000 rows follow: 5 million slots, past the 4 194 304 the check fills.
+        var first = Enumerable.Range(0, 5).SelectMany(cell => new DrawItem[]
+        {
+            Start(20 + cell, SemanticRole.TableCell) with { Span = new CellSpan(TableSlots.MaxColumnSpan, 1) }, Run("x"), End(20 + cell),
+        });
+        var later = Enumerable.Range(0, 999).SelectMany(row => new DrawItem[]
+        {
+            Start(100 + 2 * row, SemanticRole.TableRow), Start(101 + 2 * row, SemanticRole.TableCell), Run("x"), End(101 + 2 * row), End(100 + 2 * row),
+        });
+        var document = Tagged([Start(1, SemanticRole.Table), Start(2, SemanticRole.TableBody), Start(3, SemanticRole.TableRow), .. first, End(3), .. later, End(2), End(1)]);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var error = Refused(document, With(PdfProfile.PdfUa1));
+
+        (GC.GetAllocatedBytesForCurrentThread() - before).Should().BeLessThan(16L * 1024 * 1024);
+        error.Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.TableTooLarge);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be("5000x1000");
+    }
+
+    [Theory]
     [MemberData(nameof(Profiles))]
     public void An_empty_or_unset_file_identifier_is_refused(string profile)
     {
