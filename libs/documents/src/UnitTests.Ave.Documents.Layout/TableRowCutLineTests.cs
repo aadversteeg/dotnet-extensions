@@ -168,4 +168,44 @@ public class TableRowCutLineTests
         WideRules(tables[1])[0].Should().Be((0.0, Line), "page 2 starts with the whole line above the long row");
         Words(tables[1], 0).First().Top.Should().BeGreaterThanOrEqualTo(Line, "the rest of the row starts below that line");
     }
+
+    /// <summary>The horizontal rules of a table part, each as its left edge, width, height and colour.</summary>
+    private static List<(double X, double Width, double Height, Color Color)> Segments(BoxFragment table) =>
+        [.. table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > rule.Size.Height)
+            .OrderBy(child => child.Offset.X)
+            .Select(child => (child.Offset.X, child.Fragment.Size.Width, child.Fragment.Size.Height, ((RuleFragment)child.Fragment).Color))];
+
+    /// <summary>
+    /// Spot check of fix round 3, SC-2a. No grid lines; only the long row's cells have a top border, and not the same
+    /// one: 4 pt black over the first column, 1 pt red over the second. With clone the row cut inside itself starts again
+    /// under the line above it, resolved with the row's own cells as on the page it started on: the same segments on
+    /// every page the row continues on, whether a repeated header row comes first or not (one rule for the line above
+    /// a row). Nothing else in the table draws a line, so each page shows exactly that line.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void With_clone_the_line_over_a_continued_row_is_resolved_with_the_row_s_own_top_borders(bool header)
+    {
+        var t = new TableModels();
+        var plain = TableModels.ReferenceCell with { Border = Border.None };
+        Box Cell(BoxStyle style, params string[] lines) => t.Lines(lines) with { Style = style };
+        var black = plain with { Border = Border.None with { Top = new BorderSide(4.Pt(), Color.Black) } };
+        var red = plain with { Border = Border.None with { Top = new BorderSide(1.Pt(), new Color(0xFF, 0, 0)) } };
+        var body = t.Body(t.Row(Cell(plain, "a"), Cell(plain, "b")), t.Row(Cell(black, LongWords), Cell(red, "x")), t.Row(Cell(plain, "c"), Cell(plain, "d")));
+        var table = header
+            ? t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Head(t.Row(Cell(plain, "h1"), Cell(plain, "h2"))), body)
+            : t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], body);
+
+        var tables = Tables(TableModels.Page(280, PageHeight, table with { Style = table.Style with { DecorationBreak = BoxDecorationBreak.Clone } }));
+
+        var continued = tables.Skip(1).Where(part => Words(part, 0).Any(word => word.Word.StartsWith('l'))).ToList();
+        continued.Should().NotBeEmpty("the long row continues on page 2");
+        var first = Segments(tables[0]);
+        first.Select(segment => (segment.Height, segment.Color)).Should().Equal((4.0, Color.Black), (1.0, new Color(0xFF, 0, 0)));
+        foreach (var part in continued)
+        {
+            Segments(part).Should().Equal(first, "the continued row starts under the same line as on its first page");
+        }
+    }
 }

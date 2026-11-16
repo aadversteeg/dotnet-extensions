@@ -166,7 +166,8 @@ internal static class TablePage
         // page and this page's first row, resolved with both rows exactly as the upper half was: the two halves are
         // halves of one line, and a row group's own top border takes part only above the group's first row. With clone a
         // row cut inside itself starts again under the whole line above it, which is resolved as on the page it started
-        // on (see remarks); the line between a repeated header and the row is that line too.
+        // on, with the row's own cells and their top borders (see remarks). One rule for the line above the page's first
+        // body row: the same context whether a repeated header comes before it or not.
         var reopensCutRow = !isFirst && resume.RowIsSplit && IsCloned(table);
         if (reopensCutRow)
         {
@@ -175,7 +176,7 @@ internal static class TablePage
 
         var continuesAfterBreak = !isFirst && !includeHeader && (!resume.RowIsSplit || reopensCutRow);
         var firstLine = continuesAfterBreak
-            ? ContinuationLine(table, firstRow.Value, new CollapsedBorders.LineContext(false, false, resumeCut))
+            ? ContinuationLine(table, firstRow.Value, resumeContext)
             : new LineAt(null, firstRow, topContext, table.HorizontalWidth(null, firstRow, topContext) / 2);
         var content = Empty(firstLine.Y) with { Lines = [firstLine] };
         if (includeHeader)
