@@ -23,4 +23,5 @@ RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian
       mupdf-tools=1.25.1+ds1-6+deb13u1 \
       python3-fonttools=4.57.0-1+deb13u1 \
       python3-pymupdf=1.25.4+ds1-3+deb13u1 \
+      python3-pil=11.1.0-5+deb13u4 \
  && rm -rf /var/lib/apt/lists/*
