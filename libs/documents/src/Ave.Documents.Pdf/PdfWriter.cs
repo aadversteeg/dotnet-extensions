@@ -61,11 +61,12 @@ public static class PdfWriter
         return Result<ImmutableArray<byte>, Error>.Success([.. output.WrittenSpan]);
     }
 
-    /// <summary>A file to write: present, with its list of objects (none of them missing, every stream with its stream)
-    /// and a catalog, the trailer's /Root (§7.5.5), that is one of them; a document information dictionary, the
-    /// trailer's /Info (§7.5.5, an indirect reference), is one of them too when it is given.</summary>
+    /// <summary>A file to write: present, with its list of objects (none of them missing) and a catalog, the trailer's
+    /// /Root (§7.5.5), that is one of them; a document information dictionary, the trailer's /Info (§7.5.5, an indirect
+    /// reference), is one of them too when it is given. A stream object without its stream has nothing to check, which
+    /// <see cref="CheckObjects"/> refuses as a missing object.</summary>
     private static Error? CheckFile(PdfFile file) =>
-        file.Catalog is null || file.Objects.Any(indirect => indirect is null or IndirectStream { Stream: null })
+        file.Catalog is null || file.Objects.Any(indirect => indirect is null)
         || !file.Objects.Any(indirect => indirect.Number == file.Catalog.ObjectNumber)
             ? IncompleteFile
             : file.Info is { } info && !file.Objects.Any(indirect => indirect.Number == info.ObjectNumber)

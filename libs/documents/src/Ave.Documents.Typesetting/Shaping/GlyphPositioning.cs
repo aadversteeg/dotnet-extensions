@@ -172,7 +172,7 @@ internal static class GlyphPositioning
                 (first, second) => pairs.Find(first.Glyph, second.Glyph), budget),
             PairAdjustmentByClass classes => AdjustPair(glyphs, index, flags, filter, classes.SecondHasValues,
                 (first, second) => ClassPair(classes, first, second), budget),
-            MarkToBase marks => Attach(glyphs, index, marks, bases, budget),
+            MarkToBase marks => Attach(glyphs, index, marks, bases),
 
             // Every other type or format: not implemented in this version; skipped (documented on the Shaper).
             _ => null,
@@ -221,9 +221,10 @@ internal static class GlyphPositioning
     /// Type 4, mark-to-base: a covered mark is attached to the nearest glyph before it that is not a mark (its
     /// base), when the base is covered and has an anchor for the mark's class; "the mark anchor is aligned with the
     /// base anchor for the applicable mark class". The offset is recorded relative to the base and resolved at the end, when all
-    /// advances are final. The base is looked up in <paramref name="bases"/> (see <see cref="Bases"/>): one operation.
+    /// advances are final. The base is looked up in <paramref name="bases"/> (see <see cref="Bases"/>), in one step that
+    /// the subtable's own operation pays for (<see cref="FirstApplying"/>).
     /// </summary>
-    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, int[] bases, ShapingBudget budget)
+    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, int[] bases)
     {
         if (table.MarkOf(glyphs[index].Glyph) is not { } mark)
         {
@@ -231,7 +232,7 @@ internal static class GlyphPositioning
         }
 
         var baseIndex = bases[index];
-        if (!budget.Spend(1) || baseIndex < 0 || table.BaseAnchor(glyphs[baseIndex].Glyph, mark.MarkClass) is not { } baseAnchor)
+        if (baseIndex < 0 || table.BaseAnchor(glyphs[baseIndex].Glyph, mark.MarkClass) is not { } baseAnchor)
         {
             return null;
         }

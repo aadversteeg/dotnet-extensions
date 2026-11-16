@@ -20,8 +20,8 @@ internal enum ShapingLimit
 /// counted over all pieces;</item>
 /// <item>operations: every glyph a lookup looks at costs one operation — each position of each lookup's walk over the
 /// buffer, each subtable tried at a position (the lookup of its coverage, whether it covers the glyph or not), each
-/// glyph that a search for a ligature's next component or a pair's second glyph steps over, and the one step to a
-/// mark's base — and the text may spend at most <see cref="MaxOperations"/>.</item>
+/// glyph that a search for a ligature's next component or a pair's second glyph steps over, and each glyph of the one
+/// pass that finds the marks' bases — and the text may spend at most <see cref="MaxOperations"/>.</item>
 /// </list>
 /// The text's own shape costs a fixed few operations per glyph per lookup: every search steps over a run of skipped
 /// glyphs at most once per subtable, and a mark finds its base in one step (the bases are found in one pass), so a
