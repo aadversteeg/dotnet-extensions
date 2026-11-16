@@ -46,6 +46,20 @@ public class TextCharacterTests
     }
 
     [Theory]
+    [InlineData(0xD800)]
+    [InlineData(0xDBFF)]
+    [InlineData(0xDC00)]
+    [InlineData(0xDFFF)]
+    public void Half_of_a_surrogate_pair_alone_is_an_input_error(int half)
+    {
+        // A lone surrogate is no character at all: in UTF-16 the code units 0xD800-0xDFFF stand for a character only in pairs.
+        var error = ErrorOf(Paragraph("a" + (char)half + "b"));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Text);
+        error.Metadata![ErrorMetadataKeys.Offset].Should().Be(1);
+    }
+
+    [Theory]
     [MemberData(nameof(Forbidden))]
     public void A_character_text_cannot_hold_is_an_input_error_at_the_paragraph(int forbidden)
     {

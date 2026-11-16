@@ -75,6 +75,27 @@ public class PageModelContractTests
         Refused(Tagged(Start(1, SemanticRole.Paragraph), Start(2, SemanticRole.TableRow), Start(3, SemanticRole.TableCell), Run("x"), End(3), End(2), End(1)), profile).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
 
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_table_head_inside_a_paragraph_is_refused(string profile) =>
+        // A THead's parent is a Table (ISO 32000-1 Table 337).
+        Refused(Tagged(Start(1, SemanticRole.Paragraph), Start(2, SemanticRole.TableHead), Start(3, SemanticRole.TableRow), Start(4, SemanticRole.TableHeaderCell), Run("x"), End(4), End(3), End(2), End(1)), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_paragraph_directly_in_a_table_is_refused(string profile) =>
+        // A Table holds rows or row groups only.
+        Refused(Tagged(Start(1, SemanticRole.Table), Start(2, SemanticRole.Paragraph), Run("x"), End(2), End(1)), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_paragraph_directly_in_a_table_head_is_refused(string profile) =>
+        // A THead holds rows only.
+        Refused(Tagged(Start(1, SemanticRole.Table), Start(2, SemanticRole.TableHead), Start(3, SemanticRole.Paragraph), Run("x"), End(3), End(2), End(1)), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
     [Fact]
     public void A_paragraph_directly_in_a_table_row_is_refused() =>
         Refused(Tagged(Start(1, SemanticRole.Table), Start(2, SemanticRole.TableRow), Start(3, SemanticRole.Paragraph), Run("x"), End(3), End(2), End(1))).Code
@@ -195,9 +216,14 @@ public class PageModelContractTests
 
     [Theory]
     [MemberData(nameof(Profiles))]
-    public void A_font_size_that_is_not_a_positive_finite_number_is_refused(string profile) =>
-        Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x") with { FontSize = double.NaN }, End(1)), profile).Code
-            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+    public void A_font_size_that_is_not_a_positive_finite_number_is_refused(string profile)
+    {
+        foreach (var size in new[] { double.NaN, 0, -1, double.PositiveInfinity })
+        {
+            Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x") with { FontSize = size }, End(1)), profile).Code
+                .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel, $"font size {size}");
+        }
+    }
 
     [Theory]
     [MemberData(nameof(Profiles))]
@@ -226,6 +252,8 @@ public class PageModelContractTests
             .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
         Refused(page with { Metadata = Accessible with { Attachments = [null!] } }, profile).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+        Refused(page with { Metadata = Accessible with { Attachments = [attachment with { MediaType = " " }] } }, profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel, "a blank media type is a missing one");
     }
 
     [Theory]

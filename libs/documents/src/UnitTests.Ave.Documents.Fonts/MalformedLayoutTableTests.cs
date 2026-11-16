@@ -88,6 +88,44 @@ public class MalformedLayoutTableTests
         ((PairAdjustmentByClass)result.Value.Lookups[0].Subtables[0]).Values.Should().HaveCount(100 * 100);
     }
 
+    /// <summary>A single substitution, format 1, of one coverage range with a delta.</summary>
+    private static byte[] SingleSubstitution(int first, int last, int delta) =>
+        LayoutTableWithOneSubtable(1, new BigEndianBuilder()
+            .UInt16(1).UInt16(6).UInt16(delta)               // format 1, coverage at +6, deltaGlyphID
+            .UInt16(2).UInt16(1).UInt16(first).UInt16(last).UInt16(0)  // coverage format 2: one range
+            .ToArray());
+
+    [Fact]
+    public void A_delta_that_wraps_below_zero_gives_glyphs_modulo_65536_and_is_checked_against_the_glyph_count()
+    {
+        // "Add to original glyph ID to get substitute glyph ID", modulo 65536: glyph 100 with delta -200 is 65 436,
+        // beyond a font of 1 000 glyphs.
+        var result = LayoutTableParser.Parse(LayoutTableParser.Gsub, SingleSubstitution(100, 100, -200), glyphCount: 1000);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
+    }
+
+    [Theory]
+    [InlineData(98, true)]
+    [InlineData(99, false)]
+    public void The_last_covered_glyph_plus_the_delta_must_be_a_glyph_of_the_font(int last, bool valid)
+    {
+        // A font of 100 glyphs, ids 0 to 99: 98 + 1 is its last glyph, 99 + 1 is none.
+        var result = LayoutTableParser.Parse(LayoutTableParser.Gsub, SingleSubstitution(10, last, 1), glyphCount: 100);
+
+        result.IsSuccess.Should().Be(valid, result.IsFailure ? result.Error.ToString() : string.Empty);
+    }
+
+    [Fact]
+    public void A_GDEF_with_a_glyph_class_definition_has_glyph_classes()
+    {
+        // Theano Didot's GDEF has a glyph class definition (glyphClassDefOffset is not 0); Lato has no GDEF at all.
+        TestFonts.Regular.Layout.Definitions.Should().BeNull();
+        TestFonts.TheanoDidot.Layout.Definitions.Should().NotBeNull();
+        TestFonts.TheanoDidot.Layout.Definitions!.HasGlyphClasses.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData(0x7FFFFFFEL)]
     [InlineData(0x7FFFFFE4L)]

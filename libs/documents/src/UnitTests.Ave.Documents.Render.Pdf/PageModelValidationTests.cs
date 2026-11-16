@@ -40,6 +40,52 @@ public class PageModelValidationTests
 
     private static DocumentMetadata Accessible => new("Title", null) { Language = "en" };
 
+    /// <summary>One glyph of Lato's "x" that shows <paramref name="text"/>.</summary>
+    private static GlyphRun GlyphWithText(string text) =>
+        Run("x") with { Glyphs = [Run("x").Glyphs[0] with { Text = text }] };
+
+    /// <summary>Lato with a name table whose PostScript name is <paramref name="length"/> letters long.</summary>
+    private static TrueTypeFont LatoNamed(int length)
+    {
+        var names = new (int Id, string Text)[] { (1, "Lato"), (2, "Regular"), (4, "Lato Regular"), (6, new string('L', length)) };
+        var storage = new List<byte>();
+        var table = new BigEndianBuilder().UInt16(0).UInt16(names.Length).UInt16(6 + 12 * names.Length);
+        foreach (var (id, text) in names)
+        {
+            var bytes = System.Text.Encoding.BigEndianUnicode.GetBytes(text);
+            table.UInt16(3).UInt16(1).UInt16(0x0409).UInt16(id).UInt16(bytes.Length).UInt16(storage.Count);
+            storage.AddRange(bytes);
+        }
+
+        var font = FontParser.Parse(FontFiles.WithTable(TestFonts.Bytes("Lato-Regular.ttf"), "name", table.Bytes(storage).ToArray()));
+        font.IsSuccess.Should().BeTrue(font.IsFailure ? font.Error.ToString() : string.Empty);
+        return font.Value;
+    }
+
+    [Theory]
+    [InlineData(120, true)]
+    [InlineData(121, false)]
+    public void A_font_name_is_a_PDF_A_name_with_its_six_letter_subset_tag_and_plus_sign(int length, bool allowed)
+    {
+        // veraPDF rule 6.1.13-4: no name longer than 127 bytes. The subset's name is ABCDEF+ and the PostScript name
+        // (ISO 32000-1 §9.6.4), 7 bytes more: a name of 120 letters is 127 bytes, one of 121 is 128.
+        var font = LatoNamed(length);
+        var glyphs = Shaper.Shape("x", font, 10).Value;
+        var run = new GlyphRun(font, 10, Color.Black, new Point(10, 50), [.. glyphs.Select(glyph => new PositionedGlyph(glyph.Glyph, 0, glyph.Text))]);
+        var document = Tagged(Accessible, Start(1, SemanticRole.Paragraph), run, End(1));
+
+        var result = PdfRenderer.Render(document, With(PdfProfile.PdfA3b));
+
+        if (allowed)
+        {
+            result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        }
+        else
+        {
+            result.Error.Parts().Select(part => part.Code).Should().Contain(PdfRenderErrorCodes.Conformance.PdfA3.NameTooLong);
+        }
+    }
+
     private static Error Refused(PageDocument document, PdfProfile profile)
     {
         Result<ImmutableArray<byte>, Error>? result = null;
@@ -137,6 +183,11 @@ public class PageModelValidationTests
         },
         // 6.1.13-11: a page side below 3 units.
         { "a page of 2 x 2 units", new PageDocument(Accessible, [new Page(new Size(2, 2), [Start(0, SemanticRole.Document), End(0)])]), "3b", PdfRenderErrorCodes.Conformance.PdfA3.PageSize },
+        // 6.1.13-3 for the author, and for a glyph's own text, written as replacement text (/ActualText).
+        { "an author longer than a PDF/A string", Tagged(Accessible with { Author = "\u00E9" + new string('a', 16_999) }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), "3b", PdfRenderErrorCodes.Conformance.PdfA3.TextTooLong },
+        { "a glyph text longer than a PDF/A string", Tagged(Accessible, Start(1, SemanticRole.Paragraph), GlyphWithText("\u00E9" + new string('a', 16_999)), End(1)), "3b", PdfRenderErrorCodes.Conformance.PdfA3.TextTooLong },
+        // 7.21.7-2 under PDF/UA-1 alone, not only at PDF/A level A: no glyph text with U+FEFF.
+        { "a glyph text of U+FEFF under PDF/UA-1", Tagged(Accessible, Start(1, SemanticRole.Paragraph), GlyphWithText("\uFEFF"), End(1)), "ua1", PdfRenderErrorCodes.Conformance.Tagged.UnmappableText },
         // PDF/UA-1 §7.1 (rule 7.1-9): a title.
         { "no title", Tagged(Accessible with { Title = null }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), "ua1", PdfRenderErrorCodes.Conformance.PdfUa1.MissingTitle },
         // 7.4.2-1: the first heading is H1, and no level is skipped going down.

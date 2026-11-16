@@ -92,6 +92,8 @@ public class ImageStructureTests
         { "a scan header whose length does not match its Ns", [.. FrameHeader, 0xFF, 0xDA, 0x00, 0x0A, 1, 1, 0x00, 0, 63, 0, 0, 0, 0x55] },
         { "a scan header and no entropy-coded data", [.. FrameHeader, .. ScanHeader] },
         { "a scan header and then at once the end of the image", [.. FrameHeader, .. ScanHeader, 0xFF, 0xD9] },
+        // T.81 Table B.3: Ns is 1 to 4. A header of five components, its length right for five, is not a scan.
+        { "a scan header of five components", [.. FrameHeader, 0xFF, 0xDA, 0x00, 0x10, 5, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 0, 63, 0, 0x55, 0xFF, 0xD9] },
     };
 
     [Theory]

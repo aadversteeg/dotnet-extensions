@@ -88,6 +88,14 @@ public class ConformanceBuildingBlockTests
         field.Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
     }
 
+    [Theory]
+    [InlineData("1a")]
+    [InlineData("a:b")]
+    [InlineData("")]
+    public void An_XMP_namespace_prefix_that_is_not_an_XML_name_is_an_error_value_not_an_exception(string prefix) =>
+        new XmpPacket([new XmpProperty(new XmpNamespace(prefix, "urn:a"), "b", new XmpText("x"))]).Write().Error.Code
+            .Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
+
     [Fact]
     public void An_XMP_property_without_a_namespace_or_value_is_an_error_value_not_an_exception()
     {

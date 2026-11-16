@@ -50,6 +50,17 @@ public class LineBreakTests
     }
 
     [Fact]
+    public void A_span_of_text_and_a_line_break_keeps_its_own_text_style()
+    {
+        // Only a span that is nothing but forced breaks takes the paragraph's style; one that also holds text is text.
+        var model = DocumentTranslator.ToModel(Document([Paragraph([Text("a"), Text("b" + "\u2028" + "c").FontSize(30.Pt())])]).FontFamily("Lato")).Value;
+
+        var runs = model.Root.Children.OfType<global::Ave.Documents.DocumentModel.Box>().Single().Children.OfType<global::Ave.Documents.DocumentModel.TextRun>().ToList();
+        runs[1].Style.Should().NotBe(runs[0].Style);
+        runs[1].Style.FontSize.Should().Be(30.Pt());
+    }
+
+    [Fact]
     public void The_line_break_run_in_the_model_has_the_paragraph_s_text_style()
     {
         var model = DocumentTranslator.ToModel(Document([Paragraph([Text("a"), LineBreak().FontSize(30.Pt()).Bold(), Text("b")])]).FontFamily("Lato")).Value;

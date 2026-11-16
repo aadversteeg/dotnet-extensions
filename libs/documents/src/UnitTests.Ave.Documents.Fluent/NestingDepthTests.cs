@@ -14,6 +14,14 @@ public class NestingDepthTests
         Enumerable.Range(0, depth - 1).Aggregate((Element)Paragraph("deep"), (inner, _) => Block([inner]));
 
     [Fact]
+    public void The_limit_is_64_levels()
+    {
+        // The number itself, not the constant: a test that reads the constant moves with it.
+        DocumentTranslator.ToModel(Document([Nested(64)]).FontFamily("Lato")).IsSuccess.Should().BeTrue();
+        DocumentTranslator.ToModel(Document([Nested(65)]).FontFamily("Lato")).Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.TooDeep);
+    }
+
+    [Fact]
     public void A_document_at_the_limit_is_accepted() =>
         DocumentTranslator.ToModel(Document([Nested(InputLimits.MaxNestingDepth)]).FontFamily("Lato")).IsSuccess.Should().BeTrue();
 

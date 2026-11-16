@@ -94,6 +94,26 @@ public class ShapingBudgetTests
     }
 
     [Fact]
+    public void A_text_may_grow_to_exactly_its_glyph_limit()
+    {
+        // 14 doubling lookups make 16 384 glyphs of one: the limit of a short text itself, which is allowed.
+        var shaped = Shaper.Shape("a", FontWith(doubling: 14, identity: 0, withoutPositioning: true), 10);
+
+        shaped.IsSuccess.Should().BeTrue(shaped.IsFailure ? shaped.Error.ToString() : string.Empty);
+        shaped.Value.Should().HaveCount(16_384);
+    }
+
+    [Fact]
+    public void A_missing_glyph_names_its_code_point_with_four_hex_digits()
+    {
+        // U+0E01 THAI CHARACTER KO KAI, which Lato does not have.
+        var shaped = Shaper.Shape("\u0E01", TestFonts.Regular, 10);
+
+        shaped.Error.Code.Should().Be(FontErrorCodes.GlyphMissing);
+        shaped.Error.Metadata![global::Ave.Documents.Core.ErrorMetadataKeys.CodePoint].Should().Be("U+0E01");
+    }
+
+    [Fact]
     public void The_glyph_limit_holds_for_the_whole_text_across_forced_line_breaks()
     {
         // 13 doubling lookups make 8 192 glyphs of one a. Twenty a's in a row (163 840 glyphs) are past the limit of the
