@@ -195,7 +195,7 @@ internal static class LayoutTableParser
                 {
                     var ligature = set + reader.UInt16(set + 2 + position * 2);
                     var components = Math.Max(0, reader.UInt16(ligature + 2) - 1);
-                    components = reader.Fits(ligature + 4, components * 2L) ? components : 0;
+                    components = reader.Fits(ligature + 4, components * 2L) && reader.Records(components) ? components : 0;
                     return new Ligature(
                         Output(reader, reader.UInt16(ligature), glyphCount),
                         [.. Enumerable.Range(0, components).Select(component => new GlyphId(reader.UInt16(ligature + 4 + component * 2)))]);
@@ -232,13 +232,14 @@ internal static class LayoutTableParser
     /// classDef2Offset, class1Count, class2Count, class1Records[class1Count]", each holding class2Count pairs of
     /// value records. When both value formats are 0 the records take no bytes and adjust nothing, so none is stored
     /// (the counts alone could otherwise ask for 65535 × 65535 records from a few bytes); otherwise every record lies
-    /// inside the table, so their number is bounded by its size.</summary>
+    /// inside the table and is charged to the work budget as it is created (<see cref="TableReader.Records"/>), even one
+    /// whose fields are all device offsets and read nothing, so subtables that share the records cannot multiply them.</summary>
     private static PairAdjustmentByClass PairByClassAt(TableReader reader, int offset)
     {
         var (format1, format2) = (reader.UInt16(offset + 4), reader.UInt16(offset + 6));
         var (class1Count, class2Count) = (reader.UInt16(offset + 12), reader.UInt16(offset + 14));
         var pairLength = ValueRecordLength(format1) + ValueRecordLength(format2);
-        var records = pairLength == 0 || !reader.Fits(offset + 16, (long)class1Count * class2Count * pairLength)
+        var records = pairLength == 0 || !reader.Fits(offset + 16, (long)class1Count * class2Count * pairLength) || !reader.Records((long)class1Count * class2Count)
             ? 0
             : class1Count * class2Count;
 

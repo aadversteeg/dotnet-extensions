@@ -22,9 +22,12 @@ namespace Ave.Documents.Fonts.OpenType;
 /// broken, so <see cref="Count"/> returns 0 and <see cref="Fits"/> false from then on, and no further array is walked.
 /// And the parse has a work budget proportional to the table's size (<see cref="WorkPerByte"/>,
 /// <see cref="MinimumWork"/>), as HarfBuzz's sanitizer has: offsets that stay inside the table can still point at each
-/// other in ways that multiply the work, which no well-formed table needs. Work is charged per value read, so a range
-/// record is one record however many glyphs it covers, and a shared coverage or class table is read once
-/// (<see cref="Shared{T}"/>); a parser that walks parsed data again charges that walk with <see cref="Spend"/>.</para>
+/// other in ways that multiply the work, which no well-formed table needs. Work is charged per value read AND per record
+/// created (<see cref="Records"/>, which <see cref="Count"/> calls): some records read nothing — a value record whose
+/// fields are all device offsets, which are skipped — and subtables that share one array let a few bytes stand for many
+/// such records, so only charging the records bounds the parsed form by the budget. A range record is one record
+/// however many glyphs it covers, and a shared coverage or class table is read once (<see cref="Shared{T}"/>); a parser
+/// that walks parsed data again charges that walk with <see cref="Spend"/>.</para>
 /// <para>Offsets are added in 64-bit arithmetic wherever a 32-bit value takes part, so no sum can wrap around, and
 /// the parsed form of a table is never larger than the records the table holds: a record that takes no bytes (a
 /// value record with valueFormat 0) is not stored.</para>
@@ -92,6 +95,15 @@ internal sealed class TableReader(ReadOnlyMemory<byte> table)
     }
 
     /// <summary>
+    /// Charges for <paramref name="count"/> records the parser is about to create, one unit each, on top of the values
+    /// they read (see the remarks of this class). Returns false, and the parser creates none, when the budget is used up
+    /// or a problem is known.
+    /// </summary>
+    /// <param name="count">The number of records.</param>
+    /// <returns>Whether they may be created.</returns>
+    public bool Records(long count) => count == 0 ? !HasProblem : Spend(count);
+
+    /// <summary>
     /// A sub-table that several subtables may point at — a coverage table or a class definition: compiled fonts share
     /// identical ones widely — read once per table parse and then reused, so sharing costs no work from the budget.
     /// </summary>
@@ -129,18 +141,20 @@ internal sealed class TableReader(ReadOnlyMemory<byte> table)
         InRange(offset, 4) ? System.Text.Encoding.ASCII.GetString(table.Span.Slice(offset, 4)) : "    ";
 
     /// <summary>
-    /// Reads the uint16 count of an array of records and checks that the whole array lies inside the table. A
-    /// count whose records would run past the end is recorded as out of range and read as 0, so a malformed count
-    /// can never make a parser walk records that are not there. After any problem the count is 0.
+    /// Reads the uint16 count of an array of records, checks that the whole array lies inside the table, and charges
+    /// the records the caller is about to create (<see cref="Records"/>). A count whose records would run past the end
+    /// is recorded as out of range and read as 0, so a malformed count can never make a parser walk records that are not
+    /// there. After any problem the count is 0.
     /// </summary>
     /// <param name="countOffset">Where the count is.</param>
     /// <param name="arrayOffset">Where the first record starts.</param>
     /// <param name="recordLength">The length of one record in bytes.</param>
-    /// <returns>The count, or 0 when the array does not fit or the table is already known to be malformed.</returns>
+    /// <returns>The count, or 0 when the array does not fit, the budget is used up or the table is already known to be
+    /// malformed.</returns>
     public int Count(int countOffset, int arrayOffset, int recordLength)
     {
         var count = UInt16(countOffset);
-        return Fits(arrayOffset, (long)count * recordLength) ? count : 0;
+        return Fits(arrayOffset, (long)count * recordLength) && Records(count) ? count : 0;
     }
 
     /// <summary>True when <paramref name="length"/> bytes from <paramref name="offset"/> lie inside the table (and no

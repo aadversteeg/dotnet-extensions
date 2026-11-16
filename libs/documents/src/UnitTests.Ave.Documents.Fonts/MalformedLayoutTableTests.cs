@@ -8,8 +8,9 @@ namespace UnitTests.Ave.Documents.Fonts;
 
 /// <summary>
 /// Hand-made GSUB and GPOS tables that are malformed in ways a random byte change rarely finds: an offset near the
-/// end of the 32-bit range, and counts whose records take no bytes. A malformed font gives an error value, never an
-/// exception, and the parsed form of a table is never much larger than the table itself.
+/// end of the 32-bit range, counts whose records take no bytes, and records that read nothing shared by many subtables.
+/// A malformed font gives an error value, never an exception, and the parsed form of a table is bounded by its size:
+/// every record created is charged to the work budget of <see cref="TableReader.WorkPerByte"/> units per byte.
 /// </summary>
 public class MalformedLayoutTableTests
 {
@@ -73,6 +74,57 @@ public class MalformedLayoutTableTests
             .UInt16(1).UInt16(0).UInt16(0)
             .UInt16(1).UInt16(0).UInt16(0)
             .ToArray();
+
+    /// <summary>
+    /// A GPOS table of one pair-adjustment lookup with <paramref name="subtables"/> subtable offsets that all point at
+    /// one class-pair subtable (format 2) of <paramref name="classes"/> × <paramref name="classes"/> records whose
+    /// valueFormat1 holds only an X placement device offset (0x0010): two bytes a record, and no value read, because
+    /// device offsets are skipped. The coverage (format 1, no glyphs) is read from the first record's bytes.
+    /// </summary>
+    private static byte[] SharedDeviceOnlyClassPairs(int subtables, int classes)
+    {
+        const int Lookup = 18;
+        var subtable = Lookup + 6 + subtables * 2;
+        var builder = new BigEndianBuilder()
+            .UInt16(1).UInt16(0).UInt16(10).UInt16(12).UInt16(14) // version 1.0, script, feature and lookup lists
+            .UInt16(0)                                              // no scripts
+            .UInt16(0)                                              // no features
+            .UInt16(1).UInt16(Lookup - 14)                          // one lookup
+            .UInt16(2).UInt16(0).UInt16(subtables);                 // pair adjustment, no flags, the subtables
+        for (var index = 0; index < subtables; index++)
+        {
+            builder.UInt16(subtable - Lookup);
+        }
+
+        builder.UInt16(2).UInt16(16).UInt16(0x0010).UInt16(0).UInt16(0).UInt16(0).UInt16(classes).UInt16(classes);
+        return builder.UInt16(1).Bytes(new byte[classes * classes * 2 - 2]).ToArray();
+    }
+
+    [Theory]
+    [InlineData(50)]
+    [InlineData(200)]
+    public void Shared_class_pair_records_that_read_nothing_are_charged_as_records(int subtables)
+    {
+        // Each record makes a PairValues whatever it reads, so its creation is charged to the work budget: 50 offsets to
+        // one subtable of 10 000 records would otherwise keep 500 000 records parsed from a 20 KB table.
+        var table = SharedDeviceOnlyClassPairs(subtables, classes: 100);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+
+        var result = LayoutTableParser.Parse(LayoutTableParser.Gpos, table, glyphCount: 100);
+
+        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(16L * 1024 * 1024);
+        result.IsFailure.Should().BeTrue("the table asks for far more work than its size allows");
+        result.Error.Code.Should().Be(FontErrorCodes.Parse.InvalidValue);
+    }
+
+    [Fact]
+    public void One_subtable_of_class_pair_records_that_read_nothing_is_parsed()
+    {
+        var result = LayoutTableParser.Parse(LayoutTableParser.Gpos, SharedDeviceOnlyClassPairs(1, classes: 100), glyphCount: 100);
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        ((PairAdjustmentByClass)result.Value.Lookups[0].Subtables[0]).Values.Should().HaveCount(100 * 100);
+    }
 
     [Theory]
     [InlineData(0x7FFFFFFEL)]
