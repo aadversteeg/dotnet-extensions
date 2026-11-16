@@ -85,8 +85,8 @@ public sealed record ClassDefinition(ImmutableArray<ClassDefinition.Range> Range
 
     /// <summary>
     /// Reads a class definition table; one that several subtables point at is read once per table (see
-    /// <see cref="TableReader.Shared{T}"/>). Format 1: "startGlyphID, glyphCount, classValueArray[glyphCount]" — each
-    /// glyph from startGlyphID on becomes a range of one. Format 2: "classRangeCount, classRangeRecords[]" of
+    /// <see cref="TableReader.Shared{T}"/>). Format 1: <c>startGlyphID, glyphCount, classValueArray[glyphCount]</c> — each
+    /// glyph from startGlyphID on becomes a range of one. Format 2: <c>classRangeCount, classRangeRecords[]</c> of
     /// (startGlyphID, endGlyphID, class), "in startGlyphID order" and not overlapping, which is checked. An offset of
     /// 0 is NULL, "no table": every glyph is in class 0.
     /// </summary>

@@ -36,9 +36,15 @@ internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
     /// <summary>
     /// True when a substitution lookup with these flags skips the glyph while matching: as <see cref="Skips"/>, and a
     /// default-ignorable character, so that it does not stop a ligature (glyphs the match skips are kept after the
-    /// ligature). HarfBuzz skips every default ignorable but the zero width non-joiner while matching GSUB
-    /// (hb-ot-layout-gsubgpos.hh, the skipping iterator), and its output for "f", an ignorable and "i" in Lato is the
-    /// fi ligature followed by the invisible glyph; the reference tests compare. Two exceptions:
+    /// ligature). HarfBuzz 15.0.0, the reference the tests compare with, skips a default ignorable while matching GSUB
+    /// (hb-ot-layout-gsubgpos.hh, <c>matcher_t::may_skip</c>) unless it is the zero width non-joiner, the zero width
+    /// joiner of a lookup that does not skip it, or a glyph HarfBuzz marks hidden (hb-ot-layout.hh,
+    /// <c>UPROPS_MASK_HIDDEN</c>: U+180B–U+180D and U+180F, the Mongolian free variation selectors; U+E0020–U+E007F, the
+    /// tag characters; and U+034F COMBINING GRAPHEME JOINER where it blocks a reordering). Its output for "f", an
+    /// ignorable and "i" in Lato is the fi ligature followed by the invisible glyph. Where the engine differs from
+    /// HarfBuzz: it skips the hidden ones too (f, a tag character and i ligate here, not in HarfBuzz); and a default
+    /// ignorable of another script (U+180E, U+061C, U+17B4) ends the script run here (<see cref="Shaper"/>), so no
+    /// ligature joins across it, where HarfBuzz, given the whole text as one run, ligates. Two exceptions on purpose:
     /// <list type="bullet">
     /// <item>The zero width non-joiner is matched, so it stops a ligature: it is "intended to break both cursive
     /// connections and ligatures" (the Unicode Standard §23.2). HarfBuzz does the same.</item>

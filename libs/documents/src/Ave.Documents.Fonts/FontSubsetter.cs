@@ -34,13 +34,15 @@ public static class FontSubsetter
     private const ushort WeHaveAnXAndYScale = 0x0040;
     private const ushort WeHaveATwoByTwo = 0x0080;
 
-    /// <summary>The checkSumAdjustment rule of 'head': "0xB1B0AFBA minus the sum of the entire font".</summary>
+    /// <summary>The checksumAdjustment rule of 'head': "To compute: set it to 0, sum the entire font as uint32, then
+    /// store 0xB1B0AFBA - sum."</summary>
     private const uint ChecksumMagic = 0xB1B0AFBA;
 
     /// <summary>Builds the subset.</summary>
     /// <param name="font">The font.</param>
     /// <param name="glyphs">The glyphs used. Glyph 0 (.notdef) and the components of every composite glyph are
-    /// added, because "the .notdef glyph … must be present" and a composite is drawn from its components.</param>
+    /// added, because "Glyph 0 must be assigned to a .notdef glyph" (OpenType, Recommendations for OpenType fonts) and a
+    /// composite is drawn from its components.</param>
     /// <returns>The subset, or <c>Documents.Font.Parse.InvalidValue</c> for a composite glyph whose data is
     /// malformed. A font whose licence forbids subsetting (<see cref="EmbeddingPermissions.AllowsSubsetting"/>)
     /// gives its whole font file, marked <see cref="FontSubset.IsSubset"/> false.</returns>

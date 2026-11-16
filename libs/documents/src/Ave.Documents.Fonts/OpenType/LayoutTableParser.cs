@@ -43,8 +43,8 @@ internal static class LayoutTableParser
         return reader.Finish(tag, table);
     }
 
-    /// <summary>Script list: "scriptCount, scriptRecords[]" of (scriptTag, scriptOffset); a script table:
-    /// "defaultLangSysOffset, langSysCount, langSysRecords[]". Language-specific systems are not read: the
+    /// <summary>Script list: <c>scriptCount, scriptRecords[]</c> of (scriptTag, scriptOffset); a script table:
+    /// <c>defaultLangSysOffset, langSysCount, langSysRecords[]</c>. Language-specific systems are not read: the
     /// shaper uses the default language system.</summary>
     private static ValueList<ScriptTable> Scripts(TableReader reader, int list) =>
         [.. Enumerable.Range(0, reader.Count(list, list + 2, 6)).Select(index =>
@@ -55,8 +55,8 @@ internal static class LayoutTableParser
             return new ScriptTable(reader.Tag(record), defaultOffset == 0 ? null : LanguageSystemAt(reader, script + defaultOffset));
         })];
 
-    /// <summary>Language system: "lookupOrderOffset (reserved), requiredFeatureIndex (0xFFFF if none),
-    /// featureIndexCount, featureIndices[]".</summary>
+    /// <summary>Language system: <c>lookupOrderOffset (reserved), requiredFeatureIndex (0xFFFF if none),
+    /// featureIndexCount, featureIndices[]</c>.</summary>
     private static LanguageSystem LanguageSystemAt(TableReader reader, int offset)
     {
         var required = reader.UInt16(offset + 2);
@@ -65,8 +65,8 @@ internal static class LayoutTableParser
             [.. Enumerable.Range(0, reader.Count(offset + 4, offset + 6, 2)).Select(index => (int)reader.UInt16(offset + 6 + index * 2))]);
     }
 
-    /// <summary>Feature list: "featureCount, featureRecords[]" of (featureTag, featureOffset); a feature:
-    /// "featureParamsOffset, lookupIndexCount, lookupListIndices[]".</summary>
+    /// <summary>Feature list: <c>featureCount, featureRecords[]</c> of (featureTag, featureOffset); a feature:
+    /// <c>featureParamsOffset, lookupIndexCount, lookupListIndices[]</c>.</summary>
     private static ValueList<FeatureTable> Features(TableReader reader, int list) =>
         [.. Enumerable.Range(0, reader.Count(list, list + 2, 6)).Select(index =>
         {
@@ -77,8 +77,8 @@ internal static class LayoutTableParser
                 [.. Enumerable.Range(0, reader.Count(feature + 2, feature + 4, 2)).Select(lookup => (int)reader.UInt16(feature + 4 + lookup * 2))]);
         })];
 
-    /// <summary>Lookup list: "lookupCount, lookupOffsets[]"; a lookup: "lookupType, lookupFlag, subTableCount,
-    /// subtableOffsets[]" (and a markFilteringSet, which is not used).</summary>
+    /// <summary>Lookup list: <c>lookupCount, lookupOffsets[]</c>; a lookup: <c>lookupType, lookupFlag, subTableCount,
+    /// subtableOffsets[]</c> (and a markFilteringSet, which is not used).</summary>
     private static ValueList<Lookup> Lookups(TableReader reader, int list, string tag, int glyphCount) =>
         [.. Enumerable.Range(0, reader.Count(list, list + 2, 2)).Select(index =>
         {
@@ -90,8 +90,8 @@ internal static class LayoutTableParser
         })];
 
     /// <summary>
-    /// One subtable, decoded by lookup type and format. An extension subtable (GSUB type 7, GPOS type 9: "format,
-    /// extensionLookupType, extensionOffset32") is replaced by the subtable it points to; an extension may not
+    /// One subtable, decoded by lookup type and format. An extension subtable (GSUB type 7, GPOS type 9: <c>format,
+    /// extensionLookupType, extensionOffset32</c>) is replaced by the subtable it points to; an extension may not
     /// point to another extension ("must not be 7" / "must not be 9"), so this never recurses further.
     /// </summary>
     private static LookupSubtable Subtable(TableReader reader, string tag, int type, int offset, int glyphCount)
@@ -139,8 +139,8 @@ internal static class LayoutTableParser
         return new GlyphId((ushort)glyph);
     }
 
-    /// <summary>Single substitution format 1: "coverageOffset, deltaGlyphID" — "Add to original glyph ID to get
-    /// substitute glyph ID", modulo 65536. Format 2: "coverageOffset, glyphCount, substituteGlyphIDs[]", indexed by
+    /// <summary>Single substitution format 1: <c>coverageOffset, deltaGlyphID</c> — "Add to original glyph ID to get
+    /// substitute glyph ID", modulo 65536. Format 2: <c>coverageOffset, glyphCount, substituteGlyphIDs[]</c>, indexed by
     /// coverage index. Every glyph produced must exist in the font. For format 1 the coverage's ranges are in glyph
     /// order, so when the first covered glyph plus the delta is at least 0 and the last one plus the delta is below the
     /// glyph count, every output lies between them and the check is one step. Only otherwise (the delta wraps around
@@ -172,8 +172,8 @@ internal static class LayoutTableParser
         return new SingleSubstitution(coverage, 0, [.. Enumerable.Range(0, count).Select(index => Output(reader, reader.UInt16(offset + 6 + index * 2), glyphCount))], IsDelta: false);
     }
 
-    /// <summary>Multiple substitution format 1: "coverageOffset, sequenceCount, sequenceOffsets[]"; a sequence:
-    /// "glyphCount, substituteGlyphIDs[]". The sequences are indexed by coverage index.</summary>
+    /// <summary>Multiple substitution format 1: <c>coverageOffset, sequenceCount, sequenceOffsets[]</c>; a sequence:
+    /// <c>glyphCount, substituteGlyphIDs[]</c>. The sequences are indexed by coverage index.</summary>
     private static MultipleSubstitution MultipleSubstitutionAt(TableReader reader, int offset, int glyphCount) =>
         new(Coverage.Read(reader, offset + reader.UInt16(offset + 2)),
             [.. Enumerable.Range(0, reader.Count(offset + 4, offset + 6, 2)).Select(index =>
@@ -183,9 +183,9 @@ internal static class LayoutTableParser
                     .Select(position => Output(reader, reader.UInt16(sequence + 2 + position * 2), glyphCount))];
             })]);
 
-    /// <summary>Ligature substitution format 1: "coverageOffset, ligatureSetCount, ligatureSetOffsets[]"; a ligature
-    /// set: "ligatureCount, ligatureOffsets[]"; a ligature: "ligatureGlyph, componentCount,
-    /// componentGlyphIDs[componentCount − 1]". The sets are indexed by coverage index.</summary>
+    /// <summary>Ligature substitution format 1: <c>coverageOffset, ligatureSetCount, ligatureSetOffsets[]</c>; a ligature
+    /// set: <c>ligatureCount, ligatureOffsets[]</c>; a ligature: <c>ligatureGlyph, componentCount,
+    /// componentGlyphIDs[componentCount - 1]</c>. The sets are indexed by coverage index.</summary>
     private static LigatureSubstitution LigatureSubstitutionAt(TableReader reader, int offset, int glyphCount) =>
         new(Coverage.Read(reader, offset + reader.UInt16(offset + 2)),
             [.. Enumerable.Range(0, reader.Count(offset + 4, offset + 6, 2)).Select(index =>
@@ -202,8 +202,8 @@ internal static class LayoutTableParser
                 })];
             })]);
 
-    /// <summary>Pair adjustment format 1: "coverageOffset, valueFormat1, valueFormat2, pairSetCount,
-    /// pairSetOffsets[]"; a pair set: "pairValueCount, pairValueRecords[]" of (secondGlyph, valueRecord1,
+    /// <summary>Pair adjustment format 1: <c>coverageOffset, valueFormat1, valueFormat2, pairSetCount,
+    /// pairSetOffsets[]</c>; a pair set: <c>pairValueCount, pairValueRecords[]</c> of (secondGlyph, valueRecord1,
     /// valueRecord2). The pair sets are indexed by coverage index; in each, the first record for a second glyph
     /// counts.</summary>
     private static PairAdjustmentByGlyph PairByGlyphAt(TableReader reader, int offset)
@@ -228,8 +228,8 @@ internal static class LayoutTableParser
         return new PairAdjustmentByGlyph(Coverage.Read(reader, offset + reader.UInt16(offset + 2)), [.. sets], format2 != 0);
     }
 
-    /// <summary>Pair adjustment format 2: "coverageOffset, valueFormat1, valueFormat2, classDef1Offset,
-    /// classDef2Offset, class1Count, class2Count, class1Records[class1Count]", each holding class2Count pairs of
+    /// <summary>Pair adjustment format 2: <c>coverageOffset, valueFormat1, valueFormat2, classDef1Offset,
+    /// classDef2Offset, class1Count, class2Count, class1Records[class1Count]</c>, each holding class2Count pairs of
     /// value records. When both value formats are 0 the records take no bytes and adjust nothing, so none is stored
     /// (the counts alone could otherwise ask for 65535 × 65535 records from a few bytes); otherwise every record lies
     /// inside the table and is charged to the work budget as it is created (<see cref="TableReader.Records"/>), even one
@@ -282,9 +282,9 @@ internal static class LayoutTableParser
         return new ValueRecord(fields[0], fields[1], fields[2], fields[3]);
     }
 
-    /// <summary>Mark-to-base format 1: "markCoverageOffset, baseCoverageOffset, markClassCount, markArrayOffset,
-    /// baseArrayOffset". Mark array: "markCount, markRecords[]" of (markClass, markAnchorOffset); base array:
-    /// "baseCount, baseRecords[]", each "baseAnchorOffsets[markClassCount]" (0 = no anchor for that class). Both
+    /// <summary>Mark-to-base format 1: <c>markCoverageOffset, baseCoverageOffset, markClassCount, markArrayOffset,
+    /// baseArrayOffset</c>. Mark array: <c>markCount, markRecords[]</c> of (markClass, markAnchorOffset); base array:
+    /// <c>baseCount, baseRecords[]</c>, each "baseAnchorOffsets[markClassCount]" (0 = no anchor for that class). Both
     /// arrays are indexed by coverage index.</summary>
     private static MarkToBase MarkToBaseAt(TableReader reader, int offset)
     {
@@ -309,7 +309,7 @@ internal static class LayoutTableParser
             [.. bases]);
     }
 
-    /// <summary>Anchor formats 1–3 all start "anchorFormat, xCoordinate, yCoordinate".</summary>
+    /// <summary>Anchor formats 1–3 all start <c>anchorFormat, xCoordinate, yCoordinate</c>.</summary>
     private static Anchor AnchorAt(TableReader reader, int offset)
     {
         var format = reader.UInt16(offset);

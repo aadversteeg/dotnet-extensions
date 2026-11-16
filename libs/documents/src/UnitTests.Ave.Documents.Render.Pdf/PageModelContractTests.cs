@@ -104,7 +104,8 @@ public class PageModelContractTests
     [Theory]
     [MemberData(nameof(Profiles))]
     public void A_table_with_two_heads_is_refused(string profile) =>
-        // ISO 32000-1 Table 337 gives a table "an optional table head (THead)"; veraPDF rule 7.2-11 allows zero or one.
+        // ISO 32000-1 Table 337 gives a table "an optional table head (structure type THead)"; veraPDF rule 7.2-11
+        // allows zero or one.
         Refused(TableOf(SemanticRole.TableHead, SemanticRole.TableHead, SemanticRole.TableBody), profile).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
 
@@ -306,7 +307,8 @@ public class PageModelContractTests
     [MemberData(nameof(Profiles))]
     public void A_file_identifier_longer_than_a_PDF_string_is_refused(string profile)
     {
-        // ISO 32000-1 Annex C, Table C.1: a string holds at most 32 767 bytes (veraPDF rule 6.1.13-3 under PDF/A).
+        // veraPDF rule 6.1.13-3: under PDF/A no string is longer than 32 767 bytes; the writer holds the identifier to
+        // that in every profile.
         var document = Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1));
         var longest = With(ProfileNamed(profile)) with { FileIdentifier = [.. Enumerable.Repeat((byte)7, 32_767)] };
 

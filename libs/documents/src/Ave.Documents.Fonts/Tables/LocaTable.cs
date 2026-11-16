@@ -39,12 +39,12 @@ internal sealed record LocaTable(ImmutableArray<int> Offsets)
         long previous = 0;
         for (var index = 0; index <= glyphCount; index++)
         {
-            // "Offset16: the actual local offset divided by 2 is stored."
+            // Short format (Offset16): "The local offset divided by 2 is stored."
             long offset = longOffsets
                 ? BigEndian.UInt32(table, index * 4)
                 : BigEndian.UInt16(table, index * 2) * 2L;
 
-            // "The offsets must be in ascending order", and each must point inside 'glyf'.
+            // "Offsets must be in ascending order, with loca[n] <= loca[n+1].", and each must point inside 'glyf'.
             if (offset < previous || offset > glyfLength)
             {
                 return FontParseErrors.InvalidValue<LocaTable>(

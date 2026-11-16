@@ -238,8 +238,10 @@ internal static class StructureNesting
 
     /// <summary>
     /// The kids of every table, counted over all pages, where a node split over pages is one element. ISO 32000-1
-    /// Table 337 says a table "contains either one or more table rows (TR) as children; or an optional table head
-    /// (THead) followed by one or more table body elements (TBody) and an optional table footer (TFoot)". So a table
+    /// Table 337 says a table "contains either one or more table rows (structure type TR) as children; or an optional
+    /// table head (structure type THead) followed by one or more table body elements (structure type TBody) and an
+    /// optional table footer (structure type TFoot)". (It may also have a caption as its first or last child; there is
+    /// no caption role.) So a table
     /// holds rows or row groups, not both; at most one THead, which comes first; at most one TFoot, which comes last.
     /// veraPDF checks the counts for PDF/UA-1 (rules 7.2-11 and 7.2-12). Whether a head needs a body is a profile's rule
     /// (PDF/UA-1, rule 7.2-14). Linear in the number of structure markers, whatever their shape.

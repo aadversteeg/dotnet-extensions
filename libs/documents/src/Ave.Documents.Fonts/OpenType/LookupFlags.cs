@@ -16,10 +16,10 @@ public readonly record struct LookupFlags(ushort Value)
     /// <summary>"If set, skips over all combining marks" (bit 0x0008).</summary>
     public bool IgnoreMarks => (Value & 0x0008) != 0;
 
-    /// <summary>"If set, indicates that the lookup table structure is followed by a MarkFilteringSet field"
-    /// (bit 0x0010). Mark filtering sets are not implemented: such a lookup is skipped (see the shaper).</summary>
+    /// <summary>"If set, indicates that the Lookup table structure includes the markFilteringSet field." (bit
+    /// 0x0010). Mark filtering sets are not implemented: such a lookup is skipped (see the shaper).</summary>
     public bool UsesMarkFilteringSet => (Value & 0x0010) != 0;
 
-    /// <summary>"If not zero, skips over all marks of attachment type different from specified" (high byte).</summary>
+    /// <summary>"If not zero, skips over all marks not in the specified mark attachment class." (high byte).</summary>
     public int MarkAttachmentType => Value >> 8;
 }

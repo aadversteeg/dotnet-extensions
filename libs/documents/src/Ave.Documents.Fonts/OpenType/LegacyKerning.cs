@@ -22,9 +22,10 @@ public sealed record LegacyKerning(ValueList<KerningSubtable> Subtables)
     public const string Tag = "kern";
 
     /// <summary>
-    /// The adjustment for a pair, in font design units. "Values in subtables are added" unless a subtable has the
-    /// override bit, whose value then replaces the sum so far (coverage bit 3, "If set to 1 the value in this table
-    /// should replace the value currently being accumulated").
+    /// The adjustment for a pair, in font design units: the values of the subtables are accumulated (the 'kern' page
+    /// speaks of the value "currently being accumulated"), and a subtable with the override bit replaces the sum so far
+    /// (coverage bit 3, "If this bit is set to 1 the value in this table should replace the value currently being
+    /// accumulated.").
     /// </summary>
     /// <param name="left">The first glyph.</param>
     /// <param name="right">The second glyph.</param>

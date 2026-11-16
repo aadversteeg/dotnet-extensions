@@ -272,7 +272,8 @@ public class WrittenValueTests
     [Fact]
     public void A_long_run_of_glyphs_is_shown_with_strings_of_at_most_32767_bytes()
     {
-        // ISO 32000-1 Annex C, Table C.1: a string holds at most 32 767 bytes (veraPDF rule 6.1.13-3 under PDF/A). 40 000
+        // ISO 32000-1 Annex C, Table C.1: a string in a content stream holds at most 32 767 bytes (veraPDF rule 6.1.13-3
+        // under PDF/A). 40 000
         // glyphs side by side without a gap are 80 000 bytes of glyph codes, so the TJ array needs at least three strings.
         var run = Run(new string('i', 40_000), TestFonts.Regular, new Point(0, 50));
         var file = Latin1(PdfRenderer.Render(OnePage(new DocumentMetadata("Long", null), run), Plain).Value);

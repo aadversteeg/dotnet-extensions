@@ -1,16 +1,24 @@
 # Citations audit
 
 Every citation and quotation in the code, tests and documentation, checked against the public text it names.
-Date of the check: 2026-11-15. Branch `m1-fixes`.
+Date of the check: 2026-11-15, second check 2026-11-16, third check (quotations) 2026-11-16. Branch `m1-fixes`.
 
 ## How
 
 - **Extraction.** `tools/extract-citations.py` reads every comment block of the source files and every paragraph
   of the Markdown files, and keeps each block that names an outside text: a section (§), a table, a rule id, a
   numbered standard, or a quotation. A block with a place (clause, table, rule) or a quotation is a citation; a
-  block that only names a specification ("PNG", "HarfBuzz") is a mention and claims no place. Run it again after
-  a change to see what is new. Generated data, third-party texts and golden files are not read.
-- **Count.** 768 blocks: 572 citations and 196 mentions.
+  block that only names a specification ("PNG", "HarfBuzz") is a mention and claims no place. Since the third check
+  it also keeps every block that names no specification but holds a quotation of five words or more (kind
+  "quotation"), with the nearest specification named above it in the file as its context: such a block usually quotes
+  the specification its member's or its class's summary names. Quotation marks are paired from left to right, so the
+  closing mark of a short quoted value never opens a long false quotation; fenced code in Markdown is not read. Run it
+  again after a change to see what is new. Generated data, third-party texts, golden files and the two generated
+  documents (this audit and the conformance matrix) are not read.
+- **Count.** At the first check, 768 blocks: 572 citations and 196 mentions. Now (third check, after its fixes):
+  1 209 blocks: 922 citations (187 with a quotation), 64 quotations whose block names no specification, and 223
+  mentions. The growth since the first check is the fix rounds' text and the conformance matrix builder, which now
+  lists every rule id on its own line (each line names a rule).
 - **Check.** Every citation was checked against the public text in batches by a research agent (S1 to S10 below):
   does the place exist and say what the sentence claims, and is every quotation verbatim. Sources:
   - ISO 32000-1:2008 in Adobe's free copy `PDF32000_2008.pdf` (clause and table numbers of ISO 32000-1:2008);
@@ -38,6 +46,11 @@ Citations written or changed after the check (the corrections themselves, and th
 listed at the end: 68 changed blocks carry the verdict of the block they replace; 67 new blocks
 quote only the veraPDF rule texts (read from the pinned image's profiles) or texts the check above confirmed
 verbatim; each says which.
+
+Third check (quotations, see the last section): of 95 quoted texts in 72 blocks the earlier extraction did not keep,
+61 were verbatim, 28 close and 6 not in the text named; all 34 are fixed (verbatim now, or prose without quotation
+marks). Ten blocks quote no outside text (own words in quotation marks). The 236 blocks new or changed in fix round 3
+are listed with their check.
 
 ## The fixed citations
 
@@ -845,3 +858,344 @@ against the public texts on 2026-11-16. Each row: the reference, where it is, th
 | CSS Text 3 §5.5: BK and NL characters are forced line breaks | `docs/architecture.md` | section RIGHT; "lets them" understated it ("must be treated as forced line breaks"); §4 conflicts for Cc characters | quoted, and the conflict with §4 named |
 | CSS Text 3 §4: carriage return "treated identically to spaces" | `src/Ave.Documents.Typesetting/WhiteSpaceCollapsing.cs` | RIGHT (§4 introduction) | none |
 | snapshot.debian.org keeps every state "for good" | `tools/reference/tools.Dockerfile` | WRONG: "all past and current packages", states about six hours apart, removals possible | reworded with the service's own words |
+
+## Third check, 2026-11-16: quotations
+
+The extraction now keeps quotations in blocks that name no specification (see How). The internet-scout agent checked
+every such quotation, and every quotation written in fix round 3, against the public text, character by character for
+UAX #14 rule notation (batch and verdicts with the exact specification texts: scratch files of the round, summarised
+here). Sources: OpenType 1.9.1 (learn.microsoft.com, the pages' own dates), UAX #14 revision 57 (Unicode 18.0.0) and
+revision 55, PNG Second and Third Edition, CSS Fragmentation 3 (CR 2018-12-04), CSS Fonts 4 (WD 2026-11-12), CSS 2.1,
+CSS Text 3 (CRD 2026-08-14), ISO 32000-1:2008 in Adobe's copy, Namespaces in XML 1.0 (Third Edition), HarfBuzz 15.0.0
+source.
+
+Findings beyond single quotations, fixed in the same change:
+
+- ISO 32000-1 Annex C limits strings to 32 767 bytes "only to strings in content streams"; the comments that cited it
+  for every string (the file identifier) now cite veraPDF rule 6.1.13-3, PDF/A's rule for all strings.
+- HarfBuzz's buffer limits: 64 glyphs per input glyph and at least 16 384 were HarfBuzz's numbers from 2.7.3 to 11.4.1;
+  the pinned 15.0.0 has 256 and 65 536, and 4 096 and 65 536 operations. The constants now say so.
+- HarfBuzz 15.0.0 does not skip "hidden" default ignorables in GSUB (Mongolian free variation selectors, tag
+  characters, a grapheme joiner that blocks a reordering); the shaper's comment claimed it skips every default
+  ignorable but ZWNJ, and now says what HarfBuzz does and where the engine differs.
+- OS/2 fsType: the least-restrictive rule for several usage bits holds for OS/2 versions 0 to 2 only.
+
+The quotation blocks the tool finds now (64), with the verdict of the check and what changed:
+
+| Place | Quotation (start) | Verdict |
+| --- | --- | --- |
+| `docs/architecture.md:17` | “no unsafe code, no P/Invoke, no native assets” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `docs/pdf-profiles-and-accessibility.md:92` | “Logo of Versteeg IT Solutions” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/Ave.Documents.Core/ErrorSourceExtensions.cs:6` | “where in the user's code” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/Ave.Documents.DocumentModel/DocumentModelText.cs:7` | “page size=595.276x841.89 margin=56.693,56.693,56.693,56.693 box #0 fl” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/Ave.Documents.Fonts/EmbeddingPermissions.cs:18` | “When this bit is set, the font must not be subsetted prior to embeddin” | CLOSE ("may not"); now verbatim ("must not") |
+| `src/Ave.Documents.Fonts/EmbeddingPermissions.cs:22` | “the font must not be modified, embedded or exchanged in any manner wit” | CLOSE ("explicit" missing); now verbatim; the least-restrictive rule now said to be the spec's for OS/2 versions 0 to 2 only |
+| `src/Ave.Documents.Fonts/FontSubsetter.cs:37` | “To compute: set it to 0, sum the entire font as uint32, then store 0xB” | CLOSE (no "minus" wording in 1.9.1); now the 'head' text verbatim |
+| `src/Ave.Documents.Fonts/OpenType/GlyphDefinitions.cs:21` | “3 Mark glyph (non-spacing combining glyph)” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/GlyphDefinitions.cs:24` | “2 Ligature glyph (multiple character, spacing glyph)” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/GlyphDefinitions.cs:27` | “1 Base glyph (single character, spacing glyph)” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/LayoutTableParser.cs:142` | “Add to original glyph ID to get substitute glyph ID” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/LegacyKerning.cs:24` | “If this bit is set to 1 the value in this table should replace the val” | NOT-FOUND ("Values in subtables are added") and CLOSE ("If set to 1"); now prose plus the override bit's text verbatim |
+| `src/Ave.Documents.Fonts/OpenType/LookupFlags.cs:10` | “If set, skips over base glyphs” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/LookupFlags.cs:13` | “If set, skips over ligatures” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/LookupFlags.cs:16` | “If set, skips over all combining marks” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/LookupFlags.cs:19` | “If set, indicates that the Lookup table structure includes the markFil” | CLOSE (1.9.1 wording differs); now verbatim |
+| `src/Ave.Documents.Fonts/OpenType/LookupFlags.cs:23` | “If not zero, skips over all marks not in the specified mark attachment” | CLOSE (1.9.1 wording differs); now verbatim |
+| `src/Ave.Documents.Fonts/OpenType/LookupSubtable.cs:19` | “Add to original glyph ID to get substitute glyph ID” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/OpenType/LookupSubtable.cs:53` | “The order in the Ligature offset array defines the preference for usin” | NOT-FOUND ("more components … fewer"); now the preference-order sentence verbatim |
+| `src/Ave.Documents.Fonts/OpenType/LookupSubtable.cs:66` | “start with the second component, ordered in writing direction” | CLOSE ("beginning with"); now verbatim ("start with the second component, ordered in writing direction") |
+| `src/Ave.Documents.Fonts/OpenType/LookupSubtable.cs:86` | “If valueFormat2 is set to 0, then the second glyph of the pair is the” | CLOSE ('first' glyph of the next pair); now verbatim (the “next” glyph) |
+| `src/Ave.Documents.Fonts/Tables/CmapEntries.cs:11` | “this character has no glyph” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/Ave.Documents.Fonts/Tables/CmapFormat4.cs:50` | “The segments are sorted in order of increasing endCode values” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/Tables/CmapFormat4.cs:82` | “If the idRangeOffset is 0, the idDelta value is added directly to the” | CLOSE (wording differs); now verbatim |
+| `src/Ave.Documents.Fonts/Tables/CmapFormat4.cs:88` | “glyphId = *(idRangeOffset[i]/2 + (c - startCode[i]) + &idRangeOffset[i” | CLOSE (left-hand side glyphIdArray[i]); now verbatim (glyphId =) |
+| `src/Ave.Documents.Fonts/Tables/HeadTable.cs:30` | “unitsPerEm: Set to a value from 16 to 16384.” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/Tables/HeadTable.cs:37` | “indexToLocFormat: 0 for short offsets (Offset16), 1 for long (Offset32” | RIGHT (verbatim) |
+| `src/Ave.Documents.Fonts/Tables/HmtxTable.cs:38` | “As an optimization, the number of records can be less than the number” | CLOSE (sentence no longer in 1.9.1); now the 1.9.1 sentence verbatim |
+| `src/Ave.Documents.Fonts/Tables/LocaTable.cs:42` | “The local offset divided by 2 is stored.” | CLOSE ("actual" belongs to the long format); now verbatim |
+| `src/Ave.Documents.Images/Png/PngPalette.cs:23` | “shall appear for colour type 3, and may appear for colour types 2 and” | RIGHT in the PNG Second Edition (§11.2.3); the class now names that edition for its section numbers |
+| `src/Ave.Documents.Layout/LayoutResult.cs:28` | “placed this fragment, continue here” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/Ave.Documents.PageModel/PageModelText.cs:7` | “page 1 size=595.276x841.89 start #1 paragraph glyphs Lato-Regular 11p” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/Ave.Documents.Pdf/PdfObject.cs:119` | “this optional entry is absent” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:81` | “Assign a line breaking class to each code point” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:109` | “Treat X (CM / ZWJ)* as if it were X.” | CLOSE (LB9 joined with a comma); now the two sentences verbatim |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:172` | “NU ( SY / IS )* ×” | CLOSE (spaces inside the parentheses); now verbatim |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:188` | “× ( BK / CR / LF / NL )” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:202` | “[^SP HY HH] × GL” | RIGHT in UAX #14 revision 57 (Unicode 18), which the class names; revision 55 reads [^SP BA HY HH] |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:211` | “(sot / BK / CR / LF / NL / OP / QU / GL / SP / ZW) [\p{Pi}&QU] SP* ×” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:214` | “× [\p{Pf}&QU] ( SP / GL / WJ / CL / QU / CP / EX / IS / SY / BK / CR /” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:222` | “(CL / CP) SP* × NS” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:229` | “× [ QU - \p{Pi} ]” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:233` | “× QU ( [^$EastAsian] / eot )” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:240` | “( sot / BK / CR / LF / NL / SP / ZW / CB / GL ) ( HY / HH ) × ( AL / H” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:244` | “HL (HY / HH) × [^HL]” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:252` | “(AL / HL) × NU” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:261` | “JL × (JL / JV / H2 / H3)” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:269` | “(AL / HL) × (AL / HL)” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:273` | “IS × (AL / HL)” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:278` | “sot (RI RI)* RI × RI” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:325` | “NU ( SY / IS )* CL × PO” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:343` | “Do not break inside the orthographic syllables of Brahmic scripts” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphPositioning.cs:129` | “If valueFormat2 is set to 0, then the second glyph of the pair is the” | CLOSE (as LookupSubtable.cs:86); now verbatim |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphPositioning.cs:168` | “the mark anchor is aligned with the base anchor for the applicable mar” | CLOSE (anchor wording); now verbatim |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphSubstitution.cs:119` | “replace a single glyph with another” | RIGHT (verbatim) |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphSubstitution.cs:123` | “A multiple substitution replaces a single glyph with more than one gly” | CLOSE ("replace" vs "replaces"); now the full sentence verbatim |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphSubstitution.cs:145` | “replace multiple glyphs with one glyph” | RIGHT (verbatim) |
+| `src/UnitTests.Ave.Documents.Fonts/FontSubsetterTests.cs:151` | “When this bit is set, the font must not be subsetted prior to embeddin” | CLOSE ("may not"); now verbatim |
+| `src/UnitTests.Ave.Documents.Fonts/TableParserTests.cs:137` | “The segments are sorted in order of increasing endCode values” | RIGHT (verbatim) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/BoundingBoxTests.cs:116` | “in its entirety on a single page” | RIGHT (verbatim) |
+| `src/UnitTests.Ave.Documents.Typesetting/GlyphGrowthTests.cs:19` | “glyph 5 → glyph 5, glyph 5” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+| `src/UnitTests.Ave.Documents.Typesetting/GreedyLineBreakerTests.cs:71` | “[^SP HY HH] × GL” | RIGHT in UAX #14 revision 57 (Unicode 18) |
+| `src/UnitTests.Ave.Documents.Typesetting/OpenTypeShapingTests.cs:32` | “The order in the Ligature offset array defines the preference for usin” | NOT-FOUND (in neither HarfBuzz nor OpenType); now the GSUB preference-order sentence verbatim |
+| `tools/reference/chromium/rectangles.py:1` | “page x0 y0 x1 y1 height” | OWN-WORDS: a term, a format sample or a rule of this engine in quotation marks; it quotes no outside text |
+
+Quotations that were not quotations, now written without quotation marks, so they left this list: the field lists
+of GDEF, GSUB, GPOS and the coverage and class tables (a table's field names in order, now code), the CLOSE lines of
+`LocaTable.cs:47` (now verbatim, in a citation block), `SlicedBox.cs:41` and `DrawItem.cs:38` (NOT-FOUND: own words,
+now prose), `WhiteSpaceCollapsing.cs:31` (NOT-FOUND in CSS Text 3; now cites §4.1.1 verbatim), and the Table 337
+quotations of `PageModelRules.cs` and `PageModelContractTests.cs` (CLOSE: "(TR)" for "(structure type TR)"; now
+verbatim).
+
+### Blocks new or changed in fix round 3
+
+Every citation or quotation block whose text differs from the reviewed head `ff49463` (236), with how it was checked.
+Rule ids were also checked mechanically: every rule id these blocks name is a rule of the pinned profiles.
+
+| Place | References | Verdict |
+| --- | --- | --- |
+| `docs/pdf-profiles-and-accessibility.md:62` | PDF/A-3, veraPDF rule 6.1.13-11 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:63` | 6.1.13-3, PDF/A-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:64` | 6.1.13-4, PDF/A-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:65` | 6.8-1, PDF/A-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:66` | 6.2.11.7.3-1, PDF/A-3a | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:67` | 6.1.13-7, PDF/A-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:68` | 6.7.4-1, 7.2-29, PDF/A-3a | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:69` | 6.2.11.7.2-2, 7.21.7-2, PDF/A-3a | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:70` | 7.1-3, PDF/A-3a | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:71` | 6.2.11.8-1, 7.21.8-1, PDF/A-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `docs/pdf-profiles-and-accessibility.md:72` | 7.2-14 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/Ave.Documents.DocumentModel/BoxStyle.cs:57` | CSS Fragmentation 3, §5.4 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.DocumentModel/BoxStyle.cs:63` | CSS Fragmentation 3, §5.4 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Fluent/InputChecks.cs:18` | CSS Paged Media 3, §3 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Fluent/InputChecks.cs:51` | CSS Fonts 4, §2.2, §2.5 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fluent/InputLimits.cs:16` | ISO 32000-1 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Fonts/EmbeddingPermissions.cs:18` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/EmbeddingPermissions.cs:22` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/FontSubsetter.cs:37` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/FontSubsetter.cs:41` | OpenType | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/ClassDefinition.cs:8` | OpenType | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/Coverage.cs:8` | OpenType | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/GlyphDefinitions.cs:7` | OpenType | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/LayoutTableParser.cs:142` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/LegacyKerning.cs:24` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/LookupFlags.cs:19` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/LookupFlags.cs:23` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/LookupSubtable.cs:53` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/LookupSubtable.cs:66` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/LookupSubtable.cs:86` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/OpenType/TableReader.cs:10` | HarfBuzz, OpenType | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/Tables/CmapFormat4.cs:82` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/Tables/CmapFormat4.cs:88` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/Tables/HmtxTable.cs:38` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Fonts/Tables/LocaTable.cs:42` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Images/Png/PngPalette.cs:9` | PNG, §11.2.3, §11.3.2.1 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Layout/Tracks/TablePage.cs:11` | CSS 2.1, CSS Fragmentation 3, Chromium, §17.2, §17.5.3, §17.6.2, §4.1, §4.5, §5.3, §5.4 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Pdf/PdfFile.cs:5` | ISO 32000-1, §14.3.3, §14.4, §7.5, §7.7.2 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Pdf/PdfNumber.cs:8` | ISO 32000-1, veraPDF rule 6.1.13-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/Ave.Documents.Pdf/PdfObject.cs:34` | ISO 32000-1, veraPDF rule 6.1.13-1, §7.3.3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/Ave.Documents.Pdf/PdfObject.cs:40` | §7.3.3 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Pdf/PdfObject.cs:72` | §7.9.2.2 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Pdf/PdfObject.cs:119` | (quotation; context §7.3.7) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Pdf/PdfSerializer.cs:34` | §7.3.3, §7.3.7 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Pdf/PdfSerializer.cs:84` | §7.3.3 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Pdf/PdfTrees.cs:16` | §7.9.6 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Pdf/PdfTrees.cs:28` | §7.9.7 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Pdf/PdfWriter.cs:64` | §7.5.5 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Pdf/PdfWriter.cs:75` | ISO 32000-1, veraPDF rule 6.1.13-3 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Pdf/PdfWriter.cs:83` | veraPDF rule 6.1.3-1, §14.4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/Ave.Documents.Pdf/Xmp/XmpPacket.cs:26` | 6.6.2.1-2, XML 1.0, XMP, veraPDF rule 6.6.2.1-5, §2.2 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Pdf/Xmp/XmpPacket.cs:107` | XML 1.0, §3 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Pdf/Xmp/XmpSchemaDescription.cs:27` | 6.6.2.3.3-1, ISO 19005-3, §6.6.2.3.3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/Ave.Documents.Render.Pdf/PageContentStream.cs:123` | ISO 32000-1, veraPDF rule 6.1.13-3, §9.4.3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/Ave.Documents.Render.Pdf/PageContentStream.cs:131` | §9.4.3, §9.4.4 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Render.Pdf/PageModelRules.cs:93` | ISO 32000-1, §14.11.2 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Render.Pdf/PageModelRules.cs:239` | 7.2-11, 7.2-12, 7.2-14, ISO 32000-1, PDF/UA-1, Table 337 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Render.Pdf/PageModelRules.cs:295` | ISO 32000-1, Table 337 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Render.Pdf/PdfRenderOptions.cs:7` | ISO 32000-1, XMP, §14.3.3, §14.4 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Render.Pdf/ProfileLimits.cs:41` | veraPDF rule 6.8-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/Ave.Documents.Render.Pdf/Tagging/TableRegularity.cs:63` | ISO 14289-1, PDF/UA-1, §7.2 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Typesetting/LineBreaking/BreakableSegments.cs:27` | CSS Text 3, §4.1.2 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:109` | (quotation; context §6) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/LineBreaking/UnicodeLineBreaking.cs:172` | (quotation; context §6) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphFilter.cs:36` | HarfBuzz, Unicode Standard, hb-ot-layout-gsubgpos.hh, hb-ot-layout.hh, §23.2 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphPositioning.cs:50` | OpenType | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphPositioning.cs:129` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphPositioning.cs:168` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphSubstitution.cs:123` | (quotation; context HarfBuzz) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphSubstitution.cs:145` | (quotation; context HarfBuzz) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/Ave.Documents.Typesetting/Shaping/ShapingBudget.cs:15` | HarfBuzz, hb-limits.hh | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/Ave.Documents.Typesetting/WhiteSpaceCollapsing.cs:31` | CSS Text 3, §4.1.1 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/UnitTests.Ave.Documents.Fluent/LengthLimitTests.cs:13` | veraPDF rule 6.1.13-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Fonts/FontSubsetterTests.cs:151` | (quotation; context OpenType) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/UnitTests.Ave.Documents.Fonts/LayoutValueRulesTests.cs:6` | OpenType | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/UnitTests.Ave.Documents.Layout/TableRowCutLineTests.cs:8` | CSS Fragmentation 3, §5.4 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/UnitTests.Ave.Documents.Pdf/ConformanceBuildingBlockTests.cs:117` | §3 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/UnitTests.Ave.Documents.Pdf/PdfObjectRulesTests.cs:67` | ISO 32000-1, veraPDF rule 6.1.13-1, §7.3.3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelContractTests.cs:107` | ISO 32000-1, Table 337, veraPDF rule 7.2-11 | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelContractTests.cs:206` | ISO 32000-1, §14.11.2 | places named, no quotation; each place already checked: ISO 32000-1 clauses as in the first check, Table 337, §7.3.3 and Annex C read by the scout in this check, §14.11.2 as veraPDF rule 6.1.13-11 names it; hb-limits.hh and Namespaces in XML §3 read by the scout in this check; CSS sections as in the first check |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelContractTests.cs:310` | veraPDF rule 6.1.13-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelValidationTests.cs:128` | veraPDF rule 6.1.13-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelValidationTests.cs:130` | 6.1.13-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelValidationTests.cs:138` | 6.1.13-11 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelValidationTests.cs:140` | 7.1-9, PDF/UA-1, §7.1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelValidationTests.cs:142` | 7.4.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelValidationTests.cs:256` | veraPDF rule 6.8-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/WrittenValueTests.cs:275` | ISO 32000-1, veraPDF rule 6.1.13-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Samples/NumberAndStringLimitTests.cs:17` | 6.1.13-1, 6.1.13-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Samples/NumberAndStringLimitTests.cs:63` | 6.1.13-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Samples/NumberAndStringLimitTests.cs:76` | 6.1.13-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `src/UnitTests.Ave.Documents.Typesetting/OpenTypeShapingTests.cs:32` | (quotation; context HarfBuzz, hb-ot-shape.cc) | quotations checked by the internet-scout (third check); verbatim after the fixes above |
+| `tools/conformance/build-matrix.py:57` | 6.1.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:58` | 6.1.2-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:62` | 6.1.4-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:63` | 6.1.6-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:64` | 6.1.6-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:65` | 6.1.7.1-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:66` | 6.1.7.1-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:67` | 6.1.7.1-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:72` | 6.1.12-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:73` | 6.1.12-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:74` | 6.1.13-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:76` | 6.1.13-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:87` | 6.2.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:88` | 6.2.3-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:89` | 6.2.3-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:95` | 6.2.4.4-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:96` | 6.2.4.4-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:97` | 6.2.5-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:98` | 6.2.5-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:99` | 6.2.5-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:100` | 6.2.5-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:101` | 6.2.5-5 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:102` | 6.2.5-6 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:109` | 6.2.8.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:110` | 6.2.8.3-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:111` | 6.2.8.3-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:112` | 6.2.8.3-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:113` | 6.2.8.3-5 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:114` | 6.2.9-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:115` | 6.2.9-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:116` | 6.2.9-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:120` | 6.2.11.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:121` | 6.2.11.2-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:122` | 6.2.11.2-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:123` | 6.2.11.2-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:124` | 6.2.11.2-5 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:125` | 6.2.11.2-6 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:126` | 6.2.11.2-7 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:129` | 6.2.11.3.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:130` | 6.2.11.3.3-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:131` | 6.2.11.3.3-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:133` | 6.2.11.4.1-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:137` | 6.2.11.6-1, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:138` | 6.2.11.6-2, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:139` | 6.2.11.6-3, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:140` | 6.2.11.6-4, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:142` | 6.2.11.7.2-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:144` | 6.2.11.8-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:146` | 6.3.1-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:147` | 6.3.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:148` | 6.3.2-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:149` | 6.3.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:150` | 6.3.3-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:151` | 6.3.3-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:152` | 6.3.3-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:153` | 6.4.1-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:154` | 6.4.1-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:155` | 6.4.1-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:158` | 6.4.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:159` | 6.4.3-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:160` | 6.4.3-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:161` | 6.5.1-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:162` | 6.5.1-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:163` | 6.5.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:164` | 6.5.2-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:171` | 6.6.2.3.1-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:172` | 6.6.2.3.1-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:174` | 6.6.2.3.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:175` | 6.6.2.3.3-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:176` | 6.6.2.3.3-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:177` | 6.6.2.3.3-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:178` | 6.6.2.3.3-5 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:179` | 6.6.2.3.3-6 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:180` | 6.6.2.3.3-7 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:181` | 6.6.2.3.3-8 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:182` | 6.6.2.3.3-9 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:183` | 6.6.2.3.3-10 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:184` | 6.6.2.3.3-11 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:185` | 6.6.2.3.3-12 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:186` | 6.6.2.3.3-13 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:187` | 6.6.2.3.3-14 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:188` | 6.6.2.3.3-15 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:189` | 6.6.2.3.3-16 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:190` | 6.6.2.3.3-17 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:191` | 6.6.2.3.3-18 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:192` | 6.6.4-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:193` | 6.6.4-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:194` | 6.6.4-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:195` | 6.6.4-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:196` | 6.6.4-5 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:197` | 6.6.4-6 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:198` | 6.6.4-7 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:202` | 6.7.3.4-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:203` | 6.7.3.4-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:204` | 6.7.3.4-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:205` | 6.7.4-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:207` | 6.8-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:212` | 6.9-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:213` | 6.9-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:214` | 6.9-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:215` | 6.9-4 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:216` | 6.10-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:217` | 6.10-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:248` | 7.2-11 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:251` | 7.2-14 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:258` | 7.2-21, 7.2-30 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:259` | 7.2-22 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:266` | 7.2-29 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:267` | 7.2-30 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:270` | 7.2-33, XMP | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:277` | 7.2-41 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:278` | 7.2-42 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:279` | 7.2-43 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:281` | 7.4.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:285` | 7.5-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:286` | 7.5-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:288` | 7.9-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:289` | 7.9-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:290` | 7.10-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:291` | 7.10-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:295` | 7.18.1-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:296` | 7.18.1-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:297` | 7.18.1-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:298` | 7.18.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:299` | 7.18.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:300` | 7.18.4-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:301` | 7.18.4-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:302` | 7.18.5-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:303` | 7.18.5-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:304` | 7.18.6.2-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:305` | 7.18.6.2-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:306` | 7.18.8-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:307` | 7.20-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:308` | 7.20-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:311` | 7.21.3.3-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:312` | 7.21.3.3-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:313` | 7.21.3.3-3 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:315` | 7.21.4.1-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:319` | 7.21.6-1, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:320` | 7.21.6-2, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:321` | 7.21.6-3, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:322` | 7.21.6-4, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:324` | 7.21.7-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+| `tools/conformance/build-matrix.py:325` | 7.21.8-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |

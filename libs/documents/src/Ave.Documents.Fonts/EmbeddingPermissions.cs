@@ -15,16 +15,16 @@ public sealed record EmbeddingPermissions(ushort FsType)
     private const ushort NoSubsetting = 0x0100;
     private const ushort BitmapOnly = 0x0200;
 
-    /// <summary>False when the "No subsetting" bit is set: "When this bit is set, the font may not be subsetted
+    /// <summary>False when the "No subsetting" bit is set: "When this bit is set, the font must not be subsetted
     /// prior to embedding." Such a font is embedded whole.</summary>
     public bool AllowsSubsetting => (FsType & NoSubsetting) == 0;
 
     /// <summary>
     /// True when the outlines may be embedded. Not allowed when only "Restricted License embedding" is set
-    /// ("must not be modified, embedded or exchanged in any manner without first obtaining permission"), or when
-    /// "Bitmap embedding only" is set, because a PDF embeds outlines. The spec says that when several of the
-    /// usage bits are set, the least restrictive one applies, so Restricted together with Preview &amp; Print or
-    /// Editable does allow embedding.
+    /// ("the font must not be modified, embedded or exchanged in any manner without first obtaining explicit permission
+    /// of the legal owner"), or when "Bitmap embedding only" is set, because a PDF embeds outlines. For OS/2 versions 0
+    /// to 2 the spec has the least restrictive of several usage bits apply; the engine reads every version that way, so
+    /// Restricted together with Preview &amp; Print or Editable does allow embedding.
     /// </summary>
     public bool AllowsOutlineEmbedding =>
         (FsType & BitmapOnly) == 0

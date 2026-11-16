@@ -14,10 +14,13 @@ namespace Ave.Documents.Typesetting.Shaping;
 internal static class GlyphSubstitution
 {
     /// <summary>How many glyphs one input glyph may become, counting every lookup: a decomposition adds a few glyphs per
-    /// character, so 64 is far beyond any real font.</summary>
+    /// character, so 64 is far beyond any real font. The number is HarfBuzz's HB_BUFFER_MAX_LEN_FACTOR from version 2.7.3
+    /// to 11.4.1; since 11.4.2 HarfBuzz allows 256, so the pinned reference (15.0.0) would shape some texts this engine
+    /// refuses.</summary>
     public const int MaxGrowthFactor = 64;
 
-    /// <summary>The fewest glyphs any text may become, so a short text is not held to 64 times its length.</summary>
+    /// <summary>The fewest glyphs any text may become, so a short text is not held to 64 times its length: HarfBuzz's
+    /// HB_BUFFER_MAX_LEN_MIN from 2.7.3 to 11.4.1 (65 536 since 11.4.2).</summary>
     public const int MinGlyphLimit = 16384;
 
     /// <summary>The most glyphs the substitutions may produce from a text of <paramref name="inputLength"/> glyphs.
@@ -117,7 +120,7 @@ internal static class GlyphSubstitution
             case SingleSubstitution single when single.Replace(item.Glyph) is { } replacement:
                 return new Substitution([item with { Glyph = replacement, Class = filter.ClassAfterSubstitution(replacement, item.Class) }], index + 1);
 
-            // Type 2: "replace a single glyph with more than one glyph". All of them show the same characters;
+            // Type 2: "A multiple substitution replaces a single glyph with more than one glyph." All of them show the same characters;
             // the text stays on the first, so copying the text gives it once.
             case MultipleSubstitution multiple when multiple.SequenceOf(item.Glyph) is { } sequence:
                 return new Substitution(

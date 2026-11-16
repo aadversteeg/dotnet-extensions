@@ -7,8 +7,8 @@ using Ave.Extensions.Functional;
 namespace Ave.Documents.Images.Png;
 
 /// <summary>
-/// The colour information outside the pixel data: the palette (PLTE, PNG §11.2.3) and simple transparency (tRNS,
-/// §11.3.2.1).
+/// The colour information outside the pixel data: the palette (PLTE, PNG Second Edition §11.2.3) and simple
+/// transparency (tRNS, §11.3.2.1).
 /// </summary>
 /// <param name="Colors">Palette entries as red, green, blue triples; empty when there is no PLTE chunk.</param>
 /// <param name="Alphas">The alpha of each palette entry (tRNS for indexed colour); entries tRNS leaves out are 255

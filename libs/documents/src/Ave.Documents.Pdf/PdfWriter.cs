@@ -73,8 +73,10 @@ public static class PdfWriter
         new Error(PdfErrorCodes.Write.InvalidObject, "A PDF file needs its objects, none of them missing, and a catalog.").With(ErrorMetadataKeys.Value, "null");
 
     /// <summary>
-    /// The longest file identifier: 32 767 bytes, the most a string may hold (ISO 32000-1 Annex C, Table C.1; veraPDF
-    /// rule 6.1.13-3 under PDF/A). Applied to every file, as <see cref="PdfSerializer.MaxReal"/> is.
+    /// The longest file identifier: 32 767 bytes, the most PDF/A allows any string (veraPDF rule 6.1.13-3: "A conforming
+    /// file shall not contain any string longer than 32767 bytes"). ISO 32000-1 Annex C sets that limit for strings in
+    /// content streams only; the writer applies it to the identifier in every file, as it applies
+    /// <see cref="PdfSerializer.MaxReal"/>: no identifier needs to be longer.
     /// </summary>
     public const int MaxFileIdentifierLength = 32_767;
 

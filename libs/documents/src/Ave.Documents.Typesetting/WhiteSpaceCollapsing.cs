@@ -28,8 +28,10 @@ public static class WhiteSpaceCollapsing
     /// <returns>The collapsed text of each run; same count and order.</returns>
     public static ImmutableArray<string> Collapse(IReadOnlyList<string> runs)
     {
-        // One pass over all characters of the paragraph; "previous character was white space" carries over
-        // from one run to the next, which is what makes collapsing work across run boundaries.
+        // One pass over all characters of the paragraph; whether the previous character was white space carries over
+        // from one run to the next, which is what makes collapsing work across run boundaries (CSS Text 3 §4.1.1: a
+        // collapsible space following another is collapsed "even one outside the boundary of the inline containing
+        // that space, provided both spaces are within the same inline formatting context").
         var result = ImmutableArray.CreateBuilder<string>(runs.Count);
         var previousWasSpace = false;
         foreach (var run in runs)

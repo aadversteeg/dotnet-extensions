@@ -25,17 +25,21 @@ internal enum ShapingLimit
 /// The glyph limit alone does not bound the work: a lookup list may hold one lookup thousands of times, and every one of
 /// them walks the whole buffer. A font that reaches a limit is malformed or hostile; the text is refused
 /// (<see cref="TypesettingErrorCodes.TooManyGlyphs"/>, <see cref="TypesettingErrorCodes.TooMuchWork"/>) instead of
-/// costing time and memory without bound. HarfBuzz likewise bounds a buffer by a length limit and an operations limit.
+/// costing time and memory without bound. HarfBuzz likewise bounds a buffer by a length limit and an operations limit
+/// (hb-limits.hh, applied in <c>hb_buffer_t::enter</c>); it counts its operations its own way, so the numbers below bound
+/// the same kind of work, not the same amount.
 /// The budget is the state of one call of <see cref="Shaper.Shape"/>; it is created for it and never shared.
 /// </summary>
 internal sealed class ShapingBudget
 {
     /// <summary>Operations a text may spend per glyph it starts with: room for each glyph to be looked at by a thousand
-    /// lookups, far more than the features the shaper applies hold in any real font.</summary>
+    /// lookups, far more than the features the shaper applies hold in any real font. HarfBuzz's HB_BUFFER_MAX_OPS_FACTOR
+    /// from version 2.7.3 to 11.4.1 (4 096 since 11.4.2).</summary>
     public const int OperationsPerGlyph = 1024;
 
     /// <summary>The fewest operations any text may spend, so that a short text is not held to 1 024 per glyph: one glyph
-    /// that real decompositions turn into a few still has room for every lookup of the font.</summary>
+    /// that real decompositions turn into a few still has room for every lookup of the font. HarfBuzz's
+    /// HB_BUFFER_MAX_OPS_MIN since version 11.4.2.</summary>
     public const int MinOperations = 65_536;
 
     private long _glyphs;

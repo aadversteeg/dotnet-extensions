@@ -129,7 +129,7 @@ internal static class GlyphPositioning
     /// <summary>
     /// Type 2, pair adjustment. The second glyph of the pair is the next glyph the lookup does not skip. The first
     /// value record adjusts the first glyph, the second the second one. "If valueFormat2 is set to 0, then the second
-    /// glyph of the pair is the 'first' glyph of the next pair"; otherwise the next pair starts after it.
+    /// glyph of the pair is the “next” glyph for which a lookup should be performed."; otherwise the next pair starts after it.
     /// </summary>
     private static int? AdjustPair(
         GlyphItem[] glyphs, int index, LookupFlags flags, GlyphFilter filter, bool secondHasValues, System.Func<GlyphItem, GlyphItem, PairValues?> find, ShapingBudget budget)
@@ -167,8 +167,8 @@ internal static class GlyphPositioning
 
     /// <summary>
     /// Type 4, mark-to-base: a covered mark is attached to the nearest glyph before it that is not a mark (its
-    /// base), when the base is covered and has an anchor for the mark's class; "the mark's anchor point is aligned
-    /// with the base's anchor point". The offset is recorded relative to the base and resolved at the end, when all
+    /// base), when the base is covered and has an anchor for the mark's class; "the mark anchor is aligned with the
+    /// base anchor for the applicable mark class". The offset is recorded relative to the base and resolved at the end, when all
     /// advances are final.
     /// </summary>
     private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, ShapingBudget budget)

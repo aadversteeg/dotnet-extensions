@@ -79,13 +79,13 @@ internal static class CmapFormat4
                 int glyph;
                 if (rangeOffset == 0)
                 {
-                    // "If the idRangeOffset value for the segment is 0, the delta value is added directly to the
-                    // character code to get the corresponding glyph index", modulo 65536.
+                    // "If the idRangeOffset is 0, the idDelta value is added directly to the character code offset
+                    // (i.e. idDelta[i] + c) to get the corresponding glyph index", modulo 65536.
                     glyph = (codePoint + delta) & 0xFFFF;
                 }
                 else
                 {
-                    // "glyphIdArray[i] = *(idRangeOffset[i]/2 + (c - startCode[i]) + &idRangeOffset[i])": the
+                    // "glyphId = *(idRangeOffset[i]/2 + (c - startCode[i]) + &idRangeOffset[i])": the
                     // offset is counted in bytes from the idRangeOffset entry itself. A glyph id of 0 found there
                     // means "missing"; any other value gets the delta added, modulo 65536.
                     var position = rangeOffsetPosition + rangeOffset + (codePoint - start) * 2;

@@ -29,7 +29,8 @@ public class OpenTypeShapingTests
     [Fact]
     public void The_longest_ligature_is_preferred()
     {
-        // "Ligatures with more components should be stored ahead of those with fewer components" (GSUB type 4).
+        // GSUB type 4: "The order in the Ligature offset array defines the preference for using the ligatures."; the
+        // first ligature that matches, in that order, is the one taken.
         var glyphs = Shape("office");
 
         glyphs.Select(glyph => glyph.Text).Should().Equal("o", "ffi", "c", "e");

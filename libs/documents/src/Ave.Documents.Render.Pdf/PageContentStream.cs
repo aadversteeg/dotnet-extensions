@@ -122,7 +122,8 @@ internal static class PageContentStream
 
     /// <summary>
     /// The most glyphs one string of a TJ array holds: 16 383, the most two-byte glyph codes that fit the 32 767 bytes
-    /// ISO 32000-1 Annex C (Table C.1) allows a string, the limit veraPDF rule 6.1.13-3 checks under PDF/A. A longer
+    /// ISO 32000-1 Annex C (Table C.1) allows a string in a content stream, the limit veraPDF rule 6.1.13-3 checks for
+    /// every string under PDF/A. A longer
     /// stretch without adjustments is shown with several strings side by side, which TJ shows as one (§9.4.3).
     /// </summary>
     internal const int MaxGlyphsPerString = 32_767 / 2;

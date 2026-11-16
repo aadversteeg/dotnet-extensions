@@ -30,8 +30,8 @@ public sealed record GlyphDefinitions(ClassDefinition? GlyphClasses, ClassDefini
     /// <summary>The table tag.</summary>
     public const string Tag = "GDEF";
 
-    /// <summary>Reads the header ("majorVersion 1, minorVersion, glyphClassDefOffset, attachListOffset,
-    /// ligCaretListOffset, markAttachClassDefOffset") and the two class definitions.</summary>
+    /// <summary>Reads the header — its fields majorVersion (1), minorVersion, glyphClassDefOffset, attachListOffset,
+    /// ligCaretListOffset and markAttachClassDefOffset, in that order — and the two class definitions.</summary>
     /// <param name="data">The table bytes.</param>
     /// <returns>The definitions, or a parse error.</returns>
     internal static Result<GlyphDefinitions, Error> Parse(ReadOnlyMemory<byte> data)

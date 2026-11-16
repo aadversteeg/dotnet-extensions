@@ -37,7 +37,7 @@ public sealed record FillRectangle(Rect Area, Color Color) : DrawItem;
 
 /// <summary>
 /// Glyphs of one font, size and colour on one baseline. Glyphs are referenced by glyph id in a font program,
-/// never as "text plus a font name": the PDF writer needs glyph ids for composite fonts, and a raster back-end
+/// never as text with a font name: the PDF writer needs glyph ids for composite fonts, and a raster back-end
 /// needs the outlines of exactly these glyphs.
 /// </summary>
 /// <param name="Font">The font the glyph ids belong to.</param>

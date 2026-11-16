@@ -84,10 +84,10 @@ public sealed record Coverage(ImmutableArray<Coverage.Range> Ranges)
 
     /// <summary>
     /// Reads a coverage table; one that several subtables point at is read once per table (see
-    /// <see cref="TableReader.Shared{T}"/>). Format 1: "glyphCount, glyphArray[glyphCount]" — "in numerical order";
+    /// <see cref="TableReader.Shared{T}"/>). Format 1: <c>glyphCount, glyphArray[glyphCount]</c> — "in numerical order";
     /// the index is the position in the array. A glyph listed twice keeps its first index, and an array out of order
-    /// is sorted, so a lookup always finds the index the array gives. Format 2: "rangeCount,
-    /// rangeRecords[rangeCount]" of (startGlyphID, endGlyphID, startCoverageIndex), "in startGlyphID order" and not
+    /// is sorted, so a lookup always finds the index the array gives. Format 2: <c>rangeCount,
+    /// rangeRecords[rangeCount]</c> of (startGlyphID, endGlyphID, startCoverageIndex), "in startGlyphID order" and not
     /// overlapping, which is checked. Another format is invalid.
     /// </summary>
     internal static Coverage Read(TableReader reader, int offset) => reader.Shared(offset, () => ReadAt(reader, offset));

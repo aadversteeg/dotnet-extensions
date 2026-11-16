@@ -148,7 +148,7 @@ public class FontSubsetterTests
     [Fact]
     public void A_font_whose_licence_forbids_subsetting_is_embedded_whole_without_a_subset_tag()
     {
-        // OS/2 fsType bit 8, 0x0100 "No subsetting": "When this bit is set, the font may not be subsetted prior to
+        // OS/2 fsType bit 8, 0x0100 "No subsetting": "When this bit is set, the font must not be subsetted prior to
         // embedding."
         var font = WithFsType(0x0100);
 

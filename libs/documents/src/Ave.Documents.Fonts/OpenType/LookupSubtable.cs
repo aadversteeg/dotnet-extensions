@@ -52,8 +52,8 @@ public sealed record MultipleSubstitution(Coverage Glyphs, ValueList<ValueList<G
 
 /// <summary>GSUB lookup type 4, ligature substitution: replaces a sequence of glyphs with one ligature glyph.</summary>
 /// <param name="FirstGlyphs">The covered first glyphs.</param>
-/// <param name="Sets">For each coverage index, the candidate ligatures in preference order ("Ligatures with more
-/// components should be stored ahead of those with fewer components", and the first that matches is used).</param>
+/// <param name="Sets">For each coverage index, the candidate ligatures in preference order ("The order in the Ligature
+/// offset array defines the preference for using the ligatures."), and the first that matches is used.</param>
 public sealed record LigatureSubstitution(Coverage FirstGlyphs, ValueList<ValueList<Ligature>> Sets) : LookupSubtable
 {
     /// <summary>The ligatures that start with <paramref name="glyph"/>; empty when the subtable does not cover it.</summary>
@@ -65,8 +65,8 @@ public sealed record LigatureSubstitution(Coverage FirstGlyphs, ValueList<ValueL
 
 /// <summary>One ligature of a <see cref="LigatureSubstitution"/>.</summary>
 /// <param name="Glyph">The ligature glyph.</param>
-/// <param name="Components">The component glyphs AFTER the first one, in order ("componentGlyphIDs … beginning
-/// with the second component").</param>
+/// <param name="Components">The component glyphs AFTER the first one, in order (componentGlyphIDs: "start with the
+/// second component, ordered in writing direction").</param>
 public sealed record Ligature(GlyphId Glyph, ValueList<GlyphId> Components);
 
 /// <summary>GPOS lookup type 2, pair adjustment, format 1: adjustments for individual pairs of glyphs. The pairs
@@ -84,8 +84,8 @@ public sealed record PairAdjustmentByGlyph : LookupSubtable
     public Coverage FirstGlyphs { get; }
 
     /// <summary>True when valueFormat2 is not zero: then the second glyph is consumed by the pair; otherwise it can
-    /// start the next pair ("If valueFormat2 is set to 0, then the second glyph of the pair is the 'first' glyph of
-    /// the next pair").</summary>
+    /// start the next pair ("If valueFormat2 is set to 0, then the second glyph of the pair is the “next” glyph for
+    /// which a lookup should be performed.").</summary>
     public bool SecondHasValues { get; }
 
     /// <summary>For each coverage index, the second glyphs of its pairs with their two value records.</summary>

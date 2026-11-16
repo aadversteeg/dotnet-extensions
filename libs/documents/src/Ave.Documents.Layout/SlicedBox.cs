@@ -38,7 +38,7 @@ internal static class SlicedBox
         ValueList<PlacedFragment> children, double height, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect) =>
         Result<Maybe<Content>, Error>.Success(Maybe.From(new Content(children, height, continuation, appeal)));
 
-    /// <summary>The result "not even the first piece of content fits".</summary>
+    /// <summary>The result for a box of which not even the first piece of content fits.</summary>
     public static Result<Maybe<Content>, Error> NothingFits => Result<Maybe<Content>, Error>.Success(Maybe<Content>.None);
 
     /// <summary>The horizontal space border and padding take: left plus right.</summary>

@@ -107,8 +107,8 @@ public static class UnicodeLineBreaking
     }
 
     /// <summary>
-    /// LB9 and LB10. LB9: "Treat X (CM | ZWJ)* as if it were X, where X is any line break class except BK, CR,
-    /// LF, NL, SP, or ZW" — a mark joins the unit of the character before it. LB10: "Treat any remaining CM or
+    /// LB9 and LB10. LB9: "Treat X (CM | ZWJ)* as if it were X." "where X is any line break class except BK, CR,
+    /// LF, NL, SP, or ZW." — a mark joins the unit of the character before it. LB10: "Treat any remaining CM or
     /// ZWJ as if it had the properties of U+0041 A", that is class AL and none of the traits.
     /// </summary>
     /// <returns>The units; for every code point the index of its unit; and whether it was absorbed into the unit
@@ -169,7 +169,7 @@ public static class UnicodeLineBreaking
             return index >= 0 ? Units[index] : null;
         }
 
-        /// <summary>For "NU (SY | IS)* ×": true when the unit at <paramref name="index"/>, after skipping SY and IS
+        /// <summary>For "NU ( SY | IS )* ×": true when the unit at <paramref name="index"/>, after skipping SY and IS
         /// units backwards, is NU.</summary>
         public bool NumberEndsAt(int index)
         {

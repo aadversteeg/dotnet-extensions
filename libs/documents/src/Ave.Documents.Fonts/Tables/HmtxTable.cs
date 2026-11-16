@@ -35,8 +35,8 @@ internal sealed record HmtxTable(ImmutableArray<int> AdvanceWidths)
             return FontParseErrors.Truncated<HmtxTable>(Tag, needed, table.Length);
         }
 
-        // "If the font is monospaced, only one entry need be in the array, but that entry is required. The last
-        // entry applies to all subsequent glyphs."
+        // "As an optimization, the number of records can be less than the number of glyphs, in which case the advance
+        // width value of the last record applies to all remaining glyph IDs." (numberOfHMetrics is at least 1 here.)
         var lastAdvance = BigEndian.UInt16(table, (numberOfHMetrics - 1) * LongMetricLength);
         var widths = ImmutableArray.CreateBuilder<int>(glyphCount);
         for (var glyph = 0; glyph < glyphCount; glyph++)
