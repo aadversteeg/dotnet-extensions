@@ -92,6 +92,57 @@ public class PageModelContractTests
         PdfRenderer.Render(document, With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
     }
 
+    /// <summary>A table whose kids are the given row groups and rows, each holding one row of one cell.</summary>
+    private static PageDocument TableOf(params SemanticRole[] kids)
+    {
+        IEnumerable<DrawItem> Kid(SemanticRole role, int node) => role == SemanticRole.TableRow
+            ? [Start(node, role), Start(node + 1, SemanticRole.TableCell), Run("x"), End(node + 1), End(node)]
+            : [Start(node, role), Start(node + 1, SemanticRole.TableRow), Start(node + 2, SemanticRole.TableCell), Run("x"), End(node + 2), End(node + 1), End(node)];
+        return Tagged([Start(1, SemanticRole.Table), .. kids.SelectMany((role, index) => Kid(role, 10 * (index + 1))), End(1)]);
+    }
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_table_with_two_heads_is_refused(string profile) =>
+        // ISO 32000-1 Table 337 gives a table "an optional table head (THead)"; veraPDF rule 7.2-11 allows zero or one.
+        Refused(TableOf(SemanticRole.TableHead, SemanticRole.TableHead, SemanticRole.TableBody), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_table_head_after_a_body_is_refused(string profile) =>
+        Refused(TableOf(SemanticRole.TableBody, SemanticRole.TableHead), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_table_of_rows_and_row_groups_together_is_refused(string profile) =>
+        Refused(TableOf(SemanticRole.TableRow, SemanticRole.TableBody), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Fact]
+    public void A_head_bodies_and_a_table_of_rows_are_accepted()
+    {
+        PdfRenderer.Render(TableOf(SemanticRole.TableHead, SemanticRole.TableBody, SemanticRole.TableBody), With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
+        PdfRenderer.Render(TableOf(SemanticRole.TableRow, SemanticRole.TableRow), With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_table_head_continued_on_the_next_page_is_one_head()
+    {
+        // A node split over pages is one structure element, so the head that opens again on page 2 is still one THead.
+        IEnumerable<DrawItem> Part(string body) =>
+        [
+            Start(0, SemanticRole.Document), Start(1, SemanticRole.Table),
+            Start(2, SemanticRole.TableHead), Start(3, SemanticRole.TableRow), Start(4, SemanticRole.TableHeaderCell), Run("h"), End(4), End(3), End(2),
+            Start(5, SemanticRole.TableBody), Start(6, SemanticRole.TableRow), Start(7, SemanticRole.TableCell), Run(body), End(7), End(6), End(5),
+            End(1), End(0),
+        ];
+        var document = new PageDocument(Accessible, [new Page(new Size(200, 100), [.. Part("a")]), new Page(new Size(200, 100), [.. Part("b")])]);
+
+        PdfRenderer.Render(document, With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
+    }
+
     [Theory]
     [MemberData(nameof(Profiles))]
     public void One_node_with_two_roles_is_refused(string profile)

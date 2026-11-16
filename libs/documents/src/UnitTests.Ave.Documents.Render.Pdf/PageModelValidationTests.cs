@@ -196,6 +196,29 @@ public class PageModelValidationTests
         ProfileLimits.ObjectCount(ProfileLimits.MaxIndirectObjects + 1, PdfProfile.PdfUa1).Should().BeEmpty("the limit is PDF/A's");
     }
 
+    [Theory]
+    [InlineData("application/xml\n")]
+    [InlineData("application/xml\r\n")]
+    [InlineData("applïcation/xml")]
+    [InlineData("application/x ml")]
+    public void A_media_type_outside_the_PDF_A_pattern_is_refused_in_a_hand_made_page_model(string mediaType)
+    {
+        // veraPDF rule 6.8-1 tests /^[-\w+\.]+\/[-\w+\.]+$/ in JavaScript, where $ is the end of the text and \w is ASCII.
+        var attachment = new Attachment("data.xml", [.. "<a/>"u8], mediaType, Here) { Relationship = AttachmentRelationship.Data };
+        var document = Tagged(Accessible with { Attachments = [attachment] }, Start(1, SemanticRole.Paragraph), Run("x"), End(1));
+
+        Refused(document, PdfProfile.PdfA3b).Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfA3.MediaType);
+        PdfRenderer.Render(document, With(PdfProfile.Plain)).IsSuccess.Should().BeTrue("the pattern is PDF/A's");
+    }
+
+    [Fact]
+    public void A_media_type_of_the_PDF_A_pattern_is_written() =>
+        PdfRenderer.Render(
+                Tagged(Accessible with { Attachments = [new Attachment("data.xml", [.. "<a/>"u8], "application/vnd.a-b_c+xml", Here) { Relationship = AttachmentRelationship.Data }] },
+                    Start(1, SemanticRole.Paragraph), Run("x"), End(1)),
+                With(PdfProfile.PdfA3b))
+            .IsSuccess.Should().BeTrue();
+
     [Fact]
     public void A_valid_hand_made_page_model_is_written() =>
         PdfRenderer.Render(Tagged(Accessible, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();

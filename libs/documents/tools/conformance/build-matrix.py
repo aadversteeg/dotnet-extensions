@@ -122,7 +122,7 @@ CLASSIFICATION = {
     "6.7.3.4-*": (BY, "Only standard structure types are written; there is no role map."),
     "6.7.4-1": (CHECKED, "The front-end refuses a language that is not a language tag (`Input.Invalid.Language`); the back-end refuses one in a page model (`Pdf.Conformance.Tagged.InvalidLanguage`, Render.Pdf PageModelValidationTests). One pattern: Core LanguageTags."),
     # embedded files (6.8)
-    "6.8-1": (CHECKED, "A media type outside the rule's pattern: `Pdf.Conformance.PdfA3.MediaType` (" + LIMITS + "); a missing one is `Pdf.Write.InvalidPageModel`."),
+    "6.8-1": (CHECKED, "A media type outside the rule's pattern, matched against the whole text (a final line feed too): `Pdf.Conformance.PdfA3.MediaType` (" + LIMITS + "); a missing one is `Pdf.Write.InvalidPageModel`."),
     "6.8-2": (BY, "Every file specification has /F and /UF."),
     "6.8-3": (CHECKED, "An attachment without a relationship: `Pdf.Conformance.PdfA3.AttachmentWithoutRelationship` (Fluent ConformanceRefusalTests)."),
     "6.8-4": (BY, "Every attachment is in the catalog's /AF."),
@@ -155,7 +155,7 @@ CLASSIFICATION = {
     "7.2-8": (CHECKED, "A TH outside a row: `Pdf.Write.InvalidPageModel` (" + CONTRACT + ")."),
     "7.2-9": (CHECKED, "A TD outside a row: `Pdf.Write.InvalidPageModel` (" + CONTRACT + ")."),
     "7.2-10": (CHECKED, "Row kids other than cells: `Pdf.Write.InvalidPageModel` (" + CONTRACT + ")."),
-    "7.2-11": (BY, "The front-end makes at most one header group per table (TableTranslator)."),
+    "7.2-11": (CHECKED, "A table with more than one THead, or a THead after another row group: `Pdf.Write.InvalidPageModel` (" + CONTRACT + "). The front-end makes at most one header group per table."),
     "7.2-12": (NEVER, "No TFoot role."),
     "7.2-13": (NEVER, "No TFoot role."),
     "7.2-14": (CHECKED, "Header rows are a THead only when the table has body rows (Samples TaggedPdfTests); a hand-made THead without TBody is `Pdf.Conformance.PdfUa1.TableHeadWithoutBody` (" + CONTRACT + "). Found by GeneratedDocumentTests."),

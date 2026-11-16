@@ -38,9 +38,11 @@ internal static class ProfileLimits
     /// </summary>
     private const int SubsetTagBytes = 7;
 
-    /// <summary>veraPDF rule 6.8-1's pattern for an embedded file's media type. <c>\w</c> in that rule's JavaScript
-    /// means ASCII letters, digits and the underscore, which is what <see cref="RegexOptions.ECMAScript"/> gives.</summary>
-    private static readonly Regex PdfA3MediaType = new(@"^[-\w+\.]+\/[-\w+\.]+$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
+    /// <summary>veraPDF rule 6.8-1's pattern for an embedded file's media type, <c>/^[-\w+\.]+\/[-\w+\.]+$/</c> in
+    /// JavaScript, written out for .NET: <c>\w</c> there means the ASCII letters, digits and the underscore, so the classes
+    /// name them; and <c>$</c> there is the end of the text, which is <c>\z</c> in .NET, whose <c>$</c> also matches
+    /// before a final line feed.</summary>
+    private static readonly Regex PdfA3MediaType = new(@"^[-A-Za-z0-9_+.]+/[-A-Za-z0-9_+.]+\z", RegexOptions.CultureInvariant);
 
     /// <summary>The PDF/A-3 limits: page size, string and name lengths, the media type form and, at level A, text in
     /// the Private Use Area.</summary>

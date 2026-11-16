@@ -72,6 +72,11 @@ internal static class PageModelRules
             }
         }
 
+        foreach (var problem in StructureNesting.TableParts(document.Pages))
+        {
+            yield return problem;
+        }
+
         foreach (var problem in AttachmentProblems(document.Metadata?.Attachments ?? []))
         {
             yield return problem;
@@ -213,6 +218,63 @@ internal static class StructureNesting
                 open.Pop();
             }
         }
+    }
+
+    /// <summary>
+    /// The kids of every table, counted over all pages, where a node split over pages is one element. ISO 32000-1
+    /// Table 337 says a table "contains either one or more table rows (TR) as children; or an optional table head
+    /// (THead) followed by one or more table body elements (TBody) and an optional table footer (TFoot)". So a table
+    /// holds rows or row groups, not both; at most one THead, which comes first; at most one TFoot, which comes last.
+    /// veraPDF checks the counts for PDF/UA-1 (rules 7.2-11 and 7.2-12). Whether a head needs a body is a profile's rule
+    /// (PDF/UA-1, rule 7.2-14). Linear in the number of structure markers, whatever their shape.
+    /// </summary>
+    /// <param name="pages">The pages; missing pages are reported elsewhere and skipped here.</param>
+    /// <returns>One breach per table that has one.</returns>
+    public static IEnumerable<Error> TableParts(IEnumerable<Page?> pages)
+    {
+        var kids = new Dictionary<NodeId, List<(string Type, SourceLocation Source)>>();
+        var seen = new HashSet<(NodeId Table, NodeId Kid)>();
+        foreach (var page in pages.OfType<Page>())
+        {
+            var open = new Stack<(NodeId Node, string? Type)>();
+            foreach (var item in page.Items)
+            {
+                if (item is StructureStart start)
+                {
+                    var type = start.Role?.StandardStructureType;
+                    if (type is "TR" or "THead" or "TBody" or "TFoot"
+                        && open.FirstOrDefault(entry => entry.Type is not null) is { Type: "Table" } table
+                        && seen.Add((table.Node, start.Node)))
+                    {
+                        (kids.TryGetValue(table.Node, out var list) ? list : kids[table.Node] = []).Add((type, start.Source));
+                    }
+
+                    open.Push((start.Node, type));
+                }
+                else if (item is StructureEnd && open.Count > 0)
+                {
+                    open.Pop();
+                }
+            }
+        }
+
+        return kids.Select(table => PartsBreach(table.Key, table.Value)).OfType<Error>();
+    }
+
+    /// <summary>The first way a table's kids, in order, break the rule of <see cref="TableParts"/>, or null.</summary>
+    private static Error? PartsBreach(NodeId table, List<(string Type, SourceLocation Source)> kids)
+    {
+        var types = kids.Select(kid => kid.Type).ToList();
+        var reason =
+            types.Contains("TR") && types.Exists(type => type != "TR") ? "holds rows beside row groups; it holds one or the other"
+            : types.Count(type => type == "THead") > 1 ? "has more than one THead; it has at most one"
+            : types.Count(type => type == "TFoot") > 1 ? "has more than one TFoot; it has at most one"
+            : types.IndexOf("THead") > 0 ? "has its THead after another row group; the head comes first"
+            : types.Contains("TFoot") && types[^1] != "TFoot" ? "has a row group after its TFoot; the footer comes last"
+            : null;
+        return reason is null
+            ? null
+            : PageModelRules.Invalid($"Table node {table} {reason} (ISO 32000-1 Table 337).", string.Join(",", types)).WithSource(kids[0].Source);
     }
 
     private static string? Breach(string type, string? parent) =>

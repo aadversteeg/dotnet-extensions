@@ -13,7 +13,7 @@ A rule that PDF/A-3a adds to PDF/A-3b lists only PDF/A-3a. The generated-documen
 (`UnitTests.Ave.Documents.Samples/GeneratedDocumentTests.cs`) checks the whole matrix at once: documents drawn from a
 fixed seed are refused or pass veraPDF.
 
-110 rules by construction, 42 checked, 109 cannot occur (261 rules).
+109 rules by construction, 43 checked, 109 cannot occur (261 rules).
 
 | Rule | Profiles | veraPDF rule text | Class | How |
 | --- | --- | --- | --- | --- |
@@ -168,7 +168,7 @@ fixed seed are refused or pass veraPDF.
 | 6.7.3.4-2 | PDF/A-3a | A circular mapping shall not exist | by construction | Only standard structure types are written; there is no role map. |
 | 6.7.3.4-3 | PDF/A-3a | Standard tags shall not be remapped to a non-standard type | by construction | Only standard structure types are written; there is no role map. |
 | 6.7.4-1 | PDF/A-3a | If the Lang entry is present in the document's Catalog dictionary or in a structure element dictionary or property list, its value shall … | checked | The front-end refuses a language that is not a language tag (`Input.Invalid.Language`); the back-end refuses one in a page model (`Pdf.Conformance.Tagged.InvalidLanguage`, Render.Pdf PageModelValidationTests). One pattern: Core LanguageTags. |
-| 6.8-1 | PDF/A-3b, PDF/A-3a | The MIME type of an embedded file, or a subset of a file, shall be specified using the Subtype key of the file specification dictionary. … | checked | A media type outside the rule's pattern: `Pdf.Conformance.PdfA3.MediaType` (Fluent ProfileLimitTests; Render.Pdf PageModelValidationTests); a missing one is `Pdf.Write.InvalidPageModel`. |
+| 6.8-1 | PDF/A-3b, PDF/A-3a | The MIME type of an embedded file, or a subset of a file, shall be specified using the Subtype key of the file specification dictionary. … | checked | A media type outside the rule's pattern, matched against the whole text (a final line feed too): `Pdf.Conformance.PdfA3.MediaType` (Fluent ProfileLimitTests; Render.Pdf PageModelValidationTests); a missing one is `Pdf.Write.InvalidPageModel`. |
 | 6.8-2 | PDF/A-3b, PDF/A-3a | The file specification dictionary for an embedded file shall contain the F and UF keys | by construction | Every file specification has /F and /UF. |
 | 6.8-3 | PDF/A-3b, PDF/A-3a | The file specification dictionary shall contain key AFRelationship of type Name identifying the relationship between the embedded file … | checked | An attachment without a relationship: `Pdf.Conformance.PdfA3.AttachmentWithoutRelationship` (Fluent ConformanceRefusalTests). |
 | 6.8-4 | PDF/A-3b, PDF/A-3a | The additional information provided for associated files as well as the usage requirements for associated files indicate the … | by construction | Every attachment is in the catalog's /AF. |
@@ -200,7 +200,7 @@ fixed seed are refused or pass veraPDF.
 | 7.2-8 | PDF/UA-1 | TH element should be contained in TR element | checked | A TH outside a row: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-9 | PDF/UA-1 | TD element should be contained in TR element | checked | A TD outside a row: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-10 | PDF/UA-1 | TR element may contain only TH and TD elements | checked | Row kids other than cells: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
-| 7.2-11 | PDF/UA-1 | Table element should contain zero or one THead kid | by construction | The front-end makes at most one header group per table (TableTranslator). |
+| 7.2-11 | PDF/UA-1 | Table element should contain zero or one THead kid | checked | A table with more than one THead, or a THead after another row group: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). The front-end makes at most one header group per table. |
 | 7.2-12 | PDF/UA-1 | Table element should contain zero or one TFoot kid | cannot occur | No TFoot role. |
 | 7.2-13 | PDF/UA-1 | If Table element contains TFoot kid, Table element should contain one or more TBody kids | cannot occur | No TFoot role. |
 | 7.2-14 | PDF/UA-1 | If Table element contains THead kid, Table element should contain one or more TBody kids | checked | Header rows are a THead only when the table has body rows (Samples TaggedPdfTests); a hand-made THead without TBody is `Pdf.Conformance.PdfUa1.TableHeadWithoutBody` (Render.Pdf PageModelContractTests). Found by GeneratedDocumentTests. |
