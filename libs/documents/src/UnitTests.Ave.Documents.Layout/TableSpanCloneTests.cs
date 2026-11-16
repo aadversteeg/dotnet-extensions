@@ -23,7 +23,7 @@ public class TableSpanCloneTests
     /// side), beside a one-line cell in each row (2 pt borders); optionally a header row repeated on every page; after an
     /// empty block that moves the table <paramref name="offset"/> down.
     /// </summary>
-    private static StyledDocument Document(double offset, double pageHeight, bool header, double spanLine, double? spanTop = null, double? spanBottom = null, bool shortSpan = false, int units = 12)
+    private static StyledDocument Document(double offset, double pageHeight, bool header, double spanLine, double? spanTop = null, double? spanBottom = null, bool shortSpan = false, int units = 12, double rowPadding = 0)
     {
         var t = new TableModels();
         var thin = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(2.Pt(), Color.Black)) };
@@ -41,7 +41,8 @@ public class TableSpanCloneTests
         {
             shortSpan
                 ? t.Row(Cell(thick, $"s{unit:00}x"), Cell(thin, $"a{unit:00}w", $"a{unit:00}x", $"a{unit:00}y", $"a{unit:00}z"))
-                : t.Row(Cell(thick, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(thin, $"a{unit:00}")),
+                : t.Row(Cell(thick, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"),
+                    Cell(thin with { Padding = thin.Padding with { Bottom = (thin.Padding.Bottom.Points + rowPadding).Pt() } }, $"a{unit:00}")),
             t.Row(Cell(thin, $"b{unit:00}")),
         }).ToArray();
         var columns = (ValueList<TrackSize>)[new TrackSize.Fixed(80.Pt()), new TrackSize.Fill(1)];
@@ -152,16 +153,19 @@ public class TableSpanCloneTests
     /// before it exists, and every page end steps through the lines of the unit, among them the narrow window in which
     /// the second row cannot be cut and the page breaks between the rows across the spanning cell with text left. Every
     /// page is closed across its full width at both ends, no text lies under a line, or the table does not fit at all.
+    /// Extra bottom padding in the first row's other cell moves the line between the rows against the spanning cell's
+    /// text lines, so that at some break between the rows a line of the spanning cell ends just above the line there,
+    /// and has to keep clear of the half of it that ends the page.
     /// </summary>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void With_clone_a_unit_broken_anywhere_on_small_pages_is_closed_and_keeps_its_text_clear(bool header)
     {
-        for (var pageHeight = 10.0; pageHeight < 80; pageHeight += 0.25)
+        foreach (var (rowPadding, pageHeight) in Enumerable.Range(0, 25).SelectMany(padding => Enumerable.Range(0, 280).Select(height => (padding * 0.5, 10 + height * 0.25))))
         {
-            var because = $"header {header}, page area {pageHeight}";
-            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(0, pageHeight, header, 4, units: 1));
+            var because = $"header {header}, extra row padding {rowPadding}, page area {pageHeight}";
+            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(0, pageHeight, header, 4, units: 1, rowPadding: rowPadding));
             if (result.IsFailure)
             {
                 result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit, because);
