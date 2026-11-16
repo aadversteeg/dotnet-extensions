@@ -17,9 +17,11 @@ internal static class TableRegularity
 {
     /// <summary>
     /// The most slots the check fills for one table: 4 194 304 (2^22), a thousand columns of four thousand rows, far
-    /// beyond a table a reader can take in. Each slot is one number, so the check of a table takes at most 16 MiB
-    /// whatever its spans; a larger table is refused (<c>Documents.Pdf.Conformance.PdfUa1.TableTooLarge</c>) rather than
-    /// checked with memory that the page model's spans, not its size, decide.
+    /// beyond a table a reader can take in. Each slot is one number (16 MiB at the cap); with the slot lists that grow
+    /// as cells are placed and the grid copied from them, filling a grid at the cap allocates about 51 MiB, whatever its
+    /// spans (measured, and pinned below 64 MiB by a Core TableSlotsTests test). A larger table is refused
+    /// (<c>Documents.Pdf.Conformance.PdfUa1.TableTooLarge</c>) rather than checked with memory that the page model's
+    /// spans, not its size, decide.
     /// </summary>
     public const int MaxGridSlots = 1 << 22;
 

@@ -125,4 +125,20 @@ public class TableSlotsTests
 
         grid.Problems.Should().ContainSingle().Which.Kind.Should().Be(TableSlots.ProblemKind.SpanBelowOne);
     }
+
+    [Fact]
+    public void A_grid_at_the_PDF_UA_check_s_cap_fills_with_the_memory_its_comment_states()
+    {
+        // The PDF/UA-1 check fills at most 4 194 304 slots (TableRegularity.MaxGridSlots): here 1 000 columns of 4 194
+        // rows, each row one cell spanning them all. Its comment states about 51 MiB (16 MiB of slots, plus the slot
+        // lists growing as cells are placed and the grid copied from them): pinned below 64 MiB. Measured, not timed.
+        IReadOnlyList<IReadOnlyList<IReadOnlyList<CellSpan>>> groups = [[.. Enumerable.Range(0, 4_194).Select(_ => (IReadOnlyList<CellSpan>)[new CellSpan(1_000, 1)])]];
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var grid = TableSlots.Fill(groups, 1_000);
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        grid.Slots.Length.Should().Be(4_194);
+        allocated.Should().BeLessThan(64L * 1024 * 1024, $"{allocated / (1024.0 * 1024):0.0} MiB allocated");
+    }
 }
