@@ -61,7 +61,7 @@ public static class PdfSerializer
         PdfNull => "null",
         PdfBoolean boolean => boolean.Value ? "true" : "false",
         PdfInteger integer => integer.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
-        PdfReal real => InvariantNumber.Format(real.Value, RealDecimals),
+        PdfReal real => WriteReal(real.Value),
         PdfName name => WriteName(name.Value),
         PdfString { Form: PdfStringForm.Hex } hex => WriteHexString(hex.Bytes),
         PdfString literal => WriteLiteralString(literal.Bytes),
@@ -70,6 +70,18 @@ public static class PdfSerializer
         PdfReference reference => $"{reference.ObjectNumber} 0 R",
         _ => throw new InvalidOperationException($"Unknown PDF object type {value.GetType().Name}."),
     };
+
+    /// <summary>
+    /// §7.3.3: "A real value shall be written as one or more decimal digits with an optional sign and a leading,
+    /// trailing, or embedded PERIOD (2Eh) (decimal point)." A real whose digits are whole at four decimals (5, 1e20) gets
+    /// ".0", so that it stays a real for every reader: a reader that took 3000000000 for an integer would find it
+    /// outside the integer range of Annex C.
+    /// </summary>
+    private static string WriteReal(double value)
+    {
+        var digits = InvariantNumber.Format(value, RealDecimals);
+        return digits.Contains('.') ? digits : digits + ".0";
+    }
 
     private static string WriteDictionary(PdfDictionary dictionary) =>
         "<<" + string.Concat(dictionary.Entries.Select(entry => $" {WriteName(entry.Key.Value)} {Write(entry.Value)}")) + " >>";

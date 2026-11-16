@@ -15,13 +15,14 @@ internal static class InputChecks
 {
     private static readonly string[] Sides = ["top", "right", "bottom", "left"];
 
-    /// <summary>Page size: positive finite width and height; margins finite and not negative; and the margins
-    /// must leave a page area (CSS Paged Media 3 §3) to lay content out in.</summary>
+    /// <summary>Page size: a positive width and height of at most <see cref="InputLimits.MaxLength"/>; margins finite,
+    /// not negative and at most that long; and the margins must leave a page area (CSS Paged Media 3 §3) to lay
+    /// content out in.</summary>
     public static IEnumerable<Error> Page(PageSetup page, SourceLocation source)
     {
-        if (!(page.Width.IsFinite && page.Height.IsFinite && page.Width.Points > 0 && page.Height.Points > 0))
+        if (!(IsPositiveAndBounded(page.Width) && IsPositiveAndBounded(page.Height)))
         {
-            yield return Problem(DocumentErrorCodes.Input.Invalid.PageSize, "The page width and height must be positive.", $"{page.Width}x{page.Height}", "size", source);
+            yield return Problem(DocumentErrorCodes.Input.Invalid.PageSize, $"The page width and height must be positive and at most {InputLimits.MaxLength}.", $"{page.Width}x{page.Height}", "size", source);
             yield break;
         }
 
@@ -48,8 +49,9 @@ internal static class InputChecks
             .Concat(Lengths(box.Padding, "padding", source, DocumentErrorCodes.Input.Invalid.Length));
 
     /// <summary>
-    /// Text formatting: a family name that is not empty, a positive finite size (CSS Fonts 4 §2.5: "Negative
-    /// lengths are invalid."; zero would make every glyph invisible), and a weight in 1–1000 (§2.2).
+    /// Text formatting: a family name that is not empty, a positive finite size of at most
+    /// <see cref="InputLimits.MaxLength"/> (CSS Fonts 4 §2.5: "Negative lengths are invalid."; zero would make every
+    /// glyph invisible), and a weight in 1–1000 (§2.2).
     /// </summary>
     public static IEnumerable<Error> Text(TextFormat format, SourceLocation source)
     {
@@ -58,9 +60,9 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.FontFamily, "The font family is empty.", family, "font-family", source);
         }
 
-        if (format.FontSize is { } size && !(size.IsFinite && size.Points > 0))
+        if (format.FontSize is { } size && !IsPositiveAndBounded(size))
         {
-            yield return Problem(DocumentErrorCodes.Input.Invalid.FontSize, "The font size must be a positive number.", size.ToString(), "font-size", source);
+            yield return Problem(DocumentErrorCodes.Input.Invalid.FontSize, $"The font size must be a positive number of at most {InputLimits.MaxLength}.", size.ToString(), "font-size", source);
         }
 
         if (format.FontWeight is { } weight && !weight.IsValid)
@@ -127,14 +129,31 @@ internal static class InputChecks
     public static Error TrailingPageBreak(SourceLocation source) =>
         Problem(DocumentErrorCodes.Input.Invalid.PageBreak, "A page break must be followed by an element in the same list.", "PageBreak", "break-before", source);
 
-    /// <summary>Checks four sides: finite (else Input.Invalid.Length) and not negative (else <paramref name="negativeCode"/>).</summary>
+    /// <summary>Checks four sides: finite and at most <see cref="InputLimits.MaxLength"/> (else Input.Invalid.Length),
+    /// and not negative (else <paramref name="negativeCode"/>).</summary>
     private static IEnumerable<Error> Lengths(Edges edges, string property, SourceLocation source, ErrorCode negativeCode) =>
         edges.Sides().Zip(Sides).SelectMany(side => side.First switch
         {
             { IsFinite: false } => [Problem(DocumentErrorCodes.Input.Invalid.Length, $"{property}-{side.Second} must be a number.", side.First.ToString(), $"{property}-{side.Second}", source)],
             { Points: < 0 } => [Problem(negativeCode, $"{property}-{side.Second} may not be negative.", side.First.ToString(), $"{property}-{side.Second}", source)],
+            var length when !IsBounded(length) => [Problem(DocumentErrorCodes.Input.Invalid.Length, $"{property}-{side.Second} may be at most {InputLimits.MaxLength}.", length.ToString(), $"{property}-{side.Second}", source)],
             _ => System.Array.Empty<Error>(),
         });
+
+    /// <summary>A length the front-end accepts at all: finite, and no longer than <see cref="InputLimits.MaxLength"/>
+    /// either way.</summary>
+    private static bool IsBounded(Length length) =>
+        length.IsFinite && System.Math.Abs(length.Points) <= InputLimits.MaxLength.Points;
+
+    /// <summary>A size: bounded (<see cref="IsBounded"/>) and above zero.</summary>
+    private static bool IsPositiveAndBounded(Length length) => IsBounded(length) && length.Points > 0;
+
+    /// <summary>A header or footer height, when one is given, is a positive length of at most
+    /// <see cref="InputLimits.MaxLength"/>.</summary>
+    public static IEnumerable<Error> AreaHeight(Length? height, SourceLocation source) =>
+        height is { } given && !IsPositiveAndBounded(given)
+            ? [Problem(DocumentErrorCodes.Input.Invalid.Length, $"A header or footer height must be a positive length of at most {InputLimits.MaxLength}.", given.ToString(), "height", source)]
+            : [];
 
     /// <summary>Border widths: finite and not negative (CSS Backgrounds 3 §3.3: "Negative values are invalid").</summary>
     public static IEnumerable<Error> Border(DocumentModel.Border border, SourceLocation source) =>
@@ -156,13 +175,13 @@ internal static class InputChecks
         {
             var valid = column switch
             {
-                DocumentModel.TrackSize.Fixed fixedWidth => fixedWidth.Width.IsFinite && fixedWidth.Width.Points >= 0,
+                DocumentModel.TrackSize.Fixed fixedWidth => IsBounded(fixedWidth.Width) && fixedWidth.Width.Points >= 0,
                 DocumentModel.TrackSize.Fill fill => double.IsFinite(fill.Weight) && fill.Weight > 0,
                 _ => true,
             };
             if (!valid)
             {
-                yield return Problem(DocumentErrorCodes.Input.Invalid.Columns, "A fixed column width must be zero or more and a fill weight positive.", column.ToString(), "columns", source);
+                yield return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed column width must be zero or more and at most {InputLimits.MaxLength}, and a fill weight positive.", column.ToString(), "columns", source);
             }
         }
     }
@@ -235,11 +254,11 @@ internal static class InputChecks
         });
     }
 
-    /// <summary>An image's width and height, when set, are positive finite lengths.</summary>
+    /// <summary>An image's width and height, when set, are positive lengths of at most <see cref="InputLimits.MaxLength"/>.</summary>
     public static IEnumerable<Error> ImageSize(Length? width, Length? height, SourceLocation source) =>
         new[] { (Value: width, Name: "width"), (Value: height, Name: "height") }
-            .Where(size => size.Value is { } length && !(length.IsFinite && length.Points > 0))
-            .Select(size => Problem(DocumentErrorCodes.Input.Invalid.ImageSize, $"An image {size.Name} must be a positive length.", size.Value.ToString()!, size.Name, source));
+            .Where(size => size.Value is { } length && !IsPositiveAndBounded(length))
+            .Select(size => Problem(DocumentErrorCodes.Input.Invalid.ImageSize, $"An image {size.Name} must be a positive length of at most {InputLimits.MaxLength}.", size.Value.ToString()!, size.Name, source));
 
     /// <summary>
     /// A language tag of the form <see cref="LanguageTags"/> describes. The empty string, by which a PDF says that the

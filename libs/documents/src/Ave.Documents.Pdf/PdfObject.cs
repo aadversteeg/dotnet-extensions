@@ -31,11 +31,14 @@ public sealed record PdfNull : PdfObject
 /// <param name="Value">The value.</param>
 public sealed record PdfBoolean(bool Value) : PdfObject;
 
-/// <summary>An integer (§7.3.3).</summary>
+/// <summary>An integer (§7.3.3). Held as a C# int, which is the integer range of ISO 32000-1 Annex C (Table C.1:
+/// -2^31 to 2^31 - 1), so no integer outside it can be written (veraPDF rule 6.1.13-1). A larger whole number is a
+/// <see cref="PdfReal"/> (<see cref="PdfNumber.From"/>).</summary>
 /// <param name="Value">The value.</param>
-public sealed record PdfInteger(long Value) : PdfObject;
+public sealed record PdfInteger(int Value) : PdfObject;
 
-/// <summary>A real number (§7.3.3). Must be finite; the writer refuses NaN and infinity.</summary>
+/// <summary>A real number (§7.3.3). Must be finite and within <see cref="PdfSerializer.MaxReal"/>; the writer refuses
+/// any other. Always written with a decimal point, so a reader never takes it for an integer.</summary>
 /// <param name="Value">The value.</param>
 public sealed record PdfReal(double Value) : PdfObject;
 

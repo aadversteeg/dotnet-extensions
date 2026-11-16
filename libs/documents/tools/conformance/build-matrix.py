@@ -53,7 +53,7 @@ CLASSIFICATION = {
     "6.1.9-1": (BY, "PdfWriter writes `n 0 obj` with single spaces."),
     "6.1.10-1": (NEVER, "No inline images."),
     "6.1.12-*": (NEVER, "No permissions or signature dictionaries."),
-    "6.1.13-1": (BY, "Every integer written is a C# int."),
+    "6.1.13-1": (BY, "`PdfInteger` holds a C# int, the rule's range; `PdfNumber.From` makes a whole number outside it a real, which `PdfSerializer` always writes with a decimal point (Pdf PdfObjectRulesTests). The front-end also refuses any length above 14 400 pt (Fluent LengthLimitTests)."),
     "6.1.13-2": (CHECKED, "A real beyond ±3.403e38 is `Pdf.Write.InvalidNumber` (Pdf PdfObjectRulesTests)."),
     "6.1.13-3": (CHECKED, "Title, author, language, attachment name and description, alternative text and replacement text longer than 32 767 bytes as a string: `Pdf.Conformance.PdfA3.TextTooLong` (" + LIMITS + ")."),
     "6.1.13-4": (CHECKED, "A media type or font name longer than 127 bytes as a name: `Pdf.Conformance.PdfA3.NameTooLong` (" + LIMITS + ")."),

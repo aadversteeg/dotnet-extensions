@@ -137,7 +137,10 @@ properties give the same element in any order, and setting the same property twi
 collapsing border model has none) and rows and row groups have no margin or padding: setting them is reported as
 `Documents.Input.Invalid.NotApplicable`. A page break is not allowed inside a cell or a row of blocks.
 
-Lengths are typed: `12.Pt()`, `4.Mm()`, `2.Cm()`.
+Lengths are typed: `12.Pt()`, `4.Mm()`, `2.Cm()`. No length may be longer than 14 400 pt (200 inches, the largest
+page side PDF names; `InputLimits.MaxLength`): a page side, a margin, a padding, a border, a font size, a column width,
+an image size or a header or footer height above it is reported with that property's code
+(`Documents.Input.Invalid.Length`, `.PageSize`, `.FontSize`, `.Columns` or `.ImageSize`), in every profile.
 
 Precedence is a fixed rule, never the order of the calls:
 

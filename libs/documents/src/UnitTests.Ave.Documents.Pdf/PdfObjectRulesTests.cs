@@ -55,6 +55,36 @@ public class PdfObjectRulesTests
         ContentStream.Serialize([ContentOperators.Rectangle(0, 0, value, 1)]).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
     }
 
+    [Theory]
+    [InlineData(2147483647.0, "2147483647")]
+    [InlineData(-2147483648.0, "-2147483648")]
+    [InlineData(2147483648.0, "2147483648.0")]
+    [InlineData(-2147483649.0, "-2147483649.0")]
+    [InlineData(3e9, "3000000000.0")]
+    [InlineData(1e20, "100000000000000000000.0")]
+    public void A_whole_number_outside_the_integer_range_is_written_as_a_real_with_a_decimal_point(double value, string expected)
+    {
+        // ISO 32000-1 Annex C, Table C.1: an integer is at most 2^31 - 1 and at least -2^31 (veraPDF rule 6.1.13-1).
+        // A reader tells a real from an integer by its decimal point (§7.3.3), so the real must carry one.
+        PdfSerializer.Serialize(PdfNumber.From(value)).Value.Should().Be(expected);
+        ContentStream.Serialize([ContentOperators.Rectangle(0, 0, value, 1)]).IsSuccess.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(5.0, "5.0")]
+    [InlineData(0.0, "0.0")]
+    [InlineData(0.00001, "0.0")]
+    [InlineData(-7.00004, "-7.0")]
+    [InlineData(1e20, "100000000000000000000.0")]
+    public void A_real_is_never_written_in_the_form_of_an_integer(double value, string expected) =>
+        PdfSerializer.Serialize(new PdfReal(value)).Value.Should().Be(expected);
+
+    [Theory]
+    [InlineData(-12.0, -12)]
+    [InlineData(3.00004, 3)]
+    public void A_number_that_is_whole_at_four_decimals_and_in_the_integer_range_is_an_integer(double value, int expected) =>
+        PdfNumber.From(value).Should().Be(new PdfInteger(expected));
+
     [Fact]
     public void The_largest_real_is_written()
     {

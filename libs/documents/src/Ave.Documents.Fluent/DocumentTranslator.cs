@@ -274,12 +274,8 @@ public static class DocumentTranslator
         }
 
         var source = area.Content.Source;
-        IEnumerable<Error> heightProblems = area.Height is { } height && !(height.IsFinite && height.Points > 0)
-            ? [new Error(DocumentErrorCodes.Input.Invalid.Length, $"A header or footer height must be a positive length ({source}).")
-                .With(ErrorMetadataKeys.Value, height.ToString()).With(ErrorMetadataKeys.Property, "height").WithSource(source)]
-            : [];
         return WithProblems(
-            [.. heightProblems, .. InputChecks.PageBreakIn([area.Content], "page header or footer")],
+            [.. InputChecks.AreaHeight(area.Height, source), .. InputChecks.PageBreakIn([area.Content], "page header or footer")],
             Children([area.Content], new NodeId(id.Value + 1), inherited).OnSuccessMap(children =>
                 (PageArea?)new PageArea(new Box(id, SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, source), area.Height)));
     }

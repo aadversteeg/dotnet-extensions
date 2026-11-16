@@ -56,18 +56,21 @@ public class ProfileLimitTests
     }
 
     [Theory]
-    [InlineData(15000, 500)]
     [InlineData(2, 2)]
-    [InlineData(500, 14401)]
-    public void A_page_side_outside_3_to_14400_units_is_refused_under_PDF_A(double width, double height)
+    [InlineData(2.99, 500)]
+    [InlineData(500, 1)]
+    public void A_page_side_below_3_units_is_refused_under_PDF_A(double width, double height)
     {
-        // No content, so that a 2pt page fails on its size, not on content that does not fit.
+        // No content, so that a 2pt page fails on its size, not on content that does not fit. A side above 14 400 units
+        // never reaches the back-end: the front-end refuses any length above it in every profile (LengthLimitTests).
         var document = Document([], Page(width.Pt(), height.Pt()), title: "Limits", language: "en").FontFamily("Lato");
 
         var result = Render(document, PdfProfile.PdfA3b);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Parts().Select(part => part.Code).Should().Contain(PdfRenderErrorCodes.Conformance.PdfA3.PageSize);
+        var plain = Render(document, PdfProfile.Plain);
+        plain.IsSuccess.Should().BeTrue(plain.IsFailure ? Describe(plain.Error) : string.Empty);
     }
 
     [Theory]
