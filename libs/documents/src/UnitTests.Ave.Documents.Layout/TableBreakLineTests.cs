@@ -147,14 +147,21 @@ public class TableBreakLineTests
         {
             UnitsKeepEveryPartInsideThePage(0, pageHeight, mode);
         }
+
+        // One unit alone: its last row is the table's last, which needs the inner half of the table's bottom border in
+        // both modes, so a cut at the page end that would complete every cell must move up instead.
+        for (var pageHeight = mode == BoxDecorationBreak.Clone ? 22.0 : 20.0; pageHeight < 60; pageHeight += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, units: 1);
+        }
     }
 
-    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode)
+    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12)
     {
-        var (document, expected) = SpannedUnits(offset, pageHeight, mode);
+        var (document, expected) = SpannedUnits(offset, pageHeight, mode, units);
         var pages = Paginate(document);
 
-        var because = $"{mode}, offset {offset}, page area {pageHeight}";
+        var because = $"{mode}, {units} units, offset {offset}, page area {pageHeight}";
         var words = new List<string>();
         foreach (var page in pages)
         {
