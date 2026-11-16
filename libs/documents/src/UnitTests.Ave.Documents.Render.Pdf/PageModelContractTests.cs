@@ -192,6 +192,19 @@ public class PageModelContractTests
             .Should().Be(PdfErrorCodes.Write.InvalidFileIdentifier);
     }
 
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_file_identifier_longer_than_a_PDF_string_is_refused(string profile)
+    {
+        // ISO 32000-1 Annex C, Table C.1: a string holds at most 32 767 bytes (veraPDF rule 6.1.13-3 under PDF/A).
+        var document = Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1));
+        var longest = With(ProfileNamed(profile)) with { FileIdentifier = [.. Enumerable.Repeat((byte)7, 32_767)] };
+
+        Refused(document, longest with { FileIdentifier = [.. Enumerable.Repeat((byte)7, 32_768)] }).Code
+            .Should().Be(PdfErrorCodes.Write.InvalidFileIdentifier);
+        PdfRenderer.Render(document, longest).IsSuccess.Should().BeTrue();
+    }
+
     [Fact]
     public void A_profile_with_an_undefined_PDF_A_level_is_refused() =>
         Refused(Tagged(Start(1, SemanticRole.Paragraph), Run("x"), End(1)), With(PdfProfile.Plain with { PdfA3 = (PdfA3Level)9 })).Code

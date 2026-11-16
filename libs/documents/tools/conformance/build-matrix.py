@@ -55,7 +55,7 @@ CLASSIFICATION = {
     "6.1.12-*": (NEVER, "No permissions or signature dictionaries."),
     "6.1.13-1": (BY, "`PdfInteger` holds a C# int, the rule's range; `PdfNumber.From` makes a whole number outside it a real, which `PdfSerializer` always writes with a decimal point (Pdf PdfObjectRulesTests). The front-end also refuses any length above 14 400 pt (Fluent LengthLimitTests)."),
     "6.1.13-2": (CHECKED, "A real beyond ±3.403e38 is `Pdf.Write.InvalidNumber` (Pdf PdfObjectRulesTests)."),
-    "6.1.13-3": (CHECKED, "Title, author, language, attachment name and description, alternative text and replacement text longer than 32 767 bytes as a string: `Pdf.Conformance.PdfA3.TextTooLong` (" + LIMITS + ")."),
+    "6.1.13-3": (CHECKED, "Title, author, language, attachment name and description, alternative text and replacement text longer than 32 767 bytes as a string: `Pdf.Conformance.PdfA3.TextTooLong` (" + LIMITS + "). A file identifier longer than 32 767 bytes: `Pdf.Write.InvalidFileIdentifier` (" + CONTRACT + "). Glyph codes by construction: a TJ string holds at most 16 383 two-byte codes (PageContentStream.MaxGlyphsPerString; Render.Pdf WrittenValueTests)."),
     "6.1.13-4": (CHECKED, "A media type or font name longer than 127 bytes as a name: `Pdf.Conformance.PdfA3.NameTooLong` (" + LIMITS + ")."),
     "6.1.13-5": (BY, "Reals are written with four decimals, so nothing closer to zero than 0.0001 but zero itself."),
     "6.1.13-7": (CHECKED, "More than 8 388 607 objects: `Pdf.Conformance.PdfA3.TooManyObjects` (Render.Pdf PageModelValidationTests)."),

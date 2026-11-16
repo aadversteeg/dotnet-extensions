@@ -56,13 +56,33 @@ public static class PdfWriter
         return Result<ImmutableArray<byte>, Error>.Success([.. output.WrittenSpan]);
     }
 
+    /// <summary>
+    /// The longest file identifier: 32 767 bytes, the most a string may hold (ISO 32000-1 Annex C, Table C.1; veraPDF
+    /// rule 6.1.13-3 under PDF/A). Applied to every file, as <see cref="PdfSerializer.MaxReal"/> is.
+    /// </summary>
+    public const int MaxFileIdentifierLength = 32_767;
+
     /// <summary>A given file identifier is a byte string with content: the trailer's /ID holds it twice (§14.4), and
     /// PDF/A refuses an empty one (veraPDF rule 6.1.3-1). An unset (default) array is refused too instead of failing
-    /// when it is read.</summary>
-    private static Error? CheckIdentifier(ImmutableArray<byte>? identifier) =>
-        identifier is { } bytes && (bytes.IsDefault || bytes.IsEmpty)
-            ? new Error(PdfErrorCodes.Write.InvalidFileIdentifier, "The file identifier is empty; give one of at least one byte, or none to derive it from the content.")
+    /// when it is read, and so is one longer than <see cref="MaxFileIdentifierLength"/>.</summary>
+    private static Error? CheckIdentifier(ImmutableArray<byte>? identifier)
+    {
+        if (identifier is not { } bytes)
+        {
+            return null;
+        }
+
+        // Asked first: every other member of an unset array throws.
+        if (bytes.IsDefault || bytes.IsEmpty)
+        {
+            return new Error(PdfErrorCodes.Write.InvalidFileIdentifier, "The file identifier is empty; give one of at least one byte, or none to derive it from the content.");
+        }
+
+        return bytes.Length > MaxFileIdentifierLength
+            ? new Error(PdfErrorCodes.Write.InvalidFileIdentifier, $"The file identifier has {bytes.Length} bytes; a PDF string holds at most {MaxFileIdentifierLength}.")
+                .With(ErrorMetadataKeys.Value, bytes.Length.ToString(CultureInfo.InvariantCulture))
             : null;
+    }
 
     /// <summary>The writer's own rule: objects are numbered 1..N without gaps, so the cross-reference table (§7.5.4)
     /// is one subsection from 0.</summary>
