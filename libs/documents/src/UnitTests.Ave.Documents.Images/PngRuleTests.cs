@@ -51,7 +51,7 @@ public class PngRuleTests
     [Fact]
     public void A_paeth_tie_between_above_and_upper_left_picks_above()
     {
-        // PNG §9.4, Paeth: "if pa <= pb and pa <= pc then Pr = a else if pb <= pc then Pr = b else Pr = c". For the
+        // PNG §9.4, Paeth (three lines there): "if pa <= pb and pa <= pc then Pr = a else if pb <= pc then Pr = b else Pr = c". For the
         // second pixel of row 1: a (left) = 0, b (above) = 30, c (upper left) = 10, so p = 20, pa = 20, pb = 10, pc = 10:
         // pb and pc tie and b wins. The raw value 100 is filtered as 100 − 30 = 70.
         // Row 1's first pixel: a = 0, b = 10, c = 0 → p = 10, b is closest; raw 0 is filtered as 0 − 10 = 246.

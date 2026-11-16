@@ -14,8 +14,8 @@ namespace Ave.Documents.Pdf;
 public static class PdfTrees
 {
     /// <summary>
-    /// A name tree: <c>&lt;&lt; /Names [key1 value1 key2 value2 …] &gt;&gt;</c>. §7.9.6: "the keys shall be sorted in
-    /// lexical order", which for byte strings is the order of their bytes.
+    /// A name tree: <c>&lt;&lt; /Names [key1 value1 key2 value2 …] &gt;&gt;</c>. §7.9.6, Table 36, the Names entry: "The
+    /// keys shall be sorted in lexical order, as described below.", which for byte strings is the order of their bytes.
     /// </summary>
     /// <param name="entries">The keys and values; keys unique. Null and an unset array are read as no entries; a missing key or value is
     /// kept, and refused when the tree is written (<see cref="PdfSerializer.Problem"/>).</param>

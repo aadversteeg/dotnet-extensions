@@ -139,7 +139,8 @@ internal static class GlyphSubstitution
             case SingleSubstitution single when single.Replace(item.Glyph) is { } replacement:
                 return new Substitution([item with { Glyph = replacement, Class = filter.ClassAfterSubstitution(replacement, item.Class) }], index + 1);
 
-            // Type 2: "A multiple substitution replaces a single glyph with more than one glyph." All of them show the same characters;
+            // Type 2 ("Lookup type 2 subtable: multiple substitution"): "A multiple substitution (MultipleSubst) subtable
+            // replaces a single glyph with a sequence of glyphs". All of them show the same characters;
             // the text stays on the first, so copying the text gives it once.
             case MultipleSubstitution multiple when multiple.SequenceOf(item.Glyph) is { } sequence:
                 return new Substitution(

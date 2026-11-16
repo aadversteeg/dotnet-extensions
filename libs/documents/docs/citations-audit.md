@@ -1199,3 +1199,57 @@ Rule ids were also checked mechanically: every rule id these blocks name is a ru
 | `tools/conformance/build-matrix.py:322` | 7.21.6-4, TrueType | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
 | `tools/conformance/build-matrix.py:324` | 7.21.7-2 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
 | `tools/conformance/build-matrix.py:325` | 7.21.8-1 | rule ids and rule texts checked against the pinned veraPDF profiles (the matrix builder stops on an unknown id) |
+
+## Fourth check, 2026-11-16: spot check of fix round 3
+
+The extraction now keeps quotations that hold `<` or `>` (a comparison such as `loca[n] <= loca[n+1]`): an XML or
+HTML tag or processing instruction ends a quotation instead of the two characters, so markup still cannot pair
+with a quotation mark of the prose. Two quotations were new: `Fonts/Tables/LocaTable.cs:47` ("Offsets must be in
+ascending order, with loca[n] <= loca[n+1].", verbatim, OpenType 'loca') and `UnitTests.Ave.Documents.Images/PngRuleTests.cs:54`
+(verbatim, see below). The three citation nits of the spot check are fixed, each against the primary source:
+GlyphSubstitution (lookup type 2), FlowLayout (forced break, whole sentence), PdfTrees (capital letter, Table 36).
+
+Blocks new or changed in fix round 4 (against `c18c1a7`; the place is the block's first line now). A block whose
+wording changed for another reason keeps the verdict of its quotation and claim, said so as "unchanged".
+
+| Place | Kind | Check |
+| --- | --- | --- |
+| `docs/architecture.md:219` | mention | mention: names a specification or program, claims no place |
+| `src/Ave.Documents.Fonts/OpenType/ClassDefinition.cs:11` | citation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/Ave.Documents.Fonts/OpenType/Coverage.cs:10` | citation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/Ave.Documents.Layout/ConstraintSpace.cs:3` | citation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/Ave.Documents.Layout/FlowLayout.cs:99` | citation | RIGHT: both quotations verbatim (CSS Fragmentation 3 §5.2, "When an unforced break occurs before or after a block-level box, any margins adjoining the break are truncated to zero."), scout check of fix round 4 (2026-11-16, primary source read) |
+| `src/Ave.Documents.Layout/FlowLayout.cs:271` | citation | FIXED: the forced-break fragment is now the whole sentence of §5.2, verbatim, scout check of fix round 4 (2026-11-16, primary source read); the unforced one is verbatim |
+| `src/Ave.Documents.Layout/InFlowChild.cs:21` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Layout/Tracks/TablePage.cs:11` | citation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/Ave.Documents.Pdf/IndirectObject.cs:3` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Pdf/PdfObject.cs:121` | quotation | unchanged: own words in quotation marks, no outside text (third check) |
+| `src/Ave.Documents.Pdf/PdfSerializer.cs:42` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Pdf/PdfSerializer.cs:77` | citation | RIGHT: §7.3 "Objects" lists the object types the serializer writes |
+| `src/Ave.Documents.Pdf/PdfSerializer.cs:79` | citation | RIGHT: as PdfSerializer.cs:77 |
+| `src/Ave.Documents.Pdf/PdfTrees.cs:16` | citation | FIXED: capitalised, and placed where it stands: Table 36, the Names entry, verbatim, scout check of fix round 4 (2026-11-16, primary source read) |
+| `src/Ave.Documents.Pdf/PdfTrees.cs:28` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Pdf/PdfWriter.cs:64` | citation | RIGHT: Table 15, Info: "(Optional; shall be an indirect reference)", scout check of fix round 4 (2026-11-16, primary source read) |
+| `src/Ave.Documents.Pdf/Xmp/XmpPacket.cs:107` | citation | RIGHT: Namespaces in XML 1.0 §3, "Reserved Prefixes and Namespace Names": other prefixes "MUST NOT be bound to this namespace name" (xml and xmlns), scout check of fix round 4 (2026-11-16, primary source read) |
+| `src/Ave.Documents.Pdf/Xmp/XmpSchemaDescription.cs:27` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Render.Pdf/PageModelRules.cs:98` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Render.Pdf/PageModelRules.cs:188` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Render.Pdf/PageModelRules.cs:244` | citation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/Ave.Documents.Render.Pdf/PdfRenderOptions.cs:7` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Typesetting/GreedyLineBreaker.cs:20` | citation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/Ave.Documents.Typesetting/GreedyLineBreaker.cs:108` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Typesetting/LineBreaking/BreakableSegments.cs:18` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Typesetting/LineBreaking/BreakableSegments.cs:37` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphPositioning.cs:220` | quotation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/Ave.Documents.Typesetting/Shaping/GlyphSubstitution.cs:142` | quotation | FIXED: the earlier sentence was the GSUB overview's; now the heading and first sentence of the lookup type 2 section, verbatim, scout check of fix round 4 (2026-11-16, primary source read) |
+| `src/Ave.Documents.Typesetting/Shaping/ShapingBudget.cs:15` | citation | unchanged: no quotation of its own |
+| `src/Ave.Documents.Typesetting/Shaping/ShapingBudget.cs:40` | mention | mention: names a specification or program, claims no place |
+| `src/UnitTests.Ave.Documents.Core/TableSlotsTests.cs:132` | mention | mention: names a specification or program, claims no place |
+| `src/UnitTests.Ave.Documents.Fonts/LayoutValueRulesTests.cs:6` | citation | unchanged: its quotations and their verdicts are those of the earlier checks |
+| `src/UnitTests.Ave.Documents.Images/PngRuleTests.cs:54` | citation | RIGHT: verbatim in PNG 2nd and 3rd edition §9.4 "Filter type 4: Paeth", where it is three lines (said in the comment); newly extracted (holds <), scout check of fix round 4 (2026-11-16, primary source read) |
+| `src/UnitTests.Ave.Documents.Layout/PageAndTableRuleTests.cs:154` | citation | RIGHT: the quotation of ForcedBreaks.cs (C318, RIGHT), copied verbatim |
+| `src/UnitTests.Ave.Documents.Layout/TrailingMarginTests.cs:140` | citation | RIGHT: §5.2 truncates margins adjoining an unforced break (FlowLayout.cs:99) |
+| `src/UnitTests.Ave.Documents.Pdf/ConformanceBuildingBlockTests.cs:132` | citation | RIGHT: as XmpPacket.cs:107, scout check of fix round 4 (2026-11-16, primary source read) |
+| `src/UnitTests.Ave.Documents.Render.Pdf/PageModelContractTests.cs:254` | citation | unchanged: no quotation of its own |
+| `src/UnitTests.Ave.Documents.Render.Pdf/TotalApiTests.cs:7` | mention | mention: names a specification or program, claims no place |
+| `src/Ave.Documents.Fonts/Tables/LocaTable.cs:47` | quotation | RIGHT: verbatim (ASCII `<=`), scout check of fix round 4 (2026-11-16, primary source read); newly extracted, block unchanged |

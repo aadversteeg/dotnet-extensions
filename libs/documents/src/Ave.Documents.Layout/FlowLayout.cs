@@ -277,7 +277,8 @@ public static class FlowLayout
     /// (<see cref="MarginCollapsing.Top"/>). Not for a new formatting context such as the root.</item>
     /// <item>Continuing after an UNFORCED break between two children: "any margins adjoining the break are
     /// truncated to zero" (CSS Fragmentation 3 §5.2).</item>
-    /// <item>Continuing after a FORCED break: "margins after the break are preserved" — they DO take space.</item>
+    /// <item>Continuing after a FORCED break: "When a forced break occurs there, adjoining margins before the break
+    /// are truncated, but margins after the break are preserved." (§5.2) — they DO take space.</item>
     /// </list>
     /// A child that continues inside itself starts at the top of the page without any margin; that case is
     /// handled where the child is placed.

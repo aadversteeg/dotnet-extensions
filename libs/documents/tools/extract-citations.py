@@ -45,10 +45,15 @@ REFERENCE = re.compile(
 )
 # A quotation: text in double quotes that is prose, not an XML attribute value (name="…") or markup.
 # Every pair of quotation marks is matched, short or long, left to right, so that the closing mark of a short quotation
-# is never taken as the opening mark of a long one; only quotations of some length are kept (quotes_in).
-QUOTE = re.compile(r"(?<![=\\])\"([^\"\n<>]*?)\"|“([^”<>]*?)”")
+# is never taken as the opening mark of a long one; only quotations of some length are kept (quotes_in). A quotation
+# may hold < and >, as a comparison such as loca[n] <= loca[n+1] does; markup ends a quotation instead (MARKUP), so
+# the value of a tag's attribute never pairs with a quotation mark of the prose.
+QUOTE = re.compile(r"(?<![=\\])\"([^\"\n]*?)\"|“([^”]*?)”")
 # In code, a quotation inside a string literal is written with escaped quotes.
-ESCAPED_QUOTE = re.compile(r"\\\"([^\"\n<>]*?)\\\"|“([^”<>]*?)”")
+ESCAPED_QUOTE = re.compile(r"\\\"([^\"\n]*?)\\\"|“([^”]*?)”")
+# An XML or HTML tag or processing instruction in a comment (<see cref="X"/>, <c>, </para>, <?xpacket?>): after the <
+# comes a letter, a slash or a question mark. Each is replaced by a line end, which no straight quotation crosses.
+MARKUP = re.compile(r"</?[A-Za-z?][^<>\n]*>")
 
 # The shortest text in straight quotes that counts as a quotation (shorter ones are names and values, "kern"), and in
 # curly or escaped quotes.
@@ -59,7 +64,7 @@ MIN_OTHER_QUOTE = 8
 def quotes_in(text, pattern):
     """The quotations of a block: every quoted text of the minimum length, in order."""
     found = []
-    for match in pattern.finditer(text):
+    for match in pattern.finditer(MARKUP.sub("\n", text)):
         straight = match.group(1)
         if straight is not None and len(straight) >= (MIN_STRAIGHT_QUOTE if pattern is QUOTE else MIN_OTHER_QUOTE):
             found.append(straight)

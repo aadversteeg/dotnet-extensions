@@ -23,8 +23,8 @@ public static class PdfSerializer
     public const double MaxReal = 3.403e38;
 
     /// <summary>
-    /// The deepest an object may nest arrays and dictionaries, the object itself being level 1. ISO 32000-1 sets no such
-    /// limit; the writer's own. Checking and writing an object recurse once per level, so the limit keeps both far from
+    /// The deepest an object may nest arrays and dictionaries, the object itself being level 1: a limit of the writer's
+    /// own. Checking and writing an object recurse once per level, so the limit keeps both far from
     /// the stack limit whatever object a caller builds. The engine's own objects nest a few levels (a page's resources:
     /// page, /Resources, /Font, …), so 64 never refuses one of them.
     /// </summary>
