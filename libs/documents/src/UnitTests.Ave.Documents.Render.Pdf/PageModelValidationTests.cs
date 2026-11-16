@@ -122,6 +122,41 @@ public class PageModelValidationTests
         Refused(Tagged(Accessible, Start(1, SemanticRole.Heading(level)), Run("x"), End(1)), PdfProfile.PdfA3a).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
 
+    /// <summary>Hand-made page models that break one profile rule each, with the profile and the code it answers with.</summary>
+    public static TheoryData<string, PageDocument, string, ErrorCode> ProfileRefusals => new()
+    {
+        // veraPDF rule 6.1.13-3: 17 000 characters, one outside ASCII, so UTF-16 with a byte-order mark: 34 002 bytes.
+        { "a title longer than a PDF/A string", Tagged(Accessible with { Title = "é" + new string('t', 16_999) }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), "3b", PdfRenderErrorCodes.Conformance.PdfA3.TextTooLong },
+        // 6.1.13-4: a media type of 128 bytes, written as a name.
+        {
+            "a media type longer than a PDF/A name",
+            Tagged(Accessible with { Attachments = [new Attachment("data.bin", [.. "1"u8], "application/" + new string('x', 116), new SourceLocation("PageModelValidationTests.cs", 1)) { Relationship = AttachmentRelationship.Data }] },
+                Start(1, SemanticRole.Paragraph), Run("x"), End(1)),
+            "3b",
+            PdfRenderErrorCodes.Conformance.PdfA3.NameTooLong
+        },
+        // 6.1.13-11: a page side below 3 units.
+        { "a page of 2 x 2 units", new PageDocument(Accessible, [new Page(new Size(2, 2), [Start(0, SemanticRole.Document), End(0)])]), "3b", PdfRenderErrorCodes.Conformance.PdfA3.PageSize },
+        // PDF/UA-1 §7.1 (rule 7.1-9): a title.
+        { "no title", Tagged(Accessible with { Title = null }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), "ua1", PdfRenderErrorCodes.Conformance.PdfUa1.MissingTitle },
+        // 7.4.2-1: the first heading is H1, and no level is skipped going down.
+        { "a first heading of level 2", Tagged(Accessible, Start(1, SemanticRole.Heading(2)), Run("x"), End(1)), "ua1", PdfRenderErrorCodes.Conformance.PdfUa1.FirstHeadingNotH1 },
+        {
+            "a heading level skipped",
+            Tagged(Accessible, Start(1, SemanticRole.Heading(1)), Run("x"), End(1), Start(2, SemanticRole.Heading(3)), Run("y"), End(2)),
+            "ua1",
+            PdfRenderErrorCodes.Conformance.PdfUa1.HeadingLevelSkipped
+        },
+    };
+
+    [Theory]
+    [MemberData(nameof(ProfileRefusals))]
+    public void A_hand_made_page_model_that_breaks_a_profile_rule_is_refused_with_its_code(string what, PageDocument document, string profile, ErrorCode code)
+    {
+        Refused(document, ProfileNamed(profile)).Parts().Select(part => part.Code).Should().Contain(code, what);
+        PdfRenderer.Render(document, With(PdfProfile.Plain)).IsSuccess.Should().BeTrue(what + " is a profile's rule, not the contract's");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("  ")]

@@ -11,7 +11,7 @@ namespace UnitTests.Ave.Documents.Architecture;
 public class ProjectRulesTests
 {
     /// <summary>The repository root: the folder above this assembly that holds Directory.Build.props.</summary>
-    private static string RepositoryRoot()
+    internal static string RepositoryRoot()
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "Directory.Build.props")))

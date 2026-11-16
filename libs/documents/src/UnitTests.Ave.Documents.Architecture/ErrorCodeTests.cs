@@ -25,7 +25,7 @@ public class ErrorCodeTests
             .Where(name => name != "Ave.Documents.TestSupport")
             .Order(StringComparer.Ordinal);
 
-    private sealed record Code(string Library, Type Owner, FieldInfo Field, string Path)
+    internal sealed record Code(string Library, Type Owner, FieldInfo Field, string Path)
     {
         public bool IsBranch => Field.Name == "_";
     }
@@ -44,7 +44,7 @@ public class ErrorCodeTests
             .Select(field => new Code(library, field.DeclaringType!, field, ((ErrorCode)field.GetValue(null)!).ToString())),
     ];
 
-    private static List<Code> AllCodes() => [.. Libraries.SelectMany(CodesOf)];
+    internal static List<Code> AllCodes() => [.. Libraries.SelectMany(CodesOf)];
 
     [Fact]
     public void The_libraries_are_found_in_the_build_output()
