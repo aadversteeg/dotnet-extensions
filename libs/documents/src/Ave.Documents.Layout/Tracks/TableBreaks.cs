@@ -61,9 +61,10 @@ internal static class TableBreaks
         for (var row = segment.FirstRow; row <= segment.LastRow; row++)
         {
             // A break between rows ends the page at the line above `row`: down to its centre (slice) or with the
-            // whole line (clone, InsideBelow of the row above).
+            // whole line (clone, InsideBelow of the row above). That always fits here: the loop reaches `row` only when
+            // the row above fitted with that share of the line (the test below, one round earlier).
             var top = segment.RowTop(row);
-            if (row > segment.FirstRow && Fitting.Fits(top + InsideBelow(table, row - 1), height))
+            if (row > segment.FirstRow)
             {
                 yield return new Breakpoint(BreakKind.BetweenRows, row, BreakAppeal.ViolatesAvoid, content, segment);
             }
@@ -90,12 +91,13 @@ internal static class TableBreaks
     /// <summary>
     /// How far the line above <paramref name="row"/> reaches below the row's top: half its width. A row's top is the
     /// centre of the line above it, both for a line between two rows and for the line that starts the page (the
-    /// table's top line, or the line that continues after a break, whose centre or upper edge is the row's top).
+    /// table's top line, or the line that continues after a break, whose centre or upper edge is the row's top). The
+    /// line above a segment is never an upper half: upper halves only end pages.
     /// </summary>
     private static double LineInside(TableGeometry table, TableSegments.Segment segment, int row) =>
-        row > segment.FirstRow ? table.HorizontalWidth(row - 1, row, CollapsedBorders.LineContext.Interior) / 2
-        : segment.Above.Part == LinePart.UpperHalf ? 0
-        : table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2;
+        row > segment.FirstRow
+            ? table.HorizontalWidth(row - 1, row, CollapsedBorders.LineContext.Interior) / 2
+            : table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2;
 
     /// <summary>The latest breakpoint of the highest appeal that places body content, taken; None when none does.</summary>
     /// <param name="table">The table.</param>
