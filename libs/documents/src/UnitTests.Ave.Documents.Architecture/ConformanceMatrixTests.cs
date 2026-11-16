@@ -7,8 +7,11 @@ namespace UnitTests.Ave.Documents.Architecture;
 /// docs/conformance-matrix.md promises, rule by rule, how the engine meets veraPDF's profiles; these tests check that
 /// what it names is real. Every error code it names exists in an engine library; every test class it names exists in
 /// the test project it names; a "checked" rule names at least one code and one test class, and every test class it
-/// names tests one of the rule's codes (its source refers to the code), so the named test is one that fails when the
-/// refusal is removed. The matrix builder (tools/conformance/build-matrix.py) lists every rule id on its own.
+/// names refers to one of the rule's codes in its source. That is what is checked: the named class tests the code, not
+/// necessarily this rule. Several rules share one code and one class (ten rows name only Pdf.Write.InvalidPageModel and
+/// Render.Pdf PageModelContractTests), so one mention satisfies all of them; whether a test fails when a particular
+/// refusal is removed is shown by the mutant runs of the fix rounds, not here. The matrix builder
+/// (tools/conformance/build-matrix.py) lists every rule id on its own.
 /// </summary>
 public class ConformanceMatrixTests
 {
@@ -82,7 +85,7 @@ public class ConformanceMatrixTests
     }
 
     [Fact]
-    public void Every_checked_rule_names_a_code_and_test_classes_that_test_it()
+    public void Every_checked_rule_names_a_code_and_test_classes_that_refer_to_one_of_its_codes()
     {
         var problems = new List<string>();
         foreach (var row in Rows().Where(row => row.Class == "checked"))
