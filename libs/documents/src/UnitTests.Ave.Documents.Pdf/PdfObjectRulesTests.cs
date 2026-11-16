@@ -119,6 +119,79 @@ public class PdfObjectRulesTests
         PdfWriter.Write(FileWith(new PdfArray([value]))).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject, what);
     }
 
+    /// <summary>An array holding an array, <paramref name="depth"/> levels: the outermost array is level 1.</summary>
+    private static PdfObject Nested(int depth) =>
+        Enumerable.Range(1, depth - 1).Aggregate((PdfObject)new PdfArray([new PdfInteger(1)]), (inner, _) => new PdfArray([inner]));
+
+    [Theory]
+    [InlineData(3_000)]
+    [InlineData(100_000)]
+    public void An_object_nested_deeper_than_the_limit_is_an_error_value_not_a_stack_overflow(int depth)
+    {
+        PdfSerializer.Serialize(Nested(depth)).Error.Code.Should().Be(PdfErrorCodes.Write.NestedTooDeep);
+        PdfWriter.Write(FileWith(Nested(depth))).Error.Code.Should().Be(PdfErrorCodes.Write.NestedTooDeep);
+    }
+
+    [Fact]
+    public void The_nesting_limit_counts_arrays_and_dictionaries_from_the_outermost_object()
+    {
+        // The limit holds for the object given: a dictionary counts as a level as an array does.
+        PdfSerializer.Serialize(Nested(PdfSerializer.MaxNestingDepth)).IsSuccess.Should().BeTrue();
+        PdfSerializer.Serialize(Nested(PdfSerializer.MaxNestingDepth + 1)).Error.Code.Should().Be(PdfErrorCodes.Write.NestedTooDeep);
+        PdfSerializer.Serialize(PdfDictionary.Of(("A", Nested(PdfSerializer.MaxNestingDepth - 1)))).IsSuccess.Should().BeTrue();
+        PdfSerializer.Serialize(PdfDictionary.Of(("A", Nested(PdfSerializer.MaxNestingDepth)))).Error.Code.Should().Be(PdfErrorCodes.Write.NestedTooDeep);
+    }
+
+    [Fact]
+    public void Every_object_the_writer_writes_is_counted_from_its_own_top()
+    {
+        // Each indirect object is a tree of its own: the catalog entry here is one level below the catalog dictionary.
+        PdfWriter.Write(FileWith(Nested(PdfSerializer.MaxNestingDepth - 1))).IsSuccess.Should().BeTrue();
+        PdfWriter.Write(FileWith(Nested(PdfSerializer.MaxNestingDepth))).Error.Code.Should().Be(PdfErrorCodes.Write.NestedTooDeep);
+    }
+
+    [Fact]
+    public void An_unset_array_is_read_as_empty_as_null_is()
+    {
+        PdfString.FromBytes(default(System.Collections.Immutable.ImmutableArray<byte>)).Bytes.Should().BeEmpty();
+        PdfArray.OfNumbers(default(System.Collections.Immutable.ImmutableArray<double>)).Items.Should().BeEmpty();
+        PdfDictionary.Of(default(System.Collections.Immutable.ImmutableArray<(PdfName, PdfObject?)>)).Entries.Should().BeEmpty();
+        ContentStream.Serialize(default(System.Collections.Immutable.ImmutableArray<ContentOperation?>)).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+    }
+
+    [Theory]
+    [InlineData(-7)]
+    [InlineData(0)]
+    [InlineData(99)]
+    public void An_info_reference_to_no_object_of_the_file_is_an_error_value(int number) =>
+        PdfWriter.Write(FileWith(new PdfInteger(0)) with { Info = new PdfReference(number) }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+
+    [Fact]
+    public void An_info_reference_to_an_object_of_the_file_is_written()
+    {
+        var file = FileWith(new PdfInteger(0)) with { Info = new PdfReference(2) };
+
+        System.Text.Encoding.ASCII.GetString([.. PdfWriter.Write(file).Value]).Should().Contain("/Info 2 0 R");
+    }
+
+    /// <summary>A case of PdfObject from another assembly: possible, since a record's copy constructor is protected.</summary>
+    private sealed record ForeignObject(PdfObject Original) : PdfObject(Original);
+
+    [Fact]
+    public void An_object_of_a_type_from_another_assembly_is_an_error_value()
+    {
+        PdfSerializer.Serialize(new ForeignObject(PdfNull.Instance)).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+        PdfWriter.Write(FileWith(new PdfArray([new ForeignObject(PdfNull.Instance)]))).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+    }
+
+    [Fact]
+    public void A_stream_object_without_its_stream_is_an_error_value()
+    {
+        var file = FileWith(new PdfInteger(0));
+
+        PdfWriter.Write(file with { Objects = [.. file.Objects, new IndirectStream(3, null!)] }).Error.Code.Should().Be(PdfErrorCodes.Write.InvalidObject);
+    }
+
     [Fact]
     public void A_missing_file_object_list_or_catalog_is_an_error_value()
     {

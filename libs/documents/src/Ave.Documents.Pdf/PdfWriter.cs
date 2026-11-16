@@ -62,12 +62,16 @@ public static class PdfWriter
     }
 
     /// <summary>A file to write: present, with its list of objects (none of them missing, every stream with its stream)
-    /// and a catalog, the trailer's /Root (§7.5.5), that is one of them.</summary>
+    /// and a catalog, the trailer's /Root (§7.5.5), that is one of them; a document information dictionary, the
+    /// trailer's /Info (§7.5.5, an indirect reference), is one of them too when it is given.</summary>
     private static Error? CheckFile(PdfFile file) =>
         file.Catalog is null || file.Objects.Any(indirect => indirect is null or IndirectStream { Stream: null })
         || !file.Objects.Any(indirect => indirect.Number == file.Catalog.ObjectNumber)
             ? IncompleteFile
-            : null;
+            : file.Info is { } info && !file.Objects.Any(indirect => indirect.Number == info.ObjectNumber)
+                ? new Error(PdfErrorCodes.Write.InvalidObject, $"The trailer's /Info names object {info.ObjectNumber}, which is not one of the file's objects.")
+                    .With(ErrorMetadataKeys.Value, info.ObjectNumber.ToString(CultureInfo.InvariantCulture))
+                : null;
 
     private static Error IncompleteFile =>
         new Error(PdfErrorCodes.Write.InvalidObject, "A PDF file needs its objects, none of them missing, and a catalog.").With(ErrorMetadataKeys.Value, "null");
@@ -117,12 +121,7 @@ public static class PdfWriter
     /// <summary>The objects themselves (<see cref="PdfSerializer.Problem"/>), and every stream dictionary: /Length and
     /// /Filter are the writer's to set (§7.3.8.2, Table 5).</summary>
     private static Error? CheckObjects(ValueList<IndirectObject> objects) =>
-        PdfSerializer.Problem(objects.Select(indirect => indirect switch
-        {
-            IndirectValue value => value.Value,
-            IndirectStream stream => stream.Stream.Dictionary,
-            _ => throw new InvalidOperationException($"Unknown indirect object {indirect.GetType().Name}."),
-        }))
+        PdfSerializer.Problem(objects.Select(indirect => indirect.Checked))
         ?? objects.OfType<IndirectStream>()
             .Where(stream => stream.Stream.Dictionary.ContainsKey("Length") || stream.Stream.Dictionary.ContainsKey("Filter"))
             .Select(stream => (Error?)new Error(PdfErrorCodes.Write.InvalidObject, $"Stream object {stream.Number} sets /Length or /Filter; the writer sets them.")

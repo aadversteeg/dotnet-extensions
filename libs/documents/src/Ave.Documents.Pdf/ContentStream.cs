@@ -20,8 +20,8 @@ public static class ContentStream
     /// <c>Documents.Pdf.Write.InvalidObject</c> error for a missing operation, operator or operand.</returns>
     public static Result<ImmutableArray<byte>, Error> Serialize(IEnumerable<ContentOperation?>? operations)
     {
-        var all = (operations ?? []).ToImmutableArray();
-        var missing = operations is null || all.Any(operation => operation is null || string.IsNullOrWhiteSpace(operation.Operator));
+        var all = operations.OrEmpty().ToImmutableArray();
+        var missing = operations is null or ImmutableArray<ContentOperation?> { IsDefault: true } || all.Any(operation => operation is null || string.IsNullOrWhiteSpace(operation.Operator));
         if (missing)
         {
             return Result<ImmutableArray<byte>, Error>.Failure(

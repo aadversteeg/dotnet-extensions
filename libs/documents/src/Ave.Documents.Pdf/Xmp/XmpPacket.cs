@@ -104,6 +104,9 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     /// <summary>The XML namespace's own URI, which the prefix <c>xml</c> is bound to by definition.</summary>
     private const string XmlNamespaceUri = "http://www.w3.org/XML/1998/namespace";
 
+    /// <summary>The namespace name the prefix xmlns is bound to by definition (XML Namespaces 1.0 §3).</summary>
+    private const string XmlnsNamespaceUri = "http://www.w3.org/2000/xmlns/";
+
     /// <summary>
     /// The namespaces of the packet as an XML writer must declare them (Namespaces in XML 1.0, §3): "The prefix xml is
     /// by definition bound to the namespace name http://www.w3.org/XML/1998/namespace" and "The prefix xmlns is used only
@@ -118,6 +121,8 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
         var used = properties.SelectMany(NamespacesOf).Distinct().ToList();
         var reserved = used.Where(space => space.Prefix is "xml" or "xmlns")
             .Select(space => InvalidName($"the namespace prefix {space.Prefix}, which XML binds by definition (xml to {XmlNamespaceUri})"));
+        var reservedUris = used.Where(space => space.Prefix is not ("xml" or "xmlns") && space.Uri is XmlNamespaceUri or XmlnsNamespaceUri)
+            .Select(space => InvalidName($"the namespace URI {space.Uri} for the prefix {space.Prefix}: XML binds it to {(space.Uri == XmlNamespaceUri ? "xml" : "xmlns")} only"));
         var badUris = used.Where(space => XmlCharacters.IndexOfForbidden(space.Uri) is not null)
             .Select(space => InvalidName($"the namespace URI of {space.Prefix}, which holds a character XML does not allow"));
         var bound = used.Concat([XmpNamespace.Rdf, XmpNamespace.Meta])
@@ -125,7 +130,7 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
             .GroupBy(space => space.Prefix)
             .Where(group => group.Select(space => space.Uri).Distinct().Count() > 1)
             .Select(group => InvalidName($"the namespace prefix {group.Key} for more than one URI ({string.Join(", ", group.Select(space => space.Uri).Distinct())})"));
-        return reserved.Concat(badUris).Concat(bound);
+        return reserved.Concat(reservedUris).Concat(badUris).Concat(bound);
     }
 
     private static bool IsNcName(string? name) =>

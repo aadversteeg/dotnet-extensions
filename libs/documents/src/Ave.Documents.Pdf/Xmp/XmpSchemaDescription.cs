@@ -28,11 +28,11 @@ public sealed record XmpSchemaDescription(string Name, XmpNamespace Namespace, V
     /// The <c>pdfaExtension:schemas</c> property (ISO 19005-3 §6.6.2.3.3, veraPDF rules 6.6.2.3.3-1 to -10): a bag of
     /// schema descriptions, each with its name, namespace URI, prefix and a sequence of property descriptions.
     /// </summary>
-    /// <param name="schemas">The schemas to describe; null is read as none. A missing schema, or a missing part of one,
+    /// <param name="schemas">The schemas to describe; null and an unset array are read as none. A missing schema, or a missing part of one,
     /// becomes a missing value, which <see cref="XmpPacket.Write"/> refuses.</param>
     /// <returns>The property.</returns>
     public static XmpProperty ContainerProperty(IEnumerable<XmpSchemaDescription?>? schemas) =>
-        new(XmpNamespace.PdfAExtension, "schemas", new XmpUnorderedArray([.. (schemas ?? []).Select(schema => schema?.Describe() ?? new XmpStructure([null!]))]));
+        new(XmpNamespace.PdfAExtension, "schemas", new XmpUnorderedArray([.. schemas.OrEmpty().Select(schema => schema?.Describe() ?? new XmpStructure([null!]))]));
 
     private XmpValue Describe() => new XmpStructure(
     [

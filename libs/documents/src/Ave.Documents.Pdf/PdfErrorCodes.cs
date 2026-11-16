@@ -27,6 +27,10 @@ public static class PdfErrorCodes
         /// /Length or /Filter, which the writer sets itself. Metadata: Value.</summary>
         public static readonly ErrorCode InvalidObject = _ / "InvalidObject";
 
+        /// <summary>An object with arrays and dictionaries nested deeper than <see cref="PdfSerializer.MaxNestingDepth"/>.
+        /// Metadata: Value (the limit).</summary>
+        public static readonly ErrorCode NestedTooDeep = _ / "NestedTooDeep";
+
         /// <summary>An XMP value with a character XML 1.0 does not allow (§2.2, production [2] Char). Metadata:
         /// Property (prefixed name), Offset.</summary>
         public static readonly ErrorCode InvalidText = _ / "InvalidText";

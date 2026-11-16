@@ -14,7 +14,9 @@ namespace Ave.Documents.Pdf;
 /// </summary>
 public abstract record PdfObject
 {
-    // Only the cases in this assembly exist, so a switch over them is complete.
+    // Only the cases in this assembly are written. No other assembly can call this constructor, but a record's copy
+    // constructor is always protected, so one can still derive from the type: the serializer refuses such a case
+    // with an error value (PdfSerializer.Problem).
     private protected PdfObject()
     {
     }
@@ -87,9 +89,9 @@ public sealed record PdfString(ValueList<byte> Bytes, PdfStringForm Form) : PdfO
     }
 
     /// <summary>Binary data, written as a hexadecimal string.</summary>
-    /// <param name="bytes">The bytes; null is read as no bytes.</param>
+    /// <param name="bytes">The bytes; null and an unset array are read as no bytes.</param>
     /// <returns>The string.</returns>
-    public static PdfString FromBytes(IEnumerable<byte>? bytes) => new([.. bytes ?? []], PdfStringForm.Hex);
+    public static PdfString FromBytes(IEnumerable<byte>? bytes) => new([.. bytes.OrEmpty()], PdfStringForm.Hex);
 }
 
 /// <summary>An array (§7.3.6).</summary>
@@ -97,9 +99,9 @@ public sealed record PdfString(ValueList<byte> Bytes, PdfStringForm Form) : PdfO
 public sealed record PdfArray(ValueList<PdfObject> Items) : PdfObject
 {
     /// <summary>An array of numbers; whole numbers become integers, others reals.</summary>
-    /// <param name="numbers">The numbers; null is read as none.</param>
+    /// <param name="numbers">The numbers; null and an unset array are read as none.</param>
     /// <returns>The array.</returns>
-    public static PdfArray OfNumbers(params IEnumerable<double>? numbers) => new([.. (numbers ?? []).Select(PdfNumber.From)]);
+    public static PdfArray OfNumbers(params IEnumerable<double>? numbers) => new([.. numbers.OrEmpty().Select(PdfNumber.From)]);
 }
 
 /// <summary>
@@ -117,11 +119,11 @@ public sealed record PdfDictionary(ValueList<KeyValuePair<PdfName, PdfObject>> E
         .GroupBy(entry => entry.Key.Value).FirstOrDefault(group => group.Count() > 1)?.Key;
 
     /// <summary>Creates a dictionary from (key, value) pairs, leaving out pairs whose value is null.</summary>
-    /// <param name="entries">The entries; a null value means "this optional entry is absent"; null is read as no
-    /// entries.</param>
+    /// <param name="entries">The entries; a null value means "this optional entry is absent"; null and an unset array
+    /// are read as no entries.</param>
     /// <returns>The dictionary.</returns>
     public static PdfDictionary Of(params IEnumerable<(PdfName Key, PdfObject? Value)>? entries) =>
-        new([.. (entries ?? [])
+        new([.. entries.OrEmpty()
             .Where(entry => entry.Value is not null)
             .Select(entry => KeyValuePair.Create(entry.Key, entry.Value!))]);
 

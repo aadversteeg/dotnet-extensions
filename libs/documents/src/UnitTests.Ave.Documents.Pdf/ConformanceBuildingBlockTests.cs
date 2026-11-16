@@ -104,6 +104,9 @@ public class ConformanceBuildingBlockTests
         new XmpPacket([null!]).Write().Error.Code.Should().Be(PdfErrorCodes.Write.InvalidPropertyName);
     }
 
+    /// <summary>A case of XmpValue from another assembly: possible, since a record's copy constructor is protected.</summary>
+    private sealed record ForeignValue(XmpValue Original) : XmpValue(Original);
+
     public static TheoryData<string, XmpPacket> UnwritableNamespaces => new()
     {
         { "a value without text", new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, "title", new XmpText(null!))]) },
@@ -112,6 +115,10 @@ public class ConformanceBuildingBlockTests
         { "the prefix xmlns", new XmpPacket([new XmpProperty(new XmpNamespace("xmlns", "urn:a"), "b", new XmpText("x"))]) },
         { "the prefix xml", new XmpPacket([new XmpProperty(new XmpNamespace("xml", "urn:a"), "b", new XmpText("x"))]) },
         { "rdf with another URI", new XmpPacket([new XmpProperty(new XmpNamespace("rdf", "urn:a"), "b", new XmpText("x"))]) },
+        { "a value of a type from another assembly", new XmpPacket([new XmpProperty(XmpNamespace.DublinCore, "title", new ForeignValue(new XmpText("x")))]) },
+        { "x with another URI", new XmpPacket([new XmpProperty(new XmpNamespace("x", "urn:a"), "b", new XmpText("x"))]) },
+        { "another prefix for the URI of xmlns", new XmpPacket([new XmpProperty(new XmpNamespace("a", "http://www.w3.org/2000/xmlns/"), "b", new XmpText("x"))]) },
+        { "another prefix for the URI of xml", new XmpPacket([new XmpProperty(new XmpNamespace("a", "http://www.w3.org/XML/1998/namespace"), "b", new XmpText("x"))]) },
         {
             "a prefix bound again inside a structure",
             new XmpPacket([new XmpProperty(new XmpNamespace("a", "urn:a"), "s", new XmpStructure([new XmpProperty(new XmpNamespace("a", "urn:b"), "f", new XmpText("x"))]))])
@@ -122,7 +129,8 @@ public class ConformanceBuildingBlockTests
     [MemberData(nameof(UnwritableNamespaces))]
     public void A_packet_no_XML_writer_can_write_is_an_error_value_not_an_exception(string what, XmpPacket packet)
     {
-        // XML Namespaces 1.0 §3: the prefixes xml and xmlns are bound by definition; one prefix names one URI.
+        // XML Namespaces 1.0 §3: the prefixes xml and xmlns are bound by definition, and no other prefix may be bound to
+        // their URIs; one prefix names one URI.
         global::Ave.Extensions.Functional.Result<System.Collections.Immutable.ImmutableArray<byte>, global::Ave.Extensions.ErrorPaths.Error>? result = null;
         var write = () => result = packet.Write();
 

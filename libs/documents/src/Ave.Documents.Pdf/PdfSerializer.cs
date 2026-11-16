@@ -22,6 +22,14 @@ public static class PdfSerializer
     /// reals as such floats.</summary>
     public const double MaxReal = 3.403e38;
 
+    /// <summary>
+    /// The deepest an object may nest arrays and dictionaries, the object itself being level 1. ISO 32000-1 sets no such
+    /// limit; the writer's own. Checking and writing an object recurse once per level, so the limit keeps both far from
+    /// the stack limit whatever object a caller builds. The engine's own objects nest a few levels (a page's resources:
+    /// page, /Resources, /Font, …), so 64 never refuses one of them.
+    /// </summary>
+    public const int MaxNestingDepth = 64;
+
     /// <summary>Writes an object, after checking it (<see cref="Problem"/>).</summary>
     /// <param name="value">The object.</param>
     /// <returns>Its PDF syntax, or a <see cref="PdfErrorCodes.Write.InvalidNumber"/> or
@@ -35,27 +43,40 @@ public static class PdfSerializer
     /// The one check every writer of PDF syntax makes before it writes: the first problem in some object trees, or
     /// null. A number must be finite (§7.3.3: PDF numbers are finite values), and a dictionary's keys unique (§7.3.7).
     /// Nothing may be missing: an object, a name's text, a dictionary key; a string has a form the serializer knows, and a
-    /// reference an object number of 1 or more (the writer numbers objects from 1).
+    /// reference an object number of 1 or more (the writer numbers objects from 1). Arrays and dictionaries nest at most
+    /// <see cref="MaxNestingDepth"/> levels in each tree; the check stops at the first level past it, so it never
+    /// recurses deeper than that itself.
     /// </summary>
     /// <param name="values">The object trees.</param>
-    /// <returns>An <see cref="PdfErrorCodes.Write.InvalidNumber"/> or <see cref="PdfErrorCodes.Write.InvalidObject"/>
-    /// error, or null.</returns>
+    /// <returns>An <see cref="PdfErrorCodes.Write.InvalidNumber"/>, <see cref="PdfErrorCodes.Write.InvalidObject"/> or
+    /// <see cref="PdfErrorCodes.Write.NestedTooDeep"/> error, or null.</returns>
     public static Error? Problem(IEnumerable<PdfObject?>? values) =>
-        values is null ? Invalid("No objects were given.", "null") : values.Select(ProblemIn).FirstOrDefault(problem => problem is not null);
+        values is null ? Invalid("No objects were given.", "null") : FirstProblem(values.OrEmpty(), level: 1);
 
-    private static Error? ProblemIn(PdfObject? value) => value switch
+    private static Error? FirstProblem(IEnumerable<PdfObject?> values, int level) =>
+        values.Select(value => ProblemIn(value, level)).FirstOrDefault(problem => problem is not null);
+
+    /// <summary>The first problem in one object at <paramref name="level"/> (the top of a tree is level 1).</summary>
+    private static Error? ProblemIn(PdfObject? value, int level) => value switch
     {
         null => Invalid("An object is missing.", "null"),
+        PdfArray or PdfDictionary when level > MaxNestingDepth => new Error(
+                PdfErrorCodes.Write.NestedTooDeep, $"Arrays and dictionaries may nest at most {MaxNestingDepth} levels deep.")
+            .With(ErrorMetadataKeys.Value, MaxNestingDepth.ToString(System.Globalization.CultureInfo.InvariantCulture)),
         PdfReal real when !double.IsFinite(real.Value) || Math.Abs(real.Value) > MaxReal => InvalidNumber(real.Value),
         PdfName { Value: null } => Invalid("A name has no text.", "null"),
         PdfString { Form: var form } when !Enum.IsDefined(form) => Invalid($"A string has the form {(int)form}, which is not a form.", ((int)form).ToString(System.Globalization.CultureInfo.InvariantCulture)),
         PdfReference { ObjectNumber: < 1 } reference => Invalid($"A reference names object {reference.ObjectNumber}; objects are numbered from 1.", reference.ObjectNumber.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-        PdfArray array => Problem(array.Items),
+        PdfArray array => FirstProblem(array.Items, level + 1),
         PdfDictionary dictionary when dictionary.Entries.Any(entry => entry.Key?.Value is null) => Invalid("A dictionary has an entry without a key.", "null"),
         PdfDictionary { DuplicateKey: { } key } => new Error(PdfErrorCodes.Write.InvalidObject, $"A dictionary has two entries with the key /{key}.")
             .With(ErrorMetadataKeys.Value, key),
-        PdfDictionary dictionary => Problem(dictionary.Entries.Select(entry => entry.Value)),
-        _ => null,
+        PdfDictionary dictionary => FirstProblem(dictionary.Entries.Select(entry => entry.Value), level + 1),
+        PdfNull or PdfBoolean or PdfInteger or PdfReal or PdfName or PdfString or PdfReference => null,
+
+        // A record cannot hide its copy constructor, so another assembly can derive a case of its own from PdfObject;
+        // the serializer writes only the cases of §7.3 and answers any other with an error value.
+        _ => Invalid($"An object of type {value.GetType().Name} is not one of the PDF objects of ISO 32000-1 §7.3.", value.GetType().Name),
     };
 
     private static Error Invalid(string message, string value) =>
@@ -65,7 +86,7 @@ public static class PdfSerializer
         new Error(PdfErrorCodes.Write.InvalidNumber, $"PDF numbers must be finite and within ±{MaxReal}, got {value}.")
             .With(ErrorMetadataKeys.Value, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
-    /// <summary>Writes an object whose numbers are known to be finite.</summary>
+    /// <summary>Writes an object that passed <see cref="Problem"/>: numbers finite, nesting within the limit.</summary>
     internal static string Write(PdfObject value) => value switch
     {
         PdfNull => "null",
