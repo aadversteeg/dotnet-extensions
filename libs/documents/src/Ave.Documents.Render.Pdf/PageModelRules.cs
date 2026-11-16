@@ -21,7 +21,8 @@ internal static class PageModelRules
     /// <summary>
     /// Checks the page model and reports every breach together (<c>Documents.Pdf.Write.InvalidPageModel</c>):
     /// <list type="bullet">
-    /// <item>metadata and at least one page: a PDF without a page has nothing to show and is not useful to write;</item>
+    /// <item>metadata and at least one page: a PDF without a page has nothing to show and is not useful to write; every
+    /// page of positive, finite width and height;</item>
     /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
     /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
@@ -71,7 +72,7 @@ internal static class PageModelRules
             var page = document.Pages[index];
             var problems = page is null
                 ? [Invalid($"Page {index + 1} is missing.", Number(index + 1))]
-                : ItemProblems(page, index + 1).Concat(StructureNesting.Problems(page, index + 1)).Concat(RoleProblems(page, index + 1, roles));
+                : SizeProblems(page, index + 1).Concat(ItemProblems(page, index + 1)).Concat(StructureNesting.Problems(page, index + 1)).Concat(RoleProblems(page, index + 1, roles));
             foreach (var problem in problems)
             {
                 yield return problem;
@@ -88,6 +89,15 @@ internal static class PageModelRules
             yield return problem;
         }
     }
+
+    /// <summary>A page is a rectangle of positive, finite width and height: its /MediaBox (ISO 32000-1 §14.11.2). A page
+    /// of no area shows nothing; the PDF/A profiles narrow the sides further (<see cref="ProfileLimits"/>).</summary>
+    private static IEnumerable<Error> SizeProblems(Page page, int number) =>
+        page.Size is { Width: > 0 and < double.PositiveInfinity, Height: > 0 and < double.PositiveInfinity }
+            ? []
+            : [Invalid($"Page {number} is {Number(page.Size.Width)} x {Number(page.Size.Height)}; a page has a positive, finite width and height.", $"{Number(page.Size.Width)}x{Number(page.Size.Height)}")];
+
+    private static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
 
     private static IEnumerable<Error> ItemProblems(Page page, int number) =>
         page.Items.Select((item, index) => ItemProblem(item, index, number)).OfType<Error>();
