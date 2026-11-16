@@ -68,7 +68,9 @@ internal static class CollapsedBorders
     /// <summary>
     /// The horizontal line in column <paramref name="column"/> between row <paramref name="above"/> and row
     /// <paramref name="below"/> as they stand on the page; null for the table's top or bottom edge on this page. None
-    /// where one cell spans both rows.
+    /// where one cell spans both rows — except at a break with clone (<see cref="LineContext.ClosesCutCells"/>), where
+    /// that cell is closed by its own bottom and top border, as a cell that ends above the line and one that starts
+    /// below it.
     /// </summary>
     /// <param name="table">The tracks box.</param>
     /// <param name="grid">The grid.</param>
@@ -82,16 +84,18 @@ internal static class CollapsedBorders
     {
         var upper = above is { } a ? grid.CellAt(a, column) : null;
         var lower = below is { } b ? grid.CellAt(b, column) : null;
-        if (upper is not null && upper == lower)
+        if (upper is not null && upper == lower && !edge.ClosesCutCells)
         {
             return BorderSide.None;
         }
 
+        // A cell takes part with its bottom border when it ends above the line and with its top border when it starts
+        // below it; at a break with clone also when the line cuts it, since clone closes every fragment.
         var upperRow = above is { } top ? grid.Rows[top] : null;
         var lowerRow = below is { } bottom ? grid.Rows[bottom] : null;
         var groupBoundary = upperRow is null || lowerRow is null || upperRow.Group != lowerRow.Group;
-        var upperCell = upper is { } u && grid.Cells[u].LastRow == above && !edge.IsCut(u) ? grid.Cells[u] : null;
-        var lowerCell = lower is { } l && grid.Cells[l].Row == below && !edge.IsCut(l) ? grid.Cells[l] : null;
+        var upperCell = upper is { } u && (grid.Cells[u].LastRow == above || edge.ClosesCutCells) && !edge.IsCut(u) ? grid.Cells[u] : null;
+        var lowerCell = lower is { } l && (grid.Cells[l].Row == below || edge.ClosesCutCells) && !edge.IsCut(l) ? grid.Cells[l] : null;
         IEnumerable<(BorderSide, Origin)> candidates =
         [
             .. upperRow is null && edge.IncludesTable ? [(table.Style.Border.Top, Origin.Table)] : Nothing,
@@ -124,18 +128,25 @@ internal static class CollapsedBorders
     private static IEnumerable<(BorderSide, Origin)> Nothing => [];
 
     /// <summary>
-    /// What a horizontal line needs to know about the page: whether the table's border joins an edge, and which cells
-    /// and row continue from the previous page (their border at the cut is sliced away). Only lines at the top of a
-    /// continued part need the second (with slice; with clone a row cut inside itself is closed by whole lines, resolved as
-    /// between whole rows, see <see cref="TablePage"/>).
+    /// What a horizontal line needs to know about the page: whether the table's border joins an edge, which cells and
+    /// row continue from the previous page (with slice their border at the cut is sliced away; only lines at the top of a
+    /// continued part need this), and whether the line is a break with clone, which closes every cell it cuts with that
+    /// cell's own border (see <see cref="TablePage"/>).
     /// </summary>
     /// <param name="IncludesTable">True when the table's top (or bottom) border takes part at this edge.</param>
     /// <param name="RowBelowIsCut">True when the row below the line continues from the previous page.</param>
-    /// <param name="CutCells">The cells cut at this line.</param>
-    public sealed record LineContext(bool IncludesTable, bool RowBelowIsCut, IReadOnlySet<int> CutCells)
+    /// <param name="CutCells">The cells cut at this line whose border is sliced away.</param>
+    /// <param name="ClosesCutCells">True for the line that ends or starts a page at a break with clone: a cell the line
+    /// cuts (one that spans across it, or continues below it) takes part with its own bottom border above the line and
+    /// its own top border below it, so the table is closed across its full width.</param>
+    public sealed record LineContext(bool IncludesTable, bool RowBelowIsCut, IReadOnlySet<int> CutCells, bool ClosesCutCells = false)
     {
         /// <summary>A line between two rows that are both whole on this page.</summary>
         public static LineContext Interior { get; } = new(false, false, new HashSet<int>());
+
+        /// <summary>The line at a break between two rows, or inside a row, with clone: it ends one page or starts the
+        /// next, and closes every cell it cuts.</summary>
+        public static LineContext ClonedBreak { get; } = new(false, false, new HashSet<int>(), ClosesCutCells: true);
 
         /// <summary>True when the cell is cut at this line.</summary>
         /// <param name="cell">The cell index.</param>

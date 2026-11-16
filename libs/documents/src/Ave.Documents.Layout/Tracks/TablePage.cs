@@ -53,10 +53,14 @@ namespace Ave.Documents.Layout;
 /// draws nothing at the cut: the row's cells are boxes cut by a break, which get no border there (CSS Fragmentation 3
 /// §5.4). <see cref="BoxDecorationBreak.Clone"/> closes the table on both pages, as word processors do: the page ends
 /// with the whole line below the cut row (the table's bottom border when it is the last row), centred so that its lower
-/// edge is the page end, and the next page starts with the whole line above the row, as at the top of a table. Each cut
-/// cell that ends in the row keeps clear of the line below it by half the line's width, and each cut cell that starts in
-/// the row starts its rest half the line's width below the line above it, as whole cells do. A cell that spans past the
-/// cut row has no line at the cut in its columns, as at a break between two rows that it spans.</para>
+/// edge is the page end, and the next page starts with the whole line above the row, as at the top of a table.</para>
+/// <para><b>With clone the table is closed across its full width on both pages</b>, at a break between rows and inside a
+/// row alike: the line that ends the page and the line that starts the next also run over the column of a cell that
+/// spans rows and continues over the break. Such a cell is closed by its own bottom border at the page end and its own
+/// top border at the start of the next page (<see cref="CollapsedBorders.LineContext.ClonedBreak"/>), as clone gives
+/// every fragment of a box its whole border (CSS Fragmentation 3 §5.4). Every cut cell keeps clear of the line that ends
+/// the page by half the line's width, and every cell that continues starts its rest half the line's width below the line
+/// that starts the next page, as whole cells do.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every
 /// later fragment. They never break. A break right after the header rows, with no body row on the page, is not a
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
@@ -166,12 +170,13 @@ internal static class TablePage
         // page and this page's first row, resolved with both rows exactly as the upper half was: the two halves are
         // halves of one line, and a row group's own top border takes part only above the group's first row. With clone a
         // row cut inside itself starts again under the whole line above it, which is resolved as on the page it started
-        // on, with the row's own cells and their top borders (see remarks). One rule for the line above the page's first
-        // body row: the same context whether a repeated header comes before it or not.
+        // on, with the row's own cells and their top borders (see remarks). With clone the line also closes a spanning
+        // cell that continues over the break (see remarks). One rule for the line above the page's first body row: the
+        // same context whether a repeated header comes before it or not.
         var reopensCutRow = !isFirst && resume.RowIsSplit && IsCloned(table);
-        if (reopensCutRow)
+        if (!isFirst && IsCloned(table))
         {
-            resumeContext = CollapsedBorders.LineContext.Interior;
+            resumeContext = CollapsedBorders.LineContext.ClonedBreak;
         }
 
         var continuesAfterBreak = !isFirst && !includeHeader && (!resume.RowIsSplit || reopensCutRow);
@@ -271,12 +276,21 @@ internal static class TablePage
     internal static CollapsedBorders.LineContext EdgeContext(TableGrid grid, int row) =>
         row == grid.Rows.Length - 1 ? new CollapsedBorders.LineContext(true, false, new HashSet<int>()) : CollapsedBorders.LineContext.Interior;
 
+    /// <summary>The context of the line below a row when the page ends there or inside the row: the table's bottom
+    /// border for the last row; with clone a line that closes every cell it cuts (see remarks).</summary>
+    internal static CollapsedBorders.LineContext PageEndContext(TableGeometry table, int row) =>
+        row == table.Grid.Rows.Length - 1 ? EdgeContext(table.Grid, row)
+        : IsCloned(table) ? CollapsedBorders.LineContext.ClonedBreak
+        : CollapsedBorders.LineContext.Interior;
+
     /// <summary>True when the table repeats whole grid lines at a break (see remarks).</summary>
     internal static bool IsCloned(TableGeometry table) => table.Box.Style.DecorationBreak == BoxDecorationBreak.Clone;
 
     /// <summary>The line that ends a page at a break between rows: its upper half, or the whole line (see remarks).</summary>
     internal static LineAt? BottomLine(TableGeometry table, int? above, int? below, double y) =>
-        above is null ? null : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, IsCloned(table) ? LinePart.Whole : LinePart.UpperHalf);
+        above is null ? null
+        : IsCloned(table) ? new LineAt(above, below, CollapsedBorders.LineContext.ClonedBreak, y)
+        : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, LinePart.UpperHalf);
 
     /// <summary>The line that starts a page after a break between rows, resolved from the row before the break and the
     /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down. With
@@ -296,10 +310,10 @@ internal static class TablePage
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,
     /// the half of the table's bottom border inside the table; for any other row, with clone the half of the line below
-    /// it that lies under its centre, and with slice nothing, because the line is split at its centre.</summary>
+    /// it that lies under its centre (the line that closes the table at the break, see remarks), and with slice nothing,
+    /// because the line is split at its centre.</summary>
     internal static double InsideBelow(TableGeometry table, int row) =>
-        row == table.Grid.Rows.Length - 1 ? table.HorizontalWidth(row, null, EdgeContext(table.Grid, row)) / 2
-        : IsCloned(table) ? table.HorizontalWidth(row, row + 1, CollapsedBorders.LineContext.Interior) / 2
+        row == table.Grid.Rows.Length - 1 || IsCloned(table) ? table.HorizontalWidth(row, Next(table.Grid, row), PageEndContext(table, row)) / 2
         : 0;
 
     internal static Content Empty(double top) => new([], [], [], top, false);

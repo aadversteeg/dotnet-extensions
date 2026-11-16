@@ -221,8 +221,9 @@ Each is documented next to its code as well.
   modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
   break inside a row, `Slice` draws no line at the cut (a box cut by a break gets no border there); `Clone` closes the
   table on both pages: the page ends with the whole line below the cut row (the table's bottom border for the last
-  row), and the next page starts with the whole line above it; the cut content keeps clear of both. A cell that spans
-  past the cut row has no line at the cut in its columns, as at a break between two rows it spans. A row that breaks
+  row), and the next page starts with the whole line above it; the cut content keeps clear of both. With `Clone` the
+  table is closed across its full width on both pages, at every break: a cell that spans rows and continues over the
+  break is closed by its own bottom border at the page end and its own top border on the next page. A row that breaks
   inside itself must leave content for the next page. With `Clone` such a cut needs one line width more room than
   with `Slice`, so on a very small page area a table may not fit with `Clone` that fits with `Slice`.
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one

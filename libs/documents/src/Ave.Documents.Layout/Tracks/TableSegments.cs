@@ -77,13 +77,14 @@ internal static class TableSegments
     }
 
     /// <summary>
-    /// With clone, the rest of a cell cut inside its own row starts under the whole line that starts the page (see
-    /// <see cref="TablePage"/>): half that line's width lies in the cell, as for a whole cell (<see cref="CellLayoutBox"/>),
-    /// but the cell's own layout gives a continued box no top inset, so the rest is lowered by it here. 0 for every other
-    /// cell, and with slice.
+    /// With clone, the rest of every cell that continues from the previous page — a cell cut inside its own row, or a
+    /// spanning cell cut between or inside the rows it spans — starts under the whole line that starts the page, which
+    /// runs across the full width (see <see cref="TablePage"/>): half that line's width lies in the cell, as for a whole
+    /// cell (<see cref="CellLayoutBox"/>), but the cell's own layout gives a continued box no top inset, so the rest is
+    /// lowered by it here. Only the first segment of a page has continued cells. 0 for every other cell, and with slice.
     /// </summary>
     internal static double ReopenedInset(TableGeometry table, Segment segment, ActiveCell cell) =>
-        TablePage.IsCloned(table) && cell.Token is not null && table.Grid.Cells[cell.Cell].Row == segment.FirstRow
+        TablePage.IsCloned(table) && cell.Token is not null
             ? table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2
             : 0;
 

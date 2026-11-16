@@ -203,9 +203,10 @@ internal static class TableBreaks
                 continue;
             }
 
-            // With clone a cut cell that ends in the cut row keeps clear of the line drawn below the cut (see TablePage).
+            // With clone every cut cell keeps clear of the line that ends the page, which runs across the full width
+            // (see TablePage): the line below the cut row, or the line above the row a break between rows comes before.
             var top = segment.RowTop(cell.StartRow);
-            var clearance = inside && IsCloned(table) && info.LastRow == cutRow ? CutLineBelow(table, cutRow) : 0;
+            var clearance = IsCloned(table) ? InsideBelow(table, inside ? cutRow : cutRow - 1) : 0;
             var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance);
             if (sliced.IsFailure)
             {
@@ -236,7 +237,7 @@ internal static class TableBreaks
         var bottom = inside ? cutY : segment.RowTop(cutRow);
         var placed = new Content(rows, cells, lines, bottom, HasBody: rows.Count > content.Rows.Count || content.HasBody);
         var bottomLine = !inside ? BottomLine(table, cutRow - 1, cutRow, bottom)
-            : IsCloned(table) ? new LineAt(cutRow, Next(grid, cutRow), EdgeContext(grid, cutRow), bottom)
+            : IsCloned(table) ? new LineAt(cutRow, Next(grid, cutRow), PageEndContext(table, cutRow), bottom)
             : null;
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), appeal)));
     }
