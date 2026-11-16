@@ -14,9 +14,39 @@ namespace Ave.Documents.Fonts.OpenType;
 /// Kept as ranges and searched, never expanded glyph by glyph: in the fonts of large scripts one range record gives
 /// a class to tens of thousands of glyphs (Malgun Gothic: 28 215 glyphs in a GDEF of 30 bytes).
 /// </remarks>
-/// <param name="Ranges">The ranges of glyphs with a class other than 0, in glyph order, none overlapping.</param>
+/// <param name="Ranges">The ranges of glyphs with a class other than 0, in glyph order, none overlapping (see
+/// <see cref="Ranges"/>).</param>
 public sealed record ClassDefinition(ImmutableArray<ClassDefinition.Range> Ranges)
 {
+    private readonly ImmutableArray<Range> _ranges = Checked(Ranges);
+
+    /// <summary>The ranges in glyph order, none overlapping and none ending before it starts, which the binary search of
+    /// <see cref="ClassOf"/> needs; checked whenever they are set (an <see cref="ArgumentException"/> for ranges that
+    /// break it, a programming error: the parser never makes such). An unset array is no ranges.</summary>
+    public ImmutableArray<Range> Ranges
+    {
+        get => _ranges;
+        init => _ranges = Checked(value);
+    }
+
+    private static ImmutableArray<Range> Checked(ImmutableArray<Range> ranges)
+    {
+        if (ranges.IsDefault)
+        {
+            return [];
+        }
+
+        for (var index = 0; index < ranges.Length; index++)
+        {
+            if (ranges[index].End < ranges[index].Start || (index > 0 && ranges[index].Start <= ranges[index - 1].End))
+            {
+                throw new ArgumentException($"Class ranges must be in glyph order and not overlap; range {index} ({ranges[index].Start}–{ranges[index].End}) is not.", nameof(Ranges));
+            }
+        }
+
+        return ranges;
+    }
+
     /// <summary>Consecutive glyphs that share a class.</summary>
     /// <param name="Start">The first glyph id.</param>
     /// <param name="End">The last glyph id.</param>

@@ -9,13 +9,14 @@ namespace Ave.Documents.Fonts.OpenType;
 /// table"): the class of every glyph (base, ligature, mark, component), which the lookup flags use to skip glyphs,
 /// and the mark attachment classes.
 /// </summary>
-/// <param name="GlyphClasses">glyphClassDef: 1 base, 2 ligature, 3 mark, 4 component; 0 unknown.</param>
+/// <param name="GlyphClasses">glyphClassDef: 1 base, 2 ligature, 3 mark, 4 component; 0 unknown. Null when the table
+/// has none (glyphClassDefOffset is 0).</param>
 /// <param name="MarkAttachmentClasses">markAttachClassDef, used by the MarkAttachmentType lookup flag.</param>
-public sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinition MarkAttachmentClasses)
+public sealed record GlyphDefinitions(ClassDefinition? GlyphClasses, ClassDefinition MarkAttachmentClasses)
 {
-    /// <summary>True when the table has a glyph class definition (glyphClassDefOffset is not 0). A GDEF table may hold
-    /// only other parts (mark attachment classes, ligature carets); then it says nothing about glyph classes.</summary>
-    public bool HasGlyphClasses { get; init; }
+    /// <summary>True when the table has a glyph class definition. A GDEF table may hold only other parts (mark
+    /// attachment classes, ligature carets); then it says nothing about glyph classes.</summary>
+    public bool HasGlyphClasses => GlyphClasses is not null;
 
     /// <summary>The glyph class value for a mark ("3 Mark glyph (non-spacing combining glyph)").</summary>
     public const int MarkClass = 3;
@@ -43,11 +44,8 @@ public sealed record GlyphDefinitions(ClassDefinition GlyphClasses, ClassDefinit
 
         var glyphClasses = reader.UInt16(4);
         var definitions = new GlyphDefinitions(
-            ClassDefinition.Read(reader, 0, glyphClasses),
-            ClassDefinition.Read(reader, 0, reader.UInt16(10)))
-        {
-            HasGlyphClasses = glyphClasses != 0,
-        };
+            glyphClasses == 0 ? null : ClassDefinition.Read(reader, 0, glyphClasses),
+            ClassDefinition.Read(reader, 0, reader.UInt16(10)));
         return reader.Finish(Tag, definitions);
     }
 }

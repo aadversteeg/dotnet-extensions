@@ -107,8 +107,8 @@ public class WorkBudgetTests
         var result = GlyphDefinitions.Parse(gdef);
 
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
-        result.Value.GlyphClasses.ClassOf(new GlyphId(28000)).Should().Be(1);
-        result.Value.GlyphClasses.ClassOf(new GlyphId(28215)).Should().Be(0);
+        result.Value.GlyphClasses!.ClassOf(new GlyphId(28000)).Should().Be(1);
+        result.Value.GlyphClasses!.ClassOf(new GlyphId(28215)).Should().Be(0);
     }
 
     [Fact]

@@ -19,8 +19,8 @@ internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
     /// font without GDEF (Lato has none).
     /// </summary>
     public GlyphClass ClassOf(GlyphId glyph, bool isNonspacingMarkCharacter) =>
-        Definitions is { HasGlyphClasses: true } definitions
-            ? definitions.GlyphClasses.ClassOf(glyph) switch
+        Definitions is { GlyphClasses: { } classes }
+            ? classes.ClassOf(glyph) switch
             {
                 GlyphDefinitions.MarkClass => GlyphClass.Mark,
                 GlyphDefinitions.LigatureClass => GlyphClass.Ligature,
