@@ -116,8 +116,8 @@ together, at the author's line where there is one.
 | --- | --- | --- |
 | front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| PDF back-end contract (`Render.Pdf/PageModelRules.cs`, `PdfRenderer.cs` for the options) | a page model from any producer: metadata and at least one page, nothing missing, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, one role per node, attachments with a name, a media type and a unique name; render options with a profile and a non-empty file identifier | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
-| profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables, the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
+| PDF back-end contract (`Render.Pdf/PageModelRules.cs`, `PdfRenderer.cs` for the options) | a page model from any producer: metadata and at least one page, nothing missing, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head (first) and one footer (last), one role per node, attachments with a name, a media type and a unique name; render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
+| profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
 The slot-filling rule of a table (which slot each cell takes, and when a span runs past its group or overlaps
 another) is `Core/TableSlots.cs`. The front-end's table check, the layout's grid and the PDF/UA regularity check all
@@ -127,6 +127,39 @@ Some rules are checked twice, on purpose, by calling the same rule: the front-en
 and the back-end refuses them as well, because it accepts page models that did not come from the front-end. These are
 the span rule, unique and non-blank attachment names (a duplicate would silently drop a file from the embedded-files
 name tree), and the language form (for the tagged profiles).
+
+## Bounded work: the one rule every reader of input follows
+
+A reader of input is any code that takes bytes or values it did not make: the font parser, the image decoders, the
+shaper (a font's lookups are input), the back-end's checks of a page model. **Its work and its memory are bounded by
+the size of its input, or by a fixed and named limit; never by a number the input states.** Four habits make it so:
+
+1. **Charge for what is done.** A parse has a work budget proportional to the bytes (`TableReader.WorkPerByte`), and
+   charges it for every value read AND every record created (`TableReader.Records`, which `Count` calls): a record
+   that reads nothing still costs memory. A structure that many offsets may point at is parsed once and shared
+   (`TableReader.Shared`); walking parsed data again is charged too (`TableReader.Spend`). Shaping spends operations
+   the same way: every glyph a lookup looks at (`Shaping/ShapingBudget.cs`).
+2. **Check a count against the bytes that must hold it** before allocating for it (`TableReader.Count` and `Fits`; a
+   PNG header's size against `ImageLimits` before anything is inflated; a JPEG is embedded without being decoded).
+3. **Name a limit where a number decides the size** — decoded pixels, glyphs made by substitutions, lookup operations,
+   spans, the PDF/UA grid, nesting, lengths — check it before the work, and give it an error code (table below). A
+   limit holds for the whole input it protects (one text, not each piece of it).
+4. **Compute with input numbers in 64 bits**, so a sum or product cannot wrap around into a valid-looking value.
+
+| Limit | Value | Where | Error |
+| --- | --- | --- | --- |
+| work of a layout table parse | 8 units per byte, at least 16 384 | `Fonts/OpenType/TableReader.cs` | `Documents.Font.Parse.InvalidValue` |
+| decoded image | 2^26 pixels | `Images/ImageLimits.cs` | `Documents.Image.TooLarge` |
+| glyphs of one text | 64 per input glyph, at least 16 384 | `Typesetting/Shaping/GlyphSubstitution.cs` | `Documents.Typesetting.TooManyGlyphs` |
+| shaping operations of one text | 1 024 per input glyph, at least 65 536 | `Typesetting/Shaping/ShapingBudget.cs` | `Documents.Typesetting.TooMuchWork` |
+| cell span | 1 000 columns, 65 534 rows | `Core/TableSlots.cs` | `Documents.Input.Invalid.Table`, `Documents.Pdf.Write.InvalidPageModel` |
+| PDF/UA grid of one table | the first row's width; 4 194 304 slots | `Render.Pdf/Tagging/TableRegularity.cs` | `Documents.Pdf.Conformance.PdfUa1.TableTooLarge` |
+| nesting of elements | 64 levels | `Fluent/InputLimits.cs` | `Documents.Input.Invalid.TooDeep` |
+| a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
+
+One reader is bounded by a constant rather than by its input: the `cmap` formats 4 and 12 are expanded into one entry
+per mapped code point, so a few groups of 12 bytes can fill all 1 114 112 code points of Unicode (tens of MiB). The
+bound is Unicode's size; a reader written to the rule above would keep the groups and search them.
 
 ## Conformance in one paragraph
 
@@ -179,7 +212,8 @@ Each is documented next to its code as well.
   CMYK and arithmetic-coded JPEG are refused as unsupported. An image may have at most 2^26 pixels (about 67
   million, `Images/ImageLimits.cs`; `Documents.Image.TooLarge`), so a small file cannot claim a huge decoded size.
 - **Input size:** elements nest at most 64 deep (`Fluent/InputLimits.cs`; `Documents.Input.Invalid.TooDeep`), which
-  keeps every recursive step of the engine far from the stack limit.
+  keeps every recursive step of the engine far from the stack limit; no length is longer than 14 400 pt
+  (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
   lower half starting the next (as Chromium 159 draws it); `Clone`, the code front-end's default for tables, ends the
