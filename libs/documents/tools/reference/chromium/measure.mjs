@@ -21,6 +21,10 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+// The reference is Chromium with font hinting off: the engine lays text out with the font's unhinted advances, which is
+// what a PDF holds; hinted advances are a screen-rendering property of one platform (see README.md, "The reference").
+const chromiumArgs = ['--font-render-hinting=none'];
+
 const here = resolve(import.meta.dirname);
 const cases = join(here, 'cases');
 const out = join(here, 'out');
@@ -52,10 +56,13 @@ if (step === 'all' || step === 'words') {
   words();
 }
 
-/** Chromium's print of every case and the box sizes; the Chromium version to out/chromium-version.txt. */
+/**
+ * Chromium's print of every case and the box sizes; to out/chromium-version.txt the Chromium version, its flags and the
+ * Playwright image it ran in (MEASURE_IMAGE, set by measure.ps1; "host" when Chromium runs on this machine).
+ */
 async function print() {
   const { chromium } = await import('playwright');
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: chromiumArgs });
   const page = await browser.newPage();
   for (const name of names) {
     await page.goto(pathToFileURL(join(cases, `${name}.html`)).href);
@@ -75,7 +82,8 @@ async function print() {
     await page.emulateMedia({ media: null });
   }
 
-  writeFileSync(join(out, 'chromium-version.txt'), `chromium ${browser.version()}\n`);
+  writeFileSync(join(out, 'chromium-version.txt'),
+    `chromium ${browser.version()}\nchromium flags ${chromiumArgs.join(' ')}\nplaywright image ${process.env.MEASURE_IMAGE ?? 'host'}\n`);
   await browser.close();
 }
 
