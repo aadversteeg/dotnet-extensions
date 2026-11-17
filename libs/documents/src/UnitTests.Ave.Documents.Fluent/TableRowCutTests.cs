@@ -39,13 +39,29 @@ public class TableRowCutTests
     private static string Lorem(int words, string tag) => string.Join(" ", Enumerable.Range(0, words).Select(index => $"{tag}{index:000}"));
 
     /// <summary>Lays the table out after "intro" with the given bottom margin, and checks every page: no empty strip,
-    /// every word of the table once.</summary>
-    private static void NoEmptyStrip(TableElement table, IEnumerable<string> words, double offset, string because)
+    /// every word of the table once. Returns the pages.</summary>
+    private static ValueList<PageFragment> NoEmptyStrip(TableElement table, IEnumerable<string> words, double offset, string because)
     {
         var result = Paginate(table, offset);
         result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
         RowParts.EmptyStrips(result.Value).Should().BeEmpty(because);
         result.Value.SelectMany(page => Tables(page.Root.Fragment)).SelectMany(Words).Should().BeEquivalentTo(words, because + ": every word once");
+        return result.Value;
+    }
+
+    /// <summary>The pages that end with a part of a row that goes on to the next page and shows no text: a cut where
+    /// only a drawing (a border, a background, an image, a rule) is placed.</summary>
+    private static int TextlessCuts(ValueList<PageFragment> pages)
+    {
+        var rows = pages.Select(page => Tables(page.Root.Fragment)
+            .SelectMany(table => table.Children.Select(group => group.Fragment).OfType<BoxFragment>()
+                .SelectMany(group => group.Children.Select(row => (Row: (BoxFragment)row.Fragment, Top: row.Offset.Y))))
+            .Where(row => row.Row.Size.Height > 1e-6)
+            .OrderBy(row => row.Top)
+            .Select(row => row.Row)
+            .ToList()).ToList();
+        return Enumerable.Range(0, rows.Count - 1)
+            .Count(page => rows[page].Count > 0 && !Words(rows[page][^1]).Any() && rows[page + 1].Any(row => row.Box.Id == rows[page][^1].Box.Id));
     }
 
     /// <summary>The shapes with a label that spans <paramref name="span"/> rows of <paramref name="lines"/> lines each,
@@ -113,14 +129,22 @@ public class TableRowCutTests
     }
 
     /// <summary>Cell content that draws nothing: invisible characters, white space that is not collapsed, an empty
-    /// block with padding only, a table of one empty cell without lines.</summary>
+    /// block with padding only, an empty block with a background but no height, a table of one empty cell without
+    /// lines; and a cell without content whose own background fills it (a cell's own background is not counted: it
+    /// fills every part of the row).</summary>
     public static TheoryData<string> DrawsNothing => new()
     {
         "zero width space", "soft hyphen", "word joiner", "no-break space", "line break only", "padded empty block", "table of one empty cell",
+        "empty block with a background and no height", "empty cell with a background",
     };
 
-    /// <summary>Cell content that draws but holds no text: an empty block with a border, an empty block with a background.</summary>
-    public static TheoryData<string> DrawsWithoutText => new() { "bordered empty block", "filled empty block" };
+    /// <summary>Cell content that draws but holds no text: an empty block with a border on every side or on one, an
+    /// empty block with a background, an image, a table of one empty cell with lines (rules).</summary>
+    public static TheoryData<string> DrawsWithoutText => new()
+    {
+        "bordered empty block", "block with a top border", "block with a bottom border", "block with a left border", "filled empty block", "image",
+        "table of one empty cell with lines",
+    };
 
     private static CellElement Content(string kind) => kind switch
     {
@@ -132,22 +156,35 @@ public class TableRowCutTests
         "padded empty block" => Cell([Block([]).Padding(3.Pt())]),
         "table of one empty cell" => Cell([Table(Columns(Fill(1)), [TableRow([Cell([])])])]),
         "bordered empty block" => Cell([Block([]).Border(1.Pt(), Color.Black)]),
-        "filled empty block" => Cell([Block([]).Padding(2.Pt()).Background(new Color(0xC0, 0xC0, 0xC0))]),
+        "filled empty block" => Cell([Block([]).Padding(2.Pt()).Background(Grey)]),
+        "empty block with a background and no height" => Cell([Block([]).Background(Grey)]),
+        "empty cell with a background" => Cell([]).Background(Grey),
+        "block with a top border" => Cell([Block([]).Padding(2.Pt()).BorderTop(1.Pt(), Color.Black)]),
+        "block with a bottom border" => Cell([Block([]).Padding(2.Pt()).BorderBottom(1.Pt(), Color.Black)]),
+        "block with a left border" => Cell([Block([]).Padding(2.Pt()).BorderLeft(1.Pt(), Color.Black)]),
+        "image" => Cell([Image(TestImages.Bytes("rgb8.png")).Width(6.Pt()).Height(6.Pt()).Decorative()]),
+        "table of one empty cell with lines" => Cell([Table(Columns(Fill(1)), [TableRow([Cell([])])]).GridLines(1.Pt(), Color.Black)]),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not a cell kind of these tests"),
     };
 
+    private static readonly Color Grey = new(0xC0, 0xC0, 0xC0);
+
     [Theory]
     [MemberData(nameof(DrawsNothing))]
-    public void A_cell_that_draws_nothing_never_makes_an_empty_strip(string kind) => EveryShape(kind);
+    public void A_cell_that_draws_nothing_never_makes_an_empty_strip(string kind) =>
+        EveryShape(kind).Should().Be(0, "a row part without text never goes on beside a cell that draws nothing");
 
     [Theory]
     [MemberData(nameof(DrawsWithoutText))]
-    public void A_cell_that_draws_without_text_is_cut_only_where_it_draws(string kind) => EveryShape(kind);
+    public void A_cell_that_draws_without_text_is_cut_only_where_it_draws(string kind) =>
+        EveryShape(kind).Should().BePositive("where the text beside it does not fit yet but the drawing does, the row is cut and the drawing ends the page");
 
     /// <summary>The cell kind in one-line rows beside text (probe P3 of review 35), and as the third cell beside a
-    /// label over three one-line rows and over two rows of three lines.</summary>
-    private static void EveryShape(string kind)
+    /// label over three one-line rows and over two rows of three lines. Returns how many pages of the one-line rows
+    /// end with a row part that goes on and shows no text (<see cref="TextlessCuts"/>).</summary>
+    private static int EveryShape(string kind)
     {
+        var textless = 0;
         foreach (var clone in new[] { true, false })
         {
             foreach (var line in new[] { 0.0, 1.0 })
@@ -162,7 +199,7 @@ public class TableRowCutTests
                     }
 
                     var plain = Table(Columns(Fill(1), Fill(1)), [.. Enumerable.Range(0, 30).Select(i => (TablePart)TableRow([Cell($"r{i:00}"), Content(kind)]))]);
-                    NoEmptyStrip(Lined(plain), Enumerable.Range(0, 30).Select(i => $"r{i:00}"), offset, because + ", one-line rows");
+                    textless += TextlessCuts(NoEmptyStrip(Lined(plain), Enumerable.Range(0, 30).Select(i => $"r{i:00}"), offset, because + ", one-line rows"));
                     var (three, threeWords) = Labelled(3, 1, kept: false, () => Content(kind));
                     NoEmptyStrip(Lined(three), threeWords, offset, because + ", label over three one-line rows");
                     var (two, twoWords) = Labelled(2, 3, kept: false, () => Content(kind));
@@ -170,6 +207,8 @@ public class TableRowCutTests
                 }
             }
         }
+
+        return textless;
     }
 
     [Fact]
