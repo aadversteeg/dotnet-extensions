@@ -1,0 +1,10 @@
+1 0.000000 0.792422 45.900436 10.663424 nnnnnnnnnn
+1 0.000000 11.760202 459.004636 21.631204 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+1 0.000000 21.828137 50.980842 32.793175 nnnnnnnnnn
+1 0.000000 32.795917 509.801841 43.760955 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+1 0.000000 43.995878 53.549975 55.512047 nnnnnnnnnn
+1 0.000000 55.649144 535.499552 67.165313 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+1 0.000000 66.855871 56.061154 78.914945 nnnnnnnnnn
+1 0.000000 78.509137 560.597993 90.568211 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+1 0.000000 90.626765 61.199515 103.788101 nnnnnnnnnn
+1 0.000000 103.651004 611.994469 116.812340 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
