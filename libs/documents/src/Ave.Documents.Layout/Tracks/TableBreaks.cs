@@ -49,7 +49,7 @@ internal static class TableBreaks
 
     /// <summary>
     /// The breakpoints inside a unit that does not fit: between two of its rows whose upper part fits (a spanning
-    /// cell is cut there, so it violates an avoid), and inside the first row that does not fit.
+    /// cell continues over it, see <see cref="BetweenRowsAppeal"/>), and inside the first row that does not fit.
     /// </summary>
     /// <param name="table">The table.</param>
     /// <param name="content">The page up to the unit.</param>
@@ -66,7 +66,7 @@ internal static class TableBreaks
             var top = segment.RowTop(row);
             if (row > segment.FirstRow)
             {
-                yield return new Breakpoint(BreakKind.BetweenRows, row, BreakAppeal.ViolatesAvoid, content, segment);
+                yield return new Breakpoint(BreakKind.BetweenRows, row, BetweenRowsAppeal(table.Grid, segment, row), content, segment);
             }
 
             if (!Fitting.Fits(top + segment.Heights[row - segment.FirstRow] + InsideBelow(table, row), height) || row == segment.LastRow)
@@ -268,6 +268,35 @@ internal static class TableBreaks
             current.IsFirstOfGroup ? BreakAvoidance.Between(previous.Group, current.Group) : BreakAppeal.Perfect);
         return withinKeptGroup ? BreakAppeal.ViolatesAvoid : between;
     }
+
+    /// <summary>
+    /// THE RULE FOR A BREAK BETWEEN TWO ROWS THAT A CELL SPANNING ROWS CROSSES: a row span does not keep its rows
+    /// together. The break is an ordinary break between rows, with the appeal a break before <paramref name="row"/>
+    /// has anywhere (<see cref="BeforeAppeal"/>: lower inside a row group kept together, or at a keep-with-next), and
+    /// the spanning cell continues on the next page, cut as a break inside it cuts it. The one keep rule a span adds
+    /// is the cell's own: the cell's content breaks at this break, and every breakpoint inside it has the cell as an
+    /// ancestor, so a cell kept together (<c>break-inside: avoid</c>) lowers the appeal (CSS Fragmentation 3 §4.4,
+    /// rules 2 and 4). Without this rule the break before the whole unit would always win, and the rows under a label
+    /// would move to the next page together, leaving the page above half empty.
+    /// </summary>
+    /// <remarks>
+    /// CSS Fragmentation 3 §4.1 puts class A breaks "Between sibling boxes of the following types", among them "table
+    /// row boxes", and says nothing about a cell that spans them; CSS 2.1 is silent too (§13.3.3 names no table rows, §17
+    /// no page breaks). CSS Tables 3 (Working Draft, §6.1) asks to keep a row unbroken only "if the cells spanning the
+    /// row do not span any subsequent row"; other rows "are said freely fragmentable". Chromium 159 prints the same
+    /// (tools/reference/chromium, cases b4-row-span and b5-row-span-kept-cell: it breaks between the rows under a
+    /// label, and moves a label kept together whole); it dropped its own avoidance of such breaks in 2023, because it
+    /// was "creating large gaps when printing" (Chromium review 4136462, bug 1396218).
+    /// </remarks>
+    /// <param name="grid">The grid.</param>
+    /// <param name="segment">The unit the break is in, measured.</param>
+    /// <param name="row">The row the break comes before.</param>
+    /// <returns>The appeal.</returns>
+    private static BreakAppeal BetweenRowsAppeal(TableGrid grid, TableSegments.Segment segment, int row) =>
+        segment.Cells
+            .Select(cell => grid.Cells[cell.Cell])
+            .Where(cell => cell.Row < row && cell.LastRow >= row)
+            .Aggregate(BeforeAppeal(grid, row), (appeal, cell) => BreakAvoidance.Inside(cell.Box, appeal));
 
     /// <summary>The appeal of a break inside a row: lower when the row or its group is kept together.</summary>
     private static BreakAppeal InsideAppeal(TableGrid grid, int row) =>

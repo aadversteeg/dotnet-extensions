@@ -242,7 +242,11 @@ Each is documented next to its code as well.
   whole (`Tracks/TableBreaks.cs`, `CutsInsideRow`, decided from the placed result). So no page ends with an empty strip
   of a row: not beside a cell that spans rows and placed its text higher up, nor beside cells of invisible characters
   or empty padded blocks. With `Clone` such a cut needs one line width more room than with `Slice`, so on a very small
-  page area a table may not fit with `Clone` that fits with `Slice`.
+  page area a table may not fit with `Clone` that fits with `Slice`. A row span does not keep its rows together: a
+  break between two rows that a spanning cell crosses is an ordinary break between rows, with the appeal it would
+  have without the span, and the cell continues on the next page (`TableBreaks.BetweenRowsAppeal`). The author's keep
+  rules still apply: a row group kept together, a spanning cell kept together, `KeepWithNext`. So the rows under a
+  label fill their pages as rows without one do.
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.

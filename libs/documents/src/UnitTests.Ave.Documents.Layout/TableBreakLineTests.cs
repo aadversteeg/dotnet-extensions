@@ -279,16 +279,17 @@ public class TableBreakLineTests
     {
         // Offset 12.25, page area 120: the second row of unit 02 starts at 106.5 (the centre of the 3pt line above it)
         // and the page ends at 107.75, inside the lower half of that line. Breaking inside that row would cut the line
-        // off at 108, so it is no breakpoint; of the others, the break before the unit (at 87.5) keeps the unit
-        // together and wins over the break between its rows, which cuts the spanning cell.
+        // off at 108, so it is no breakpoint. The latest break left is the one between the unit's rows, at 106.5: a
+        // row span does not keep its rows together (fix round 6, SL-1), so it is an ordinary break between rows and
+        // wins over the break before the unit (at 87.5); the spanning cell continues on page 2.
         var (document, _) = SpannedUnits(12.25, 120, BoxDecorationBreak.Slice);
 
         var pages = Paginate(document);
 
         var table = Boxes(pages[0].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box;
-        table.Size.Height.Should().BeApproximately(87.5, Epsilon);
-        Words(table).Should().EndWith(["b01"]);
-        Words(Boxes(pages[1].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).Should().StartWith(["s02x", "s02y", "s02z", "a02", "b02"]);
+        table.Size.Height.Should().BeApproximately(106.5, Epsilon);
+        Words(table).Should().EndWith(["b01", "s02x", "a02"]);
+        Words(Boxes(pages[1].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).Should().StartWith(["s02y", "s02z", "b02"]);
     }
 
     [Fact]

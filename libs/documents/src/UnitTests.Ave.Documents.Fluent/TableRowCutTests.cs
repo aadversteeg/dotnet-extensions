@@ -233,9 +233,9 @@ public class TableRowCutTests
     public void P1_a_label_over_three_one_line_rows_moves_the_row_that_does_not_fit_whole()
     {
         // Probe P1 of review 35, clone with 1 pt lines, page area 180: page 1 ended with "row #57, 10.6 high: NO TEXT"
-        // under "Day3 a3", and the whole row "b3" followed on page 2. That cut is refused now, and of the breaks left,
-        // the one before the unit (no cell cut) wins over the one between its rows (which cuts the label): page 1 ends
-        // with unit 2 and the label goes to page 2 with its three rows.
+        // under "Day3 a3", and the whole row "b3" followed on page 2. That cut is refused now, and the latest break left
+        // is the one between "a3" and "b3": a row span does not keep its rows together (fix round 6, SL-1), so page 1
+        // ends with "Day3 a3" and the label continues on page 2 beside "b3" and "c3".
         var table = Table(Columns(60.Pt(), Fill(1)), [.. Enumerable.Range(0, 6).SelectMany(u => new TablePart[]
         {
             TableRow([Cell($"Day{u}").RowSpan(3), Cell($"a{u}")]), TableRow([Cell($"b{u}")]), TableRow([Cell($"c{u}")]),
@@ -246,8 +246,8 @@ public class TableRowCutTests
         result.IsSuccess.Should().BeTrue();
         RowParts.EmptyStrips(result.Value).Should().BeEmpty();
         var pages = result.Value.Select(page => Tables(page.Root.Fragment).Single()).ToList();
-        Words(pages[0]).Should().EndWith(["Day2", "a2", "b2", "c2"]);
-        Words(pages[1]).Should().StartWith(["Day3", "a3", "b3", "c3"]);
+        Words(pages[0]).Should().EndWith(["Day2", "a2", "b2", "c2", "Day3", "a3"]);
+        Words(pages[1]).Should().StartWith(["b3", "c3", "Day4"]);
     }
 
     [Fact]

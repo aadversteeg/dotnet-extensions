@@ -1253,3 +1253,14 @@ wording changed for another reason keeps the verdict of its quotation and claim,
 | `src/UnitTests.Ave.Documents.Render.Pdf/PageModelContractTests.cs:254` | citation | unchanged: no quotation of its own |
 | `src/UnitTests.Ave.Documents.Render.Pdf/TotalApiTests.cs:7` | mention | mention: names a specification or program, claims no place |
 | `src/Ave.Documents.Fonts/Tables/LocaTable.cs:47` | quotation | RIGHT: verbatim (ASCII `<=`), scout check of fix round 4 (2026-11-16, primary source read); newly extracted, block unchanged |
+
+## Fifth check, 2026-11-17: fix round 6
+
+Blocks new or changed in fix round 6 (against `e2f22af`). Every quotation was read from the primary source by the
+research agent on 2026-11-17 (raw W3C HTML; the Chromium commit as exported to web-platform-tests).
+
+| Where | Kind | Verdict |
+| --- | --- | --- |
+| `src/Ave.Documents.Layout/Tracks/TableBreaks.cs:272` | citation | RIGHT: CSS Fragmentation 3 (CR 2018-12-04) §4.1, class A "Between sibling boxes of the following types", list holds "table row boxes", no text on row-spanning cells; §4.4 rule 2 ("a common ancestor of all the elements has a break-inside value of avoid") and rule 4 as in BreakAvoidance.cs; CSS 2.1 §13.3.3 names no table rows, §17 no page breaks; CSS Tables 3 (WD 2025-12-16) §6.1 "if the cells spanning the row do not span any subsequent row", "Other rows are said freely fragmentable."; Chromium commit "[table-fragmentation] Remove rowspan avoidance logic" (review 4136462, bug 1396218, 2023-01-10): "creating large gaps when printing", verbatim |
+| `src/Ave.Documents.Layout/Tracks/TablePage.cs:11` | citation | unchanged places; the sentence on a break between two rows of a unit now states the rule of TableBreaks.cs:272, no new quotation |
+| `src/UnitTests.Ave.Documents.Layout/ChromiumReferenceTests.cs` (two new tests) | mention | mention: Chromium 159 print of cases `b4-row-span` and `b5-row-span-kept-cell`, measured 2026-11-17 (`tools/reference/chromium/measured/`) |

@@ -167,4 +167,51 @@ public class ChromiumReferenceTests
             ],
             options => options.WithStrictOrdering());
     }
+
+    /// <summary>
+    /// The row-span print cases <c>b4-row-span</c> and <c>b5-row-span-kept-cell</c>: no header, four labels that
+    /// each span six one-line rows, on the 260 × 160 pt page area; in the second case every label is a cell kept
+    /// together (<c>break-inside: avoid</c>).
+    /// </summary>
+    private static StyledDocument LabelCase(TableModels t, bool keptLabels)
+    {
+        var label = TableModels.ReferenceCell with { Span = new CellSpan(1, 6), BreakInside = keptLabels ? BreakInside.Avoid : BreakInside.Auto };
+        var rows = Enumerable.Range(0, 4).SelectMany(unit => Enumerable.Range(0, 6).Select(index => index == 0
+            ? t.Row(t.Cell($"m{unit}", label), t.Cell($"r{unit}x{index}"))
+            : t.Row(t.Cell($"r{unit}x{index}"))));
+        return TableModels.Page(260, 160, t.Table([new TrackSize.Fixed(80.Pt()), new TrackSize.Fill(1)], t.Body([.. rows])));
+    }
+
+    /// <summary>The text of every cell on a page that shows text.</summary>
+    private static IEnumerable<string> CellTexts(PageFragment page) =>
+        Boxes(page.Root.Fragment, SemanticRole.TableCell).Select(cell => Text(cell)).Where(text => text.Length > 0);
+
+    [Fact]
+    public void Rows_under_a_label_that_spans_them_break_between_them_like_Chromium()
+    {
+        // Chromium print (b4-row-span): a row span does not keep its rows together. Page 1 holds m0 and its six rows,
+        // m1 and three of its rows; page 2 the other three rows of m1 (the label continues, its text stays on page 1),
+        // m2 and its six rows; page 3 m3 and its six rows.
+        var pages = Paginate(LabelCase(new TableModels(), keptLabels: false));
+
+        pages.Select(page => CellTexts(page).ToList()).Should().BeEquivalentTo(
+            [
+                ["m0", "r0x0", "r0x1", "r0x2", "r0x3", "r0x4", "r0x5", "m1", "r1x0", "r1x1", "r1x2"],
+                ["r1x3", "r1x4", "r1x5", "m2", "r2x0", "r2x1", "r2x2", "r2x3", "r2x4", "r2x5"],
+                (List<string>)["m3", "r3x0", "r3x1", "r3x2", "r3x3", "r3x4", "r3x5"],
+            ],
+            options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public void Rows_under_a_label_kept_together_move_to_the_next_page_whole_like_Chromium()
+    {
+        // Chromium print (b5-row-span-kept-cell): with break-inside: avoid on the label, a break between its rows would
+        // break inside it, so each label moves to the next page with its six rows: four pages.
+        var pages = Paginate(LabelCase(new TableModels(), keptLabels: true));
+
+        pages.Select(page => CellTexts(page).ToList()).Should().BeEquivalentTo(
+            Enumerable.Range(0, 4).Select(unit => (List<string>)[$"m{unit}", .. Enumerable.Range(0, 6).Select(index => $"r{unit}x{index}")]),
+            options => options.WithStrictOrdering());
+    }
 }
