@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Suppress XML documentation warnings for test projects -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- The engine targets net10.0 only: -p:UseNs20=true and -p:UseNs21=true do not apply here -->
+    <Ns20AssetUnderTest>false</Ns20AssetUnderTest>
+    <!-- Release runs these tests in head mode: they use Ave.Extensions.Documents,
+         which depends on Ave.Extensions.Documents.Fluent; in release mode it would bring the
+         published package next to the one under test (CS1704). See docs/RELEASING.md. -->
+    <TestInHeadMode>true</TestInHeadMode>
+    <!-- Output must not depend on the machine's culture (numbers in PDF and in the text serialisations) -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
+    <Using Include="System" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Linq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Extensions.Documents.Fluent\Ave.Extensions.Documents.Fluent.csproj" />
+    <!-- The refusal and metadata tests render through the composition package (ToPdf). -->
+    <ProjectReference Include="..\Ave.Extensions.Documents\Ave.Extensions.Documents.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.TestSupport\Ave.Extensions.Documents.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tests' own check of the rule for a row cut by a page break, shared with the layout tests. -->
+    <Compile Include="..\UnitTests.Extensions.Documents.Layout\RowParts.cs" Link="RowParts.cs" />
+  </ItemGroup>
+
+</Project>

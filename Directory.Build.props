@@ -6,6 +6,8 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Code-style rules that .editorconfig sets to warning fail the build (today only libs/documents sets any) -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
@@ -37,8 +39,10 @@
     <!-- Source Link comes with the .NET SDK: no package reference. A package reference would put its build-time
          dependencies (System.Memory and others) into the netstandard2.0 compile graph of every library. -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <!-- On GitHub Actions: deterministic source paths (/_/...) in the PDBs -->
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- On GitHub Actions: deterministic source paths (/_/...) in the PDBs of the libraries. Not for tests, samples
+         and tools: their [CallerFilePath] values must stay real paths, because tests find their golden files and test
+         data next to their source with them. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and $(MSBuildProjectName.StartsWith('Ave.Extensions.'))">true</ContinuousIntegrationBuild>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -55,9 +59,11 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <!-- Every package carries the README of its family (libs/<family>/README.md) and the repository LICENSE -->
+  <!-- Every package carries the README of its family (libs/<family>/README.md) and the repository LICENSE, and the
+       family's NOTICE.md when it has one (third-party data and fonts, what the code was written from) -->
   <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Ave.Extensions.'))">
     <None Include="$(MSBuildProjectDirectory)/../README.md" Pack="true" PackagePath="\" Visible="false"/>
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" Visible="false"/>
+    <None Include="$(MSBuildProjectDirectory)/../NOTICE.md" Condition="Exists('$(MSBuildProjectDirectory)/../NOTICE.md')" Pack="true" PackagePath="\" Visible="false"/>
   </ItemGroup>
 </Project>

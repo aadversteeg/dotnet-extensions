@@ -38,12 +38,21 @@ a newer version sets `VersionOverride` on its reference.
   carries the minimum version, and the lower package is not built.
 
 A test project references only the package it tests. The packages below it come through that package, so in
-release mode the tests run against the published minimum versions. Two test projects cannot work that way:
+release mode the tests run against the published minimum versions. Some test projects cannot work that way:
 `UnitTests.Extensions.Functional` uses `Ave.Extensions.Functional.FluentAssertions` and
 `UnitTests.Extensions.FileSystem` uses `Ave.Extensions.FileSystem.InMemory`, and both helpers depend on the
 package under test. In release mode the helper would bring the published version of the package under test next to
 the one being built (error CS1704). These projects set `<TestInHeadMode>true</TestInHeadMode>`, and a release runs
-them in head mode.
+them in head mode. In the documents family the same holds for `UnitTests.Extensions.Documents.Fonts` and
+`.PageModel` (their test helper `Ave.Extensions.Documents.TestSupport` depends on Fonts and PageModel),
+`UnitTests.Extensions.Documents.Fluent` (it renders through `Ave.Extensions.Documents`, which depends on Fluent) and
+`UnitTests.Extensions.Documents.Architecture` (the family's rules, checked on the head build of every library
+together).
+
+Other packages of this repository that a test project uses besides the one it tests are package references, like a
+library's (for example `Ave.Extensions.Documents.Typesetting` in `UnitTests.Extensions.Documents.Render.Pdf`), so in
+release mode they are the published minimum versions too. A test project that tests no package of its own name sets
+`<TestedPackageId>`: `UnitTests.Extensions.Documents.Samples` and `.Architecture` test `Ave.Extensions.Documents`.
 
 ## What the release workflow does
 
@@ -133,6 +142,49 @@ All file-system minimums rise in this wave.
 
 The functional, error-paths and fluent-contracts minimums are versions that are on nuget.org today, so those
 packages can be released in any order.
+
+## First release of the documents family
+
+The documents family (`libs/documents`) is new on nuget.org. Its first release is `0.1.0-preview.2` of all 11
+packages. The minimum versions of its own packages in `Directory.Packages.props` are already `0.1.0-preview.2`, so
+nothing has to be raised between the steps; but in release mode a package restores the packages below it from
+nuget.org, so each step starts only when the packages of the step before are on nuget.org (indexing can take a few
+minutes). Until the wave is done, the CI job "Release mode (main only)" is red for the documents packages that are
+not published yet.
+
+The tag names are the package ids without `Ave.Extensions.`, as for every package:
+
+| Tag name | Package |
+|---|---|
+| `documents-core` | `Ave.Extensions.Documents.Core` |
+| `documents-fonts` | `Ave.Extensions.Documents.Fonts` |
+| `documents-images` | `Ave.Extensions.Documents.Images` |
+| `documents-page-model` | `Ave.Extensions.Documents.PageModel` |
+| `documents-pdf` | `Ave.Extensions.Documents.Pdf` |
+| `documents-typesetting` | `Ave.Extensions.Documents.Typesetting` |
+| `documents-document-model` | `Ave.Extensions.Documents.DocumentModel` |
+| `documents-layout` | `Ave.Extensions.Documents.Layout` |
+| `documents-render-pdf` | `Ave.Extensions.Documents.Render.Pdf` |
+| `documents-fluent` | `Ave.Extensions.Documents.Fluent` |
+| `documents` | `Ave.Extensions.Documents` |
+
+Release order, lowest layer first (the packages of one step can go in any order):
+
+1. `documents-core` (it needs `Ave.Extensions.Functional` 0.1.0-preview.3 and `Ave.Extensions.ErrorPaths`
+   0.0.3-preview.1, both on nuget.org);
+2. `documents-fonts`, `documents-images`;
+3. `documents-page-model`;
+4. `documents-pdf`, `documents-typesetting`, `documents-document-model`: their tests use
+   `Ave.Extensions.Documents.TestSupport`, which needs Fonts, Images and PageModel;
+5. `documents-layout`, `documents-render-pdf` (its tests also use Typesetting), `documents-fluent`;
+6. `documents`.
+
+For example, step 1:
+
+```shell
+git tag documents-core/0.1.0-preview.2
+git push origin documents-core/0.1.0-preview.2
+```
 
 ## One-time setup
 

@@ -1,0 +1,7 @@
+document title="Letter" author="Someone"
+page 1 size=200x100
+  fill (10, 10) 180x20 #ddebf7
+  start #1 paragraph
+  glyphs Lato-Regular 10pt #000000 at (10, 19.87) "Hi" g15@0 g98@7.635
+  end #1
+page 2 size=200x100

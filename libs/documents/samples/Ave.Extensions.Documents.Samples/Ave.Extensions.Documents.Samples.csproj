@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- An application: one TargetFramework. The root sets TargetFrameworks for every Ave.Extensions.* project, and
+         dotnet publish refuses a project with TargetFrameworks, even with one framework in it. -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- A sample application: never packed, no XML documentation required -->
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- No native app host: the publish folder then holds managed assemblies only (proved by tools/verify-samples.ps1).
+         Run with `dotnet Ave.Extensions.Documents.Samples.dll <output folder>`. -->
+    <UseAppHost>false</UseAppHost>
+    <!-- The timesheet formats numbers in the reader's culture (nl-NL, en-US) — .NET formatting in the template, not in
+         the engine — so this app needs the culture data the libraries do without. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Ave.Extensions.Documents\Ave.Extensions.Documents.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../assets/fonts/lato/*.ttf;$(MSBuildThisFileDirectory)../../assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The synthetic timesheet data of the reporting proof of concept (an earlier Typst version of the report) and
+         its logo as PNG (made by tools/generate-test-images.py). -->
+    <None Include="data/*.json;assets/logo.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

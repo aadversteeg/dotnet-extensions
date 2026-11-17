@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Shared helpers for the test projects: the committed test fonts, golden-file comparison and reading PDFs back with PdfPig.</Description>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <!-- A helper of the test projects: never packed, no XML documentation required -->
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Package references, like a library's: in release mode a test project then gets these at their published
+         minimum version, the same as the package under test does (see docs/RELEASING.md) -->
+    <PackageReference Include="Ave.Extensions.Documents.Fonts" />
+    <PackageReference Include="Ave.Extensions.Documents.PageModel" />
+    <PackageReference Include="Ave.Extensions.Documents.Images" />
+    <!-- PdfPig reads our PDFs back in tests (independent, pure managed, Apache-2.0). Test-only. -->
+    <PackageReference Include="PdfPig" />
+    <!-- The Docker-backed facts (reference checks that skip without Docker) derive from xunit's attributes. Test-only.
+         xunit.extensibility.core holds the attributes; the xunit package would make this a test project (its
+         xunit.core props set IsTestProject), and `dotnet test` on the solution would then abort on it. -->
+    <PackageReference Include="xunit.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The OFL test fonts (Lato, Theano Didot), copied next to every assembly that references this project. -->
+    <None Include="$(MSBuildThisFileDirectory)../assets/fonts/lato/*.ttf;$(MSBuildThisFileDirectory)../assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(MSBuildThisFileDirectory)../assets/fonts/theano/*.ttf" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The pinned reference tools image (qpdf, poppler, MuPDF, fontTools), built by ReferenceTools from this file. -->
+    <None Include="$(MSBuildThisFileDirectory)../tools/reference/tools.Dockerfile" Link="tools/tools.Dockerfile" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The image test files (made by tools/generate-test-images.py), for layout and PDF tests. -->
+    <None Include="$(MSBuildThisFileDirectory)../UnitTests.Extensions.Documents.Images/Assets/*" Link="images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

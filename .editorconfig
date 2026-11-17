@@ -8,3 +8,9 @@ indent_size = 4
 
 [*.{csproj,props,targets,slnx,proj,config,xml,json,yml,yaml}]
 indent_size = 2
+
+# documents: unused using directives and block-scoped namespaces fail the build (EnforceCodeStyleInBuild in
+# Directory.Build.props reports the rules that are set to warning here)
+[libs/documents/**.cs]
+dotnet_diagnostic.IDE0005.severity = warning
+csharp_style_namespace_declarations = file_scoped:warning

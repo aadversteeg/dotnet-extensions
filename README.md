@@ -11,10 +11,11 @@ released on its own.
 | `libs/error-paths` | `Ave.Extensions.ErrorPaths`, `.Functional`, `.Serialization`, `.FluentAssertions`, `.AspNetCore` | [README](libs/error-paths/README.md) |
 | `libs/fluent-contracts` | `Ave.Extensions.FluentContracts`, `.ForTesting`, `.ForValidation` | [README](libs/fluent-contracts/README.md) |
 | `libs/file-system` | `Ave.Extensions.FileSystem.Abstractions`, `Ave.Extensions.FileSystem`, `.Local`, `.InMemory`, `.AzureFileStorage`, `.MimeDetective` | [README](libs/file-system/README.md) |
+| `libs/documents` | `Ave.Extensions.Documents` and `.Core`, `.Fonts`, `.Images`, `.Pdf`, `.Typesetting`, `.DocumentModel`, `.PageModel`, `.Layout`, `.Render.Pdf`, `.Fluent`: a document engine that writes PDF/A and PDF/UA | [README](libs/documents/README.md) |
 
-The libraries target `netstandard2.0` and `net10.0`, with two differences: `Ave.Extensions.FileSystem.InMemory` and
+The libraries target `netstandard2.0` and `net10.0`, with these differences: `Ave.Extensions.FileSystem.InMemory` and
 `Ave.Extensions.FileSystem.AzureFileStorage` also target `netstandard2.1` (see the file-system README), and
-`Ave.Extensions.ErrorPaths.AspNetCore` targets `net10.0` only.
+`Ave.Extensions.ErrorPaths.AspNetCore` and the documents family target `net10.0` only.
 
 ## Building and testing
 
@@ -55,7 +56,7 @@ the test assembly loads is that build. Only `Ave.Extensions.FileSystem.InMemory`
 tests the same as `-p:UseNs20=true`.
 
 Use one switch at a time; together they stop the build with an error. `UnitTests.Extensions.ErrorPaths.AspNetCore`
-is left as it is in both modes, because its library has no `netstandard2.0` build. The switches live in
+and the documents tests are left as they are in both modes, because their libraries have no `netstandard2.0` build. The switches live in
 `Directory.Build.targets`.
 
 Delete the `bin` and `obj` folders before you switch between the three modes (the default and the two switches)
@@ -75,7 +76,9 @@ on .NET Framework.
 
 `.github/workflows/ci.yml` runs this check and the tests (Linux and Windows; the `net10.0` and the `netstandard2.0`
 build) for every pull request and every push to `main`. When the change affects the file-system family, it also
-runs the file-system tests with `-p:UseNs21=true`.
+runs the file-system tests with `-p:UseNs21=true`. The documents family runs on Linux and Windows against its
+`net10.0` build only; its reference tests need Docker with Linux containers and are skipped where there is none
+(see the documents README).
 
 ## References between the packages
 

@@ -416,3 +416,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Output of the documents samples, tools/verify-samples.ps1 and the Chromium measurement
+libs/documents/**/out/

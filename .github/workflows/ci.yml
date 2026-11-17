@@ -2,8 +2,9 @@ name: CI
 
 # Builds and tests the families a change touches, on Linux and Windows, against the net10.0 build and the
 # netstandard2.0 build of the libraries. When the file-system family is affected, its tests also run against the
-# netstandard2.1 build of the two libraries that have one. On main it also builds and tests every package the way
-# a release does. Nothing here publishes anything. See docs/RELEASING.md.
+# netstandard2.1 build of the two libraries that have one. The documents family targets net10.0 only and has a job
+# of its own. On main it also builds and tests every package the way a release does. Nothing here publishes
+# anything. See docs/RELEASING.md.
 
 on:
   push:
@@ -37,6 +38,7 @@ jobs:
     outputs:
       solutions: ${{ steps.affected.outputs.solutions }}
       file-system: ${{ steps.affected.outputs.file-system }}
+      documents: ${{ steps.affected.outputs.documents }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -63,6 +65,8 @@ jobs:
               - 'libs/fluent-contracts/**'
             file-system:
               - 'libs/file-system/**'
+            documents:
+              - 'libs/documents/**'
 
       - id: affected
         name: Choose the solutions to build
@@ -71,29 +75,34 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           # A family is built and tested when it changed or a family below it changed. The order is
-          # functional <- error-paths <- fluent-contracts and file-system (file-system uses both lower families).
-          # So a change at the root (build files, eng/, this workflow), in functional or in error-paths builds
-          # everything; fluent-contracts and file-system only build themselves.
+          # functional <- error-paths <- fluent-contracts, file-system and documents (file-system and documents use
+          # both lower families). So a change at the root (build files, eng/, this workflow), in functional or in
+          # error-paths builds every family; fluent-contracts, file-system and documents only build themselves.
+          # The job test gets the family solutions except documents, which targets net10.0 only and runs in the
+          # job test-documents; the root solution dotnet-extensions.slnx holds the same projects as all family
+          # solutions together.
           has() { [[ "$CHANGES" == *"\"$1\""* ]]; }
+          all=false
+          if [ "$EVENT" = workflow_dispatch ] || has root || has functional || has error-paths; then all=true; fi
           solutions=""
-          if [ "$EVENT" = workflow_dispatch ] || has root || has functional || has error-paths; then
-            solutions="dotnet-extensions.slnx"
-          else
-            if has fluent-contracts; then solutions="$solutions libs/fluent-contracts/extensions.slnx"; fi
-            if has file-system; then solutions="$solutions libs/file-system/extensions.slnx"; fi
-          fi
+          for family in functional error-paths fluent-contracts file-system; do
+            if [ "$all" = true ] || has "$family"; then solutions="$solutions libs/$family/extensions.slnx"; fi
+          done
           solutions="${solutions# }"
-          # file-system=true when the solutions to build include the file-system family (the whole repository
-          # does): the job test-netstandard21 runs only then.
+          # file-system=true: the job test-netstandard21 runs. documents=true: the job test-documents runs.
           file_system=false
-          if [ "$solutions" = dotnet-extensions.slnx ] || [[ " $solutions " == *" libs/file-system/extensions.slnx "* ]]; then
-            file_system=true
-          fi
+          if [ "$all" = true ] || has file-system; then file_system=true; fi
+          documents=false
+          if [ "$all" = true ] || has documents; then documents=true; fi
           echo "Changed: $CHANGES"
           echo "Solutions: ${solutions:-none}"
           echo "File-system family affected: $file_system"
-          echo "solutions=$solutions" >> "$GITHUB_OUTPUT"
-          echo "file-system=$file_system" >> "$GITHUB_OUTPUT"
+          echo "Documents family affected: $documents"
+          {
+            echo "solutions=$solutions"
+            echo "file-system=$file_system"
+            echo "documents=$documents"
+          } >> "$GITHUB_OUTPUT"
 
   test:
     name: Test (${{ matrix.os }}, ${{ matrix.asset }})
@@ -186,10 +195,48 @@ jobs:
           path: ${{ runner.temp }}/test-results
           if-no-files-found: ignore
 
+  test-documents:
+    # The documents family targets net10.0 only, so it has no netstandard2.0 run. Its reference tests (veraPDF,
+    # qpdf and the other tools in pinned Docker images, trait Category=Reference) run where the runner's Docker runs
+    # Linux containers (ubuntu-latest); on windows-latest they are skipped with a message that says so.
+    name: Test (${{ matrix.os }}, net10.0, documents)
+    needs: changes
+    if: needs.changes.outputs.documents == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      SOLUTION: libs/documents/extensions.slnx
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build "$SOLUTION" -c Release
+
+      - name: Test
+        run: |
+          dotnet test "$SOLUTION" -c Release --no-build --logger trx --results-directory "$RUNNER_TEMP/test-results"
+
+      - name: Keep the test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.os }}-documents
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: ignore
+
   checks:
     name: Repository checks
     needs: changes
-    if: needs.changes.outputs.solutions != ''
+    if: needs.changes.outputs.solutions != '' || needs.changes.outputs.documents == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

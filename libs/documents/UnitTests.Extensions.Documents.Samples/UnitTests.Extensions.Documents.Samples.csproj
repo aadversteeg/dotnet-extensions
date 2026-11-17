@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Suppress XML documentation warnings for test projects -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- The engine targets net10.0 only: -p:UseNs20=true and -p:UseNs21=true do not apply here -->
+    <Ns20AssetUnderTest>false</Ns20AssetUnderTest>
+    <!-- The samples render through the composition package (ToPdf): a release of that package runs these tests -->
+    <TestedPackageId>Ave.Extensions.Documents</TestedPackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
+    <Using Include="System" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Linq" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- The timesheet sample formats numbers in nl-NL and en-US, so these tests need culture data. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\samples\Ave.Extensions.Documents.Samples\Ave.Extensions.Documents.Samples.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.TestSupport\Ave.Extensions.Documents.TestSupport.csproj" />
+  </ItemGroup>
+
+</Project>

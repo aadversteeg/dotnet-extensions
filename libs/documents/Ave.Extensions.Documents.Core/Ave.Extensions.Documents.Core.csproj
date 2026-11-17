@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net10.0 only: the engine is written for .NET 10 and has no netstandard build (README.md, "Target framework") -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <PackageTags>pdf;pdf-a;pdf-ua;document;layout;typesetting</PackageTags>
+    <Description>Shared vocabulary of the Ave.Extensions.Documents engine: typed lengths, geometry, colour, source locations, semantic roles and the error-code tree.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The engine needs newer versions than the repository's minimums -->
+    <PackageReference Include="Ave.Extensions.Functional" VersionOverride="0.1.0-preview.3" />
+    <PackageReference Include="Ave.Extensions.Functional.Core" VersionOverride="0.1.0-preview.3" />
+    <PackageReference Include="Ave.Extensions.ErrorPaths" VersionOverride="0.0.3-preview.1" />
+    <PackageReference Include="Ave.Extensions.ErrorPaths.Functional" />
+  </ItemGroup>
+
+</Project>

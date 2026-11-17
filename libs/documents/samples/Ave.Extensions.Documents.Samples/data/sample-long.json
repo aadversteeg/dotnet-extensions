@@ -1,0 +1,808 @@
+{
+  "reportDate": "2026-11-03T00:00:00",
+  "projectName": "Platformteam Q3",
+  "projectTitle": "PoC",
+  "periodStart": "2026-09-01T00:00:00",
+  "periodEnd": "2026-09-30T00:00:00",
+  "customerName": "Bakkerij De Gouden Korenaar B.V.",
+  "timeEntries": [
+    {
+      "title": "Ondersteuning gebruikers \u2013 vragen over export",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Ontwikkeling",
+      "duration": 8.16,
+      "executedAt": "2026-09-01T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Documentatie",
+      "duration": 12.94,
+      "executedAt": "2026-09-01T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Documentatie",
+      "duration": 8.95,
+      "executedAt": "2026-09-01T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "",
+      "taskName": "Overleg",
+      "duration": 12.55,
+      "executedAt": "2026-09-01T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Ontwikkeling",
+      "duration": 11.97,
+      "executedAt": "2026-09-01T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "",
+      "taskName": "Overleg",
+      "duration": 4.79,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Overleg",
+      "duration": 11.69,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Ontwikkeling",
+      "duration": 6.14,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "",
+      "taskName": "Review",
+      "duration": 6.01,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Documentatie",
+      "duration": 11.11,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "",
+      "taskName": "Beheer",
+      "duration": 14.09,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Review",
+      "duration": 5.97,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "",
+      "taskName": "Review",
+      "duration": 13.64,
+      "executedAt": "2026-09-02T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Analyse",
+      "duration": 11.16,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Ontwikkeling",
+      "duration": 9.24,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 12.7,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "",
+      "taskName": "Review",
+      "duration": 10.23,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Documentatie",
+      "duration": 5.96,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 13.3,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Overleg",
+      "duration": 6.44,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Documentatie",
+      "duration": 10.4,
+      "executedAt": "2026-09-03T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Overleg",
+      "duration": 10.96,
+      "executedAt": "2026-09-04T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Analyse",
+      "duration": 13.11,
+      "executedAt": "2026-09-04T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "",
+      "taskName": "Documentatie",
+      "duration": 8.96,
+      "executedAt": "2026-09-04T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Ontwikkeling",
+      "duration": 10.23,
+      "executedAt": "2026-09-07T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Review",
+      "duration": 12.18,
+      "executedAt": "2026-09-07T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Analyse",
+      "duration": 6.9,
+      "executedAt": "2026-09-08T00:00:00"
+    },
+    {
+      "title": "Azure Container Apps scaling",
+      "description": "",
+      "taskName": "Review",
+      "duration": 5.9,
+      "executedAt": "2026-09-08T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Beheer",
+      "duration": 10.72,
+      "executedAt": "2026-09-08T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Overleg",
+      "duration": 13.77,
+      "executedAt": "2026-09-08T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "",
+      "taskName": "Review",
+      "duration": 7.35,
+      "executedAt": "2026-09-08T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Ontwikkeling",
+      "duration": 8.84,
+      "executedAt": "2026-09-08T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Documentatie",
+      "duration": 6.29,
+      "executedAt": "2026-09-08T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Review",
+      "duration": 8.8,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "",
+      "taskName": "Review",
+      "duration": 7.93,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "",
+      "taskName": "Documentatie",
+      "duration": 4.88,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Azure Container Apps scaling",
+      "description": "",
+      "taskName": "Review",
+      "duration": 13.34,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Review",
+      "duration": 10.19,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Overleg",
+      "duration": 4.96,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Ondersteuning gebruikers \u2013 vragen over export",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Documentatie",
+      "duration": 9.1,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Ontwikkeling",
+      "duration": 9.45,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Azure Container Apps scaling",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Review",
+      "duration": 8.18,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Beheer",
+      "duration": 13.12,
+      "executedAt": "2026-09-09T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Overleg",
+      "duration": 13.06,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 7.81,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Ontwikkeling",
+      "duration": 5.06,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Beheer",
+      "duration": 7.77,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Overleg",
+      "duration": 14.09,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Analyse",
+      "duration": 4.7,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Azure Container Apps scaling",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Review",
+      "duration": 11.15,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Analyse",
+      "duration": 5.19,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Ontwikkeling",
+      "duration": 9.29,
+      "executedAt": "2026-09-10T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "",
+      "taskName": "Review",
+      "duration": 13.11,
+      "executedAt": "2026-09-11T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "",
+      "taskName": "Analyse",
+      "duration": 4.59,
+      "executedAt": "2026-09-11T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "",
+      "taskName": "Analyse",
+      "duration": 4.92,
+      "executedAt": "2026-09-14T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Analyse",
+      "duration": 13.54,
+      "executedAt": "2026-09-14T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Beheer",
+      "duration": 8.43,
+      "executedAt": "2026-09-14T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Analyse",
+      "duration": 8.58,
+      "executedAt": "2026-09-14T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Overleg",
+      "duration": 5.29,
+      "executedAt": "2026-09-14T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 4.94,
+      "executedAt": "2026-09-14T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Review",
+      "duration": 5.48,
+      "executedAt": "2026-09-15T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 4.61,
+      "executedAt": "2026-09-15T00:00:00"
+    },
+    {
+      "title": "Azure Container Apps scaling",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Overleg",
+      "duration": 9.34,
+      "executedAt": "2026-09-15T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Ontwikkeling",
+      "duration": 13.09,
+      "executedAt": "2026-09-15T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Documentatie",
+      "duration": 11.34,
+      "executedAt": "2026-09-16T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Overleg",
+      "duration": 6.75,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Documentatie",
+      "duration": 7.59,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Ontwikkeling",
+      "duration": 12.42,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Beheer",
+      "duration": 12.56,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "",
+      "taskName": "Beheer",
+      "duration": 8.32,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Review",
+      "duration": 13.73,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Overleg",
+      "duration": 6.7,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 6.44,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Analyse",
+      "duration": 5.62,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Analyse",
+      "duration": 8.29,
+      "executedAt": "2026-09-17T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Analyse",
+      "duration": 7.98,
+      "executedAt": "2026-09-18T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Beheer",
+      "duration": 7.86,
+      "executedAt": "2026-09-18T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Overleg",
+      "duration": 7.52,
+      "executedAt": "2026-09-21T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "",
+      "taskName": "Review",
+      "duration": 9.8,
+      "executedAt": "2026-09-21T00:00:00"
+    },
+    {
+      "title": "Ondersteuning gebruikers \u2013 vragen over export",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Overleg",
+      "duration": 11.61,
+      "executedAt": "2026-09-21T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "",
+      "taskName": "Documentatie",
+      "duration": 6.77,
+      "executedAt": "2026-09-22T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Overleg",
+      "duration": 6.11,
+      "executedAt": "2026-09-22T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 7.51,
+      "executedAt": "2026-09-22T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Beheer",
+      "duration": 13.73,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Documentatie",
+      "duration": 13.45,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Documentatie",
+      "duration": 7.14,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Caf\u00E9-overleg met Zo\u00EB en Ren\u00E9 over de planning voor Q1 \u2014 besluit: \u20AC-bedragen altijd met twee decimalen.",
+      "taskName": "Analyse",
+      "duration": 5.65,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Logging naar OTLP-collector",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 8.2,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Back-up en restore test",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Ontwikkeling",
+      "duration": 8.55,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Analyse",
+      "duration": 13.75,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "",
+      "taskName": "Analyse",
+      "duration": 6.49,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "",
+      "taskName": "Overleg",
+      "duration": 6.52,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Analyse",
+      "duration": 9.9,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Overleg",
+      "duration": 4.68,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Prijsberekening 50% korting = $x? (onderzoek)",
+      "description": "",
+      "taskName": "Review",
+      "duration": 12.27,
+      "executedAt": "2026-09-23T00:00:00"
+    },
+    {
+      "title": "Documentatie *deploy* procedure",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 5.72,
+      "executedAt": "2026-09-24T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Beheer",
+      "duration": 9.65,
+      "executedAt": "2026-09-24T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Overleg",
+      "duration": 14.08,
+      "executedAt": "2026-09-25T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Review",
+      "duration": 11.09,
+      "executedAt": "2026-09-25T00:00:00"
+    },
+    {
+      "title": "Datamodel facturatie (fase 2)",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 5.66,
+      "executedAt": "2026-09-25T00:00:00"
+    },
+    {
+      "title": "Azure Container Apps scaling",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Overleg",
+      "duration": 9.93,
+      "executedAt": "2026-09-28T00:00:00"
+    },
+    {
+      "title": "Azure Container Apps scaling",
+      "description": "",
+      "taskName": "Ontwikkeling",
+      "duration": 7.71,
+      "executedAt": "2026-09-28T00:00:00"
+    },
+    {
+      "title": "Overleg met Jansen \u0026 Zn. over factuurflow",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Beheer",
+      "duration": 12.83,
+      "executedAt": "2026-09-28T00:00:00"
+    },
+    {
+      "title": "Refinement sprint 42",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Ontwikkeling",
+      "duration": 5.19,
+      "executedAt": "2026-09-29T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Review",
+      "duration": 6.79,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "API endpoint voor weekoverzicht",
+      "description": "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a\u002Bb$; \u003Clabel\u003E @ref [haakjes] \\ backslash.",
+      "taskName": "Documentatie",
+      "duration": 9.13,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "",
+      "taskName": "Overleg",
+      "duration": 11.5,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Documentatie",
+      "duration": 13.36,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd.",
+      "taskName": "Beheer",
+      "duration": 8.38,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Code review PR #128 \u0026 #131",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Overleg",
+      "duration": 12.99,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Security review: Entra ID-rollen",
+      "description": "",
+      "taskName": "Documentatie",
+      "duration": 5.75,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Migratie naar Aspire 13.6",
+      "description": "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopen zonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt.",
+      "taskName": "Beheer",
+      "duration": 10.32,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Performance-analyse rapportage",
+      "description": "",
+      "taskName": "Analyse",
+      "duration": 8.79,
+      "executedAt": "2026-09-30T00:00:00"
+    },
+    {
+      "title": "Bugfix: urenstaat telt weekend dubbel",
+      "description": "Afgestemd met de product owner; vervolgactie ingepland.",
+      "taskName": "Overleg",
+      "duration": 8.8,
+      "executedAt": "2026-09-30T00:00:00"
+    }
+  ]
+}

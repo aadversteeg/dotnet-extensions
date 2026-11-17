@@ -1,0 +1,31 @@
+{
+  "reportDate": "2026-11-03T00:00:00",
+  "projectName": "Randgevallen 🚀",
+  "projectTitle": "PoC",
+  "periodStart": null,
+  "periodEnd": null,
+  "customerName": "Müller & Søn → “Klant”",
+  "timeEntries": [
+    {
+      "title": "Emoji 😀 and arrows → ⇒ and a\ttab",
+      "description": "Line one\nline two\r\n  with   extra   spaces, a non‑breaking hyphen and CJK 中文",
+      "taskName": "Test",
+      "duration": 1234.5,
+      "executedAt": "2026-10-01T00:00:00"
+    },
+    {
+      "title": "Rounding 0.005",
+      "description": "",
+      "taskName": "Test",
+      "duration": 0.005,
+      "executedAt": "2026-10-02T00:00:00"
+    },
+    {
+      "title": "Correction (negative)",
+      "description": "",
+      "taskName": "Test",
+      "duration": -1.25,
+      "executedAt": "2026-10-03T00:00:00"
+    }
+  ]
+}

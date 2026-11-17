@@ -1,0 +1,87 @@
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Images;
+
+namespace Ave.Extensions.Documents.DocumentModel;
+
+/// <summary>
+/// A node of the document tree: a <see cref="Box"/>, an <see cref="InlineRun"/> or an <see cref="ImageNode"/>.
+/// Every node has an id (its pre-order position) and the source location of the code or markup that produced it.
+/// </summary>
+/// <param name="Id">The node id, unique in the document.</param>
+/// <param name="Source">Where the node was written; reported with every error about it.</param>
+public abstract record Node(NodeId Id, SourceLocation Source);
+
+/// <summary>
+/// A box: a rectangle that is laid out by the algorithm <see cref="Layout"/> names and that contains child
+/// nodes. In CSS terms a block-level box (CSS Display 3 §2.1); <see cref="Layout"/> is its inner display type.
+/// </summary>
+/// <remarks>
+/// Which children a box may have depends on its algorithm: <see cref="LayoutAlgorithmId.Flow"/> stacks child
+/// boxes, <see cref="LayoutAlgorithmId.Inline"/> sets inline runs in lines (a block container whose content is an
+/// inline formatting context, CSS 2.1 §9.2.1), <see cref="LayoutAlgorithmId.Tracks"/> lays out row groups of rows of
+/// cells, <see cref="LayoutAlgorithmId.Image"/> holds one image. The algorithm reports an error for children it
+/// cannot lay out.
+/// </remarks>
+/// <param name="Id">The node id.</param>
+/// <param name="Role">What the box means (paragraph, heading, …), independent of how it is laid out.</param>
+/// <param name="Layout">The layout algorithm for its content.</param>
+/// <param name="Style">The computed box properties.</param>
+/// <param name="Children">The child nodes, in document order.</param>
+/// <param name="Source">Where the box was written.</param>
+public sealed record Box(
+    NodeId Id,
+    SemanticRole Role,
+    LayoutAlgorithmId Layout,
+    BoxStyle Style,
+    ValueList<Node> Children,
+    SourceLocation Source) : Node(Id, Source);
+
+/// <summary>
+/// A piece of text in one style, laid out by its parent's inline algorithm: literal text
+/// (<see cref="TextRun"/>) or text computed at layout time (<see cref="CounterRun"/>). Inline layout reports any
+/// other kind as invalid content.
+/// </summary>
+/// <param name="Id">The node id.</param>
+/// <param name="Style">The computed text properties.</param>
+/// <param name="Source">Where the run was written.</param>
+public abstract record InlineRun(NodeId Id, TextStyle Style, SourceLocation Source) : Node(Id, Source);
+
+/// <summary>A run of literal text; a leaf of the tree.</summary>
+/// <param name="Id">The node id.</param>
+/// <param name="Text">The text as written; white space is collapsed during layout (CSS Text 3 §4.1).</param>
+/// <param name="Style">The computed text properties.</param>
+/// <param name="Source">Where the text was written.</param>
+public sealed record TextRun(NodeId Id, string Text, TextStyle Style, SourceLocation Source) : InlineRun(Id, Style, Source);
+
+/// <summary>
+/// Text whose value is known only during layout: the number of the page it lands on, or the number of pages
+/// (CSS Paged Media 3 §6.1, the page-based counters <c>page</c> and <c>pages</c>, shown as <c>counter(page)</c> and
+/// <c>counter(pages)</c> in decimal). The paginator settles the page count with a whole-document fixpoint.
+/// </summary>
+/// <param name="Id">The node id.</param>
+/// <param name="Counter">Which counter.</param>
+/// <param name="Style">The computed text properties.</param>
+/// <param name="Source">Where the reference was written; reported when the page count does not settle.</param>
+public sealed record CounterRun(NodeId Id, PageCounter Counter, TextStyle Style, SourceLocation Source) : InlineRun(Id, Style, Source);
+
+/// <summary>The page-based counters (CSS Paged Media 3 §6.1).</summary>
+public enum PageCounter
+{
+    /// <summary>The number of the current page, starting at 1 (<c>counter(page)</c>).</summary>
+    PageNumber,
+
+    /// <summary>The total number of pages of the document (<c>counter(pages)</c>).</summary>
+    PageCount,
+}
+
+/// <summary>
+/// An image: a replaced element (CSS 2.1 §10.3.2), the only child of a box laid out by
+/// <see cref="LayoutAlgorithmId.Image"/>. Its size comes from <see cref="Width"/> and <see cref="Height"/> and, for
+/// what they leave open, from the image's natural size and aspect ratio.
+/// </summary>
+/// <param name="Id">The node id.</param>
+/// <param name="Image">The decoded image.</param>
+/// <param name="Width">The specified width, or null for <c>auto</c>.</param>
+/// <param name="Height">The specified height, or null for <c>auto</c>.</param>
+/// <param name="Source">Where the image was written.</param>
+public sealed record ImageNode(NodeId Id, ImageData Image, Length? Width, Length? Height, SourceLocation Source) : Node(Id, Source);

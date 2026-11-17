@@ -1,0 +1,431 @@
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
+
+namespace UnitTests.Extensions.Documents.Layout;
+
+/// <summary>
+/// The grid line at a page break between two rows. In the collapsing border model half of a line lies in the cells on
+/// each side of it (CSS 2.1 §17.6.2), and a box cut by a break gets nothing added at the cut (CSS Fragmentation 3
+/// §5.4, <c>box-decoration-break: slice</c>). So the line is split along its centre: its upper half ends the page,
+/// its lower half starts the next one, and a row fits when it fits down to the centre of its bottom line. Chromium
+/// 159 does exactly this (tools/reference/chromium, cases <c>mf4-line-*</c>).
+/// </summary>
+public class TableBreakLineTests
+{
+    private const double Epsilon = 1e-9;
+
+    private static BoxStyle Lined(double width) => BoxStyle.Initial with { Border = Border.All(new BorderSide(width.Pt(), Color.Black)) };
+
+    /// <summary>A two-column table of 30 one-line rows, every line <paramref name="lineWidth"/> wide, after an empty
+    /// block whose margin moves the table <paramref name="offset"/> down.</summary>
+    /// <summary>With <paramref name="empty"/> set, every row has a third cell, without content of that kind
+    /// (<see cref="TableModels.EmptyKinds"/>).</summary>
+    private static StyledDocument Rows(double lineWidth, double offset, double pageHeight, int count = 30, double fontSize = 10, BoxDecorationBreak mode = BoxDecorationBreak.Slice, string? empty = null)
+    {
+        var t = new TableModels();
+        var cell = Lined(lineWidth);
+        Box Cell(string text) => new(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, cell,
+            [new Box(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(t.Next(), text, Models.Text(fontSize), Models.At(0))], Models.At(0))],
+            Models.At(0));
+        var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
+        Box[] Cells(int i) => empty is null ? [Cell($"row{i:00}"), Cell("value")] : [Cell($"row{i:00}"), Cell("value"), t.Empty(empty, cell)];
+        ValueList<TrackSize> columns = empty is null ? [new TrackSize.Fill(1), new TrackSize.Fill(1)] : [new TrackSize.Fill(1), new TrackSize.Fill(1), new TrackSize.Fill(1)];
+        var table = t.Table(columns, t.Body([.. Enumerable.Range(0, count).Select(i => t.Row(Cells(i)))]));
+        return TableModels.Page(280, pageHeight, spacer, table with { Style = table.Style with { DecorationBreak = mode } });
+    }
+
+    private static IEnumerable<(BoxFragment Box, Point At)> Boxes(Fragment fragment, Point at, SemanticRole role) =>
+        fragment is BoxFragment box
+            ? (box.Box.Role == role ? [(box, at)] : Enumerable.Empty<(BoxFragment, Point)>())
+                .Concat(box.Children.SelectMany(child => Boxes(child.Fragment, at + child.Offset, role)))
+            : [];
+
+    private static string Text(Fragment fragment) => fragment switch
+    {
+        BoxFragment box => string.Concat(box.Children.Select(child => Text(child.Fragment))),
+        LineFragment line => string.Concat(line.Children.Select(child => Text(child.Fragment))),
+        TextFragment text => string.Concat(text.Glyphs.Select(glyph => glyph.Text)),
+        _ => string.Empty,
+    };
+
+    private static ValueList<PageFragment> Paginate(StyledDocument document)
+    {
+        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        return result.Value;
+    }
+
+    [Theory]
+    [InlineData(4.0, BoxDecorationBreak.Slice)]
+    [InlineData(1.0, BoxDecorationBreak.Slice)]
+    [InlineData(0.5, BoxDecorationBreak.Slice)]
+    [InlineData(4.0, BoxDecorationBreak.Clone)]
+    [InlineData(1.0, BoxDecorationBreak.Clone)]
+    [InlineData(0.5, BoxDecorationBreak.Clone)]
+    public void No_start_offset_leaves_a_row_without_content_or_a_line_outside_the_table(double lineWidth, BoxDecorationBreak mode) =>
+        EveryRowWholeOnePerPage(lineWidth, mode, empty: null);
+
+    /// <summary>The same sweep with a cell without content in every row, with and without grid lines: a cell without
+    /// content places nothing, so a row that does not fit is never cut into an empty strip and a whole row.</summary>
+    [Theory]
+    [MemberData(nameof(EmptyCellCases))]
+    public void No_start_offset_cuts_a_row_with_an_empty_cell_into_an_empty_strip(string empty, double lineWidth, BoxDecorationBreak mode) =>
+        EveryRowWholeOnePerPage(lineWidth, mode, empty);
+
+    public static TheoryData<string, double, BoxDecorationBreak> EmptyCellCases()
+    {
+        var cases = new TheoryData<string, double, BoxDecorationBreak>();
+        foreach (var empty in TableModels.EmptyKinds)
+        {
+            foreach (var lineWidth in new[] { 0.0, 1.0 })
+            {
+                cases.Add(empty, lineWidth, BoxDecorationBreak.Clone);
+                cases.Add(empty, lineWidth, BoxDecorationBreak.Slice);
+            }
+        }
+
+        return cases;
+    }
+
+    private static void EveryRowWholeOnePerPage(double lineWidth, BoxDecorationBreak mode, string? empty)
+    {
+        // The sweeps with a cell that draws nothing (eight kinds, each with and without lines) step by half a point.
+        const double PageHeight = 150;
+        var step = empty is null ? 0.25 : 0.5;
+        for (var offset = 0.0; offset < 40; offset += step)
+        {
+            var pages = Paginate(Rows(lineWidth, offset, PageHeight, mode: mode, empty: empty));
+
+            var because = $"{mode}, line width {lineWidth}, empty cell {empty ?? "none"}, offset {offset}";
+            var rows = new List<string>();
+            foreach (var page in pages)
+            {
+                var (table, at) = Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single();
+                (at.Y + table.Size.Height).Should().BeLessThanOrEqualTo(PageHeight + Epsilon, because + ": the table's part fits the page area");
+                foreach (var rule in table.Children.Where(child => child.Fragment is RuleFragment))
+                {
+                    rule.Offset.Y.Should().BeGreaterThanOrEqualTo(-Epsilon, because);
+                    (rule.Offset.Y + rule.Fragment.Size.Height).Should().BeLessThanOrEqualTo(table.Size.Height + Epsilon, because + ": no rule outside the table's box");
+                }
+
+                foreach (var (row, _) in Boxes(table, new Point(0, 0), SemanticRole.TableRow))
+                {
+                    var text = Text(row);
+                    text.Should().NotBeEmpty(because + ": a row on a page holds content");
+                    rows.Add(text);
+                }
+            }
+
+            rows.Should().Equal(Enumerable.Range(0, 30).Select(i => $"row{i:00}value"), because + ": every row once, whole");
+            RowParts.EmptyStrips(pages).Should().BeEmpty(because);
+        }
+    }
+
+    /// <summary>Every text fragment's text, in tree order: one word per line in these tables.</summary>
+    private static IEnumerable<string> Words(Fragment fragment) => fragment switch
+    {
+        BoxFragment box => box.Children.SelectMany(child => Words(child.Fragment)),
+        LineFragment line => line.Children.SelectMany(child => Words(child.Fragment)),
+        TextFragment text => [string.Concat(text.Glyphs.Select(glyph => glyph.Text))],
+        _ => [],
+    };
+
+    /// <summary>
+    /// Twelve units of two rows tied by a cell spanning both, three lines high, next to two one-line cells; every line
+    /// 3pt wide. A unit that does not fit is broken between its rows or inside a row. With <paramref name="empty"/> set,
+    /// every row has a third cell that draws nothing, of that kind (<see cref="TableModels.EmptyKinds"/>). With
+    /// <paramref name="shortLabel"/> the spanning cell is one line: a label over two one-line rows (probe run 35, SP-1).
+    /// </summary>
+    private static (StyledDocument Document, string[] Words) SpannedUnits(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, string? empty = null, double line = 3, bool shortLabel = false)
+    {
+        var t = new TableModels();
+        var style = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(line.Pt(), Color.Black)) };
+        var words = new List<string>();
+        Box Cell(int span, params string[] lines)
+        {
+            words.AddRange(lines);
+            return t.Lines(lines) with { Style = style with { Span = new CellSpan(1, span) } };
+        }
+
+        Box[] WithEmpty(params Box[] cells) => empty is null ? cells : [.. cells, t.Empty(empty, style)];
+        var rows = Enumerable.Range(0, units).SelectMany(unit => new[]
+        {
+            t.Row(WithEmpty(shortLabel ? Cell(2, $"s{unit:00}x") : Cell(2, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(1, $"a{unit:00}"))),
+            t.Row(WithEmpty(Cell(1, $"b{unit:00}"))),
+        }).ToArray();
+        var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
+        ValueList<TrackSize> columns = empty is null ? [new TrackSize.Fill(1), new TrackSize.Fill(1)] : [new TrackSize.Fill(1), new TrackSize.Fill(1), new TrackSize.Fill(1)];
+        var table = t.Table(columns, t.Body(rows));
+        return (TableModels.Page(280, pageHeight, spacer, table with { Style = table.Style with { DecorationBreak = mode } }), [.. words]);
+    }
+
+    [Theory]
+    [InlineData(BoxDecorationBreak.Slice, false)]
+    [InlineData(BoxDecorationBreak.Clone, false)]
+    [InlineData(BoxDecorationBreak.Slice, true)]
+    [InlineData(BoxDecorationBreak.Clone, true)]
+    public void Units_broken_between_or_inside_their_rows_keep_every_part_and_every_line_inside_the_page(BoxDecorationBreak mode, bool shortLabel)
+    {
+        // A row of a unit is kept on the page only when it fits with its share of the line below it (half the line
+        // for slice, all of it for clone), and a break inside a row is taken only when it leaves content of the row
+        // for the next page: a row continued on a page holds content, or lies beside a spanning cell that does.
+        // Offsets move every row through the window where its content fits and its line does not; page areas
+        // smaller than a unit make the first unit of each page break inside itself, where no break before it exists
+        // (from 20pt with slice, which lays the table out from 19pt; with clone from 22pt, one line width more: the
+        // cut ends the page with the whole 3pt line below it, and the cut content keeps clear of that line. On a smaller
+        // page area the table does not fit at all, which is an error, not a layout).
+        for (var offset = 0.0; offset < 60; offset += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(offset, 120, mode, shortLabel: shortLabel);
+        }
+
+        // With a short label every cell of the unit's first row holds one line, and no line fits above its cell's
+        // bottom padding and line in less than the whole row; so nothing of the row would show above a cut, and with
+        // slice the table needs the whole row: 20.5 pt (with the long label, its first line fits from 20 pt).
+        var smallest = mode == BoxDecorationBreak.Clone ? 22.0 : shortLabel ? 20.5 : 20.0;
+        for (var pageHeight = smallest; pageHeight < 60; pageHeight += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, shortLabel: shortLabel);
+        }
+
+        // Below that the layout may refuse the table, but never with a page whose row or line runs past its end.
+        for (var pageHeight = 10.0; pageHeight < smallest; pageHeight += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, mayNotFit: true, shortLabel: shortLabel);
+        }
+
+        // One unit alone: its last row is the table's last, which needs the inner half of the table's bottom border in
+        // both modes, so a cut at the page end that would complete every cell must move up instead.
+        for (var pageHeight = smallest; pageHeight < 60; pageHeight += 0.25)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, units: 1, shortLabel: shortLabel);
+        }
+    }
+
+    /// <summary>The same sweep with a cell without content in every row, with and without grid lines: the empty cell
+    /// never makes a break inside a row whose cells with content place nothing, so no row part on a page is an empty
+    /// strip (spot check of fix round 3, SC-1). Page areas from 10 pt: an error or a valid layout.</summary>
+    [Theory]
+    [MemberData(nameof(EmptyCellCases))]
+    public void Units_with_an_empty_cell_keep_every_part_inside_the_page_and_no_empty_strip(string empty, double lineWidth, BoxDecorationBreak mode)
+    {
+        // Half-point steps: eight kinds, each with and without lines (the sweeps without the empty cell step by 0.25).
+        for (var offset = 0.0; offset < 60; offset += 0.5)
+        {
+            UnitsKeepEveryPartInsideThePage(offset, 120, mode, empty: empty, line: lineWidth);
+        }
+
+        for (var pageHeight = 10.0; pageHeight < 60; pageHeight += 0.5)
+        {
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, mayNotFit: true, empty: empty, line: lineWidth);
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, units: 1, mayNotFit: true, empty: empty, line: lineWidth);
+        }
+    }
+
+    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, bool mayNotFit = false, string? empty = null, double line = 3, bool shortLabel = false)
+    {
+        var (document, expected) = SpannedUnits(offset, pageHeight, mode, units, empty, line, shortLabel);
+        var because = $"{mode}, {units} units, offset {offset}, page area {pageHeight}, empty cell {empty ?? "none"}, line {line}, short label {shortLabel}";
+        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
+        if (mayNotFit && result.IsFailure)
+        {
+            result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit, because);
+            return;
+        }
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
+        var pages = result.Value;
+
+        var words = new List<string>();
+        foreach (var (page, number) in pages.Select((page, index) => (page, index + 1)))
+        {
+            var (table, at) = Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single();
+            (at.Y + table.Size.Height).Should().BeLessThanOrEqualTo(pageHeight + Epsilon, because + ": the table's part fits the page area");
+
+            // A break inside a row leaves content of it for the next page: no page holds only lines of the table.
+            Words(table).Should().NotBeEmpty(because + $": the table's part on page {number} holds content");
+            foreach (var rule in table.Children.Where(child => child.Fragment is RuleFragment))
+            {
+                (rule.Offset.Y + rule.Fragment.Size.Height).Should().BeLessThanOrEqualTo(table.Size.Height + Epsilon, because + ": no rule outside the table's box");
+            }
+
+            var cells = Boxes(table, new Point(0, 0), SemanticRole.TableCell).Where(cell => Words(cell.Box).Any()).ToList();
+            foreach (var (row, rowAt) in Boxes(table, new Point(0, 0), SemanticRole.TableRow).Where(row => !Words(row.Box).Any() && row.Box.Size.Height > Epsilon))
+            {
+                // A row without words of its own is only right beside a spanning cell that shows content on this
+                // page: its own cells moved on whole, or were complete on the page before. (A row of height 0 only
+                // holds a spanning cell that continues into the rows below it, and draws nothing.)
+                cells.Should().Contain(cell => cell.At.Y < rowAt.Y + row.Size.Height - Epsilon && cell.At.Y + cell.Box.Size.Height > rowAt.Y + Epsilon,
+                    because + $": a row on a page holds content or lies beside a spanning cell that does (row at {rowAt.Y})");
+            }
+
+            foreach (var (row, _) in Boxes(table, new Point(0, 0), SemanticRole.TableRow))
+            {
+                // A row's box starts where its cells start; a zero-high continued row sits at the top of its cells.
+                row.Children.Should().OnlyContain(cell => Math.Abs(cell.Offset.Y) < Epsilon, because + ": a row's cells start at the row's top");
+            }
+
+            words.AddRange(Words(table));
+        }
+
+        words.Should().BeEquivalentTo(expected, because + ": every line once");
+        RowParts.EmptyStrips(pages).Should().BeEmpty(because);
+    }
+
+    [Fact]
+    public void A_break_inside_a_row_is_not_taken_above_the_bottom_of_the_line_over_the_row()
+    {
+        // Offset 12.25, page area 120: the second row of unit 02 starts at 106.5 (the centre of the 3pt line above it)
+        // and the page ends at 107.75, inside the lower half of that line. Breaking inside that row would cut the line
+        // off at 108, so it is no breakpoint. The latest break left is the one between the unit's rows, at 106.5: a
+        // row span does not keep its rows together (fix round 6, SL-1), so it is an ordinary break between rows and
+        // wins over the break before the unit (at 87.5); the spanning cell continues on page 2.
+        var (document, _) = SpannedUnits(12.25, 120, BoxDecorationBreak.Slice);
+
+        var pages = Paginate(document);
+
+        var table = Boxes(pages[0].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box;
+        table.Size.Height.Should().BeApproximately(106.5, Epsilon);
+        Words(table).Should().EndWith(["b01", "s02x", "a02"]);
+        Words(Boxes(pages[1].Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).Should().StartWith(["s02y", "s02z", "b02"]);
+    }
+
+    [Fact]
+    public void With_clone_a_cut_inside_a_row_lies_the_lower_half_of_the_line_below_it_above_the_page_end()
+    {
+        // Clone, one unit, page area 27.5. Page 2 resumes inside the unit's second row, the table's last: its rest
+        // ("s00y", "s00z" and "b00") with the half line below is exactly 27.5, but the table's bottom line needs 1.5
+        // more, so the row does not fit. The cut ends the page with the whole bottom line (3pt), so it lies 1.5 above
+        // the page end, at 26: "s00z" no longer fits above it and goes on to page 3, and page 2 is closed by the line
+        // from 24.5 to 27.5, as page 3 is.
+        var (document, _) = SpannedUnits(0, 27.5, BoxDecorationBreak.Clone, units: 1);
+
+        var pages = Paginate(document);
+
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        tables.Should().HaveCount(3);
+        tables[1].Size.Height.Should().BeApproximately(27.5, Epsilon);
+        Words(tables[1]).Should().Equal("s00y", "b00");
+        Words(tables[2]).Should().Equal("s00z");
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        Wide(tables[1]).Select(rule => (rule.Offset.Y, rule.Fragment.Size.Height)).Should().Equal((0.0, 3.0), (24.5, 3.0));
+    }
+
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(0.75)]
+    [InlineData(1.5)]
+    [InlineData(2.25)]
+    public void A_row_that_fits_down_to_its_bottom_line_s_centre_stays_and_the_line_is_split_like_Chromium(double extra)
+    {
+        // Chromium (cases mf4-line-*): 3pt lines, 12pt text; the page area ends at the centre of row 8's bottom line
+        // plus 0, 0.75, 1.5 or 2.25 pt. In every case rows 1–8 are on page 1, page 1 ends with the upper half of the
+        // line (1.5pt), page 2 starts with its lower half, and page 2's first row is 1.5pt higher than row 1 on page 1.
+        const double Line = 3, Pitch = 14.4 + Line;
+        var area = Line / 2 + 8 * Pitch + extra;
+
+        var pages = Paginate(Rows(Line, 0, area, count: 20, fontSize: 12));
+
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        Boxes(tables[0], new Point(0, 0), SemanticRole.TableRow).Should().HaveCount(8);
+        var lastRule = tables[0].Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100).MaxBy(child => child.Offset.Y)!;
+        lastRule.Fragment.Size.Height.Should().BeApproximately(Line / 2, Epsilon, "the upper half of the line ends page 1");
+        (lastRule.Offset.Y + Line / 2).Should().BeApproximately(tables[0].Size.Height, Epsilon);
+        var firstRule = tables[1].Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100).MinBy(child => child.Offset.Y)!;
+        firstRule.Offset.Y.Should().BeApproximately(0, Epsilon);
+        firstRule.Fragment.Size.Height.Should().BeApproximately(Line / 2, Epsilon, "the lower half of the line starts page 2");
+        var firstRowTop = (Func<BoxFragment, double>)(table => Boxes(table, new Point(0, 0), SemanticRole.TableRow).First().At.Y);
+        (firstRowTop(tables[0]) - firstRowTop(tables[1])).Should().BeApproximately(Line / 2, Epsilon);
+    }
+
+    [Theory]
+    [InlineData(0.0, 7)]
+    [InlineData(0.75, 7)]
+    [InlineData(1.5, 8)]
+    [InlineData(2.25, 8)]
+    public void With_clone_a_row_fits_only_with_the_whole_line_below_it_and_each_page_has_whole_lines(double extra, int rowsOnPageOne)
+    {
+        // The same 3pt grid as the Chromium cases. With clone the page area must hold row 8 AND the whole line below it:
+        // the line's centre plus half its width. Page 1 then ends with the whole 3pt line, page 2 starts with the whole
+        // line again, and page 2's first row sits as low as row 1 on page 1 (half a line below the table's top).
+        const double Line = 3, Pitch = 14.4 + Line;
+        var area = Line / 2 + 8 * Pitch + extra;
+
+        var pages = Paginate(Rows(Line, 0, area, count: 20, fontSize: 12, mode: BoxDecorationBreak.Clone));
+
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        Boxes(tables[0], new Point(0, 0), SemanticRole.TableRow).Should().HaveCount(rowsOnPageOne);
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        var lastRule = Wide(tables[0]).MaxBy(child => child.Offset.Y)!;
+        lastRule.Fragment.Size.Height.Should().BeApproximately(Line, Epsilon, "the whole line ends page 1");
+        (lastRule.Offset.Y + Line).Should().BeApproximately(tables[0].Size.Height, Epsilon);
+        tables[0].Size.Height.Should().BeLessThanOrEqualTo(area + Epsilon);
+        var firstRule = Wide(tables[1]).MinBy(child => child.Offset.Y)!;
+        firstRule.Offset.Y.Should().BeApproximately(0, Epsilon);
+        firstRule.Fragment.Size.Height.Should().BeApproximately(Line, Epsilon, "the whole line starts page 2");
+        var firstRowTop = (Func<BoxFragment, double>)(table => Boxes(table, new Point(0, 0), SemanticRole.TableRow).First().At.Y);
+        firstRowTop(tables[1]).Should().BeApproximately(firstRowTop(tables[0]), Epsilon);
+    }
+
+    [Fact]
+    public void With_clone_the_line_at_a_break_is_resolved_from_both_rows_on_both_pages()
+    {
+        var t = new TableModels();
+        var grey = new BorderSide(1.Pt(), new Color(0x80, 0x80, 0x80));
+        var black = new BorderSide(6.Pt(), Color.Black);
+        var cell = BoxStyle.Initial with { Border = Border.All(grey) };
+        var row = BoxStyle.Initial with { Border = Border.All(BorderSide.None) with { Bottom = black } };
+        Box Cell(string text) => new(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, cell,
+            [new Box(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(t.Next(), text, Models.Text(12), Models.At(0))], Models.At(0))],
+            Models.At(0));
+        var table = t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], t.Body([.. Enumerable.Range(0, 20).Select(i => t.Row(row, Cell($"row{i:00}"), Cell("value")))]));
+
+        var pages = Paginate(TableModels.Page(280, 150, table with { Style = table.Style with { DecorationBreak = BoxDecorationBreak.Clone } }));
+
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        ((RuleFragment)Wide(tables[0]).MaxBy(child => child.Offset.Y)!.Fragment).Color.Should().Be(Color.Black);
+        ((RuleFragment)Wide(tables[0]).MaxBy(child => child.Offset.Y)!.Fragment).Size.Height.Should().BeApproximately(6, Epsilon);
+        ((RuleFragment)Wide(tables[1]).MinBy(child => child.Offset.Y)!.Fragment).Color.Should().Be(Color.Black);
+        ((RuleFragment)Wide(tables[1]).MinBy(child => child.Offset.Y)!.Fragment).Size.Height.Should().BeApproximately(6, Epsilon);
+    }
+
+    /// <summary>
+    /// Rows with different borders at the break: every cell has a 1pt grey border, every row a 6pt black bottom border,
+    /// and the body group a 4pt red top border. Between two rows the resolved line is the 6pt black one (§17.6.2.1:
+    /// the widest wins). The two halves at a break are halves of that same line: page 1 ends with 3pt black, and page 2
+    /// starts with 3pt black, not with the grey or red border the first row on page 2 would have at the table's top.
+    /// The group's top border belongs to the group's first row only.
+    /// </summary>
+    [Fact]
+    public void The_two_halves_at_a_break_are_halves_of_the_same_resolved_line()
+    {
+        var t = new TableModels();
+        var grey = new BorderSide(1.Pt(), new Color(0x80, 0x80, 0x80));
+        var black = new BorderSide(6.Pt(), Color.Black);
+        var red = new BorderSide(4.Pt(), new Color(0xFF, 0, 0));
+        var cell = BoxStyle.Initial with { Border = Border.All(grey) };
+        var row = BoxStyle.Initial with { Border = Border.All(BorderSide.None) with { Bottom = black } };
+        Box Cell(string text) => new(t.Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, cell,
+            [new Box(t.Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(t.Next(), text, Models.Text(12), Models.At(0))], Models.At(0))],
+            Models.At(0));
+        var body = t.Body(BoxStyle.Initial with { Border = Border.All(BorderSide.None) with { Top = red } }, [.. Enumerable.Range(0, 20).Select(i => t.Row(row, Cell($"row{i:00}"), Cell("value")))]);
+        var document = TableModels.Page(280, 150, t.Table([new TrackSize.Fill(1), new TrackSize.Fill(1)], body));
+
+        var pages = Paginate(document);
+
+        pages.Count.Should().BeGreaterThan(1);
+        var tables = pages.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        static IEnumerable<PlacedFragment> Wide(BoxFragment table) => table.Children.Where(child => child.Fragment is RuleFragment rule && rule.Size.Width > 100);
+        var pageEnd = (RuleFragment)Wide(tables[0]).MaxBy(child => child.Offset.Y)!.Fragment;
+        pageEnd.Color.Should().Be(Color.Black);
+        pageEnd.Size.Height.Should().BeApproximately(3, Epsilon);
+        var pageStart = (RuleFragment)Wide(tables[1]).MinBy(child => child.Offset.Y)!.Fragment;
+        pageStart.Color.Should().Be(Color.Black, "the lower half of the same 6pt black line, not the group's red top border");
+        pageStart.Size.Height.Should().BeApproximately(3, Epsilon);
+        var first = (RuleFragment)Wide(tables[0]).MinBy(child => child.Offset.Y)!.Fragment;
+        first.Color.Should().Be(new Color(0xFF, 0, 0), "on page 1 the group's top border is the table's first line");
+    }
+}

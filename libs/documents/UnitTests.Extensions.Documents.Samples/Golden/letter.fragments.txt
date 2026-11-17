@@ -1,0 +1,89 @@
+page 1 size=595.276x841.89
+  box #0 document at (56.693, 56.693) size=481.89x728.504
+    box #1 paragraph at (0, 0) size=481.89x10.8
+      line at (0, 0) size=258.39x10.8
+        text #2 Lato-Regular 9pt at (0, 0) size=258.39x10.8 ascent=8.883 "Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town"
+    box #3 paragraph at (0, 16.8) size=481.89x10.8
+      line at (0, 0) size=481.89x10.8
+        text #4 Lato-Regular 9pt at (343.501, 0) size=138.389x10.8 ascent=8.883 "Example Town, 15 November 2026"
+    box #5 heading-1 at (0, 45.6) size=481.89x26.4
+      line at (0, 0) size=337.711x26.4
+        text #6 Lato-Bold 22pt at (0, 0) size=337.711x26.4 ascent=21.714 "Quotation for document rendering"
+    box #7 paragraph at (0, 84) size=481.89x13.2
+      line at (0, 0) size=59.23x13.2
+        text #8 Lato-Regular 11pt at (0, 0) size=59.23x13.2 ascent=10.857 "Dear reader,"
+    box #9 paragraph at (0, 103.2) size=481.89x39.6
+      line at (0, 0) size=481.89x13.2
+        text #10 Lato-Regular 11pt at (0, 0) size=458.251x13.2 ascent=10.857 "Thank you for your interest in our document engine. This letter was written in C# through the "
+        text #11 Lato-Bold 11pt at (458.251, 0) size=23.639x13.2 ascent=10.857 "code"
+      line at (0, 13.2) size=481.89x13.2
+        text #11 Lato-Bold 11pt at (0, 0) size=46.849x13.2 ascent=10.857 "front-end"
+        text #12 Lato-Regular 11pt at (46.849, 0) size=435.041x13.2 ascent=10.857 ", laid out by the engine's own layout algorithms, and written to PDF by its own PDF writer."
+      line at (0, 26.4) size=287.65x13.2
+        text #12 Lato-Regular 11pt at (0, 0) size=287.65x13.2 ascent=10.857 "No native library and no external tool took part in making it."
+    box #13 paragraph at (0, 148.8) size=481.89x66
+      line at (0, 0) size=481.89x13.2
+        text #14 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "Every paragraph you see is broken into lines where the Unicode line breaking algorithm allows it,"
+      line at (0, 13.2) size=481.89x13.2
+        text #14 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "with the greedy method that browsers use: each line takes as many words as fit, and the next word"
+      line at (0, 26.4) size=481.89x13.2
+        text #14 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "starts a new line. The lines are then justified by widening the spaces between words, and the text"
+      line at (0, 39.6) size=481.89x13.2
+        text #14 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "stays selectable and searchable because the PDF carries a map from every glyph back to its"
+      line at (0, 52.8) size=52.547x13.2
+        text #14 Lato-Regular 11pt at (0, 0) size=52.547x13.2 ascent=10.857 "characters."
+    box #15 paragraph at (0, 220.8) size=481.89x39.6
+      line at (0, 0) size=481.89x13.2
+        text #16 Lato-Regular 11pt at (0, 0) size=374.789x13.2 ascent=10.857 "Kerning and ligatures come from the font's own OpenType tables. In "
+        text #17 Lato-Bold 11pt at (374.789, 0) size=41.415x13.2 ascent=10.857 "AVATAR"
+        text #18 Lato-Regular 11pt at (416.204, 0) size=65.686x13.2 ascent=10.857 ", WAVE and"
+      line at (0, 13.2) size=481.89x13.2
+        text #18 Lato-Regular 11pt at (0, 0) size=391.619x13.2 ascent=10.857 "Tyrannosaurus the letters move closer together; in office, fifty, affine and flag the "
+        text #19 Lato-Bold 11pt at (391.619, 0) size=6.606x13.2 ascent=10.857 "fi"
+        text #20 Lato-Regular 11pt at (398.224, 0) size=83.665x13.2 ascent=10.857 ", ff and fl become"
+      line at (0, 26.4) size=290.967x13.2
+        text #20 Lato-Regular 11pt at (0, 0) size=290.967x13.2 ascent=10.857 "single ligature glyphs, which still copy as two or three letters."
+    box #21 generic at (0, 272.4) size=481.89x90.477
+      box #22 paragraph at (11.339, 14.339) size=459.213x13.2
+        line at (0, 0) size=349.905x13.2
+          text #23 Lato-Bold 11pt at (0, 0) size=37.065x13.2 ascent=10.857 "Layers: "
+          text #24 Lato-Regular 11pt at (37.065, 0) size=312.84x13.2 ascent=10.857 "code front-end, document model, layout, page model, PDF writer"
+      box #25 paragraph at (11.339, 30.539) size=459.213x13.2
+        line at (0, 0) size=321.42x13.2
+          text #26 Lato-Bold 11pt at (0, 0) size=26.405x13.2 ascent=10.857 "Text: "
+          text #27 Lato-Regular 11pt at (26.405, 0) size=295.015x13.2 ascent=10.857 "Unicode line breaking, OpenType kerning, ligatures and marks"
+      box #28 paragraph at (11.339, 46.739) size=459.213x13.2
+        line at (0, 0) size=324.676x13.2
+          text #29 Lato-Bold 11pt at (0, 0) size=32.609x13.2 ascent=10.857 "Fonts: "
+          text #30 Lato-Regular 11pt at (32.609, 0) size=292.066x13.2 ascent=10.857 "TrueType, only the used glyphs embedded, explicit input only"
+      box #31 paragraph at (11.339, 62.939) size=459.213x13.2
+        line at (0, 0) size=261.068x13.2
+          text #32 Lato-Bold 11pt at (0, 0) size=41.162x13.2 ascent=10.857 "Output: "
+          text #33 Lato-Regular 11pt at (41.162, 0) size=219.907x13.2 ascent=10.857 "the same bytes for the same input, every time"
+    box #34 paragraph at (0, 374.877) size=481.89x26.4
+      line at (0, 0) size=481.89x13.2
+        text #35 Lato-Regular 11pt at (0, 0) size=125.452x13.2 ascent=10.857 "The block above has a "
+        text #36 Lato-Bold 11pt at (125.452, 0) size=106.504x13.2 ascent=10.857 "coloured background"
+        text #37 Lato-Regular 11pt at (231.956, 0) size=249.934x13.2 ascent=10.857 " and padding on all four sides. Blocks can hold"
+      line at (0, 13.2) size=138.391x13.2
+        text #37 Lato-Regular 11pt at (0, 0) size=138.391x13.2 ascent=10.857 "paragraphs and other blocks."
+page 2 size=595.276x841.89
+  box #0 document at (56.693, 56.693) size=481.89x131.8
+    box #38 heading-2 at (0, 18) size=481.89x19.8
+      line at (0, 0) size=262.919x19.8
+        text #39 Lato-Bold 16.5pt at (218.971, 0) size=43.948x19.8 ascent=16.285 "Terms"
+    box #40 paragraph at (0, 47.8) size=481.89x26.4
+      line at (0, 0) size=481.89x13.2
+        text #41 Lato-Regular 11pt at (0, 0) size=481.89x13.2 ascent=10.857 "This second page starts with an explicit page break. A page break is not an element of its own in the"
+      line at (0, 13.2) size=405.696x13.2
+        text #41 Lato-Regular 11pt at (0, 0) size=405.696x13.2 ascent=10.857 "document model: it sets break-before: page on the element that follows it, as in CSS."
+    box #42 paragraph at (0, 80.2) size=481.89x13.2
+      line at (0, 0) size=319.297x13.2
+        text #43 Lato-Bold 11pt at (0, 0) size=41.729x13.2 ascent=10.857 "Validity. "
+        text #44 Lato-Regular 11pt at (41.729, 0) size=277.569x13.2 ascent=10.857 "This quotation is an example and is valid for no time at all."
+    box #45 paragraph at (0, 99.4) size=481.89x13.2
+      line at (0, 0) size=63.024x13.2
+        text #46 Lato-Regular 11pt at (0, 0) size=63.024x13.2 ascent=10.857 "Kind regards,"
+    box #47 paragraph at (0, 118.6) size=481.89x13.2
+      line at (0, 0) size=106.056x13.2
+        text #48 Lato-Bold 11pt at (0, 0) size=106.056x13.2 ascent=10.857 "The document engine"
