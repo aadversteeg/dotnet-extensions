@@ -39,8 +39,10 @@
     <!-- Source Link comes with the .NET SDK: no package reference. A package reference would put its build-time
          dependencies (System.Memory and others) into the netstandard2.0 compile graph of every library. -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <!-- On GitHub Actions: deterministic source paths (/_/...) in the PDBs -->
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- On GitHub Actions: deterministic source paths (/_/...) in the PDBs of the libraries. Not for tests, samples
+         and tools: their [CallerFilePath] values must stay real paths, because tests find their golden files and test
+         data next to their source with them. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and $(MSBuildProjectName.StartsWith('Ave.Extensions.'))">true</ContinuousIntegrationBuild>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
