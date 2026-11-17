@@ -13,8 +13,20 @@ namespace Ave.Extensions.Documents.TestSupport;
 /// </summary>
 public static class Docker
 {
-    /// <summary>Why Docker cannot be used here, or null when it can: the daemon answers <c>docker version</c>.</summary>
+    /// <summary>
+    /// Why Docker cannot be used here, or null when it can: the daemon answers <c>docker version</c> and runs Linux
+    /// containers (the reference images are Linux images; a Windows runner's Docker runs Windows containers only).
+    /// </summary>
     public static string? UnavailableReason { get; } = Probe();
+
+    /// <summary>
+    /// The <c>docker run</c> arguments that run a container as the current user (<c>--user uid:gid</c>) on Linux and
+    /// macOS, empty on Windows. A container runs as its image's user otherwise: files it writes into a mounted folder
+    /// then belong to that user (root, for most images), and it cannot read a folder only the current user may read,
+    /// such as one made by <see cref="System.IO.Directory.CreateTempSubdirectory(string)"/> (mode 0700). Docker Desktop
+    /// on Windows maps mounted folders itself.
+    /// </summary>
+    public static IReadOnlyList<string> UserArguments { get; } = CurrentUser();
 
     /// <summary>Runs <c>docker</c> with the arguments and waits for it.</summary>
     /// <param name="arguments">The arguments, each passed as is (no shell).</param>
@@ -60,13 +72,30 @@ public static class Docker
     {
         try
         {
-            var (exitCode, output) = Run(["version", "--format", "{{.Server.Version}}"], TimeSpan.FromSeconds(30));
-            return exitCode == 0 ? null : $"Skipped: Docker is installed but its daemon does not answer ({output.Trim()}).";
+            var (exitCode, output) = Run(["version", "--format", "{{.Server.Os}}"], TimeSpan.FromSeconds(30));
+            return exitCode != 0
+                ? $"Skipped: Docker is installed but its daemon does not answer ({output.Trim()})."
+                : output.Trim() != "linux"
+                    ? $"Skipped: Docker runs {output.Trim()} containers here; the reference checks run Linux images."
+                    : null;
         }
         catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or TimeoutException or InvalidOperationException)
         {
             return $"Skipped: Docker is not available ({exception.Message}); reference checks run the tools in Docker images.";
         }
+    }
+
+    private static string[] CurrentUser() =>
+        OperatingSystem.IsWindows() ? [] : ["--user", $"{Id("-u")}:{Id("-g")}"];
+
+    /// <summary>The output of <c>id</c> with one option: the current user's numeric id (<c>-u</c>) or group id (<c>-g</c>).</summary>
+    private static string Id(string option)
+    {
+        var start = new ProcessStartInfo("id", option) { RedirectStandardOutput = true, UseShellExecute = false };
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("id did not start.");
+        var output = process.StandardOutput.ReadToEnd().Trim();
+        process.WaitForExit();
+        return process.ExitCode == 0 && output.Length > 0 ? output : throw new InvalidOperationException($"id {option} failed.");
     }
 }
 

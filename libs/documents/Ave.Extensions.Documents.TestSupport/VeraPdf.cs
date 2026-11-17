@@ -45,7 +45,7 @@ public static class VeraPdf
     {
         var files = Directory.GetFiles(folder, "*.pdf").Select(Path.GetFileName).Order(StringComparer.Ordinal).ToArray();
         var (_, output) = Docker.Run(
-            ["run", "--rm", "-v", $"{Path.GetFullPath(folder)}:/data:ro", Image, "--flavour", flavour, "--format", "mrr", .. files.Select(file => "/data/" + file)],
+            ["run", "--rm", .. Docker.UserArguments, "-v", $"{Path.GetFullPath(folder)}:/data:ro", Image, "--flavour", flavour, "--format", "mrr", .. files.Select(file => "/data/" + file)],
             TimeSpan.FromMinutes(5));
         var start = output.IndexOf("<?xml", StringComparison.Ordinal);
         if (start < 0)

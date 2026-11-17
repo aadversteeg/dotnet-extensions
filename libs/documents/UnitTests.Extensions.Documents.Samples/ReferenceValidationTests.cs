@@ -73,7 +73,7 @@ public sealed class ReferenceValidationTests : IClassFixture<ReferenceValidation
         var extracted = System.IO.Path.Combine(_samples.Path, "extracted-timesheet.xml");
         var (exitCode, output) = Docker.Run(
             [
-                "run", "--rm", "-v", $"{_samples.Path}:/work", ReferenceTools.Image, "bash", "-c",
+                "run", "--rm", .. Docker.UserArguments, "-v", $"{_samples.Path}:/work", ReferenceTools.Image, "bash", "-c",
                 "set -eu -o pipefail && qpdf --list-attachments /work/timesheet-normal.nl.pdf "
                 + "&& qpdf --show-attachment=timesheet.xml /work/timesheet-normal.nl.pdf > /work/extracted-timesheet.xml",
             ],
