@@ -119,6 +119,30 @@ public class ForcedLineBreakTests
         lines.Select(Visible).Should().Equal(plain.Select(Visible), text + ": the same text on each line");
     }
 
+    /// <summary>
+    /// Mutant R5-15 of review 35: a piece of soft hyphens after a space ("xx ab", a space, two soft hyphens, "cd ef")
+    /// shows a hyphen where the line breaks after it, so it goes on the line only when it fits with that hyphen; where
+    /// it does not, the line ends after "xx ab". With room for the space and the hyphen it stays, and the line shows
+    /// "xx ab" and the hyphen (the spaces before a shown soft hyphen stay).
+    /// </summary>
+    [Fact]
+    public void Soft_hyphens_after_a_space_stay_on_the_line_only_when_their_hyphen_fits()
+    {
+        var (word, space, hyphen) = (Width(Shape("xx ab")), Width(Shape(" ")), Width(Shape("-")));
+        var text = WithBreaks("xx ab {SHY}{SHY}cd ef");
+        foreach (var extra in new[] { 0, hyphen / 2, hyphen + 0.01 })
+        {
+            var lines = GreedyLineBreaker.BreakLines([[.. Shape(text)]], availableWidth: word + extra);
+
+            lines.Select(Visible).Should().Equal(["xx ab", "cd ef"], $"extra {extra}");
+            lines.Should().OnlyContain(line => line.Width <= word + extra + 1e-9, $"extra {extra}: no line wider than the line box");
+        }
+
+        var roomy = GreedyLineBreaker.BreakLines([[.. Shape(text)]], availableWidth: word + space + hyphen + 0.01);
+        roomy.Select(Visible).Should().Equal(["xx ab \u00AD", "cd ef"], "with room for the space and the hyphen the soft hyphens stay");
+        roomy[0].Segments[^1].Glyphs[^1].IsInvisible.Should().BeFalse("the last one shows as a hyphen (which keeps the soft hyphen's text)");
+    }
+
     /// <summary>The text of a line without its invisible characters and spaces at either end.</summary>
     private static string Visible(TextLine line) =>
         string.Concat(line.Segments.SelectMany(segment => segment.Glyphs).Where(glyph => !glyph.IsInvisible).Select(glyph => glyph.Text)).Trim();
