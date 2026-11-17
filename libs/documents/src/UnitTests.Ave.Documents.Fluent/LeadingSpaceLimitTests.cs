@@ -70,6 +70,16 @@ public class LeadingSpaceLimitTests
     }
 
     [Fact]
+    public void A_top_margin_taller_than_the_page_area_leaves_no_room_and_the_refusal_says_so()
+    {
+        var result = Paginate(Paragraph("para").MarginTop(200.Pt()));
+
+        result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+        result.Error.Message.Should().EndWith(" does not fit in the page, which has no room left for it, and cannot be broken; nothing before it on the page can move to a later page.");
+        result.Error.Metadata![ErrorMetadataKeys.Value].Should().Be("-50");
+    }
+
+    [Fact]
     public void After_a_forced_page_break_the_same_leading_space_is_refused() =>
         RefusedWithItsRoom(Paginate(Paragraph("first"), PageBreak(), Block([]).MarginBottom(138.5.Pt()), OneRow()), "table");
 
