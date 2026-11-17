@@ -43,21 +43,90 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
 `out/*.txt` over it after a deliberate re-measurement.
 
-The files in `measured/` were measured with Chromium 159 on Windows. Chromium on Linux (the Playwright container)
-gives the same heights, page breaks and fixed widths, but other text widths: by default it rounds glyph advances to
-hinted values, so words and auto-sized columns differ by up to about 6 pt. With hinting switched off
-(`--font-render-hinting=none`) the difference is at most 0.071 pt, and the column widths the tests pin agree within
-0.012 pt. `measured/` is unchanged; measure on Windows to compare a new Chromium with it.
+## The reference
+
+The reference is Chromium of the pinned version (Playwright 1.65.1, Chromium 159.0.8154.6) in the pinned Playwright
+container (`mcr.microsoft.com/playwright:v1.65.1-noble`, by digest, see `measure.ps1`), with font hinting off
+(`--font-render-hinting=none`, set in `measure.mjs`). `versions.txt` records the version, the flag and the image.
+
+Why hinting off: the engine lays text out with the unhinted advances of the font, which is what a PDF contains. Hinted
+advances are a screen-rendering property of one platform: with the default hinting, Chromium on Linux rounds every glyph
+advance to whole pixels and lines break differently. With hinting off, Chromium on Linux gives the same line breaks,
+heights and page breaks as Chromium on Windows gave. The container makes the reference the same on every machine.
+
+## The comparison rule
+
+Chromium stores every layout length as a whole number of layout units of 1/64 CSS px; the engine keeps exact values. So a
+test compares an engine length with a measured Chromium length as "equal within n layout units" (one layout unit is
+0.75/64 pt = 0.0117 pt), where n is the number of snapped lengths that add up to the measured value. n comes from the
+structure of the case (which paddings, borders, column widths and text runs make the value), is written in the test
+next to the check together with what it counts, and a sum gets the sum of its parts' n. There is no other tolerance.
+`ChromiumLayout` in the test-support project holds the layout unit and the comparison.
+
+How Chromium snaps, read from its source (chromium/src main at 08469936, Chromium 160, and the 159 branch 8154; paths
+under `third_party/blink/renderer/`):
+
+- a layout unit is 1/64 px: `platform/geometry/layout_unit.h:473` (`using LayoutUnit = FixedPoint<6, int32_t>`); the
+  plain conversion from float truncates (lines 125–130);
+- specified widths and paddings are truncated: `platform/geometry/length_functions.h:52–57` (`LayoutUnit(length.Pixels())`),
+  `core/layout/length_utils.cc:1521–1547` (padding), `core/layout/table/table_layout_algorithm_types.cc:38–39` (column
+  widths). 100 pt becomes 133.328125 px, 4 pt 5.328125 px;
+- border widths are whole pixels: `core/css/resolver/style_builder_converter.cc:1964–2000`. 0.75 pt is exactly 1 px, so the
+  borders of the cases add nothing to n;
+- every text item is ceiled to a layout unit and the items are summed: `platform/fonts/shaping/shape_result.h:170–171`
+  (`SnappedWidth()` = `LayoutUnit::FromFloatCeil(width_)`), `core/layout/inline/inline_node.cc:2099`;
+- a table's auto columns get truncated shares of the space to distribute, and the last column the remainder:
+  `core/layout/table/table_layout_utils.cc:466` (`DistributeInlineSizeToComputedInlineSizeAuto`);
+- grid `fr` tracks get truncated shares, the fractions carried to the next track: `core/layout/grid/grid_track_sizing_algorithm.cc:1281–1309`;
+- printing scales the page by 0.75 (CSS px to points) and does not round coordinates: `components/printing/renderer/print_render_frame_helper.cc`,
+  `printing/metafile_skia.cc`.
+
+## Where Chromium is not exact
+
+At some font sizes Chromium's text is narrower than the font's advances, and the engine deliberately does not follow it.
+Before the advances are computed, the font size is rounded twice:
+
+1. Blink floors the font size to 1/100 px: `third_party/blink/renderer/platform/fonts/font_description.cc:263–274`
+   (`FontDescription::EffectiveFontSize`, precision multiplier 100 in `font_cache_key.h:54`);
+2. on Linux, web fonts go through Skia's Fontations backend, and its font library skrifa truncates the pixels per em to
+   1/64 px to match FreeType: skrifa `src/instance.rs:52–64` (`fixed_linear_scale`), used for the advances in
+   `src/metrics.rs:254, 299–319` (Skia `src/ports/SkTypeface_fontations.cpp:591–593`; the web-font typeface factory is
+   `platform/fonts/web_font_typeface_factory.cc`).
+
+At 10 pt (13.333 px) the advances are therefore computed for 13.33 px truncated to 853/64 = 13.328125 px: every advance
+is 0.039 % (a factor of 0.99960938) smaller. At 9 pt (12 px), 10.5 pt (14 px) and 12 pt (16 px) nothing is rounded.
+Measured in the container (case `font-sizes`, widths in px; the text is "n", advance 1116 of 2000 units, no kerning):
+
+| Font size | 10 × "n": font's advances → Chromium | 100 × "n": font's advances → Chromium |
+| --- | --- | --- |
+| 9 pt (12 px) | 66.96 → 66.96875 (ceiled) | 669.6 → 669.609375 (ceiled) |
+| 10 pt (13.333 px) | 74.4 → 74.375 (2 layout units less) | 744.0 → 743.71875 (18 less) |
+| 10.5 pt (14 px) | 78.12 → 78.125 (ceiled) | 781.2 → 781.203125 (ceiled) |
+| 11 pt (14.667 px) | 81.84 → 81.78125 (4 less) | 818.4 → 817.8125 (38 less) |
+| 12 pt (16 px) | 89.28 → 89.28125 (ceiled) | 892.8 → 892.796875 (one layout unit under the ceiling) |
+
+At 12 pt the 100-glyph run is one layout unit under the ceiled value. skrifa holds its scale (pixels per em × 64 /
+units per em) as a 16.16 fixed-point number: at 16 px, 1024/2000 = 0.512 becomes 33554/65536, 0.0013 % small, and 100
+advances come to 892.7885 px instead of 892.8, which ceils to 892.796875. That stays within the one layout unit of the
+ceil; at 10.5 pt the same effect is smaller (0.00044 %) and does not show in these runs.
+
+So at a font size Chromium rounds, its text is up to about 0.04 % narrower than the font's advances, and a line that
+fits in Chromium by less than that can break one word earlier in the engine. The cases that pin lengths therefore use
+sizes Chromium keeps exact (`widths-exact` at 10.5 pt; the `mf4-line-*` cases at 12 pt). The 10 pt case `widths` stays:
+its test applies the factor above, as the oracle's artefact, to the engine's exact text widths and then compares with the
+same rule, so a change in Chromium or its font backend shows up there.
 
 ## Cases and the tests that use them
 
 All cases use Lato from `assets/fonts/lato` and `cases/common.css`: `border-collapse: collapse`, `border: 0.75pt
-solid`, `padding: 2pt 4pt`, Lato 10 pt. The border is 0.75 pt because Chromium draws a 1 pt border as one device
-pixel (0.75 pt at 96 dpi) and lays out with that width.
+solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The border is 0.75 pt because Chromium draws a
+1 pt border as one device pixel (0.75 pt at 96 dpi) and lays out with that width.
 
 | Case | What it shows | Test (`UnitTests.Extensions.Documents.Layout`) |
 | --- | --- | --- |
-| `widths` | auto columns (`t1`), a fixed and two auto columns (`t2`), grid `fr` columns (`w3`, `w4`, their items): `boxes.txt` | `ChromiumReferenceTests`: the three width tests |
+| `widths-exact` | at 10.5 pt: auto columns (`t1`), a fixed and two auto columns (`t2`), grid `fr` columns (`w3`, `w4`, their items): `boxes.txt` | `ChromiumReferenceTests`: the three width tests |
+| `widths` | the same tables at 10 pt, a size Chromium rounds | `ChromiumReferenceTests.At_a_font_size_Chromium_rounds_its_text_is_the_font_s_advances_scaled_by_the_documented_factor` |
+| `font-sizes` | 10 and 100 times "n" at 9, 10, 10.5, 11 and 12 pt: where Chromium's text width is exact (see above) | none; the numbers are in this README |
 | `b1-repeat` | a long table breaks between rows and repeats its header row | `A_long_table_breaks_between_rows_and_repeats_its_header_like_Chromium` |
 | `b2-split-row` | a row taller than the space left breaks inside its cells | `A_row_taller_than_the_space_left_breaks_inside_its_cells_like_Chromium` |
 | `b3-keep-group` | a row group with `break-inside: avoid` moves to the next page whole | `A_row_group_kept_together_moves_to_the_next_page_whole_like_Chromium` |

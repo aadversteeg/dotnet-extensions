@@ -193,6 +193,10 @@ Each is documented next to its code as well.
   an empty page overflows; a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
+- **Against Chromium:** at font sizes Chromium rounds (10 pt and 11 pt, for example; 9, 10.5 and 12 pt are exact), its
+  text is up to about 0.04 % narrower than the font's advances, so a line that fits in Chromium by less than that
+  can break one word earlier in the engine. The engine keeps the font's exact advances; the reference cases that
+  pin lengths use sizes Chromium keeps exact (`tools/reference/chromium/README.md`, "Where Chromium is not exact").
 - **Leading space before the first unbreakable piece (NF-1):** leading space (margins, empty boxes) plus a first
   unbreakable piece that together exceed the page area, at the document start or after a forced page break, is
   refused (`Documents.Layout.DoesNotFit`; the message names the element and the room it had). The layout counts a box
@@ -311,7 +315,7 @@ Each is documented next to its code as well.
 | layering, no native code, test packages stay out | `UnitTests.Extensions.Documents.Architecture` (compiled assemblies); `tools/verify-samples.ps1` step 2 (publish folder, PE headers) | `dotnet test`; the script |
 | line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Extensions.Documents.Typesetting` |
 | shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
-| table layout | numbers measured in Chromium 157, measured again in Chromium 159 (Playwright 1.65.1), and pinned; the cases and the measuring script are in `tools/reference/chromium/` | `UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs` |
+| table layout | numbers measured in Chromium 159 in the pinned Playwright container with font hinting off, and pinned; compared within n layout units (1/64 px), n counted from the structure of each case; the cases, the measuring script and the rule are in `tools/reference/chromium/` | `UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs` |
 | text in the PDF | PdfPig reads every glyph back at the position the page model says | `TestSupport/PdfReadBack.cs` |
 | structure tree | PdfPig reads the structure tree and marked content back (roles, order, attributes, text per element; every glyph marked) | `TestSupport/PdfStructureReadBack.cs`, `UnitTests.Extensions.Documents.Samples/TaggedPdfTests.cs`, `UnitTests.Extensions.Documents.Render.Pdf/TaggingTests.cs` |
 | PDF/A-3b, PDF/A-3a, PDF/UA-1 | veraPDF 1.30.4 in Docker (pinned by digest) on every sample; a plain file must fail as negative control | `UnitTests.Extensions.Documents.Samples/ReferenceValidationTests.cs` (trait `Category=Reference`, skipped without Docker); script step 5 |
