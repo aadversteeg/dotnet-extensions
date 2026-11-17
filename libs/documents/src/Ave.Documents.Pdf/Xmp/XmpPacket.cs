@@ -24,13 +24,23 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     private const string PacketId = "W5M0MpCehiHzreSzNTczkc9d";
 
     /// <summary>
+    /// The deepest a property's value may nest arrays and structures, the value itself being level 1: a limit of the
+    /// writer's own, as <see cref="PdfSerializer.MaxNestingDepth"/> is for PDF objects. Every walk over a value (the
+    /// checks and the writing) recurses once per level, so the limit keeps them far from the stack limit whatever value a
+    /// caller builds. The engine's own metadata nests at most four levels (the PDF/A extension schema: a bag of
+    /// structures holding a sequence of structures), so 64 never refuses it.
+    /// </summary>
+    public const int MaxNestingDepth = 64;
+
+    /// <summary>
     /// Writes the packet as UTF-8 (veraPDF rule 6.6.2.1-5: "The XMP package must be encoded as UTF-8"): the
     /// <c>xpacket</c> header with the byte order mark as the begin attribute and without the bytes or encoding
     /// attributes (rules 6.6.2.1-2 and -3), the <c>x:xmpmeta</c> element, one <c>rdf:RDF</c>, one <c>rdf:Description
     /// rdf:about=""</c> per namespace, and the read-only trailer <c>end="w"</c>. No padding is added: the engine writes
     /// new files and never edits metadata in place.
     /// </summary>
-    /// <returns>The packet bytes; <c>Documents.Pdf.Write.InvalidPropertyName</c> for every property or field whose name,
+    /// <returns>The packet bytes; <c>Documents.Pdf.Write.NestedTooDeep</c> for the first property whose value nests
+    /// deeper than <see cref="MaxNestingDepth"/>, checked before anything else; <c>Documents.Pdf.Write.InvalidPropertyName</c> for every property or field whose name,
     /// namespace or value is missing or whose name or prefix is not an XML name (an NCName, which an element name must
     /// be), and for namespaces no XML writer can declare (<see cref="NamespaceProblems"/>);
     /// <c>Documents.Pdf.Write.InvalidText</c> for every value with a character XML 1.0 does not allow (§2.2,
@@ -38,6 +48,11 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
     public Result<ImmutableArray<byte>, Error> Write()
     {
         var properties = Properties.ToImmutableArray();
+        if (properties.Select(property => property is null ? null : TooDeep(property, property.Value, level: 1)).FirstOrDefault(problem => problem is not null) is { } tooDeep)
+        {
+            return Result<ImmutableArray<byte>, Error>.Failure(tooDeep);
+        }
+
         var nameProblems = properties.SelectMany(NameProblems).ToImmutableArray();
         nameProblems = nameProblems.IsEmpty ? NamespaceProblems(properties).ToImmutableArray() : nameProblems;
         var problems = nameProblems.IsEmpty
@@ -77,6 +92,32 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
         }
 
         return [.. output.ToArray()];
+    }
+
+    /// <summary>
+    /// The nesting error for a top-level <paramref name="property"/> whose <paramref name="value"/> (at
+    /// <paramref name="level"/>) nests arrays and structures deeper than <see cref="MaxNestingDepth"/>, or null. It stops
+    /// at the first level past the limit, so it never recurses deeper than that itself. Missing parts are left to the
+    /// other checks.
+    /// </summary>
+    private static Error? TooDeep(XmpProperty property, XmpValue? value, int level) => value switch
+    {
+        XmpOrderedArray or XmpUnorderedArray or XmpStructure when level > MaxNestingDepth => NestedTooDeep(property),
+        XmpOrderedArray array => FirstTooDeep(property, array.Items, level + 1),
+        XmpUnorderedArray array => FirstTooDeep(property, array.Items, level + 1),
+        XmpStructure structure => FirstTooDeep(property, structure.Fields.Select(field => field?.Value), level + 1),
+        _ => null,
+    };
+
+    private static Error? FirstTooDeep(XmpProperty property, IEnumerable<XmpValue?> values, int level) =>
+        values.Select(value => TooDeep(property, value, level)).FirstOrDefault(problem => problem is not null);
+
+    private static Error NestedTooDeep(XmpProperty property)
+    {
+        var name = $"{property.Namespace?.Prefix}:{property.Name}";
+        return new Error(PdfErrorCodes.Write.NestedTooDeep, $"The XMP property {name} nests arrays and structures more than {MaxNestingDepth} levels deep.")
+            .With(ErrorMetadataKeys.Value, MaxNestingDepth.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            .With(ErrorMetadataKeys.Property, name);
     }
 
     /// <summary>A property and, through arrays and structures, every field it holds: a namespace with an NCName prefix,
