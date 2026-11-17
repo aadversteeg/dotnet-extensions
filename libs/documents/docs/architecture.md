@@ -210,6 +210,20 @@ Each is documented next to its code as well.
   space, and the row could be broken; the message does not name the blank stretch as the cause. Pinned by
   `BlankRowPartLimitTests` (Fluent). Cutting anyway when the only other outcome is a refusal is next milestone's
   rule.
+- **Three smaller table and page-start cases (review 36, notes):**
+  - *The mirror of the strip.* A row may be cut where it draws text on this page while what is left of it for the
+    next page draws nothing; that page then starts with an empty part of the row, 8 to 10 pt high. Seen for one kind
+    of cell only: a cell with two empty blocks with padding (237 of 2 400 documents in the reviewer's sweep). The rule
+    for a cut asks only that something of the row is left, not that it draws.
+  - *A thin strip under a thick line.* With an 8 pt line under the first row of each group of rows under a label, a
+    page may end with the 8 pt line and the 1 pt line that closes the table right under it, and the second row
+    follows whole on the next page (1 page of 107 in the reviewer's probe). The label's text line ends 1 pt below the
+    top of the second row, inside the thick line, so something is drawn below that row's top by the letter of the
+    rule, although nothing of the row shows.
+  - *Two older first-on-page cases.* A block with padding that is first on a page and holds a piece that cannot be
+    broken, between "page area minus both paddings" and "page area minus the top padding" high, is refused; lower
+    on the page the same block is placed and broken. A paragraph kept together that is first on a page inside a
+    padded block is broken, although it would fit the next page. Both were so before fix round 5.
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
