@@ -1,12 +1,11 @@
 <Solution>
-  <Project Path="samples/Ave.Extensions.Documents.Samples/Ave.Extensions.Documents.Samples.csproj" />
   <Project Path="Ave.Extensions.Documents/Ave.Extensions.Documents.csproj" />
   <Project Path="Ave.Extensions.Documents.Core/Ave.Extensions.Documents.Core.csproj" />
+  <Project Path="Ave.Extensions.Documents.DocumentModel/Ave.Extensions.Documents.DocumentModel.csproj" />
   <Project Path="Ave.Extensions.Documents.Fluent/Ave.Extensions.Documents.Fluent.csproj" />
   <Project Path="Ave.Extensions.Documents.Fonts/Ave.Extensions.Documents.Fonts.csproj" />
   <Project Path="Ave.Extensions.Documents.Images/Ave.Extensions.Documents.Images.csproj" />
   <Project Path="Ave.Extensions.Documents.Layout/Ave.Extensions.Documents.Layout.csproj" />
-  <Project Path="Ave.Extensions.Documents.DocumentModel/Ave.Extensions.Documents.DocumentModel.csproj" />
   <Project Path="Ave.Extensions.Documents.PageModel/Ave.Extensions.Documents.PageModel.csproj" />
   <Project Path="Ave.Extensions.Documents.Pdf/Ave.Extensions.Documents.Pdf.csproj" />
   <Project Path="Ave.Extensions.Documents.Render.Pdf/Ave.Extensions.Documents.Render.Pdf.csproj" />
@@ -14,14 +13,17 @@
   <Project Path="Ave.Extensions.Documents.Typesetting/Ave.Extensions.Documents.Typesetting.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Architecture/UnitTests.Extensions.Documents.Architecture.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Core/UnitTests.Extensions.Documents.Core.csproj" />
+  <Project Path="UnitTests.Extensions.Documents.DocumentModel/UnitTests.Extensions.Documents.DocumentModel.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Fluent/UnitTests.Extensions.Documents.Fluent.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Fonts/UnitTests.Extensions.Documents.Fonts.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Images/UnitTests.Extensions.Documents.Images.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Layout/UnitTests.Extensions.Documents.Layout.csproj" />
-  <Project Path="UnitTests.Extensions.Documents.DocumentModel/UnitTests.Extensions.Documents.DocumentModel.csproj" />
   <Project Path="UnitTests.Extensions.Documents.PageModel/UnitTests.Extensions.Documents.PageModel.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Pdf/UnitTests.Extensions.Documents.Pdf.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Render.Pdf/UnitTests.Extensions.Documents.Render.Pdf.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Samples/UnitTests.Extensions.Documents.Samples.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Typesetting/UnitTests.Extensions.Documents.Typesetting.csproj" />
+  <Folder Name="/samples/">
+    <Project Path="samples/Ave.Extensions.Documents.Samples/Ave.Extensions.Documents.Samples.csproj" />
+  </Folder>
 </Solution>

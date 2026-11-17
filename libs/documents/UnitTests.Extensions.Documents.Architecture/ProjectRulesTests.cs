@@ -10,20 +10,20 @@ namespace UnitTests.Extensions.Documents.Architecture;
 /// </summary>
 public class ProjectRulesTests
 {
-    /// <summary>The repository root: the folder above this assembly that holds Directory.Build.props.</summary>
-    internal static string RepositoryRoot()
+    /// <summary>The family folder (libs/documents): the folder above this assembly that holds the family solution, extensions.slnx.</summary>
+    internal static string FamilyRoot()
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
-        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "Directory.Build.props")))
+        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "extensions.slnx")))
         {
             folder = folder.Parent;
         }
 
-        return folder?.FullName ?? throw new InvalidOperationException("Directory.Build.props not found above " + AppContext.BaseDirectory);
+        return folder?.FullName ?? throw new InvalidOperationException("extensions.slnx not found above " + AppContext.BaseDirectory);
     }
 
     private static IEnumerable<string> NonTestProjectNames() =>
-        Directory.GetFiles(RepositoryRoot(), "*.csproj", SearchOption.AllDirectories)
+        Directory.GetFiles(FamilyRoot(), "*.csproj", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Select(path => Path.GetFileNameWithoutExtension(path)!)
             .Where(name => !name.StartsWith("UnitTests.", StringComparison.Ordinal))
@@ -41,7 +41,7 @@ public class ProjectRulesTests
     {
         // The xunit package brings xunit.core, whose build props set IsTestProject to true and add the TestContainer
         // capability; xunit.extensibility.core holds the same attributes without that.
-        var file = Directory.GetFiles(RepositoryRoot(), project + ".csproj", SearchOption.AllDirectories).Single();
+        var file = Directory.GetFiles(FamilyRoot(), project + ".csproj", SearchOption.AllDirectories).Single();
         var packages = XDocument.Load(file).Descendants("PackageReference").Select(reference => (string?)reference.Attribute("Include"));
 
         packages.Should().NotContain(["xunit", "xunit.core", "Microsoft.NET.Test.Sdk"], $"{project} is not a test project");

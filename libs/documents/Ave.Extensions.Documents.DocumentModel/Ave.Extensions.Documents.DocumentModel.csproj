@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- net10.0 only: the engine is written for .NET 10 and has no netstandard build (README.md, "Target framework") -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <PackageTags>pdf;pdf-a;pdf-ua;document;layout;typesetting</PackageTags>
     <Description>The engine-neutral document model: an immutable styled box tree with CSS semantics, the contract between every front-end and layout.</Description>
   </PropertyGroup>
 

@@ -29,7 +29,7 @@ public class ConformanceMatrixTests
 
     private static List<Row> Rows() =>
     [
-        .. File.ReadAllLines(Path.Combine(ProjectRulesTests.RepositoryRoot(), "docs", "conformance-matrix.md"))
+        .. File.ReadAllLines(Path.Combine(ProjectRulesTests.FamilyRoot(), "docs", "conformance-matrix.md"))
             .Where(line => line.StartsWith("| ", StringComparison.Ordinal))
             .Select(line => line.Split('|').Select(cell => cell.Trim()).ToArray())
             .Where(cells => cells.Length >= 6 && RuleId.IsMatch(cells[1]))
@@ -44,7 +44,7 @@ public class ConformanceMatrixTests
     /// <summary>The source of a test class: the text of the files of its test project that declare it, or null.</summary>
     private static string? SourceOf(string project, string name)
     {
-        var folder = Path.Combine(ProjectRulesTests.RepositoryRoot(), "UnitTests.Extensions.Documents." + project);
+        var folder = Path.Combine(ProjectRulesTests.FamilyRoot(), "UnitTests.Extensions.Documents." + project);
         var files = Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Select(File.ReadAllText)

@@ -2,7 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <IsSampleOrSupport>true</IsSampleOrSupport>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <!-- A sample application: never packed, no XML documentation required -->
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);1591</NoWarn>
     <!-- No native app host: the publish folder then holds managed assemblies only (proved by tools/verify-samples.ps1).
          Run with `dotnet Ave.Extensions.Documents.Samples.dll <output folder>`. -->
     <UseAppHost>false</UseAppHost>
@@ -16,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(RepositoryRoot)assets/fonts/lato/*.ttf;$(RepositoryRoot)assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(MSBuildThisFileDirectory)../../assets/fonts/lato/*.ttf;$(MSBuildThisFileDirectory)../../assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- The reporting PoC's sample data (copied from /d/dev/ave/reporting-poc/data, commit 4cce9bf) and its logo as PNG
          (made by tools/generate-test-images.py). -->
     <None Include="data/*.json;assets/logo.png" CopyToOutputDirectory="PreserveNewest" />

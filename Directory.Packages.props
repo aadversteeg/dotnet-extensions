@@ -57,9 +57,16 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageVersion Include="Moq" Version="4.20.72" />
-    <PackageVersion Include="xunit" Version="2.7.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.7" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
+    <!-- The xunit attributes without xunit.core's build props, which would make a helper project a test project
+         (documents: Ave.Extensions.Documents.TestSupport). Same version as xunit. -->
+    <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
+    <!-- documents, tests only: PdfPig (Apache-2.0, pure managed) reads the generated PDFs back; WebAssembly
+         (Apache-2.0, dotnet-webassembly) runs harfbuzz.wasm, the reference shaper -->
+    <PackageVersion Include="PdfPig" Version="0.1.16" />
+    <PackageVersion Include="WebAssembly" Version="2.1.0" />
 
     <!-- Benchmarks -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.5" />
