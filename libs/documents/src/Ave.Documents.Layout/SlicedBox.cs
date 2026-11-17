@@ -71,6 +71,8 @@ internal static class SlicedBox
     /// The content is laid out again with that space kept free, which moves the break to the last breakpoint
     /// before it — what Chromium prints for this case (checked against its print output). Because a layout call is
     /// pure, this second call is just another call; no state is kept.</item>
+    /// <item>Content that does not leave that room either — empty content, which fits any height — means nothing of
+    /// the box fits: the box moves to the next page whole, since its bottom padding and border are no breakpoint.</item>
     /// <item>LIMIT: if even then nothing fits and the box is at the start of a page, it is placed anyway and its
     /// bottom padding and border overflow the page area; there is no earlier page where it would fit better.
     /// CSS Fragmentation 3 §4.4 would let the user agent "break anywhere in order to avoid losing content off the edge
@@ -111,7 +113,9 @@ internal static class SlicedBox
                 return Result<LayoutResult, Error>.Failure(reserved.Error);
             }
 
-            if (reserved.Value.HasValue)
+            // The content placed with the room kept free must leave that room: empty content "fits" any height, even
+            // the negative one left when not even the bottom padding and border fit, and would end below the page.
+            if (reserved.Value.HasValue && Fitting.Fits(topInset + reserved.Value.Value.Height + bottomInset, space.AvailableHeight))
             {
                 content = reserved.Value.Value;
             }

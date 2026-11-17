@@ -47,6 +47,36 @@ public class TrailingMarginTests
     private static StyledDocument OnPage(double areaHeight, params Node[] children) =>
         new(new DocumentMetadata("Test", null), new PageStyle(300.Pt(), (areaHeight + 20).Pt(), Edges.All(10.Pt())), Flow(0, [.. children]));
 
+    /// <summary>
+    /// An empty box with bottom padding or a bottom border, where the page ends inside it (found in fix round 5 while
+    /// testing the row-cut rule): its bottom padding and border are no place for a break, so when they do not fit, the
+    /// box moves to the next page whole. Before, an empty box was placed anyway — empty content "fits" even the
+    /// negative height left once that room is kept free — and its bottom ran past the page end by up to its padding
+    /// and border.
+    /// </summary>
+    [Theory]
+    [InlineData(2.0, 0.0)]
+    [InlineData(0.0, 1.0)]
+    [InlineData(2.0, 1.0)]
+    public void An_empty_box_whose_bottom_padding_or_border_does_not_fit_moves_to_the_next_page(double padding, double border)
+    {
+        var style = BoxStyle.Initial with
+        {
+            Padding = new Edges(padding.Pt(), 0.Pt(), padding.Pt(), 0.Pt()),
+            Border = Border.All(BorderSide.None) with { Bottom = new BorderSide(border.Pt(), Color.Black) },
+        };
+        var height = 2 * padding + border;
+        for (var area = 14.4 + 0.25; area < 14.4 + height + 14.4; area += 0.25)
+        {
+            var pages = Paginate(OnPage(area, Paragraph(1, "first", size: 12), Flow(2, [], style), Paragraph(3, "after", size: 12)));
+
+            var because = $"padding {padding}, border {border}, page area {area}";
+            EveryBoxEndsInsideThePageArea(pages, area, because);
+            pages.SelectMany(page => Bottoms(page.Root.Fragment, 0)).Where(found => found.Box.Box.Id == new NodeId(2)).Should()
+                .ContainSingle(because).Which.Box.Size.Height.Should().BeApproximately(height, Epsilon, because + ": the empty box is placed once, whole");
+        }
+    }
+
     [Fact]
     public void A_padded_box_whose_last_child_has_a_large_bottom_margin_moves_to_the_next_page()
     {
