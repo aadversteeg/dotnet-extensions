@@ -152,17 +152,20 @@ public class TableRowSpanBreakTests
         }
     }
 
-    [Fact]
-    public void A_label_kept_together_over_rows_of_several_lines_is_not_cut()
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void A_label_kept_together_over_rows_of_several_lines_is_not_cut(int lines)
     {
-        // The same keep rule for a label over three rows of three lines each: neither a break between those rows nor a
-        // break inside one of them is taken while a better break exists, so each label is on one page with its rows.
+        // The same keep rule for a label over three rows of two or three lines each: neither a break between those
+        // rows nor a break inside one of them is taken while a better break exists, so each label is on one page with
+        // its rows. Sixty start offsets put the page end in each of the label's three rows.
         foreach (var clone in new[] { true, false })
         {
-            for (var offset = 0.0; offset < 30; offset += 1)
+            for (var offset = 0.0; offset < 60; offset += 1)
             {
-                var because = $"{(clone ? "clone" : "slice")}, offset {offset}";
-                CellElement Lines(int unit, int row) => Cell([.. Enumerable.Range(0, 3).Select(line => (Element)Paragraph($"r{unit:00}x{row}{line}"))]);
+                var because = $"{lines} lines, {(clone ? "clone" : "slice")}, offset {offset}";
+                CellElement Lines(int unit, int row) => Cell([.. Enumerable.Range(0, lines).Select(line => (Element)Paragraph($"r{unit:00}x{row}{line}"))]);
                 var table = Table(Columns(60.Pt(), Fill(1)), [.. Enumerable.Range(0, 6).SelectMany(unit => Enumerable.Range(0, 3).Select(row => (TablePart)(row == 0
                     ? TableRow([Cell($"m{unit:00}").RowSpan(3).KeepTogether(), Lines(unit, row)])
                     : TableRow([Lines(unit, row)]))))]).GridLines(1.Pt(), Color.Black);
@@ -173,6 +176,48 @@ public class TableRowSpanBreakTests
                     unitsByPage.Count(units => units.Contains(unit)).Should().Be(1, because + $": the rows of unit {unit} are on one page");
                 }
             }
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void A_cell_kept_together_holds_back_only_the_breaks_that_cut_it(int keptRow)
+    {
+        // A label over three rows (not kept); one of its rows, `keptRow`, has a text cell of four lines kept together.
+        // A break between two of these rows cuts only the label, unless the kept cell spans it, which it does not: it
+        // starts below the one break and ends above the other. So both are ordinary breaks between rows and each is
+        // taken where it is the latest that fits; the kept cell moves on whole. Counted as cut by the break before it
+        // or after it, the cell would hold that break back and the page would end earlier. Sixty start offsets put the
+        // page end in each of the three rows.
+        string Kind(string word) => word[3..4];
+        var kinds = keptRow == 1 ? new[] { "a", "k", "c" } : ["a", "b", "k"];
+        foreach (var clone in new[] { true, false })
+        {
+            var splits = new HashSet<(string Above, string Below)>();
+            for (var offset = 0.0; offset < 60; offset += 1)
+            {
+                var because = $"kept row {keptRow}, {(clone ? "clone" : "slice")}, offset {offset}";
+                CellElement Text(int unit, int row) => row == keptRow
+                    ? Cell([.. Enumerable.Range(0, 4).Select(line => (Element)Paragraph($"r{unit:00}k{line}"))]).KeepTogether()
+                    : Cell($"r{unit:00}{kinds[row]}");
+                var table = Table(Columns(60.Pt(), Fill(1)), [.. Enumerable.Range(0, 6).SelectMany(unit => Enumerable.Range(0, 3).Select(row => (TablePart)(row == 0
+                    ? TableRow([Cell($"m{unit:00}").RowSpan(3), Text(unit, row)])
+                    : TableRow([Text(unit, row)]))))]).GridLines(1.Pt(), Color.Black);
+                var pages = Laid(Broken(table, clone), offset, because)
+                    .Select(page => Words(page.Root.Fragment).Where(word => word.StartsWith('r')).ToList()).ToList();
+                foreach (var unit in Enumerable.Range(0, 6).Select(unit => $"r{unit:00}k"))
+                {
+                    pages.Count(page => page.Any(word => word.StartsWith(unit))).Should().Be(1, because + $": the kept cell {unit} is on one page");
+                }
+
+                // The page breaks that fall inside a unit, as the kinds of the rows on both sides.
+                splits.UnionWith(Enumerable.Range(0, pages.Count - 1)
+                    .Where(page => pages[page][^1][1..3] == pages[page + 1][0][1..3])
+                    .Select(page => (Kind(pages[page][^1]), Kind(pages[page + 1][0]))));
+            }
+
+            splits.Should().Contain([(kinds[0], kinds[1]), (kinds[1], kinds[2])], $"kept row {keptRow}, {(clone ? "clone" : "slice")}: the page breaks before and after the kept row, inside the unit");
         }
     }
 }
