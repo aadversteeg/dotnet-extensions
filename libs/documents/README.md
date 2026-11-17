@@ -144,6 +144,16 @@ Two more reference gates run with the tests. Line breaking runs the official `Li
 in `src/Ave.Documents.Typesetting/Unicode/` is generated from the committed data files; after updating them,
 run the tests with `UPDATE_GENERATED=1`.
 
+## Packages
+
+The 11 libraries of the layer list are packed as `Ave.Documents.*` (version in `Directory.Build.props`, a `.snupkg`
+with the sources next to each package); the test projects, `Ave.Documents.TestSupport` and the samples are not.
+Applications reference `Ave.Documents`, which brings the rest. The packages are a preview for private use: they carry
+no licence yet and say so in their description. They are not on nuget.org: `pwsh -NoProfile -File
+tools/pack-local.ps1` packs them from a clean working tree, checks each package's dependencies (only `Ave.Documents.*`
+of the same version and the four `Ave.Extensions.*` packages; `PackageRulesTests` checks the same before packing) and
+copies them into the local feed `%JASMIN_LOCAL_FEED%`. It never overwrites a version that is already there.
+
 ## Scope and known limits
 
 In: PDF/A-3b, PDF/A-3a and PDF/UA-1 profiles (tagged PDF, XMP, sRGB output intent, embedded files with their
