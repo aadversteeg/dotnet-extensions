@@ -117,31 +117,24 @@ A change that spans two packages is one pull request. Then:
 3. Release the upper package.
 
 Raise the minimum only after the lower package is on nuget.org: until then a release-mode build cannot restore it,
-and the CI job "Release mode (main only)" shows that as an error.
+and the CI job "Release mode (main only)" shows that as an error. nuget.org lists a new version some time after the
+publish job is done; in the first releases from this repository that took between 6 and 26 minutes.
 
-## First release wave
+## The first file-system releases from this repository
 
-The file-system packages were developed past the versions on nuget.org: nuget.org has `0.6.0-preview.1`, which
-targets `netstandard2.1` and `net10.0`, and the source is past `0.7.0-preview.9` and targets `netstandard2.0` and
-`net10.0` (`.InMemory` and `.AzureFileStorage` also `netstandard2.1`). So the file-system minimum versions in
-`Directory.Packages.props` (`0.6.0-preview.1`) cannot be used for a release from this repository: in release mode
-`.Local`, `.InMemory`, `.MimeDetective`, `.AzureFileStorage` and `Ave.Extensions.FileSystem` do not restore (the
-published packages have no `netstandard2.0` build), and the CI job "Release mode (main only)" is red for file-system
-until this wave is done.
+The file-system packages on nuget.org stopped at `0.6.0-preview.1`, which targets `netstandard2.1` and `net10.0`
+and has no `netstandard2.0` build. On 17 November 2026 all six file-system packages were released from this
+repository as `0.7.0-preview.10`, in dependency order, raising the minimum in `Directory.Packages.props` after
+each step:
 
-The first wave therefore goes in dependency order, raising the minimum after each step:
+1. `file-system-abstractions`;
+2. `file-system`;
+3. `file-system-local`, `file-system-in-memory` and `file-system-mime-detective`;
+4. `file-system-azure-file-storage`.
 
-1. release `file-system-abstractions`;
-2. raise `Ave.Extensions.FileSystem.Abstractions` in `Directory.Packages.props` to that version, then release
-   `file-system`;
-3. raise `Ave.Extensions.FileSystem`, then release `file-system-local`, `file-system-in-memory` and
-   `file-system-mime-detective`;
-4. raise `Ave.Extensions.FileSystem.Local`, then release `file-system-azure-file-storage`.
-
-All file-system minimums rise in this wave.
-
-The functional, error-paths and fluent-contracts minimums are versions that are on nuget.org today, so those
-packages can be released in any order.
+Since then the file-system minimums in `Directory.Packages.props` are versions that are on nuget.org, and the CI
+job "Release mode (main only)" is green for the file-system packages. A file-system package can be released on
+its own; only a change across two packages needs the order described above.
 
 ## First release of the documents family
 
