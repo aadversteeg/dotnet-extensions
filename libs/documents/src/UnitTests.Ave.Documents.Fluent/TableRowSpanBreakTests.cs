@@ -126,4 +126,53 @@ public class TableRowSpanBreakTests
             }
         }
     }
+
+    [Fact]
+    public void A_cell_kept_together_is_not_cut_inside_its_row()
+    {
+        // A cell kept together (break-inside: avoid) is a keep rule of the author's, like a row kept together: a break
+        // inside its row would break inside the cell, so the row moves to the next page whole. Rows of one line
+        // (15.4 pt with the line), then a row whose second cell has eight lines and is kept together; the start offset
+        // puts that row across the page end.
+        foreach (var clone in new[] { true, false })
+        {
+            for (var offset = 0.0; offset < 30; offset += 1)
+            {
+                var because = $"{(clone ? "clone" : "slice")}, offset {offset}";
+                var kept = Cell([.. Enumerable.Range(0, 8).Select(line => (Element)Paragraph($"k{line}"))]).KeepTogether();
+                var table = Table(Columns(60.Pt(), Fill(1)),
+                [
+                    .. Enumerable.Range(0, 6).Select(row => (TablePart)TableRow([Cell($"a{row}"), Cell($"t{row}")])),
+                    TableRow([Cell("b"), kept]),
+                    TableRow([Cell("c"), Cell("after")]),
+                ]).GridLines(1.Pt(), Color.Black);
+                var pages = Laid(Broken(table, clone), offset, because);
+                pages.Count(page => Words(page.Root.Fragment).Any(word => word.StartsWith('k'))).Should().Be(1, because + ": the kept cell is on one page");
+            }
+        }
+    }
+
+    [Fact]
+    public void A_label_kept_together_over_rows_of_several_lines_is_not_cut()
+    {
+        // The same keep rule for a label over three rows of three lines each: neither a break between those rows nor a
+        // break inside one of them is taken while a better break exists, so each label is on one page with its rows.
+        foreach (var clone in new[] { true, false })
+        {
+            for (var offset = 0.0; offset < 30; offset += 1)
+            {
+                var because = $"{(clone ? "clone" : "slice")}, offset {offset}";
+                CellElement Lines(int unit, int row) => Cell([.. Enumerable.Range(0, 3).Select(line => (Element)Paragraph($"r{unit:00}x{row}{line}"))]);
+                var table = Table(Columns(60.Pt(), Fill(1)), [.. Enumerable.Range(0, 6).SelectMany(unit => Enumerable.Range(0, 3).Select(row => (TablePart)(row == 0
+                    ? TableRow([Cell($"m{unit:00}").RowSpan(3).KeepTogether(), Lines(unit, row)])
+                    : TableRow([Lines(unit, row)]))))]).GridLines(1.Pt(), Color.Black);
+                var pages = Laid(Broken(table, clone), offset, because);
+                var unitsByPage = pages.Select(page => Words(page.Root.Fragment).Where(word => word.StartsWith('r')).Select(word => word[1..3]).Distinct().ToList()).ToList();
+                foreach (var unit in Enumerable.Range(0, 6).Select(unit => $"{unit:00}"))
+                {
+                    unitsByPage.Count(units => units.Contains(unit)).Should().Be(1, because + $": the rows of unit {unit} are on one page");
+                }
+            }
+        }
+    }
 }

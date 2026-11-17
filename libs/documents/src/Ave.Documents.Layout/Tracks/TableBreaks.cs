@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -76,7 +77,7 @@ internal static class TableBreaks
                 // clone the cut also needs the half of the line below the row that lies under the cut (see Take).
                 if (Fitting.Fits(top + LineInside(table, segment, row) + CutLineBelow(table, row), height))
                 {
-                    yield return new Breakpoint(BreakKind.InsideRow, row, InsideAppeal(table.Grid, row), content, segment);
+                    yield return new Breakpoint(BreakKind.InsideRow, row, InsideAppeal(table.Grid, segment, row), content, segment);
                 }
 
                 yield break;
@@ -293,12 +294,27 @@ internal static class TableBreaks
     /// <param name="row">The row the break comes before.</param>
     /// <returns>The appeal.</returns>
     private static BreakAppeal BetweenRowsAppeal(TableGrid grid, TableSegments.Segment segment, int row) =>
+        WithKeptCells(grid, segment, cell => cell.Row < row && cell.LastRow >= row, BeforeAppeal(grid, row));
+
+    /// <summary>The appeal of a break inside a row: lower when the row or its group is kept together, or a cell it
+    /// cuts is (every cell of the row, and every cell from a row above that spans into it), as for a break between
+    /// rows (<see cref="BetweenRowsAppeal"/>).</summary>
+    private static BreakAppeal InsideAppeal(TableGrid grid, TableSegments.Segment segment, int row) =>
+        WithKeptCells(grid, segment, cell => cell.Row <= row && cell.LastRow >= row,
+            BreakAvoidance.Inside(grid.Rows[row].Group, BreakAvoidance.Inside(grid.Rows[row].Box, BreakAppeal.Perfect)));
+
+    /// <summary>
+    /// <paramref name="appeal"/>, lowered when a cell of the segment that the break cuts is kept together
+    /// (<c>break-inside: avoid</c>, <see cref="BreakAvoidance.Inside"/>): the break falls inside that cell.
+    /// </summary>
+    /// <param name="grid">The grid.</param>
+    /// <param name="segment">The unit the break is in, measured.</param>
+    /// <param name="cuts">Which cells the break cuts.</param>
+    /// <param name="appeal">The appeal without the cells' keep rules.</param>
+    /// <returns>The appeal.</returns>
+    private static BreakAppeal WithKeptCells(TableGrid grid, TableSegments.Segment segment, Func<TableGrid.Cell, bool> cuts, BreakAppeal appeal) =>
         segment.Cells
             .Select(cell => grid.Cells[cell.Cell])
-            .Where(cell => cell.Row < row && cell.LastRow >= row)
-            .Aggregate(BeforeAppeal(grid, row), (appeal, cell) => BreakAvoidance.Inside(cell.Box, appeal));
-
-    /// <summary>The appeal of a break inside a row: lower when the row or its group is kept together.</summary>
-    private static BreakAppeal InsideAppeal(TableGrid grid, int row) =>
-        BreakAvoidance.Inside(grid.Rows[row].Group, BreakAvoidance.Inside(grid.Rows[row].Box, BreakAppeal.Perfect));
+            .Where(cuts)
+            .Aggregate(appeal, (lowered, cell) => BreakAvoidance.Inside(cell.Box, lowered));
 }

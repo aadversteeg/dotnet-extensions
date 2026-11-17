@@ -23,8 +23,8 @@ namespace Ave.Documents.Layout;
 /// <para><b>Breaking</b> (CSS Fragmentation 3 §4.1): the breakpoints are between units (class A, no cell is cut),
 /// between two rows inside a unit (a cell that spans both continues on the next page), and inside a row: every cell of
 /// the row is a parallel flow that continues on the next page from where the page end cut it, and the row's part on
-/// this page fills the page (§5.3). Each breakpoint has an appeal (<see cref="BreakAppeal"/>): a break inside a row or
-/// a row group marked <c>break-inside: avoid</c> violates it, so does a break at <c>break-before</c>/<c>break-after:
+/// this page fills the page (§5.3). Each breakpoint has an appeal (<see cref="BreakAppeal"/>): a break inside a row, a
+/// row group or a cell marked <c>break-inside: avoid</c> violates it, so does a break at <c>break-before</c>/<c>break-after:
 /// avoid</c>. A row span does not keep its rows together: a break between two rows of a unit has the appeal it would
 /// have without the span, lowered only when it cuts a spanning cell marked <c>break-inside: avoid</c> (stated once, in
 /// <see cref="TableBreaks"/>, BetweenRowsAppeal). The page breaks at the latest

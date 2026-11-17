@@ -269,7 +269,8 @@ Each is documented next to its code as well.
   break between two rows that a spanning cell crosses is an ordinary break between rows, with the appeal it would
   have without the span, and the cell continues on the next page (`TableBreaks.BetweenRowsAppeal`). The author's keep
   rules still apply: a row group kept together, a spanning cell kept together, `KeepWithNext`. So the rows under a
-  label fill their pages as rows without one do.
+  label fill their pages as rows without one do. A cell kept together is a keep rule at a break inside its row too:
+  the row is not cut there while a better break exists (`TableBreaks.InsideAppeal`).
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.
