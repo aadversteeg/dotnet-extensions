@@ -16,8 +16,8 @@
     <PackageVersion Include="Ave.Extensions.ErrorPaths" Version="0.0.2-preview.1" />
     <PackageVersion Include="Ave.Extensions.ErrorPaths.Functional" Version="0.0.3-preview.1" />
     <PackageVersion Include="Ave.Extensions.FluentContracts" Version="0.0.1-preview.2" />
-    <PackageVersion Include="Ave.Extensions.FileSystem.Abstractions" Version="0.6.0-preview.1" />
-    <PackageVersion Include="Ave.Extensions.FileSystem" Version="0.6.0-preview.1" />
+    <PackageVersion Include="Ave.Extensions.FileSystem.Abstractions" Version="0.7.0-preview.10" />
+    <PackageVersion Include="Ave.Extensions.FileSystem" Version="0.7.0-preview.10" />
     <PackageVersion Include="Ave.Extensions.FileSystem.Local" Version="0.6.0-preview.1" />
     <!-- documents: the first release from this repository is 0.1.0-preview.2 of every package, lowest layer first
          (see docs/RELEASING.md, "First release of the documents family") -->
