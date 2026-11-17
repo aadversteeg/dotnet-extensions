@@ -667,8 +667,8 @@ page 1 size=595.276x841.89
             box #572 generic at (0, 0) size=538.583x9.6
               box #573 generic at (0, 0) size=134.646x9.6
                 box #574 paragraph at (0, 0) size=134.646x9.6
-                  line at (0, 0) size=132.184x9.6
-                    text #575 Lato-Regular 8pt at (0, 0) size=132.184x9.6 ascent=7.896 "Rekening: NL00 BANK 0123 4567 89"
+                  line at (0, 0) size=132.096x9.6
+                    text #575 Lato-Regular 8pt at (0, 0) size=132.096x9.6 ascent=7.896 "Rekening: NL00 BANK 0123 4567 89"
               box #576 generic at (134.646, 0) size=134.646x9.6
                 box #577 paragraph at (0, 0) size=134.646x9.6
                   line at (0, 0) size=111.555x9.6
@@ -882,8 +882,8 @@ page 2 size=595.276x841.89
             box #572 generic at (0, 0) size=538.583x9.6
               box #573 generic at (0, 0) size=134.646x9.6
                 box #574 paragraph at (0, 0) size=134.646x9.6
-                  line at (0, 0) size=132.184x9.6
-                    text #575 Lato-Regular 8pt at (0, 0) size=132.184x9.6 ascent=7.896 "Rekening: NL00 BANK 0123 4567 89"
+                  line at (0, 0) size=132.096x9.6
+                    text #575 Lato-Regular 8pt at (0, 0) size=132.096x9.6 ascent=7.896 "Rekening: NL00 BANK 0123 4567 89"
               box #576 generic at (134.646, 0) size=134.646x9.6
                 box #577 paragraph at (0, 0) size=134.646x9.6
                   line at (0, 0) size=111.555x9.6
