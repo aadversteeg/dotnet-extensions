@@ -146,13 +146,13 @@ run the tests with `UPDATE_GENERATED=1`.
 
 ## Packages
 
-The 11 libraries of the layer list are packed as `Ave.Extensions.Documents.*` (version in `Directory.Build.props`, a `.snupkg`
-with the sources next to each package); the test projects, `Ave.Extensions.Documents.TestSupport` and the samples are not.
-Applications reference `Ave.Extensions.Documents`, which brings the rest. The packages are a preview for private use: they carry
-no licence yet and say so in their description. They are not on nuget.org: `pwsh -NoProfile -File
-tools/pack-local.ps1` packs them from a clean working tree, checks each package's dependencies (only `Ave.Extensions.Documents.*`
-of the same version and the four `Ave.Extensions.*` packages; `PackageRulesTests` checks the same before packing) and
-copies them into the local feed `%JASMIN_LOCAL_FEED%`. It never overwrites a version that is already there.
+The 11 libraries of the layer list are packages, each with a `.snupkg` symbols package next to it; the test projects,
+`Ave.Extensions.Documents.TestSupport` and the samples are not packed. Applications reference
+`Ave.Extensions.Documents`, which brings the rest. The packages are MIT licensed (the repository's `LICENSE`) and carry
+this README and `NOTICE.md`; `Ave.Extensions.Documents.Typesetting` also carries the Unicode licence of the data its
+property table is generated from. They are released from this repository by `.github/workflows/release.yml`, one tag per
+package (see `docs/RELEASING.md` at the root). `PackageRulesTests` checks what each package may depend on: the engine
+packages below it and, for Core only, `Ave.Extensions.Functional` and `Ave.Extensions.ErrorPaths`.
 
 ## Scope and known limits
 

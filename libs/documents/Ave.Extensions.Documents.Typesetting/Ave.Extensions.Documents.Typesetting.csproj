@@ -16,4 +16,10 @@
     <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Typesetting" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The Unicode property table in this library is generated from the Unicode Character Database, whose licence
+         asks for its notice to travel with data derived from it -->
+    <None Include="$(MSBuildThisFileDirectory)../assets/unicode/18.0.0/LICENSE.txt" Pack="true" PackagePath="licenses/Unicode-LICENSE.txt" Visible="false" />
+  </ItemGroup>
+
 </Project>
