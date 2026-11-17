@@ -31,6 +31,9 @@ public class AssemblyRulesTests
         ["Ave.Documents"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Fluent"],
     };
 
+    /// <summary>The names of the product libraries (the layer list), for the rules on other things than assemblies.</summary>
+    internal static IReadOnlyCollection<string> LibraryNames => AllowedReferences.Keys;
+
     public static TheoryData<string> Libraries => [.. AllowedReferences.Keys];
 
     private static string PathOf(string assembly) => Path.Combine(AppContext.BaseDirectory, assembly + ".dll");
