@@ -229,6 +229,54 @@ public class TableRowCutTests
         }
     }
 
+    /// <summary>A label over three rows that holds only <paramref name="label"/>, beside 14 pt text in every row (probe
+    /// Q5 of review 36). Eighteen rows; returns the table and its words.</summary>
+    private static (TableElement Table, string[] Words) LabelHolding(Func<Element> label)
+    {
+        var table = Table(
+            Columns(40.Pt(), Fill(1)),
+            [.. Enumerable.Range(0, 18).Select(i => (TablePart)(i % 3 == 0
+                ? TableRow([Cell([label()]).RowSpan(3), Cell($"r{i:00}").FontSize(14.Pt())])
+                : TableRow([Cell($"r{i:00}").FontSize(14.Pt())])))]);
+        return (table, [.. Enumerable.Range(0, 18).Select(i => $"r{i:00}")]);
+    }
+
+    public static TheoryData<string> DrawsOnlyInTheFirstRow => new() { "small table with lines", "small image" };
+
+    [Theory]
+    [MemberData(nameof(DrawsOnlyInTheFirstRow))]
+    public void A_rule_or_an_image_counts_as_drawn_only_where_it_lies(string kind)
+    {
+        // Review 36, surviving mutant IM1: with a rule or an image counted wherever it lies, a label that holds only a
+        // small nested table with lines (rules) or a small image, all within its first row, made a cut inside the
+        // rows below it, and 91 of 120 pages ended with an empty strip. What the label draws lies above those rows.
+        Element Label() => kind == "small table with lines"
+            ? Table(Columns(Fill(1)), [TableRow([Cell([Block([]).Padding(2.Pt())])])]).GridLines(2.Pt(), Color.Black)
+            : Image(TestImages.Bytes("rgb8.png")).Width(6.Pt()).Height(6.Pt()).Decorative();
+        for (var offset = 0.0; offset < 60; offset += 0.5)
+        {
+            var (table, words) = LabelHolding(Label);
+            NoEmptyStrip(table, words, offset, $"label holds only a {kind}, offset {offset}");
+        }
+    }
+
+    [Fact]
+    public void The_bottom_border_of_a_box_counts_as_drawn_at_the_bottom_of_the_box()
+    {
+        // Review 36, surviving mutant BB1: a label that holds only an empty block with 28 pt top padding and a 2 pt
+        // bottom border; the border lies in the label's second row (its first row is one 14 pt line high). Where the
+        // text of that row does not fit but the border does, the row is cut and the border ends the page. Measured at
+        // the box's top instead, the border would lie in the first row and the row would never be cut there.
+        var textless = 0;
+        for (var offset = 0.0; offset < 60; offset += 0.5)
+        {
+            var (table, words) = LabelHolding(() => Block([]).PaddingTop(28.Pt()).BorderBottom(2.Pt(), Color.Black));
+            textless += TextlessCuts(NoEmptyStrip(table, words, offset, $"offset {offset}"));
+        }
+
+        textless.Should().BePositive("a row is cut where only the bottom border of the label's block is placed");
+    }
+
     [Fact]
     public void P1_a_label_over_three_one_line_rows_moves_the_row_that_does_not_fit_whole()
     {
