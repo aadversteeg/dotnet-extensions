@@ -13,10 +13,12 @@ public class ForcedLineBreakTests
     /// <summary>U+2028 LINE SEPARATOR, written as "|" in the test data.</summary>
     private static readonly string Break = char.ConvertFromUtf32(0x2028);
 
-    /// <summary>The test data with "|" as the line separator, "~" as the no-break space U+00A0, and "{SHY}", "{ZWSP}" and
-    /// "{WJ}" as the invisible characters soft hyphen U+00AD, zero width space U+200B and word joiner U+2060.</summary>
+    /// <summary>The test data with "|" as the line separator, "~" as the no-break space U+00A0, and "{SHY}", "{ZWSP}",
+    /// "{WJ}" and "{ZWNJ}" as the invisible characters soft hyphen U+00AD, zero width space U+200B, word joiner U+2060
+    /// and zero width non-joiner U+200C.</summary>
     private static string WithBreaks(string text) => text.Replace("|", Break, StringComparison.Ordinal).Replace("~", "\u00A0", StringComparison.Ordinal)
-        .Replace("{SHY}", "\u00AD", StringComparison.Ordinal).Replace("{ZWSP}", "\u200B", StringComparison.Ordinal).Replace("{WJ}", "\u2060", StringComparison.Ordinal);
+        .Replace("{SHY}", "\u00AD", StringComparison.Ordinal).Replace("{ZWSP}", "\u200B", StringComparison.Ordinal).Replace("{WJ}", "\u2060", StringComparison.Ordinal)
+        .Replace("{ZWNJ}", "\u200C", StringComparison.Ordinal);
 
     private static ShapedGlyph[] Shape(string text) => [.. Shaper.Shape(text, TestFonts.Regular, 10).Value];
 
@@ -70,11 +72,15 @@ public class ForcedLineBreakTests
     [InlineData("a | |b")]
     [InlineData("xx ab cd |ef")]
     [InlineData("a | ")]
+    [InlineData("wwwwwwwwwwww |cd")]
+    [InlineData("wwwwwwwwwwww  |cd")]
     public void Invisible_characters_before_a_forced_break_or_the_paragraph_end_change_no_line(string text)
     {
+        // "wwwwwwwwwwww" is wider than the line (review 35, SC-5 nit): it overflows a line of its own either way, and the
+        // invisible character after its space must not end that line and make one of its own before the forced break.
         var width = Width(Shape("xx ab")) + Width(Shape(" ")) / 2;
         var plain = GreedyLineBreaker.BreakLines([[.. Shape(WithBreaks(text))]], availableWidth: width);
-        foreach (var invisible in new[] { "{SHY}", "{ZWSP}", "{WJ}", "{SHY}{WJ}" })
+        foreach (var invisible in new[] { "{SHY}", "{ZWSP}", "{WJ}", "{ZWNJ}", "{SHY}{WJ}" })
         {
             // Before every forced break, and at the end when the text ends in a space.
             var marked = text.Replace(" |", " " + invisible + "|", StringComparison.Ordinal);
@@ -86,6 +92,31 @@ public class ForcedLineBreakTests
             lines.Select(line => (line.Width, line.EndsWithForcedBreak)).Should().Equal(plain.Select(line => (line.Width, line.EndsWithForcedBreak)), because);
             lines.Select(Visible).Should().Equal(plain.Select(Visible), because + ": the same text on each line");
         }
+    }
+
+    /// <summary>
+    /// Review 35, SC-5 nit: invisible characters before the spaces at the start of a line change nothing either. The
+    /// spaces at a line start are removed (CSS Text 3 §4.1.2) also when an invisible character stands before or among
+    /// them; the invisible characters stay as text, without width. Lines start with spaces at the paragraph start,
+    /// after a forced break, and where a line wraps before a zero width space (UAX #14 LB8 keeps the spaces after it
+    /// with it).
+    /// </summary>
+    [Theory]
+    [InlineData(" b", "{ZWSP} b")]
+    [InlineData(" b", "{WJ}  b")]
+    [InlineData(" b", "{SHY} {ZWSP} b")]
+    [InlineData("a| b", "a|{ZWSP} b")]
+    [InlineData("xx ab cd", "xx ab{ZWSP} cd")]
+    [InlineData("xx ab cd", "xx ab {ZWSP} cd")]
+    public void Invisible_characters_before_the_spaces_at_a_line_start_change_no_line(string plainText, string text)
+    {
+        var width = Width(Shape("xx ab")) + Width(Shape(" ")) / 2;
+        var plain = GreedyLineBreaker.BreakLines([[.. Shape(WithBreaks(plainText))]], availableWidth: width);
+
+        var lines = GreedyLineBreaker.BreakLines([[.. Shape(WithBreaks(text))]], availableWidth: width);
+
+        lines.Select(line => (line.Width, line.EndsWithForcedBreak)).Should().Equal(plain.Select(line => (line.Width, line.EndsWithForcedBreak)), text);
+        lines.Select(Visible).Should().Equal(plain.Select(Visible), text + ": the same text on each line");
     }
 
     /// <summary>The text of a line without its invisible characters and spaces at either end.</summary>

@@ -25,12 +25,13 @@ public static class GreedyLineBreaker
     /// <list type="bullet">
     /// <item>A line ends where the next piece would not fit (<see cref="Fitting.Fits"/>), not counting the spaces at
     /// the piece's end, which would hang at the end of the line. A piece that shows nothing (spaces, invisible
-    /// characters, a forced break) never widens the line: with it the line ends where its last visible glyph ends.</item>
+    /// characters, a forced break) never widens the line, so it never ends one: it stays on the line, even on a line
+    /// that already overflows with a piece wider than the line.</item>
     /// <item>Spaces at the start and at the end of a line are removed (CSS Text 3 §4.1.2, "Phase II: Trimming and
-    /// Positioning"); UAX #14 puts the opportunity AFTER a run of spaces (LB18), so they end the line before. At the
-    /// end, invisible characters among those spaces (a soft hyphen, a zero width space, a word joiner, before a forced
-    /// break or the paragraph end) do not keep them: the spaces go, the invisible characters stay as text without width,
-    /// and no line is made of invisible characters alone. So the lines are the same as without them.</item>
+    /// Positioning"); UAX #14 puts the opportunity AFTER a run of spaces (LB18), so they end the line before.
+    /// Invisible characters among those spaces (a soft hyphen, a zero width space, a word joiner) do not keep them, at
+    /// either end: the spaces go, the invisible characters stay as text without width, and no line is made of invisible
+    /// characters alone. So the lines are the same as without them.</item>
     /// <item>A line always ends after a mandatory break (UAX #14 "!"); an empty line is not made.</item>
     /// <item>A line that breaks after a soft hyphen shows a hyphen there (UAX #14 §5.4; CSS Text 3 §5.3, <c>hyphens: manual</c>): the
     /// invisible soft hyphen is replaced by its <see cref="ShapedGlyph.BreakHyphen"/>. A segment that ends in a soft
@@ -51,8 +52,6 @@ public static class GreedyLineBreaker
         var line = new List<BreakableSegments.RunGlyph>();
         var lineWidth = 0.0;
 
-        // The width of the blank glyphs at the end of the line (its trailing spaces), which a line end removes.
-        var blankAtEnd = 0.0;
         var segments = BreakableSegments.Split(runs);
         for (var index = 0; index < segments.Length; index++)
         {
@@ -61,22 +60,22 @@ public static class GreedyLineBreaker
             // break, which has no hyphen, so its HyphenWidth is 0 already.)
             var segment = segments[index];
             var hyphenWidth = index == segments.Length - 1 ? 0 : segment.HyphenWidth;
-            var widthAtEnd = segment.IsBlank && hyphenWidth == 0 ? lineWidth - blankAtEnd : lineWidth + segment.WidthAtLineEnd + hyphenWidth;
-            if (line.Count > 0 && !Fitting.Fits(widthAtEnd, availableWidth))
+            // A segment that shows nothing — no visible glyph, and no hyphen at a break after it — never ends a line.
+            var showsNothing = segment.IsBlank && hyphenWidth == 0;
+            if (line.Count > 0 && !showsNothing && !Fitting.Fits(lineWidth + segment.WidthAtLineEnd + hyphenWidth, availableWidth))
             {
                 AddLine(lines, line, endsWithForcedBreak: false, breaksHere: true);
                 line.Clear();
                 lineWidth = 0;
-                blankAtEnd = 0;
             }
 
-            // A new line does not start with spaces (only possible at the paragraph start or after a mandatory break).
-            var glyphs = line.Count == 0 ? segment.Glyphs.SkipWhile(glyph => glyph.Glyph.IsSpace) : segment.Glyphs;
+            // A new line does not start with spaces (at the paragraph start, after a mandatory break, or where it wraps
+            // before a zero width space and the spaces after it), also not among invisible characters.
+            var glyphs = line.Count == 0 ? WithoutLeadingSpaces(segment.Glyphs) : segment.Glyphs;
             foreach (var glyph in glyphs)
             {
                 line.Add(glyph);
                 lineWidth += glyph.Glyph.Advance;
-                blankAtEnd = BreakableSegments.IsBlank(glyph.Glyph) ? blankAtEnd + glyph.Glyph.Advance : 0;
             }
 
             if (segment.EndsWithMandatoryBreak)
@@ -84,12 +83,19 @@ public static class GreedyLineBreaker
                 AddLine(lines, line, endsWithForcedBreak: true, breaksHere: true);
                 line.Clear();
                 lineWidth = 0;
-                blankAtEnd = 0;
             }
         }
 
         AddLine(lines, line, endsWithForcedBreak: false, breaksHere: false);
         return lines.ToImmutable();
+    }
+
+    /// <summary>The glyphs without the spaces among the blank glyphs they start with; the invisible characters among
+    /// those stay, and so does a forced break and everything after it.</summary>
+    private static IEnumerable<BreakableSegments.RunGlyph> WithoutLeadingSpaces(IEnumerable<BreakableSegments.RunGlyph> glyphs)
+    {
+        static bool Leading(BreakableSegments.RunGlyph glyph) => BreakableSegments.IsBlank(glyph.Glyph) && !glyph.Glyph.IsLineBreak;
+        return glyphs.TakeWhile(Leading).Where(glyph => !glyph.Glyph.IsSpace).Concat(glyphs.SkipWhile(Leading));
     }
 
     /// <summary>Adds a line without its trailing spaces, grouping its glyphs into one segment per consecutive
