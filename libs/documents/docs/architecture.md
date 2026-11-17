@@ -201,6 +201,15 @@ Each is documented next to its code as well.
   faces: a first table row kept together that does not fit there is cut inside instead of moved, and a table's header
   row may stand alone at the foot of that page. A paragraph of text before it makes the box move on as usual. Pinned by
   `LeadingSpaceLimitTests` (Fluent); the rule itself is next milestone's work.
+- **A blank part of a table row as tall as the page area:** a part of a row that is as tall as the page area and
+  draws nothing cannot be cut, and the document is refused (`Documents.Layout.DoesNotFit`). A row is cut only where
+  some cell draws something below the row's top on that page (`TableBreaks.CutsInsideRow`); a page that would hold
+  only blank lines, empty padded blocks or no-break spaces of the row offers no cut, and at the top of a page the row
+  cannot move on. The row may have text elsewhere: "top", 30 blank lines and "end" in one cell is refused, because
+  the page after "top" would hold blank lines only. This is not the leading-space limit above: there is no leading
+  space, and the row could be broken; the message does not name the blank stretch as the cause. Pinned by
+  `BlankRowPartLimitTests` (Fluent). Cutting anyway when the only other outcome is a refusal is next milestone's
+  rule.
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
