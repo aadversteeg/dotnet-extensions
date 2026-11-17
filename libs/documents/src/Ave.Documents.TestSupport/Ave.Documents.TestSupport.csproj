@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Shared helpers for the test projects: the committed test fonts, golden-file comparison and reading PDFs back with PdfPig.</Description>
+    <IsSampleOrSupport>true</IsSampleOrSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
+    <!-- PdfPig reads our PDFs back in tests (independent, pure managed, Apache-2.0). Test-only. -->
+    <PackageReference Include="PdfPig" />
+    <!-- The Docker-backed facts (reference checks that skip without Docker) derive from xunit's attributes. Test-only.
+         xunit.extensibility.core holds the attributes; the xunit package would make this a test project (its
+         xunit.core props set IsTestProject), and `dotnet test` on the solution would then abort on it. -->
+    <PackageReference Include="xunit.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The OFL test fonts (Lato, Theano Didot), copied next to every assembly that references this project. -->
+    <None Include="$(RepositoryRoot)assets/fonts/lato/*.ttf;$(RepositoryRoot)assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(RepositoryRoot)assets/fonts/theano/*.ttf" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The pinned reference tools image (qpdf, poppler, MuPDF, fontTools), built by ReferenceTools from this file. -->
+    <None Include="$(RepositoryRoot)tools/reference/tools.Dockerfile" Link="tools/tools.Dockerfile" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The image test files (made by tools/generate-test-images.py), for layout and PDF tests. -->
+    <None Include="$(RepositoryRoot)src/UnitTests.Ave.Documents.Images/Assets/*" Link="images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

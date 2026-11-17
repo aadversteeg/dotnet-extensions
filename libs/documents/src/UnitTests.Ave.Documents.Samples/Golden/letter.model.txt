@@ -1,0 +1,51 @@
+document title="Quotation for document rendering" author="Ave.Documents samples"
+page size=595.276x841.89 margin=56.693,56.693,56.693,56.693
+box #0 flow document @SampleDocuments.cs:32
+  box #1 inline paragraph margin=0,0,6,0 @SampleDocuments.cs:34
+    text #2 "Versteeg IT Solutions · Example Street 1 · 1234 AB Example Town" Lato 9pt w400 #595959 @SampleDocuments.cs:34
+  box #3 inline paragraph margin=0,0,18,0 text-align=right @SampleDocuments.cs:36
+    text #4 "Example Town, 15 November 2026" Lato 9pt w400 #595959 @SampleDocuments.cs:36
+  box #5 inline heading-1 margin=6,0,12,0 @SampleDocuments.cs:37
+    text #6 "Quotation for document rendering" Lato 22pt w700 #1f4e79 @SampleDocuments.cs:37
+  box #7 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:95
+    text #8 "Dear reader," Lato 11pt w400 #000000 @SampleDocuments.cs:95
+  box #9 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:97
+    text #10 "Thank you for your interest in our document engine. This letter was written in C# through the " Lato 11pt w400 #000000 @SampleDocuments.cs:40
+    text #11 "code front-end" Lato 11pt w700 #000000 @SampleDocuments.cs:41
+    text #12 ", laid out by the engine's own layout algorithms, and written to PDF by its own PDF writer. No native library and no external tool took part in making it." Lato 11pt w400 #000000 @SampleDocuments.cs:42
+  box #13 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:95
+    text #14 "Every paragraph you see is broken into lines where the Unicode line breaking algorithm allows it, with the greedy method that browsers use: each line takes as many words as fit, and the next word starts a new line. The lines are then justified by widening the spaces between words, and the text stays selectable and searchable because the PDF carries a map from every glyph back to its characters." Lato 11pt w400 #000000 @SampleDocuments.cs:95
+  box #15 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:97
+    text #16 "Kerning and ligatures come from the font's own OpenType tables. In " Lato 11pt w400 #000000 @SampleDocuments.cs:50
+    text #17 "AVATAR" Lato 11pt w700 #000000 @SampleDocuments.cs:51
+    text #18 ", WAVE and Tyrannosaurus the letters move closer together; in office, fifty, affine and flag the " Lato 11pt w400 #000000 @SampleDocuments.cs:52
+    text #19 "fi" Lato 11pt w700 #000000 @SampleDocuments.cs:53
+    text #20 ", ff and fl become single ligature glyphs, which still copy as two or three letters." Lato 11pt w400 #000000 @SampleDocuments.cs:54
+  box #21 flow generic margin=12,0,12,0 padding=11.339,11.339,11.339,11.339 background=#ddebf7 @SampleDocuments.cs:101
+    box #22 inline paragraph margin=3,0,3,0 @SampleDocuments.cs:102
+      text #23 "Layers: " Lato 11pt w700 #000000 @SampleDocuments.cs:102
+      text #24 "code front-end, document model, layout, page model, PDF writer" Lato 11pt w400 #000000 @SampleDocuments.cs:102
+    box #25 inline paragraph margin=3,0,3,0 @SampleDocuments.cs:102
+      text #26 "Text: " Lato 11pt w700 #000000 @SampleDocuments.cs:102
+      text #27 "Unicode line breaking, OpenType kerning, ligatures and marks" Lato 11pt w400 #000000 @SampleDocuments.cs:102
+    box #28 inline paragraph margin=3,0,3,0 @SampleDocuments.cs:102
+      text #29 "Fonts: " Lato 11pt w700 #000000 @SampleDocuments.cs:102
+      text #30 "TrueType, only the used glyphs embedded, explicit input only" Lato 11pt w400 #000000 @SampleDocuments.cs:102
+    box #31 inline paragraph margin=3,0,3,0 @SampleDocuments.cs:102
+      text #32 "Output: " Lato 11pt w700 #000000 @SampleDocuments.cs:102
+      text #33 "the same bytes for the same input, every time" Lato 11pt w400 #000000 @SampleDocuments.cs:102
+  box #34 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:97
+    text #35 "The block above has a " Lato 11pt w400 #000000 @SampleDocuments.cs:64
+    text #36 "coloured background" Lato 11pt w700 #000000 @SampleDocuments.cs:65
+    text #37 " and padding on all four sides. Blocks can hold paragraphs and other blocks." Lato 11pt w400 #000000 @SampleDocuments.cs:66
+  box #38 inline heading-2 margin=18,0,10,0 break-before=page text-align=center @SampleDocuments.cs:69
+    text #39 "Terms" Lato 16.5pt w700 #1f4e79 @SampleDocuments.cs:69
+  box #40 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:95
+    text #41 "This second page starts with an explicit page break. A page break is not an element of its own in the document model: it sets break-before: page on the element that follows it, as in CSS." Lato 11pt w400 #000000 @SampleDocuments.cs:95
+  box #42 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:97
+    text #43 "Validity. " Lato 11pt w700 #000000 @SampleDocuments.cs:72
+    text #44 "This quotation is an example and is valid for no time at all." Lato 11pt w400 #000000 @SampleDocuments.cs:72
+  box #45 inline paragraph margin=6,0,6,0 text-align=justify @SampleDocuments.cs:97
+    text #46 "Kind regards," Lato 11pt w400 #000000 @SampleDocuments.cs:73
+  box #47 inline paragraph @SampleDocuments.cs:74
+    text #48 "The document engine" Lato 11pt w700 #000000 @SampleDocuments.cs:74

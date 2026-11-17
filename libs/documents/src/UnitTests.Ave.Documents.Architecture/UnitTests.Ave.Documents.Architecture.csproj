@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Checks the compiled library assemblies themselves: no native code, and every layer depends only on the
+       layers below it. References every library so that all of them are copied next to the tests. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents\Ave.Documents.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Typesetting\Ave.Documents.Typesetting.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
+    <!-- Build order only: the positive control of the test-only-package rule reads the reference shaper's test
+         assembly from that project's output folder, so that project is built first (neither its assembly nor its files
+         are copied here). -->
+    <ProjectReference Include="..\UnitTests.Ave.Documents.Typesetting\UnitTests.Ave.Documents.Typesetting.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+</Project>

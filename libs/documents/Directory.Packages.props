@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Errors as values (runtime dependencies of the libraries). -->
+    <PackageVersion Include="Ave.Extensions.Functional" Version="0.1.0-preview.3" />
+    <PackageVersion Include="Ave.Extensions.Functional.Core" Version="0.1.0-preview.3" />
+    <PackageVersion Include="Ave.Extensions.ErrorPaths" Version="0.0.3-preview.1" />
+    <PackageVersion Include="Ave.Extensions.ErrorPaths.Functional" Version="0.0.3-preview.1" />
+
+    <!-- Tests only. FluentAssertions stays on 7.x: version 8 changed its licence. -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <!-- The xunit attributes without xunit.core's build props, which would mark a helper project as a test project. -->
+    <PackageVersion Include="xunit.extensibility.core" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.0" />
+    <!-- PdfPig (Apache-2.0, pure managed) reads our PDFs back in tests; never referenced by a library. -->
+    <PackageVersion Include="PdfPig" Version="0.1.16" />
+    <!-- WebAssembly (Apache-2.0, RyanLamansky/dotnet-webassembly) runs harfbuzz.wasm, the reference shaper, in tests only. -->
+    <PackageVersion Include="WebAssembly" Version="2.1.0" />
+  </ItemGroup>
+</Project>

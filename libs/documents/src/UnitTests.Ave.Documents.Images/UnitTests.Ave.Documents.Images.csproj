@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Made by tools/generate-test-images.py with Pillow, an independent encoder. -->
+    <None Include="Assets/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,392 @@
+Document
+  Div
+    Div
+      Div
+        Div
+          Div
+            P "Jansen & Zn. Installatietechniek"
+            P "2026-11-03"
+        Div
+          Div
+            P "SmallBusiness onderhoud"
+            P "Periode: 2026-10-01 - 2026-10-31"
+  Table
+    THead
+      TR
+        TH Scope=Column
+          P "Uitgevoerd op"
+        TH Scope=Column
+          P "Taak"
+        TH Scope=Column
+          P "Titel"
+        TH Scope=Column
+          P "Duur (uur)"
+    TBody
+      TR
+        TD
+          P "2026-10-01"
+        TD
+          P "Beheer"
+        TD
+          P "Migratie naar Aspire 13.6"
+        TD
+          P "1,00"
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-01"
+        TD
+          P "Analyse"
+        TD
+          P "Datamodel facturatie (fase 2)"
+        TD RowSpan=2
+          P "3,50"
+      TR
+        TD ColSpan=2
+          P "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-02"
+        TD
+          P "Overleg"
+        TD
+          P "Code review PR #128 & #131"
+        TD RowSpan=2
+          P "1,75"
+      TR
+        TD ColSpan=2
+          P "Afgestemd met de product owner; vervolgactie ingepland."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-05"
+        TD
+          P "Overleg"
+        TD
+          P "Logging naar OTLP-collector"
+        TD RowSpan=2
+          P "1,00"
+      TR
+        TD ColSpan=2
+          P "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-06"
+        TD
+          P "Ontwikkeling"
+        TD
+          P "Logging naar OTLP-collector"
+        TD RowSpan=2
+          P "3,00"
+      TR
+        TD ColSpan=2
+          P "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-06"
+        TD
+          P "Beheer"
+        TD
+          P "Performance-analyse rapportage"
+        TD RowSpan=2
+          P "1,00"
+      TR
+        TD ColSpan=2
+          P "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-07"
+        TD
+          P "Ontwikkeling"
+        TD
+          P "Back-up en restore test"
+        TD RowSpan=2
+          P "2,75"
+      TR
+        TD ColSpan=2
+          P "Afgestemd met de product owner; vervolgactie ingepland."
+    TBody
+      TR
+        TD
+          P "2026-10-08"
+        TD
+          P "Ontwikkeling"
+        TD
+          P "Refinement sprint 42"
+        TD
+          P "0,75"
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-08"
+        TD
+          P "Analyse"
+        TD
+          P "Migratie naar Aspire 13.6"
+        TD RowSpan=2
+          P "3,50"
+      TR
+        TD ColSpan=2
+          P "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+    TBody
+      TR
+        TD
+          P "2026-10-09"
+        TD
+          P "Beheer"
+        TD
+          P "API endpoint voor weekoverzicht"
+        TD
+          P "2,50"
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-09"
+        TD
+          P "Beheer"
+        TD
+          P "Performance-analyse rapportage"
+        TD RowSpan=2
+          P "1,00"
+      TR
+        TD ColSpan=2
+          P "Afgestemd met de product owner; vervolgactie ingepland."
+    TBody
+      TR
+        TD
+          P "2026-10-12"
+        TD
+          P "Review"
+        TD
+          P "Migratie naar Aspire 13.6"
+        TD
+          P "0,50"
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-13"
+        TD
+          P "Beheer"
+        TD
+          P "Overleg met Jansen & Zn. over factuurflow"
+        TD RowSpan=2
+          P "2,00"
+      TR
+        TD ColSpan=2
+          P "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+    TBody
+      TR
+        TD
+          P "2026-10-14"
+        TD
+          P "Ontwikkeling"
+        TD
+          P "API endpoint voor weekoverzicht"
+        TD
+          P "3,00"
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-14"
+        TD
+          P "Overleg"
+        TD
+          P "Documentatie *deploy* procedure"
+        TD RowSpan=2
+          P "2,25"
+      TR
+        TD ColSpan=2
+          P "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+    TBody
+      TR
+        TD
+          P "2026-10-15"
+        TD
+          P "Overleg"
+        TD
+          P "Refinement sprint 42"
+        TD
+          P "3,75"
+      TR
+        TD
+          P "2026-10-16"
+        TD
+          P "Beheer"
+        TD
+          P "Documentatie *deploy* procedure"
+        TD
+          P "3,00"
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-19"
+        TD
+          P "Review"
+        TD
+          P "Code review PR #128 & #131"
+        TD RowSpan=2
+          P "1,00"
+      TR
+        TD ColSpan=2
+          P "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-19"
+        TD
+          P "Review"
+        TD
+          P "Code review PR #128 & #131"
+        TD RowSpan=2
+          P "1,00"
+      TR
+        TD ColSpan=2
+          P "Afgestemd met de product owner; vervolgactie ingepland."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-20"
+        TD
+          P "Documentatie"
+        TD
+          P "Datamodel facturatie (fase 2)"
+        TD RowSpan=2
+          P "3,75"
+      TR
+        TD ColSpan=2
+          P "Afgestemd met de product owner; vervolgactie ingepland."
+    TBody
+      TR
+        TD
+          P "2026-10-21"
+        TD
+          P "Documentatie"
+        TD
+          P "Logging naar OTLP-collector"
+        TD
+          P "3,00"
+      TR
+        TD
+          P "2026-10-21"
+        TD
+          P "Ontwikkeling"
+        TD
+          P "Documentatie *deploy* procedure"
+        TD
+          P "1,00"
+      TR
+        TD
+          P "2026-10-22"
+        TD
+          P "Overleg"
+        TD
+          P "Logging naar OTLP-collector"
+        TD
+          P "0,75"
+      TR
+        TD
+          P "2026-10-23"
+        TD
+          P "Analyse"
+        TD
+          P "Code review PR #128 & #131"
+        TD
+          P "3,75"
+      TR
+        TD
+          P "2026-10-26"
+        TD
+          P "Documentatie"
+        TD
+          P "Back-up en restore test"
+        TD
+          P "1,25"
+      TR
+        TD
+          P "2026-10-27"
+        TD
+          P "Beheer"
+        TD
+          P "Logging naar OTLP-collector"
+        TD
+          P "3,00"
+      TR
+        TD
+          P "2026-10-27"
+        TD
+          P "Ontwikkeling"
+        TD
+          P "Refinement sprint 42"
+        TD
+          P "1,25"
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-28"
+        TD
+          P "Documentatie"
+        TD
+          P "Refinement sprint 42"
+        TD RowSpan=2
+          P "1,00"
+      TR
+        TD ColSpan=2
+          P "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-28"
+        TD
+          P "Review"
+        TD
+          P "Logging naar OTLP-collector"
+        TD RowSpan=2
+          P "0,75"
+      TR
+        TD ColSpan=2
+          P "Afgestemd met de product owner; vervolgactie ingepland."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-29"
+        TD
+          P "Overleg"
+        TD
+          P "Overleg met Jansen & Zn. over factuurflow"
+        TD RowSpan=2
+          P "4,00"
+      TR
+        TD ColSpan=2
+          P "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+    TBody
+      TR
+        TD RowSpan=2
+          P "2026-10-30"
+        TD
+          P "Ontwikkeling"
+        TD
+          P "Back-up en restore test"
+        TD RowSpan=2
+          P "0,50"
+      TR
+        TD ColSpan=2
+          P "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+    TBody
+      TR
+        TD
+          P "2026-10-30"
+        TD
+          P "Review"
+        TD
+          P "Prijsberekening 50% korting = $x? (onderzoek)"
+        TD
+          P "2,25"
+      TR
+        TD ColSpan=3
+          P "Totaal:"
+        TD
+          P "64,50"

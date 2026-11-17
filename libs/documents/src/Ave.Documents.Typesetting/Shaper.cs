@@ -1,0 +1,272 @@
+using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+using Ave.Documents.Core;
+using Ave.Documents.Fonts;
+using Ave.Documents.Fonts.OpenType;
+using Ave.Documents.Typesetting.Shaping;
+using Ave.Documents.Typesetting.Unicode;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
+using Ave.Extensions.Functional;
+
+namespace Ave.Documents.Typesetting;
+
+/// <summary>
+/// Turns text into positioned glyphs with the font's OpenType layout tables: characters become glyphs through
+/// 'cmap'; GSUB substitutes glyphs (ligatures such as "fi"); 'hmtx' gives each glyph its advance; GPOS (or the old
+/// 'kern' table) adjusts pairs and puts marks on their bases.
+/// </summary>
+/// <remarks>
+/// <para>What is implemented, for the scripts that need no reordering — Latin, Greek and Cyrillic:</para>
+/// <list type="bullet">
+/// <item>GSUB features <c>ccmp</c>, <c>liga</c>, <c>clig</c>; lookup types 1 (single), 2 (multiple) and 4
+/// (ligature), reached directly or through type 7 (extension).</item>
+/// <item>GPOS features <c>kern</c> and <c>mark</c>; lookup types 2 (pair adjustment, formats 1 and 2) and 4
+/// (mark-to-base), directly or through type 9 (extension). Without a GPOS <c>kern</c> feature, the 'kern' table
+/// is used.</item>
+/// <item>The script's default language system (OpenType spec, "ScriptList table"); language-specific systems
+/// are not used.</item>
+/// </list>
+/// <para>DOCUMENTED SKIPS (never errors, never crashes): a subtable of any other lookup type or format inside these
+/// features is skipped — for example contextual substitution (types 5 and 6) inside <c>ccmp</c>; a lookup that
+/// uses a mark filtering set is skipped; device tables and variation data are not applied. Features outside the
+/// list, such as <c>calt</c> (contextual alternates, type 6 in Lato), are not applied at all. Text of other scripts
+/// is shaped with the same features and the font's default script, which is right for scripts without
+/// reordering or joining, and is a documented limit for the complex scripts (Arabic, Indic, …), which are not
+/// supported.</para>
+/// <para>Each script run of the text is shaped on its own (UAX #24 Script property; characters of the Common and
+/// Inherited scripts belong to the run around them), because a font's lookups are chosen per script.</para>
+/// </remarks>
+public static class Shaper
+{
+    /// <summary>The GSUB features applied: glyph composition/decomposition, standard and contextual ligatures.</summary>
+    public static readonly FrozenSet<string> SubstitutionFeatures = new[] { "ccmp", "liga", "clig" }.ToFrozenSet();
+
+    /// <summary>The GPOS features applied: kerning and mark positioning.</summary>
+    public static readonly FrozenSet<string> PositioningFeatures = new[] { "kern", "mark" }.ToFrozenSet();
+
+    /// <summary>
+    /// Shapes one run of text in one font and size. A character the font has no glyph for is an error, never a
+    /// silent drop or a .notdef box; ALL such characters in the run are reported together.
+    /// </summary>
+    /// <param name="text">The text, already white-space collapsed.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="fontSize">The font size in points.</param>
+    /// <returns>The glyphs in text order, or a <see cref="FontErrorCodes.GlyphMissing"/> error (several
+    /// combined into <see cref="ErrorCodes.Aggregate"/>), or <see cref="DocumentErrorCodes.Input.Invalid.Text"/>
+    /// for text that is not valid UTF-16.</returns>
+    public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, double fontSize) =>
+        Characters(text).OnSuccessBind(characters =>
+            characters.Select((character, index) => (character, index))
+                .TraverseAll(item => InitialGlyph(item.character, item.index, font))
+                .OnSuccessBind(glyphs => ShapeScriptRuns(characters, [.. glyphs], font, fontSize)));
+
+    /// <summary>
+    /// Splits text into Unicode scalar values, joining surrogate pairs. An unpaired surrogate is not a
+    /// character at all, so it is an error rather than being replaced by U+FFFD.
+    /// </summary>
+    private static Result<ImmutableArray<Rune>, Error> Characters(string text)
+    {
+        var characters = new List<Rune>(text.Length);
+        var remaining = text.AsSpan();
+        while (!remaining.IsEmpty)
+        {
+            if (Rune.DecodeFromUtf16(remaining, out var character, out var consumed) != System.Buffers.OperationStatus.Done)
+            {
+                var offset = text.Length - remaining.Length;
+                return Result<ImmutableArray<Rune>, Error>.Failure(
+                    new Error(DocumentErrorCodes.Input.Invalid.Text, $"The text has an unpaired surrogate at offset {offset}.")
+                        .With(ErrorMetadataKeys.Offset, offset));
+            }
+
+            characters.Add(character);
+            remaining = remaining[consumed..];
+        }
+
+        return Result<ImmutableArray<Rune>, Error>.Success([.. characters]);
+    }
+
+    /// <summary>
+    /// The glyph 'cmap' gives a character, before any substitution. A
+    /// default-ignorable character needs no glyph: it is invisible whatever the font has for it (HarfBuzz hides
+    /// them the same way, hb-ot-shape <c>hb_ot_hide_default_ignorables</c>), so it is never missing. Nor does a
+    /// mandatory line break (UAX #14 classes BK, CR, LF and NL, such as the line separator U+2028 that
+    /// <c>LineBreak()</c> writes): it ends a line and draws nothing.
+    /// </summary>
+    private static Result<GlyphItem, Error> InitialGlyph(Rune character, int index, TrueTypeFont font)
+    {
+        var filter = new GlyphFilter(font.Layout.Definitions);
+        var properties = UnicodeProperties.Of(character.Value);
+        var traits = properties.Traits;
+        var isLineBreak = IsMandatoryBreak(character);
+        if ((traits & CharacterTraits.DefaultIgnorable) != 0 || isLineBreak)
+        {
+            return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), character.ToString(), GlyphClass.Base) { IsDefaultIgnorable = true, IsLineBreak = isLineBreak });
+        }
+
+        var isNonspacingMark = (traits & CharacterTraits.NonspacingMark) != 0;
+        return font.RequireGlyph(character)
+            .OnSuccessMap(glyph => new GlyphItem(glyph, character.ToString(), filter.ClassOf(glyph, isNonspacingMark)));
+    }
+
+    /// <summary>Shapes each piece of the text (a script run, cut after every forced line break) on its own, under ONE
+    /// budget for the whole text (<see cref="ShapingBudget"/>), so the pieces share its limits. Once a limit is reached
+    /// the later pieces stop at their first step, and the text gets the one error of that limit.</summary>
+    private static Result<ImmutableArray<ShapedGlyph>, Error> ShapeScriptRuns(ImmutableArray<Rune> characters, ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, double fontSize)
+    {
+        var hyphen = Hyphen(font, fontSize);
+        var budget = new ShapingBudget(glyphs.Length);
+        var pieces = ScriptRuns(characters)
+            .SelectMany(run => SplitAfterLineBreaks(characters, run))
+            .Select(run => ShapeRun([.. glyphs.Skip(run.Start).Take(run.Length)], run.Tag, font, budget))
+            .ToList();
+        return budget.Exceeded is { } limit
+            ? Result<ImmutableArray<ShapedGlyph>, Error>.Failure(LimitReached(font, budget, limit))
+            : Result<ImmutableArray<ShapedGlyph>, Error>.Success([.. pieces.SelectMany(piece => piece!.Value).Select(glyph => new ShapedGlyph(
+                    glyph.Glyph,
+                    font.Metrics.ToPoints(glyph.XAdvance, fontSize),
+                    glyph.Text,
+                    font.Metrics.ToPoints(glyph.XOffset, fontSize),
+                    font.Metrics.ToPoints(glyph.YOffset, fontSize))
+                {
+                    IsInvisible = glyph.IsDefaultIgnorable,
+                    IsLineBreak = glyph.IsLineBreak,
+                    BreakHyphen = glyph.Text == SoftHyphen ? hyphen : null,
+                })]);
+    }
+
+    /// <summary>The soft hyphen U+00AD.</summary>
+    private const string SoftHyphen = "\u00AD";
+
+    /// <summary>
+    /// The hyphen shown where a line breaks at a soft hyphen. UAX #14 §5.4: the soft hyphen is "an invisible format
+    /// character that merely indicates a preferred intraword line break position. If the line is broken at that
+    /// point, then whatever mechanism is appropriate for intraword line breaks should be invoked" (CSS Text 3 §5.3,
+    /// <c>hyphens: manual</c>, hyphenates only there). Drawn with the glyph of U+2010 HYPHEN when the font has it,
+    /// otherwise of U+002D HYPHEN-MINUS; null when it has neither, and the break then shows nothing (a documented
+    /// limit). Whatever glyph is drawn, its text is the soft hyphen it stands for, not the character whose glyph it
+    /// borrows: a reader gets the word back whole, and a hyphen-minus elsewhere in the document keeps its own text.
+    /// Tagged PDF asks for exactly this: "such an incidental word division shall be represented by a soft hyphen
+    /// character" (ISO 32000-1 §14.8.2.2.3, Hyphenation).
+    /// </summary>
+    private static ShapedGlyph? Hyphen(TrueTypeFont font, double fontSize) =>
+        new[] { 0x2010, 0x002D }
+            .Select(codePoint => font.GlyphFor(new Rune(codePoint)))
+            .Where(glyph => glyph.HasValue)
+            .Select(glyph => new ShapedGlyph(glyph.Value, font.Metrics.ToPoints(font.AdvanceWidth(glyph.Value), fontSize), SoftHyphen))
+            .FirstOrDefault();
+
+    /// <summary>
+    /// The shaping steps for one script run, all in font design units: GSUB lookups; the 'hmtx' advance of every
+    /// resulting glyph; then the old 'kern' table if GPOS has no kerning, and the GPOS lookups. Each step spends from the
+    /// text's <paramref name="budget"/>; null when one reaches a limit.
+    /// </summary>
+    private static ImmutableArray<GlyphItem>? ShapeRun(ImmutableArray<GlyphItem> glyphs, string script, TrueTypeFont font, ShapingBudget budget)
+    {
+        var layout = font.Layout;
+        var filter = new GlyphFilter(layout.Definitions);
+        if (GlyphSubstitution.Apply(glyphs, layout.Substitutions.LookupsFor(script, SubstitutionFeatures), filter, budget) is not { } substituted)
+        {
+            return null;
+        }
+
+        var withAdvances = substituted.Select(glyph => glyph with { XAdvance = glyph.IsDefaultIgnorable ? 0 : font.AdvanceWidth(glyph.Glyph) }).ToImmutableArray();
+
+        // "kern" in GPOS wins over the 'kern' table: the table is used only when no GPOS feature is called kern.
+        var hasGposKerning = layout.Positions.Features.Any(feature => feature.Tag == "kern");
+        var kerned = hasGposKerning ? withAdvances : GlyphPositioning.ApplyLegacyKerning(withAdvances, layout.Kerning, budget);
+        return kerned is { } ready ? GlyphPositioning.Apply(ready, layout.Positions.LookupsFor(script, PositioningFeatures), filter, budget) : null;
+    }
+
+    /// <summary>The error for the limit of <paramref name="budget"/> that the text reached: which limit, how it follows
+    /// from the text's length, and what spent it. Only the font's substitutions make glyphs, and only its lookups spend
+    /// more than a fixed few operations per glyph (see <see cref="ShapingBudget"/>), so the message names the font.</summary>
+    private static Error LimitReached(TrueTypeFont font, ShapingBudget budget, ShapingLimit limit)
+    {
+        var name = font.Names.PostScriptName;
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        var error = limit == ShapingLimit.Glyphs
+            ? new Error(TypesettingErrorCodes.TooManyGlyphs, string.Create(culture,
+                    $"Font '{name}' turns a text of {budget.InputLength} glyphs into more than {budget.GlyphLimit} glyphs ({GlyphSubstitution.MaxGrowthFactor} per glyph, at least {GlyphSubstitution.MinGlyphLimit}): its substitutions make more glyphs than any real font needs."))
+                .With(ErrorMetadataKeys.Value, budget.GlyphLimit.ToString(culture))
+            : new Error(TypesettingErrorCodes.TooMuchWork, string.Create(culture,
+                    $"Font '{name}' needs more than {budget.OperationLimit} operations to shape a text of {budget.InputLength} glyphs ({ShapingBudget.OperationsPerGlyph} per glyph, at least {ShapingBudget.MinOperations}): its lookups look at each glyph more often than any real font needs."))
+                .With(ErrorMetadataKeys.Value, budget.OperationLimit.ToString(culture));
+        return error.With(ErrorMetadataKeys.FontName, name);
+    }
+
+    /// <summary>A run of characters of one script, with the OpenType script tag its lookups are chosen by.</summary>
+    private sealed record ScriptRun(int Start, int Length, string Tag);
+
+    /// <summary>A mandatory line break: UAX #14 classes BK, CR, LF and NL.</summary>
+    private static bool IsMandatoryBreak(Rune character) =>
+        UnicodeProperties.Of(character.Value).Class is LineBreakClass.BK or LineBreakClass.CR or LineBreakClass.LF or LineBreakClass.NL;
+
+    /// <summary>
+    /// A script run cut after every mandatory line break in it. A forced break ends its line as a wrap does, so the
+    /// glyphs on either side are on different lines and must not be shaped together: no kerning pair, ligature or
+    /// mark attachment may join them. Each piece is shaped on its own.
+    /// </summary>
+    private static IEnumerable<ScriptRun> SplitAfterLineBreaks(ImmutableArray<Rune> characters, ScriptRun run)
+    {
+        var start = run.Start;
+        var end = run.Start + run.Length;
+        for (var index = run.Start; index < end; index++)
+        {
+            if (IsMandatoryBreak(characters[index]))
+            {
+                yield return run with { Start = start, Length = index + 1 - start };
+                start = index + 1;
+            }
+        }
+
+        if (start < end)
+        {
+            yield return run with { Start = start, Length = end - start };
+        }
+    }
+
+    /// <summary>
+    /// Splits the text where its script changes (UAX #24 Script property). Characters of the Common and Inherited
+    /// scripts (spaces, punctuation, digits, combining marks) take the script of the character before them, or —
+    /// at the start of the text — of the first character after them that has one. The OpenType script tags are
+    /// <c>latn</c>, <c>grek</c> and <c>cyrl</c> (OpenType spec, "Script tags"); any other script, or text with no
+    /// script at all, uses the default script <c>DFLT</c>.
+    /// </summary>
+    private static ImmutableArray<ScriptRun> ScriptRuns(ImmutableArray<Rune> characters)
+    {
+        var scripts = characters.Select(character => UnicodeProperties.Of(character.Value).Script).ToArray();
+        var current = scripts.FirstOrDefault(script => script is not (TextScript.Common or TextScript.Inherited), TextScript.Common);
+        var runs = ImmutableArray.CreateBuilder<ScriptRun>();
+        var start = 0;
+        for (var index = 0; index < scripts.Length; index++)
+        {
+            var script = scripts[index] is TextScript.Common or TextScript.Inherited ? current : scripts[index];
+            if (script != current)
+            {
+                runs.Add(new ScriptRun(start, index - start, Tag(current)));
+                start = index;
+                current = script;
+            }
+        }
+
+        if (scripts.Length > 0)
+        {
+            runs.Add(new ScriptRun(start, scripts.Length - start, Tag(current)));
+        }
+
+        return runs.ToImmutable();
+    }
+
+    private static string Tag(TextScript script) => script switch
+    {
+        TextScript.Latin => "latn",
+        TextScript.Greek => "grek",
+        TextScript.Cyrillic => "cyrl",
+        _ => LayoutTable.DefaultScript,
+    };
+}

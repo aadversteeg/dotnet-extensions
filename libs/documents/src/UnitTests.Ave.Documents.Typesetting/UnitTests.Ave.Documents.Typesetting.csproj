@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Typesetting\Ave.Documents.Typesetting.csproj" />
+    <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The reference shaper: HarfBuzz as WebAssembly on a managed WebAssembly runtime. Test-only. -->
+    <PackageReference Include="WebAssembly" />
+    <None Include="Reference/harfbuzz.wasm" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

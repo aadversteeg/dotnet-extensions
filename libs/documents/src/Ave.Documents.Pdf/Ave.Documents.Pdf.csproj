@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>PDF objects and a PDF file writer (ISO 32000-1) in plain managed code. Knows nothing about layout or fonts.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+  </ItemGroup>
+
+</Project>

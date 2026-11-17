@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The timesheet sample formats numbers in nl-NL and en-US, so these tests need culture data. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\samples\Ave.Documents.Samples\Ave.Documents.Samples.csproj" />
+    <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
+  </ItemGroup>
+
+</Project>

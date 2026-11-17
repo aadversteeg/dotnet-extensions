@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Shared vocabulary of the Ave.Documents engine: typed lengths, geometry, colour, source locations, semantic roles and the error-code tree.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ave.Extensions.Functional" />
+    <PackageReference Include="Ave.Extensions.Functional.Core" />
+    <PackageReference Include="Ave.Extensions.ErrorPaths" />
+    <PackageReference Include="Ave.Extensions.ErrorPaths.Functional" />
+  </ItemGroup>
+
+</Project>

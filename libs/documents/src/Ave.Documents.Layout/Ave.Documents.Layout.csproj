@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Layout for the Ave.Documents engine: pure layout algorithms (block flow, inline text), pagination, and painting into the page model.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Typesetting\Ave.Documents.Typesetting.csproj" />
+    <ProjectReference Include="..\Ave.Documents.DocumentModel\Ave.Documents.DocumentModel.csproj" />
+    <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tests register small algorithms of their own (WithAlgorithm is internal). -->
+    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Layout" />
+  </ItemGroup>
+
+</Project>

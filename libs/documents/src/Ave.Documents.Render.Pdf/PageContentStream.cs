@@ -1,0 +1,175 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using Ave.Documents.Core;
+using Ave.Documents.PageModel;
+using Ave.Documents.Pdf;
+using Ave.Documents.Render.Pdf.Tagging;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
+
+namespace Ave.Documents.Render.Pdf;
+
+/// <summary>
+/// Writes a page's display list as a PDF content stream. This is the ONE place where page coordinates (origin
+/// top-left, y down) become PDF user space (origin bottom-left, y up, ISO 32000-1 §8.3.2.3): y_pdf = page height − y.
+/// </summary>
+internal static class PageContentStream
+{
+    /// <summary>
+    /// Builds the content stream of one page from its events (<see cref="PageEvents"/>): each content run is drawn in
+    /// order, inside its marked-content sequence when the run is marked (tagged PDF, ISO 32000-1 §14.6 and §14.8).
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <param name="runs">The page's content runs, each with its mark, in order.</param>
+    /// <param name="resources">The used fonts and images, to find each one's resource name.</param>
+    /// <returns>The stream data, or an error for a number that is not finite.</returns>
+    public static Result<ImmutableArray<byte>, Error> Build(Page page, ImmutableArray<MarkedRun> runs, ResourceNames resources) =>
+        ContentStream.Serialize(runs.SelectMany(marked => Marked(marked.Mark, marked.Run.Items.SelectMany(item => Operations(item, page, resources)))));
+
+    private static IEnumerable<ContentOperation> Marked(ContentMark mark, IEnumerable<ContentOperation> operations) =>
+        mark.Begin() is { } begin ? [begin, .. operations, ContentOperators.EndMarkedContent()] : operations;
+
+    private static IEnumerable<ContentOperation> Operations(DrawItem item, Page page, ResourceNames resources) => item switch
+    {
+        FillRectangle fill => Rectangle(fill, page.Size.Height),
+        GlyphRun run => Text(run, resources.Fonts[run.Font], page.Size.Height),
+        DrawImage image => Image(image, resources.Images[image.Image].ResourceName, page.Size.Height),
+        _ => throw new InvalidOperationException($"The PDF back-end cannot draw a {item.GetType().Name} yet."),
+    };
+
+    /// <summary>
+    /// A filled rectangle: set the colour, add the rectangle (whose y is its BOTTOM edge in PDF space) and fill
+    /// it, inside q/Q so the colour does not leak into later items (§8.4.2).
+    /// </summary>
+    private static ImmutableArray<ContentOperation> Rectangle(FillRectangle fill, double pageHeight) =>
+    [
+        ContentOperators.SaveState(),
+        FillColor(fill.Color),
+        ContentOperators.Rectangle(fill.Area.Origin.X, pageHeight - fill.Area.Origin.Y - fill.Area.Size.Height, fill.Area.Size.Width, fill.Area.Size.Height),
+        ContentOperators.Fill(),
+        ContentOperators.RestoreState(),
+    ];
+
+    /// <summary>
+    /// An image: inside q/Q, map the unit square of user space onto the image's rectangle with <c>cm</c> (§8.9.4: "the
+    /// unit square of user space, bounded by user coordinates (0, 0) and (1, 1), corresponds to the boundary of the image
+    /// in image space"), whose y is its BOTTOM edge in PDF space, then paint it with
+    /// <c>Do</c> (§8.8).
+    /// </summary>
+    private static ImmutableArray<ContentOperation> Image(DrawImage image, PdfName resource, double pageHeight) =>
+    [
+        ContentOperators.SaveState(),
+        ContentOperators.ConcatMatrix(image.Area.Size.Width, 0, 0, image.Area.Size.Height, image.Area.Origin.X, pageHeight - image.Area.Origin.Y - image.Area.Size.Height),
+        ContentOperators.PaintXObject(resource),
+        ContentOperators.RestoreState(),
+    ];
+
+    /// <summary>
+    /// A glyph run: one text object (§9.4) that selects the font and size and sets the colour; then, for each
+    /// stretch of glyphs (<see cref="Stretches"/>), it moves the text origin to the first glyph of the stretch and shows
+    /// the glyphs. A stretch whose glyph needs its own text is enclosed in a <c>/Span</c> marked-content sequence with
+    /// an <c>/ActualText</c> entry (§14.9.4): a reader takes that text instead of the ToUnicode text of the glyph.
+    /// Marked-content operators may appear inside a text object (§9.4.1, Figure 9).
+    /// </summary>
+    private static ImmutableArray<ContentOperation> Text(GlyphRun run, UsedFont font, double pageHeight) =>
+    [
+        ContentOperators.SaveState(),
+        ContentOperators.BeginText(),
+        ContentOperators.SetFont(font.ResourceName, run.FontSize),
+        FillColor(run.Color),
+        .. Stretches(run.Glyphs, font).SelectMany(stretch => Replaced(stretch, font, new[]
+        {
+            ContentOperators.MoveTextTo(run.Origin.X + stretch[0].X, pageHeight - (run.Origin.Y + stretch[0].Y)),
+            ContentOperators.ShowGlyphsWithAdjustments(GlyphArray(run, stretch)),
+        })),
+        ContentOperators.EndText(),
+        ContentOperators.RestoreState(),
+    ];
+
+    /// <summary>The operations of a stretch, inside a replacement-text span when its glyph needs one.</summary>
+    private static IEnumerable<ContentOperation> Replaced(ImmutableArray<PositionedGlyph> stretch, UsedFont font, IEnumerable<ContentOperation> operations) =>
+        font.NeedsReplacement(stretch[0])
+            ? [ContentOperators.BeginMarkedContent("Span", PdfDictionary.Of(("ActualText", PdfString.FromText(stretch[0].Text)))), .. operations, ContentOperators.EndMarkedContent()]
+            : operations;
+
+    /// <summary>
+    /// The glyphs split into consecutive stretches that can be shown with one TJ: the same <see cref="PositionedGlyph.Y"/>
+    /// (TJ moves the pen only horizontally, §9.4.3; a raised or lowered mark makes its own stretch), and no glyph that
+    /// needs replacement text, which gets a stretch of its own.
+    /// </summary>
+    private static IEnumerable<ImmutableArray<PositionedGlyph>> Stretches(ValueList<PositionedGlyph> glyphs, UsedFont font)
+    {
+        var stretch = ImmutableArray.CreateBuilder<PositionedGlyph>();
+        foreach (var glyph in glyphs)
+        {
+            var standsAlone = font.NeedsReplacement(glyph);
+            if (stretch.Count > 0 && (stretch[0].Y != glyph.Y || standsAlone || font.NeedsReplacement(stretch[0])))
+            {
+                yield return stretch.ToImmutable();
+                stretch.Clear();
+            }
+
+            stretch.Add(glyph);
+        }
+
+        if (stretch.Count > 0)
+        {
+            yield return stretch.ToImmutable();
+        }
+    }
+
+    /// <summary>
+    /// The most glyphs one string of a TJ array holds: 16 383, the most two-byte glyph codes that fit the 32 767 bytes
+    /// ISO 32000-1 Annex C (Table C.1) allows a string in a content stream, the limit veraPDF rule 6.1.13-3 checks for
+    /// every string under PDF/A. A longer
+    /// stretch without adjustments is shown with several strings side by side, which TJ shows as one (§9.4.3).
+    /// </summary>
+    internal const int MaxGlyphsPerString = 32_767 / 2;
+
+    /// <summary>
+    /// The TJ array (§9.4.3) of one stretch, whose first glyph is at the text origin. After each glyph a viewer
+    /// advances the pen by the glyph's /W width. Where the page model puts a glyph somewhere else (kerning,
+    /// placement, justification), a number is inserted that moves the pen:
+    /// by the formula of §9.4.4, a number n moves it by −n / 1000 × font size. Numbers smaller than 0.001 (a
+    /// millionth of the font size) are rounding noise from summing widths, and are left out. Glyph codes are
+    /// two bytes, big-endian: the glyph id under Identity-H. A string is closed after an adjustment and after
+    /// <see cref="MaxGlyphsPerString"/> glyphs, so no string is longer than a PDF string may be.
+    /// </summary>
+    private static ImmutableArray<PdfObject> GlyphArray(GlyphRun run, ImmutableArray<PositionedGlyph> stretch)
+    {
+        var items = ImmutableArray.CreateBuilder<PdfObject>();
+        var codes = new List<byte>();
+        var pen = stretch[0].X;
+        foreach (var glyph in stretch)
+        {
+            var adjustment = Math.Round((pen - glyph.X) * 1000 / run.FontSize, 3);
+            if ((adjustment != 0 && codes.Count > 0) || codes.Count == 2 * MaxGlyphsPerString)
+            {
+                items.Add(PdfString.FromBytes(codes));
+                codes.Clear();
+            }
+
+            if (adjustment != 0)
+            {
+                items.Add(PdfNumber.From(adjustment));
+                pen -= adjustment / 1000 * run.FontSize;
+            }
+
+            codes.Add((byte)(glyph.Glyph.Value >> 8));
+            codes.Add((byte)(glyph.Glyph.Value & 0xFF));
+            pen += FontEmbedding.GlyphSpace(run.Font, run.Font.AdvanceWidth(glyph.Glyph)) / 1000 * run.FontSize;
+        }
+
+        if (codes.Count > 0)
+        {
+            items.Add(PdfString.FromBytes(codes));
+        }
+
+        return items.ToImmutable();
+    }
+
+    private static ContentOperation FillColor(Color color) =>
+        ContentOperators.SetFillRgb(color.Red / 255.0, color.Green / 255.0, color.Blue / 255.0);
+}

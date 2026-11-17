@@ -1,0 +1,631 @@
+document title="Urenstaat Jansen & Zn. Installatietechniek 2026-10-01 - 2026-10-31"
+page size=595.276x841.89 margin=28.346,28.346,22.677,28.346
+page-template
+  header height=85.039pt
+    box #547 flow generic @Timesheet.cs:77
+      box #548 flow generic @Timesheet.cs:77
+        box #549 tracks generic columns=70.866pt,1fr,auto @Timesheet.cs:79
+          box #550 table-row-group generic @Timesheet.cs:79
+            box #551 table-row generic @Timesheet.cs:79
+              box #552 flow generic vertical-align=middle @Timesheet.cs:81
+                box #553 image figure @Timesheet.cs:81
+                  image #554 png 400x400 rgb width=70.866pt @Timesheet.cs:81
+              box #555 flow generic vertical-align=middle @Timesheet.cs:82
+                box #556 inline paragraph padding=0,0,0,28.346 @Timesheet.cs:82
+                  text #557 "Urenstaat" Lato 24pt w700 #000000 @Timesheet.cs:82
+              box #558 flow generic vertical-align=middle @Timesheet.cs:85
+                box #559 flow generic padding=0,0,0,28.346 text-align=right @Timesheet.cs:85
+                  box #560 inline paragraph text-align=right @Timesheet.cs:85
+                    text #561 "Jansen & Zn. Installatietechniek" Lato 9pt w400 #000000 @Timesheet.cs:85
+                  box #562 inline paragraph margin=3,0,0,0 text-align=right @Timesheet.cs:85
+                    text #563 "SmallBusiness onderhoud" Lato 9pt w400 #000000 @Timesheet.cs:85
+                  box #564 inline paragraph margin=3,0,0,0 text-align=right @Timesheet.cs:85
+                    text #565 "2026-10-01 - 2026-10-31" Lato 9pt w400 #000000 @Timesheet.cs:85
+        box #566 flow generic border=none/none/3pt #ffa500/none @Timesheet.cs:111
+  footer height=34.016pt
+    box #567 flow generic @Timesheet.cs:95
+      box #568 flow generic padding=11.339,0,0,0 @Timesheet.cs:95
+        box #569 flow generic border=none/none/3pt #ffa500/none @Timesheet.cs:111
+        box #570 tracks generic margin=6,0,0,0 columns=1fr,1fr,1fr,1fr @Timesheet.cs:98
+          box #571 table-row-group generic @Timesheet.cs:98
+            box #572 table-row generic @Timesheet.cs:98
+              box #573 flow generic @Timesheet.cs:100
+                box #574 inline paragraph @Timesheet.cs:100
+                  text #575 "Rekening: NL00 BANK 0123 4567 89" Lato 8pt w400 #000000 @Timesheet.cs:100
+              box #576 flow generic @Timesheet.cs:101
+                box #577 inline paragraph text-align=center @Timesheet.cs:101
+                  text #578 "BTW: NL000000000B00" Lato 8pt w400 #000000 @Timesheet.cs:101
+              box #579 flow generic @Timesheet.cs:102
+                box #580 inline paragraph text-align=center @Timesheet.cs:102
+                  text #581 "KvK: 00000000" Lato 8pt w400 #000000 @Timesheet.cs:102
+              box #582 flow generic @Timesheet.cs:103
+                box #583 inline paragraph text-align=right @Timesheet.cs:103
+                  text #584 "Pagina " Lato 8pt w400 #000000 @Timesheet.cs:103
+                  counter #585 page Lato 8pt w400 #000000 @Timesheet.cs:103
+                  text #586 " van " Lato 8pt w400 #000000 @Timesheet.cs:103
+                  counter #587 pages Lato 8pt w400 #000000 @Timesheet.cs:103
+first-page-template
+  header height=85.039pt
+    box #588 flow generic @Timesheet.cs:77
+      box #589 flow generic @Timesheet.cs:77
+        box #590 tracks generic columns=70.866pt,1fr,auto @Timesheet.cs:79
+          box #591 table-row-group generic @Timesheet.cs:79
+            box #592 table-row generic @Timesheet.cs:79
+              box #593 flow generic vertical-align=middle @Timesheet.cs:81
+                box #594 image figure @Timesheet.cs:81
+                  image #595 png 400x400 rgb width=70.866pt @Timesheet.cs:81
+              box #596 flow generic vertical-align=middle @Timesheet.cs:82
+                box #597 inline paragraph padding=0,0,0,28.346 @Timesheet.cs:82
+                  text #598 "Urenstaat" Lato 24pt w700 #000000 @Timesheet.cs:82
+              box #599 flow generic vertical-align=middle @Timesheet.cs:84
+                box #600 flow generic @Timesheet.cs:84
+        box #601 flow generic border=none/none/3pt #ffa500/none @Timesheet.cs:111
+  footer height=34.016pt
+    box #567 flow generic @Timesheet.cs:95
+      box #568 flow generic padding=11.339,0,0,0 @Timesheet.cs:95
+        box #569 flow generic border=none/none/3pt #ffa500/none @Timesheet.cs:111
+        box #570 tracks generic margin=6,0,0,0 columns=1fr,1fr,1fr,1fr @Timesheet.cs:98
+          box #571 table-row-group generic @Timesheet.cs:98
+            box #572 table-row generic @Timesheet.cs:98
+              box #573 flow generic @Timesheet.cs:100
+                box #574 inline paragraph @Timesheet.cs:100
+                  text #575 "Rekening: NL00 BANK 0123 4567 89" Lato 8pt w400 #000000 @Timesheet.cs:100
+              box #576 flow generic @Timesheet.cs:101
+                box #577 inline paragraph text-align=center @Timesheet.cs:101
+                  text #578 "BTW: NL000000000B00" Lato 8pt w400 #000000 @Timesheet.cs:101
+              box #579 flow generic @Timesheet.cs:102
+                box #580 inline paragraph text-align=center @Timesheet.cs:102
+                  text #581 "KvK: 00000000" Lato 8pt w400 #000000 @Timesheet.cs:102
+              box #582 flow generic @Timesheet.cs:103
+                box #583 inline paragraph text-align=right @Timesheet.cs:103
+                  text #584 "Pagina " Lato 8pt w400 #000000 @Timesheet.cs:103
+                  counter #585 page Lato 8pt w400 #000000 @Timesheet.cs:103
+                  text #586 " van " Lato 8pt w400 #000000 @Timesheet.cs:103
+                  counter #587 pages Lato 8pt w400 #000000 @Timesheet.cs:103
+box #0 flow document @Timesheet.cs:53
+  box #1 tracks generic columns=1fr,1fr @Timesheet.cs:55
+    box #2 table-row-group generic @Timesheet.cs:55
+      box #3 table-row generic @Timesheet.cs:55
+        box #4 flow generic @Timesheet.cs:57
+          box #5 flow generic @Timesheet.cs:57
+            box #6 inline paragraph @Timesheet.cs:57
+              text #7 "Jansen & Zn. Installatietechniek" Lato 13pt w400 #000000 @Timesheet.cs:57
+            box #8 inline paragraph margin=4,0,0,0 @Timesheet.cs:57
+              text #9 "2026-11-03" Lato 11pt w400 #000000 @Timesheet.cs:57
+        box #10 flow generic @Timesheet.cs:58
+          box #11 flow generic text-align=right @Timesheet.cs:58
+            box #12 inline paragraph text-align=right @Timesheet.cs:58
+              text #13 "SmallBusiness onderhoud" Lato 13pt w400 #000000 @Timesheet.cs:58
+            box #14 inline paragraph margin=4,0,0,0 text-align=right @Timesheet.cs:58
+              text #15 "Periode: 2026-10-01 - 2026-10-31" Lato 11pt w400 #000000 @Timesheet.cs:58
+  box #16 tracks table margin=10,0,0,0 box-decoration-break=clone columns=2.5fr,3fr,10fr,2fr @Timesheet.cs:121
+    box #17 table-header-group table-head @Timesheet.cs:124
+      box #18 table-row table-row @Timesheet.cs:124
+        box #19 flow table-header-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:124
+          box #20 inline paragraph @Timesheet.cs:124
+            text #21 "Uitgevoerd op" Lato 10pt w700 #000000 @Timesheet.cs:124
+        box #22 flow table-header-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:124
+          box #23 inline paragraph @Timesheet.cs:124
+            text #24 "Taak" Lato 10pt w700 #000000 @Timesheet.cs:124
+        box #25 flow table-header-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:124
+          box #26 inline paragraph @Timesheet.cs:124
+            text #27 "Titel" Lato 10pt w700 #000000 @Timesheet.cs:124
+        box #28 flow table-header-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:124
+          box #29 inline paragraph text-align=right @Timesheet.cs:124
+            text #30 "Duur (uur)" Lato 10pt w700 #000000 @Timesheet.cs:124
+    box #31 table-row-group table-body @Timesheet.cs:142
+      box #32 table-row table-row @Timesheet.cs:142
+        box #33 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #34 inline paragraph @Timesheet.cs:144
+            text #35 "2026-10-01" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #36 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #37 inline paragraph @Timesheet.cs:145
+            text #38 "Beheer" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #39 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #40 inline paragraph @Timesheet.cs:146
+            text #41 "Migratie naar Aspire 13.6" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #42 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #43 inline paragraph text-align=right @Timesheet.cs:147
+            text #44 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+    box #45 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #46 table-row table-row @Timesheet.cs:142
+        box #47 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #48 inline paragraph @Timesheet.cs:144
+            text #49 "2026-10-01" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #50 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #51 inline paragraph @Timesheet.cs:145
+            text #52 "Analyse" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #53 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #54 inline paragraph @Timesheet.cs:146
+            text #55 "Datamodel facturatie (fase 2)" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #56 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #57 inline paragraph text-align=right @Timesheet.cs:147
+            text #58 "3,50" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #59 table-row table-row @Timesheet.cs:151
+        box #60 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #61 inline paragraph @Timesheet.cs:151
+            text #62 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #63 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #64 table-row table-row @Timesheet.cs:142
+        box #65 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #66 inline paragraph @Timesheet.cs:144
+            text #67 "2026-10-02" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #68 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #69 inline paragraph @Timesheet.cs:145
+            text #70 "Overleg" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #71 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #72 inline paragraph @Timesheet.cs:146
+            text #73 "Code review PR #128 & #131" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #74 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #75 inline paragraph text-align=right @Timesheet.cs:147
+            text #76 "1,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #77 table-row table-row @Timesheet.cs:151
+        box #78 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #79 inline paragraph @Timesheet.cs:151
+            text #80 "Afgestemd met de product owner; vervolgactie ingepland." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #81 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #82 table-row table-row @Timesheet.cs:142
+        box #83 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #84 inline paragraph @Timesheet.cs:144
+            text #85 "2026-10-05" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #86 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #87 inline paragraph @Timesheet.cs:145
+            text #88 "Overleg" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #89 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #90 inline paragraph @Timesheet.cs:146
+            text #91 "Logging naar OTLP-collector" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #92 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #93 inline paragraph text-align=right @Timesheet.cs:147
+            text #94 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #95 table-row table-row @Timesheet.cs:151
+        box #96 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #97 inline paragraph @Timesheet.cs:151
+            text #98 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #99 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #100 table-row table-row @Timesheet.cs:142
+        box #101 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #102 inline paragraph @Timesheet.cs:144
+            text #103 "2026-10-06" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #104 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #105 inline paragraph @Timesheet.cs:145
+            text #106 "Ontwikkeling" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #107 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #108 inline paragraph @Timesheet.cs:146
+            text #109 "Logging naar OTLP-collector" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #110 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #111 inline paragraph text-align=right @Timesheet.cs:147
+            text #112 "3,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #113 table-row table-row @Timesheet.cs:151
+        box #114 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #115 inline paragraph @Timesheet.cs:151
+            text #116 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #117 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #118 table-row table-row @Timesheet.cs:142
+        box #119 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #120 inline paragraph @Timesheet.cs:144
+            text #121 "2026-10-06" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #122 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #123 inline paragraph @Timesheet.cs:145
+            text #124 "Beheer" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #125 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #126 inline paragraph @Timesheet.cs:146
+            text #127 "Performance-analyse rapportage" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #128 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #129 inline paragraph text-align=right @Timesheet.cs:147
+            text #130 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #131 table-row table-row @Timesheet.cs:151
+        box #132 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #133 inline paragraph @Timesheet.cs:151
+            text #134 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #135 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #136 table-row table-row @Timesheet.cs:142
+        box #137 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #138 inline paragraph @Timesheet.cs:144
+            text #139 "2026-10-07" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #140 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #141 inline paragraph @Timesheet.cs:145
+            text #142 "Ontwikkeling" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #143 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #144 inline paragraph @Timesheet.cs:146
+            text #145 "Back-up en restore test" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #146 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #147 inline paragraph text-align=right @Timesheet.cs:147
+            text #148 "2,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #149 table-row table-row @Timesheet.cs:151
+        box #150 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #151 inline paragraph @Timesheet.cs:151
+            text #152 "Afgestemd met de product owner; vervolgactie ingepland." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #153 table-row-group table-body @Timesheet.cs:142
+      box #154 table-row table-row @Timesheet.cs:142
+        box #155 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #156 inline paragraph @Timesheet.cs:144
+            text #157 "2026-10-08" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #158 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #159 inline paragraph @Timesheet.cs:145
+            text #160 "Ontwikkeling" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #161 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #162 inline paragraph @Timesheet.cs:146
+            text #163 "Refinement sprint 42" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #164 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #165 inline paragraph text-align=right @Timesheet.cs:147
+            text #166 "0,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+    box #167 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #168 table-row table-row @Timesheet.cs:142
+        box #169 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #170 inline paragraph @Timesheet.cs:144
+            text #171 "2026-10-08" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #172 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #173 inline paragraph @Timesheet.cs:145
+            text #174 "Analyse" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #175 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #176 inline paragraph @Timesheet.cs:146
+            text #177 "Migratie naar Aspire 13.6" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #178 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #179 inline paragraph text-align=right @Timesheet.cs:147
+            text #180 "3,50" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #181 table-row table-row @Timesheet.cs:151
+        box #182 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #183 inline paragraph @Timesheet.cs:151
+            text #184 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #185 table-row-group table-body @Timesheet.cs:142
+      box #186 table-row table-row @Timesheet.cs:142
+        box #187 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #188 inline paragraph @Timesheet.cs:144
+            text #189 "2026-10-09" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #190 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #191 inline paragraph @Timesheet.cs:145
+            text #192 "Beheer" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #193 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #194 inline paragraph @Timesheet.cs:146
+            text #195 "API endpoint voor weekoverzicht" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #196 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #197 inline paragraph text-align=right @Timesheet.cs:147
+            text #198 "2,50" Lato 10pt w400 #000000 @Timesheet.cs:147
+    box #199 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #200 table-row table-row @Timesheet.cs:142
+        box #201 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #202 inline paragraph @Timesheet.cs:144
+            text #203 "2026-10-09" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #204 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #205 inline paragraph @Timesheet.cs:145
+            text #206 "Beheer" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #207 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #208 inline paragraph @Timesheet.cs:146
+            text #209 "Performance-analyse rapportage" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #210 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #211 inline paragraph text-align=right @Timesheet.cs:147
+            text #212 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #213 table-row table-row @Timesheet.cs:151
+        box #214 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #215 inline paragraph @Timesheet.cs:151
+            text #216 "Afgestemd met de product owner; vervolgactie ingepland." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #217 table-row-group table-body @Timesheet.cs:142
+      box #218 table-row table-row @Timesheet.cs:142
+        box #219 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #220 inline paragraph @Timesheet.cs:144
+            text #221 "2026-10-12" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #222 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #223 inline paragraph @Timesheet.cs:145
+            text #224 "Review" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #225 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #226 inline paragraph @Timesheet.cs:146
+            text #227 "Migratie naar Aspire 13.6" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #228 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #229 inline paragraph text-align=right @Timesheet.cs:147
+            text #230 "0,50" Lato 10pt w400 #000000 @Timesheet.cs:147
+    box #231 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #232 table-row table-row @Timesheet.cs:142
+        box #233 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #234 inline paragraph @Timesheet.cs:144
+            text #235 "2026-10-13" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #236 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #237 inline paragraph @Timesheet.cs:145
+            text #238 "Beheer" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #239 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #240 inline paragraph @Timesheet.cs:146
+            text #241 "Overleg met Jansen & Zn. over factuurflow" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #242 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #243 inline paragraph text-align=right @Timesheet.cs:147
+            text #244 "2,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #245 table-row table-row @Timesheet.cs:151
+        box #246 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #247 inline paragraph @Timesheet.cs:151
+            text #248 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #249 table-row-group table-body @Timesheet.cs:142
+      box #250 table-row table-row @Timesheet.cs:142
+        box #251 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #252 inline paragraph @Timesheet.cs:144
+            text #253 "2026-10-14" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #254 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #255 inline paragraph @Timesheet.cs:145
+            text #256 "Ontwikkeling" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #257 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #258 inline paragraph @Timesheet.cs:146
+            text #259 "API endpoint voor weekoverzicht" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #260 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #261 inline paragraph text-align=right @Timesheet.cs:147
+            text #262 "3,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+    box #263 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #264 table-row table-row @Timesheet.cs:142
+        box #265 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #266 inline paragraph @Timesheet.cs:144
+            text #267 "2026-10-14" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #268 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #269 inline paragraph @Timesheet.cs:145
+            text #270 "Overleg" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #271 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #272 inline paragraph @Timesheet.cs:146
+            text #273 "Documentatie *deploy* procedure" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #274 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #275 inline paragraph text-align=right @Timesheet.cs:147
+            text #276 "2,25" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #277 table-row table-row @Timesheet.cs:151
+        box #278 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #279 inline paragraph @Timesheet.cs:151
+            text #280 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #281 table-row-group table-body @Timesheet.cs:142
+      box #282 table-row table-row @Timesheet.cs:142
+        box #283 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #284 inline paragraph @Timesheet.cs:144
+            text #285 "2026-10-15" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #286 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #287 inline paragraph @Timesheet.cs:145
+            text #288 "Overleg" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #289 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #290 inline paragraph @Timesheet.cs:146
+            text #291 "Refinement sprint 42" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #292 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #293 inline paragraph text-align=right @Timesheet.cs:147
+            text #294 "3,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #295 table-row table-row @Timesheet.cs:142
+        box #296 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #297 inline paragraph @Timesheet.cs:144
+            text #298 "2026-10-16" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #299 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #300 inline paragraph @Timesheet.cs:145
+            text #301 "Beheer" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #302 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #303 inline paragraph @Timesheet.cs:146
+            text #304 "Documentatie *deploy* procedure" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #305 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #306 inline paragraph text-align=right @Timesheet.cs:147
+            text #307 "3,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+    box #308 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #309 table-row table-row @Timesheet.cs:142
+        box #310 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #311 inline paragraph @Timesheet.cs:144
+            text #312 "2026-10-19" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #313 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #314 inline paragraph @Timesheet.cs:145
+            text #315 "Review" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #316 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #317 inline paragraph @Timesheet.cs:146
+            text #318 "Code review PR #128 & #131" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #319 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #320 inline paragraph text-align=right @Timesheet.cs:147
+            text #321 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #322 table-row table-row @Timesheet.cs:151
+        box #323 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #324 inline paragraph @Timesheet.cs:151
+            text #325 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #326 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #327 table-row table-row @Timesheet.cs:142
+        box #328 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #329 inline paragraph @Timesheet.cs:144
+            text #330 "2026-10-19" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #331 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #332 inline paragraph @Timesheet.cs:145
+            text #333 "Review" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #334 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #335 inline paragraph @Timesheet.cs:146
+            text #336 "Code review PR #128 & #131" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #337 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #338 inline paragraph text-align=right @Timesheet.cs:147
+            text #339 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #340 table-row table-row @Timesheet.cs:151
+        box #341 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #342 inline paragraph @Timesheet.cs:151
+            text #343 "Afgestemd met de product owner; vervolgactie ingepland." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #344 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #345 table-row table-row @Timesheet.cs:142
+        box #346 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #347 inline paragraph @Timesheet.cs:144
+            text #348 "2026-10-20" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #349 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #350 inline paragraph @Timesheet.cs:145
+            text #351 "Documentatie" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #352 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #353 inline paragraph @Timesheet.cs:146
+            text #354 "Datamodel facturatie (fase 2)" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #355 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #356 inline paragraph text-align=right @Timesheet.cs:147
+            text #357 "3,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #358 table-row table-row @Timesheet.cs:151
+        box #359 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #360 inline paragraph @Timesheet.cs:151
+            text #361 "Afgestemd met de product owner; vervolgactie ingepland." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #362 table-row-group table-body @Timesheet.cs:142
+      box #363 table-row table-row @Timesheet.cs:142
+        box #364 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #365 inline paragraph @Timesheet.cs:144
+            text #366 "2026-10-21" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #367 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #368 inline paragraph @Timesheet.cs:145
+            text #369 "Documentatie" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #370 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #371 inline paragraph @Timesheet.cs:146
+            text #372 "Logging naar OTLP-collector" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #373 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #374 inline paragraph text-align=right @Timesheet.cs:147
+            text #375 "3,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #376 table-row table-row @Timesheet.cs:142
+        box #377 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #378 inline paragraph @Timesheet.cs:144
+            text #379 "2026-10-21" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #380 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #381 inline paragraph @Timesheet.cs:145
+            text #382 "Ontwikkeling" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #383 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #384 inline paragraph @Timesheet.cs:146
+            text #385 "Documentatie *deploy* procedure" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #386 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #387 inline paragraph text-align=right @Timesheet.cs:147
+            text #388 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #389 table-row table-row @Timesheet.cs:142
+        box #390 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #391 inline paragraph @Timesheet.cs:144
+            text #392 "2026-10-22" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #393 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #394 inline paragraph @Timesheet.cs:145
+            text #395 "Overleg" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #396 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #397 inline paragraph @Timesheet.cs:146
+            text #398 "Logging naar OTLP-collector" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #399 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #400 inline paragraph text-align=right @Timesheet.cs:147
+            text #401 "0,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #402 table-row table-row @Timesheet.cs:142
+        box #403 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #404 inline paragraph @Timesheet.cs:144
+            text #405 "2026-10-23" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #406 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #407 inline paragraph @Timesheet.cs:145
+            text #408 "Analyse" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #409 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #410 inline paragraph @Timesheet.cs:146
+            text #411 "Code review PR #128 & #131" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #412 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #413 inline paragraph text-align=right @Timesheet.cs:147
+            text #414 "3,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #415 table-row table-row @Timesheet.cs:142
+        box #416 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #417 inline paragraph @Timesheet.cs:144
+            text #418 "2026-10-26" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #419 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #420 inline paragraph @Timesheet.cs:145
+            text #421 "Documentatie" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #422 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #423 inline paragraph @Timesheet.cs:146
+            text #424 "Back-up en restore test" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #425 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #426 inline paragraph text-align=right @Timesheet.cs:147
+            text #427 "1,25" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #428 table-row table-row @Timesheet.cs:142
+        box #429 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #430 inline paragraph @Timesheet.cs:144
+            text #431 "2026-10-27" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #432 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #433 inline paragraph @Timesheet.cs:145
+            text #434 "Beheer" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #435 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #436 inline paragraph @Timesheet.cs:146
+            text #437 "Logging naar OTLP-collector" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #438 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #439 inline paragraph text-align=right @Timesheet.cs:147
+            text #440 "3,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #441 table-row table-row @Timesheet.cs:142
+        box #442 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #443 inline paragraph @Timesheet.cs:144
+            text #444 "2026-10-27" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #445 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #446 inline paragraph @Timesheet.cs:145
+            text #447 "Ontwikkeling" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #448 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #449 inline paragraph @Timesheet.cs:146
+            text #450 "Refinement sprint 42" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #451 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #452 inline paragraph text-align=right @Timesheet.cs:147
+            text #453 "1,25" Lato 10pt w400 #000000 @Timesheet.cs:147
+    box #454 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #455 table-row table-row @Timesheet.cs:142
+        box #456 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #457 inline paragraph @Timesheet.cs:144
+            text #458 "2026-10-28" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #459 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #460 inline paragraph @Timesheet.cs:145
+            text #461 "Documentatie" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #462 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #463 inline paragraph @Timesheet.cs:146
+            text #464 "Refinement sprint 42" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #465 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #466 inline paragraph text-align=right @Timesheet.cs:147
+            text #467 "1,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #468 table-row table-row @Timesheet.cs:151
+        box #469 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #470 inline paragraph @Timesheet.cs:151
+            text #471 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #472 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #473 table-row table-row @Timesheet.cs:142
+        box #474 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #475 inline paragraph @Timesheet.cs:144
+            text #476 "2026-10-28" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #477 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #478 inline paragraph @Timesheet.cs:145
+            text #479 "Review" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #480 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #481 inline paragraph @Timesheet.cs:146
+            text #482 "Logging naar OTLP-collector" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #483 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #484 inline paragraph text-align=right @Timesheet.cs:147
+            text #485 "0,75" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #486 table-row table-row @Timesheet.cs:151
+        box #487 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #488 inline paragraph @Timesheet.cs:151
+            text #489 "Afgestemd met de product owner; vervolgactie ingepland." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #490 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #491 table-row table-row @Timesheet.cs:142
+        box #492 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #493 inline paragraph @Timesheet.cs:144
+            text #494 "2026-10-29" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #495 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #496 inline paragraph @Timesheet.cs:145
+            text #497 "Overleg" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #498 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #499 inline paragraph @Timesheet.cs:146
+            text #500 "Overleg met Jansen & Zn. over factuurflow" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #501 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #502 inline paragraph text-align=right @Timesheet.cs:147
+            text #503 "4,00" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #504 table-row table-row @Timesheet.cs:151
+        box #505 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #506 inline paragraph @Timesheet.cs:151
+            text #507 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #508 table-row-group table-body break-inside=avoid @Timesheet.cs:151
+      box #509 table-row table-row @Timesheet.cs:142
+        box #510 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=1x2 @Timesheet.cs:144
+          box #511 inline paragraph @Timesheet.cs:144
+            text #512 "2026-10-30" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #513 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #514 inline paragraph @Timesheet.cs:145
+            text #515 "Ontwikkeling" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #516 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #517 inline paragraph @Timesheet.cs:146
+            text #518 "Back-up en restore test" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #519 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right span=1x2 @Timesheet.cs:147
+          box #520 inline paragraph text-align=right @Timesheet.cs:147
+            text #521 "0,50" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #522 table-row table-row @Timesheet.cs:151
+        box #523 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 span=2x1 @Timesheet.cs:151
+          box #524 inline paragraph @Timesheet.cs:151
+            text #525 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen." Lato 8pt w400 italic #232323 @Timesheet.cs:151
+    box #526 table-row-group table-body @Timesheet.cs:142
+      box #527 table-row table-row @Timesheet.cs:142
+        box #528 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:144
+          box #529 inline paragraph @Timesheet.cs:144
+            text #530 "2026-10-30" Lato 10pt w400 #000000 @Timesheet.cs:144
+        box #531 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:145
+          box #532 inline paragraph @Timesheet.cs:145
+            text #533 "Review" Lato 10pt w400 #000000 @Timesheet.cs:145
+        box #534 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 @Timesheet.cs:146
+          box #535 inline paragraph @Timesheet.cs:146
+            text #536 "Prijsberekening 50% korting = $x? (onderzoek)" Lato 10pt w400 #000000 @Timesheet.cs:146
+        box #537 flow table-cell padding=1.5,2,1.5,2 border=1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3/1pt #d3d3d3 text-align=right @Timesheet.cs:147
+          box #538 inline paragraph text-align=right @Timesheet.cs:147
+            text #539 "2,25" Lato 10pt w400 #000000 @Timesheet.cs:147
+      box #540 table-row table-row @Timesheet.cs:126
+        box #541 flow table-cell padding=5,2,5,2 border=1.5pt #000000/1.5pt #000000/1.5pt #000000/1.5pt #000000 span=3x1 @Timesheet.cs:128
+          box #542 inline paragraph @Timesheet.cs:128
+            text #543 "Totaal:" Lato 10pt w700 #000000 @Timesheet.cs:128
+        box #544 flow table-cell padding=5,2,5,2 border=1.5pt #000000/1.5pt #000000/1.5pt #000000/1.5pt #000000 text-align=right @Timesheet.cs:129
+          box #545 inline paragraph text-align=right @Timesheet.cs:129
+            text #546 "64,50" Lato 10pt w700 #000000 @Timesheet.cs:129

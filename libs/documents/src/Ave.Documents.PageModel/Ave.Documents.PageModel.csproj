@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The page model: per page a display list of positioned glyph runs and shapes, independent of any output format.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
+    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
+  </ItemGroup>
+
+</Project>

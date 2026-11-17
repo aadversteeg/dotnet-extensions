@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Documents.Fluent\Ave.Documents.Fluent.csproj" />
+    <!-- The refusal and metadata tests render through the composition package (ToPdf). -->
+    <ProjectReference Include="..\Ave.Documents\Ave.Documents.csproj" />
+    <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tests' own check of the rule for a row cut by a page break, shared with the layout tests. -->
+    <Compile Include="..\UnitTests.Ave.Documents.Layout\RowParts.cs" Link="RowParts.cs" />
+  </ItemGroup>
+
+</Project>
