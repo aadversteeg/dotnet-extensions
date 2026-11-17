@@ -134,8 +134,8 @@ public class TableRowCutTests
     /// fills every part of the row).</summary>
     public static TheoryData<string> DrawsNothing => new()
     {
-        "zero width space", "soft hyphen", "word joiner", "no-break space", "line break only", "padded empty block", "table of one empty cell",
-        "empty block with a background and no height", "empty cell with a background",
+        "zero width space", "soft hyphen", "word joiner", "no-break space", "no-break space and zero width space", "line break only",
+        "padded empty block", "table of one empty cell", "empty block with a background and no height", "empty cell with a background",
     };
 
     /// <summary>Cell content that draws but holds no text: an empty block with a border on every side or on one, an
@@ -152,6 +152,7 @@ public class TableRowCutTests
         "soft hyphen" => Cell("\u00AD"),
         "word joiner" => Cell("\u2060"),
         "no-break space" => Cell("\u00A0"),
+        "no-break space and zero width space" => Cell("\u00A0\u200B"),
         "line break only" => Cell([Paragraph([LineBreak()])]),
         "padded empty block" => Cell([Block([]).Padding(3.Pt())]),
         "table of one empty cell" => Cell([Table(Columns(Fill(1)), [TableRow([Cell([])])])]),
@@ -180,8 +181,10 @@ public class TableRowCutTests
         EveryShape(kind).Should().BePositive("where the text beside it does not fit yet but the drawing does, the row is cut and the drawing ends the page");
 
     /// <summary>The cell kind in one-line rows beside text (probe P3 of review 35), and as the third cell beside a
-    /// label over three one-line rows and over two rows of three lines. Returns how many pages of the one-line rows
-    /// end with a row part that goes on and shows no text (<see cref="TextlessCuts"/>).</summary>
+    /// label over three one-line rows and over two rows of three lines. In the one-line rows the text is 14 pt, so its
+    /// line is taller than a line of the cell beside it (12 pt): page ends fall where that line fits and the text does
+    /// not, and only what the cell draws decides the cut there. Returns how many pages of the one-line rows end with a
+    /// row part that goes on and shows no text (<see cref="TextlessCuts"/>).</summary>
     private static int EveryShape(string kind)
     {
         var textless = 0;
@@ -198,7 +201,7 @@ public class TableRowCutTests
                         return clone ? lined : lined.SplitLinesAtBreaks();
                     }
 
-                    var plain = Table(Columns(Fill(1), Fill(1)), [.. Enumerable.Range(0, 30).Select(i => (TablePart)TableRow([Cell($"r{i:00}"), Content(kind)]))]);
+                    var plain = Table(Columns(Fill(1), Fill(1)), [.. Enumerable.Range(0, 30).Select(i => (TablePart)TableRow([Cell($"r{i:00}").FontSize(14.Pt()), Content(kind)]))]);
                     textless += TextlessCuts(NoEmptyStrip(Lined(plain), Enumerable.Range(0, 30).Select(i => $"r{i:00}"), offset, because + ", one-line rows"));
                     var (three, threeWords) = Labelled(3, 1, kept: false, () => Content(kind));
                     NoEmptyStrip(Lined(three), threeWords, offset, because + ", label over three one-line rows");
@@ -209,6 +212,21 @@ public class TableRowCutTests
         }
 
         return textless;
+    }
+
+    [Fact]
+    public void A_filled_block_in_a_column_of_no_width_draws_nothing()
+    {
+        // A column may be 0 pt wide; a block with a background in it has no area, so it draws nothing and never makes a
+        // row cut beside the 14 pt text, which would leave an empty strip.
+        foreach (var clone in new[] { true, false })
+        {
+            for (var offset = 0.0; offset < 30; offset += 1)
+            {
+                var table = Table(Columns(0.Pt(), Fill(1)), [.. Enumerable.Range(0, 30).Select(i => (TablePart)TableRow([Cell([Block([]).Padding(2.Pt()).Background(Grey)]), Cell($"r{i:00}").FontSize(14.Pt())]))]);
+                NoEmptyStrip(clone ? table : table.SplitLinesAtBreaks(), Enumerable.Range(0, 30).Select(i => $"r{i:00}"), offset, $"{(clone ? "clone" : "slice")}, offset {offset}");
+            }
+        }
     }
 
     [Fact]

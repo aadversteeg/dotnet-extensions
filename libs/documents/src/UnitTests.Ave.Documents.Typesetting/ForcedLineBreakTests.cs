@@ -117,6 +117,8 @@ public class ForcedLineBreakTests
 
         lines.Select(line => (line.Width, line.EndsWithForcedBreak)).Should().Equal(plain.Select(line => (line.Width, line.EndsWithForcedBreak)), text);
         lines.Select(Visible).Should().Equal(plain.Select(Visible), text + ": the same text on each line");
+        lines.SelectMany(line => line.Segments).SelectMany(segment => segment.Glyphs).Count(glyph => glyph.IsInvisible && !glyph.IsLineBreak)
+            .Should().Be(Shape(WithBreaks(text)).Count(glyph => glyph.IsInvisible && !glyph.IsLineBreak), text + ": the invisible characters stay as text");
     }
 
     /// <summary>

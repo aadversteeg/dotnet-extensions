@@ -82,9 +82,14 @@ internal static class RowParts
         return areas.Where(area => area.Bottom - area.Top > Epsilon);
     }
 
-    /// <summary>A box's background and the visible sides of the border it paints.</summary>
+    /// <summary>A box's background and the visible sides of the border it paints; nothing for a box of no width.</summary>
     private static IEnumerable<(double Top, double Bottom)> Decoration(BoxFragment box, double top)
     {
+        if (box.Size.Width <= Epsilon)
+        {
+            yield break;
+        }
+
         var (border, height) = (box.Border, box.Size.Height);
         var (upper, lower) = (border.Top.Width.Points, border.Bottom.Width.Points);
         if (box.Box.Style.Background is not null)
