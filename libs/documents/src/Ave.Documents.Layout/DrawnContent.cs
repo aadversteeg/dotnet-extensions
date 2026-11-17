@@ -8,7 +8,8 @@ namespace Ave.Documents.Layout;
 /// <summary>
 /// What a fragment draws on its page, read from the fragment tree the way <see cref="PagePainter"/> paints it. A
 /// fragment draws something when it holds a visible glyph, an image, a rule, or a box with a background or a visible
-/// border side — each with an area that is not empty. Layout asks this where a decision depends on whether placed
+/// border side — each with an area that is not empty (an image or a rule of no width has no height either, as an
+/// image keeps its ratio and a table draws no rule of no width). Layout asks this where a decision depends on whether placed
 /// content shows anything: a row cut by a page break (<see cref="TableBreaks"/>).
 /// </summary>
 internal static class DrawnContent
@@ -25,7 +26,7 @@ internal static class DrawnContent
         BoxFragment box => DecorationBelow(box, y) || ChildrenDrawBelow(box.Children, y),
         LineFragment line => ChildrenDrawBelow(line.Children, y),
         TextFragment text => text.Glyphs.Any(IsVisible) && AreaBelow(0, text.Size.Height, y),
-        ImageFragment or RuleFragment => fragment.Size.Width > 0 && AreaBelow(0, fragment.Size.Height, y),
+        ImageFragment or RuleFragment => AreaBelow(0, fragment.Size.Height, y),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
 

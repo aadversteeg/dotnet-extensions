@@ -90,11 +90,11 @@ public static class GreedyLineBreaker
         return lines.ToImmutable();
     }
 
-    /// <summary>The glyphs without the spaces among the blank glyphs they start with; the invisible characters among
-    /// those stay, and so does a forced break and everything after it.</summary>
+    /// <summary>The glyphs of a segment without the spaces among the blank glyphs it starts with; the invisible
+    /// characters among those stay, and so does a forced break (always a segment's last glyph).</summary>
     private static IEnumerable<BreakableSegments.RunGlyph> WithoutLeadingSpaces(IEnumerable<BreakableSegments.RunGlyph> glyphs)
     {
-        static bool Leading(BreakableSegments.RunGlyph glyph) => BreakableSegments.IsBlank(glyph.Glyph) && !glyph.Glyph.IsLineBreak;
+        static bool Leading(BreakableSegments.RunGlyph glyph) => BreakableSegments.IsBlank(glyph.Glyph);
         return glyphs.TakeWhile(Leading).Where(glyph => !glyph.Glyph.IsSpace).Concat(glyphs.SkipWhile(Leading));
     }
 
