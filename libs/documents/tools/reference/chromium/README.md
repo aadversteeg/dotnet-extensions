@@ -8,8 +8,19 @@ Nothing here is part of the engine or its build. The tests do not run Chromium; 
 
 ## Run it
 
-Needs Node.js 20 or later and Docker: poppler's `pdftotext` and PyMuPDF run in the reference tools image, built from
+With Docker only (Linux, macOS or Windows; Docker must run Linux containers):
+
+```
+pwsh -NoProfile -File measure.ps1                # every case
+pwsh -NoProfile -File measure.ps1 mf4-line-0     # one or more cases by name
+```
+
+`measure.ps1` runs Chromium in the official Playwright container of the pinned version (`v1.65.1-noble`, pinned by
+digest), and poppler's `pdftotext` and PyMuPDF (`extract.sh`) in the reference tools image, built from
 `../tools.Dockerfile` (Debian pinned by digest, packages from snapshot.debian.org at a fixed date, exact versions).
+On Linux and macOS the containers run as the current user, so nothing they write is root-owned.
+
+On a machine with Node.js 20 or later, a Playwright Chromium and Docker, the same in one process:
 
 ```
 npm ci
@@ -31,6 +42,12 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
 `out/*.txt` over it after a deliberate re-measurement.
+
+The files in `measured/` were measured with Chromium 159 on Windows. Chromium on Linux (the Playwright container)
+gives the same heights, page breaks and fixed widths, but other text widths: by default it rounds glyph advances to
+hinted values, so words and auto-sized columns differ by up to about 6 pt. With hinting switched off
+(`--font-render-hinting=none`) the difference is at most 0.071 pt, and the column widths the tests pin agree within
+0.012 pt. `measured/` is unchanged; measure on Windows to compare a new Chromium with it.
 
 ## Cases and the tests that use them
 
