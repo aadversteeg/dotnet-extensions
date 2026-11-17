@@ -108,6 +108,35 @@ public class PackageRulesTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(AssemblyRulesTests.Libraries), MemberType = typeof(AssemblyRulesTests))]
+    public void Library_references_the_other_packages_as_packages(string library)
+    {
+        // A project reference in a library's project file would make its package depend on the head build of the other
+        // package at the release version, whatever was published; the reference switch needs a package reference.
+        var project = ProjectFile(library);
+
+        project.Descendants("ProjectReference").Should().BeEmpty();
+    }
+
+    [Theory]
+    [MemberData(nameof(AssemblyRulesTests.Libraries), MemberType = typeof(AssemblyRulesTests))]
+    public void Every_package_a_library_references_has_a_minimum_version(string library)
+    {
+        // In head mode the reference switch removes the package reference before restore, so a missing version shows
+        // only in a release build. Directory.Packages.props must name it, or the reference carries a VersionOverride.
+        var central = XDocument.Load(Path.Combine(ProjectRulesTests.FamilyRoot(), "..", "..", "Directory.Packages.props"))
+            .Descendants("PackageVersion")
+            .Select(version => (string?)version.Attribute("Include"))
+            .ToHashSet();
+        var withoutVersion = ProjectFile(library).Descendants("PackageReference")
+            .Where(reference => reference.Attribute("VersionOverride") is null)
+            .Select(reference => (string?)reference.Attribute("Include"))
+            .Where(package => !central.Contains(package));
+
+        withoutVersion.Should().BeEmpty();
+    }
+
     [Fact]
     public void The_rule_sees_packages_and_project_references()
     {

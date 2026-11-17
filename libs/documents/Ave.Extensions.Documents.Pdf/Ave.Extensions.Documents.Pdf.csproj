@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Documents.Core\Ave.Extensions.Documents.Core.csproj" />
+    <PackageReference Include="Ave.Extensions.Documents.Core" />
   </ItemGroup>
 
 </Project>

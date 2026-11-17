@@ -14,10 +14,23 @@
     <PackageVersion Include="Ave.Extensions.Functional.Core" Version="0.0.5-preview.1" />
     <PackageVersion Include="Ave.Extensions.Functional" Version="0.0.5-preview.1" />
     <PackageVersion Include="Ave.Extensions.ErrorPaths" Version="0.0.2-preview.1" />
+    <PackageVersion Include="Ave.Extensions.ErrorPaths.Functional" Version="0.0.3-preview.1" />
     <PackageVersion Include="Ave.Extensions.FluentContracts" Version="0.0.1-preview.2" />
     <PackageVersion Include="Ave.Extensions.FileSystem.Abstractions" Version="0.6.0-preview.1" />
     <PackageVersion Include="Ave.Extensions.FileSystem" Version="0.6.0-preview.1" />
     <PackageVersion Include="Ave.Extensions.FileSystem.Local" Version="0.6.0-preview.1" />
+    <!-- documents: the first release from this repository is 0.1.0-preview.2 of every package, lowest layer first
+         (see docs/RELEASING.md, "First release of the documents family") -->
+    <PackageVersion Include="Ave.Extensions.Documents.Core" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Fonts" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Images" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Pdf" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Typesetting" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.DocumentModel" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.PageModel" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Layout" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Render.Pdf" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Fluent" Version="0.1.0-preview.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Documents.Core\Ave.Extensions.Documents.Core.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.Fonts\Ave.Extensions.Documents.Fonts.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.Typesetting\Ave.Extensions.Documents.Typesetting.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.DocumentModel\Ave.Extensions.Documents.DocumentModel.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.PageModel\Ave.Extensions.Documents.PageModel.csproj" />
+    <PackageReference Include="Ave.Extensions.Documents.Core" />
+    <PackageReference Include="Ave.Extensions.Documents.Fonts" />
+    <PackageReference Include="Ave.Extensions.Documents.Typesetting" />
+    <PackageReference Include="Ave.Extensions.Documents.DocumentModel" />
+    <PackageReference Include="Ave.Extensions.Documents.PageModel" />
   </ItemGroup>
 
   <ItemGroup>

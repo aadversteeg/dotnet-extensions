@@ -30,8 +30,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.Documents.Render.Pdf\Ave.Extensions.Documents.Render.Pdf.csproj" />
     <ProjectReference Include="..\Ave.Extensions.Documents.TestSupport\Ave.Extensions.Documents.TestSupport.csproj" />
-    <!-- Shaping builds realistic glyph runs for the tests. -->
-    <ProjectReference Include="..\Ave.Extensions.Documents.Typesetting\Ave.Extensions.Documents.Typesetting.csproj" />
+    <!-- Shaping builds realistic glyph runs for the tests. Another package than the one under test, so a package
+         reference: in release mode the tests use its published minimum version. -->
+    <PackageReference Include="Ave.Extensions.Documents.Typesetting" />
   </ItemGroup>
 
 </Project>

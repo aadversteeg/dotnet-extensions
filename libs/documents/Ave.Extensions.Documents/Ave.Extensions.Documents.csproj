@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Documents.Fluent\Ave.Extensions.Documents.Fluent.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.Layout\Ave.Extensions.Documents.Layout.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.Render.Pdf\Ave.Extensions.Documents.Render.Pdf.csproj" />
+    <PackageReference Include="Ave.Extensions.Documents.Fluent" />
+    <PackageReference Include="Ave.Extensions.Documents.Layout" />
+    <PackageReference Include="Ave.Extensions.Documents.Render.Pdf" />
   </ItemGroup>
 
 </Project>

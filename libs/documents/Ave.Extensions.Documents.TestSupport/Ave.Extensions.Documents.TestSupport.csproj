@@ -9,9 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Extensions.Documents.Fonts\Ave.Extensions.Documents.Fonts.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.PageModel\Ave.Extensions.Documents.PageModel.csproj" />
-    <ProjectReference Include="..\Ave.Extensions.Documents.Images\Ave.Extensions.Documents.Images.csproj" />
+    <!-- Package references, like a library's: in release mode a test project then gets these at their published
+         minimum version, the same as the package under test does (see docs/RELEASING.md) -->
+    <PackageReference Include="Ave.Extensions.Documents.Fonts" />
+    <PackageReference Include="Ave.Extensions.Documents.PageModel" />
+    <PackageReference Include="Ave.Extensions.Documents.Images" />
     <!-- PdfPig reads our PDFs back in tests (independent, pure managed, Apache-2.0). Test-only. -->
     <PackageReference Include="PdfPig" />
     <!-- The Docker-backed facts (reference checks that skip without Docker) derive from xunit's attributes. Test-only.
