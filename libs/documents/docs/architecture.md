@@ -193,10 +193,11 @@ Each is documented next to its code as well.
   an empty page overflows; a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
-- **Against Chromium:** at font sizes Chromium rounds (10 pt and 11 pt, for example; 9, 10.5 and 12 pt are exact), its
-  text is up to about 0.04 % narrower than the font's advances, so a line that fits in Chromium by less than that
-  can break one word earlier in the engine. The engine keeps the font's exact advances; the reference cases that
-  pin lengths use sizes Chromium keeps exact (`tools/reference/chromium/README.md`, "Where Chromium is not exact").
+- **Against Chromium:** at most font sizes Chromium's text is narrower than the font's advances, by a share that
+  depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small sizes; none at 9, 10.5 and 12 pt), so a line
+  that fits in Chromium by less than that share of its text width can break one word earlier in the engine. The
+  engine keeps the font's exact advances; the reference cases that pin lengths use sizes Chromium keeps exact
+  (`tools/reference/chromium/README.md`, "Where Chromium is not exact").
 - **Leading space before the first unbreakable piece (NF-1):** leading space (margins, empty boxes) plus a first
   unbreakable piece that together exceed the page area, at the document start or after a forced page break, is
   refused (`Documents.Layout.DoesNotFit`; the message names the element and the room it had). The layout counts a box

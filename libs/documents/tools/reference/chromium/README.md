@@ -110,11 +110,16 @@ units per em) as a 16.16 fixed-point number: at 16 px, 1024/2000 = 0.512 becomes
 advances come to 892.7885 px instead of 892.8, which ceils to 892.796875. That stays within the one layout unit of the
 ceil; at 10.5 pt the same effect is smaller (0.00044 %) and does not show in these runs.
 
-So at a font size Chromium rounds, its text is up to about 0.04 % narrower than the font's advances, and a line that
-fits in Chromium by less than that can break one word earlier in the engine. The cases that pin lengths therefore use
-sizes Chromium keeps exact (`widths-exact` at 10.5 pt; the `mf4-line-*` cases at 12 pt). The 10 pt case `widths` stays:
-its test applies the factor above, as the oracle's artefact, to the engine's exact text widths and then compares with the
-same rule, so a change in Chromium or its font backend shows up there.
+How large the effect is follows from the two steps: the pixels per em lose less than 0.01 px (the floor to 1/100 px)
+plus less than 1/64 px (the truncation), so less than 0.0256 px in all. Relative to the font size that is 0.039 % at
+10 pt, 0.071 % at 11 pt (the 100-glyph run above: 38 layout units of 818.4 px), 0.056 % at 7 pt and 14 pt, 0.098 % at
+8 pt and 0.16 % at 5 pt; it is zero where the size in px is a whole multiple of 1/64 px that survives the floor to
+1/100 px (12, 14 and 16 px). So at a font size Chromium rounds, its text is narrower than the font's advances by a
+share that depends on the size, and a line that fits in Chromium by less than that share of its text width can break
+one word earlier in the engine. The cases that pin lengths therefore use sizes Chromium keeps exact (`widths-exact` at
+10.5 pt; the `mf4-line-*` cases at 12 pt). The 10 pt case `widths` stays: its test applies the factor above, as the
+oracle's artefact, to the engine's exact text widths and then compares with the same rule, so a change in Chromium or
+its font backend shows up there.
 
 ## Cases and the tests that use them
 

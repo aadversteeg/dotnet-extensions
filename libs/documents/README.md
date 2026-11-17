@@ -247,11 +247,15 @@ container with font hinting off, within the layout units Chromium snaps
 
 Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows, the
 line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
-border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content,
-interlaced and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and
-other OpenType lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts. At font sizes Chromium rounds (10 pt and 11 pt, for example; 9, 10.5 and 12 pt are exact), its text is up to about 0.04 % narrower than the font's advances, so a line that fits in Chromium by less than that can break one word earlier in the engine; the engine keeps the font's exact advances (`tools/reference/chromium/README.md`, "Where Chromium is not exact"). Tagging limits (no row
-headers, lists, captions, links or per-element language) and the PDF/UA checks a person must make are in
-`docs/pdf-profiles-and-accessibility.md`; all limits together are in `docs/architecture.md`.
+border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content, interlaced
+and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and other OpenType
+lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts. At most font sizes Chromium's text is narrower
+than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small
+sizes; none at 9, 10.5 and 12 pt), so a line that fits in Chromium by less than that share of its text width can
+break one word earlier in the engine, which keeps the font's exact advances (`tools/reference/chromium/README.md`,
+"Where Chromium is not exact"). Tagging limits (no row headers, lists, captions, links or per-element language) and
+the PDF/UA checks a person must make are in `docs/pdf-profiles-and-accessibility.md`; all limits together are in
+`docs/architecture.md`.
 
 ## Conventions
 
