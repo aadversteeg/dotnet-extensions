@@ -55,7 +55,7 @@ internal static class PageAreas
                 // continuation means the content is taller than the area, and an area never continues on a next page.
                 if (placement.HasNoValue || placement.Value.Continuation is not null)
                 {
-                    return Result<Area, Error>.Failure(LayoutErrors.DoesNotFit(content));
+                    return Result<Area, Error>.Failure(LayoutErrors.AreaDoesNotFit(content, available));
                 }
 
                 // The content was laid out in the area's height after its top margin, so it fits there; what can still
@@ -63,7 +63,7 @@ internal static class PageAreas
                 var fragment = placement.Value.Fragment;
                 var used = margin.Top.Points + fragment.Fragment.Size.Height + margin.Bottom.Points;
                 return area.Height is { } fixedHeight && !Fitting.Fits(used, fixedHeight.Points)
-                    ? Result<Area, Error>.Failure(LayoutErrors.DoesNotFit(content))
+                    ? Result<Area, Error>.Failure(LayoutErrors.AreaDoesNotFit(content, fixedHeight.Points))
                     : Result<Area, Error>.Success(new Area(fragment, area.Height?.Points ?? used));
             });
     }

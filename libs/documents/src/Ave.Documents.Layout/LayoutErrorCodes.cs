@@ -9,8 +9,11 @@ public static class LayoutErrorCodes
     /// <summary><c>Documents.Layout</c>.</summary>
     public static readonly ErrorCode _ = DocumentErrorCodes._ / "Layout";
 
-    /// <summary>Content that can never fit on a page, not even on an empty one, and cannot be broken.
-    /// Metadata: Node, SourceFile, SourceLine.</summary>
+    /// <summary>Content that does not fit where it is and cannot be broken, with nothing before it on the page that
+    /// could move to a later page: on an empty page, or — LIMIT (NF-1, docs/architecture.md, Known limits) — after only
+    /// leading space (margins, empty boxes) at the document start or after a forced page break; also header or footer
+    /// content that does not fit in its area. Metadata: Node, Value (the room it had, in points), SourceFile,
+    /// SourceLine.</summary>
     public static readonly ErrorCode DoesNotFit = _ / "DoesNotFit";
 
     /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.

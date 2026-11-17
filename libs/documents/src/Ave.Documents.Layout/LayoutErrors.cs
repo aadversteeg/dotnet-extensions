@@ -13,12 +13,36 @@ internal static class LayoutErrors
     /// <summary>The element a box was made from, for a message: its role and its source.</summary>
     private static string Describe(Box box) => $"The {box.Role} made at {box.Source}";
 
-    public static Error DoesNotFit(Box box) =>
+    /// <summary>
+    /// A box of which not even the first piece fits, where nothing before it on the page can move to a later page
+    /// (<see cref="ConstraintSpace.IsAtPageStart"/>). The message says what does not fit and how much room it had. It
+    /// does not claim the box would not fit on an empty page: LIMIT (NF-1, docs/architecture.md, Known limits) — after
+    /// only leading space (its own top margin, or empty boxes with margins) at the document start or after a forced page
+    /// break the box counts as at the start of the page too, and it might fit on the next one.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="available">The height it had, from the top of its border box (zero or less: none).</param>
+    public static Error DoesNotFit(Box box, double available) =>
         new Error(
                 LayoutErrorCodes.DoesNotFit,
-                $"{Describe(box)} does not fit on a page, not even on an empty one, and cannot be broken.")
+                $"{Describe(box)} does not fit in {Room(available)} and cannot be broken; nothing before it on the page can move to a later page.")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(box.Source);
+
+    /// <summary>A header or footer area's content that does not fit in the area: an area never breaks.</summary>
+    /// <param name="content">The area's content.</param>
+    /// <param name="height">The area's height: its fixed height, or the page area's.</param>
+    public static Error AreaDoesNotFit(Box content, double height) =>
+        new Error(
+                LayoutErrorCodes.DoesNotFit,
+                $"{Describe(content)} does not fit in the {InvariantNumber.Format(height)}pt of its header or footer area, and an area never breaks.")
+            .With(ErrorMetadataKeys.Node, content.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(height))
+            .WithSource(content.Source);
+
+    private static string Room(double available) =>
+        available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
 
     public static Error InvalidContent(Box box, string message) =>
         new Error(LayoutErrorCodes.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")

@@ -193,6 +193,14 @@ Each is documented next to its code as well.
   an empty page overflows; a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
+- **Leading space before the first unbreakable piece (NF-1):** leading space (margins, empty boxes) plus a first
+  unbreakable piece that together exceed the page area, at the document start or after a forced page break, is
+  refused (`Documents.Layout.DoesNotFit`; the message names the element and the room it had). The layout counts a box
+  after only its own top margin, or after empty boxes with margins, as being at the start of the page, so it does not
+  move it to the next page, where that space would be gone (`LayoutResult.NothingFits`). The same rule has two softer
+  faces: a first table row kept together that does not fit there is cut inside instead of moved, and a table's header
+  row may stand alone at the foot of that page. A paragraph of text before it makes the box move on as usual. Pinned by
+  `LeadingSpaceLimitTests` (Fluent); the rule itself is next milestone's work.
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body

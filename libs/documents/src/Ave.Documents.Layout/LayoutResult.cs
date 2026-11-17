@@ -36,14 +36,17 @@ public abstract record LayoutResult
     /// <summary>
     /// The rule every algorithm applies when not even the first piece of a box fits. At the start of a page
     /// the box will not fit on any later page either, because all pages have the same size: that is
-    /// <see cref="LayoutErrorCodes.DoesNotFit"/>, with the box's source location. Anywhere else it is
-    /// <see cref="NoRoom"/>, and the box moves to the next page.
+    /// <see cref="LayoutErrorCodes.DoesNotFit"/>, with the box's source location and the room it had. Anywhere else it
+    /// is <see cref="NoRoom"/>, and the box moves to the next page. LIMIT (NF-1, docs/architecture.md, Known limits): a
+    /// box after only leading space (its own top margin, or empty boxes with margins), at the document start or after a
+    /// forced page break, counts as at the start of the page as well, so it is refused although it might fit on the next
+    /// page, where that space would be gone.
     /// </summary>
     /// <param name="box">The box that does not fit.</param>
     /// <param name="space">The space it was given.</param>
     /// <returns>NoRoom, or the DoesNotFit error.</returns>
     public static Result<LayoutResult, Error> NothingFits(Box box, ConstraintSpace space) =>
         space.IsAtPageStart
-            ? Result<LayoutResult, Error>.Failure(LayoutErrors.DoesNotFit(box))
+            ? Result<LayoutResult, Error>.Failure(LayoutErrors.DoesNotFit(box, space.AvailableHeight))
             : Result<LayoutResult, Error>.Success(NoRoom.Instance);
 }
