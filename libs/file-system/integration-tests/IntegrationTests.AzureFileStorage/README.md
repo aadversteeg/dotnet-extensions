@@ -101,18 +101,20 @@ dotnet test --filter "DisplayName~AFSIT-001"
 Set environment variables in your build pipeline:
 
 ```bash
-export AZURE_FILESTORAGE_ACCOUNT_NAME="your_account"
-export AZURE_FILESTORAGE_ACCOUNT_KEY="your_key"
-export AZURE_FILESTORAGE_SHARE_NAME="integration-tests"
+export AZURE_FILESTORAGE_AzureFileStorage__AccountName="your_account"
+export AZURE_FILESTORAGE_AzureFileStorage__AccountKey="your_key"
 dotnet test
 ```
+
+The CI of this repository does this on `main` only, from the repository secrets `AZURE_STORAGE_ACCOUNT_NAME` and
+`AZURE_STORAGE_ACCOUNT_KEY` (job "Azure integration tests" in `.github/workflows/ci.yml`).
 
 ### Skipping Tests
 
 To skip integration tests:
 
 ```bash
-export SKIP_INTEGRATION_TESTS=true
+export AZURE_FILESTORAGE_SkipIntegrationTests=true
 dotnet test
 ```
 

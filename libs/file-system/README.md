@@ -434,6 +434,15 @@ about two minutes. Those tests have the trait `Category=Network`; CI leaves them
 dotnet test extensions.slnx --filter "Category!=Network"
 ```
 
+`IntegrationTests.AzureFileStorage` holds the tests against a real Azure storage account. Without an account its
+tests skip themselves. To run them locally, give the account name and key as user secrets (see
+`integration-tests/IntegrationTests.AzureFileStorage/USER_SECRETS_SETUP.md`). Use a storage account that is only
+for these tests: they empty the file share `integration-tests`.
+
+CI runs them on `main` only, in the three modes below, with the repository secrets `AZURE_STORAGE_ACCOUNT_NAME`
+and `AZURE_STORAGE_ACCOUNT_KEY`. That job fails when a secret is missing or a test is skipped. A pull request does
+not run them and never gets the account key.
+
 ### Supported runtimes
 
 The packages target `netstandard2.0` and `net10.0`. `Ave.Extensions.FileSystem.InMemory` and

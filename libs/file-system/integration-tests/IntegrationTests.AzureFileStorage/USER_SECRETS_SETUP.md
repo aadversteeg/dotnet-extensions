@@ -81,16 +81,13 @@ The tests will automatically pick up your user secrets configuration.
 You can also use environment variables instead of or in addition to user secrets:
 
 ```bash
-# Primary environment variables
-export AZURE_FILESTORAGE_ACCOUNT_NAME="your_storage_account_name"
-export AZURE_FILESTORAGE_ACCOUNT_KEY="your_storage_account_key"
-export AZURE_FILESTORAGE_SHARE_NAME="integration-tests"
-
-# Alternative environment variables (for compatibility)
-export AZURE_STORAGE_ACCOUNT_NAME="your_storage_account_name"
-export AZURE_STORAGE_ACCOUNT_KEY="your_storage_account_key"
-export AZURE_STORAGE_SHARE_NAME="integration-tests"
+export AZURE_FILESTORAGE_AzureFileStorage__AccountName="your_storage_account_name"
+export AZURE_FILESTORAGE_AzureFileStorage__AccountKey="your_storage_account_key"
+export AZURE_FILESTORAGE_AzureFileStorage__ShareName="integration-tests"
 ```
+
+The name is the prefix `AZURE_FILESTORAGE_`, then the configuration key with `__` between its parts. No other
+variable names are read.
 
 ## Removing User Secrets
 
@@ -113,7 +110,6 @@ The integration tests load configuration in this order (later sources override e
 1. `appsettings.test.json`
 2. **User Secrets** ← Your settings
 3. Environment Variables
-4. Individual environment variable aliases
 
 This means your user secrets will override the template `appsettings.test.json` but can still be overridden by environment variables if needed.
 

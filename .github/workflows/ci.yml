@@ -3,8 +3,8 @@ name: CI
 # Builds and tests the families a change touches, on Linux and Windows, against the net10.0 build and the
 # netstandard2.0 build of the libraries. When the file-system family is affected, its tests also run against the
 # netstandard2.1 build of the two libraries that have one. The documents family targets net10.0 only and has a job
-# of its own. On main it also builds and tests every package the way a release does. Nothing here publishes
-# anything. See docs/RELEASING.md.
+# of its own. On main it also builds and tests every package the way a release does, and runs the Azure integration
+# tests against a real storage account. Nothing here publishes anything. See docs/RELEASING.md.
 
 on:
   push:
@@ -232,6 +232,71 @@ jobs:
           name: test-results-${{ matrix.os }}-documents
           path: ${{ runner.temp }}/test-results
           if-no-files-found: ignore
+
+  azure-integration:
+    # The integration tests of Ave.Extensions.FileSystem.AzureFileStorage against a real Azure storage account, in
+    # the three test modes. In every other job these tests skip themselves, because no storage account is
+    # configured there. Only on main: a pull request never gets the account key. The tests empty the file share
+    # they use, so the three modes run one after the other (max-parallel: 1) and on Linux only; the concurrency
+    # group of this workflow keeps two runs on main apart. The test results are not kept as an artifact: secrets
+    # are masked in the log, not in a file.
+    name: Azure integration tests (${{ matrix.asset }}, main only)
+    needs: changes
+    if: >-
+      github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.file-system == 'true'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        asset: [net10.0, netstandard2.0, netstandard2.1]
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: libs/file-system/integration-tests/IntegrationTests.AzureFileStorage/IntegrationTests.AzureFileStorage.csproj
+      USE_NS20: ${{ matrix.asset == 'netstandard2.0' }}
+      USE_NS21: ${{ matrix.asset == 'netstandard2.1' }}
+    steps:
+      - name: The storage account secrets are set
+        env:
+          ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+          ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+        run: |
+          if [ -z "$ACCOUNT_NAME" ] || [ -z "$ACCOUNT_KEY" ]; then
+            echo "::error title=Azure integration tests::The repository secrets AZURE_STORAGE_ACCOUNT_NAME and AZURE_STORAGE_ACCOUNT_KEY are not set. See libs/file-system/README.md."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build "$PROJECT" -c Release -p:UseNs20="$USE_NS20" -p:UseNs21="$USE_NS21"
+
+      - name: Test
+        # The share name and the other settings come from appsettings.test.json in the test project.
+        env:
+          AZURE_FILESTORAGE_AzureFileStorage__AccountName: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+          AZURE_FILESTORAGE_AzureFileStorage__AccountKey: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+        run: |
+          dotnet test "$PROJECT" -c Release --no-build -p:UseNs20="$USE_NS20" -p:UseNs21="$USE_NS21" \
+            --logger "trx;LogFileName=azure-integration.trx" --results-directory "$RUNNER_TEMP/test-results"
+
+      - name: Every test ran
+        # A test that cannot use the storage account skips itself, and a skipped test proves nothing.
+        run: |
+          counters=$(grep -o '<Counters [^>]*>' "$RUNNER_TEMP/test-results/azure-integration.trx")
+          total=$(sed -E 's/.* total="([0-9]+)".*/\1/' <<< "$counters")
+          executed=$(sed -E 's/.* executed="([0-9]+)".*/\1/' <<< "$counters")
+          echo "Tests: $total, executed: $executed"
+          if [ "$total" -eq 0 ] || [ "$executed" -ne "$total" ]; then
+            echo "::error title=Azure integration tests::$((total - executed)) of $total tests did not run"
+            exit 1
+          fi
 
   checks:
     name: Repository checks
