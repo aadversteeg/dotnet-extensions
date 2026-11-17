@@ -24,7 +24,7 @@ internal static class DrawnContent
     {
         BoxFragment box => DecorationBelow(box, y) || ChildrenDrawBelow(box.Children, y),
         LineFragment line => ChildrenDrawBelow(line.Children, y),
-        TextFragment text => text.Glyphs.Any(IsVisible) && text.Size.Width > 0 && AreaBelow(0, text.Size.Height, y),
+        TextFragment text => text.Glyphs.Any(IsVisible) && AreaBelow(0, text.Size.Height, y),
         ImageFragment or RuleFragment => fragment.Size.Width > 0 && AreaBelow(0, fragment.Size.Height, y),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
