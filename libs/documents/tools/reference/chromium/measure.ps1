@@ -7,7 +7,8 @@
     by digest, so the same Chromium measures on every machine), and extract.sh in the reference tools image between
     its two steps:
 
-    1. Playwright container: npm ci, then node measure.mjs --step print (Chromium's print of every case, box sizes).
+    1. Playwright container: npm ci, then node measure.mjs --step print (Chromium's print of every case, box sizes),
+       with font hinting off (--font-render-hinting=none, set in measure.mjs: see README.md, "The reference").
     2. Reference tools image (../tools.Dockerfile): extract.sh (pdftotext -bbox, rectangles.py, tool versions).
     3. Playwright container: node measure.mjs --step words (words.txt per case, versions.txt).
 
@@ -43,7 +44,8 @@ New-Item -ItemType Directory -Force $out | Out-Null
 $user = if ($IsWindows) { @() } else { @('--user', "$(id -u):$(id -g)") }
 $names = if ($Cases.Count -gt 0) { $Cases } else { @(Get-ChildItem (Join-Path $here 'cases') -Filter *.html | Sort-Object Name | ForEach-Object BaseName) }
 
-$playwright = @('run', '--rm') + $user + @('-e', 'HOME=/tmp', '-v', "${family}:/family", '-w', '/family/tools/reference/chromium', $PlaywrightImage)
+# MEASURE_IMAGE: measure.mjs records the image in versions.txt, next to the Chromium version and flags.
+$playwright = @('run', '--rm') + $user + @('-e', 'HOME=/tmp', '-e', "MEASURE_IMAGE=$PlaywrightImage", '-v', "${family}:/family", '-w', '/family/tools/reference/chromium', $PlaywrightImage)
 
 Write-Host "== 1. print with Chromium ($PlaywrightImage)"
 docker @playwright bash -c "npm ci --no-audit --no-fund --loglevel=error && node measure.mjs --step print $($names -join ' ')"

@@ -1,19 +1,19 @@
 div 300.000 29.484 w1
 table 300.000 29.484 t1
 td 94.852 28.734 alpha beta gamma delta e
-td 35.590 28.734 one two
-td 168.809 28.734 a much longer piece of t
+td 35.578 28.734 one two
+td 168.820 28.734 a much longer piece of t
 div 399.996 17.484 w2
-table 236.297 17.484 t2
+table 236.285 17.484 t2
 td 99.996 16.734 fixed
 td 31.547 16.734 short
-td 104.004 16.734 somewhat longer text
+td 103.992 16.734 somewhat longer text
 div 300.000 12.000 w3
-div 52.922 12.000 one
+div 52.934 12.000 one
 div 105.867 12.000 two words
-div 141.211 12.000 Supercalifragilisticexpi
+div 141.199 12.000 Supercalifragilisticexpi
 div 300.000 12.000 w4
 div 42.094 12.000 a
-div 50.520 12.000 b
+div 50.531 12.000 b
 div 168.410 12.000 c
-div 38.977 12.000 Duration
+div 38.965 12.000 Duration

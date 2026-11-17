@@ -1,0 +1,19 @@
+div 300.000 30.984 w1
+table 300.000 30.984 t1
+td 95.098 30.234 alpha beta gamma delta e
+td 36.199 30.234 one two
+td 167.953 30.234 a much longer piece of t
+div 399.996 18.234 w2
+table 242.238 18.234 t2
+td 99.996 17.484 fixed
+td 32.695 17.484 short
+td 108.797 17.484 somewhat longer text
+div 300.000 12.750 w3
+div 50.555 12.750 one
+div 101.133 12.750 two words
+div 148.313 12.750 Supercalifragilisticexpi
+div 300.000 12.750 w4
+div 41.777 12.750 a
+div 50.145 12.750 b
+div 167.145 12.750 c
+div 40.934 12.750 Duration

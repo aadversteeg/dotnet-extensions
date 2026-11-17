@@ -241,16 +241,21 @@ box slicing at page breaks (CSS Fragmentation 3 §5.2–§5.4), tables and rows 
 `fr` columns, collapsing borders, repeated header rows, rows broken between lines), header and footer areas with a
 different first page, page number and page count (a fixpoint of at most 5 passes), PNG and JPEG images, Unicode line
 breaking (UAX #14, Unicode 18.0.0), OpenType shaping for Latin, Greek and Cyrillic, text-align and inter-word
-justification, TrueType subsetting, deterministic output. Table layout is checked against Chromium 157 and 159
-(`UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs`).
+justification, TrueType subsetting, deterministic output. Table layout is checked against Chromium 159 in a pinned
+container with font hinting off, within the layout units Chromium snaps
+(`UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs`, `tools/reference/chromium/README.md`).
 
 Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows, the
 line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
-border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content,
-interlaced and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and
-other OpenType lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts. Tagging limits (no row
-headers, lists, captions, links or per-element language) and the PDF/UA checks a person must make are in
-`docs/pdf-profiles-and-accessibility.md`; all limits together are in `docs/architecture.md`.
+border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content, interlaced
+and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and other OpenType
+lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts. At most font sizes Chromium's text is narrower
+than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small
+sizes; none at 9, 10.5 and 12 pt), so a line that fits in Chromium by less than that share of its text width can
+break one word earlier in the engine, which keeps the font's exact advances (`tools/reference/chromium/README.md`,
+"Where Chromium is not exact"). Tagging limits (no row headers, lists, captions, links or per-element language) and
+the PDF/UA checks a person must make are in `docs/pdf-profiles-and-accessibility.md`; all limits together are in
+`docs/architecture.md`.
 
 ## Conventions
 

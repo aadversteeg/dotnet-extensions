@@ -6,9 +6,11 @@ namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// Document-model builders for tracks tests. Ids come from one instance per test, so every node of a
-/// document has its own id. Cells hold one Lato 10 pt paragraph (line height 12 pt).
+/// document has its own id. Cells hold Lato paragraphs, 10 pt (line height 12 pt) unless the constructor names
+/// another size.
 /// </summary>
-internal sealed class TableModels
+/// <param name="fontSize">The font size of the cells' text, in points.</param>
+internal sealed class TableModels(double fontSize = 10)
 {
     private int _next = 1;
 
@@ -25,7 +27,7 @@ internal sealed class TableModels
     {
         var id = Next();
         var paragraph = new Box(Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
-            [new TextRun(Next(), text, Models.Text(), new SourceLocation(file, line))], new SourceLocation(file, line));
+            [new TextRun(Next(), text, Models.Text(fontSize), new SourceLocation(file, line))], new SourceLocation(file, line));
         return new Box(id, SemanticRole.TableCell, LayoutAlgorithmId.Flow, style ?? ReferenceCell, [paragraph], new SourceLocation(file, line));
     }
 
@@ -34,7 +36,7 @@ internal sealed class TableModels
     {
         var id = Next();
         ValueList<Node> paragraphs = [.. lines.Select(text => (Node)new Box(Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
-            [new TextRun(Next(), text, Models.Text(), new SourceLocation(file, line))], new SourceLocation(file, line)))];
+            [new TextRun(Next(), text, Models.Text(fontSize), new SourceLocation(file, line))], new SourceLocation(file, line)))];
         return new Box(id, SemanticRole.TableCell, LayoutAlgorithmId.Flow, ReferenceCell, paragraphs, new SourceLocation(file, line));
     }
 
@@ -47,7 +49,7 @@ internal sealed class TableModels
     /// <summary>A cell that draws nothing, of the given kind (<see cref="EmptyKinds"/>), in the given style.</summary>
     public Box Empty(string kind, BoxStyle style)
     {
-        Box Paragraph(string text) => new(Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(Next(), text, Models.Text(), Models.At(0))], Models.At(0));
+        Box Paragraph(string text) => new(Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(Next(), text, Models.Text(fontSize), Models.At(0))], Models.At(0));
         Box Block(BoxStyle blockStyle) => new(Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, blockStyle, [], Models.At(0));
         ValueList<Node> children = kind switch
         {
