@@ -2,7 +2,7 @@ using System;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// The font header (OpenType spec, "head — Font header table"): the size of the design grid, the bounding box

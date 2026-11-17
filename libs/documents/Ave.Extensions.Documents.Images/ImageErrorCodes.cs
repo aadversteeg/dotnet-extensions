@@ -1,7 +1,7 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>Errors about images (decoding the bytes a caller passed in).</summary>
 public static class ImageErrorCodes

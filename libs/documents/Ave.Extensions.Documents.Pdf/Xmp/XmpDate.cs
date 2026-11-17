@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace Ave.Documents.Pdf.Xmp;
+namespace Ave.Extensions.Documents.Pdf.Xmp;
 
 /// <summary>Formats dates as XMP Date values (ISO 16684-1 §8.2.1.2, "a subset of the formats as defined in Date and Time Formats", the W3C profile of ISO 8601).</summary>
 public static class XmpDate

@@ -1,10 +1,10 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fonts;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// <c>line-height: normal</c> with a font that has a line gap. Theano Didot: 2048 units per em, hhea ascender 1962,

@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Text formatting as the author specifies it. A null field means "inherit from the parent" — font family,

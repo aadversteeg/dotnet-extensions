@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>The fixed texts of the timesheet in one language (the PoC's label table <c>L</c>).</summary>
 /// <param name="Title">The document title.</param>

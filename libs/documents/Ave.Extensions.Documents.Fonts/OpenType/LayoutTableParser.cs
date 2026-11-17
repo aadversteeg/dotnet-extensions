@@ -3,11 +3,11 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>
 /// Reads a GSUB or GPOS table (OpenType spec, "GSUB — Glyph substitution table", "GPOS — Glyph positioning table").

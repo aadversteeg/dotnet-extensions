@@ -2,7 +2,7 @@ using System;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// The OS/2 and Windows metrics table (OpenType spec, "OS/2 — OS/2 and Windows metrics table"): the weight

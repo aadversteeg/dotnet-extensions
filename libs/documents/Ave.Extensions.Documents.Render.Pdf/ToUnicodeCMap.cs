@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// Builds the ToUnicode CMap of a composite font (ISO 32000-1 §9.10.3): the map from each glyph code to the

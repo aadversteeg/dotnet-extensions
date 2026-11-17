@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// What a document says about itself, as opposed to what it shows: title, author, language, and the files that travel

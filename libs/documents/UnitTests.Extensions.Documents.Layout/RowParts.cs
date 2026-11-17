@@ -1,8 +1,8 @@
-using Ave.Documents.Core;
-using Ave.Documents.Layout;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// The tests' own check of the rule for a row that a page break cuts (fix round 5, SP-1), read from the placed result

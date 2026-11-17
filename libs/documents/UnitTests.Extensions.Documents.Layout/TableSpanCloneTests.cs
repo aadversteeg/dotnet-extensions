@@ -1,9 +1,9 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// Spot check of fix round 3, SC-2b. With <see cref="BoxDecorationBreak.Clone"/> the table is closed across its FULL

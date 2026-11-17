@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
-using Ave.Documents.Core;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>Embeds an attached file (ISO 32000-1 §7.11.4): a file specification that points at an embedded file stream.</summary>
 internal static class AttachmentEmbedding

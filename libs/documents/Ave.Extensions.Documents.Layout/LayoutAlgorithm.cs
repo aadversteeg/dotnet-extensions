@@ -1,8 +1,8 @@
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// THE LAYOUT CONTRACT. Every layout algorithm is a pure function with this shape: given a box, the space it

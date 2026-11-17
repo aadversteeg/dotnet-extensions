@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// Small document models for layout tests. Pages are 200 × 100 pt with 10 pt margins: a page area of

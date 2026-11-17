@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>
 /// The kerning pairs of the old 'kern' table (OpenType spec, "kern — Kerning table"), used when a font has no

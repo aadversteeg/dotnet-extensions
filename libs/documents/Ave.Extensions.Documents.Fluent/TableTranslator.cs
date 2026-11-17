@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Translates tables and rows of blocks into tracks boxes (<see cref="LayoutAlgorithmId.Tracks"/>): the table box,

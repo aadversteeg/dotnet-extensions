@@ -49,13 +49,13 @@ $samples = Join-Path $root 'out/samples'
 
 Write-Host '== 0. the reference tools image'
 $dockerfile = Join-Path $root 'tools/reference/tools.Dockerfile'
-$ToolImage = 'ave-documents-tools:' + (Get-FileHash $dockerfile -Algorithm SHA256).Hash.ToLowerInvariant().Substring(0, 12)
+$ToolImage = 'ave-extensions-documents-tools:' + (Get-FileHash $dockerfile -Algorithm SHA256).Hash.ToLowerInvariant().Substring(0, 12)
 Get-Content -Raw $dockerfile | docker build -q -t $ToolImage -
 if ($LASTEXITCODE -ne 0) { throw "building $ToolImage failed" }
 Write-Host "   $ToolImage"
 
 Write-Host '== 1. publish'
-dotnet publish (Join-Path $root 'samples/Ave.Documents.Samples') -c Release -o $publish -nologo -v q
+dotnet publish (Join-Path $root 'samples/Ave.Extensions.Documents.Samples') -c Release -o $publish -nologo -v q
 if ($LASTEXITCODE -ne 0) { throw 'publish failed' }
 
 Write-Host '== 2. scan the publish folder for native code'
@@ -82,7 +82,7 @@ Write-Host '   no native code in the publish folder'
 
 Write-Host '== 3. run the samples'
 if (Test-Path $samples) { Remove-Item -Recurse -Force $samples }
-dotnet (Join-Path $publish 'Ave.Documents.Samples.dll') $samples
+dotnet (Join-Path $publish 'Ave.Extensions.Documents.Samples.dll') $samples
 if ($LASTEXITCODE -ne 0) { throw 'samples failed' }
 
 Write-Host '== 4. independent checks in Docker'

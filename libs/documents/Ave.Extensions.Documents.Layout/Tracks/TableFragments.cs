@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// The fragment of one page of a tracks box: the table's box, inside it a box per row group, inside those a box per

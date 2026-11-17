@@ -2,10 +2,10 @@ using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using Ave.Documents.Images;
-using Ave.Documents.Images.Png;
+using Ave.Extensions.Documents.Images;
+using Ave.Extensions.Documents.Images.Png;
 
-namespace UnitTests.Ave.Documents.Images;
+namespace UnitTests.Extensions.Documents.Images;
 
 /// <summary>
 /// A PNG header may announce up to 2^31 − 1 × 2^31 − 1 pixels in 13 bytes. The decoder refuses an image above its

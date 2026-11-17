@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// Collapsing margins of block flow, CSS 2.1 §8.3.1: "adjoining margins of two or more boxes … can combine to

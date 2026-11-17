@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>How the public API reads a sequence it is given.</summary>
 internal static class Sequences

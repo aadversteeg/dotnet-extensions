@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>
 /// The lookupFlag field of a lookup table (OpenType spec, "Lookup table" → "LookupFlag bit enumeration"): which

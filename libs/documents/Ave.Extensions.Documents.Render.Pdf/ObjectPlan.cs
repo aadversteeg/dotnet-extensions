@@ -2,7 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The object numbers of the file, fixed in advance from the fonts, images, pages and what the profile adds, so every

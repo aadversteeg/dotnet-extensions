@@ -1,9 +1,9 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// Lays out the header and footer areas of one page (<see cref="PageTemplate"/>). Each is laid out like a CSS

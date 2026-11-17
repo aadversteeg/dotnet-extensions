@@ -1,7 +1,7 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Combines an element's own modifier values with its shared style into the values the element specifies

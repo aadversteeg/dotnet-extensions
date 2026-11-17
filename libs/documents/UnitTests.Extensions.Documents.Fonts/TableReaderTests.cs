@@ -1,6 +1,6 @@
-using Ave.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Fonts.OpenType;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// The reader under every layout-table parser: its range checks, its stop after the first problem, and its work

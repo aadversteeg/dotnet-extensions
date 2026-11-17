@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// The form of a language tag, in one place for every layer: a primary subtag of 1–8 letters, then subtags of 1–8

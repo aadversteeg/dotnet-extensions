@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// Embeds a TrueType font as a composite font (ISO 32000-1 §9.7): a Type0 font with the Identity-H encoding,

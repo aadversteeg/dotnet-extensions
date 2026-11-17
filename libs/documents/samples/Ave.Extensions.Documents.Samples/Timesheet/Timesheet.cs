@@ -1,12 +1,12 @@
 using System;
 using System.Globalization;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fluent;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fluent;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
 /// The SmallBusiness timesheet written with the code front-end — the same layout as the reporting PoC's Typst

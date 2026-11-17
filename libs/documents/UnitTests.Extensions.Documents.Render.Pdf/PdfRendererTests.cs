@@ -1,14 +1,14 @@
 using System.Collections.Immutable;
 using System.Text;
 using System.Text.RegularExpressions;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.PageModel;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Render.Pdf;
+namespace UnitTests.Extensions.Documents.Render.Pdf;
 
 public class PdfRendererTests
 {
@@ -106,7 +106,7 @@ public class PdfRendererTests
     {
         var text = Latin1(PdfRenderer.Render(TwoPages(), Options).Value);
 
-        text.Should().Contain("/Author (Tester) /Producer (Ave.Documents) /CreationDate (D:20261115092200+01'00) /ModDate (D:20261115092200+01'00)");
+        text.Should().Contain("/Author (Tester) /Producer (Ave.Extensions.Documents) /CreationDate (D:20261115092200+01'00) /ModDate (D:20261115092200+01'00)");
         text.Should().Contain(@"/Title (\376\377\000T\000e\000s\000t\000 \000\351)");
     }
 

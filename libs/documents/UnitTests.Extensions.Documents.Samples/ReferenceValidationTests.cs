@@ -1,10 +1,10 @@
 using System.IO;
 using System.Text;
-using Ave.Documents.Pdf;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// The reference checks of the conformance profiles, with tools that run in Docker (skipped with a message when Docker is absent; leave
@@ -48,7 +48,7 @@ public sealed class ReferenceValidationTests : IClassFixture<ReferenceValidation
     [DockerFact]
     public void A_plain_timesheet_fails_PDF_A_3b_so_the_check_is_live()
     {
-        var folder = Directory.CreateTempSubdirectory("ave-documents-plain-").FullName;
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-plain-").FullName;
         try
         {
             File.WriteAllBytes(

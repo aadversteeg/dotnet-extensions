@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// A whole document as the author wrote it. An immutable value: it can be stored, shared and asserted on in a

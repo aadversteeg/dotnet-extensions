@@ -1,14 +1,14 @@
 using System.Collections.Immutable;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fluent;
-using Ave.Documents.Layout;
-using Ave.Documents.PageModel;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// The letter and the long-text samples end to end: golden files for the three text serialisations, byte-identical output on
@@ -109,7 +109,7 @@ public class SampleTests
         // image drawn at the wrong size fail here, which no text check and no validator notices.
         var stages = Run(SampleFiles.Documents.Single(sample => sample.Name == name).Document);
 
-        stages.Pages.Pages.SelectMany(page => page.Items).OfType<global::Ave.Documents.PageModel.FillRectangle>().Should().NotBeEmpty();
+        stages.Pages.Pages.SelectMany(page => page.Items).OfType<global::Ave.Extensions.Documents.PageModel.FillRectangle>().Should().NotBeEmpty();
         PdfReadBack.AreaDifferences(stages.Pages, stages.Pdf).Should().BeEmpty();
     }
 

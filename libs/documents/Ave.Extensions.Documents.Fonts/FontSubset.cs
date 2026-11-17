@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>A font program reduced to the glyphs a document uses, made by <see cref="FontSubsetter"/>.</summary>
 /// <param name="Tag">Six uppercase letters that name this subset; the PDF font name is <c>Tag+PostScriptName</c>

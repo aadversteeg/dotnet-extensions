@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.DocumentModel;
+namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
 /// The page box (CSS Paged Media 3 §3): the size of the sheet, the margins around the page area, and what is

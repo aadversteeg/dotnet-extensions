@@ -1,8 +1,8 @@
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>What a <see cref="LayoutAlgorithm"/> returns when it does not fail: a fragment, or "no room here".</summary>
 public abstract record LayoutResult

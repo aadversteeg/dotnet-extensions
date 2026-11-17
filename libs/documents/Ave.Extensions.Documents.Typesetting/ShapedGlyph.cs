@@ -1,6 +1,6 @@
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts;
 
-namespace Ave.Documents.Typesetting;
+namespace Ave.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// One glyph produced by shaping: which glyph, how far it advances the pen, where it is drawn relative to the

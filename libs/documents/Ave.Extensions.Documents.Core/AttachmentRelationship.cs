@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// How an embedded file relates to the document: the values of the file specification's <c>/AFRelationship</c> entry

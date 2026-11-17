@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
-using static Ave.Documents.Layout.TablePage;
+using static Ave.Extensions.Documents.Layout.TablePage;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// Where a page of a tracks box can break, and which break it takes (CSS Fragmentation 3 §4.1, §4.4). A breakpoint is

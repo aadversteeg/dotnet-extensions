@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using System.Linq;
 using System.Text;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// A direct PDF object (ISO 32000-1 §7.3): boolean, number, string, name, array, dictionary, null, or a

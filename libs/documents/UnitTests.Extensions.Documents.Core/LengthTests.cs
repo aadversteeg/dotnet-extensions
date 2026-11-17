@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace UnitTests.Ave.Documents.Core;
+namespace UnitTests.Extensions.Documents.Core;
 
 public class LengthTests
 {

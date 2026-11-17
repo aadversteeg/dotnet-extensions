@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>
 /// The image of the reference tools (qpdf, poppler, MuPDF, fontTools, PyMuPDF), built locally from
@@ -22,7 +22,7 @@ public static class ReferenceTools
     private static string Build()
     {
         var dockerfile = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "tools", "tools.Dockerfile"));
-        var tag = "ave-documents-tools:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(dockerfile)))[..12];
+        var tag = "ave-extensions-documents-tools:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(dockerfile)))[..12];
         var (exitCode, output) = Docker.Run(["build", "-q", "-t", tag, "-"], TimeSpan.FromMinutes(20), dockerfile);
         return exitCode == 0 ? tag : throw new InvalidOperationException($"docker build of {tag} failed:\n{output}");
     }

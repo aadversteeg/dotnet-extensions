@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using Ave.Documents.Core;
-using Ave.Documents.PageModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Render.Pdf.Tagging;
+namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 
 /// <summary>
 /// One page's display list read as a sequence of events: a structure node opens, content is drawn, a node closes.

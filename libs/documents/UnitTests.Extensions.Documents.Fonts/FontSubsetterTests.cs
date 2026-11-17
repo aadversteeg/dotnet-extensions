@@ -1,10 +1,10 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.Tables;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.Tables;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// TrueType subsetting. Glyph facts come from fontTools 4.68.0, not from this code: in Lato Regular, 'A' is glyph

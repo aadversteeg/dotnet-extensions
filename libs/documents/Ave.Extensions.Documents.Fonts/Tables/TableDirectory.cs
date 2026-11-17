@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// The table directory at the start of an OpenType/TrueType file: which tables exist and where their bytes are

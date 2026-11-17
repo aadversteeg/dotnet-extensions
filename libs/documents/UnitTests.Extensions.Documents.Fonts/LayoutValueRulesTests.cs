@@ -1,7 +1,7 @@
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// The public layout values hold what their binary searches need, whoever makes them: a coverage and a class definition
@@ -27,7 +27,7 @@ public class LayoutValueRulesTests
         var made = Coverage.Of([.. ranges]);
 
         made.Error.Code.Should().Be(FontErrorCodes.InvalidRanges, what);
-        made.Error.Metadata![global::Ave.Documents.Core.ErrorMetadataKeys.Value].Should().Be(what == "out of order" || what == "overlapping" ? "1" : "0", what + ": the first range that breaks the order");
+        made.Error.Metadata![global::Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be(what == "out of order" || what == "overlapping" ? "1" : "0", what + ": the first range that breaks the order");
     }
 
     public static TheoryData<string, ClassDefinition.Range[]> BadClassDefinitions => new()

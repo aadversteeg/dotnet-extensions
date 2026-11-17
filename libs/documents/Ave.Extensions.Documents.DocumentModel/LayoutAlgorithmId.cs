@@ -1,4 +1,4 @@
-namespace Ave.Documents.DocumentModel;
+namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
 /// Names the layout algorithm of a box: its inner display type (CSS Display 3 §2.2). The engine ships four —

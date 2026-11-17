@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// A set of formatting values as the author specifies them: what the modifiers (<see cref="TextModifiers"/>,

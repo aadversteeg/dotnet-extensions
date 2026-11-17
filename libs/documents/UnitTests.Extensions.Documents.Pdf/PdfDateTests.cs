@@ -1,6 +1,6 @@
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Pdf;
 
-namespace UnitTests.Ave.Documents.Pdf;
+namespace UnitTests.Extensions.Documents.Pdf;
 
 /// <summary>Date strings, ISO 32000-1 §7.9.4: the offset from UT is written as HH'mm, minutes included.</summary>
 public class PdfDateTests

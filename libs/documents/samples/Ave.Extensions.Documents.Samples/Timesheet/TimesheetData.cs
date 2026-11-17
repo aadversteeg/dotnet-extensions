@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
 /// The data of one timesheet, the shape of SmallBusiness's <c>TimeSheetReportData</c> (as copied into the reporting

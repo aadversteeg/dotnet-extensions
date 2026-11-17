@@ -1,7 +1,7 @@
-using Ave.Documents.Core;
-using Ave.Documents.Images;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Images;
 
-namespace Ave.Documents.DocumentModel;
+namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
 /// A node of the document tree: a <see cref="Box"/>, an <see cref="InlineRun"/> or an <see cref="ImageNode"/>.

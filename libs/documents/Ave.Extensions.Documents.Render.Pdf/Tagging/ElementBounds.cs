@@ -2,10 +2,10 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.PageModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.PageModel;
 
-namespace Ave.Documents.Render.Pdf.Tagging;
+namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 
 /// <summary>
 /// The bounding boxes of the structure elements that need one. ISO 32000-1 §14.8.5.4.3, Table 344, <c>BBox</c>:

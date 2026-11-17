@@ -1,8 +1,8 @@
-using Ave.Documents.Core;
-using Ave.Documents.Pdf;
-using Ave.Documents.Pdf.Xmp;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Pdf.Xmp;
 
-namespace UnitTests.Ave.Documents.Pdf;
+namespace UnitTests.Extensions.Documents.Pdf;
 
 /// <summary>
 /// XMP values nest arrays and structures at most <see cref="XmpPacket.MaxNestingDepth"/> levels deep, as PDF objects do

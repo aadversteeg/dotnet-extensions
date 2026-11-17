@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf.Tagging;
+namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 
 /// <summary>Writes a <see cref="StructureTree"/> as PDF objects: the structure tree root, the parent tree and the elements.</summary>
 internal static class StructureObjects

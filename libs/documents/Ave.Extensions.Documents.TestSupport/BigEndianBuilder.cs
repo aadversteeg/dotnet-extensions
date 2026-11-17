@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>Builds big-endian byte arrays for hand-made font tables in tests.</summary>
 public sealed class BigEndianBuilder

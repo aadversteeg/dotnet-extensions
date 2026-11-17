@@ -1,10 +1,10 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.Typesetting.Shaping;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Typesetting.Shaping;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// GPOS rules that Lato never exercises (its pair kerning only changes advances), so no test of a real font would

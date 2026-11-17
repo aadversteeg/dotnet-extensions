@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// cmap subtable format 4, "Segment mapping to delta values" (OpenType spec, "cmap" → "Format 4"). Maps the

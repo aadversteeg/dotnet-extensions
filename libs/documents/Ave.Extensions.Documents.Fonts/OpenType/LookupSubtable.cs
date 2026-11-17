@@ -1,8 +1,8 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 // The lookup subtables this reader understands, decoded from GSUB and GPOS. A closed set: only the cases in this
 // file exist, so the shaper can switch over all of them. A subtable of any other type or format is kept as an

@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// Document-model builders for tracks tests. Ids come from one instance per test, so every node of a

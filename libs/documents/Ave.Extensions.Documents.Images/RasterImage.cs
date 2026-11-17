@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>
 /// An image decoded to 8-bit samples, row by row from the top, pixels left to right, the channels of one pixel next

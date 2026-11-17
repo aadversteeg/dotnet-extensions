@@ -1,6 +1,6 @@
 using System;
 
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>
 /// A decoded image, ready to be placed on a page: its size in pixels, its colour space and the data a back-end

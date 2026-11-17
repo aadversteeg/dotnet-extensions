@@ -1,7 +1,7 @@
 using System;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// Where a box was broken at the end of a page, so its layout can continue on the next page. Break tokens are the

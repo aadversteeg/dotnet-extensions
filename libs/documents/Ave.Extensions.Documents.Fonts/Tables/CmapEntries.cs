@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>The rules both cmap formats apply to each (code point, glyph id) pair they read.</summary>
 internal static class CmapEntries

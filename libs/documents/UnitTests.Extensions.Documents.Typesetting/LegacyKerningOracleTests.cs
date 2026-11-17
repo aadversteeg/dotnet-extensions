@@ -1,10 +1,10 @@
 using System.Buffers.Binary;
 using System.Text;
-using Ave.Documents.Fonts;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// The old 'kern' table path against an oracle: values read from Theano Didot's 'kern' table by hand with fontTools

@@ -1,7 +1,7 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>Errors from layout.</summary>
 public static class LayoutErrorCodes

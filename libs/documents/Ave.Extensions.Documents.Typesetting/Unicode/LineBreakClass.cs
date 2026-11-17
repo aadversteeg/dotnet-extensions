@@ -1,4 +1,4 @@
-namespace Ave.Documents.Typesetting.Unicode;
+namespace Ave.Extensions.Documents.Typesetting.Unicode;
 
 /// <summary>
 /// The values of the Unicode Line_Break property (UAX #14 §5.1, "Description of Line Breaking Properties"),

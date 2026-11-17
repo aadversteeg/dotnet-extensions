@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>Formats dates the way PDF requires (ISO 32000-1 §7.9.4).</summary>
 public static class PdfDate

@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// Everything a PDF file consists of, before it is written: the numbered objects and the trailer entries

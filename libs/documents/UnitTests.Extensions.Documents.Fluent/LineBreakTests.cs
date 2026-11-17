@@ -1,12 +1,12 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.Functional;
-using Ave.Documents.Layout;
-using Ave.Documents.PageModel;
-using Ave.Documents.TestSupport;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.TestSupport;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// <c>LineBreak()</c>: a forced line break inside a paragraph, as HTML's <c>br</c>. It is the line separator U+2028, a
@@ -55,7 +55,7 @@ public class LineBreakTests
         // Only a span that is nothing but forced breaks takes the paragraph's style; one that also holds text is text.
         var model = DocumentTranslator.ToModel(Document([Paragraph([Text("a"), Text("b" + "\u2028" + "c").FontSize(30.Pt())])]).FontFamily("Lato")).Value;
 
-        var runs = model.Root.Children.OfType<global::Ave.Documents.DocumentModel.Box>().Single().Children.OfType<global::Ave.Documents.DocumentModel.TextRun>().ToList();
+        var runs = model.Root.Children.OfType<global::Ave.Extensions.Documents.DocumentModel.Box>().Single().Children.OfType<global::Ave.Extensions.Documents.DocumentModel.TextRun>().ToList();
         runs[1].Style.Should().NotBe(runs[0].Style);
         runs[1].Style.FontSize.Should().Be(30.Pt());
     }
@@ -65,7 +65,7 @@ public class LineBreakTests
     {
         var model = DocumentTranslator.ToModel(Document([Paragraph([Text("a"), LineBreak().FontSize(30.Pt()).Bold(), Text("b")])]).FontFamily("Lato")).Value;
 
-        var runs = model.Root.Children.OfType<global::Ave.Documents.DocumentModel.Box>().Single().Children.OfType<global::Ave.Documents.DocumentModel.TextRun>().ToList();
+        var runs = model.Root.Children.OfType<global::Ave.Extensions.Documents.DocumentModel.Box>().Single().Children.OfType<global::Ave.Extensions.Documents.DocumentModel.TextRun>().ToList();
         runs[1].Style.Should().Be(runs[0].Style);
     }
 }

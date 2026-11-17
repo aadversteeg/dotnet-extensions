@@ -1,12 +1,12 @@
-using Ave.Documents.Core;
-using Ave.Documents.Layout;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.ErrorPaths;
-using static UnitTests.Ave.Documents.Layout.Models;
+using static UnitTests.Extensions.Documents.Layout.Models;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 public class LayoutErrorTests
 {

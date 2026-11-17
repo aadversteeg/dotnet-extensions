@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>The committed Unicode property table must be exactly what the committed Unicode data files say.</summary>
 public class UnicodeDataTests

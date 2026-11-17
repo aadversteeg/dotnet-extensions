@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>
 /// A baseline or progressive JPEG file, kept as it is: PDF viewers decode it themselves through the DCTDecode

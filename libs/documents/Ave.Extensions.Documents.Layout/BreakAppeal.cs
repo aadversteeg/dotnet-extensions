@@ -1,4 +1,4 @@
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// How good a place for a page break is: the common currency of keep rules, after Chromium's

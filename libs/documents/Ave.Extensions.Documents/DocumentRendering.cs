@@ -1,12 +1,12 @@
 using System.Collections.Immutable;
-using Ave.Documents.Fluent;
-using Ave.Documents.Fonts;
-using Ave.Documents.Layout;
-using Ave.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.Render.Pdf;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents;
+namespace Ave.Extensions.Documents;
 
 /// <summary>
 /// The whole pipeline in one call, for callers that just want the PDF. This composition package is the only place that

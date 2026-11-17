@@ -1,6 +1,6 @@
 using System;
 
-namespace Ave.Documents.Typesetting.Unicode;
+namespace Ave.Extensions.Documents.Typesetting.Unicode;
 
 /// <summary>
 /// The other Unicode properties the line breaking and shaping rules look at, besides Line_Break. Each comes from its own

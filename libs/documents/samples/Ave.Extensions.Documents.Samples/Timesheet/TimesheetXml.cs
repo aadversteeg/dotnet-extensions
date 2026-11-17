@@ -3,10 +3,10 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
 /// The timesheet's data in machine-readable form, embedded in the PDF as an attachment with the relationship
@@ -17,7 +17,7 @@ namespace Ave.Documents.Samples;
 public static class TimesheetXml
 {
     /// <summary>The XML namespace of the summary.</summary>
-    public const string Namespace = "urn:example:ave-documents:timesheet";
+    public const string Namespace = "urn:example:ave-extensions-documents:timesheet";
 
     /// <summary>The attachment's file name.</summary>
     public const string FileName = "timesheet.xml";

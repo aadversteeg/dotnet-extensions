@@ -1,10 +1,10 @@
 using System.Runtime.CompilerServices;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.ErrorPaths;
-using static Ave.Documents.Fluent.Elements;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// A table's shape is the author's input, so the front-end checks it — with the documented code

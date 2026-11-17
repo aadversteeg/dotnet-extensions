@@ -1,7 +1,7 @@
 using System.IO;
 using System.Xml.Linq;
 
-namespace UnitTests.Ave.Documents.Architecture;
+namespace UnitTests.Extensions.Documents.Architecture;
 
 /// <summary>
 /// Rules checked on the project files. Only the <c>UnitTests.*</c> projects are test projects: <c>dotnet test</c> on
@@ -33,7 +33,7 @@ public class ProjectRulesTests
 
     [Fact]
     public void The_helper_and_sample_projects_are_found() =>
-        NonTestProjectNames().Should().Contain(["Ave.Documents.TestSupport", "Ave.Documents.Samples", "Ave.Documents.Core"]);
+        NonTestProjectNames().Should().Contain(["Ave.Extensions.Documents.TestSupport", "Ave.Extensions.Documents.Samples", "Ave.Extensions.Documents.Core"]);
 
     [Theory]
     [MemberData(nameof(NonTestProjects))]

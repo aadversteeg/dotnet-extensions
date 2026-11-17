@@ -1,13 +1,13 @@
 using System.Runtime.CompilerServices;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fluent;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Images;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Images;
 using Ave.Extensions.ErrorPaths;
-using static Ave.Documents.Fluent.Elements;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Elements and modifiers of the code front-end for tables, rows of blocks, images, page header and footer,

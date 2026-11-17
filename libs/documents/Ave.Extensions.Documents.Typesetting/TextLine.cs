@@ -1,7 +1,7 @@
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Typesetting;
+namespace Ave.Extensions.Documents.Typesetting;
 
 /// <summary>One line of a paragraph, as produced by line breaking: consecutive pieces of the input runs.</summary>
 /// <param name="Segments">The pieces, left to right.</param>

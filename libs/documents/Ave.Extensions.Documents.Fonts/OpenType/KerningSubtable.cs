@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>One format-0 subtable of the 'kern' table. Its pairs are read through <see cref="ValueOf"/>.</summary>
 public sealed record KerningSubtable

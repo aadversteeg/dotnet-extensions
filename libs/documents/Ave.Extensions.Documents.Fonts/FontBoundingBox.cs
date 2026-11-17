@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>A rectangle in font design units, y up from the baseline (the font's own coordinate system).</summary>
 /// <param name="XMin">Left.</param>

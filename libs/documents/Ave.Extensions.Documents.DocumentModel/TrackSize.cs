@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.DocumentModel;
+namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
 /// The size of one column of a tracks box (a table or a row of blocks). Three kinds, named after the CSS concepts

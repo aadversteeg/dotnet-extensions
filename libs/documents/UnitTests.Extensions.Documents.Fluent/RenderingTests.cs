@@ -1,15 +1,15 @@
 using System.Runtime.CompilerServices;
 using System.Text;
-using Ave.Documents;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Fonts;
-using Ave.Documents.Layout;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Layout;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>The whole pipeline through <see cref="DocumentRendering.ToPdf"/>: errors from later layers still
 /// point at the caller's line.</summary>

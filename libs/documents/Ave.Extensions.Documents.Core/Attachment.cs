@@ -1,6 +1,6 @@
 using System;
 
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// A file embedded in the document (ISO 32000-1 §7.11.4, embedded file streams), for example the machine-readable XML

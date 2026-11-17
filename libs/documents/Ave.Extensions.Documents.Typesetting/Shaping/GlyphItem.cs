@@ -1,6 +1,6 @@
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts;
 
-namespace Ave.Documents.Typesetting.Shaping;
+namespace Ave.Extensions.Documents.Typesetting.Shaping;
 
 /// <summary>
 /// One glyph in the shaping buffer, in font design units. Each lookup turns the whole buffer into a new one;

@@ -1,11 +1,11 @@
 using System.Runtime.InteropServices;
 using System.Text;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.Fonts.Tables;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Fonts.Tables;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// Font rules that Lato never exercises — it has no 2×2 component transforms, no 'kern' table and only US English

@@ -1,8 +1,8 @@
-using Ave.Documents.Core;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 public class FontSetTests
 {

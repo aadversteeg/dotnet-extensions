@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Four lengths, one per side of a box, for margins and padding. The parameter order is top, right, bottom,

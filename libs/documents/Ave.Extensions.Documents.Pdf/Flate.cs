@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.IO.Compression;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// The FlateDecode filter's encoder (ISO 32000-1 §7.4.4): zlib format (RFC 1950) around deflate data

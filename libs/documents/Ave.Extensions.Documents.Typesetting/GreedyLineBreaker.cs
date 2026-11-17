@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Typesetting.LineBreaking;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Typesetting.LineBreaking;
 
-namespace Ave.Documents.Typesetting;
+namespace Ave.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// Breaks a paragraph into lines with the greedy ("first fit") method browsers use for CSS text: fill each

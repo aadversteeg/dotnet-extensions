@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Immutable;
-using Ave.Documents.Core;
-using Ave.Documents.Images;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Images;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// An image: a PNG or JPEG file given as bytes, like fonts are (the engine never reads files itself). Made by

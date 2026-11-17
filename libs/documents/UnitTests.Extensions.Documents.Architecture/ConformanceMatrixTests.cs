@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace UnitTests.Ave.Documents.Architecture;
+namespace UnitTests.Extensions.Documents.Architecture;
 
 /// <summary>
 /// docs/conformance-matrix.md promises, rule by rule, how the engine meets veraPDF's profiles; these tests check that
@@ -44,7 +44,7 @@ public class ConformanceMatrixTests
     /// <summary>The source of a test class: the text of the files of its test project that declare it, or null.</summary>
     private static string? SourceOf(string project, string name)
     {
-        var folder = Path.Combine(ProjectRulesTests.RepositoryRoot(), "src", "UnitTests.Ave.Documents." + project);
+        var folder = Path.Combine(ProjectRulesTests.RepositoryRoot(), "UnitTests.Extensions.Documents." + project);
         var files = Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Select(File.ReadAllText)

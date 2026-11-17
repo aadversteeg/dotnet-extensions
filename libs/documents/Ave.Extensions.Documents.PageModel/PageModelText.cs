@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.PageModel;
+namespace Ave.Extensions.Documents.PageModel;
 
 /// <summary>
 /// Writes a page document as stable, human-readable text: one line per draw item, grouped by page. Used for

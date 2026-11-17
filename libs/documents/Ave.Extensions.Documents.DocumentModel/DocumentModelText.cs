@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.DocumentModel;
+namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
 /// Writes a document model as stable, human-readable text: one line per node, children indented by two spaces.

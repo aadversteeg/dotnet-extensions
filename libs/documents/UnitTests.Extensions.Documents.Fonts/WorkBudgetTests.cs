@@ -1,8 +1,8 @@
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// The work budget of a layout table (<see cref="TableReader.WorkPerByte"/> units per byte, at least

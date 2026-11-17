@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Short unit helpers so code reads like a style sheet: <c>12.Pt()</c>, <c>2.5.Cm()</c>, <c>15.Mm()</c>.

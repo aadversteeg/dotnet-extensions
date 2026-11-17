@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// How many columns and rows a table cell covers. Shared vocabulary: layout sizes the cell from it (document model

@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>
 /// What the font's licence allows when embedding it in a document: the <c>fsType</c> bits of the 'OS/2' table

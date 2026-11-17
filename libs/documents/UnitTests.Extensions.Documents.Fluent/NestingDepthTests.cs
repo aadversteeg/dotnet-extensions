@@ -1,8 +1,8 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Elements nest at most <see cref="InputLimits.MaxNestingDepth"/> deep. Each level costs layout a call frame, so

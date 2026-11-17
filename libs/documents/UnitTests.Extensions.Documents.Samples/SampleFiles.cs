@@ -1,13 +1,13 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
-using Ave.Documents;
-using Ave.Documents.Fluent;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>Every sample the samples app writes, rendered in the test process with the same options.</summary>
 internal static class SampleFiles
@@ -39,7 +39,7 @@ internal static class SampleFiles
     /// <summary>Writes every sample to a new temporary folder and returns its path; the caller deletes it.</summary>
     public static string WriteAll(PdfRenderOptions? options = null)
     {
-        var folder = Directory.CreateTempSubdirectory("ave-documents-samples-").FullName;
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-samples-").FullName;
         foreach (var (name, document) in Documents)
         {
             File.WriteAllBytes(Path.Combine(folder, name + ".pdf"), [.. Pdf(document, options)]);

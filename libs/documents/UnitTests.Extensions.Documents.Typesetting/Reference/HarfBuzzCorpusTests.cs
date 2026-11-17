@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
-using Ave.Documents.Fonts;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 using Xunit.Abstractions;
 
-namespace UnitTests.Ave.Documents.Typesetting.Reference;
+namespace UnitTests.Extensions.Documents.Typesetting.Reference;
 
 /// <summary>
 /// The gate of rule B3: our shaper against HarfBuzz on a corpus of English, Dutch, German, French, Greek and

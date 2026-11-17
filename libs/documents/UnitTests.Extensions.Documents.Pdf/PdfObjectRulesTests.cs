@@ -1,6 +1,6 @@
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Pdf;
 
-namespace UnitTests.Ave.Documents.Pdf;
+namespace UnitTests.Extensions.Documents.Pdf;
 
 /// <summary>
 /// One rule for bad input in the PDF library: the writer checks the objects it is given and answers with an error

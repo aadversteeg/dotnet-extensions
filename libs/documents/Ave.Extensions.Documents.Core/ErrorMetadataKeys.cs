@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// The metadata keys the engine puts on its errors (<c>Error.With(key, value)</c>). One list, so producers and

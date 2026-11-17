@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// The content-stream operators the engine uses, one function per operator, each named after what it does and

@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Images.Jpeg;
+namespace Ave.Extensions.Documents.Images.Jpeg;
 
 /// <summary>
 /// Reads the header of a JPEG file (ITU-T T.81 | ISO/IEC 10918-1) far enough to embed the file unchanged: size and

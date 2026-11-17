@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// A minimal sRGB colour profile, written in code: an ICC version 2 display profile of the matrix/TRC kind (ICC.1:2001-04,
@@ -69,7 +69,7 @@ public static class SrgbIccProfile
         (string Signature, byte[] Data)[] tags =
         [
             ("desc", TextDescriptionType(Description)),
-            ("cprt", TextType("No copyright. Written by Ave.Documents from the values of IEC 61966-2-1.")),
+            ("cprt", TextType("No copyright. Written by Ave.Extensions.Documents from the values of IEC 61966-2-1.")),
             ("wtpt", XyzType(D50)),
             ("rXYZ", XyzType(Red)),
             ("gXYZ", XyzType(Green)),

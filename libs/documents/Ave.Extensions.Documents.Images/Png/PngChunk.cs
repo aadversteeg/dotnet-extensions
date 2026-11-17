@@ -5,7 +5,7 @@ using System.Text;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Images.Png;
+namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>One chunk of a PNG file (PNG §5.3 "Chunk layout"): a four-letter type and its data.</summary>
 /// <param name="Type">The chunk type, for example <c>IHDR</c>.</param>

@@ -4,9 +4,9 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Pdf;
 
-namespace UnitTests.Ave.Documents.Pdf;
+namespace UnitTests.Extensions.Documents.Pdf;
 
 public class PdfWriterTests
 {

@@ -6,11 +6,11 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// Writes a <see cref="PdfFile"/> as the bytes of a PDF 1.7 file with a classic cross-reference table

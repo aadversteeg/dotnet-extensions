@@ -1,12 +1,12 @@
 using System;
 using System.Runtime.CompilerServices;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
-/// The functions a document is written with. Import them with <c>using static Ave.Documents.Fluent.Elements;</c>
+/// The functions a document is written with. Import them with <c>using static Ave.Extensions.Documents.Fluent.Elements;</c>
 /// and write a document as nested calls; children go in collection expressions, formatting goes in modifiers,
 /// and a component is just a method that returns an element:
 /// <code>

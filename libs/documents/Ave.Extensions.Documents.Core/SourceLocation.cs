@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Where a piece of the document was written: the caller's source file and line. The code front-end fills it

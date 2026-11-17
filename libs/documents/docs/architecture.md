@@ -1,8 +1,8 @@
-# Architecture of Ave.Documents (milestone M1)
+# Architecture of Ave.Extensions.Documents (milestone M1)
 
 For a reviewer who has never seen the code. It says what each part is for, where the contracts are, where every
-policy and whole algorithm lives, what is known not to work, and how each claim is checked. Paths are relative to
-`src/` unless they start with another top-level folder.
+policy and whole algorithm lives, what is known not to work, and how each claim is checked. Paths are relative to the
+family folder (`libs/documents`).
 
 ## What it is
 
@@ -14,25 +14,25 @@ bug in the engine.
 
 ## Layers
 
-Each layer is one project and may use only the layers below it in this list. `UnitTests.Ave.Documents.Architecture`
+Each layer is one project and may use only the layers below it in this list. `UnitTests.Extensions.Documents.Architecture`
 checks this on the compiled assemblies, together with "no unsafe code, no P/Invoke, no native assets" and "no
 test-only package in a product assembly".
 
 | Project | Role |
 | --- | --- |
-| `Ave.Documents` | composition: `ToPdf` joins the front-end, layout and the PDF back-end; the one package an application needs |
-| `Ave.Documents.Fluent` | code front-end: a document as an immutable value; translates it to the document model (cascade + validation); knows nothing about layout or PDF |
-| `Ave.Documents.Render.Pdf` | page model → PDF: fonts, images, content streams, and the conformance profiles (tagging, XMP, output intent, attachments, refusals) |
-| `Ave.Documents.Layout` | layout algorithms, pagination driver, painter (fragments → page model) |
-| `Ave.Documents.PageModel` | page model: per page a display list plus structure and artifact markers |
-| `Ave.Documents.DocumentModel` | document model: a styled box tree with computed values |
-| `Ave.Documents.Typesetting` | white-space collapsing, UAX #14 line breaking, OpenType shaping, justification |
-| `Ave.Documents.Pdf` | PDF objects and writer, content operators, XMP writer, sRGB ICC profile, `PdfProfile`; knows nothing about layout |
-| `Ave.Documents.Fonts` | TrueType reader (with GSUB, GPOS, GDEF, kern) and subsetter |
-| `Ave.Documents.Images` | PNG decoder and JPEG header reader |
-| `Ave.Documents.Core` | shared vocabulary: lengths, geometry, colour, `ValueList<T>`, source locations, roles, metadata, attachments, the error-code tree |
+| `Ave.Extensions.Documents` | composition: `ToPdf` joins the front-end, layout and the PDF back-end; the one package an application needs |
+| `Ave.Extensions.Documents.Fluent` | code front-end: a document as an immutable value; translates it to the document model (cascade + validation); knows nothing about layout or PDF |
+| `Ave.Extensions.Documents.Render.Pdf` | page model → PDF: fonts, images, content streams, and the conformance profiles (tagging, XMP, output intent, attachments, refusals) |
+| `Ave.Extensions.Documents.Layout` | layout algorithms, pagination driver, painter (fragments → page model) |
+| `Ave.Extensions.Documents.PageModel` | page model: per page a display list plus structure and artifact markers |
+| `Ave.Extensions.Documents.DocumentModel` | document model: a styled box tree with computed values |
+| `Ave.Extensions.Documents.Typesetting` | white-space collapsing, UAX #14 line breaking, OpenType shaping, justification |
+| `Ave.Extensions.Documents.Pdf` | PDF objects and writer, content operators, XMP writer, sRGB ICC profile, `PdfProfile`; knows nothing about layout |
+| `Ave.Extensions.Documents.Fonts` | TrueType reader (with GSUB, GPOS, GDEF, kern) and subsetter |
+| `Ave.Extensions.Documents.Images` | PNG decoder and JPEG header reader |
+| `Ave.Extensions.Documents.Core` | shared vocabulary: lengths, geometry, colour, `ValueList<T>`, source locations, roles, metadata, attachments, the error-code tree |
 
-The pipeline is four pure functions in a row (`Ave.Documents/DocumentRendering.cs`). The composition lives in its
+The pipeline is four pure functions in a row (`Ave.Extensions.Documents/DocumentRendering.cs`). The composition lives in its
 own package so that a front-end depends only on the vocabulary it translates into (Core, Fonts, Images,
 DocumentModel), and a second front-end (markup) sits next to the first one instead of on top of it:
 
@@ -307,13 +307,13 @@ Each is documented next to its code as well.
 
 | Claim | Check | How to run |
 | --- | --- | --- |
-| layering, no native code, test packages stay out | `UnitTests.Ave.Documents.Architecture` (compiled assemblies); `tools/verify-samples.ps1` step 2 (publish folder, PE headers) | `dotnet test`; the script |
-| line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Ave.Documents.Typesetting` |
-| shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Ave.Documents.Typesetting/Reference/` |
-| table layout | numbers measured in Chromium 157, measured again in Chromium 159 (Playwright 1.65.1), and pinned; the cases and the measuring script are in `tools/reference/chromium/` | `UnitTests.Ave.Documents.Layout/ChromiumReferenceTests.cs` |
+| layering, no native code, test packages stay out | `UnitTests.Extensions.Documents.Architecture` (compiled assemblies); `tools/verify-samples.ps1` step 2 (publish folder, PE headers) | `dotnet test`; the script |
+| line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Extensions.Documents.Typesetting` |
+| shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
+| table layout | numbers measured in Chromium 157, measured again in Chromium 159 (Playwright 1.65.1), and pinned; the cases and the measuring script are in `tools/reference/chromium/` | `UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs` |
 | text in the PDF | PdfPig reads every glyph back at the position the page model says | `TestSupport/PdfReadBack.cs` |
-| structure tree | PdfPig reads the structure tree and marked content back (roles, order, attributes, text per element; every glyph marked) | `TestSupport/PdfStructureReadBack.cs`, `UnitTests.Ave.Documents.Samples/TaggedPdfTests.cs`, `UnitTests.Ave.Documents.Render.Pdf/TaggingTests.cs` |
-| PDF/A-3b, PDF/A-3a, PDF/UA-1 | veraPDF 1.30.4 in Docker (pinned by digest) on every sample; a plain file must fail as negative control | `UnitTests.Ave.Documents.Samples/ReferenceValidationTests.cs` (trait `Category=Reference`, skipped without Docker); script step 5 |
+| structure tree | PdfPig reads the structure tree and marked content back (roles, order, attributes, text per element; every glyph marked) | `TestSupport/PdfStructureReadBack.cs`, `UnitTests.Extensions.Documents.Samples/TaggedPdfTests.cs`, `UnitTests.Extensions.Documents.Render.Pdf/TaggingTests.cs` |
+| PDF/A-3b, PDF/A-3a, PDF/UA-1 | veraPDF 1.30.4 in Docker (pinned by digest) on every sample; a plain file must fail as negative control | `UnitTests.Extensions.Documents.Samples/ReferenceValidationTests.cs` (trait `Category=Reference`, skipped without Docker); script step 5 |
 | attachments | PdfPig in process, and qpdf in Docker, byte for byte | `TaggedPdfTests`, `ReferenceValidationTests`; script step 5 |
 | PDF syntax, fonts, images | `qpdf --check`, `pdffonts`, `pdfimages`, fontTools on every extracted subset | script step 4 |
 | how it looks | poppler and MuPDF renders, side by side with the PoC's Typst pages | script steps 4 and 6 (`out/samples/png`, `out/samples/sbs`) |

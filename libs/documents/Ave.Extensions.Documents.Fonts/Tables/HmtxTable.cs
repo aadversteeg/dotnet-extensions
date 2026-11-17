@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// Horizontal metrics (OpenType spec, "hmtx — Horizontal metrics table"): the advance width of every glyph, in

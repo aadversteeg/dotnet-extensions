@@ -1,8 +1,8 @@
-using Ave.Documents.Fonts;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// Default-ignorable code points (Unicode <c>Default_Ignorable_Code_Point</c>, DerivedCoreProperties.txt): they take
@@ -115,11 +115,11 @@ public class DefaultIgnorableTests
             .UInt16(1).UInt16(0).UInt16(0).UInt16(0).UInt16(0).UInt16(12)   // version 1.0, no glyphClassDef, markAttachClassDef at 12
             .UInt16(2).UInt16(0)                                             // class definition format 2, no ranges
             .ToArray();
-        var definitions = global::Ave.Documents.Fonts.OpenType.GlyphDefinitions.Parse(gdef).Value;
-        var filter = new global::Ave.Documents.Typesetting.Shaping.GlyphFilter(definitions);
+        var definitions = global::Ave.Extensions.Documents.Fonts.OpenType.GlyphDefinitions.Parse(gdef).Value;
+        var filter = new global::Ave.Extensions.Documents.Typesetting.Shaping.GlyphFilter(definitions);
 
         definitions.HasGlyphClasses.Should().BeFalse();
-        filter.ClassOf(new GlyphId(7), isNonspacingMarkCharacter: true).Should().Be(global::Ave.Documents.Typesetting.Shaping.GlyphClass.Mark);
-        filter.ClassOf(new GlyphId(7), isNonspacingMarkCharacter: false).Should().Be(global::Ave.Documents.Typesetting.Shaping.GlyphClass.Base);
+        filter.ClassOf(new GlyphId(7), isNonspacingMarkCharacter: true).Should().Be(global::Ave.Extensions.Documents.Typesetting.Shaping.GlyphClass.Mark);
+        filter.ClassOf(new GlyphId(7), isNonspacingMarkCharacter: false).Should().Be(global::Ave.Extensions.Documents.Typesetting.Shaping.GlyphClass.Base);
     }
 }

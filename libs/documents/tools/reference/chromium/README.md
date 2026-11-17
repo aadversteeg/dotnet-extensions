@@ -38,7 +38,7 @@ All cases use Lato from `assets/fonts/lato` and `cases/common.css`: `border-coll
 solid`, `padding: 2pt 4pt`, Lato 10 pt. The border is 0.75 pt because Chromium draws a 1 pt border as one device
 pixel (0.75 pt at 96 dpi) and lays out with that width.
 
-| Case | What it shows | Test (`src/UnitTests.Ave.Documents.Layout`) |
+| Case | What it shows | Test (`UnitTests.Extensions.Documents.Layout`) |
 | --- | --- | --- |
 | `widths` | auto columns (`t1`), a fixed and two auto columns (`t2`), grid `fr` columns (`w3`, `w4`, their items): `boxes.txt` | `ChromiumReferenceTests`: the three width tests |
 | `b1-repeat` | a long table breaks between rows and repeats its header row | `A_long_table_breaks_between_rows_and_repeats_its_header_like_Chromium` |

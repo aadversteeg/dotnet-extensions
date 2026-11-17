@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Modifiers for <see cref="PageSetup"/>: <c>PageSetup.A4.Margin(1.Cm()).Header(logo).Footer(pageOf)</c>. Each returns a

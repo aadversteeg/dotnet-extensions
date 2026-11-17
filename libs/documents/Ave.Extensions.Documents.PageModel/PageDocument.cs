@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.PageModel;
+namespace Ave.Extensions.Documents.PageModel;
 
 /// <summary>
 /// The laid-out document: every page with what to draw on it. The output of layout and the input of every

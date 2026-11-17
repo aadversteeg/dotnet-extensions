@@ -1,16 +1,16 @@
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
-using Ave.Documents;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
-using static Ave.Documents.Fluent.Elements;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Every refusal of a conformance profile: the profile names the rule in the error code and

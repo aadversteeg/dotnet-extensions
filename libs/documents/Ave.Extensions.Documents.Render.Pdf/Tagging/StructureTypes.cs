@@ -1,8 +1,8 @@
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf.Tagging;
+namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 
 /// <summary>
 /// The standard structure type of each role (ISO 32000-1 §14.8.4) and the attributes that go with it. Every role names

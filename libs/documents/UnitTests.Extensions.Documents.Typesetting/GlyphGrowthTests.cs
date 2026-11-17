@@ -1,11 +1,11 @@
 using System.Collections.Immutable;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting.Shaping;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting.Shaping;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// Malformed input never buys unbounded work: one-to-many substitutions that feed each other are stopped at

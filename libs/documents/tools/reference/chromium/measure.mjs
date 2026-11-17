@@ -21,7 +21,7 @@ const here = resolve(import.meta.dirname);
 const cases = join(here, 'cases');
 const out = join(here, 'out');
 const dockerfile = readFileSync(join(here, '..', 'tools.Dockerfile'));
-const tools = `ave-documents-tools:${createHash('sha256').update(dockerfile).digest('hex').slice(0, 12)}`;
+const tools = `ave-extensions-documents-tools:${createHash('sha256').update(dockerfile).digest('hex').slice(0, 12)}`;
 execFileSync('docker', ['build', '-q', '-t', tools, '-'], { input: dockerfile, stdio: ['pipe', 'inherit', 'inherit'] });
 
 const wanted = process.argv.slice(2);

@@ -1,10 +1,10 @@
 using System.Text;
-using Ave.Documents.Fonts;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
-using Ave.Documents.Typesetting.Shaping;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
+using Ave.Extensions.Documents.Typesetting.Shaping;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// Shaping one text has two limits, both counted over the whole text: the glyphs its substitutions may make, and the
@@ -91,7 +91,7 @@ public class ShapingBudgetTests
         (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(64L * 1024 * 1024);
         shaped.IsFailure.Should().BeTrue("one letter may not cost 1.6 million operations");
         shaped.Error.Code.Should().Be(TypesettingErrorCodes.TooMuchWork);
-        shaped.Error.Metadata![global::Ave.Documents.Core.ErrorMetadataKeys.FontName].Should().Be(font.Names.PostScriptName);
+        shaped.Error.Metadata![global::Ave.Extensions.Documents.Core.ErrorMetadataKeys.FontName].Should().Be(font.Names.PostScriptName);
     }
 
     /// <summary>
@@ -334,7 +334,7 @@ public class ShapingBudgetTests
         var shaped = Shaper.Shape("\u0E01", TestFonts.Regular, 10);
 
         shaped.Error.Code.Should().Be(FontErrorCodes.GlyphMissing);
-        shaped.Error.Metadata![global::Ave.Documents.Core.ErrorMetadataKeys.CodePoint].Should().Be("U+0E01");
+        shaped.Error.Metadata![global::Ave.Extensions.Documents.Core.ErrorMetadataKeys.CodePoint].Should().Be("U+0E01");
     }
 
     [Fact]

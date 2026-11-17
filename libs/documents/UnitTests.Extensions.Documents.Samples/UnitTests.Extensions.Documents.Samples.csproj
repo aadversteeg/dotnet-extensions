@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\samples\Ave.Documents.Samples\Ave.Documents.Samples.csproj" />
-    <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
+    <ProjectReference Include="..\samples\Ave.Extensions.Documents.Samples\Ave.Extensions.Documents.Samples.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.TestSupport\Ave.Extensions.Documents.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>

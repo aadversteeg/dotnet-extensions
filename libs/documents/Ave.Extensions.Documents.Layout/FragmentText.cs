@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// Writes the fragment tree as stable, human-readable text: one line per fragment, children indented by two

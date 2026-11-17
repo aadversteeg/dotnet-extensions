@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Shared vocabulary of the Ave.Documents engine: typed lengths, geometry, colour, source locations, semantic roles and the error-code tree.</Description>
+    <Description>Shared vocabulary of the Ave.Extensions.Documents engine: typed lengths, geometry, colour, source locations, semantic roles and the error-code tree.</Description>
   </PropertyGroup>
 
   <ItemGroup>

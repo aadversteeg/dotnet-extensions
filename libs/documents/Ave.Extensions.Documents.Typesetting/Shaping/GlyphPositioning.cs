@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Fonts.OpenType;
 
-namespace Ave.Documents.Typesetting.Shaping;
+namespace Ave.Extensions.Documents.Typesetting.Shaping;
 
 /// <summary>
 /// Applies GPOS lookups to the shaping buffer (OpenType spec, "GPOS — Glyph positioning table"), or the old

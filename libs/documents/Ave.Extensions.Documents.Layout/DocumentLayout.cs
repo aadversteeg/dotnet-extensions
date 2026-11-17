@@ -1,10 +1,10 @@
-using Ave.Documents.Fonts;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.PageModel;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>The entry point of the layout layer: document model in, page model out.</summary>
 public static class DocumentLayout

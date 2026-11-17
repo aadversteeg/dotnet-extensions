@@ -1,8 +1,8 @@
 using System;
 using System.IO;
-using Ave.Documents.Images;
+using Ave.Extensions.Documents.Images;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>The image test files (Pillow-made, see tools/generate-test-images.py), copied next to every test assembly.</summary>
 public static class TestImages

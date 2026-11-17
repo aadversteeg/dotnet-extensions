@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Pdf.Xmp;
+namespace Ave.Extensions.Documents.Pdf.Xmp;
 
 /// <summary>
 /// The description of an XMP schema that PDF/A does not predefine. PDF/A accepts a property only from the predefined

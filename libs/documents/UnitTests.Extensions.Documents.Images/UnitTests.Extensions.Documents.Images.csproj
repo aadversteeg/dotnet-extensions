@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Images\Ave.Extensions.Documents.Images.csproj" />
   </ItemGroup>
 
   <ItemGroup>

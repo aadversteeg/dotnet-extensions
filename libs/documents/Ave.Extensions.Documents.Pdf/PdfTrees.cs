@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using System.Linq;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// Name trees and number trees (ISO 32000-1 §7.9.6 and §7.9.7) written as a single root node that holds all entries.

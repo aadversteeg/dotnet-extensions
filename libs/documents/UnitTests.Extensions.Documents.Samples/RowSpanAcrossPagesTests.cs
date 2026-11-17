@@ -1,13 +1,13 @@
 using System.Collections.Immutable;
 using System.IO;
-using Ave.Documents;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// A cell that spans rows and is cut by a page end, in a tagged PDF. In the structure tree a cell is a kid of the row it
@@ -93,7 +93,7 @@ public class RowSpanAcrossPagesTests
     [InlineData("ua1")]
     public void Tables_with_a_spanning_cell_cut_by_a_page_pass_veraPDF(string flavour)
     {
-        var folder = Directory.CreateTempSubdirectory("ave-documents-rowspan-").FullName;
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-rowspan-").FullName;
         try
         {
             foreach (var (name, document) in Cases)

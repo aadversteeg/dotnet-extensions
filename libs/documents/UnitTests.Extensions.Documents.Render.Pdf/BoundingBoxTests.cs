@@ -1,11 +1,11 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Render.Pdf;
+namespace UnitTests.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The <c>/BBox</c> layout attribute of figures and tables (ISO 32000-1 §14.8.5.4.3, Table 344): "required for any

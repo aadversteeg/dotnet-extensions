@@ -1,7 +1,7 @@
 using System.Linq;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>Forced page breaks between boxes (CSS Fragmentation 3 §3.1, <c>break-before</c>).</summary>
 internal static class ForcedBreaks

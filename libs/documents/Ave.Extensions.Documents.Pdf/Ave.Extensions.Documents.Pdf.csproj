@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Core\Ave.Extensions.Documents.Core.csproj" />
   </ItemGroup>
 
 </Project>

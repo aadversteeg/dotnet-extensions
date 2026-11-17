@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Render.Pdf.Tagging;
+namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 
 /// <summary>
 /// PDF/UA's rule that a table is a regular grid: "Table rows shall have the same number of columns" and "Table columns

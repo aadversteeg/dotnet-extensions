@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
-    <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Fonts\Ave.Extensions.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.PageModel\Ave.Extensions.Documents.PageModel.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Images\Ave.Extensions.Documents.Images.csproj" />
     <!-- PdfPig reads our PDFs back in tests (independent, pure managed, Apache-2.0). Test-only. -->
     <PackageReference Include="PdfPig" />
     <!-- The Docker-backed facts (reference checks that skip without Docker) derive from xunit's attributes. Test-only.
@@ -30,7 +30,7 @@
 
   <ItemGroup>
     <!-- The image test files (made by tools/generate-test-images.py), for layout and PDF tests. -->
-    <None Include="$(RepositoryRoot)src/UnitTests.Ave.Documents.Images/Assets/*" Link="images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(RepositoryRoot)UnitTests.Extensions.Documents.Images/Assets/*" Link="images/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

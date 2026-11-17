@@ -1,7 +1,7 @@
 using System.Reflection;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace UnitTests.Ave.Documents.Core;
+namespace UnitTests.Extensions.Documents.Core;
 
 /// <summary>Every role is written as a standard PDF structure type (ISO 32000-1 §14.8.4), except decoration.</summary>
 public class SemanticRoleTests

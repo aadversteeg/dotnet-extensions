@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Formats numbers the same way on every machine. Used by every text output of the engine: the PDF writer and

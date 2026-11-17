@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 // Geometry used by layout and the page model. All values are in points (1/72 inch). The coordinate system is
 // the one CSS uses: origin at the top-left corner, x grows to the right, y grows DOWN the page. The PDF back-end

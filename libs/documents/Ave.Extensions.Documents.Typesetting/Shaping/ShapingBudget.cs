@@ -1,6 +1,6 @@
 using System;
 
-namespace Ave.Documents.Typesetting.Shaping;
+namespace Ave.Extensions.Documents.Typesetting.Shaping;
 
 /// <summary>Which limit of a <see cref="ShapingBudget"/> a text reached.</summary>
 internal enum ShapingLimit

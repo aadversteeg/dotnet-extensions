@@ -1,7 +1,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>
 /// Identifies an image by its content: the SHA-256 digest of the file the caller passed in. The same bytes give

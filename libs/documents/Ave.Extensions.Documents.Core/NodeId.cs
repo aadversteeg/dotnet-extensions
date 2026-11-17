@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Identifies one node of the document model. Assigned by the front-end in document (pre-order) order, so the

@@ -1,19 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>The PDF back-end of the Ave.Documents engine: writes the page model as a PDF file with embedded fonts and searchable text.</Description>
+    <Description>The PDF back-end of the Ave.Extensions.Documents engine: writes the page model as a PDF file with embedded fonts and searchable text.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Pdf\Ave.Documents.Pdf.csproj" />
-    <ProjectReference Include="..\Ave.Documents.PageModel\Ave.Documents.PageModel.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Core\Ave.Extensions.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Fonts\Ave.Extensions.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Images\Ave.Extensions.Documents.Images.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Pdf\Ave.Extensions.Documents.Pdf.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.PageModel\Ave.Extensions.Documents.PageModel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Render.Pdf" />
+    <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Render.Pdf" />
   </ItemGroup>
 
 </Project>

@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// What every layout call can see besides its own arguments: the fonts, the table that maps a layout algorithm id

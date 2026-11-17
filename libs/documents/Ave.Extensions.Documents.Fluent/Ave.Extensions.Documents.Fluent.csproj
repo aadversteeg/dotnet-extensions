@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>The code front-end of the Ave.Documents engine: build a document as an immutable value from plain C# function calls and translate it into the document model. Rendering it to PDF is in the Ave.Documents package.</Description>
+    <Description>The code front-end of the Ave.Extensions.Documents engine: build a document as an immutable value from plain C# function calls and translate it into the document model. Rendering it to PDF is in the Ave.Extensions.Documents package.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Images\Ave.Documents.Images.csproj" />
-    <ProjectReference Include="..\Ave.Documents.DocumentModel\Ave.Documents.DocumentModel.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Core\Ave.Extensions.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Fonts\Ave.Extensions.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Images\Ave.Extensions.Documents.Images.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.DocumentModel\Ave.Extensions.Documents.DocumentModel.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
 using System;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Modifiers for an <see cref="Attachment"/> made by <see cref="Elements.Attachment"/>. Each returns a copy with one

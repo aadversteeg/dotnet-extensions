@@ -1,4 +1,4 @@
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// The space a layout algorithm may use for one box on the current page (Chromium LayoutNG's "constraint

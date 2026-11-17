@@ -1,4 +1,4 @@
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// A numbered object in the file body, <c>12 0 obj … endobj</c> (ISO 32000-1 §7.3.10), that other objects

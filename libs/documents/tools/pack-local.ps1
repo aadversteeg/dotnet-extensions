@@ -15,7 +15,7 @@
     4. Packs each library in Release, one project and one MSBuild node at a time, at below-normal priority (the
        machine may host other services), into out/packages: a .nupkg and a .snupkg per library.
     5. Checks every package before anything is copied: its version is the expected one, and its dependencies are only
-       other Ave.Documents.* packages of the same version or the four Ave.Extensions.* packages.
+       other Ave.Extensions.Documents.* packages of the same version or the four Ave.Extensions.* packages.
     6. Refuses to overwrite: a package version in the feed is never replaced, because NuGet caches packages by id and
        version (the global packages folder) and a replaced file would be ignored on machines that restored it before.
        To replace one, raise the version.

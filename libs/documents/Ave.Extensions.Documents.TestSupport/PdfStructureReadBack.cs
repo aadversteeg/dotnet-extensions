@@ -7,7 +7,7 @@ using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Tokens;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>
 /// Reads the logical structure of a tagged PDF back with PdfPig, an independent reader: the structure tree from the

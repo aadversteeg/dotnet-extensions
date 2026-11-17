@@ -5,7 +5,7 @@ using System.Text;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// The naming table (OpenType spec, "name — Naming table"): the human-readable names of the font.

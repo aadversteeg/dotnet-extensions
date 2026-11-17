@@ -1,9 +1,9 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// Documented limits of table layout (docs/architecture.md, "Long tables"), pinned so that a change to them is a

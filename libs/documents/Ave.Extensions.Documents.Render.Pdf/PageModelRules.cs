@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.PageModel;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The contract a page model must meet before the back-end writes it, whatever the profile. The back-end is a public
@@ -91,7 +91,7 @@ internal static class PageModelRules
     }
 
     /// <summary>The smallest page side in every profile: the smallest length the writer writes as more than 0, since it
-    /// writes <see cref="Ave.Documents.Pdf.PdfSerializer.RealDecimals"/> decimals; a smaller side would make a /MediaBox without area. The
+    /// writes <see cref="Ave.Extensions.Documents.Pdf.PdfSerializer.RealDecimals"/> decimals; a smaller side would make a /MediaBox without area. The
     /// PDF/A profiles require 3 units (<see cref="ProfileLimits.MinPageSide"/>).</summary>
     public const double MinPageSide = 0.0001;
 

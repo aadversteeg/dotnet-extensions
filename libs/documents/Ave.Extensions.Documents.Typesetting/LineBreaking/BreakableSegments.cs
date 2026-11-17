@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Typesetting.LineBreaking;
+namespace Ave.Extensions.Documents.Typesetting.LineBreaking;
 
 /// <summary>
 /// Cuts the shaped glyphs of a paragraph into the pieces between break opportunities: the "items" any line

@@ -1,4 +1,4 @@
-document title="Quotation for document rendering" author="Ave.Documents samples"
+document title="Quotation for document rendering" author="Ave.Extensions.Documents samples"
 page size=595.276x841.89 margin=56.693,56.693,56.693,56.693
 box #0 flow document @SampleDocuments.cs:32
   box #1 inline paragraph margin=0,0,6,0 @SampleDocuments.cs:34

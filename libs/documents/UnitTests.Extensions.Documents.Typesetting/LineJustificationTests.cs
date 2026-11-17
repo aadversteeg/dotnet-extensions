@@ -1,8 +1,8 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>text-align and inter-word justification (CSS Text 3 §6.1, §6.4) on lines of 1-point-wide glyphs.</summary>
 public class LineJustificationTests

@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>
 /// The index of a glyph in a font (OpenType "glyph ID"): 0 to maxp.numGlyphs − 1. Glyph 0 is <c>.notdef</c>,

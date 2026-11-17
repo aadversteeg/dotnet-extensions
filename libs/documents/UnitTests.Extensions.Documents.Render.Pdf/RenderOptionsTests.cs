@@ -1,7 +1,7 @@
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
 
-namespace UnitTests.Ave.Documents.Render.Pdf;
+namespace UnitTests.Extensions.Documents.Render.Pdf;
 
 /// <summary>Render options are a value: two options are equal exactly when they write the same file — the same date
 /// (the same instant in the same offset, since the offset is written), profile and file identifier, wherever the

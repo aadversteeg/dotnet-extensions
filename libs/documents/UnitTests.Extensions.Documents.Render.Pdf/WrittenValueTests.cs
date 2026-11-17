@@ -5,16 +5,16 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Images;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Images;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Render.Pdf;
+namespace UnitTests.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// Values the back-end writes that only a reader of the file sees: no other test reads them back, so only these tests

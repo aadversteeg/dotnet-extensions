@@ -2,13 +2,13 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fluent;
-using Ave.Documents.Fonts;
-using Ave.Documents.Layout;
-using Ave.Documents.PageModel;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.Samples;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Samples;
 using Ave.Extensions.Functional;
 
 // Writes the samples to the folder given as the first argument (default: ./out), each as a PDF plus the three text

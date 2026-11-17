@@ -1,4 +1,4 @@
-# Ave.Documents
+# Ave.Extensions.Documents
 
 A document engine in pure managed .NET 10: a document written in C# goes in, a PDF comes out. No native
 library, no P/Invoke and no external engine or tool at run time; tools appear only in tests.
@@ -18,7 +18,7 @@ What it does (milestone M1):
   files. veraPDF checks every sample.
 
 Everything that can fail returns an error value (the Ave.Extensions packages), with the author's file and line. The
-proof is the SmallBusiness timesheet, written with the code front-end (`samples/Ave.Documents.Samples/Timesheet/`).
+proof is the SmallBusiness timesheet, written with the code front-end (`samples/Ave.Extensions.Documents.Samples/Timesheet/`).
 
 For a reviewer, start with `docs/architecture.md`. Template authors: `docs/code-front-end.md` and
 `docs/pdf-profiles-and-accessibility.md`.
@@ -26,62 +26,62 @@ For a reviewer, start with `docs/architecture.md`. Template authors: `docs/code-
 ## Layers
 
 Each layer is its own project and package and depends only on the layers above it in this list. The
-dependencies are checked on the compiled assemblies by `UnitTests.Ave.Documents.Architecture`.
+dependencies are checked on the compiled assemblies by `UnitTests.Extensions.Documents.Architecture`.
 
 ```
- Ave.Documents                composition: ToPdf runs front-end, layout and PDF back-end in a row
+ Ave.Extensions.Documents                composition: ToPdf runs front-end, layout and PDF back-end in a row
         │
         ▼
- Ave.Documents.Fluent         code front-end: a document as an immutable value built from function calls
+ Ave.Extensions.Documents.Fluent         code front-end: a document as an immutable value built from function calls
         │  translate (cascade + validation)
         ▼
- Ave.Documents.DocumentModel  document model: styled box tree with CSS semantics, computed values only
+ Ave.Extensions.Documents.DocumentModel  document model: styled box tree with CSS semantics, computed values only
         │  lay out (pure algorithms + break tokens), paint
         ▼
- Ave.Documents.Layout         Flow, Inline, Tracks and Image algorithms; pagination driver with page templates
+ Ave.Extensions.Documents.Layout         Flow, Inline, Tracks and Image algorithms; pagination driver with page templates
                               and the page-count fixpoint; painter                     ← uses Typesetting
         │
         ▼
- Ave.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, images, structure markers)
+ Ave.Extensions.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, images, structure markers)
         │  render
         ▼
- Ave.Documents.Render.Pdf     page model → PDF: subset composite fonts, ToUnicode, image XObjects, content streams,
+ Ave.Extensions.Documents.Render.Pdf     page model → PDF: subset composite fonts, ToUnicode, image XObjects, content streams,
                               conformance profiles: tagging, XMP, output intent, attachments, refusals
         │
         ▼
  PDF bytes
 
- Ave.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping, justification
- Ave.Documents.Pdf            PDF objects, content operators, file writer, XMP writer, sRGB ICC profile, PdfProfile
+ Ave.Extensions.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping, justification
+ Ave.Extensions.Documents.Pdf            PDF objects, content operators, file writer, XMP writer, sRGB ICC profile, PdfProfile
                               (knows nothing about layout)
- Ave.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
- Ave.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and JPEG header reader (embedded as is)
- Ave.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, metadata,
+ Ave.Extensions.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
+ Ave.Extensions.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and JPEG header reader (embedded as is)
+ Ave.Extensions.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, metadata,
                               attachments, error codes
 ```
 
 Where the contracts are:
 
-- Layout contract: `src/Ave.Documents.Layout/LayoutAlgorithm.cs` (the layout delegate and its rules, and the
+- Layout contract: `Ave.Extensions.Documents.Layout/LayoutAlgorithm.cs` (the layout delegate and its rules, and the
   intrinsic-widths delegate), `ConstraintSpace.cs`, `BreakToken.cs`, `LayoutResult.cs` (with the break appeal),
   `Fragment.cs`, `LayoutEnvironment.cs` (algorithms by id, the current page).
-- Tracks algorithm: `src/Ave.Documents.Layout/Tracks/` (`TracksLayout.cs` lists the steps).
-- Document model: `src/Ave.Documents.DocumentModel/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `LayoutAlgorithmId.cs`.
-- Page model: `src/Ave.Documents.PageModel/PageDocument.cs`, `DrawItem.cs` (with structure and artifact markers).
-- Conformance: `src/Ave.Documents.Pdf/PdfProfile.cs`, `src/Ave.Documents.Render.Pdf/ConformanceRules.cs`,
-  `src/Ave.Documents.Render.Pdf/Tagging/`.
+- Tracks algorithm: `Ave.Extensions.Documents.Layout/Tracks/` (`TracksLayout.cs` lists the steps).
+- Document model: `Ave.Extensions.Documents.DocumentModel/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `LayoutAlgorithmId.cs`.
+- Page model: `Ave.Extensions.Documents.PageModel/PageDocument.cs`, `DrawItem.cs` (with structure and artifact markers).
+- Conformance: `Ave.Extensions.Documents.Pdf/PdfProfile.cs`, `Ave.Extensions.Documents.Render.Pdf/ConformanceRules.cs`,
+  `Ave.Extensions.Documents.Render.Pdf/Tagging/`.
 - Error codes: each library defines the codes it raises in its own `*ErrorCodes.cs` (`Core/DocumentErrorCodes.cs`
   holds the root and the input codes every front-end shares; `Fonts`, `Images`, `Typesetting`, `Layout`, `Pdf` and
-  `Render.Pdf` have their own). `UnitTests.Ave.Documents.Architecture/ErrorCodeTests.cs` checks that no library raises another
+  `Render.Pdf` have their own). `UnitTests.Extensions.Documents.Architecture/ErrorCodeTests.cs` checks that no library raises another
   library's codes.
 
 ## Writing a document
 
 ```csharp
-using Ave.Documents;          // ToPdf: the Ave.Documents package joins front-end, layout and PDF back-end
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents;          // ToPdf: the Ave.Extensions.Documents package joins front-end, layout and PDF back-end
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
 var note = Style.Empty.Padding(4.Mm()).Background(new Color(0xDD, 0xEB, 0xF7));   // a reusable style
 
@@ -105,22 +105,22 @@ Every step returns `Result<T, Error>` (Ave.Extensions.Functional / ErrorPaths). 
 as `Documents.Font.GlyphMissing` or `Documents.Layout.DoesNotFit` and the file and line of the call that caused
 them. The layer namespaces (`Typesetting`, `DocumentModel`, `PageModel`, …) are named so that they never hide the
 front-end's functions (`Text`, `Paragraph`, …) or the page model's `Page`, so documents can be written in any
-namespace, including one under `Ave.Documents`.
+namespace, including one under `Ave.Extensions.Documents`.
 
 ## Build, test, run the samples
 
 ```
-cd src
-dotnet build Ave.Documents.slnx
-dotnet test Ave.Documents.slnx
-dotnet run --project ../samples/Ave.Documents.Samples -- ../out/samples
+cd libs/documents
+dotnet build extensions.slnx
+dotnet test extensions.slnx
+dotnet run --project samples/Ave.Extensions.Documents.Samples -- out/samples
 ```
 
 The samples app writes `sample-a-letter.pdf` (two pages), `sample-b-long.pdf` (five pages) and the timesheet
 for the reporting PoC's three data sets in Dutch and English (`timesheet-{normal,long,edge}.{nl,en}.pdf`), all as
 PDF/A-3a + PDF/UA-1, each with `.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its
 intermediate models. The timesheets embed `timesheet.xml`, also written next to them as
-`.attachment.timesheet.xml`. `dotnet run --project ../samples/Ave.Documents.Samples -- time long nl-NL 20` measures
+`.attachment.timesheet.xml`. `dotnet run --project samples/Ave.Extensions.Documents.Samples -- time long nl-NL 20` measures
 one timesheet (cold, then the median of 20 warm renders).
 The samples app needs culture data for the timesheet's number formats; the libraries do not.
 
@@ -140,17 +140,17 @@ skipped with a message, and `dotnet test --filter Category!=Reference` leaves th
 
 Two more reference gates run with the tests. Line breaking runs the official `LineBreakTest.txt` of Unicode 18.0.0
 (`assets/unicode/`). Shaping is compared with HarfBuzz, which runs as WebAssembly inside the test process
-(`src/UnitTests.Ave.Documents.Typesetting/Reference/`); no library references it. The Unicode property table
-in `src/Ave.Documents.Typesetting/Unicode/` is generated from the committed data files; after updating them,
+(`UnitTests.Extensions.Documents.Typesetting/Reference/`); no library references it. The Unicode property table
+in `Ave.Extensions.Documents.Typesetting/Unicode/` is generated from the committed data files; after updating them,
 run the tests with `UPDATE_GENERATED=1`.
 
 ## Packages
 
-The 11 libraries of the layer list are packed as `Ave.Documents.*` (version in `Directory.Build.props`, a `.snupkg`
-with the sources next to each package); the test projects, `Ave.Documents.TestSupport` and the samples are not.
-Applications reference `Ave.Documents`, which brings the rest. The packages are a preview for private use: they carry
+The 11 libraries of the layer list are packed as `Ave.Extensions.Documents.*` (version in `Directory.Build.props`, a `.snupkg`
+with the sources next to each package); the test projects, `Ave.Extensions.Documents.TestSupport` and the samples are not.
+Applications reference `Ave.Extensions.Documents`, which brings the rest. The packages are a preview for private use: they carry
 no licence yet and say so in their description. They are not on nuget.org: `pwsh -NoProfile -File
-tools/pack-local.ps1` packs them from a clean working tree, checks each package's dependencies (only `Ave.Documents.*`
+tools/pack-local.ps1` packs them from a clean working tree, checks each package's dependencies (only `Ave.Extensions.Documents.*`
 of the same version and the four `Ave.Extensions.*` packages; `PackageRulesTests` checks the same before packing) and
 copies them into the local feed `%JASMIN_LOCAL_FEED%`. It never overwrites a version that is already there.
 
@@ -165,7 +165,7 @@ box slicing at page breaks (CSS Fragmentation 3 §5.2–§5.4), tables and rows 
 different first page, page number and page count (a fixpoint of at most 5 passes), PNG and JPEG images, Unicode line
 breaking (UAX #14, Unicode 18.0.0), OpenType shaping for Latin, Greek and Cyrillic, text-align and inter-word
 justification, TrueType subsetting, deterministic output. Table layout is checked against Chromium 157 and 159
-(`src/UnitTests.Ave.Documents.Layout/ChromiumReferenceTests.cs`).
+(`UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs`).
 
 Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows, the
 line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated

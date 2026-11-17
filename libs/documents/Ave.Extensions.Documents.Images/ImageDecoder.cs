@@ -1,10 +1,10 @@
 using System;
-using Ave.Documents.Images.Jpeg;
-using Ave.Documents.Images.Png;
+using Ave.Extensions.Documents.Images.Jpeg;
+using Ave.Extensions.Documents.Images.Png;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>The entry point of the image layer: image file bytes in, <see cref="ImageData"/> out.</summary>
 public static class ImageDecoder

@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Images;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Images;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>An image the document draws, with its name in the pages' /XObject resources.</summary>
 /// <param name="Image">The image.</param>

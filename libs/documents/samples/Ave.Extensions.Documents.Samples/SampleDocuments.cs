@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
 /// The sample documents, written through the code front-end. Components are plain methods that return elements;
@@ -75,7 +75,7 @@ public static class SampleDocuments
             ],
             Page,
             title: "Quotation for document rendering",
-            author: "Ave.Documents samples",
+            author: "Ave.Extensions.Documents samples",
             language: "en")
             .FontFamily("Lato").FontSize(11.Pt());
 

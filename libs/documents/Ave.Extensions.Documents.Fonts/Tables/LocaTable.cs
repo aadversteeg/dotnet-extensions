@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// The index to location table (OpenType spec, "loca — Index to location"): where each glyph's outline starts

@@ -2,10 +2,10 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
-using Ave.Documents.Typesetting.Unicode;
-using static Ave.Documents.Typesetting.Unicode.LineBreakClass;
+using Ave.Extensions.Documents.Typesetting.Unicode;
+using static Ave.Extensions.Documents.Typesetting.Unicode.LineBreakClass;
 
-namespace Ave.Documents.Typesetting.LineBreaking;
+namespace Ave.Extensions.Documents.Typesetting.LineBreaking;
 
 /// <summary>
 /// The Unicode Line Breaking Algorithm, UAX #14 revision 57 (Unicode 18.0.0), with the default rules and no

@@ -1,4 +1,4 @@
-namespace Ave.Documents.Typesetting.Shaping;
+namespace Ave.Extensions.Documents.Typesetting.Shaping;
 
 /// <summary>The classes of the OpenType glyph definition table (GDEF glyphClassDef) that shaping uses.</summary>
 internal enum GlyphClass

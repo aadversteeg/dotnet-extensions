@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// The characters XML 1.0 allows in a document (XML 1.0, fifth edition, §2.2, production [2]: <c>Char ::= #x9 | #xA |

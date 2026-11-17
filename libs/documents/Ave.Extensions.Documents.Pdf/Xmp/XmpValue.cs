@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Pdf.Xmp;
+namespace Ave.Extensions.Documents.Pdf.Xmp;
 
 /// <summary>
 /// The value of an XMP property (ISO 16684-1 §6.3, value forms: simple, structure, array): a simple text value, an array, a language alternative,

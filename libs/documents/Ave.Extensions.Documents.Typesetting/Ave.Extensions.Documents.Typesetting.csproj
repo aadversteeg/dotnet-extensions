@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Text processing for the Ave.Documents engine: white-space collapsing, shaping (characters to positioned glyphs) and line breaking.</Description>
+    <Description>Text processing for the Ave.Extensions.Documents engine: white-space collapsing, shaping (characters to positioned glyphs) and line breaking.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Core\Ave.Documents.Core.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Fonts\Ave.Documents.Fonts.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Core\Ave.Extensions.Documents.Core.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Fonts\Ave.Extensions.Documents.Fonts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="UnitTests.Ave.Documents.Typesetting" />
+    <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Typesetting" />
   </ItemGroup>
 
 </Project>

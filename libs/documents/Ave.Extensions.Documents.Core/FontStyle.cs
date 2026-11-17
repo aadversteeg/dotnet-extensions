@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Upright or italic glyphs: the CSS property <c>font-style</c> (CSS Fonts 4 §2.4). The oblique-with-angle form

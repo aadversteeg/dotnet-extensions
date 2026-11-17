@@ -1,15 +1,15 @@
 using System.Collections.Immutable;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace UnitTests.Ave.Documents.Render.Pdf;
+namespace UnitTests.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The back-end's contract is total: <see cref="PdfRenderer.Render"/> validates the whole page model and the options

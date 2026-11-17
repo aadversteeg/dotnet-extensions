@@ -1,11 +1,11 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>The tracks algorithm on its own: collapsed borders, spans, alignment, keep rules, errors and termination.</summary>
 public class TracksLayoutTests

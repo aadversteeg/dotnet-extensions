@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace UnitTests.Ave.Documents.Core;
+namespace UnitTests.Extensions.Documents.Core;
 
 /// <summary>The slot-filling rule of the HTML table model, shared by the front-end, layout and the PDF/UA check.</summary>
 public class TableSlotsTests

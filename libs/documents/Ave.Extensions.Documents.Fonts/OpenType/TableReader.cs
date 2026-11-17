@@ -1,11 +1,11 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using Ave.Documents.Fonts.Tables;
+using Ave.Extensions.Documents.Fonts.Tables;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>
 /// Reads big-endian values from one OpenType layout table, checking every read against the table's end.

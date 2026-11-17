@@ -1,4 +1,4 @@
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>
 /// The largest image the engine decodes. A PNG header announces its size in 13 bytes, up to 2^31 − 1 by 2^31 − 1

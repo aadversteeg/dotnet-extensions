@@ -1,7 +1,7 @@
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// Errors the PDF back-end raises: a page model that breaks the back-end's contract, and input a conformance profile

@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
 /// Limits user text to the characters a font can show, as the reporting PoC does before it hands data to Typst

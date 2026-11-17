@@ -2,7 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Xml.Linq;
 
-namespace UnitTests.Ave.Documents.Architecture;
+namespace UnitTests.Extensions.Documents.Architecture;
 
 /// <summary>
 /// Rules for what the packages bring with them. A package's dependencies are written by <c>dotnet pack</c> from the
@@ -30,7 +30,7 @@ public class PackageRulesTests
 
     private static PackageInputs InputsOf(string project)
     {
-        var assets = Path.Combine(ProjectRulesTests.RepositoryRoot(), "src", project, "obj", "project.assets.json");
+        var assets = Path.Combine(ProjectRulesTests.RepositoryRoot(), project, "obj", "project.assets.json");
         using var json = JsonDocument.Parse(File.ReadAllText(assets));
         var section = json.RootElement.GetProperty("project");
 
@@ -53,7 +53,7 @@ public class PackageRulesTests
 
     /// <summary>The projects that are packed: every project that is neither a test project nor a sample or helper.</summary>
     private static IEnumerable<string> PackedProjectNames() =>
-        Directory.GetFiles(Path.Combine(ProjectRulesTests.RepositoryRoot(), "src"), "*.csproj", SearchOption.AllDirectories)
+        Directory.GetFiles(ProjectRulesTests.RepositoryRoot(), "*.csproj", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !Path.GetFileName(path).StartsWith("UnitTests.", StringComparison.Ordinal))
             .Where(path => !XDocument.Load(path).Descendants("IsSampleOrSupport").Any(element => element.Value == "true"))
@@ -70,7 +70,7 @@ public class PackageRulesTests
         var inputs = InputsOf(library);
 
         // Core references no other project, so an empty list is a pass.
-        inputs.ProjectReferences.Where(reference => !reference.StartsWith("Ave.Documents", StringComparison.Ordinal)).Should().BeEmpty();
+        inputs.ProjectReferences.Where(reference => !reference.StartsWith("Ave.Extensions.Documents", StringComparison.Ordinal)).Should().BeEmpty();
         inputs.ProjectReferences.Should().BeSubsetOf(PackedProjectNames(), "a reference to a project that is not packed is a dependency nobody can restore");
         inputs.Packages.Should().BeSubsetOf(AllowedPackages);
     }
@@ -98,9 +98,9 @@ public class PackageRulesTests
         // Positive control: this test project's own restore graph holds the test packages (added for every UnitTests.*
         // project by Directory.Build.props, not by its .csproj) and a project reference; a reader that found none of them
         // would let every library pass.
-        var inputs = InputsOf("UnitTests.Ave.Documents.Architecture");
+        var inputs = InputsOf("UnitTests.Extensions.Documents.Architecture");
 
         inputs.Packages.Should().Contain(["xunit", "FluentAssertions"]).And.NotContain("xunit.runner.visualstudio", "that one is private");
-        inputs.ProjectReferences.Should().Contain("Ave.Documents");
+        inputs.ProjectReferences.Should().Contain("Ave.Extensions.Documents");
     }
 }

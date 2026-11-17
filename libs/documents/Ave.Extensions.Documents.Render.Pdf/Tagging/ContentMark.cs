@@ -1,7 +1,7 @@
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf.Tagging;
+namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 
 /// <summary>A content run of a page together with how it is marked: the two are made together, by the structure tree
 /// (or <see cref="StructureTree.Unmarked"/>), so the content stream can never pair a run with another run's mark.</summary>

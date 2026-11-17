@@ -1,12 +1,12 @@
 using System.Collections.Immutable;
 using System.Text;
 using System.Xml.Linq;
-using Ave.Documents.Fluent;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
 using UglyToad.PdfPig;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// The samples as PDF/A-3a + PDF/UA-1, read back with PdfPig (an independent reader): the structure tree (roles, order,
@@ -120,7 +120,7 @@ public class TaggedPdfTests
     [Fact]
     public void A_plain_file_has_no_structure_and_no_metadata()
     {
-        var plain = SampleFiles.Pdf(SampleFiles.Timesheet("edge", "en-US"), SampleOutput.Options with { Profile = global::Ave.Documents.Pdf.PdfProfile.Plain });
+        var plain = SampleFiles.Pdf(SampleFiles.Timesheet("edge", "en-US"), SampleOutput.Options with { Profile = global::Ave.Extensions.Documents.Pdf.PdfProfile.Plain });
 
         PdfStructureReadBack.Read(plain).Should().BeEmpty();
         using var pdf = PdfDocument.Open([.. plain]);

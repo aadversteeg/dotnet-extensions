@@ -1,7 +1,7 @@
-using Ave.Documents.Fonts;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// Property tests: a damaged font file must give an error value, never an exception. Each table parser checks

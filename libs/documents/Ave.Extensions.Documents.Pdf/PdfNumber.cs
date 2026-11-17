@@ -1,6 +1,6 @@
 using System;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>Creates the right number object for a value.</summary>
 public static class PdfNumber

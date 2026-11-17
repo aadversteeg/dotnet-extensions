@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Immutable;
-using Ave.Documents.Images;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Images;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// Embeds an image as an image XObject (ISO 32000-1 §8.9.5, Table 89): a stream of samples with its width, height,

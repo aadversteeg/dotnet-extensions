@@ -1,10 +1,10 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
-using static UnitTests.Ave.Documents.Layout.Models;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
+using static UnitTests.Extensions.Documents.Layout.Models;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// Keep rules in block flow (CSS Fragmentation 3 §3.1, §3.2) resolved by break appeal: a break an <c>avoid</c> is

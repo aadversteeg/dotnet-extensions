@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// Something the text modifiers (<see cref="TextModifiers"/>) apply to: it carries its own <see cref="Style"/>

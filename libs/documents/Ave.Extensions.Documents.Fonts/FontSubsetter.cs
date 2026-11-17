@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Security.Cryptography;
-using Ave.Documents.Fonts.Tables;
+using Ave.Extensions.Documents.Fonts.Tables;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>
 /// Builds a TrueType font program that holds only the glyphs a document uses, for embedding in PDF (ISO

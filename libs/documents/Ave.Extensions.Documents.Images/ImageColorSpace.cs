@@ -1,4 +1,4 @@
-namespace Ave.Documents.Images;
+namespace Ave.Extensions.Documents.Images;
 
 /// <summary>
 /// The colour space of an image's colour samples. Both map directly onto a PDF device colour space (ISO 32000-1

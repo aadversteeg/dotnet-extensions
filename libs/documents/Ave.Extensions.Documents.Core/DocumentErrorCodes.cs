@@ -1,15 +1,15 @@
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// The root of the engine's error-code tree and the branch every layer shares: errors in the input. Codes are paths
 /// (Ave.Extensions.ErrorPaths): a caller can match a whole branch with <c>error.Is(DocumentErrorCodes.Input._)</c>
 /// or one leaf with <c>error.Code == DocumentErrorCodes.Input.Invalid.Length</c>. Each nested class's <c>_</c> is its
 /// branch. Each library defines its own branch next to the code that raises it, under this root:
-/// <c>FontErrorCodes</c> (Ave.Documents.Fonts, <c>Documents.Font</c>), <c>ImageErrorCodes</c> (Ave.Documents.Images,
-/// <c>Documents.Image</c>), <c>LayoutErrorCodes</c> (Ave.Documents.Layout, <c>Documents.Layout</c>) and
-/// <c>PdfErrorCodes</c> (Ave.Documents.Pdf, <c>Documents.Pdf</c>), so a new back-end rule never edits this file.
+/// <c>FontErrorCodes</c> (Ave.Extensions.Documents.Fonts, <c>Documents.Font</c>), <c>ImageErrorCodes</c> (Ave.Extensions.Documents.Images,
+/// <c>Documents.Image</c>), <c>LayoutErrorCodes</c> (Ave.Extensions.Documents.Layout, <c>Documents.Layout</c>) and
+/// <c>PdfErrorCodes</c> (Ave.Extensions.Documents.Pdf, <c>Documents.Pdf</c>), so a new back-end rule never edits this file.
 /// </summary>
 /// <remarks>
 /// Which metadata each error carries is listed per code; the keys are in <see cref="ErrorMetadataKeys"/>.
@@ -67,7 +67,7 @@ public static class DocumentErrorCodes
             public static readonly ErrorCode MetadataText = _ / "MetadataText";
 
             /// <summary>Elements nested deeper than the front-end allows (<c>InputLimits.MaxNestingDepth</c> in
-            /// Ave.Documents.Fluent), at the first element past the limit. Metadata: Value (the limit).</summary>
+            /// Ave.Extensions.Documents.Fluent), at the first element past the limit. Metadata: Value (the limit).</summary>
             public static readonly ErrorCode TooDeep = _ / "TooDeep";
 
             /// <summary>A property set on an element it does not apply to, for example box properties in the

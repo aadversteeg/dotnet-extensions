@@ -1,4 +1,4 @@
-namespace Ave.Documents.Typesetting.LineBreaking;
+namespace Ave.Extensions.Documents.Typesetting.LineBreaking;
 
 /// <summary>A place where a line may (or must) end: before the UTF-16 code unit at <see cref="Offset"/>.</summary>
 /// <param name="Offset">The index in the text of the first code unit of the next line. The end of the text is

@@ -6,7 +6,7 @@ using System.Linq;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Images.Png;
+namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>
 /// A PNG decoder for the variants a document needs (PNG Specification, Second Edition = ISO/IEC 15948:2004):

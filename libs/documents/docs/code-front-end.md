@@ -1,9 +1,9 @@
 # The code front-end
 
-`Ave.Documents.Fluent` lets you write a document as C#: a document is an immutable value built from plain
+`Ave.Extensions.Documents.Fluent` lets you write a document as C#: a document is an immutable value built from plain
 function calls and shaped with modifiers. Nothing is drawn, measured or validated while you build it;
 `DocumentTranslator.ToModel` checks everything at once and reports every problem with the file and line of the
-element that caused it. `ToPdf` (package `Ave.Documents`, namespace `Ave.Documents`) runs the whole pipeline: it
+element that caused it. `ToPdf` (package `Ave.Extensions.Documents`, namespace `Ave.Extensions.Documents`) runs the whole pipeline: it
 translates, lays out and writes the PDF. The front-end itself knows neither the layout nor any back-end.
 
 ## A complete example
@@ -12,13 +12,13 @@ translates, lays out and writes the PDF. The front-end itself knows neither the 
 using System;
 using System.IO;
 using System.Linq;
-using Ave.Documents;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.Fonts;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
 // Reusable styles are values, built with the same modifiers as elements.
 var navy = new Color(0x1F, 0x4E, 0x79);
@@ -176,7 +176,7 @@ var entries = Table(
     .CellPadding(4.Pt(), 2.Pt());
 ```
 
-The full timesheet is `samples/Ave.Documents.Samples/Timesheet/Timesheet.cs`.
+The full timesheet is `samples/Ave.Extensions.Documents.Samples/Timesheet/Timesheet.cs`.
 
 How tables lay out: fixed columns keep their width; auto columns get between their narrowest and widest content;
 fill columns share what is left, never narrower than their narrowest content. Columns that cannot fit are the

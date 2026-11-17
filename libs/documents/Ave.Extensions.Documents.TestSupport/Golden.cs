@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>
 /// Golden-file comparison for the text serialisations. A golden file lives in a <c>Golden</c> folder next to

@@ -1,5 +1,5 @@
 {
-  "name": "ave-documents-chromium-reference",
+  "name": "ave-extensions-documents-chromium-reference",
   "private": true,
   "description": "Prints the HTML reference cases with Chromium and lists the position of every word per page.",
   "type": "module",

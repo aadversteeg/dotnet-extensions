@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// The characters a document's text may hold, whatever the output format. Text is a sequence of Unicode scalar values

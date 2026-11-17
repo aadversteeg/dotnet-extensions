@@ -1,8 +1,8 @@
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.Tables;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.Tables;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// Table parsers on hand-made tables, for the cases the Lato fonts do not contain (cmap format 12, a cmap

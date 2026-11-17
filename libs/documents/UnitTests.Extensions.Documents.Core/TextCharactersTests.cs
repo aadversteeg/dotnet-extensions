@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace UnitTests.Ave.Documents.Core;
+namespace UnitTests.Extensions.Documents.Core;
 
 /// <summary>
 /// The characters text may hold, in one rule (<see cref="TextCharacters"/>): no control character but tab and the forced

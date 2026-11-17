@@ -1,9 +1,9 @@
 using System.Runtime.CompilerServices;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// The translator reports every problem of the document at once — in the body and in every page area — so an author

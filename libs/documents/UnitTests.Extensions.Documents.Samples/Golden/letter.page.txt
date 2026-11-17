@@ -1,4 +1,4 @@
-document title="Quotation for document rendering" author="Ave.Documents samples" language=en
+document title="Quotation for document rendering" author="Ave.Extensions.Documents samples" language=en
 page 1 size=595.276x841.89
   start #0 document
   start #1 paragraph

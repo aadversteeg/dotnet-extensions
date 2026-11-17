@@ -1,4 +1,4 @@
-namespace Ave.Documents.Typesetting.Shaping;
+namespace Ave.Extensions.Documents.Typesetting.Shaping;
 
 /// <summary>A mark attached to a base glyph by GPOS mark-to-base.</summary>
 /// <param name="BaseIndex">The index of the base glyph in the buffer.</param>

@@ -1,17 +1,17 @@
 using System.Collections.Immutable;
 using System.IO;
 using System.Text;
-using Ave.Documents;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
-using static Ave.Documents.Fluent.Elements;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// The promise behind every profile, tried on documents nobody wrote by hand: for any input the front-end accepts,
@@ -70,7 +70,7 @@ public sealed class GeneratedDocumentTests
     [MemberData(nameof(Flavours))]
     public void Every_generated_document_is_refused_or_passes_veraPDF(string flavour)
     {
-        var folder = Directory.CreateTempSubdirectory($"ave-documents-generated-{flavour}-").FullName;
+        var folder = Directory.CreateTempSubdirectory($"ave-extensions-documents-generated-{flavour}-").FullName;
         try
         {
             // The same documents for every profile: string hash codes differ per process, so nothing is derived from the flavour.

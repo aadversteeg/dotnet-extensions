@@ -12,7 +12,7 @@ and that the test classes of a checked rule test its codes.
 - **cannot occur**: the rule is about a feature the engine never writes.
 
 A rule that PDF/A-3a adds to PDF/A-3b lists only PDF/A-3a. The generated-documents reference test
-(`UnitTests.Ave.Documents.Samples/GeneratedDocumentTests.cs`) checks the whole matrix at once: documents drawn from a
+(`UnitTests.Extensions.Documents.Samples/GeneratedDocumentTests.cs`) checks the whole matrix at once: documents drawn from a
 fixed seed (100 per profile: borders, backgrounds, spans, nested and broken tables, page areas, images with alpha,
 font sizes, lengths at and past the limits, long words) are refused, with a code of an expected family, or pass veraPDF.
 

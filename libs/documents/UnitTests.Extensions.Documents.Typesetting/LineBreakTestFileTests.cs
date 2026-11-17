@@ -2,10 +2,10 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using Ave.Documents.Typesetting.LineBreaking;
+using Ave.Extensions.Documents.Typesetting.LineBreaking;
 using Xunit.Abstractions;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// The gate of rule B1: the official Unicode conformance test for line breaking, LineBreakTest.txt of the same

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// The collapsing border model of tables (CSS 2.1 §17.6.2), chosen over the separated model: between two cells there

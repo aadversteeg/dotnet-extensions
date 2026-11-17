@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <IsSampleOrSupport>true</IsSampleOrSupport>
     <!-- No native app host: the publish folder then holds managed assemblies only (proved by tools/verify-samples.ps1).
-         Run with `dotnet Ave.Documents.Samples.dll <output folder>`. -->
+         Run with `dotnet Ave.Extensions.Documents.Samples.dll <output folder>`. -->
     <UseAppHost>false</UseAppHost>
     <!-- The timesheet formats numbers in the reader's culture (nl-NL, en-US) — .NET formatting in the template, not in
          the engine — so this app needs the culture data the libraries do without. -->
@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Ave.Documents\Ave.Documents.csproj" />
+    <ProjectReference Include="..\..\Ave.Extensions.Documents\Ave.Extensions.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

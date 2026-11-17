@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>
 /// A font's advanced typography tables, as far as shaping needs them: glyph substitution (GSUB), glyph

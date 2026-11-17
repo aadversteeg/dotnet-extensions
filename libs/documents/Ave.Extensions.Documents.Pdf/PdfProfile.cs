@@ -1,4 +1,4 @@
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>
 /// The standard a PDF file is written to. A profile both ADDS what its standards require (XMP metadata, an output

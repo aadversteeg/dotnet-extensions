@@ -1,9 +1,9 @@
 using System.Text;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.Tables;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.Tables;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// The name table decodes at most one string per name ID the engine uses, so records that point at the same bytes

@@ -5,7 +5,7 @@ using System.Reflection.PortableExecutable;
 using System.Xml.Linq;
 using Ave.Extensions.ErrorPaths;
 
-namespace UnitTests.Ave.Documents.Architecture;
+namespace UnitTests.Extensions.Documents.Architecture;
 
 /// <summary>
 /// The error-code tree: Core holds the root and the shared input branch; every library defines its own codes next to
@@ -15,14 +15,14 @@ namespace UnitTests.Ave.Documents.Architecture;
 /// </summary>
 public class ErrorCodeTests
 {
-    private const string CoreLibrary = "Ave.Documents.Core";
+    private const string CoreLibrary = "Ave.Extensions.Documents.Core";
 
     /// <summary>Every engine assembly in the test output, except the test support library.</summary>
     private static IEnumerable<string> Libraries =>
-        Directory.GetFiles(AppContext.BaseDirectory, "Ave.Documents*.dll")
+        Directory.GetFiles(AppContext.BaseDirectory, "Ave.Extensions.Documents*.dll")
             .Select(Path.GetFileNameWithoutExtension)
             .OfType<string>()
-            .Where(name => name != "Ave.Documents.TestSupport")
+            .Where(name => name != "Ave.Extensions.Documents.TestSupport")
             .Order(StringComparer.Ordinal);
 
     internal sealed record Code(string Library, Type Owner, FieldInfo Field, string Path)
@@ -49,7 +49,7 @@ public class ErrorCodeTests
     [Fact]
     public void The_libraries_are_found_in_the_build_output()
     {
-        Libraries.Should().Contain([CoreLibrary, "Ave.Documents.Fonts", "Ave.Documents.Render.Pdf", "Ave.Documents"]);
+        Libraries.Should().Contain([CoreLibrary, "Ave.Extensions.Documents.Fonts", "Ave.Extensions.Documents.Render.Pdf", "Ave.Extensions.Documents"]);
         AllCodes().Should().HaveCountGreaterThan(50);
     }
 
@@ -113,11 +113,11 @@ public class ErrorCodeTests
     public void The_foreign_code_scan_sees_a_use_of_Core_s_codes()
     {
         // Positive control: the front-end raises Core's input codes, so the scan must see them as references to Core.
-        UsedErrorCodeFields("Ave.Documents.Fluent").Should().Contain(field => field.StartsWith(CoreLibrary + ": DocumentErrorCodes", StringComparison.Ordinal));
+        UsedErrorCodeFields("Ave.Extensions.Documents.Fluent").Should().Contain(field => field.StartsWith(CoreLibrary + ": DocumentErrorCodes", StringComparison.Ordinal));
     }
 
     private static IEnumerable<string> ForeignErrorCodeFields(string library) =>
-        UsedErrorCodeFields(library).Where(field => field.StartsWith("Ave.Documents", StringComparison.Ordinal) && !field.StartsWith(CoreLibrary + ":", StringComparison.Ordinal));
+        UsedErrorCodeFields(library).Where(field => field.StartsWith("Ave.Extensions.Documents", StringComparison.Ordinal) && !field.StartsWith(CoreLibrary + ":", StringComparison.Ordinal));
 
     /// <summary>"assembly: Type.Field" for every field of an <c>…ErrorCodes</c> type in another assembly that the
     /// library references.</summary>

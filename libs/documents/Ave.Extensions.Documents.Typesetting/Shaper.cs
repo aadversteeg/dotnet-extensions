@@ -4,16 +4,16 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.Typesetting.Shaping;
-using Ave.Documents.Typesetting.Unicode;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Typesetting.Shaping;
+using Ave.Extensions.Documents.Typesetting.Unicode;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Typesetting;
+namespace Ave.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// Turns text into positioned glyphs with the font's OpenType layout tables: characters become glyphs through

@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.Fonts.Tables;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Fonts.Tables;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>Reads TrueType font files. Fonts are always explicit input: there is no lookup of system fonts.</summary>
 public static class FontParser

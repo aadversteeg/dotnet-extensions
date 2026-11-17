@@ -1,8 +1,8 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.DocumentModel;
+namespace UnitTests.Extensions.Documents.DocumentModel;
 
 public class DocumentModelTextTests
 {

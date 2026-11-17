@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// The thickness of a font, on the numeric scale CSS uses (CSS Fonts 4 §2.2 "font-weight": 1–1000, normal is

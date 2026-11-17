@@ -2,10 +2,10 @@ using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using Ave.Documents.Images;
-using Ave.Documents.Images.Png;
+using Ave.Extensions.Documents.Images;
+using Ave.Extensions.Documents.Images.Png;
 
-namespace UnitTests.Ave.Documents.Images;
+namespace UnitTests.Extensions.Documents.Images;
 
 /// <summary>
 /// The structure rules of the two formats, beyond their checksums: the PNG chunk order (PNG §5.6) and a JPEG frame

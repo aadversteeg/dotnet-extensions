@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>One page of the fragment tree: the page size, the root box's fragment and the page-area fragments.</summary>
 /// <param name="PageSize">The page size in points.</param>

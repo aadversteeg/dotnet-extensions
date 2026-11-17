@@ -1,15 +1,15 @@
 using System.Collections.Immutable;
 using System.IO;
-using Ave.Documents;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// The text a reader gets from the PDF equals the document's text, run by run. One glyph can stand for several
@@ -74,7 +74,7 @@ public class TextReadBackTests
     [InlineData("ua1")]
     public void Glyphs_with_replacement_text_pass_veraPDF(string flavour)
     {
-        var folder = Directory.CreateTempSubdirectory("ave-documents-actualtext-").FullName;
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-actualtext-").FullName;
         try
         {
             var document = Narrow(Paragraph("x-y"), Paragraph("an extra\u00ADordinary thing"), Paragraph("a\u00A0b c"));

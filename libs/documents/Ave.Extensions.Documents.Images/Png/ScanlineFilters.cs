@@ -1,6 +1,6 @@
 using System;
 
-namespace Ave.Documents.Images.Png;
+namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>
 /// Undoes PNG filter method 0 (PNG §9 "Filtering"). Every scanline starts with one filter-type byte; the encoder

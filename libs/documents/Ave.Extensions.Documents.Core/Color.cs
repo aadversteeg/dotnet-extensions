@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// An RGB colour with 8 bits per channel, as used by CSS (<c>#1f4e79</c>).

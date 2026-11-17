@@ -1,7 +1,7 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Pdf;
+namespace Ave.Extensions.Documents.Pdf;
 
 /// <summary>Errors the PDF writer raises. The back-end (Render.Pdf) adds its own codes to the same branches.</summary>
 public static class PdfErrorCodes

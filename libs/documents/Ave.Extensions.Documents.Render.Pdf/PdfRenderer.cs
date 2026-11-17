@@ -1,17 +1,17 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Images;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf.Tagging;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Images;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf.Tagging;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>The PDF back-end: page model in, PDF file out.</summary>
 public static class PdfRenderer

@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>A language system table (OpenType spec, "Language system table").</summary>
 /// <param name="RequiredFeature">The index of the feature that is always applied, or null ("if no

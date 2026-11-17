@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>The Ave.Documents engine in one package: the code front-end, layout and the PDF back-end, joined by one call (ToPdf). Reference this to build a document in C# and get a PDF; reference the layer packages to use or replace one layer.</Description>
+    <Description>The Ave.Extensions.Documents engine in one package: the code front-end, layout and the PDF back-end, joined by one call (ToPdf). Reference this to build a document in C# and get a PDF; reference the layer packages to use or replace one layer.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ave.Documents.Fluent\Ave.Documents.Fluent.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Layout\Ave.Documents.Layout.csproj" />
-    <ProjectReference Include="..\Ave.Documents.Render.Pdf\Ave.Documents.Render.Pdf.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Fluent\Ave.Extensions.Documents.Fluent.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Layout\Ave.Extensions.Documents.Layout.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Render.Pdf\Ave.Extensions.Documents.Render.Pdf.csproj" />
   </ItemGroup>
 
 </Project>

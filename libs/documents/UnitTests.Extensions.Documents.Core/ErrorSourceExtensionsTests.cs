@@ -1,7 +1,7 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 
-namespace UnitTests.Ave.Documents.Core;
+namespace UnitTests.Extensions.Documents.Core;
 
 public class ErrorSourceExtensionsTests
 {

@@ -10,7 +10,7 @@
 # - each tool by its exact Debian version, so an install fails instead of taking another version.
 #
 # Built locally, never published: tools/verify-samples.ps1, tools/reference/chromium/measure.mjs and the reference
-# tests build it with "docker build -t ave-documents-tools:<first 12 hex digits of this file's SHA-256> - < tools.Dockerfile",
+# tests build it with "docker build -t ave-extensions-documents-tools:<first 12 hex digits of this file's SHA-256> - < tools.Dockerfile",
 # so a change to this file builds a new image and an unchanged one reuses the cached image.
 FROM debian@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
 

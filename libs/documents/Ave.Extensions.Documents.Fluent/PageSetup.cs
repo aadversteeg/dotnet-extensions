@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fluent;
+namespace Ave.Extensions.Documents.Fluent;
 
 /// <summary>
 /// The pages: size and margins (CSS Paged Media 3 §3: <c>@page { size; margin }</c>) and what every page repeats — a

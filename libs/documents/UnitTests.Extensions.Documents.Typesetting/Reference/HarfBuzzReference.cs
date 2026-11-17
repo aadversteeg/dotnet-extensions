@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using WebAssembly.Runtime;
 
-namespace UnitTests.Ave.Documents.Typesetting.Reference;
+namespace UnitTests.Extensions.Documents.Typesetting.Reference;
 
 /// <summary>One glyph as HarfBuzz shapes it, in font design units (no scale set, so units are font units).</summary>
 public sealed record ReferenceGlyph(int Glyph, int Cluster, int XAdvance, int XOffset, int YOffset);

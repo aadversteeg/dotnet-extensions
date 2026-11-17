@@ -1,4 +1,4 @@
-namespace Ave.Documents.Typesetting.Unicode;
+namespace Ave.Extensions.Documents.Typesetting.Unicode;
 
 /// <summary>
 /// The Unicode properties of a code point that line breaking and shaping need: its Line_Break class, its

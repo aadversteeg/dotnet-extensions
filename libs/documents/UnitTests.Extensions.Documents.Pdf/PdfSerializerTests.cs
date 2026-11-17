@@ -1,6 +1,6 @@
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Pdf;
 
-namespace UnitTests.Ave.Documents.Pdf;
+namespace UnitTests.Extensions.Documents.Pdf;
 
 /// <summary>Object syntax per ISO 32000-1 §7.3; expected strings follow the examples in that section.</summary>
 public class PdfSerializerTests

@@ -1,13 +1,13 @@
 using System.Reflection;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
 
-namespace UnitTests.Ave.Documents.Render.Pdf;
+namespace UnitTests.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The public API of the PDF packages answers every argument value with a value — an object, or an error value from the
 /// operation that cannot go on — never with an exception: every public constructor, method and property of
-/// Ave.Documents.Pdf and Ave.Documents.Render.Pdf is called with null for every reference and the default for every
+/// Ave.Extensions.Documents.Pdf and Ave.Extensions.Documents.Render.Pdf is called with null for every reference and the default for every
 /// value type (an unset ImmutableArray included), and every member of each object so made is called the same way. A
 /// parameter that takes a sequence is also given an unset ImmutableArray: boxed, it is not null, but it cannot be read.
 /// A foreign case of an abstract type cannot reach a writer: no other assembly can derive from

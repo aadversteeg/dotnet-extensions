@@ -1,7 +1,7 @@
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
 
-namespace Ave.Documents.Typesetting.Shaping;
+namespace Ave.Extensions.Documents.Typesetting.Shaping;
 
 /// <summary>
 /// Which glyphs a lookup skips (OpenType spec, "Lookup table" → LookupFlag), and the class each glyph has. Both

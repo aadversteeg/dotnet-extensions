@@ -3,7 +3,7 @@ using System.Collections.Frozen;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// The character-to-glyph map (OpenType spec, "cmap — Character to glyph index mapping table"). Reads one

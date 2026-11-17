@@ -1,7 +1,7 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Typesetting;
+namespace Ave.Extensions.Documents.Typesetting;
 
 /// <summary>Errors the shaper and the line breaker raise.</summary>
 public static class TypesettingErrorCodes

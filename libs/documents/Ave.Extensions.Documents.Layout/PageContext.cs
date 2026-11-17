@@ -1,7 +1,7 @@
 using System.Globalization;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// The page a layout call is laying out, for computed content (<see cref="CounterRun"/>): its number and the number of

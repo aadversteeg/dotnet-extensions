@@ -1,13 +1,13 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fluent;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.Functional;
-using UnitTests.Ave.Documents.Layout;
-using static Ave.Documents.Fluent.Elements;
+using UnitTests.Extensions.Documents.Layout;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// The rule for a row that a page break cuts (fix round 5, SP-1, after probe run 35): a row is cut inside itself only

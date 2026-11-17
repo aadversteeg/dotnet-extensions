@@ -1,10 +1,10 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using Ave.Documents.Fluent;
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Fonts;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
 /// Measures how long one document takes from the front-end value to the PDF bytes (translate, lay out, paint, write),

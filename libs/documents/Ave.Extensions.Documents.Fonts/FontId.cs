@@ -1,7 +1,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>
 /// Identifies a font by its content: the SHA-256 digest of the font file. The same bytes always give the same

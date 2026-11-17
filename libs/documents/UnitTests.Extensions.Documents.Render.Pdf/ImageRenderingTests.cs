@@ -1,11 +1,11 @@
 using System.Text;
-using Ave.Documents.Core;
-using Ave.Documents.PageModel;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.TestSupport;
 using UglyToad.PdfPig;
 
-namespace UnitTests.Ave.Documents.Render.Pdf;
+namespace UnitTests.Extensions.Documents.Render.Pdf;
 
 /// <summary>Images in the PDF: image XObjects with a soft mask for alpha, JPEG embedded unchanged, each image once.</summary>
 public class ImageRenderingTests

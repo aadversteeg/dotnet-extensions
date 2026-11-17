@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Fonts;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>A font the document uses, with the glyphs it uses and the text each glyph stands for.</summary>
 /// <param name="Font">The font.</param>

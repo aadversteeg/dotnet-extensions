@@ -1,9 +1,9 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// The output of layout for one page: an immutable tree of rectangles (CSS Fragmentation 3 §2: "The portion of

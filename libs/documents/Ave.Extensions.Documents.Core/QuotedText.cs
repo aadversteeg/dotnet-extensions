@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Writes text between double quotes with escapes, for the text serialisations of the intermediate models.

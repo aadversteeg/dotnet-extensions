@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Images.Png;
+namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>
 /// Turns unfiltered scanlines into 8-bit colour samples and an optional alpha channel (PNG §7.2 "Scanlines": pixels

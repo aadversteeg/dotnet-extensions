@@ -1,4 +1,4 @@
-namespace Ave.Documents.Pdf.Xmp;
+namespace Ave.Extensions.Documents.Pdf.Xmp;
 
 /// <summary>
 /// An XML namespace of XMP properties (ISO 16684-1 §6.2: "All names in XMP shall be XML expanded names, consisting

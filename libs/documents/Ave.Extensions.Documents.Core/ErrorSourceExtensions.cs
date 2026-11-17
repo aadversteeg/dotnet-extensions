@@ -1,7 +1,7 @@
 using System.Linq;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// Attaches "where in the user's code" to an error. Each layer adds what it knows: the font layer knows the

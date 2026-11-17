@@ -1,8 +1,8 @@
 using System;
-using Ave.Documents.Core;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Pdf;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The inputs of the PDF file that are not part of the document. Nothing here is read from the clock or the
@@ -20,7 +20,7 @@ public sealed record PdfRenderOptions(DateTimeOffset CreationDate, ValueList<byt
     public PdfProfile Profile { get; init; } = PdfProfile.Plain;
 
     /// <summary>The value of the /Producer entry: the software that wrote the file.</summary>
-    public const string Producer = "Ave.Documents";
+    public const string Producer = "Ave.Extensions.Documents";
 
     /// <summary>True when both options write the same file: every member is compared, the date with its offset
     /// (<see cref="DateTimeOffset.EqualsExact"/>), not only its instant as <see cref="DateTimeOffset"/>'s own equality

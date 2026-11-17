@@ -1,16 +1,16 @@
 using System.Collections.Immutable;
 using System.Globalization;
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Fluent;
-using Ave.Documents.Layout;
-using Ave.Documents.PageModel;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
 using UglyToad.PdfPig;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// The timesheet sample end to end for the reporting PoC's three data sets in Dutch and English:

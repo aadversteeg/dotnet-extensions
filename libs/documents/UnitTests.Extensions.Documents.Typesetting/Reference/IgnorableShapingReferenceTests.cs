@@ -1,7 +1,7 @@
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Typesetting.Reference;
+namespace UnitTests.Extensions.Documents.Typesetting.Reference;
 
 /// <summary>
 /// "f", an invisible character and "i" in Lato, shaped by HarfBuzz (the reference build) and by the shaper. HarfBuzz

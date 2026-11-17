@@ -1,10 +1,10 @@
 using System.Runtime.CompilerServices;
 using System.Text;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>
 /// Reads the committed Lato fonts. The expected values were read independently with fontTools 4.68.0

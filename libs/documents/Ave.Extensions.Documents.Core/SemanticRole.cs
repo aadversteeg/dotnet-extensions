@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// What a node MEANS, independent of how it is laid out. A box laid out as a table is not necessarily a table

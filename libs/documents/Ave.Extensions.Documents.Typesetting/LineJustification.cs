@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Typesetting;
+namespace Ave.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// Places a line between the edges of its line box: alignment and inter-word justification (CSS Text 3 §6.1

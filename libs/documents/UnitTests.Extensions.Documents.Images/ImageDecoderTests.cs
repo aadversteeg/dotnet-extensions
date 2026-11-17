@@ -1,8 +1,8 @@
 using System.IO;
-using Ave.Documents.Core;
-using Ave.Documents.Images;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Images;
 
-namespace UnitTests.Ave.Documents.Images;
+namespace UnitTests.Extensions.Documents.Images;
 
 /// <summary>
 /// The decoder against files written by Pillow (tools/generate-test-images.py). Every pixel is checked against the

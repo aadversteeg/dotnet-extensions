@@ -1,7 +1,7 @@
 using System.Linq;
-using Ave.Documents.DocumentModel;
+using Ave.Extensions.Documents.DocumentModel;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// The appeal of breakpoints under the <c>avoid</c> values of CSS Fragmentation 3: <c>break-before</c> and

@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.DocumentModel;
+namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>The computed text properties of an <see cref="InlineRun"/>.</summary>
 /// <param name="FontFamily">One family name (CSS Fonts 4 §2.1; a fallback list comes later).</param>

@@ -1,9 +1,9 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.DocumentModel;
-using static Ave.Documents.Fluent.Elements;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.DocumentModel;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 public class TranslationTests
 {

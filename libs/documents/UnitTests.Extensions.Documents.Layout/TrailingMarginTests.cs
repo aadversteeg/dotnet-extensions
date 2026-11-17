@@ -1,10 +1,10 @@
-using Ave.Documents.Core;
-using Ave.Documents.DocumentModel;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
-using static UnitTests.Ave.Documents.Layout.Models;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
+using static UnitTests.Extensions.Documents.Layout.Models;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// The bottom margin of a box's last child stays inside the box when padding or a border separates them (CSS 2.1

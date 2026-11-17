@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// The one rule for "does this fit": used by line breaking (does the next word fit the line) and by page

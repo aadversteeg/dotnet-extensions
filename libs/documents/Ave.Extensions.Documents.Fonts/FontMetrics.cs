@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>
 /// The font-wide measurements, in font design units (see <see cref="UnitsPerEm"/>). Divide by UnitsPerEm and

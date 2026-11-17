@@ -1,9 +1,9 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Fonts;
+namespace UnitTests.Extensions.Documents.Fonts;
 
 /// <summary>Reading GSUB, GPOS and 'kern'. Lato facts from fontTools 4.68.0: GSUB has 41 lookups, GPOS 5; GPOS
 /// lookup 0 (kern) holds six PairPos format 1 and six format 2 subtables behind extension lookups.</summary>
@@ -53,7 +53,7 @@ public class OpenTypeTableTests
     {
         var gpos = TestFonts.Regular.Layout.Positions;
         var bytes = TestFonts.Bytes("Lato-Regular.ttf");
-        var directory = global::Ave.Documents.Fonts.Tables.TableDirectory.Parse(bytes).Value;
+        var directory = global::Ave.Extensions.Documents.Fonts.Tables.TableDirectory.Parse(bytes).Value;
         var truncated = directory.Tables["GPOS"][..200];
 
         var result = LayoutTableParser.Parse("GPOS", truncated, TestFonts.Regular.GlyphCount);

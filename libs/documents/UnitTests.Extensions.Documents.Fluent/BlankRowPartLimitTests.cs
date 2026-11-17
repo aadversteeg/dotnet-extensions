@@ -1,11 +1,11 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.Layout;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.Functional;
-using static Ave.Documents.Fluent.Elements;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Fluent;
+namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// LIMIT (review 36, reading (b); docs/architecture.md, Known limits): a part of a table row that is as tall as the

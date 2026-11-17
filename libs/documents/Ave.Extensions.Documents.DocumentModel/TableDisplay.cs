@@ -1,4 +1,4 @@
-namespace Ave.Documents.DocumentModel;
+namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
 /// The part of a table a box is: the layout-internal display types of CSS (CSS Display 3 §2.4, <c>table-*</c>

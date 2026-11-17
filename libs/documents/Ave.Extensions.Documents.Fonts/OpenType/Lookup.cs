@@ -1,6 +1,6 @@
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>A lookup (OpenType spec, "Lookup table"): subtables of one lookup type, tried in order.</summary>
 /// <param name="Index">Its index in the lookup list.</param>

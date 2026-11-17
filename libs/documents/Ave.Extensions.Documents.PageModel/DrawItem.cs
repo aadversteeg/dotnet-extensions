@@ -1,8 +1,8 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.Images;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Images;
 
-namespace Ave.Documents.PageModel;
+namespace Ave.Extensions.Documents.PageModel;
 
 /// <summary>
 /// One entry of a page's display list. Coordinates are page coordinates in points: origin top-left, y down.

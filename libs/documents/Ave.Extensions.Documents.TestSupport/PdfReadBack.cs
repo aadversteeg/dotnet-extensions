@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Ave.Documents.PageModel;
+using Ave.Extensions.Documents.PageModel;
 using UglyToad.PdfPig;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>
 /// Reads a PDF back with PdfPig, an independent PDF reader, and compares what it finds with the page model the
@@ -208,7 +208,7 @@ public static class PdfReadBack
         return differences;
     }
 
-    private static ReadArea Expected(string kind, Ave.Documents.Core.Rect area, Page page, string rgb) =>
+    private static ReadArea Expected(string kind, Ave.Extensions.Documents.Core.Rect area, Page page, string rgb) =>
         new(kind, area.Origin.X, page.Size.Height - area.Origin.Y - area.Size.Height, area.Size.Width, area.Size.Height, rgb);
 
     private static ReadArea Read(string kind, UglyToad.PdfPig.Core.PdfRectangle box, string rgb) =>

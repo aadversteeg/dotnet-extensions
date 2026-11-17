@@ -1,4 +1,4 @@
-namespace Ave.Documents.Core;
+namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
 /// A length on the page. Stored in PostScript points: 1/72 inch, the unit of PDF default user space

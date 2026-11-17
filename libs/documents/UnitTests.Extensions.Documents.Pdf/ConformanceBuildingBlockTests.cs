@@ -1,12 +1,12 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Xml.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Pdf;
-using Ave.Documents.Pdf.Xmp;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Pdf.Xmp;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.Pdf;
+namespace UnitTests.Extensions.Documents.Pdf;
 
 /// <summary>The PDF layer's conformance building blocks: XMP packets, the sRGB ICC profile, profiles, trees, marked content.</summary>
 public class ConformanceBuildingBlockTests

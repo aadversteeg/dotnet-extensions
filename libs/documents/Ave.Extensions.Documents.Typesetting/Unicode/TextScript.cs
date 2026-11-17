@@ -1,4 +1,4 @@
-namespace Ave.Documents.Typesetting.Unicode;
+namespace Ave.Extensions.Documents.Typesetting.Unicode;
 
 /// <summary>
 /// The values of the Unicode Script property (UAX #24) that shaping distinguishes in this version, from

@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Globalization;
-using Ave.Documents.Core;
-using Ave.Documents.Pdf.Xmp;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Pdf.Xmp;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The XMP metadata of the document (ISO 32000-1 §14.3.2), with which PDF/A and PDF/UA files identify the standards

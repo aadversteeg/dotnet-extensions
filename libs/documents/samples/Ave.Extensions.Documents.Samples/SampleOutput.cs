@@ -1,8 +1,8 @@
 using System;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>How the samples are written, shared by the samples app and its tests so both produce the same files.</summary>
 public static class SampleOutput

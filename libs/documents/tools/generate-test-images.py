@@ -2,7 +2,7 @@
 through libjpeg), so the engine's own decoder is never tested against files it produced itself.
 
 Run from the repository root:  python tools/generate-test-images.py
-Writes src/UnitTests.Ave.Documents.Images/Assets/*.png|*.jpg and samples/Ave.Documents.Samples/assets/logo.png.
+Writes UnitTests.Extensions.Documents.Images/Assets/*.png|*.jpg and samples/Ave.Extensions.Documents.Samples/assets/logo.png.
 The pixel pattern is a formula (see pattern()), repeated in the C# tests, so every decoded pixel can be checked.
 Only test and sample assets are made here; nothing of this runs in the engine.
 """
@@ -14,8 +14,8 @@ import zlib
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ASSETS = os.path.join(ROOT, "src", "UnitTests.Ave.Documents.Images", "Assets")
-SAMPLE_ASSETS = os.path.join(ROOT, "samples", "Ave.Documents.Samples", "assets")
+ASSETS = os.path.join(ROOT, "UnitTests.Extensions.Documents.Images", "Assets")
+SAMPLE_ASSETS = os.path.join(ROOT, "samples", "Ave.Extensions.Documents.Samples", "assets")
 
 # 7 x 5 pixels: an odd width, so rows of packed palette indices end inside a byte.
 W, H = 7, 5

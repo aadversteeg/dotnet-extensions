@@ -4,7 +4,7 @@ using System.Linq;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Images.Png;
+namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>
 /// The colour information outside the pixel data: the palette (PLTE, PNG Second Edition §11.2.3) and simple

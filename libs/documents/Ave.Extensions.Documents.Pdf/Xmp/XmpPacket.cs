@@ -5,11 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Pdf.Xmp;
+namespace Ave.Extensions.Documents.Pdf.Xmp;
 
 /// <summary>
 /// An XMP packet (ISO 16684-1 §7, RDF/XML serialization) holding the properties of one resource: the PDF document.

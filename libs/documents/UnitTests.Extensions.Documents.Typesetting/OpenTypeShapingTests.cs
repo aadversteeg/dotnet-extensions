@@ -1,12 +1,12 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
-using Ave.Documents.Fonts;
-using Ave.Documents.Fonts.OpenType;
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
-using Ave.Documents.Typesetting.Shaping;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
+using Ave.Extensions.Documents.Typesetting.Shaping;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// GSUB and GPOS on Lato Regular. Expected glyph ids and values come from fontTools 4.68.0, not from this code:

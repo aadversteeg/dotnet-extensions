@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
-using Ave.Documents.Core;
+using Ave.Extensions.Documents.Core;
 
-namespace Ave.Documents.Samples;
+namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
 /// The brand kit: everything a customer changes to restyle the timesheet, and no layout. The values are those of the

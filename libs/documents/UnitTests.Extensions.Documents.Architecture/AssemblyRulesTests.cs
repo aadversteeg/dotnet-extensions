@@ -4,7 +4,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
-namespace UnitTests.Ave.Documents.Architecture;
+namespace UnitTests.Extensions.Documents.Architecture;
 
 /// <summary>
 /// Rules checked on the compiled assemblies, so they cannot be broken by accident:
@@ -16,19 +16,19 @@ public class AssemblyRulesTests
     /// <summary>The allowed engine references per library: the layer diagram in code.</summary>
     private static readonly Dictionary<string, string[]> AllowedReferences = new()
     {
-        ["Ave.Documents.Core"] = [],
-        ["Ave.Documents.Fonts"] = ["Core"],
-        ["Ave.Documents.Images"] = ["Core"],
-        ["Ave.Documents.Pdf"] = ["Core"],
-        ["Ave.Documents.Typesetting"] = ["Core", "Fonts"],
-        ["Ave.Documents.DocumentModel"] = ["Core", "Images"],
-        ["Ave.Documents.PageModel"] = ["Core", "Fonts", "Images"],
-        ["Ave.Documents.Layout"] = ["Core", "Fonts", "Images", "Typesetting", "DocumentModel", "PageModel"],
-        ["Ave.Documents.Render.Pdf"] = ["Core", "Fonts", "Images", "Pdf", "PageModel"],
-        ["Ave.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel"],
+        ["Ave.Extensions.Documents.Core"] = [],
+        ["Ave.Extensions.Documents.Fonts"] = ["Core"],
+        ["Ave.Extensions.Documents.Images"] = ["Core"],
+        ["Ave.Extensions.Documents.Pdf"] = ["Core"],
+        ["Ave.Extensions.Documents.Typesetting"] = ["Core", "Fonts"],
+        ["Ave.Extensions.Documents.DocumentModel"] = ["Core", "Images"],
+        ["Ave.Extensions.Documents.PageModel"] = ["Core", "Fonts", "Images"],
+        ["Ave.Extensions.Documents.Layout"] = ["Core", "Fonts", "Images", "Typesetting", "DocumentModel", "PageModel"],
+        ["Ave.Extensions.Documents.Render.Pdf"] = ["Core", "Fonts", "Images", "Pdf", "PageModel"],
+        ["Ave.Extensions.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel"],
 
         // The composition package: the one place a front-end, the layout and a back-end meet.
-        ["Ave.Documents"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Fluent"],
+        ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Fluent"],
     };
 
     /// <summary>The names of the product libraries (the layer list), for the rules on other things than assemblies.</summary>
@@ -41,9 +41,9 @@ public class AssemblyRulesTests
     [Fact]
     public void Every_library_is_checked()
     {
-        var built = Directory.GetFiles(AppContext.BaseDirectory, "Ave.Documents.*.dll").Append(PathOf("Ave.Documents")).Select(Path.GetFileNameWithoutExtension);
+        var built = Directory.GetFiles(AppContext.BaseDirectory, "Ave.Extensions.Documents.*.dll").Append(PathOf("Ave.Extensions.Documents")).Select(Path.GetFileNameWithoutExtension);
 
-        built.Where(name => name != "Ave.Documents.TestSupport").Should().BeEquivalentTo(AllowedReferences.Keys);
+        built.Where(name => name != "Ave.Extensions.Documents.TestSupport").Should().BeEquivalentTo(AllowedReferences.Keys);
     }
 
     [Theory]
@@ -102,14 +102,14 @@ public class AssemblyRulesTests
     public void The_front_end_references_neither_the_layout_nor_a_back_end()
     {
         // A second back-end or a second front-end is added beside the others, joined in the composition package
-        // (Ave.Documents), never by widening the front-end. Read from the compiled front-end itself.
-        using var stream = File.OpenRead(PathOf("Ave.Documents.Fluent"));
+        // (Ave.Extensions.Documents), never by widening the front-end. Read from the compiled front-end itself.
+        using var stream = File.OpenRead(PathOf("Ave.Extensions.Documents.Fluent"));
         using var pe = new PEReader(stream);
         var metadata = pe.GetMetadataReader();
         var references = metadata.AssemblyReferences.Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name)).ToList();
 
-        references.Should().Contain("Ave.Documents.DocumentModel", "the scan reads real references");
-        references.Should().NotContain(["Ave.Documents.Layout", "Ave.Documents.PageModel", "Ave.Documents.Pdf", "Ave.Documents.Render.Pdf", "Ave.Documents.Typesetting"]);
+        references.Should().Contain("Ave.Extensions.Documents.DocumentModel", "the scan reads real references");
+        references.Should().NotContain(["Ave.Extensions.Documents.Layout", "Ave.Extensions.Documents.PageModel", "Ave.Extensions.Documents.Pdf", "Ave.Extensions.Documents.Render.Pdf", "Ave.Extensions.Documents.Typesetting"]);
     }
 
     /// <summary>
@@ -139,11 +139,11 @@ public class AssemblyRulesTests
             .Select(handle => metadata.GetString(metadata.GetAssemblyReference(handle).Name))
             .ToList();
 
-        references.Should().NotContain("Ave.Documents", "only applications reference the composition package");
-        references.Where(name => name.StartsWith("Ave.Documents.", StringComparison.Ordinal))
-            .Select(name => name["Ave.Documents.".Length..])
+        references.Should().NotContain("Ave.Extensions.Documents", "only applications reference the composition package");
+        references.Where(name => name.StartsWith("Ave.Extensions.Documents.", StringComparison.Ordinal))
+            .Select(name => name["Ave.Extensions.Documents.".Length..])
             .Should().BeSubsetOf(AllowedReferences[assembly]);
-        references.Where(name => !name.StartsWith("Ave.Documents.", StringComparison.Ordinal))
+        references.Where(name => !name.StartsWith("Ave.Extensions.Documents.", StringComparison.Ordinal))
             .Should().OnlyContain(name => name == "System.Runtime" || name.StartsWith("System.", StringComparison.Ordinal)
                 || name.StartsWith("Ave.Extensions.Functional", StringComparison.Ordinal) || name.StartsWith("Ave.Extensions.ErrorPaths", StringComparison.Ordinal));
     }
@@ -168,10 +168,10 @@ public class AssemblyRulesTests
     public void The_test_only_packages_are_really_used_by_the_tests()
     {
         // Positive control for the test above: the reference shaper's test assembly does reference WebAssembly.
-        // Same configuration and framework folders, next project: src/UnitTests.Ave.Documents.Typesetting/bin/<config>/net10.0.
+        // Same configuration and framework folders, next project: UnitTests.Extensions.Documents.Typesetting/bin/<config>/net10.0.
         var testAssembly = Path.Combine(
-            AppContext.BaseDirectory.Replace("UnitTests.Ave.Documents.Architecture", "UnitTests.Ave.Documents.Typesetting", StringComparison.Ordinal),
-            "UnitTests.Ave.Documents.Typesetting.dll");
+            AppContext.BaseDirectory.Replace("UnitTests.Extensions.Documents.Architecture", "UnitTests.Extensions.Documents.Typesetting", StringComparison.Ordinal),
+            "UnitTests.Extensions.Documents.Typesetting.dll");
         using var stream = File.OpenRead(testAssembly);
         using var pe = new PEReader(stream);
         var metadata = pe.GetMetadataReader();

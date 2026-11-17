@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>
 /// veraPDF, the PDF Association's reference validator for PDF/A and PDF/UA, run from its Docker image. Test-only: the

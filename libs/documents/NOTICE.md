@@ -17,7 +17,7 @@ Written from the specifications:
   for the list of human checks.
 - XMP: ISO 16684-1 (XMP Specification Part 1) for the packet and RDF serialization; the PDF/A extension schema
   container as ISO 19005-3 §6.6.2.3 describes it.
-- Colour: the sRGB colour profile in `src/Ave.Documents.Pdf/SrgbIccProfile.cs` is written in code from the ICC
+- Colour: the sRGB colour profile in `Ave.Extensions.Documents.Pdf/SrgbIccProfile.cs` is written in code from the ICC
   profile format ICC.1:2001-04 and the sRGB values of IEC 61966-2-1; no profile file was copied. Its colorant and
   white-point numbers equal those of the ICC's `sRGB2014.icc` (and the colorants those of the HP/Microsoft `sRGB
   IEC61966-2.1` profile), which were decoded only to confirm the values. The generated profile needs no licence of
@@ -47,7 +47,7 @@ generated PDFs back (see below).
 
 `assets/unicode/18.0.0/` contains files of the Unicode Character Database 18.0.0 (© Unicode, Inc.), licensed under
 the Unicode License v3 (`assets/unicode/18.0.0/LICENSE.txt`). The table in
-`src/Ave.Documents.Typesetting/Unicode/UnicodePropertyRanges.g.cs` is generated from them. The line breaking
+`Ave.Extensions.Documents.Typesetting/Unicode/UnicodePropertyRanges.g.cs` is generated from them. The line breaking
 algorithm is written from UAX #14, revision 57.
 
 ## Fonts
@@ -70,7 +70,7 @@ gap.
 | Ave.Extensions.Functional, Ave.Extensions.ErrorPaths | MIT | the libraries |
 | PdfPig 0.1.16 | Apache-2.0 | tests only |
 | WebAssembly 2.1.0 (dotnet-webassembly) | Apache-2.0 | tests only: runs the reference shaper |
-| harfbuzz.wasm from harfbuzzjs 1.6.4 (HarfBuzz 15.0.0) | MIT (harfbuzzjs), Old MIT (HarfBuzz) | tests only: the reference shaper, `src/UnitTests.Ave.Documents.Typesetting/Reference/` |
+| harfbuzz.wasm from harfbuzzjs 1.6.4 (HarfBuzz 15.0.0) | MIT (harfbuzzjs), Old MIT (HarfBuzz) | tests only: the reference shaper, `UnitTests.Extensions.Documents.Typesetting/Reference/` |
 | xunit, Microsoft.NET.Test.Sdk | Apache-2.0 / MIT | tests only (xunit also in the test-support project, for the Docker-backed facts) |
 | FluentAssertions 7.2.0 | Apache-2.0 | tests only (version 8 changed licence) |
 
@@ -80,5 +80,5 @@ MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They are 
 
 ## Sample data
 
-`samples/Ave.Documents.Samples/data/` holds the reporting PoC's synthetic timesheet data (no customer data);
-`samples/Ave.Documents.Samples/assets/logo.png` is the PoC's dummy logo, rasterised by `tools/generate-test-images.py`.
+`samples/Ave.Extensions.Documents.Samples/data/` holds the reporting PoC's synthetic timesheet data (no customer data);
+`samples/Ave.Extensions.Documents.Samples/assets/logo.png` is the PoC's dummy logo, rasterised by `tools/generate-test-images.py`.

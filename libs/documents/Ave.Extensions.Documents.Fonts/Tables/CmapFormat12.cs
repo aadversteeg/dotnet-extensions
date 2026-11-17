@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts.Tables;
+namespace Ave.Extensions.Documents.Fonts.Tables;
 
 /// <summary>
 /// cmap subtable format 12, "Segmented coverage" (OpenType spec, "cmap" → "Format 12"). Maps all of Unicode

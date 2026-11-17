@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Images.Png;
+namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>The PNG colour types (PNG §11.2.2, Table 11.1).</summary>
 internal enum PngColorType

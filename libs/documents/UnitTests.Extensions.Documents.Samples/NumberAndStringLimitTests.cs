@@ -1,18 +1,18 @@
 using System.Collections.Immutable;
 using System.IO;
-using Ave.Documents;
-using Ave.Documents.Core;
-using Ave.Documents.Fluent;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
-using Ave.Documents.Render.Pdf;
-using Ave.Documents.Samples;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
+using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Samples;
+using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
-using static Ave.Documents.Fluent.Elements;
+using static Ave.Extensions.Documents.Fluent.Elements;
 
-namespace UnitTests.Ave.Documents.Samples;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// Files at the number and string limits of PDF/A (veraPDF rules 6.1.13-1 and 6.1.13-3) pass veraPDF: what the engine
@@ -34,7 +34,7 @@ public sealed class NumberAndStringLimitTests
     /// <summary>Every file was written; each passes veraPDF in one folder.</summary>
     private static void AllPass(string flavour, (string Name, Result<ImmutableArray<byte>, Error> Pdf)[] files)
     {
-        var folder = Directory.CreateTempSubdirectory("ave-documents-limits-").FullName;
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-limits-").FullName;
         try
         {
             foreach (var (name, pdf) in files)

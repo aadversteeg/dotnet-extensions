@@ -1,9 +1,9 @@
-using Ave.Documents.Core;
-using Ave.Documents.Fonts;
-using Ave.Documents.PageModel;
-using Ave.Documents.TestSupport;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.TestSupport;
 
-namespace UnitTests.Ave.Documents.PageModel;
+namespace UnitTests.Extensions.Documents.PageModel;
 
 public class PageModelTextTests
 {

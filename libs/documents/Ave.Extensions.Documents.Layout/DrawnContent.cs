@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
-using Ave.Documents.Core;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace Ave.Documents.Layout;
+namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
 /// What a fragment draws on its page, read from the fragment tree the way <see cref="PagePainter"/> paints it. A

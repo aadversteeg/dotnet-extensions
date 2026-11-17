@@ -1,4 +1,4 @@
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>The names of a font, read from its 'name' table.</summary>
 /// <param name="Family">The family, for example <c>Lato</c> (typographic family, name ID 16, if present;

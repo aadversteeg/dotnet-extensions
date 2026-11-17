@@ -1,6 +1,6 @@
 using System;
 
-namespace Ave.Documents.Images.Png;
+namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>
 /// The CRC-32 every PNG chunk ends with (PNG §5.5 "CRC algorithm", the ISO 3309 / ITU-T V.42 polynomial

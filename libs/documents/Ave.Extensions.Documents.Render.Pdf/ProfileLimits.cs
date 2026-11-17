@@ -3,12 +3,12 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Ave.Documents.Core;
-using Ave.Documents.PageModel;
-using Ave.Documents.Pdf;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Pdf;
 using Ave.Extensions.ErrorPaths;
 
-namespace Ave.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.Render.Pdf;
 
 /// <summary>
 /// The rules of the conformance profiles that depend on the input and that the writer cannot meet by construction

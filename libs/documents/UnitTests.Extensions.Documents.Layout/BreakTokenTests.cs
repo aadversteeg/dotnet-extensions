@@ -1,6 +1,6 @@
-using Ave.Documents.Layout;
+using Ave.Extensions.Documents.Layout;
 
-namespace UnitTests.Ave.Documents.Layout;
+namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// A break token is a position in the content: two tokens are equal exactly when they resume at the same place. For a

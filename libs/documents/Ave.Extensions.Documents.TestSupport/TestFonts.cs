@@ -1,8 +1,8 @@
 using System;
 using System.IO;
-using Ave.Documents.Fonts;
+using Ave.Extensions.Documents.Fonts;
 
-namespace Ave.Documents.TestSupport;
+namespace Ave.Extensions.Documents.TestSupport;
 
 /// <summary>
 /// The test fonts, loaded once from the test output folder: Lato 2.015 Regular, Bold and Italic (SIL Open Font License

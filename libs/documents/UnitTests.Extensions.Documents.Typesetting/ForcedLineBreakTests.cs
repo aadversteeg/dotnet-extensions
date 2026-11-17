@@ -1,7 +1,7 @@
-using Ave.Documents.TestSupport;
-using Ave.Documents.Typesetting;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 
-namespace UnitTests.Ave.Documents.Typesetting;
+namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// A forced line break (U+2028, what <c>LineBreak()</c> writes; and the other mandatory breaks of UAX #14) ends the line

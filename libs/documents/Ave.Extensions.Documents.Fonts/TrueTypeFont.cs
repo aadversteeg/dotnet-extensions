@@ -2,12 +2,12 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Text;
-using Ave.Documents.Core;
-using Ave.Documents.Fonts.OpenType;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts.OpenType;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Documents.Fonts;
+namespace Ave.Extensions.Documents.Fonts;
 
 /// <summary>
 /// A parsed TrueType font: the original file (for embedding) plus the tables the engine needs, already

@@ -1,5 +1,5 @@
 
-namespace Ave.Documents.Fonts.OpenType;
+namespace Ave.Extensions.Documents.Fonts.OpenType;
 
 /// <summary>A script table: its tag and its default language system (OpenType spec, "Script table").</summary>
 /// <param name="Tag">The script tag, for example <c>latn</c> or <c>DFLT</c>.</param>
