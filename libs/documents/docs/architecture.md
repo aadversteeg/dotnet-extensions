@@ -281,12 +281,13 @@ Each is documented next to its code as well.
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on
   another page has none, and no other layout attributes are written.
-- **Speed:** measured, not tuned. On LAMORAK, Release, fonts parsed beforehand, PDF/A-3a + PDF/UA-1: the normal
-  timesheet takes about 1.0–1.4 s cold and 110–150 ms warm, the long one 2.5–2.9 s cold and about 410 ms warm. The
-  reporting PoC's Typst took 19 ms and 46 ms warm.
+- **Speed:** measured, not tuned. On a Windows workstation (16 logical processors, 64 GB of memory, .NET 10), Release, fonts parsed beforehand, PDF/A-3a +
+  PDF/UA-1: the normal timesheet takes about 1.0–1.4 s cold and 110–150 ms warm, the long one 2.5–2.9 s cold and about
+  410 ms warm. The Typst version of the same report (the proof of concept the sample follows) took 19 ms and 46 ms
+  warm on the same machine.
 - **Long tables:** a table's grid and columns are prepared once per layout pass and handed from page to page in the
   table's break token; a page looks up the cells of its own rows through per-row indexes. Layout time now grows with
-  the number of rows. Measured on LAMORAK (Release, A4, 2 cm margins, a three-column table with a header row, 0.5 pt
+  the number of rows. Measured on the same workstation (Release, A4, 2 cm margins, a three-column table with a header row, 0.5 pt
   grid lines, median of three runs after a warm-up, layout only):
 
   | Rows | Pages | Before | After |
@@ -316,7 +317,7 @@ Each is documented next to its code as well.
 | PDF/A-3b, PDF/A-3a, PDF/UA-1 | veraPDF 1.30.4 in Docker (pinned by digest) on every sample; a plain file must fail as negative control | `UnitTests.Extensions.Documents.Samples/ReferenceValidationTests.cs` (trait `Category=Reference`, skipped without Docker); script step 5 |
 | attachments | PdfPig in process, and qpdf in Docker, byte for byte | `TaggedPdfTests`, `ReferenceValidationTests`; script step 5 |
 | PDF syntax, fonts, images | `qpdf --check`, `pdffonts`, `pdfimages`, fontTools on every extracted subset | script step 4 |
-| how it looks | poppler and MuPDF renders, side by side with the PoC's Typst pages | script steps 4 and 6 (`out/samples/png`, `out/samples/sbs`) |
+| how it looks | poppler and MuPDF renders, side by side with the Typst version's pages (optional) | script steps 4 and 6 (`out/samples/png`, `out/samples/sbs`) |
 
 `dotnet test --filter Category!=Reference` leaves the Docker checks out. Golden files are updated with
 `UPDATE_GOLDEN=1` and reviewed as a diff.

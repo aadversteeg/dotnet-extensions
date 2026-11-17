@@ -3,8 +3,9 @@
 Lato Regular, Bold and Italic, version 2.015 (2015-08-06), by Łukasz Dziedzic (tyPoland), under the SIL Open Font
 License 1.1 (see `OFL.txt`). TrueType outlines (glyf), 2000 units per em, 3023 glyphs, cmap format 4.
 
-Copied from `/d/dev/ave/reporting-poc/templates/fonts` (LAMORAK) on 2026-11-15 (Italic added in stage 2, for
-the timesheet sample's descriptions).
+Taken unchanged from the fonts of the Typst version of the timesheet report (an earlier proof of concept, not part
+of this repository) on 2026-11-15; Italic was added later, for the timesheet sample's descriptions. The SHA-256
+values below identify the files.
 
 SHA-256:
 

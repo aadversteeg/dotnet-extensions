@@ -15,7 +15,7 @@ public static class VeraPdf
 {
     /// <summary>
     /// The image, pinned by digest so every run validates with the same rules: veraPDF 1.30.4 (built 2026-11-09), the
-    /// version the reporting proof of concept used. Its rule texts are quoted in the engine's error codes.
+    /// version the engine's conformance work was done with. Its rule texts are quoted in the engine's error codes.
     /// </summary>
     public const string Image = "verapdf/cli@sha256:f085855d442ad415e79fabbabcdd1803c2db4ee097cd5b94506c95ecdcfa1728";
 

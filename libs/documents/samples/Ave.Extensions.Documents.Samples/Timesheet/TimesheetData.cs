@@ -7,8 +7,8 @@ using System.Text.Json;
 namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
-/// The data of one timesheet, the shape of SmallBusiness's <c>TimeSheetReportData</c> (as copied into the reporting
-/// PoC, /d/dev/ave/reporting-poc src/ReportingPoc/Models.cs). Plain values; the template formats them.
+/// The data of one timesheet, in the shape of the report data of the SmallBusiness application, as the PoC (the Typst
+/// version of this report, see <see cref="Timesheets"/>) reads it. Plain values; the template formats them.
 /// </summary>
 /// <param name="ReportDate">The date the report was made.</param>
 /// <param name="ProjectName">The project.</param>

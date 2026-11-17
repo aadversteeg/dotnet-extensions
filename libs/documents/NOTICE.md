@@ -1,8 +1,12 @@
 # Notice
 
+The code of the documents family (`libs/documents`) is licensed under the MIT licence (`LICENSE` at the root of the
+repository). This file says what it was written from and lists the third-party data, fonts and tools it uses, with
+their licences.
+
 ## Code
 
-All code in this repository was written for it. No code was copied or ported from another project.
+All code in this family was written for it. No code was copied or ported from another project.
 
 Written from the specifications:
 
@@ -80,5 +84,8 @@ MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They are 
 
 ## Sample data
 
-`samples/Ave.Extensions.Documents.Samples/data/` holds the reporting PoC's synthetic timesheet data (no customer data);
-`samples/Ave.Extensions.Documents.Samples/assets/logo.png` is the PoC's dummy logo, rasterised by `tools/generate-test-images.py`.
+`samples/Ave.Extensions.Documents.Samples/data/` holds synthetic timesheet data (invented customers and entries, no
+real customer data), made for an earlier Typst version of the timesheet report;
+`samples/Ave.Extensions.Documents.Samples/assets/logo.png` is that version's dummy logo, rasterised by
+`tools/generate-test-images.py`. The bank account, VAT and Chamber of Commerce numbers in the sample's footer
+(`Timesheet/Brand.cs`) are invented placeholders.

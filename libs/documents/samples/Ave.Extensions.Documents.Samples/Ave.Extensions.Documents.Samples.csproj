@@ -20,8 +20,8 @@
 
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)../../assets/fonts/lato/*.ttf;$(MSBuildThisFileDirectory)../../assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <!-- The reporting PoC's sample data (copied from /d/dev/ave/reporting-poc/data, commit 4cce9bf) and its logo as PNG
-         (made by tools/generate-test-images.py). -->
+    <!-- The synthetic timesheet data of the reporting proof of concept (an earlier Typst version of the report) and
+         its logo as PNG (made by tools/generate-test-images.py). -->
     <None Include="data/*.json;assets/logo.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

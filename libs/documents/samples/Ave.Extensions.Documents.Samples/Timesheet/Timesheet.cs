@@ -9,8 +9,9 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace Ave.Extensions.Documents.Samples;
 
 /// <summary>
-/// The SmallBusiness timesheet written with the code front-end — the same layout as the reporting PoC's Typst
-/// template (<c>/d/dev/ave/reporting-poc/templates/timesheet.typ</c>): a header with the logo and the title on every
+/// The SmallBusiness timesheet written with the code front-end — the same layout as the Typst template of the
+/// reporting proof of concept ("the PoC" in this sample: an earlier Typst version of this report, not part of this
+/// repository; its data sets and logo are in <c>data/</c> and <c>assets/</c>): a header with the logo and the title on every
 /// page (with customer, project and period on the right from page 2 on), the customer and period lines, the entries
 /// table with repeated header row, each description as a second row under its entry and kept with it, grid lines,
 /// right-aligned hours in the culture's number format, a total row, and a footer with the bank details and "page x
