@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Fluent;
@@ -32,7 +33,11 @@ public static class TimesheetXml
             .WithDescription("Timesheet summary: customer, project, period and total hours")
             .WithModificationDate(modified);
 
-    /// <summary>The XML text, with an XML declaration and two-space indentation.</summary>
+    /// <summary>
+    /// The XML text, with an XML declaration and two-space indentation. Lines end with a line feed on every operating
+    /// system (<c>XElement.ToString()</c> would end them with the platform's line ending), so the attachment has
+    /// the same bytes everywhere.
+    /// </summary>
     /// <param name="data">The timesheet data.</param>
     /// <returns>The XML.</returns>
     public static string Summary(TimesheetData data)
@@ -46,7 +51,21 @@ public static class TimesheetXml
             new XElement(ns + "periodEnd", Day(data.PeriodEnd)),
             new XElement(ns + "entries", data.TimeEntries.Count),
             new XElement(ns + "totalHours", Math.Round(data.TimeEntries.Sum(entry => entry.Duration), 2).ToString("0.00", CultureInfo.InvariantCulture)));
-        return new XDeclaration("1.0", "UTF-8", null) + "\n" + summary + "\n";
+        var settings = new XmlWriterSettings
+        {
+            OmitXmlDeclaration = true,
+            Indent = true,
+            IndentChars = "  ",
+            NewLineChars = "\n",
+            NewLineHandling = NewLineHandling.Replace,
+        };
+        var text = new StringBuilder();
+        using (var writer = XmlWriter.Create(text, settings))
+        {
+            summary.WriteTo(writer);
+        }
+
+        return new XDeclaration("1.0", "UTF-8", null) + "\n" + text + "\n";
     }
 
     private static string Day(DateTime? day) => day?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
