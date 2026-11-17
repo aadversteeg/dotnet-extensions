@@ -199,6 +199,67 @@ public class TableSpanCloneTests
         }
     }
 
+    /// <summary>
+    /// Units of two one-line rows beside a cell of five lines that spans both; the first row of each unit has an 8 pt
+    /// bottom border of its own (a row's border takes part in every column of the line, the spanning cell's too), every
+    /// other line is 1 pt; the spanning cell's top padding moves its lines against the rows. After an empty block that
+    /// moves the table <paramref name="offset"/> down (review 35, probe M2).
+    /// </summary>
+    private static StyledDocument WideLineUnits(double offset, double spanPadding, double pageHeight = 120)
+    {
+        var t = new TableModels();
+        var thin = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(1.Pt(), Color.Black)) };
+        var span = thin with { Padding = thin.Padding with { Top = (thin.Padding.Top.Points + spanPadding).Pt() }, Span = new CellSpan(1, 2) };
+        var wide = BoxStyle.Initial with { Border = Border.All(BorderSide.None) with { Bottom = new BorderSide(8.Pt(), Color.Black) } };
+        Box Cell(BoxStyle style, params string[] lines) => t.Lines(lines) with { Style = style };
+        var rows = Enumerable.Range(0, 6).SelectMany(unit => new[]
+        {
+            t.Row(wide, Cell(span, [.. Enumerable.Range(0, 5).Select(line => $"s{unit}x{line}")]), Cell(thin, $"a{unit}")),
+            t.Row(Cell(thin, $"b{unit}")),
+        }).ToArray();
+        var table = t.Table([new TrackSize.Fixed(80.Pt()), new TrackSize.Fill(1)], t.Body(rows));
+        var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
+        return TableModels.Page(Width, pageHeight, spacer, table with { Style = table.Style with { DecorationBreak = BoxDecorationBreak.Clone } });
+    }
+
+    [Fact]
+    public void At_a_break_between_rows_a_cut_cell_keeps_clear_of_the_wide_line_that_ends_the_page()
+    {
+        // Mutant R5-2 of review 35. At a break between a unit's rows the page ends with the whole line above the row the
+        // break comes before — here the 8 pt line under the first row, in the spanning cell's column too — and the
+        // spanning cell, cut there, keeps clear of half of THAT line (4 pt), not of half of the 1 pt line under the row
+        // below. A break between rows is taken where nothing better exists: on a page whose first unit does not fit
+        // and whose end lies inside the wide line's lower half plus the half line under the next row, so page areas
+        // smaller than a unit step through it; the spanning cell's top padding moves its first line into the 3.5 pt in
+        // which only the wide line's half keeps it clear. From 29 pt: on a smaller page area a page that starts under the
+        // 8 pt line cannot hold the spanning cell's padding and first line, and the table is refused (DoesNotFit).
+        var betweenRows = 0;
+        for (var spanPadding = 0.0; spanPadding <= 8; spanPadding += 1)
+        {
+            for (var pageHeight = 29.0; pageHeight < 60; pageHeight += 0.25)
+            {
+                var because = $"spanning cell's top padding {spanPadding}, page area {pageHeight}";
+                var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), WideLineUnits(0, spanPadding, pageHeight));
+                result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
+                var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+                for (var page = 0; page < tables.Count; page++)
+                {
+                    var table = tables[page];
+                    foreach (var line in TextLines(table, new Point(0, 0)))
+                    {
+                        Rules(table).Where(rule => rule.Left < line.Right - Epsilon && line.Left < rule.Right - Epsilon && rule.Top < line.Bottom - Epsilon && line.Top < rule.Bottom - Epsilon)
+                            .Should().BeEmpty(because + $": page {page + 1}, no line over the text at {line.Top:0.##}");
+                    }
+
+                    // A page that ends with the 8 pt line ended at a break between a unit's rows.
+                    betweenRows += page + 1 < tables.Count && Rules(table).Any(rule => rule.Left < 1 && Math.Abs(rule.Bottom - table.Size.Height) < Epsilon && Math.Abs(rule.Bottom - rule.Top - 8) < Epsilon) ? 1 : 0;
+                }
+            }
+        }
+
+        betweenRows.Should().BeGreaterThan(10, "pages end at a break between a unit's rows, under the 8 pt line");
+    }
+
     /// <summary>The name of a row of <see cref="Document"/>, from its last cell's text: "a07" for the first row of unit
     /// 7 (the spanning cell starts in it), "b07" for its second.</summary>
     private static string RowName(Box row) =>
