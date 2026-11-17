@@ -15,11 +15,11 @@
        PDF/A-3b must pass for every sample; a failing PDF/A-3a or PDF/UA-1 rule is listed rule by rule and also fails
        the script, because the samples claim all three. Then qpdf extracts every timesheet's XML attachment, and the
        bytes are compared with the file the samples app wrote next to the PDF.
-    6. When the reporting PoC's PDFs are found (-PocPdfs, default ../reporting-poc/out next to this repository):
-       side-by-side PNGs of every timesheet page, ours on the left and the PoC's Typst page on the right, both rendered
-       by poppler at 100 dpi, to out/samples/sbs.
-    Tools run in Docker only; nothing here is part of the engine. Needs Docker, and network access the first time the
-    tools image is built.
+    6. Only with -TypstPdfs: side-by-side PNGs of every timesheet page, ours on the left and the same page of the Typst
+       version of the report on the right, both rendered by poppler at 100 dpi, to out/samples/sbs.
+    Tools run in Docker only; nothing here is part of the engine. Needs PowerShell 7, the .NET 10 SDK, Docker with Linux
+    containers, and network access the first time the tools image is built. Works on Linux, macOS and Windows: on Linux
+    and macOS the containers run as the current user (--user), so what they write into out/ belongs to that user.
 
     The independent checks run in the reference tools image, built from tools/reference/tools.Dockerfile: Debian 13
     pinned by digest, packages from snapshot.debian.org at a fixed date, each tool at its exact version (qpdf 12.2.0,
@@ -30,8 +30,10 @@
 .PARAMETER VeraPdfImage
     The veraPDF image; pinned to 1.30.4 by digest, the same as the reference tests (TestSupport/VeraPdf.cs).
 
-.PARAMETER PocPdfs
-    The folder with the PoC's sample-{normal,long,edge}.{nl,en}.typst.pdf files.
+.PARAMETER TypstPdfs
+    A folder with the Typst version's PDFs of the same timesheets, named sample-{normal,long,edge}.{nl,en}.typst.pdf
+    (made by the earlier proof of concept of the report, which is not part of this repository). Step 6 is skipped
+    without it.
 
 .EXAMPLE
     pwsh -NoProfile -File tools/verify-samples.ps1
@@ -39,13 +41,17 @@
 [CmdletBinding()]
 param(
     [string]$VeraPdfImage = 'verapdf/cli@sha256:f085855d442ad415e79fabbabcdd1803c2db4ee097cd5b94506c95ecdcfa1728',
-    [string]$PocPdfs = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'reporting-poc/out')
+    [string]$TypstPdfs
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $publish = Join-Path $root 'out/publish'
 $samples = Join-Path $root 'out/samples'
+
+# On Linux and macOS a container runs as its image's user: files it writes into a mounted folder would belong to
+# root, and it could not read a folder only the current user may read. Docker Desktop on Windows maps mounts itself.
+$user = if ($IsWindows) { @() } else { @('--user', "$(id -u):$(id -g)") }
 
 Write-Host '== 0. the reference tools image'
 $dockerfile = Join-Path $root 'tools/reference/tools.Dockerfile'
@@ -105,14 +111,14 @@ for f in /work/*.pdf; do
 done
 ls /work/png | sed 's|^|   png: |'
 '@
-docker run --rm -v "${samples}:/work" $ToolImage bash -c $script
+docker run --rm @user -v "${samples}:/work" $ToolImage bash -c $script
 if ($LASTEXITCODE -ne 0) { throw 'independent checks failed' }
 
 Write-Host "== 5. veraPDF $VeraPdfImage"
 $pdfs = Get-ChildItem $samples -Filter *.pdf | Sort-Object Name | ForEach-Object { "/data/$($_.Name)" }
 $failed = @()
 foreach ($flavour in '3b', '3a', 'ua1') {
-    $output = (docker run --rm -v "${samples}:/data:ro" $VeraPdfImage --flavour $flavour --format mrr @pdfs) -join "`n"
+    $output = (docker run --rm @user -v "${samples}:/data:ro" $VeraPdfImage --flavour $flavour --format mrr @pdfs) -join "`n"
     $start = $output.IndexOf('<?xml')
     if ($start -lt 0) { throw "veraPDF wrote no report for $flavour" }
     $report = [xml]$output.Substring($start)
@@ -142,11 +148,12 @@ for f in /work/timesheet-*.pdf; do
   if cmp -s "/tmp/$name.xml" "/work/$name.attachment.timesheet.xml"; then echo "   attachment $name: byte-identical ($(wc -c < "/tmp/$name.xml") bytes)"; else echo "   attachment $name: DIFFERS"; exit 1; fi
 done
 '@
-docker run --rm -v "${samples}:/work:ro" $ToolImage bash -c $extract
+docker run --rm @user -v "${samples}:/work:ro" $ToolImage bash -c $extract
 if ($LASTEXITCODE -ne 0) { throw 'attachment round trip failed' }
 
-if (Test-Path $PocPdfs) {
-    Write-Host "== 6. side by side with the PoC's Typst output ($PocPdfs)"
+if ($TypstPdfs) {
+    if (-not (Test-Path $TypstPdfs)) { throw "no folder $TypstPdfs" }
+    Write-Host "== 6. side by side with the Typst version ($TypstPdfs)"
     $compose = @'
 set -eu -o pipefail
 mkdir -p /work/sbs /tmp/poc
@@ -170,11 +177,11 @@ for set_ in ("normal", "long", "edge"):
             print("   side by side:", os.path.basename(path), "ours" if left else "-", "| typst" if right else "| -")
 PY
 '@
-    docker run --rm -v "${samples}:/work" -v "${PocPdfs}:/poc:ro" $ToolImage bash -c $compose
+    docker run --rm @user -v "${samples}:/work" -v "${TypstPdfs}:/poc:ro" $ToolImage bash -c $compose
     if ($LASTEXITCODE -ne 0) { throw 'side-by-side rendering failed' }
 }
 else {
-    Write-Host "== 6. skipped: no PoC PDFs at $PocPdfs"
+    Write-Host '== 6. skipped: no -TypstPdfs folder given'
 }
 
 Write-Host "Done. PDFs, text and PNGs are in $samples"

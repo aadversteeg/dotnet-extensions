@@ -2,7 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <!-- An application: one TargetFramework. The root sets TargetFrameworks for every Ave.Extensions.* project, and
+         dotnet publish refuses a project with TargetFrameworks, even with one framework in it. -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <!-- A sample application: never packed, no XML documentation required -->
     <IsPackable>false</IsPackable>
     <NoWarn>$(NoWarn);1591</NoWarn>
