@@ -38,20 +38,28 @@ internal sealed class TableModels
         return new Box(id, SemanticRole.TableCell, LayoutAlgorithmId.Flow, ReferenceCell, paragraphs, new SourceLocation(file, line));
     }
 
-    /// <summary>The ways a cell can be without content, for the table sweeps (spot check of fix round 3, SC-1).</summary>
-    public static IReadOnlyList<string> EmptyKinds { get; } = ["no children", "empty text", "only spaces", "empty block"];
+    /// <summary>The ways a cell can draw nothing, for the table sweeps: without content (spot check of fix round 3,
+    /// SC-1), and with content that draws nothing — invisible characters, an empty block with padding only (probe run
+    /// 35, SP-1).</summary>
+    public static IReadOnlyList<string> EmptyKinds { get; } =
+        ["no children", "empty text", "only spaces", "empty block", "zero width space", "soft hyphen", "word joiner", "padded block"];
 
-    /// <summary>A cell without content of the given kind (<see cref="EmptyKinds"/>), in the given style.</summary>
+    /// <summary>A cell that draws nothing, of the given kind (<see cref="EmptyKinds"/>), in the given style.</summary>
     public Box Empty(string kind, BoxStyle style)
     {
         Box Paragraph(string text) => new(Next(), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(Next(), text, Models.Text(), Models.At(0))], Models.At(0));
+        Box Block(BoxStyle blockStyle) => new(Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, blockStyle, [], Models.At(0));
         ValueList<Node> children = kind switch
         {
             "no children" => [],
             "empty text" => [Paragraph(string.Empty)],
             "only spaces" => [Paragraph("   ")],
-            "empty block" => [new Box(Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [], Models.At(0))],
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not an empty cell kind"),
+            "empty block" => [Block(BoxStyle.Initial)],
+            "zero width space" => [Paragraph("\u200B")],
+            "soft hyphen" => [Paragraph("\u00AD")],
+            "word joiner" => [Paragraph("\u2060")],
+            "padded block" => [Block(BoxStyle.Initial with { Padding = Edges.All(3.Pt()) })],
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not a kind of cell that draws nothing"),
         };
         return new Box(Next(), SemanticRole.TableCell, LayoutAlgorithmId.Flow, style, children, Models.At(0));
     }

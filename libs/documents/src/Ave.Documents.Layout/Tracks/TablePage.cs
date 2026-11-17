@@ -43,12 +43,12 @@ namespace Ave.Documents.Layout;
 /// row.</item>
 /// </list>
 /// <para>Only the last row of the table needs the half of the table's bottom border that lies inside the table. A break
-/// inside a row is a breakpoint only when it cuts content. The rule: a cell without content
-/// (<see cref="MarginCollapsing.HoldsNoContent"/>: no children, an empty or all-space text, only empty blocks) does not
-/// count as content placed on the page; a row is cut inside itself only when a cell with content places part of it on
-/// this page and leaves part for the next. So a row whose cells all end on this page is never split into a full row and
-/// an empty one, and a row whose cells with content place nothing here is never split into an empty strip at the page
-/// end and the whole row on the next page: it moves to the next page whole.</para>
+/// inside a row is a breakpoint only when it cuts content. The rule, decided from the placed result: a row is cut
+/// inside itself only when, on this page and below the top of that row, some cell draws something, and something of
+/// the row is left for the next page (stated once, in <see cref="TableBreaks"/>, CutsInsideRow). So a row whose cells all
+/// end on this page is never split into a full row and an empty one, and a row of which nothing would show on this page
+/// — beside a cell that spans rows and placed its text higher up, or beside cells of invisible characters — is never
+/// split into an empty strip at the page end and the whole row on the next page: it moves to the next page whole.</para>
 /// <para><b>The grid lines at a break inside a row</b> follow the same decoration break. <see cref="BoxDecorationBreak.Slice"/>
 /// draws nothing at the cut: the row's cells are boxes cut by a break, which get no border there (CSS Fragmentation 3
 /// §5.4). <see cref="BoxDecorationBreak.Clone"/> closes the table on both pages, as word processors do: the page ends
@@ -60,7 +60,10 @@ namespace Ave.Documents.Layout;
 /// fragment of a box its whole border (CSS Fragmentation 3 §5.4): the line in its column is resolved as a line between
 /// the part of the cell above it and the part below, so the cell's bottom and top border compete as two cells' borders
 /// do, and like every line at a break it is resolved once, the same on both pages
-/// (<see cref="CollapsedBorders.LineContext.ClonedBreak"/>). Every cut cell keeps clear of the line that ends
+/// (<see cref="CollapsedBorders.LineContext.ClonedBreak"/>). Where the page ends or starts at the cell's own bottom
+/// or top edge instead (a cut inside its last or first row), that line is resolved as anywhere else, with what lies
+/// beyond it: the cell's bottom border against the row below, its top border against the row above, or the table's
+/// border at its edge. Every cut cell keeps clear of the line that ends
 /// the page by half the line's width, and every cell that continues starts its rest half the line's width below the line
 /// that starts the next page, as whole cells do.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every

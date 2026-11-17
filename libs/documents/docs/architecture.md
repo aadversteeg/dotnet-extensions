@@ -225,10 +225,15 @@ Each is documented next to its code as well.
   table on both pages: the page ends with the whole line below the cut row (the table's bottom border for the last
   row), and the next page starts with the whole line above it; the cut content keeps clear of both. With `Clone` the
   table is closed across its full width on both pages, at every break: a cell that spans rows and continues over the
-  break is closed there by its own borders: its bottom and top border compete as two cells' do, and the line is the
-  same on both pages. A row that breaks
-  inside itself must leave content for the next page. With `Clone` such a cut needs one line width more room than
-  with `Slice`, so on a very small page area a table may not fit with `Clone` that fits with `Slice`.
+  break is closed there by its own borders: where the line crosses it, its bottom and top border compete as two
+  cells' do, and the line is the same on both pages; where the line is its own bottom or top edge (a cut inside its
+  last or first row), the line is resolved as anywhere else, with what lies beyond it. A row is cut inside itself only
+  when, on this page and below the top of that row, some cell draws something (a visible glyph, an image, a rule, a
+  filled or bordered box), and something of the row is left for the next page; otherwise it moves to the next page
+  whole (`Tracks/TableBreaks.cs`, `CutsInsideRow`, decided from the placed result). So no page ends with an empty strip
+  of a row: not beside a cell that spans rows and placed its text higher up, nor beside cells of invisible characters
+  or empty padded blocks. With `Clone` such a cut needs one line width more room than with `Slice`, so on a very small
+  page area a table may not fit with `Clone` that fits with `Slice`.
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.

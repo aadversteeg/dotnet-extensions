@@ -7,4 +7,9 @@
     <ProjectReference Include="..\Ave.Documents.TestSupport\Ave.Documents.TestSupport.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The tests' own check of the rule for a row cut by a page break, shared with the layout tests. -->
+    <Compile Include="..\UnitTests.Ave.Documents.Layout\RowParts.cs" Link="RowParts.cs" />
+  </ItemGroup>
+
 </Project>

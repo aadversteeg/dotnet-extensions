@@ -4,22 +4,27 @@ using Ave.Documents.Fluent;
 using Ave.Extensions.Functional;
 using Ave.Documents.Layout;
 using Ave.Documents.TestSupport;
+using UnitTests.Ave.Documents.Layout;
 using static Ave.Documents.Fluent.Elements;
 
 namespace UnitTests.Ave.Documents.Fluent;
 
 /// <summary>
-/// A table row with an empty cell at a page break (spot check of fix round 3, finding SC-1, probes K6 and K7). The
-/// rule: a cell without content does not count as content placed on the page; a row is cut inside itself only when a
-/// cell with content places part of it on this page and leaves part for the next one. So a row that does not fit moves
-/// to the next page whole, and no page shows a strip of a row without text, whatever the empty cell is made of.
+/// A table row with a cell that draws nothing at a page break (spot check of fix round 3, finding SC-1, probes K6 and
+/// K7; probe run 35, SP-1). The rule: a row is cut inside itself only when, on this page and below the top of that row,
+/// some cell draws something, and something of the row is left for the next page. A cell without content, or with
+/// content that draws nothing (invisible characters, an empty block with padding only), never makes that cut; so a row
+/// that does not fit moves to the next page whole, and no page shows a strip of a row without text.
 /// </summary>
 public class TableEmptyCellBreakTests
 {
     private const double Epsilon = 1e-6;
 
-    /// <summary>The ways a cell can be without content.</summary>
-    public static TheoryData<string> EmptyCells => new() { "no children", "empty string", "only spaces", "empty block", "empty paragraph" };
+    /// <summary>The ways a cell can draw nothing: without content, or with content that draws nothing.</summary>
+    public static TheoryData<string> EmptyCells => new()
+    {
+        "no children", "empty string", "only spaces", "empty block", "empty paragraph", "zero width space", "soft hyphen", "word joiner", "padded empty block",
+    };
 
     private static CellElement Empty(string kind) => kind switch
     {
@@ -28,7 +33,11 @@ public class TableEmptyCellBreakTests
         "only spaces" => Cell("   "),
         "empty block" => Cell([Block([])]),
         "empty paragraph" => Cell([Paragraph("")]),
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not an empty cell kind"),
+        "zero width space" => Cell("\u200B"),
+        "soft hyphen" => Cell("\u00AD"),
+        "word joiner" => Cell("\u2060"),
+        "padded empty block" => Cell([Block([]).Padding(3.Pt())]),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not a kind of cell that draws nothing"),
     };
 
     private static ValueList<PageFragment> Paginate(TableElement table, double offset)
@@ -73,6 +82,7 @@ public class TableEmptyCellBreakTests
         }
 
         words.Should().BeEquivalentTo(expected, because + ": every word once");
+        RowParts.EmptyStrips(pages).Should().BeEmpty(because);
     }
 
     [Theory]
@@ -112,7 +122,8 @@ public class TableEmptyCellBreakTests
             {
                 foreach (var line in new[] { 0.0, 1.0 })
                 {
-                    for (var offset = 0.0; offset < 30; offset += 0.25)
+                    // Half-point steps: nine kinds of cell, three shapes, both modes, with and without lines.
+                    for (var offset = 0.0; offset < 30; offset += 0.5)
                     {
                         var table = Table(columns, [.. Enumerable.Range(0, 30).Select(row)]);
                         table = line > 0 ? table.GridLines(line.Pt(), Color.Black) : table;

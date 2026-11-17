@@ -91,8 +91,10 @@ public class TableBreakLineTests
 
     private static void EveryRowWholeOnePerPage(double lineWidth, BoxDecorationBreak mode, string? empty)
     {
+        // The sweeps with a cell that draws nothing (eight kinds, each with and without lines) step by half a point.
         const double PageHeight = 150;
-        for (var offset = 0.0; offset < 40; offset += 0.25)
+        var step = empty is null ? 0.25 : 0.5;
+        for (var offset = 0.0; offset < 40; offset += step)
         {
             var pages = Paginate(Rows(lineWidth, offset, PageHeight, mode: mode, empty: empty));
 
@@ -117,6 +119,7 @@ public class TableBreakLineTests
             }
 
             rows.Should().Equal(Enumerable.Range(0, 30).Select(i => $"row{i:00}value"), because + ": every row once, whole");
+            RowParts.EmptyStrips(pages).Should().BeEmpty(because);
         }
     }
 
@@ -132,9 +135,10 @@ public class TableBreakLineTests
     /// <summary>
     /// Twelve units of two rows tied by a cell spanning both, three lines high, next to two one-line cells; every line
     /// 3pt wide. A unit that does not fit is broken between its rows or inside a row. With <paramref name="empty"/> set,
-    /// every row has a third cell, without content of that kind (<see cref="TableModels.EmptyKinds"/>).
+    /// every row has a third cell that draws nothing, of that kind (<see cref="TableModels.EmptyKinds"/>). With
+    /// <paramref name="shortLabel"/> the spanning cell is one line: a label over two one-line rows (probe run 35, SP-1).
     /// </summary>
-    private static (StyledDocument Document, string[] Words) SpannedUnits(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, string? empty = null, double line = 3)
+    private static (StyledDocument Document, string[] Words) SpannedUnits(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, string? empty = null, double line = 3, bool shortLabel = false)
     {
         var t = new TableModels();
         var style = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(line.Pt(), Color.Black)) };
@@ -148,7 +152,7 @@ public class TableBreakLineTests
         Box[] WithEmpty(params Box[] cells) => empty is null ? cells : [.. cells, t.Empty(empty, style)];
         var rows = Enumerable.Range(0, units).SelectMany(unit => new[]
         {
-            t.Row(WithEmpty(Cell(2, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(1, $"a{unit:00}"))),
+            t.Row(WithEmpty(shortLabel ? Cell(2, $"s{unit:00}x") : Cell(2, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"), Cell(1, $"a{unit:00}"))),
             t.Row(WithEmpty(Cell(1, $"b{unit:00}"))),
         }).ToArray();
         var spacer = new Box(t.Next(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Margin = new Edges(0.Pt(), 0.Pt(), offset.Pt(), 0.Pt()) }, [], Models.At(0));
@@ -158,9 +162,11 @@ public class TableBreakLineTests
     }
 
     [Theory]
-    [InlineData(BoxDecorationBreak.Slice)]
-    [InlineData(BoxDecorationBreak.Clone)]
-    public void Units_broken_between_or_inside_their_rows_keep_every_part_and_every_line_inside_the_page(BoxDecorationBreak mode)
+    [InlineData(BoxDecorationBreak.Slice, false)]
+    [InlineData(BoxDecorationBreak.Clone, false)]
+    [InlineData(BoxDecorationBreak.Slice, true)]
+    [InlineData(BoxDecorationBreak.Clone, true)]
+    public void Units_broken_between_or_inside_their_rows_keep_every_part_and_every_line_inside_the_page(BoxDecorationBreak mode, bool shortLabel)
     {
         // A row of a unit is kept on the page only when it fits with its share of the line below it (half the line
         // for slice, all of it for clone), and a break inside a row is taken only when it leaves content of the row
@@ -172,26 +178,29 @@ public class TableBreakLineTests
         // page area the table does not fit at all, which is an error, not a layout).
         for (var offset = 0.0; offset < 60; offset += 0.25)
         {
-            UnitsKeepEveryPartInsideThePage(offset, 120, mode);
+            UnitsKeepEveryPartInsideThePage(offset, 120, mode, shortLabel: shortLabel);
         }
 
-        var smallest = mode == BoxDecorationBreak.Clone ? 22.0 : 20.0;
+        // With a short label every cell of the unit's first row holds one line, and no line fits above its cell's
+        // bottom padding and line in less than the whole row; so nothing of the row would show above a cut, and with
+        // slice the table needs the whole row: 20.5 pt (with the long label, its first line fits from 20 pt).
+        var smallest = mode == BoxDecorationBreak.Clone ? 22.0 : shortLabel ? 20.5 : 20.0;
         for (var pageHeight = smallest; pageHeight < 60; pageHeight += 0.25)
         {
-            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode);
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, shortLabel: shortLabel);
         }
 
         // Below that the layout may refuse the table, but never with a page whose row or line runs past its end.
         for (var pageHeight = 10.0; pageHeight < smallest; pageHeight += 0.25)
         {
-            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, mayNotFit: true);
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, mayNotFit: true, shortLabel: shortLabel);
         }
 
         // One unit alone: its last row is the table's last, which needs the inner half of the table's bottom border in
         // both modes, so a cut at the page end that would complete every cell must move up instead.
-        for (var pageHeight = mode == BoxDecorationBreak.Clone ? 22.0 : 20.0; pageHeight < 60; pageHeight += 0.25)
+        for (var pageHeight = smallest; pageHeight < 60; pageHeight += 0.25)
         {
-            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, units: 1);
+            UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, units: 1, shortLabel: shortLabel);
         }
     }
 
@@ -202,22 +211,23 @@ public class TableBreakLineTests
     [MemberData(nameof(EmptyCellCases))]
     public void Units_with_an_empty_cell_keep_every_part_inside_the_page_and_no_empty_strip(string empty, double lineWidth, BoxDecorationBreak mode)
     {
-        for (var offset = 0.0; offset < 60; offset += 0.25)
+        // Half-point steps: eight kinds, each with and without lines (the sweeps without the empty cell step by 0.25).
+        for (var offset = 0.0; offset < 60; offset += 0.5)
         {
             UnitsKeepEveryPartInsideThePage(offset, 120, mode, empty: empty, line: lineWidth);
         }
 
-        for (var pageHeight = 10.0; pageHeight < 60; pageHeight += 0.25)
+        for (var pageHeight = 10.0; pageHeight < 60; pageHeight += 0.5)
         {
             UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, mayNotFit: true, empty: empty, line: lineWidth);
             UnitsKeepEveryPartInsideThePage(0, pageHeight, mode, units: 1, mayNotFit: true, empty: empty, line: lineWidth);
         }
     }
 
-    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, bool mayNotFit = false, string? empty = null, double line = 3)
+    private static void UnitsKeepEveryPartInsideThePage(double offset, double pageHeight, BoxDecorationBreak mode, int units = 12, bool mayNotFit = false, string? empty = null, double line = 3, bool shortLabel = false)
     {
-        var (document, expected) = SpannedUnits(offset, pageHeight, mode, units, empty, line);
-        var because = $"{mode}, {units} units, offset {offset}, page area {pageHeight}, empty cell {empty ?? "none"}, line {line}";
+        var (document, expected) = SpannedUnits(offset, pageHeight, mode, units, empty, line, shortLabel);
+        var because = $"{mode}, {units} units, offset {offset}, page area {pageHeight}, empty cell {empty ?? "none"}, line {line}, short label {shortLabel}";
         var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), document);
         if (mayNotFit && result.IsFailure)
         {
@@ -261,6 +271,7 @@ public class TableBreakLineTests
         }
 
         words.Should().BeEquivalentTo(expected, because + ": every line once");
+        RowParts.EmptyStrips(pages).Should().BeEmpty(because);
     }
 
     [Fact]

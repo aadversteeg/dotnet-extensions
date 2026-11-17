@@ -199,20 +199,26 @@ public class TableSpanCloneTests
         }
     }
 
+    /// <summary>The name of a row of <see cref="Document"/>, from its last cell's text: "a07" for the first row of unit
+    /// 7 (the spanning cell starts in it), "b07" for its second.</summary>
+    private static string RowName(Box row) =>
+        ((TextRun)((Box)((Box)row.Children[^1]).Children[0]).Children[0]).Text;
+
     [Theory]
     [InlineData(4.0, 4.0)]
     [InlineData(4.0, 1.0)]
     [InlineData(1.0, 4.0)]
     public void A_spanning_cell_cut_by_a_break_is_closed_by_its_own_borders(double top, double bottom)
     {
-        // The other cells' borders are 2 pt. In the spanning cell's column the line at the break is resolved as a line
-        // between the part of the cell above it and the part below: the cell's bottom and top border compete as two
-        // cells' borders do, and the wider wins (§17.6.2.1), on both pages, since the line at a break is resolved once.
-        // So the closing lines in its column are 4 pt whichever side is the wide one. Offset 0, page area 120: find a
-        // break that cuts a spanning cell (its words on both pages).
-        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(0, 120, header: false, spanLine: 4, spanTop: top, spanBottom: bottom));
-        result.IsSuccess.Should().BeTrue();
-        var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+        // The other cells' borders are 2 pt. Where the line that ends or starts a page crosses the spanning cell — it lies
+        // between two of the cell's rows — it is resolved as a line between the part of the cell above it and the part
+        // below: the cell's bottom and top border compete as two cells' borders do, and the wider wins (§17.6.2.1), so
+        // that line is 4 pt in the cell's column whichever side is the wide one. Where the line is the cell's own top or
+        // bottom edge (a cut inside its first or last row) it is resolved as anywhere else, with what lies beyond it:
+        // the neighbouring unit's spanning cell, or nothing at the table's edge — there the cell's own edge border alone.
+        // Checked at every REAL cut of a spanning cell (its words on both pages) over start offsets that move every
+        // break through every place in a unit. (Review 35: at offset 0 alone the only such breaks were empty strips,
+        // which the row-cut rule no longer makes.)
         static IEnumerable<string> Words(Fragment fragment) => fragment switch
         {
             BoxFragment box => box.Children.SelectMany(child => Words(child.Fragment)),
@@ -221,22 +227,55 @@ public class TableSpanCloneTests
             _ => [],
         };
 
-        var cuts = 0;
-        for (var page = 0; page + 1 < tables.Count; page++)
-        {
-            var spanWords = Words(tables[page]).Where(word => word.StartsWith('s')).Select(word => word[..3]).ToHashSet();
-            if (!Words(tables[page + 1]).Any(word => word.StartsWith('s') && spanWords.Contains(word[..3])))
-            {
-                continue;
-            }
+        // The width of the line in the spanning cell's column whose centre is the centre of the given line.
+        static double SpanColumnLine(BoxFragment table, (double Left, double Top, double Right, double Bottom) line) =>
+            Rules(table).Where(rule => rule.Left < 80 && Math.Abs((rule.Top + rule.Bottom) / 2 - (line.Top + line.Bottom) / 2) < Epsilon)
+                .Select(rule => rule.Bottom - rule.Top)
+                .Single();
 
-            cuts++;
-            var end = Rules(tables[page]).Where(rule => rule.Left < 80 && Math.Abs(rule.Bottom - tables[page].Size.Height) < Epsilon).ToList();
-            end.Should().ContainSingle().Which.Should().Match<(double Left, double Top, double Right, double Bottom)>(rule => Math.Abs(rule.Bottom - rule.Top - 4) < Epsilon, "the wider of the spanning cell's own borders ends the page in its column");
-            var start = Rules(tables[page + 1]).Where(rule => rule.Left < 80 && Math.Abs(rule.Top) < Epsilon).ToList();
-            start.Should().ContainSingle().Which.Should().Match<(double Left, double Top, double Right, double Bottom)>(rule => Math.Abs(rule.Bottom - rule.Top - 4) < Epsilon, "and starts the next page in its column");
+        const int LastUnit = 11;
+        var wider = Math.Max(top, bottom);
+        var (cuts, atEdges) = (0, 0);
+        for (var offset = 0.0; offset < 60; offset += 0.5)
+        {
+            var because = $"spanning cell's top {top}, bottom {bottom}, offset {offset}";
+            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(offset, 120, header: false, spanLine: 4, spanTop: top, spanBottom: bottom));
+            result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
+            var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+            for (var page = 0; page + 1 < tables.Count; page++)
+            {
+                var spanWords = Words(tables[page]).Where(word => word.StartsWith('s')).Select(word => word[..3]).ToHashSet();
+                if (!Words(tables[page + 1]).Any(word => word.StartsWith('s') && spanWords.Contains(word[..3])))
+                {
+                    continue;
+                }
+
+                cuts++;
+                var (ending, next) = (tables[page], tables[page + 1]);
+                var last = RowName(Boxes(ending, new Point(0, 0), SemanticRole.TableRow).Where(row => row.Box.Size.Height > Epsilon).MaxBy(row => row.At.Y).Box.Box);
+                var first = RowName(Boxes(next, new Point(0, 0), SemanticRole.TableRow).Where(row => row.Box.Size.Height > Epsilon).MinBy(row => row.At.Y).Box.Box);
+
+                // The page ends in the cell's first row (the line below it crosses the cell) or in its last row (the line
+                // below it is the cell's bottom edge, above the next unit's spanning cell, or the table's bottom edge).
+                // The line's widest segment reaches the page end; the others are centred on the same line.
+                var endLine = Rules(ending).Where(rule => Math.Abs(rule.Bottom - ending.Size.Height) < Epsilon).MaxBy(rule => rule.Bottom - rule.Top);
+                var expectedEnd = last[0] == 'b' && int.Parse(last[1..]) == LastUnit ? bottom : wider;
+                SpanColumnLine(ending, endLine).Should().BeApproximately(expectedEnd, Epsilon, because + $": page {page + 1} ends in row {last}");
+
+                // The next page starts above the cell's last row (crossing the cell) or, after a cut inside its first
+                // row, above that row: the cell's top edge, under the previous unit's spanning cell.
+                var startLine = Rules(next).Where(rule => Math.Abs(rule.Top) < Epsilon).MaxBy(rule => rule.Bottom - rule.Top);
+                var expectedStart = first[0] == 'a' && int.Parse(first[1..]) == 0 ? top : wider;
+                SpanColumnLine(next, startLine).Should().BeApproximately(expectedStart, Epsilon, because + $": page {page + 2} starts with row {first}");
+                atEdges += expectedEnd != wider || expectedStart != wider ? 1 : 0;
+            }
         }
 
-        cuts.Should().BePositive("some break cuts a spanning cell");
+        cuts.Should().BeGreaterThan(30, "the sweep crosses many real cuts of a spanning cell");
+        if (bottom < top)
+        {
+            // A cut inside the last unit's last row: the page ends with the cell's own (narrower) bottom border.
+            atEdges.Should().BeGreaterThan(0, "some cuts close the cell at the table's bottom edge with its own bottom border alone");
+        }
     }
 }
