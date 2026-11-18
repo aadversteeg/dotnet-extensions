@@ -80,7 +80,7 @@ gap.
 
 Tools used outside the build, in `tools/verify-samples.ps1` and in the reference tests, inside throw-away
 containers: veraPDF 1.30.4 (`verapdf/cli`, GPL-3.0-or-later / MPL-2.0), qpdf (Apache-2.0), poppler-utils (GPL-2.0),
-MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They are run, not linked or distributed. `tools/generate-test-images.py` uses Pillow to write the image test files.
+MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They are run, not linked or distributed. `tools/generate-test-images.py` uses Pillow to write the image test files (and writes `tools/reference/chromium/cases/tall.png` without it).
 
 ## Sample data
 
