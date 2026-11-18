@@ -1,10 +1,11 @@
 name: CI
 
 # Builds and tests the families a change touches, on Linux and Windows, against the net10.0 build and the
-# netstandard2.0 build of the libraries. When the file-system family is affected, its tests also run against the
-# netstandard2.1 build of the two libraries that have one. The documents family targets net10.0 only and has a job
-# of its own. On main it also builds and tests every package the way a release does, and runs the Azure integration
-# tests against a real storage account. The last job, CI result, is the one status check that a pull request needs.
+# netstandard2.0 build of the libraries, and on Windows also on .NET Framework 4.8 against the netstandard2.0 build.
+# When the file-system family is affected, its tests also run against the netstandard2.1 build of the two libraries
+# that have one. The documents family targets net10.0 only and has a job of its own. On main it also builds and
+# tests every package the way a release does, and runs the Azure integration tests against a real storage account.
+# The last job, CI result, is the one status check that a pull request needs.
 # Nothing here publishes anything. See docs/RELEASING.md.
 
 on:
@@ -79,9 +80,9 @@ jobs:
           # functional <- error-paths <- fluent-contracts, file-system and documents (file-system and documents use
           # both lower families). So a change at the root (build files, eng/, this workflow), in functional or in
           # error-paths builds every family; fluent-contracts, file-system and documents only build themselves.
-          # The job test gets the family solutions except documents, which targets net10.0 only and runs in the
-          # job test-documents; the root solution dotnet-extensions.slnx holds the same projects as all family
-          # solutions together.
+          # The jobs test and test-net48 get the family solutions except documents, which targets net10.0 only and
+          # runs in the job test-documents; the root solution dotnet-extensions.slnx holds the same projects as all
+          # family solutions together.
           has() { [[ "$CHANGES" == *"\"$1\""* ]]; }
           all=false
           if [ "$EVENT" = workflow_dispatch ] || has root || has functional || has error-paths; then all=true; fi
@@ -152,6 +153,60 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.asset }}
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: ignore
+
+  test-net48:
+    # The same tests as the job test, on .NET Framework 4.8 against the netstandard2.0 build of the libraries
+    # (-p:UseNet48=true, see README.md): what an application on .NET Framework gets. Windows only.
+    # UnitTests.Extensions.ErrorPaths.AspNetCore stays on net10.0, because its library has no netstandard2.0 build.
+    name: Test (windows-latest, .NET Framework 4.8)
+    needs: changes
+    if: needs.changes.outputs.solutions != ''
+    runs-on: windows-latest
+    env:
+      SOLUTIONS: ${{ needs.changes.outputs.solutions }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: |
+          for solution in $SOLUTIONS; do
+            dotnet build "$solution" -c Release -p:UseNet48=true
+          done
+
+      - name: Test
+        # Category=Network is left out, as in the job test.
+        run: |
+          status=0
+          for solution in $SOLUTIONS; do
+            dotnet test "$solution" -c Release --no-build -p:UseNet48=true --filter "Category!=Network" \
+              --logger trx --results-directory "$RUNNER_TEMP/test-results" || status=1
+          done
+          exit $status
+
+      - name: List the skipped tests
+        # Shows on the run page which tests skipped themselves on this runner, for example LFSMC-003 when Windows
+        # long paths are not enabled.
+        if: always()
+        run: |
+          skipped=$(cat "$RUNNER_TEMP"/test-results/*.trx 2>/dev/null \
+            | grep -o '<UnitTestResult [^>]*outcome="NotExecuted"[^>]*>' \
+            | sed -E 's/.* testName="([^"]*)".*/\1/' | sort -u | awk '{ printf "%s%s", (NR > 1 ? ", " : ""), $0 }' \
+            || true)
+          echo "::notice title=Skipped tests (.NET Framework 4.8)::${skipped:-no tests skipped}"
+
+      - name: Keep the test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-windows-latest-net48
           path: ${{ runner.temp }}/test-results
           if-no-files-found: ignore
 
@@ -414,7 +469,7 @@ jobs:
     # cancelled, and fails unless every pull request job succeeded or was skipped. The two jobs that run on main
     # only are not part of it.
     name: CI result
-    needs: [changes, test, test-netstandard21, test-documents, test-documents-arm64, checks]
+    needs: [changes, test, test-net48, test-netstandard21, test-documents, test-documents-arm64, checks]
     if: always()
     runs-on: ubuntu-latest
     steps:
