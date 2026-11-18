@@ -163,7 +163,7 @@ public class CoverageTests
         var largest = 0.0;
         var rasterizer = new AreaRasterizer();
 
-        rasterizer.Rasterize(polygons, FillRule.NonZero, (_, _, coverage) => largest = Math.Max(largest, coverage.ToArray().Max()));
+        rasterizer.Rasterize(polygons, FillRule.NonZero, new PixelBox(0, 0, 64, 64), (_, _, coverage) => largest = Math.Max(largest, coverage.ToArray().Max()));
 
         largest.Should().Be(1);
     }

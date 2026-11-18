@@ -12,7 +12,8 @@ namespace Ave.Extensions.Documents.Graphics;
 /// back. That stretch and the piece of the side form a loop that lies outside or on the side, so it winds around no inner
 /// point: for every point inside the box the clipped polygon winds around it exactly as often as the original did. This
 /// holds for any closed polygon, convex or not, self-intersecting or not, so both fill rules see the same coverage inside
-/// the box. Pieces along the sides that cancel each other are left in; they add no area.
+/// the box. Pieces along the sides that cancel each other are left in; they add no area. Every point of the result lies
+/// inside the box or on its sides, rounding included (see <see cref="Crossing"/>).
 /// </remarks>
 internal static class Clipping
 {
@@ -100,16 +101,24 @@ internal static class Clipping
         return keepGreater ? value >= edge : value <= edge;
     }
 
-    /// <summary>Where the edge from a to b crosses the line; the coordinate on the line is set exactly.</summary>
+    /// <summary>
+    /// Where the edge from a to b crosses the line. The coordinate on the line is set exactly; the other one is
+    /// interpolated and then held between a's and b's, where the true crossing lies. Without that hold the rounding of
+    /// a + t·(b − a) can put it a step beyond both ends (with t = 1, −15.497… + (15 + 15.497…) is 15.000000000000002), and
+    /// so outside the box when a and b lie on its edge: the clipped polygon would no longer lie inside the box.
+    /// </summary>
     private static Vertex Crossing(Vertex a, Vertex b, double edge, bool vertical)
     {
         if (vertical)
         {
             var t = (edge - a.X) / (b.X - a.X);
-            return new Vertex(edge, a.Y + (t * (b.Y - a.Y)));
+            return new Vertex(edge, Between(a.Y + (t * (b.Y - a.Y)), a.Y, b.Y));
         }
 
         var s = (edge - a.Y) / (b.Y - a.Y);
-        return new Vertex(a.X + (s * (b.X - a.X)), edge);
+        return new Vertex(Between(a.X + (s * (b.X - a.X)), a.X, b.X), edge);
     }
+
+    private static double Between(double value, double end, double otherEnd) =>
+        double.Clamp(value, double.Min(end, otherEnd), double.Max(end, otherEnd));
 }

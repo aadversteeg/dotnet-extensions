@@ -19,6 +19,7 @@ public static class GraphicsErrorCodes
     /// match their size. Metadata: Value, Property.</summary>
     public static readonly ErrorCode InvalidValue = _ / "InvalidValue";
 
-    /// <summary>A canvas or a coverage mask of more than <see cref="Canvas.MaxPixels"/> pixels. Metadata: Value.</summary>
+    /// <summary>A canvas or a coverage mask of more than <see cref="Canvas.MaxPixels"/> pixels, or a mask with more than
+    /// that many on a side. Metadata: Value.</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
 }

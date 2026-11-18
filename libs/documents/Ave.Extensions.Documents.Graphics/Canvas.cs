@@ -211,7 +211,7 @@ public sealed class Canvas
     /// <param name="transform">From the path's coordinates to device pixels.</param>
     /// <param name="rule">The fill rule.</param>
     /// <param name="clip">The box, within ±<see cref="MaxPixelCoordinate"/>; the mask covers the pixels from ⌊left⌋,
-    /// ⌊top⌋ to ⌈right⌉, ⌈bottom⌉, at most <see cref="MaxPixels"/>.</param>
+    /// ⌊top⌋ to ⌈right⌉, ⌈bottom⌉, at most <see cref="MaxPixels"/> in all and on each side.</param>
     /// <returns>The mask, or <c>Documents.Graphics.InvalidValue</c> / <c>TooLarge</c>.</returns>
     /// <exception cref="ArgumentNullException">The path is null.</exception>
     public static Result<CoverageMask, Error> Coverage(Path path, Affine transform, FillRule rule, PixelBox clip)
@@ -223,23 +223,24 @@ public sealed class Canvas
             return Invalid<CoverageMask>($"The clip box must be a finite rectangle within ±{MaxPixelCoordinate.ToString(CultureInfo.InvariantCulture)} pixels.", clip.ToString(), "clip");
         }
 
-        var left = (int)Math.Floor(clip.Left);
-        var top = (int)Math.Floor(clip.Top);
-        var width = (int)Math.Ceiling(clip.Right) - left;
-        var height = (int)Math.Ceiling(clip.Bottom) - top;
-        if ((long)width * height > MaxPixels)
+        // In 64 bits: a box as wide as the range is 2^31 pixels, one more than a 32-bit integer holds.
+        var (left, top) = ((long)Math.Floor(clip.Left), (long)Math.Floor(clip.Top));
+        var (width, height) = ((long)Math.Ceiling(clip.Right) - left, (long)Math.Ceiling(clip.Bottom) - top);
+        if (width * height > MaxPixels || width > MaxPixels || height > MaxPixels)
         {
             return TooLarge<CoverageMask>(width, height);
         }
 
-        var values = new byte[(long)width * height];
+        // The rasteriser reports only cells of the box (AreaRasterizer.Rasterize), so every index below is in the mask.
+        var values = new byte[width * height];
         return CoverageRows(new AreaRasterizer(), path, transform, rule, clip, (row, first, coverage) =>
         {
+            var start = ((row - top) * width) + first - left;
             for (var index = 0; index < coverage.Length; index++)
             {
-                values[((long)(row - top) * width) + first + index - left] = ToByte(coverage[index]);
+                values[start + index] = ToByte(coverage[index]);
             }
-        }).OnSuccessMap(_ => new CoverageMask(left, top, width, height, ImmutableArray.Create(values)));
+        }).OnSuccessMap(_ => new CoverageMask((int)left, (int)top, (int)width, (int)height, ImmutableArray.Create(values)));
     }
 
     /// <summary>Checks the values, then hands each row of the coverage of a path inside a box to <paramref name="row"/>.</summary>
@@ -265,7 +266,7 @@ public sealed class Canvas
 
         if (!box.IsEmpty)
         {
-            rasterizer.Rasterize(Clipping.ToBox(Flattening.Polygons(path, transform, box), box), rule, row);
+            rasterizer.Rasterize(Clipping.ToBox(Flattening.Polygons(path, transform, box), box), rule, box, row);
         }
 
         return Result<Unit, Error>.Success(Unit.Value);
@@ -320,7 +321,7 @@ public sealed class Canvas
 
         _preimagePolygons.Clear();
         _preimagePolygons.Add(clipped);
-        _sampler.Rasterize(_preimagePolygons, FillRule.NonZero, sample);
+        _sampler.Rasterize(_preimagePolygons, FillRule.NonZero, imageBox, sample);
     }
 
     private Result<PixelBox, Error> Box(PixelBox? clip) =>
@@ -334,7 +335,7 @@ public sealed class Canvas
             .With(ErrorMetadataKeys.Property, property));
 
     private static Result<T, Error> TooLarge<T>(long width, long height) =>
-        Result<T, Error>.Failure(new Error(GraphicsErrorCodes.TooLarge, $"{width} x {height} pixels is more than the {MaxPixels} pixels a canvas or a mask may have.")
+        Result<T, Error>.Failure(new Error(GraphicsErrorCodes.TooLarge, $"{width} x {height} pixels is more than a canvas or a mask may have: at most {MaxPixels} pixels, and at most that many on a side.")
             .With(ErrorMetadataKeys.Value, $"{width}x{height}"));
 
     /// <summary>A share 0 to 1 as 8 bits, rounded to the nearest (halves up).</summary>

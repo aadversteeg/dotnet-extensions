@@ -9,7 +9,8 @@ namespace UnitTests.Extensions.Documents.Graphics;
 /// <summary>
 /// The library's one rule for arguments (<see cref="Canvas"/> remarks): a value it cannot draw with is a
 /// <c>Documents.Graphics.*</c> error value, never an exception; inside the stated ranges nothing throws and the work of a
-/// fill is bounded by the pixels, not by the shape. The hostile values are the review's (review 38, B2, B3).
+/// fill is bounded by the pixels, not by the shape. The hostile values are the ends of the ranges and the values beyond
+/// them (not finite, the largest doubles, a size of 0).
 /// </summary>
 public class ArgumentRuleTests
 {
@@ -39,8 +40,7 @@ public class ArgumentRuleTests
     [InlineData(2, 2, 9, 9, "0,0,0,0,0,0,0,0,0,0,255,255,0,0,255,255")]
     public void A_shape_that_reaches_the_right_edge_of_the_box_in_its_last_row_is_covered(double x, double y, double width, double height, string expected)
     {
-        // Review 38, B3: these threw IndexOutOfRangeException, because the rasteriser reported one column more than the
-        // shape's extent.
+        // The mask holds exactly the box's pixels, whatever columns the shape's extent reaches.
         var mask = Canvas.Coverage(Path.Rectangle(x, y, width, height), Affine.Identity, FillRule.NonZero, new PixelBox(0, 0, 4, 4));
 
         mask.IsSuccess.Should().BeTrue();
@@ -84,6 +84,92 @@ public class ArgumentRuleTests
                 }
             }
         }
+    }
+
+    [Theory]
+    [InlineData(4, 0, 4, 4, 0, 0, 4, 4)]
+    [InlineData(32, 0, 8, 10, 0, 0, 32, 10)]
+    [InlineData(-4, 0, 4, 4, 0, 0, 4, 4)]
+    [InlineData(0, 4, 4, 4, 0, 0, 4, 4)]
+    [InlineData(-8, -2, 3, 9, -5, -2, 3, 7)]
+    public void A_shape_outside_that_touches_the_box_covers_nothing(double x, double y, double width, double height, double left, double top, double right, double bottom)
+    {
+        // The clip squeezes such a shape onto the box's edge, where it spans no column; the mask holds only the box's
+        // pixels and all of them are 0.
+        var mask = Canvas.Coverage(Path.Rectangle(x, y, width, height), Affine.Identity, FillRule.NonZero, new PixelBox(left, top, right, bottom));
+
+        mask.IsSuccess.Should().BeTrue();
+        (mask.Value.Width, mask.Value.Height).Should().Be(((int)(right - left), (int)(bottom - top)));
+        mask.Value.Values.Should().OnlyContain(value => value == 0);
+    }
+
+    [Theory]
+    [InlineData(-26, 3, 21, 37, -15.497748922713892, 41.25824388771536, 21, 37, 21, 33, -15.497748922713892, 33, 0, 0, -1)]
+    [InlineData(-3, 7, 22, 52, 2.3863691576670596, -1.9649214324224396, -3, 7, -3, 11, 2.3863691576670596, 11, 0, 0, -1)]
+    [InlineData(-18, 9, 23, 37, -10.595545927891688, 39.693570603547485, 23, 37, 23, 32, -10.595545927891688, 32, 0, 0, -1)]
+    [InlineData(-10, 30, 31, 48, 30.572490766823304, 56.8595535818474, -10, 48, -10, 44, 30.572490766823304, 44, 30, 44, 146)]
+    [InlineData(-14, -38, 32, -7, 31.420845910464077, -3.279427632713081, -14, -7, -14, -9, 31.420845910464077, -9, 31, -9, 107)]
+    public void A_clipped_polygon_with_a_corner_on_the_box_edge_is_covered_exactly(
+        int left, int top, int right, int bottom, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3, int pixelX, int pixelY, int expected)
+    {
+        // A corner exactly on the box's edge, the next one outside: the crossing the clip computes lies on the edge, not
+        // a rounding step beyond it, and the cells next to the edge keep their coverage. The last three values: a pixel
+        // whose value was lost (written into another row) and the value its exact area gives, or -1.
+        List<(double X, double Y)> points = [(x0, y0), (x1, y1), (x2, y2), (x3, y3)];
+
+        var mask = Canvas.Coverage(Polygon([.. points]), Affine.Identity, FillRule.NonZero, new PixelBox(left, top, right, bottom));
+
+        mask.IsSuccess.Should().BeTrue();
+        (mask.Value.Width, mask.Value.Height).Should().Be((right - left, bottom - top));
+        ShouldMatchExactAreas(points, mask.Value, left, top, right, bottom, "the case");
+        if (expected >= 0)
+        {
+            mask.Value.At(pixelX, pixelY).Should().Be((byte)expected);
+        }
+    }
+
+    [Fact]
+    public void Polygons_with_corners_on_the_edges_of_boxes_anywhere_get_their_exact_coverage()
+    {
+        // Boxes at whole positions on both sides of the origin; a quadrilateral with one corner exactly on the box's left
+        // or right edge, on its top or bottom line, and the next corner outside, beyond the other side. Coordinates with
+        // all 53 bits of the mantissa, so that the subtractions in the clip round.
+        static double Bits(Random random) => random.NextInt64(1L << 53) * (1.0 / (1L << 53));
+        var random = new Random(4);
+        for (var attempt = 0; attempt < 3000; attempt++)
+        {
+            var (left, top) = (random.Next(-40, 41), random.Next(-40, 41));
+            var (right, bottom) = (left + 8 + random.Next(24), top + 8 + random.Next(24));
+            var (onLeft, onTop) = (random.Next(2) == 0, random.Next(2) == 0);
+            var edgeX = onLeft ? left : right;
+            var farX = left + ((right - left) * (0.05 + (0.9 * Bits(random))));
+            var line = onTop ? top : bottom;
+            var outside = onTop ? top - 1 - (Bits(random) * 9) : bottom + 1 + (Bits(random) * 9);
+            var inner = onTop ? top + 2 + random.Next(5) : bottom - 2 - random.Next(5);
+            List<(double X, double Y)> points = [(farX, outside), (edgeX, line), (edgeX, inner), (farX, inner)];
+
+            var mask = Canvas.Coverage(Polygon([.. points]), Affine.Identity, FillRule.NonZero, new PixelBox(left, top, right, bottom));
+
+            mask.IsSuccess.Should().BeTrue($"attempt {attempt}");
+            ShouldMatchExactAreas(points, mask.Value, left, top, right, bottom, $"attempt {attempt}");
+        }
+    }
+
+    [Theory]
+    [InlineData(-1073741824, 0, 1073741824, 1, "2147483648 x 1")]
+    [InlineData(0, -1073741824, 1, 1073741824, "1 x 2147483648")]
+    [InlineData(-1073741824, -1073741824, 1073741824, 1073741824, "2147483648 x 2147483648")]
+    [InlineData(-1073741823.5, 0, 1073741823.5, 0.5, "2147483648 x 1")]
+    [InlineData(-1073741824, 0, 1073741824, 0, "2147483648 x 0")]
+    [InlineData(0, 0, 67108865, 1, "67108865 x 1")]
+    public void A_clip_box_as_wide_as_the_range_is_too_large_with_its_true_size(double left, double top, double right, double bottom, string size)
+    {
+        var mask = Canvas.Coverage(Path.Rectangle(0, 0, 1, 1), Affine.Identity, FillRule.NonZero, new PixelBox(left, top, right, bottom));
+
+        mask.IsFailure.Should().BeTrue();
+        mask.Error.Code.Should().Be(GraphicsErrorCodes.TooLarge);
+        mask.Error.Message.Should().StartWith(size + " pixels");
+        mask.Error.Metadata![ErrorMetadataKeys.Value].Should().Be(size.Replace(" x ", "x", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -141,6 +227,34 @@ public class ArgumentRuleTests
     }
 
     [Fact]
+    public void No_hostile_clip_box_makes_coverage_throw()
+    {
+        // Box edges at and next to the ends of the range, and shapes that touch such a box from outside, on each side,
+        // or reach it with a corner on its edge.
+        const double Max = Canvas.MaxPixelCoordinate;
+        double[] edges = [-Max, -Max + 0.5, -Max + 1, -4, -0.5, 0, 0.5, 4, Max - 1, Max - 0.5, Max, Max + 1, double.NaN, double.PositiveInfinity, 1e300];
+        foreach (var a in edges)
+        {
+            foreach (var b in edges)
+            {
+                var boxes = new[] { new PixelBox(a, 0, b, 1), new PixelBox(0, a, 1, b), new PixelBox(a, a, b, b), new PixelBox(a, b, a + 2, b + 2) };
+                var paths = new[]
+                {
+                    Path.Rectangle(b, 0, 4, 4), Path.Rectangle(a - 4, 0, 4, 4), Path.Rectangle(0, b, 4, 4), Path.Rectangle(a, a, 2, 2),
+                    Polygon((a + 0.3, b + 1.7), (a, b), (a, b + 2), (a + 0.3, b + 2)), Polygon((b - 0.3, a - 1.7), (b, a), (b, a + 2), (b - 0.3, a + 2)),
+                };
+                foreach (var box in boxes)
+                {
+                    foreach (var path in paths)
+                    {
+                        FluentActions.Invoking(() => Canvas.Coverage(path, Affine.Identity, FillRule.NonZero, box)).Should().NotThrow($"edges {a} and {b}, box {box}");
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void Path_builder_order_rules()
     {
         FluentActions.Invoking(() => new PathBuilder().LineTo(1, 1)).Should().Throw<InvalidOperationException>();
@@ -187,6 +301,18 @@ public class ArgumentRuleTests
         a.Fill(huge, Affine.Identity, FillRule.NonZero, Color.Black);
         b.Fill(Path.Rectangle(0, 0, 50, 50), Affine.Identity, FillRule.NonZero, Color.Black);
         a.ToImage().Pixels.Should().Equal(b.ToImage().Pixels);
+    }
+
+    /// <summary>Every pixel of the integer box against 255 × the exact area of the polygon inside it.</summary>
+    private static void ShouldMatchExactAreas(List<(double X, double Y)> points, CoverageMask mask, int left, int top, int right, int bottom, string what)
+    {
+        for (var y = top; y < bottom; y++)
+        {
+            for (var x = left; x < right; x++)
+            {
+                Math.Abs(mask.At(x, y) - (255 * Geometry.AreaInPixel(points, x, y))).Should().BeLessThanOrEqualTo(0.5 + 1e-9, $"{what}, pixel ({x}, {y})");
+            }
+        }
     }
 
     private static ErrorCode Code<T>(Ave.Extensions.Functional.Result<T, Error> result)

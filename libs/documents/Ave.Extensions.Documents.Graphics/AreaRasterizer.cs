@@ -51,14 +51,22 @@ internal sealed class AreaRasterizer
     private readonly record struct Edge(double X0, double Y0, double X1, double Y1, int Direction);
 
     /// <summary>
-    /// Computes the coverage of the polygons, row by row from the top, and hands each row to <paramref name="row"/>. The
-    /// polygons must lie inside the grid area the caller draws into (clip them first); every row and column between the
-    /// polygons' extremes is reported.
+    /// Computes the coverage of the polygons, row by row from the top, and hands each row to <paramref name="row"/>: every
+    /// row and column between the polygons' extremes that is a cell of <paramref name="area"/>, and no other.
     /// </summary>
+    /// <remarks>
+    /// The polygons are clipped to the area first (<see cref="Clipping"/>), so no cell outside it has coverage. The
+    /// extremes may still name a cell just outside: a polygon squeezed onto the area's right edge by the clip (a shape
+    /// outside that touches the edge) spans no column and is given the one cell to the right of that edge, which it covers
+    /// by 0. Such a cell is not reported, so a caller may index its own buffer by every cell it receives; the running sum
+    /// along a row still starts at the polygons' own first column, so the cells reported keep their exact values.
+    /// </remarks>
     /// <param name="polygons">Closed polygons; their edges together are the shape.</param>
     /// <param name="rule">The fill rule.</param>
+    /// <param name="area">The cells that may be reported: columns ⌊left⌋ to ⌈right⌉ − 1, rows ⌊top⌋ to ⌈bottom⌉ − 1; its
+    /// edges are integers of 32 bits after rounding outwards.</param>
     /// <param name="row">Receives each row's coverage.</param>
-    public void Rasterize(List<List<Vertex>> polygons, FillRule rule, CoverageRow row)
+    public void Rasterize(List<List<Vertex>> polygons, FillRule rule, PixelBox area, CoverageRow row)
     {
         _edges.Clear();
         double minX = double.PositiveInfinity, maxX = double.NegativeInfinity, minY = double.PositiveInfinity, maxY = double.NegativeInfinity;
@@ -87,13 +95,20 @@ internal sealed class AreaRasterizer
             return;
         }
 
-        // The reported columns are exactly the cells the polygons' extent touches, ⌊min x⌋ to ⌈max x⌉ − 1 (at least one).
-        // A piece adds to its own cell and to the next, and a vertical edge on ⌈max x⌉ itself adds to the cell there: two
-        // cells more are kept for those differences, and they are never reported.
+        // The row's cells are the ones the polygons' extent touches, ⌊min x⌋ to ⌈max x⌉ − 1 (at least one), and of them
+        // only those inside the area are reported. A piece adds to its own cell and to the next, and a vertical edge on
+        // ⌈max x⌉ itself adds to the cell there: two cells more are kept for those differences, and they are never reported.
         var firstColumn = (int)Math.Floor(minX);
         var width = int.Max(1, (int)Math.Ceiling(maxX) - firstColumn);
-        var firstRow = (int)Math.Floor(minY);
-        var lastRow = (int)Math.Ceiling(maxY);
+        var firstRow = int.Max((int)Math.Floor(minY), (int)Math.Floor(area.Top));
+        var lastRow = int.Min((int)Math.Ceiling(maxY), (int)Math.Ceiling(area.Bottom));
+        var fromColumn = int.Max(firstColumn, (int)Math.Floor(area.Left));
+        var toColumn = int.Min(firstColumn + width, (int)Math.Ceiling(area.Right));
+        if (toColumn <= fromColumn)
+        {
+            return;
+        }
+
         if (_cells.Length < width + 2)
         {
             _cells = new double[width + 2];
@@ -136,7 +151,7 @@ internal sealed class AreaRasterizer
             }
 
             Integrate(width, rule);
-            row(y, firstColumn, _coverage.AsSpan(0, width));
+            row(y, fromColumn, _coverage.AsSpan(fromColumn - firstColumn, toColumn - fromColumn));
         }
     }
 
