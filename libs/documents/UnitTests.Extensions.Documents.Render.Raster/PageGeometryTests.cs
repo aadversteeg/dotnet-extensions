@@ -138,6 +138,66 @@ public class PageGeometryTests
     }
 
     [Fact]
+    public void A_glyph_offset_both_ways_lands_at_the_origin_plus_each_offset_on_its_own_axis()
+    {
+        // X along the line, Y down the page, both set at once: each is added to its own coordinate of the origin.
+        const double scale = 150.0 / 72;
+        var image = Draw(40, 50, 150, Run('I', 24, new Point(4.15, 36.3), x: 9.7, y: -5.35));
+
+        ShouldShowExactly(image, [Placed(LetterI, 24, 4.15 + 9.7, 36.3 - 5.35, scale)]);
+    }
+
+    [Theory]
+    [InlineData(96)]
+    [InlineData(300)]
+    public void A_vertical_rule_narrower_than_a_pixel_shows_as_the_share_of_the_pixels_it_covers(double resolution)
+    {
+        // 0.2 pt wide: 0.27 pixel at 96 dpi, 0.83 at 300 dpi; columns partly covered, never dropped or widened.
+        var scale = resolution / 72;
+        var image = Draw(20, 24, resolution, new FillRectangle(new Rect(new Point(9.37, 2.5), new Size(0.2, 18.25)), Color.Black));
+
+        ShouldShowExactly(image, [new Box(9.37 * scale, 2.5 * scale, 9.57 * scale, 20.75 * scale)]);
+    }
+
+    [Fact]
+    public void A_horizontal_rule_thinner_than_a_third_of_a_pixel_shows_as_its_share()
+    {
+        // 0.2 pt at 96 dpi: 0.27 pixel, below the 0.3 pixel some renderers drop.
+        const double scale = 96.0 / 72;
+        var image = Draw(24, 20, 96, new FillRectangle(new Rect(new Point(2.25, 10.05), new Size(18.5, 0.2)), Color.Black));
+
+        ShouldShowExactly(image, [new Box(2.25 * scale, 10.05 * scale, 20.75 * scale, 10.25 * scale)]);
+        image.Pixels[((13 * image.Width) + 10) * 4].Should().BeLessThan(255, "the rule darkens the row it lies in");
+    }
+
+    [Fact]
+    public void Two_different_images_on_one_page_each_show_their_own_samples()
+    {
+        // Decoded once per render call, by image: the colour image and the grey one (the same size) must not be mixed up.
+        var colour = TestImages.Load("rgb8.png");
+        var grey = TestImages.Load("grey8.png");
+        var image = Draw(18, 7, 72,
+            new DrawImage(new Rect(new Point(1, 1), new Size(7, 5)), colour),
+            new DrawImage(new Rect(new Point(10, 1), new Size(7, 5)), grey),
+            new DrawImage(new Rect(new Point(1, 1), new Size(7, 5)), colour));
+
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var (source, left) = x < 9 ? ((RasterImage)colour, 1) : ((RasterImage)grey, 10);
+                var (column, row) = (x - left, y - 1);
+                var inside = column >= 0 && row >= 0 && column < 7 && row < 5;
+                var channels = source.ColorSpace == ImageColorSpace.Gray ? 1 : 3;
+                byte[] expected = !inside ? [255, 255, 255]
+                    : channels == 1 ? [.. Enumerable.Repeat(source.Samples[(row * 7) + column], 3)]
+                    : [.. source.Samples.Skip(((row * 7) + column) * 3).Take(3)];
+                image.Pixels.Skip(((y * image.Width) + x) * 4).Take(3).Should().Equal(expected, $"pixel ({x}, {y})");
+            }
+        }
+    }
+
+    [Fact]
     public void An_image_in_a_box_of_another_shape_is_stretched_across_and_down_by_its_own_factors()
     {
         // rgb8.png into a box 3 times its width and 2 times its height, at 72 dpi: each sample becomes a block of
