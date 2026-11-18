@@ -184,10 +184,13 @@ painting order; markers draw nothing.
 | Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, images mapped onto their rectangle as PDF maps an image's unit square |
 | composition | `ToPng`, `ToPngPages`, `ToImages` on a document or on its pages (`ToPages`) |
 
-Choices, each stated at its code: coverage is exact for straight edges where no two contours overlap or meet inside a
-pixel (where two contours wound the same way overlap, a pixel crossed by an edge of each is up to a quarter of a pixel
-too dark, measured 63.3 of 255 steps on a real glyph; where contours of opposite direction meet inside a pixel they
-cancel, up to the whole pixel; `Graphics/AreaRasterizer.cs`), curves are within 1/64 pixel; colours are
+Choices, each stated at its code: coverage is exact for straight edges where no two contours overlap or meet inside
+the part of a pixel that the clip box lets through (where two contours wound the same way overlap, a pixel crossed by
+an edge of each is up to a quarter of a pixel too dark, measured 63.3 of 255 steps on a real glyph; where contours of
+opposite direction meet inside a pixel they cancel, up to the whole pixel; `Graphics/AreaRasterizer.cs`). The fill
+rule is taken over that part of the pixel, A · g(|a| / A) with A its area and a the integral of the winding number
+over it, so a clip edge through the inside of overlapping contours (winding 2 over part of a pixel) is exact
+(`ClipBoxCoverageTests`); curves are within 1/64 pixel; colours are
 blended on the encoded 8-bit values, as PDFium, MuPDF and poppler blend them — blending in linear light would be more
 correct in theory and visibly different from every PDF viewer, so it is not done; an image is a grid of uniformly
 coloured squares (PDF's `/Interpolate false`), each device pixel showing the mean of the image over the part it covers;

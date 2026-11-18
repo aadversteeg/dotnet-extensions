@@ -25,12 +25,14 @@ internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double
 /// to cell c and (m − c)·h to cell c + 1, and a running sum along the row turns these differences into the integral of the
 /// winding number over each cell. Exact for straight edges: the only error is the rounding of double arithmetic.</para>
 /// <para><b>Fill rules.</b> The integral a is turned into coverage by the non-zero rule as min(1, |a|) and by the even-odd
-/// rule by folding |a| into [0, 1] with period 2. Both are exact where, inside a cell, the winding number takes only the
-/// values 0 and 1, or only 0 and −1: inside every outline that does not overlap itself, and wherever outlines wound the
-/// same way do not overlap. Elsewhere they are not exact. Where two contours wound the same way overlap inside a cell,
-/// the part both cover counts twice before the clamp, so the cell is up to a quarter too dark: measured on Roboto's 'Ɨ'
-/// (two crossing bars) at 2,000 random sizes and offsets, at most 63.3 of 255 steps, and only in pixels that an edge of
-/// each contour crosses. Where parts wound in opposite directions meet inside a cell they cancel, up to the whole cell:
+/// rule by folding |a| into [0, 1] with period 2, each over the part of the cell inside the area the polygons are clipped
+/// to (A · g(|a| / A), <see cref="Integrate"/>; A = 1 for a cell wholly inside). Both are exact where, inside the part of
+/// a cell inside the area, the winding number takes only the values 0 and 1, or only 0 and −1: inside every outline that
+/// does not overlap itself, and wherever outlines wound the same way do not overlap. Elsewhere they are not exact.
+/// Where two contours wound the same way overlap inside a cell, the part both cover counts twice before the clamp, so
+/// the cell is up to a quarter too dark: measured on Roboto's 'Ɨ' (two crossing bars) at 2,000 random sizes and offsets,
+/// at most 63.3 of 255 steps, and only in pixels that an edge of each contour crosses inside the area. Where parts wound
+/// in opposite directions meet inside a cell they cancel, up to the whole cell:
 /// two half-cell rectangles of opposite direction side by side give 0 where the non-zero rule asks for 1.</para>
 /// <para><b>Determinism.</b> The pixel path uses only addition, subtraction, multiplication, division and
 /// <see cref="Math.Sqrt"/>, which IEEE 754 requires to be correctly rounded, plus floor, ceiling and conversions, all on
@@ -150,7 +152,7 @@ internal sealed class AreaRasterizer
                 AddPiece(edge, y, firstColumn);
             }
 
-            Integrate(width, rule);
+            Integrate(width, rule, firstColumn, Share(y, area.Top, area.Bottom), area);
             row(y, fromColumn, _coverage.AsSpan(fromColumn - firstColumn, toColumn - fromColumn));
         }
     }
@@ -199,19 +201,35 @@ internal sealed class AreaRasterizer
         _cells[cell + 1] += height * right;
     }
 
-    /// <summary>The running sum of the cells is each cell's integral of the winding number; the fill rule makes it coverage.</summary>
-    private void Integrate(int width, FillRule rule)
+    /// <summary>
+    /// The running sum of the cells is each cell's integral a of the winding number over the part of the cell inside the
+    /// area (the polygons are clipped to it); the fill rule makes it coverage over that part. With A the size of that
+    /// part (<see cref="Share"/> of the column times that of the row), the mean winding number over it is a / A, so the
+    /// coverage is A · g(|a| / A), where g is the fill rule on a mean winding: non-zero g(w) = min(1, w), so min(A, |a|);
+    /// even-odd the fold, so A · fold(|a| / A), and 0 where A is 0. A cell wholly inside the area has A = 1 and gets
+    /// g(|a|), bit for bit what it got before the area was taken into account. Taking the rule over the whole cell
+    /// instead (g(|a|)) treats winding 2 over half a cell as winding 1 over all of it: inside two overlapping contours
+    /// that a clip edge cuts, a cell would be fully covered (non-zero, instead of half) or covered where even-odd leaves
+    /// it empty. g is 1-Lipschitz, so the rounding of a counts no more in A · g(|a| / A) than in a, however thin A is.
+    /// </summary>
+    private void Integrate(int width, FillRule rule, int firstColumn, double rowShare, PixelBox area)
     {
         var sum = 0.0;
         for (var cell = 0; cell < width; cell++)
         {
             sum += _cells[cell];
-            var area = Math.Abs(sum);
+            var integral = Math.Abs(sum);
+            var part = Share(firstColumn + cell, area.Left, area.Right) * rowShare;
             _coverage[cell] = rule == FillRule.NonZero
-                ? double.Min(1, area)
-                : Fold(area);
+                ? double.Min(part, integral)
+                : part > 0 ? part * Fold(integral / part) : 0;
         }
     }
+
+    /// <summary>The share of the unit interval of cell <paramref name="cell"/> (from cell to cell + 1) that lies between
+    /// <paramref name="from"/> and <paramref name="to"/>: 1 for a cell wholly inside, 0 for one outside.</summary>
+    private static double Share(int cell, double from, double to) =>
+        double.Max(0, double.Min(cell + 1, to) - double.Max(cell, from));
 
     /// <summary>Even-odd: the integral folded into [0, 1] with period 2 (winding 1 covered, 2 not, 3 covered, …).</summary>
     private static double Fold(double area)
