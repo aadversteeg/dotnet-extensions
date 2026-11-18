@@ -66,11 +66,16 @@ public class TableNestingCostTests
     [InlineData(15, 544)]
     public void Nested_tables_that_break_cost_the_same_with_repeated_grid_lines_as_without(int tables, long calls)
     {
-        // 2 (t + 1)(t + 2): the review's base counted 4,093 calls at 9 tables and 262,141 at 15, with repeated lines.
-        calls.Should().Be(2L * (tables + 1) * (tables + 2));
-        Count(tables, TableLines.Repeated).Calls.Should().Be(calls);
-        Count(tables, TableLines.Split).Calls.Should().Be(calls);
-        Count(tables, TableLines.None).Calls.Should().Be(calls);
+        // 2 (t + 1)(t + 2): the review's base counted 4,093 calls at 9 tables and 262,141 at 15, with repeated lines. The
+        // count is quadratic in the depth, not exponential: each table measures every table inside it at unlimited height
+        // (TableSegments.Measure) and lays a cut cell out once in the cut and once for what is left (CutShows, Rest). A
+        // change that makes it worse fails here; one that makes it better (a layout result kept within the page, planned
+        // for the next stage 1 pull request) is a deliberate edit of these numbers.
+        var because = $"2 (t + 1)(t + 2) layout calls for t = {tables} nested tables that break across a page";
+        calls.Should().Be(2L * (tables + 1) * (tables + 2), because);
+        Count(tables, TableLines.Repeated).Calls.Should().Be(calls, because + ", with repeated grid lines");
+        Count(tables, TableLines.Split).Calls.Should().Be(calls, because + ", with split grid lines");
+        Count(tables, TableLines.None).Calls.Should().Be(calls, because + ", without grid lines");
     }
 
     [Theory]
@@ -78,6 +83,6 @@ public class TableNestingCostTests
     [InlineData(15)]
     public void A_box_inside_k_tables_is_laid_out_at_most_2k_plus_1_times_on_a_page(int tables)
     {
-        Count(tables, TableLines.Repeated).MostPerBox.Should().Be((2 * tables) + 1);
+        Count(tables, TableLines.Repeated).MostPerBox.Should().Be((2 * tables) + 1, "2k + 1 layouts of a box inside k tables on one page");
     }
 }

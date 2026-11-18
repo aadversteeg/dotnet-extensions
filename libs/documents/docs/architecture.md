@@ -204,15 +204,39 @@ Each is documented next to its code as well.
   cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
+- **Work in nested tables:** a box inside k nested tables is laid out up to 2k + 1 times on a page (each table
+  measures every table inside it at unlimited height; a cut cell is laid out in the cut and once more for what is left
+  of it), so t nested tables that break across a page cost 2 (t + 1)(t + 2) layout calls: quadratic in the depth, not
+  exponential (`TableNestingCostTests`). At the nesting limit, measured on .NET 10 x64 on 2026-11-18: 63 nested one-cell
+  tables that break across 2 pages take 8,320 calls (24,704 with repeated grid lines, which make it 4 pages), 3 to 5 s,
+  1.5 to 1.8 GB allocated in all with about 111 MB of process memory at the peak, and 672 KB of stack; 64 nested blocks
+  take 130 calls, a quarter of a second, 10 MB and 304 KB of stack. The cost per page is not constant: the same nesting
+  over 20 pages takes 155,776 calls, 74 s and 68 GB allocated (peak about 150 MB), and over 200 pages it does not finish
+  in 30 minutes, because a paragraph and the boxes around it are laid out again on every page. A layout result kept
+  within the page and carried from page to page is the follow-up, in the next stage 1 pull request.
 - **Against Chromium:** at most font sizes Chromium's text is narrower than the font's advances, by a share that
   depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small sizes; none at 9, 10.5 and 12 pt), so a line
   that fits in Chromium by less than that share of its text width can break one word earlier in the engine. The
   engine keeps the font's exact advances; the reference cases that pin lengths use sizes Chromium keeps exact
-  (`tools/reference/chromium/README.md`, "Where Chromium is not exact"). With `line-height: normal` Chromium's line is
-  the font's ascent, descent and line gap each rounded to whole pixels (Lato at 12 pt: 19 px, 14.25 pt, where the
-  font's values give 14.4 pt), and it floors the half-leading above a line to a whole pixel; the engine keeps the
-  font's exact values, so a line of `normal` height and a baseline's place in its line differ by less than a pixel.
-  Line heights given as lengths, numbers or percentages are exact in both.
+  (`tools/reference/chromium/README.md`, "Where Chromium is not exact"). Chromium rounds the font metrics of every
+  inline box to whole pixels: its ascent and its descent (and for `line-height: normal` its line gap) each rounded, and
+  the half-leading above it floored to a whole pixel; the engine keeps the font's exact values. So a line of `normal`
+  height differs by up to about a pixel per line (Lato at 12 pt: Chromium 19 px, 14.25 pt, the font's values 14.4 pt;
+  three roundings can reach 1.5 px for a font with a line gap), and under an explicit line height a baseline's place
+  in its line differs too: the largest measured difference is 1.16 px (0.87 pt, Lato 10 pt at `line-height: 1.5`, case
+  `fr-lh-first-baseline`, `LineBoxReferenceTests`). Where a line mixes font sizes under a line height given as a length,
+  the boxes' rounded metrics decide the line's height, and the engine's line can be up to about half a pixel taller or
+  shorter per line: ten lines of 15 pt with a 20 pt word on two of them fill a 150 pt page in Chromium and need a second
+  page in the engine (case `fr-lh-mixed-sizes`). The policy `FontMetricRounding.WholePixels` follows Chromium's rounding
+  (pull request 8). Chromium also snaps every used line height to 1/64 px (a number times the font size floored, a length
+  or a percentage rounded); the engine does not, so where a page end falls within lines/64 px of an exact fit the page
+  can break one line earlier or later (the front-end that speaks CSS will hand over lengths in that unit). The font's
+  line metrics come from the table Chromium reads on Linux (Fontations): OS/2 typographic metrics when the font sets
+  USE_TYPO_METRICS, whatever the table's version, otherwise 'hhea'; this is the reference — on Windows and macOS
+  Chromium takes the metrics from the platform, and which table that is, is not documented. These metrics move every
+  inline box, not only lines of `normal` height. A line height smaller than its text (12 pt text on 7.5 pt lines, or 0)
+  overflows its line; Chromium paints such overflowing glyphs again at the next page's edge and adds a page for the last
+  line's overflow, the engine paints them once.
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
