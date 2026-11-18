@@ -112,6 +112,17 @@ public class ChromiumTreeTests
         HtmlParser.ParseFragment(html, new HtmlFragmentContext(context, name)).Match(result => HtmlTreeText.Format(result.Fragment), error => $"error: {error}\n")
             .Should().Be(engine);
 
+    [Fact]
+    public void A_fragment_in_a_title_context_keeps_the_standard_a_listed_limit()
+    {
+        // Listed limit (docs/architecture.md, HD-8): the standard replaces a NUL in RCDATA by U+FFFD; Chromium 159
+        // (innerHTML of a title, measured) drops it and gives "fillertext".
+        var tree = HtmlParser.ParseFragment("\0filler\0text", new HtmlFragmentContext(ElementNamespace.Html, "title"))
+            .Match(result => HtmlTreeText.Format(result.Fragment), error => $"error: {error}\n");
+
+        tree.Should().Be("| \"\uFFFDfiller\uFFFDtext\"\n").And.NotBe("| \"fillertext\"\n");
+    }
+
     [Theory]
     // Listed limit (docs/architecture.md, HD-10): an <option> after a selectedcontent that is still open. The engine's
     // clones are its own: Chromium 159 (DOMParser, measured) leaves the first two selectedcontent elements empty and

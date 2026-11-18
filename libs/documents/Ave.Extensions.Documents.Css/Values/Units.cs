@@ -8,7 +8,7 @@ namespace Ave.Extensions.Documents.Css.Values;
 /// The length units (CSS Values 4 §6): the absolute ones as points, the font- and viewport-relative ones the engine
 /// resolves, and the others, which are known and refused.
 /// </summary>
-public static class Units
+internal static class Units
 {
     /// <summary>The absolute units in points (CSS Values 4 §6.2: 1in = 2.54cm = 25.4mm = 101.6Q = 72pt = 6pc = 96px).</summary>
     internal static readonly FrozenDictionary<string, double> Absolute = new Dictionary<string, double>
