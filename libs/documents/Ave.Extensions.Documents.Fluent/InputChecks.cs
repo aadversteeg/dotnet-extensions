@@ -69,6 +69,17 @@ internal static class InputChecks
         {
             yield return Problem(DocumentErrorCodes.Input.Invalid.FontWeight, "The font weight must be 1–1000.", weight.ToString(), "font-weight", source);
         }
+
+        // CSS Fragmentation 3 §3.3: "Only positive integers are allowed as values of orphans and widows."
+        if (format.Orphans is int orphans and < 1)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.Orphans, "Orphans must be at least 1 line.", orphans.ToString(System.Globalization.CultureInfo.InvariantCulture), "orphans", source);
+        }
+
+        if (format.Widows is int widows and < 1)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", widows.ToString(System.Globalization.CultureInfo.InvariantCulture), "widows", source);
+        }
     }
 
     /// <summary>Heading levels are 1–6, as PDF structure types H1–H6 (ISO 32000-1 §14.8.4.3.2).</summary>

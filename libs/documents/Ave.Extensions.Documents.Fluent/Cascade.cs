@@ -36,7 +36,9 @@ internal static class Cascade
         own.Text.FontWeight ?? shared.Text.FontWeight,
         own.Text.Color ?? shared.Text.Color,
         own.Text.TextAlign ?? shared.Text.TextAlign,
-        own.Text.FontStyle ?? shared.Text.FontStyle);
+        own.Text.FontStyle ?? shared.Text.FontStyle,
+        own.Text.Orphans ?? shared.Text.Orphans,
+        own.Text.Widows ?? shared.Text.Widows);
 
     /// <summary>The box values an element specifies; <paramref name="defaults"/> fills what neither the element nor its
     /// style sets (a table's cell defaults; nothing for other elements).</summary>

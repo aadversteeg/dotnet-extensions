@@ -50,7 +50,9 @@ public static class DocumentTranslator
                 format.FontWeight ?? FontWeight.Regular,
                 format.Color ?? Color.Black,
                 format.FontStyle ?? FontStyle.Normal),
-            format.TextAlign ?? TextAlign.Left);
+            format.TextAlign ?? TextAlign.Left,
+            format.Orphans ?? BoxStyle.Initial.Orphans,
+            format.Widows ?? BoxStyle.Initial.Widows);
         var root = Children(document.Body, new NodeId(1), inherited).OnSuccessMap(children =>
             new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
         var page = PageStyle(document.Page, new NodeId(1 + document.Body.Sum(NodeCount)), inherited);
@@ -70,7 +72,9 @@ public static class DocumentTranslator
     /// <summary>The computed values of the inherited properties that a parent passes down.</summary>
     /// <param name="Text">The text properties.</param>
     /// <param name="Align">The text alignment.</param>
-    internal sealed record Inherited(TextStyle Text, TextAlign Align)
+    /// <param name="Orphans">The <c>orphans</c> value (CSS Fragmentation 3 §3.3; initial 2).</param>
+    /// <param name="Widows">The <c>widows</c> value (initial 2).</param>
+    internal sealed record Inherited(TextStyle Text, TextAlign Align, int Orphans, int Widows)
     {
         /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value.</summary>
         public Inherited With(TextFormat format) => new(
@@ -80,7 +84,9 @@ public static class DocumentTranslator
                 format.FontWeight ?? Text.FontWeight,
                 format.Color ?? Text.Color,
                 format.FontStyle ?? Text.FontStyle),
-            format.TextAlign ?? Align);
+            format.TextAlign ?? Align,
+            format.Orphans ?? Orphans,
+            format.Widows ?? Widows);
     }
 
     /// <summary>
@@ -124,7 +130,13 @@ public static class DocumentTranslator
         _ => 0,
     };
 
-    /// <summary>The computed box style of an element from its specified box values.</summary>
+    /// <summary>The computed box style of an element from its specified box values and the inherited paragraph
+    /// properties it computes (its own <see cref="Inherited"/>).</summary>
+    internal static BoxStyle BoxStyleOf(Cascade.BoxValues box, bool pageBreakBefore, Inherited own) =>
+        BoxStyleOf(box, pageBreakBefore, own.Align) with { Orphans = own.Orphans, Widows = own.Widows };
+
+    /// <summary>The computed box style of an element without lines (an image): the paragraph properties keep their
+    /// initial values.</summary>
     internal static BoxStyle BoxStyleOf(Cascade.BoxValues box, bool pageBreakBefore, TextAlign align) =>
         BoxStyle.Initial with
         {
@@ -173,7 +185,7 @@ public static class DocumentTranslator
         var own = inherited.With(text);
         var children = Children(block.Children, new NodeId(id.Value + 1), own);
         return WithProblems(problems, children).OnSuccessMap(nodes =>
-            (Node)new Box(id, SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyleOf(box, pageBreakBefore, own.Align), nodes, block.Source));
+            (Node)new Box(id, SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyleOf(box, pageBreakBefore, own), nodes, block.Source));
     }
 
     /// <summary>
@@ -203,7 +215,7 @@ public static class DocumentTranslator
             .Select((span, index) => Run(span, new NodeId(id.Value + 1 + index), IsLineBreaks(span) ? own.Text : own.With(Cascade.Text(span.Format, span.Style)).Text))
             .ToImmutableArray();
         return Result<Node, Error>.Success(new Box(
-            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own.Align), runs, paragraph.Source));
+            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own), runs, paragraph.Source));
     }
 
     /// <summary>A span whose text is one or more forced line breaks: the line separator U+2028 that LineBreak() writes,

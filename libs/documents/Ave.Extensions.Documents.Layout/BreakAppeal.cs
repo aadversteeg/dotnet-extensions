@@ -33,6 +33,14 @@ public enum BreakAppeal
     /// </summary>
     ViolatesAvoid,
 
+    /// <summary>
+    /// The break leaves fewer lines of a paragraph before it than <c>orphans</c> or fewer after it than <c>widows</c> ask
+    /// for (CSS Fragmentation 3 §3.3; §4.4 rule 3), and violates nothing else (Chromium
+    /// <c>kBreakAppealViolatingOrphansAndWidows</c>). Better than a break that violates an <c>avoid</c> value: §4.4 drops
+    /// rule 3 first when the rules do not leave enough breakpoints.
+    /// </summary>
+    ViolatesOrphansWidows,
+
     /// <summary>No rule is against this break (Chromium <c>kBreakAppealPerfect</c>).</summary>
     Perfect,
 }

@@ -245,7 +245,7 @@ justification, TrueType subsetting, deterministic output. Table layout is checke
 container with font hinting off, within the layout units Chromium snaps
 (`UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs`, `tools/reference/chromium/README.md`).
 
-Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows, the
+Known limits, each documented next to the code: negative margins (reported as unsupported), the
 line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
 border model, diagonal border joins, keep rules that would move a break to a cut inside a row of an earlier table, interlaced
 and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and other OpenType

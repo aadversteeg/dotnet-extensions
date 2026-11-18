@@ -14,7 +14,8 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// </summary>
 public class PageTemplateTests
 {
-    private static readonly BoxStyle Narrow = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()) };
+    // One word per line; orphans and widows 1, so where a page breaks depends only on the rules these tests are about.
+    private static readonly BoxStyle Narrow = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), Orphans = 1, Widows = 1 };
 
     private static Result<ValueList<PageFragment>, Error> Paginate(StyledDocument document, LayoutEnvironment? environment = null) =>
         Paginator.Paginate(environment ?? LayoutEnvironment.Create(TestFonts.Set), document);

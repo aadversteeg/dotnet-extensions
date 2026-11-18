@@ -102,11 +102,13 @@ internal static class TableBreaks
             : table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2;
 
     /// <summary>
-    /// The latest breakpoint of the highest appeal that places body content, taken; None when none does. A cut inside a
-    /// row that would leave a part of the row that shows nothing (<see cref="CutShows"/>) is only a last resort: it is
-    /// taken when no other breakpoint places anything, with <see cref="BreakAppeal.LastResort"/>, so the table's parent
-    /// prefers any breakpoint of its own (which moves the table to the next page), and only a table at the top of a
-    /// page, where moving gains nothing, is cut there.
+    /// The latest breakpoint of the highest appeal that places body content, taken; None when none does. A breakpoint
+    /// is taken at the appeal it promised, or kept as a fallback when taking it shows it is worse: a cut inside a row
+    /// that would leave a part of the row that shows nothing (<see cref="CutShows"/>) is only a last resort
+    /// (<see cref="BreakAppeal.LastResort"/>), and a cut that breaks a cell's content badly (orphans, a kept paragraph)
+    /// is as bad as that break. The best fallback is taken when no breakpoint keeps its promise, and the table's parent
+    /// then prefers any better breakpoint of its own (which moves the table to the next page); only a table at the top
+    /// of a page, where moving gains nothing, is cut there.
     /// </summary>
     /// <param name="table">The table.</param>
     /// <param name="breakpoints">The page's breakpoints.</param>
@@ -118,7 +120,7 @@ internal static class TableBreaks
             .OrderByDescending(breakpoint => breakpoint.Appeal)
             .ThenByDescending(breakpoint => breakpoint.Row)
             .ThenByDescending(breakpoint => breakpoint.Kind);
-        Maybe<Outcome> lastResort = Maybe<Outcome>.None;
+        Maybe<Outcome> fallback = Maybe<Outcome>.None;
         foreach (var breakpoint in ordered)
         {
             var taken = Take(table, breakpoint, height);
@@ -127,10 +129,12 @@ internal static class TableBreaks
                 return taken;
             }
 
-            lastResort = lastResort.HasValue ? lastResort : taken.Value;
+            // Taken at a lower appeal than the breakpoint promised (a part that shows nothing, a cell's own break): kept in
+            // case nothing keeps its promise; of such, the best, and of equal ones the first in page order from the end.
+            fallback = taken.Value.HasValue && (!fallback.HasValue || taken.Value.Value.Appeal > fallback.Value.Appeal) ? taken.Value : fallback;
         }
 
-        return Result<Maybe<Outcome>, Error>.Success(lastResort);
+        return Result<Maybe<Outcome>, Error>.Success(fallback);
     }
 
     /// <summary>
@@ -199,6 +203,7 @@ internal static class TableBreaks
         var cells = content.Cells;
         var continuing = ImmutableArray.CreateBuilder<CellBreak>();
         var cut = new List<(double Top, BoxFragment Fragment, CellBreak Next)>();
+        var cellsAppeal = BreakAppeal.Perfect;
         foreach (var cell in segment.Cells)
         {
             var info = grid.Cells[cell.Cell];
@@ -223,7 +228,8 @@ internal static class TableBreaks
                 return Result<Maybe<Outcome>, Error>.Failure(sliced.Error);
             }
 
-            var (fragment, next) = sliced.Value;
+            var (fragment, next, cellAppeal) = sliced.Value;
+            cellsAppeal = BreakAvoidance.Worst(cellsAppeal, cellAppeal);
             cut.Add((top, fragment, next));
             cells = cells.Add(new PlacedCell(cell.Cell, cell.StartRow, fragment));
             continuing.Add(next);
@@ -258,8 +264,11 @@ internal static class TableBreaks
         var bottomLine = !inside ? BottomLine(table, cutRow - 1, cutRow, bottom)
             : IsCloned(table) ? new LineAt(cutRow, Next(grid, cutRow), PageEndContext(table, cutRow), bottom)
             : null;
-        // A cut that leaves a part of the row showing nothing is only a last resort (CutShows).
-        var taken = shows.Value ? appeal : BreakAppeal.LastResort;
+        // A cut that leaves a part of the row showing nothing is only a last resort (CutShows). Otherwise the cut is as good
+        // as the worst break it makes inside a cut cell's content (a cell's own keep rules, orphans and widows): every
+        // cell is a flow of its own that breaks there, and Chromium joins the cells' break appeals into the row's (case
+        // c-cell-orphan-moves: a row whose cell would leave one line on the page moves to the next page).
+        var taken = shows.Value ? BreakAvoidance.Worst(appeal, cellsAppeal) : BreakAppeal.LastResort;
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), taken)));
     }
 

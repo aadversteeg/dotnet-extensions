@@ -22,8 +22,9 @@ public class ReachBackTests
 
     private static Document Doc(params Element[] body) => Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato");
 
+    /// <summary>A paragraph of lines, with orphans and widows 1 as in the cases.</summary>
     private static ParagraphElement Lines(int count, string prefix) =>
-        Paragraph([.. Enumerable.Range(0, count).SelectMany(i => i == 0 ? new[] { Text($"{prefix}{i}") } : [LineBreak(), Text($"{prefix}{i}")])]);
+        Paragraph([.. Enumerable.Range(0, count).SelectMany(i => i == 0 ? new[] { Text($"{prefix}{i}") } : [LineBreak(), Text($"{prefix}{i}")])]).Orphans(1).Widows(1);
 
     private static void ShouldPrintLikeChromium(string caseName, Document document)
     {

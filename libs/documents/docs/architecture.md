@@ -84,6 +84,7 @@ the three places to open, with that front-end as their first user.
 | cascade and inheritance, user-agent styles | `Fluent/DocumentTranslator.cs`, `Cascade.cs`, `UserAgentStyles.cs` | CSS Cascade 4 §4, §6.1, §7.2; HTML rendering (heading sizes) |
 | input validation | `Fluent/InputChecks.cs` | one function per rule, each cites its source |
 | block flow, keep rules, break choice | `Layout/FlowLayout.cs`, `BreakAvoidance.cs`, `ForcedBreaks.cs` | CSS 2.1 §9.4.1, CSS Fragmentation 3 §3–§4 |
+| orphans and widows: where a paragraph breaks, the best breakpoint inside a complete paragraph; a cut of a table row is as good as the breaks it makes inside its cells | `Layout/InlineLayout.cs` (`BreakWhereFull`, `BestBreakInside`), `Tracks/TableBreaks.cs` (`Cut`) | CSS Fragmentation 3 §3.3, §4.4 rule 3; checked against Chromium's print |
 | early breaks: a keep rule that reaches back into an earlier box's content; a box whose bottom padding does not fit breaks at its best inner breakpoint | `Layout/EarlyBreak.cs`, `FlowLayout.cs`, `InlineLayout.cs`, `Tracks/TablePage.cs`, `SlicedBox.cs` | CSS Fragmentation 3 §4.4, §4.5; checked against Chromium's print |
 | where a page starts: a box that does not fit below margins, empty boxes or padding moves on; only content that starts the page is refused; the last-resort break | `Layout/ConstraintSpace.cs` (`IsAtPageStart`), `FlowLayout.cs`, `SlicedBox.cs`, `BreakAppeal.cs` (`LastResort`) | CSS Fragmentation 3 §4.1, §4.4, §5.2; checked against Chromium's print |
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
@@ -188,7 +189,7 @@ compression comes from the .NET runtime, so bytes are identical on the same runt
 
 Each is documented next to its code as well.
 
-- **Layout:** negative margins (refused as unsupported); orphans and widows; the `line-height` property and the strut
+- **Layout:** negative margins (refused as unsupported); the `line-height` property and the strut
   (a line is always `line-height: normal`, which is why the timesheet tunes cell padding); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
   borders; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut

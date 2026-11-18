@@ -124,6 +124,7 @@ properties give the same element in any order, and setting the same property twi
 | `.BorderTop/Right/Bottom/Left(Length, Color)` | elements with a box, `Style` | `border-top` … |
 | `.KeepTogether()` | elements with a box, rows, row groups | `break-inside: avoid` |
 | `.KeepWithNext()`, `.KeepWithPrevious()` | elements with a box, rows | `break-after: avoid`, `break-before: avoid` |
+| `.Orphans(int)`, `.Widows(int)` | blocks, paragraphs, `Style` | `orphans`, `widows` (inherited, initial 2, at least 1): the fewest lines of a paragraph a page keeps before a break inside it, and after it |
 | `.GridLines(Length, Color)` | tables | a border on every cell that sets none (one shared line between cells) |
 | `.CellPadding(Length)`, `.CellPadding(vertical, horizontal)` | tables | padding of every cell that sets none |
 | `.RepeatLinesAtBreaks()` (the default) | tables | at a page break between rows the page ends with the whole grid line and the next page starts with it again; a row that is cut inside itself ends the page with the whole line below it and goes on under the whole line above it, so the table is closed on both pages, as word processors print tables; modelled on `box-decoration-break: clone` |
@@ -145,7 +146,7 @@ an image size or a header or footer height above it is reported with that proper
 Precedence is a fixed rule, never the order of the calls:
 
 1. an element's own modifier values win over its style (`.With`), which wins over what the parent passes down
-   (the text properties and `TextAlign` are inherited, like in CSS);
+   (the text properties, `TextAlign`, `Orphans` and `Widows` are inherited, like in CSS);
 2. within one of those, a single side (`MarginTop`) wins over the all-sides value (`Margin`).
 
 Text properties are inherited by children; box properties (margins, padding, background) are not. Adjoining

@@ -58,7 +58,7 @@ internal static class TableTranslator
             id,
             SemanticRole.Table,
             LayoutAlgorithmId.Tracks,
-            DocumentTranslator.BoxStyleOf(box, pageBreakBefore, own.Align) with { Columns = table.Columns, DecorationBreak = table.LinesAtBreaks },
+            DocumentTranslator.BoxStyleOf(box, pageBreakBefore, own) with { Columns = table.Columns, DecorationBreak = table.LinesAtBreaks },
             nodes,
             table.Source));
     }
@@ -85,7 +85,7 @@ internal static class TableTranslator
             id,
             SemanticRole.Generic,
             LayoutAlgorithmId.Tracks,
-            DocumentTranslator.BoxStyleOf(box, pageBreakBefore, own.Align) with { Columns = columns },
+            DocumentTranslator.BoxStyleOf(box, pageBreakBefore, own) with { Columns = columns },
             nodes,
             row.Source));
     }
@@ -185,7 +185,7 @@ internal static class TableTranslator
         var role = isLayoutOnly ? SemanticRole.Generic : group.IsHeader && hasBody ? SemanticRole.TableHead : SemanticRole.TableBody;
         var part = group.IsHeader ? TableDisplay.HeaderGroup : TableDisplay.RowGroup;
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes =>
-            (Node)new Box(id, role, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own.Align) with { TableDisplay = part }, nodes, source));
+            (Node)new Box(id, role, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own) with { TableDisplay = part }, nodes, source));
     }
 
     /// <summary>A row box with its cells; the row's text values are inherited by its cells.</summary>
@@ -208,7 +208,7 @@ internal static class TableTranslator
             .TraverseAll(item => CellNode(item.Cell, item.Id, own, cellDefaults, role, isLayoutOnly ? "row" : "table cell"))
             .OnSuccessMap(nodes => nodes.ToValueList());
         return DocumentTranslator.WithProblems(problems, children).OnSuccessMap(nodes => (Node)new Box(
-            id, isLayoutOnly ? SemanticRole.Generic : SemanticRole.TableRow, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own.Align) with { TableDisplay = TableDisplay.Row }, nodes, row.Source));
+            id, isLayoutOnly ? SemanticRole.Generic : SemanticRole.TableRow, LayoutAlgorithmId.Tracks, DocumentTranslator.BoxStyleOf(box, false, own) with { TableDisplay = TableDisplay.Row }, nodes, row.Source));
     }
 
     /// <summary>A cell box: a flow box with the cell's content; padding and border fall back to the table's cell
@@ -230,7 +230,7 @@ internal static class TableTranslator
             id,
             role,
             LayoutAlgorithmId.Flow,
-            DocumentTranslator.BoxStyleOf(box, false, own.Align) with { Span = cell.Span, VerticalAlign = cell.VerticalAlignment ?? VerticalAlign.Top },
+            DocumentTranslator.BoxStyleOf(box, false, own) with { Span = cell.Span, VerticalAlign = cell.VerticalAlignment ?? VerticalAlign.Top },
             nodes,
             cell.Source));
     }

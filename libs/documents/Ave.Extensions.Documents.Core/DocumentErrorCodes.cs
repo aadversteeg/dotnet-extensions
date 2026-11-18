@@ -46,6 +46,14 @@ public static class DocumentErrorCodes
             /// <summary>No font family set, or an empty one.</summary>
             public static readonly ErrorCode FontFamily = _ / "FontFamily";
 
+            /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
+            /// positive integers are allowed"). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Orphans = _ / "Orphans";
+
+            /// <summary>A <c>widows</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3). Metadata:
+            /// Value, Property.</summary>
+            public static readonly ErrorCode Widows = _ / "Widows";
+
             /// <summary>A heading level outside 1–6. Metadata: Value.</summary>
             public static readonly ErrorCode HeadingLevel = _ / "HeadingLevel";
 

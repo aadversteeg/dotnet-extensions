@@ -91,8 +91,9 @@ public class PaginationTests
     {
         // Six lines (72 pt) fit the 80 pt page area, but not with the 10 pt bottom padding. The padding is no
         // break point, so the box breaks before its last line, which ends the box on page 2 together with the
-        // padding. This is what Chromium 157 printed for the same case, measured when the rule was written.
-        var style = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), Padding = new Edges(0.Pt(), 0.Pt(), 10.Pt(), 0.Pt()) };
+        // padding. This is what Chromium 157 printed for the same case, measured when the rule was written. Orphans and
+        // widows 1, so only the padding rule decides (with the initial 2 the break would leave two lines for page 2).
+        var style = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), Padding = new Edges(0.Pt(), 0.Pt(), 10.Pt(), 0.Pt()), Orphans = 1, Widows = 1 };
         var pages = Paginate(Document(Paragraph(1, Words(6), style)));
 
         pages.Select(page => LineCounts(page).Single()).Should().Equal(5, 1);

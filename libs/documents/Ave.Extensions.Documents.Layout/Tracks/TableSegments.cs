@@ -50,17 +50,18 @@ internal static class TableSegments
     /// <paramref name="clearance"/> free above the cut (clone keeps it clear of the line drawn there,
     /// <see cref="TablePage"/>); a cell that ends in the slice needs no clearance, since its own box already holds the half
     /// of the line below it (<see cref="CellLayoutBox"/>). So the cell is laid out in the whole slice first, and only when
-    /// it does not end there again, without the clearance. Returns the fragment, stretched to the slice, and where the
-    /// cell continues.
+    /// it does not end there again, without the clearance. Returns the fragment, stretched to the slice, where the cell
+    /// continues, and the appeal of the break inside the cell's content (its own keep rules, orphans and widows):
+    /// perfect for a cell that ends in the slice or places nothing of itself.
     /// </summary>
-    internal static Result<(BoxFragment Fragment, CellBreak Next), Error> Slice(TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0)
+    internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal), Error> Slice(TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0)
     {
         var info = table.Grid.Cells[cell.Cell];
         var box = CellLayoutBox(table, segment, cell);
         var width = table.CellWidth(info);
         if (cell.IsComplete)
         {
-            return Result<(BoxFragment, CellBreak), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true)));
+            return Result<(BoxFragment, CellBreak, BreakAppeal), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true), BreakAppeal.Perfect));
         }
 
         var inset = ReopenedInset(table, segment, cell);
@@ -71,8 +72,9 @@ internal static class TableSegments
             .OnSuccessMap(result => result switch
             {
                 LayoutResult.Placed placed => (Stretch(Lowered(placed.Fragment, inset), sliceHeight, VerticalAlign.Top),
-                    new CellBreak(cell.Cell, placed.Continuation, placed.Continuation is null)),
-                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false)),
+                    new CellBreak(cell.Cell, placed.Continuation, placed.Continuation is null),
+                    placed.Continuation is null ? BreakAppeal.Perfect : placed.Appeal),
+                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), BreakAppeal.Perfect),
             });
     }
 

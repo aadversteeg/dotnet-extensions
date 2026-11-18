@@ -38,6 +38,17 @@ public sealed record BoxStyle
     /// front-end computes it for every box. Used by inline layout.</summary>
     public TextAlign TextAlign { get; init; }
 
+    /// <summary>The fewest lines of the box's paragraph a page may hold before a break inside it (CSS Fragmentation 3
+    /// §3.3, <c>orphans</c>: "the minimum number of line boxes in a block container that must be left in a fragment
+    /// before a fragmentation break"); initial value 2, an inherited property, so the front-end computes it for every
+    /// box; at least 1. Used by inline layout.</summary>
+    public int Orphans { get; init; } = 2;
+
+    /// <summary>The fewest lines of the box's paragraph a page may hold after a break inside it (CSS Fragmentation 3
+    /// §3.3, <c>widows</c>: "the minimum number of line boxes of a block container that must be left in a fragment after
+    /// a break"); initial value 2, inherited, at least 1. Used by inline layout.</summary>
+    public int Widows { get; init; } = 2;
+
     /// <summary>Where a table cell's content sits in the cell's height (CSS 2.1 §17.5.3, <c>vertical-align</c> on
     /// table cells). Used by the tracks algorithm for the boxes in a row; ignored elsewhere.</summary>
     public VerticalAlign VerticalAlign { get; init; }
