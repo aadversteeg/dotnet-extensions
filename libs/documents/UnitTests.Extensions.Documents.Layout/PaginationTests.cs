@@ -101,14 +101,26 @@ public class PaginationTests
     }
 
     [Fact]
-    public void A_box_at_the_page_start_whose_bottom_padding_can_never_fit_overflows_the_page_area()
+    public void A_box_at_the_page_start_whose_bottom_padding_does_not_fit_below_its_content_carries_it_to_the_next_page()
     {
-        // Documented limit of SlicedBox: with no break point left, the padding overflows instead of failing.
+        // SlicedBox, the rule for bottom padding that does not fit (Chromium's FinishFragmentation): the box breaks before
+        // its bottom padding and border, its first fragment ends right below its line, the padding starts page 2.
         var style = BoxStyle.Initial with { Padding = new Edges(0.Pt(), 0.Pt(), 75.Pt(), 0.Pt()) };
         var pages = Paginate(Document(Paragraph(1, "One", style)));
 
-        pages.Should().HaveCount(1);
-        Root(pages[0]).Children[0].Fragment.Size.Height.Should().Be(LineBoxHeight + 75);
+        pages.Should().HaveCount(2);
+        pages.Select(page => Root(page).Children[0].Fragment.Size.Height).Should().Equal(LineBoxHeight, 75);
+    }
+
+    [Fact]
+    public void Bottom_padding_taller_than_the_page_area_overflows_the_page_it_starts()
+    {
+        // Documented limit of SlicedBox: alone on its page the padding cannot move on again, so it overflows the 80 pt
+        // page area instead of failing (Chromium overflows too: a break there would make no progress).
+        var style = BoxStyle.Initial with { Padding = new Edges(0.Pt(), 0.Pt(), 90.Pt(), 0.Pt()) };
+        var pages = Paginate(Document(Paragraph(1, "One", style)));
+
+        pages.Select(page => Root(page).Children[0].Fragment.Size.Height).Should().Equal(LineBoxHeight, 90);
     }
 
     [Fact]

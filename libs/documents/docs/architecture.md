@@ -87,7 +87,8 @@ the three places to open, with that front-end as their first user.
 | line heights and the strut: `normal`, numbers, lengths and percentages; every line starts with its paragraph's strut | `DocumentModel/LineHeight.cs`, `Layout/LineBoxes.cs`, `Fluent/LineHeightValue.cs` (computed values) | CSS 2.1 §10.8, §10.8.1; CSS Inline 3 §5.1, §5.3; checked against Chromium's print |
 | a font's line metrics (ascent, descent, line gap for `normal` and the strut): OS/2 typographic when the font sets USE_TYPO_METRICS, otherwise 'hhea' (where 'hhea' has none: typographic, then Windows), as Chromium reads them on Linux; for every front-end, not a policy | `Fonts/FontParser.cs` (`LineMetricsOf`), `FontMetrics.Line` | Skia `SkFontHost_FreeType.cpp`, Fontations `skrifa` `metrics.rs`; checked against Chromium's print (cases `d-typo-*`) |
 | orphans and widows: where a paragraph breaks, the best breakpoint inside a complete paragraph; a cut of a table row is as good as the breaks it makes inside its cells | `Layout/InlineLayout.cs` (`BreakWhereFull`, `BestBreakInside`), `Tracks/TableBreaks.cs` (`Cut`) | CSS Fragmentation 3 §3.3, §4.4 rule 3; checked against Chromium's print |
-| early breaks: a keep rule that reaches back into an earlier box's content; a box whose bottom padding does not fit breaks at its best inner breakpoint | `Layout/EarlyBreak.cs`, `FlowLayout.cs`, `InlineLayout.cs`, `Tracks/TablePage.cs`, `SlicedBox.cs` | CSS Fragmentation 3 §4.4, §4.5; checked against Chromium's print |
+| early breaks: a keep rule that reaches back into an earlier box's content, never into a box that continues from the page before; a box that breaks at its own early break keeps it (its parent does not compare it with its own breakpoints) | `Layout/EarlyBreak.cs`, `FlowLayout.cs`, `InlineLayout.cs`, `Tracks/TablePage.cs`, `LayoutResult.cs` (`KeepsItsBreak`) | CSS Fragmentation 3 §4.4, §4.5; Chromium `MovePastBreakpoint`, `kNeedsEarlierBreak`; checked against Chromium's print (cases `b-*`, `fr-keep-*`) |
+| bottom padding and border that do not fit below a box's complete content: the box breaks at its best inner breakpoint and keeps it; without one it breaks before its bottom padding and border, which start the next page (a last resort, so a box lower on the page moves whole); not in table cells | `Layout/SlicedBox.cs`, `FlowLayout.cs` | CSS Fragmentation 3 §4.1, §5.4; Chromium `FinishFragmentation`; checked against Chromium's print in block flow (cases `fr-pad-*`, `fr-border-*`, `a3-pad-*`) |
 | where a page starts: a box that does not fit below margins, empty boxes or padding moves on; only content that starts the page is refused; the last-resort break | `Layout/ConstraintSpace.cs` (`IsAtPageStart`), `FlowLayout.cs`, `SlicedBox.cs`, `BreakAppeal.cs` (`LastResort`) | CSS Fragmentation 3 §4.1, §4.4, §5.2; checked against Chromium's print |
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
@@ -196,9 +197,9 @@ Each is documented next to its code as well.
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
   borders; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut
-  depends on where the page ends, so a table offers no early break there); bottom padding or a bottom border that does
-  not fit below a box's content at the top of an empty page overflows the page when the box ends the document, and
-  is refused (`Documents.Layout.DoesNotFit`) when content follows it; a table cell whose content does not fit under
+  depends on where the page ends, so a table offers no early break there); bottom padding and a bottom border taller
+  than the page area overflow the page they start (as in Chromium) when the box ends the document, and are refused
+  (`Documents.Layout.DoesNotFit`) when content follows them; a table cell whose content does not fit under
   the repeated header and, on a page without the header, does not fit with its last child's bottom margin and the
   cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is

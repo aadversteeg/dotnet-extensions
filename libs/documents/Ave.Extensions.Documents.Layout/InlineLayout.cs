@@ -176,7 +176,7 @@ public static class InlineLayout
 
         // The best breakpoint of the complete fragment, reported for a parent that may have to break here instead (a
         // break before the fragment's first line is no breakpoint of the fragment).
-        return SlicedBox.Placed(placed.ToImmutable(), bottom, null, bestBreak: BestBreakInside(style, firstLine, lines.Count));
+        return SlicedBox.Placed(placed.ToImmutable(), bottom, null, bestBreak: BestBreakInside(style, firstLine, lines.Count), atEnd: new InlineBreakToken(lines.Count));
     }
 
     /// <summary>

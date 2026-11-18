@@ -23,6 +23,14 @@ public abstract record LayoutResult
         /// (<see cref="ConstraintSpace.BreakAt"/>). Null for a fragment that breaks: the box has already chosen the best
         /// of its own breakpoints there.</summary>
         public EarlyBreak? BestBreak { get; init; }
+
+        /// <summary>For a fragment that breaks, true when the box broke at a breakpoint it chose before the place where it
+        /// ran out of room: one of its own early breaks, because a better break existed inside it than at the page end,
+        /// or because its bottom padding and border did not fit below its content. Its parent keeps this break and does
+        /// not compare it with the parent's own earlier breakpoints, as Chromium's parent lays itself out again to such a
+        /// box's early break (<c>kNeedsEarlierBreak</c>, <c>third_party/blink/renderer/core/layout/block_layout_algorithm.cc</c>);
+        /// a grandparent compares as usual.</summary>
+        public bool KeepsItsBreak { get; internal init; }
     }
 
     /// <summary>Nothing of the box fits in the space left on this page; the parent moves it to the next page.</summary>
@@ -39,7 +47,16 @@ public abstract record LayoutResult
     /// <param name="bestBreak">For a complete fragment, the best breakpoint inside it (<see cref="Placed.BestBreak"/>).</param>
     /// <returns>A successful <see cref="Placed"/> result.</returns>
     public static Result<LayoutResult, Error> Place(BoxFragment fragment, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect, EarlyBreak? bestBreak = null) =>
-        Result<LayoutResult, Error>.Success(new Placed(fragment, continuation, appeal) { BestBreak = continuation is null ? bestBreak : null });
+        Place(fragment, continuation, appeal, bestBreak, keepsItsBreak: false);
+
+    /// <summary>The successful result "placed this fragment, continue here", for a box that may keep its break
+    /// (<see cref="Placed.KeepsItsBreak"/>).</summary>
+    internal static Result<LayoutResult, Error> Place(BoxFragment fragment, BreakToken? continuation, BreakAppeal appeal, EarlyBreak? bestBreak, bool keepsItsBreak) =>
+        Result<LayoutResult, Error>.Success(new Placed(fragment, continuation, appeal)
+        {
+            BestBreak = continuation is null ? bestBreak : null,
+            KeepsItsBreak = continuation is not null && keepsItsBreak,
+        });
 
     /// <summary>
     /// The rule every algorithm applies when not even the first piece of a box fits. At the start of a page

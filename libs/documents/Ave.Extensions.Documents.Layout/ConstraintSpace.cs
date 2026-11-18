@@ -36,4 +36,12 @@ public sealed record ConstraintSpace(
     /// breaks there, with the breakpoint's appeal; it looks for no other break.
     /// </summary>
     public EarlyBreak? BreakAt { get; internal init; }
+
+    /// <summary>
+    /// True for a table cell: its bottom padding and its share of the grid line below it are never left for the next page
+    /// on their own, and its content does not break earlier because of them (<see cref="SlicedBox"/>); Chromium prevents
+    /// the break before the block-end decorations of every table cell ("that might disturb the row stretching machinery",
+    /// <c>block_layout_algorithm.cc</c>, <c>FinalizeForFragmentation</c>). The table decides where its rows break.
+    /// </summary>
+    public bool KeepsBottomInset { get; internal init; }
 }

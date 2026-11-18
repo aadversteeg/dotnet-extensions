@@ -70,7 +70,7 @@ internal static class TableSegments
 
         var inset = ReopenedInset(table, segment, cell);
         Result<LayoutResult, Error> LayOutIn(double height) =>
-            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: false, IsNewFormattingContext: true), cell.Token);
+            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: false, IsNewFormattingContext: true) { KeepsBottomInset = true }, cell.Token);
         var endsInSlice = clearance <= 0 || (segment.Natural.TryGetValue(cell.Cell, out var natural) && Fitting.Fits(natural.Size.Height, sliceHeight));
         return LayOutIn(endsInSlice ? sliceHeight : sliceHeight - clearance)
             .OnSuccessMap(result => result switch

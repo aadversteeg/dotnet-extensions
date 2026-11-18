@@ -53,12 +53,11 @@ public class PageBreakProgressTests
     }
 
     [Fact]
-    public void A_padded_block_whose_margin_after_a_forced_break_leaves_no_room_for_it_moves_whole()
+    public void A_padded_block_after_a_forced_break_keeps_its_line_and_moves_its_bottom_padding()
     {
         // Review case m47: below its 12 pt margin the block's line fits, its 130 pt bottom padding does not, and the block
-        // has no breakpoint inside: it moves to the next page whole.
-        Print(300, 174, Paragraph("i"), PageBreak(), Block([Paragraph("w")]).PaddingBottom(130.Pt()).MarginTop(12.Pt()), Paragraph("z"))
-            .Value.PageTexts.Should().Equal("i", string.Empty, "w", "z");
+        // has no breakpoint inside: it breaks before its bottom padding, which starts the next page with z below it.
+        ShouldPrintLikeChromium("fr-forced-padded", 300, 174, Paragraph("i"), PageBreak(), Block([Paragraph("w")]).PaddingBottom(130.Pt()).MarginTop(12.Pt()), Paragraph("z"));
     }
 
     [Theory]
