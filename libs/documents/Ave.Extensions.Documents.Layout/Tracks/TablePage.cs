@@ -129,7 +129,12 @@ internal static class TablePage
     /// <summary>The page's result: its content, the bottom line (null when the page end cuts the last row), the
     /// continuation, the appeal of the break, and for a complete page of the table the best breakpoint between its body
     /// units (its early break), or null.</summary>
-    public sealed record Outcome(Content Content, LineAt? BottomLine, TracksBreakToken? Continuation, BreakAppeal Appeal, TracksEarlyBreak? BestBreak = null);
+    public sealed record Outcome(Content Content, LineAt? BottomLine, TracksBreakToken? Continuation, BreakAppeal Appeal, TracksEarlyBreak? BestBreak = null)
+    {
+        /// <summary>True when the page ends in a cut whose cell keeps its break (<see cref="LayoutResult.Placed.KeepsItsBreak"/>):
+        /// the table keeps it too.</summary>
+        public bool KeepsItsBreak { get; init; }
+    }
 
     /// <summary>Lays out one page of the table and builds its fragment.</summary>
     public static Result<LayoutResult, Error> LayOut(TableGeometry table, ConstraintSpace space, TracksBreakToken? incoming)
@@ -168,7 +173,7 @@ internal static class TablePage
         }
 
         return outcome.Value.HasValue
-            ? LayoutResult.Place(TableFragments.Build(table, outcome.Value.Value), outcome.Value.Value.Continuation, outcome.Value.Value.Appeal, outcome.Value.Value.BestBreak)
+            ? LayoutResult.Place(TableFragments.Build(table, outcome.Value.Value), outcome.Value.Value.Continuation, outcome.Value.Value.Appeal, outcome.Value.Value.BestBreak, outcome.Value.Value.KeepsItsBreak)
             : LayoutResult.NothingFits(table.Box, space);
     }
 
@@ -282,7 +287,7 @@ internal static class TablePage
                 var before = TableBreaks.BeforeUnit(grid, content, row);
                 if (breakAt is { } target && target.Row == row)
                 {
-                    return TableBreaks.TakeBest(table, [before with { Appeal = target.Appeal }], height);
+                    return TableBreaks.TakeBest(table, [before with { Appeal = target.Appeal, InKeptGroup = false }], height);
                 }
 
                 breakpoints.Add(before);
@@ -304,9 +309,9 @@ internal static class TablePage
 
         var best = breakpoints
             .Where(breakpoint => breakpoint.Kind == TableBreaks.BreakKind.BeforeUnit)
-            .OrderByDescending(breakpoint => breakpoint.Appeal)
+            .OrderByDescending(breakpoint => breakpoint.Overall)
             .ThenByDescending(breakpoint => breakpoint.Row)
-            .Select(breakpoint => new TracksEarlyBreak(breakpoint.Row, breakpoint.Appeal))
+            .Select(breakpoint => new TracksEarlyBreak(breakpoint.Row, breakpoint.Overall))
             .FirstOrDefault();
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content) with { BestBreak = best }));
     }

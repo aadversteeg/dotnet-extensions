@@ -269,10 +269,18 @@ Each is documented next to its code as well.
   padded blocks, nor under a thick line that hides the text reaching into the row. With `Clone` such a cut needs one line width more room than with `Slice`, so on a very small
   page area a table may not fit with `Clone` that fits with `Slice`. A row span does not keep its rows together: a
   break between two rows that a spanning cell crosses is an ordinary break between rows, with the appeal it would
-  have without the span, and the cell continues on the next page (`TableBreaks.BetweenRowsAppeal`). The author's keep
-  rules still apply: a row group kept together, a spanning cell kept together, `KeepWithNext`. So the rows under a
-  label fill their pages as rows without one do. A cell kept together is a keep rule at a break inside its row too:
-  the row is not cut there while a better break exists (`TableBreaks.InsideAppeal`).
+  have without the span, and the cell continues on the next page, filling this page down to its end, as Chromium lays
+  a spanning cell out in the height of all its rows (`TableBreaks.BetweenRowsAppeal`, `Cut`; cases `fr-f7-*`). The
+  author's keep rules still apply: a row group kept together, a spanning cell kept together, a row kept together (which
+  keeps the rows its spanning cell reaches into, `fr-f8-*`), `KeepWithNext`. So the rows under a label fill their pages
+  as rows without one do. A cell kept together is a keep rule at a break inside its row too: the row is not cut there
+  while a better break exists (`TableBreaks.InsideAppeal`). A row group's keep is applied from outside the group, as
+  Chromium applies `break-inside: avoid` to a box's own break: where a kept group taller than the page must break, it
+  breaks where its rows break best (between two rows rather than inside a kept row or against orphans, `fr-f6-*`;
+  `TableBreaks.Breakpoint.Overall`). A row is not cut where some cell's lines all fit and only its bottom padding or its
+  share of the grid line below it does not: the row moves whole, as Chromium never breaks a cell before its bottom
+  padding (`TableSegments.Slice`, cases `fr-f4-*`). A cell that breaks at a breakpoint it chose itself keeps it, and so
+  does its row (`fr-f9-cell-*`, see "early breaks" above).
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.

@@ -56,29 +56,42 @@ internal static class TableSegments
     /// cell of a cell … a second layout at every level would double the work at every level (review 40, B3 (d)). Returns
     /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
     /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
-    /// itself.
+    /// itself, and for a cell that keeps its break (its content broke at a breakpoint it chose,
+    /// <see cref="LayoutResult.Placed.KeepsItsBreak"/>: the row keeps that break too, as Chromium follows such a break,
+    /// case <c>fr-f9-cell-orphans3</c>); a last resort for a cell whose lines all fit the slice and only its bottom padding
+    /// or its share of the grid line below it does not, where its last row is the one the cut is in
+    /// (<paramref name="endsAtTheCut"/>; Chromium never breaks a cell before its bottom padding: the row moves whole when
+    /// it can, cases <c>fr-f4-*</c>).
     /// </summary>
-    internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal), Error> Slice(TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0)
+    internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal, bool KeepsItsBreak), Error> Slice(
+        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool endsAtTheCut = false)
     {
         var info = table.Grid.Cells[cell.Cell];
         var box = CellLayoutBox(table, segment, cell);
         var width = table.CellWidth(info);
         if (cell.IsComplete)
         {
-            return Result<(BoxFragment, CellBreak, BreakAppeal), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true), BreakAppeal.Perfect));
+            return Result<(BoxFragment, CellBreak, BreakAppeal, bool), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true), BreakAppeal.Perfect, false));
         }
 
         var inset = ReopenedInset(table, segment, cell);
         Result<LayoutResult, Error> LayOutIn(double height) =>
             table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: false, IsNewFormattingContext: true) { KeepsBottomInset = true }, cell.Token);
-        var endsInSlice = clearance <= 0 || (segment.Natural.TryGetValue(cell.Cell, out var natural) && Fitting.Fits(natural.Size.Height, sliceHeight));
+        var measured = segment.Natural.TryGetValue(cell.Cell, out var natural);
+        var endsInSlice = clearance <= 0 || (measured && Fitting.Fits(natural!.Size.Height, sliceHeight));
+        var endsInItsBottomEdge = endsAtTheCut && measured && !Fitting.Fits(natural!.Size.Height, sliceHeight)
+            && Fitting.Fits(natural.Size.Height - SlicedBox.BottomInset(box.Style), sliceHeight);
         return LayOutIn(endsInSlice ? sliceHeight : sliceHeight - clearance)
             .OnSuccessMap(result => result switch
             {
                 LayoutResult.Placed placed => (Stretch(Lowered(placed.Fragment, inset), sliceHeight, VerticalAlign.Top),
                     new CellBreak(cell.Cell, placed.Continuation, placed.Continuation is null),
-                    placed.Continuation is null ? BreakAppeal.Perfect : placed.Appeal),
-                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), BreakAppeal.Perfect),
+                    placed.Continuation is null ? BreakAppeal.Perfect
+                    : endsInItsBottomEdge ? BreakAppeal.LastResort
+                    : placed.KeepsItsBreak ? BreakAppeal.Perfect
+                    : placed.Appeal,
+                    placed.Continuation is not null && placed.KeepsItsBreak && !endsInItsBottomEdge),
+                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), endsInItsBottomEdge ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),
             });
     }
 

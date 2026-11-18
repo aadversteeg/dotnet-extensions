@@ -177,8 +177,13 @@ public class TableRowCutTests
 
     [Theory]
     [MemberData(nameof(DrawsWithoutText))]
-    public void A_cell_that_draws_without_text_is_cut_only_where_it_draws(string kind) =>
-        EveryShape(kind).Should().BePositive("where the text beside it does not fit yet but the drawing does, the row is cut and the drawing ends the page");
+    public void A_cell_that_draws_without_text_never_ends_a_page_without_the_text_beside_it(string kind) =>
+        // Where the text beside the drawing does not fit yet, or only its line fits and not its cell's bottom edge, the
+        // row moves whole, as Chromium prints it: a row whose cell has no line on the page yet moves (c-cell-first-line),
+        // and so does one whose cell's lines fit but not its bottom padding or grid line (fr-f4-*). The drawing never
+        // ends a page alone, and no part of a row is left without text; that also holds where the drawing makes the cut
+        // count as showing something (NoEmptyStrip on every page).
+        EveryShape(kind).Should().Be(0, "a part of a row that shows only the drawing never ends a page");
 
     /// <summary>The cell kind in one-line rows beside text (probe P3 of review 35), and as the third cell beside a
     /// label over three one-line rows and over two rows of three lines. In the one-line rows the text is 14 pt, so its

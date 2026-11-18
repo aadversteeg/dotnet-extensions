@@ -115,7 +115,12 @@ public class TableSpanCloneTests
             var because = $"header {header}, spanning cell's border {spanLine}, short spanning cell {shortSpan}, offset {offset}";
             var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(offset, 120, header, spanLine, shortSpan: shortSpan));
             result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
-            var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
+
+            // Where the first row's lines fit below the spacer and only its bottom line does not, the row moves whole, as
+            // Chromium moves it (cases fr-f4-*), and the first page holds the empty spacer only.
+            var pages = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).ToList()).ToList();
+            pages.Skip(1).Should().AllSatisfy(page => page.Should().ContainSingle(), because + ": every later page holds the table");
+            var tables = pages.Where(page => page.Count > 0).Select(page => page.Single().Box).ToList();
             for (var page = 0; page < tables.Count; page++)
             {
                 var table = tables[page];

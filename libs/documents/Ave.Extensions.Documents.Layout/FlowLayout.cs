@@ -288,7 +288,7 @@ public static class FlowLayout
                 // no breakpoint, only the last resort (see Layout).
                 return Broken(best is null
                     ? SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, childResume), BreakAppeal.LastResort)
-                    : BreakAt(environment, children, contentWidth, contentHeight, placed, best));
+                    : BreakAt(environment, children, contentWidth, contentHeight, placed, best, isEarlier: best.Index != index || best.Inside is not null));
             }
 
             var placement = outcome.Value.Value;
@@ -299,11 +299,13 @@ public static class FlowLayout
                 var appeal = inside is not null ? breakAt!.Appeal : BreakAvoidance.Inside(child, placement.Appeal);
                 if (inside is null && best is not null && best.Appeal > appeal && !placement.KeepsItsBreak)
                 {
-                    return Broken(BreakAt(environment, children, contentWidth, contentHeight, placed, best));
+                    return Broken(BreakAt(environment, children, contentWidth, contentHeight, placed, best, isEarlier: best.Index != index || best.Inside is not null));
                 }
 
+                // A box whose page ends inside a child that keeps its break keeps it too: Chromium follows such a break
+                // from the top, through every box around it (measured two boxes deep: i x0 a0 a1 | a2 z).
                 placed.Add(placement.Fragment);
-                return Broken(SlicedBox.Placed(placed.ToImmutable(), top + placement.Fragment.Fragment.Size.Height, new FlowBreakToken(index, continuation), appeal));
+                return Broken(SlicedBox.Placed(placed.ToImmutable(), top + placement.Fragment.Fragment.Size.Height, new FlowBreakToken(index, continuation), appeal, keepsItsBreak: inside is null && placement.KeepsItsBreak));
             }
 
             if (inside is not null)
@@ -355,21 +357,24 @@ public static class FlowLayout
     /// Ends the page at a remembered breakpoint. Before a child: the fragments before it stay, the rest moves on. Inside a
     /// child: the fragments before the child stay, and the child is laid out once more, where it was, breaking at its
     /// early break; it must break there, so the result always has a continuation. Pure: the second call of the child's
-    /// layout sees exactly the arguments of the first, plus the early break.
+    /// layout sees exactly the arguments of the first, plus the early break. When the breakpoint lies before the place
+    /// where the box ran out of room (<paramref name="isEarlier"/>: not the break right before the child that has no room
+    /// or breaks badly), the box keeps that break (<see cref="LayoutResult.Placed.KeepsItsBreak"/>): Chromium's box asks
+    /// for its early break there.
     /// </summary>
     private static Result<Maybe<SlicedBox.Content>, Error> BreakAt(
-        LayoutEnvironment environment, ImmutableArray<Box> children, double contentWidth, double contentHeight, ImmutableArray<PlacedFragment>.Builder placed, Breakpoint breakpoint)
+        LayoutEnvironment environment, ImmutableArray<Box> children, double contentWidth, double contentHeight, ImmutableArray<PlacedFragment>.Builder placed, Breakpoint breakpoint, bool isEarlier)
     {
         ValueList<PlacedFragment> before = [.. placed.Take(breakpoint.PlacedCount)];
         if (breakpoint.Inside is not { } inside)
         {
-            return SlicedBox.Placed(before, breakpoint.Cursor, new FlowBreakToken(breakpoint.Index, null), breakpoint.Appeal, keepsItsBreak: true);
+            return SlicedBox.Placed(before, breakpoint.Cursor, new FlowBreakToken(breakpoint.Index, null), breakpoint.Appeal, keepsItsBreak: isEarlier);
         }
 
         var child = children[breakpoint.Index];
         return InFlowChild.Place(environment, child, contentWidth, inside.Top, contentHeight, inside.IsAtPageStart, inside.Resume, followsContent: inside.FollowsContent, breakAt: inside.Break)
             .OnSuccessBind(outcome => outcome is { HasValue: true, Value.Continuation: { } continuation }
-                ? SlicedBox.Placed([.. before, outcome.Value.Fragment], inside.Top + outcome.Value.Fragment.Fragment.Size.Height, new FlowBreakToken(breakpoint.Index, continuation), breakpoint.Appeal, keepsItsBreak: true)
+                ? SlicedBox.Placed([.. before, outcome.Value.Fragment], inside.Top + outcome.Value.Fragment.Fragment.Size.Height, new FlowBreakToken(breakpoint.Index, continuation), breakpoint.Appeal, keepsItsBreak: isEarlier)
                 : Result<Maybe<SlicedBox.Content>, Error>.Failure(LayoutErrors.EngineDefect(child, "did not break at the early break it reported")));
     }
 

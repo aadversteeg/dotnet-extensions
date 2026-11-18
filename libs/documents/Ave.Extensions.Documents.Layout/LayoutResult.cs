@@ -29,7 +29,8 @@ public abstract record LayoutResult
         /// or because its bottom padding and border did not fit below its content. Its parent keeps this break and does
         /// not compare it with the parent's own earlier breakpoints, as Chromium's parent lays itself out again to such a
         /// box's early break (<c>kNeedsEarlierBreak</c>, <c>third_party/blink/renderer/core/layout/block_layout_algorithm.cc</c>);
-        /// a grandparent compares as usual.</summary>
+        /// every box whose page ends inside such a box keeps the break as well (Chromium follows the chain of early breaks
+        /// from the top; measured two boxes deep and through a table cell).</summary>
         public bool KeepsItsBreak { get; internal init; }
     }
 
