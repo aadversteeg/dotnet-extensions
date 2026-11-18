@@ -1,0 +1,162 @@
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Functional;
+using UnitTests.Extensions.Documents.Layout;
+using Xunit.Abstractions;
+using static Ave.Extensions.Documents.Fluent.Elements;
+
+namespace UnitTests.Extensions.Documents.Fluent;
+
+/// <summary>
+/// The sweep of item A of milestone 2 (where a page starts and where a row is cut): generated documents of every kind of
+/// leading space before every kind of first piece, at 51 start offsets each, on the 276 × 150 pt page area of the
+/// <c>a1-*</c> reference cases. For every document: it is laid out (no refusal: nothing in it is taller than a page),
+/// every word is on some page exactly once, nothing passes the end of the page area, and no part of a table row that
+/// shows nothing is left at a page end or start — except where the row shows nothing over a whole page, which no layout
+/// can avoid. The generator is deterministic; the counts go to the test output.
+/// </summary>
+public class PageStartSweepTests(ITestOutputHelper output)
+{
+    private const double AreaHeight = 150;
+
+    private static PageSetup Area => Page(300.Pt(), 174.Pt()).Margin(12.Pt());
+
+    private static readonly Color Grey = new(0xCC, 0xCC, 0xCC);
+
+    private static ParagraphElement Lines(int count, string prefix) =>
+        Paragraph([.. Enumerable.Range(0, count).SelectMany(i => i == 0 ? new[] { Text($"{prefix}{i}") } : [LineBreak(), Text($"{prefix}{i}")])]);
+
+    private static Span[] Breaks(int count) => [.. Enumerable.Range(0, count).Select(_ => LineBreak())];
+
+    /// <summary>The kinds of leading space: what comes before the first piece, moving it down by the offset.</summary>
+    private static readonly (string Name, Func<double, Element, Element[]> Make)[] Leading =
+    [
+        ("nothing", (_, piece) => [piece]),
+        ("empty block with a bottom margin", (offset, piece) => [Block([]).MarginBottom(offset.Pt()), piece]),
+        ("the piece's own top margin, in a block", (offset, piece) => [Block([piece]).MarginTop(offset.Pt())]),
+        ("a line of text with a bottom margin", (offset, piece) => [Paragraph("intro").MarginBottom(offset.Pt()), piece]),
+        ("a forced break, then an empty block with a bottom margin", (offset, piece) => [Paragraph("first"), PageBreak(), Block([]).MarginBottom(offset.Pt()), piece]),
+        ("a block with top padding holding the piece", (offset, piece) => [Block([piece]).PaddingTop(offset.Pt()).Background(Grey)]),
+        ("a margin collapsing through a grey block that holds the piece", (offset, piece) => [Block([Block([]).MarginBottom(offset.Pt()), piece]).Background(Grey)]),
+        ("two empty blocks with half the margin each", (offset, piece) => [Block([]).MarginBottom((offset / 2).Pt()), Block([]).MarginTop((offset / 2).Pt()), piece]),
+    ];
+
+    private static TableElement Lined(TableElement table) => table.GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+
+    /// <summary>The kinds of first piece, each with its words.</summary>
+    private static readonly (string Name, Func<Element> Make)[] Pieces =
+    [
+        ("a one-line paragraph", () => Paragraph("para")),
+        ("a paragraph of four lines", () => Lines(4, "p")),
+        ("a paragraph of nine lines kept together", () => Lines(9, "k").KeepTogether()),
+        ("a one-row table", () => Lined(Table(Columns(Fill(1)), [TableRow([Cell("row")])]))),
+        ("a table whose first row of nine lines is kept together", () => Lined(Table(Columns(Fill(1)),
+            [TableRow([Cell([Lines(9, "r")])]).KeepTogether(), TableRow([Cell("next")])]))),
+        ("a table with a header row", () => Lined(Table(Columns(Fill(1)), [HeaderRow([Cell("head")]), TableRow([Cell("r0")]), TableRow([Cell("r1")])]))),
+        ("a 118 pt line in a block with 20 pt padding, then a tail", () => Block([Paragraph("W").FontSize(118.Pt()), Paragraph("tail")]).Padding(20.Pt()).Background(Grey)),
+        ("a row with a blank stretch of 30 lines between its text", () => Lined(Table(Columns(Fill(1), Fill(1)),
+            [TableRow([Cell("x"), Cell([Paragraph("top"), Paragraph([.. Breaks(30)]), Paragraph("end")])]), TableRow([Cell("after"), Cell("a")])]))),
+        ("a row of twenty padded empty blocks beside an empty cell", () => Lined(Table(Columns(Fill(1), Fill(1)),
+            [TableRow([Cell(""), Cell([.. Enumerable.Range(0, 20).Select(_ => (Element)Block([]).Padding(5.Pt()))])]), TableRow([Cell("after"), Cell("a")])]))),
+        ("rows of a line beside two padded empty blocks", () => Lined(Table(Columns(Fill(1), Fill(1)),
+            [.. Enumerable.Range(0, 6).Select(i => (TablePart)TableRow([Cell($"t{i}"), Cell([Block([]).Padding(4.Pt()), Block([]).Padding(4.Pt())])]))]))),
+        ("units of two rows beside a spanning label, an 8 pt line under the first", () => Table(Columns(80.Pt(), Fill(1)),
+            [.. Enumerable.Range(0, 3).SelectMany(unit => new TablePart[]
+            {
+                TableRow([Cell($"s{unit}a s{unit}b s{unit}c s{unit}d s{unit}e").RowSpan(2).PaddingTop(5.Pt()), Cell($"a{unit}").BorderBottom(8.Pt(), Color.Black)]),
+                TableRow([Cell($"b{unit}")]),
+            })]).GridLines(1.Pt(), Color.Black)),
+        ("a row with a cell of three lines kept together beside nine lines", () => Lined(Table(Columns(Fill(1), Fill(1)),
+            [TableRow([Cell([Lines(3, "c")]).KeepTogether(), Cell([Lines(9, "d")])]), TableRow([Cell("after"), Cell("z")])]))),
+    ];
+
+    /// <summary>The words of a fragment tree; a repeated header row is a copy, not words of its own.</summary>
+    private static IEnumerable<string> Words(Fragment fragment) => fragment switch
+    {
+        BoxFragment { IsRepeated: true } => [],
+        BoxFragment box => box.Children.SelectMany(child => Words(child.Fragment)),
+        LineFragment line => line.Children.SelectMany(child => Words(child.Fragment)),
+        TextFragment text => string.Concat(text.Glyphs.Select(glyph => glyph.Text)).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(word => word.Any(char.IsLetterOrDigit)),
+        _ => [],
+    };
+
+    /// <summary>The lowest bottom of anything a fragment tree draws or holds, from the page area's top.</summary>
+    private static double Bottom(Fragment fragment, double top) => fragment switch
+    {
+        BoxFragment box => box.Children.Select(child => Bottom(child.Fragment, top + child.Offset.Y)).Append(top + box.Size.Height).Max(),
+        LineFragment line => line.Children.Select(child => Bottom(child.Fragment, top + child.Offset.Y)).DefaultIfEmpty(top).Max(),
+        _ => top + fragment.Size.Height,
+    };
+
+    [Fact]
+    public void Generated_page_starts_and_row_cuts_lay_out_without_refusal_lost_words_overflow_or_avoidable_strips()
+    {
+        var (documents, pages, blankPages) = (0, 0, 0);
+        var problems = new List<string>();
+        foreach (var (leadingName, leading) in Leading)
+        {
+            foreach (var (pieceName, piece) in Pieces)
+            {
+                // The words of the document without leading space: the same words, whatever the offset.
+                var expected = Paginate([.. leading(0, piece())]).Value.SelectMany(page => Words(page.Root.Fragment))
+                    .OrderBy(word => word, StringComparer.Ordinal).ToList();
+                for (var step = 0; step <= 50; step++)
+                {
+                    var offset = step * 3.0;
+                    var because = $"{leadingName}, {pieceName}, offset {offset}";
+                    documents++;
+                    var result = Paginate([.. leading(offset, piece())]);
+                    if (result.IsFailure)
+                    {
+                        problems.Add($"{because}: refused {result.Error.Code}: {result.Error.Message}");
+                        continue;
+                    }
+
+                    var laid = result.Value;
+                    pages += laid.Count;
+                    blankPages += laid.Count(page => !Words(page.Root.Fragment).Any());
+                    var words = laid.SelectMany(page => Words(page.Root.Fragment)).OrderBy(word => word, StringComparer.Ordinal).ToList();
+                    if (!words.SequenceEqual(expected))
+                    {
+                        problems.Add($"{because}: words [{string.Join(" ", words)}] where [{string.Join(" ", expected)}]");
+                    }
+
+                    if (laid.Select(page => Bottom(page.Root.Fragment, 0)).Max() is var over && over > AreaHeight + 1e-6)
+                    {
+                        problems.Add($"{because}: content reaches {over:0.###} pt, past the page area");
+                    }
+
+                    foreach (var strip in RowParts.EmptyStrips(laid).Where(strip => !Unavoidable(laid, strip)))
+                    {
+                        problems.Add($"{because}: {strip}");
+                    }
+                }
+            }
+        }
+
+        output.WriteLine($"{documents} documents ({Leading.Length} kinds of leading space × {Pieces.Length} first pieces × 51 offsets), {pages} pages, "
+            + $"{blankPages} pages without text (pages a break leaves behind leading space on, and blank parts of rows), {problems.Count} problems.");
+        foreach (var problem in problems.Take(20))
+        {
+            output.WriteLine(problem);
+        }
+
+        problems.Should().BeEmpty();
+        documents.Should().Be(Leading.Length * Pieces.Length * 51);
+    }
+
+    /// <summary>A part of a row that shows nothing which no layout can avoid: the row shows nothing on any of its pages
+    /// (twenty padded empty blocks), or the part fills the page it is on (a blank stretch of a page's height).</summary>
+    private static bool Unavoidable(IReadOnlyList<PageFragment> pages, RowParts.EmptyStrip strip) =>
+        strip.Height >= AreaHeight - 2 || RowParts.EmptyStrips(pages).Count(other => other.Row == strip.Row) == pages.Count(page => RowOn(page.Root.Fragment, strip.Row));
+
+    private static bool RowOn(Fragment fragment, NodeId row) =>
+        fragment is BoxFragment box && (box.Box.Id == row || box.Children.Any(child => RowOn(child.Fragment, row)));
+
+    private static Result<ValueList<PageFragment>, global::Ave.Extensions.ErrorPaths.Error> Paginate(Element[] body) =>
+        DocumentTranslator.ToModel(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato"))
+            .OnSuccessBind(model => Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model));
+}

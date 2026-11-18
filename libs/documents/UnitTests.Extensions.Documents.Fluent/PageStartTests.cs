@@ -30,9 +30,14 @@ public class PageStartTests
 
     private static readonly Color Grey = new(0xCC, 0xCC, 0xCC);
 
-    /// <summary>The engine puts the words on the pages Chromium puts them on; returns both prints.</summary>
+    /// <summary>The engine puts the words on the pages Chromium puts them on, and leaves no part of a table row that
+    /// shows nothing (which holds no words, so the comparison of words would not see it); returns both prints.</summary>
     private static (PrintedPages Engine, PrintedPages Chromium) ShouldPrintLikeChromium(string caseName, params Element[] body)
     {
+        var pages = DocumentTranslator.ToModel(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato"))
+            .OnSuccessBind(model => Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model));
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+        UnitTests.Extensions.Documents.Layout.RowParts.EmptyStrips(pages.Value).Should().BeEmpty();
         var engine = Print(body);
         engine.IsSuccess.Should().BeTrue(engine.IsFailure ? engine.Error.ToString() : string.Empty);
         var chromium = PrintedPages.Chromium(caseName);
