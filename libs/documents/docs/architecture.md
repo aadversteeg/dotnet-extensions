@@ -230,7 +230,19 @@ text at all, which is why every sample page is also compared at 300 dpi. At 300 
 the exception is page 1 of timesheet-edge.nl, where 12,753 pixels differ by more than 128 steps from poppler against
 12,569 between the viewers, while the same page has 552 such pixels against MuPDF. The engine is closest to MuPDF;
 poppler draws glyph edges heavier and snaps thin rectangles to whole pixels. The viewers check images only for decoding and colour, on
-images at 1:1 on the pixel grid against MuPDF (poppler resamples every image drawn below 4×, also at 1:1).
+images at 1:1 on the pixel grid against MuPDF (poppler resamples every image drawn below 4×, also at 1:1). The sliced
+sample has nine more named exceptions (pages that hold little but an image or a few lines, where the viewers' distance
+to each other is small); each is pinned with its numbers and holds the rule once its named causes are removed, image
+interiors or baselines on whole pixels (`RasterReferenceTests`, `NamedExceptions`).
+
+**Different from the viewers: baselines on whole pixels.** Both viewers draw a glyph's baseline on a whole pixel row,
+MuPDF on the nearest (a half goes down the page), poppler on the one above (it floors), at 96 and at 300 dpi alike; the
+engine draws a glyph where the page model puts it. So a line of text can lie up to half a pixel (MuPDF) or up to one
+pixel (poppler) from the viewers' place; it never moves a line. Measured on lines of Lato 11 pt with baselines at
+fractions 0.1 to 0.95 of a pixel, and on the sliced sample: page 5's line has its baseline at 110.476 px at 96 dpi,
+both viewers draw it at 110 (ink centre row 105.33 in both, 105.82 in the engine, with equal ink;
+`tools/reference/raster/README.md`). This holds for every sample; the comparison carries it by drawing the engine's
+page again with the viewers' rows (`RasterComparison.BaselinesOnPixelRows`).
 
 **Known limits.** No hinting: small text is lighter than in a viewer that hints (PDFium). Two items that meet at a
 boundary inside a pixel each paint their exact coverage, so some of what is beneath shows through: two rectangles of
