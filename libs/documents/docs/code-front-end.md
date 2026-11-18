@@ -116,7 +116,7 @@ default, `null` for transparent). A page number the document does not have is `D
 | `PageBreak()` | starts the next element of the same list on a new page |
 | `Table(columns, rows)` | a table; `columns` made with `Columns(…)`, `rows` a list of the three below |
 | `Columns(2.5.Cm(), Fill(1), Auto)` | the column sizes: a length is fixed, `Fill(weight)` takes a share of the width left over (CSS Grid `fr`), `Auto` is as wide as the content needs |
-| `HeaderRow([cells])` | a header row: repeated at the top of every page the table continues on |
+| `HeaderRow([cells])` | a header row: repeated at the top of every page the table continues on, when the header rows are at most a quarter of the page area (as Chromium) |
 | `TableRow([cells])` | a body row; it may break between the lines of its cells unless kept together |
 | `RowGroup([rows])` | rows that belong together (a row span ends at the end of its group) |
 | `Cell(text)`, `Cell([elements])` | a table cell |

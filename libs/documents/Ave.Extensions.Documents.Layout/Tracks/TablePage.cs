@@ -72,7 +72,8 @@ namespace Ave.Extensions.Documents.Layout;
 /// the page by half the line's width, and every cell that continues starts its rest half the line's width below the line
 /// that starts the next page, as whole cells do.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every
-/// later fragment. They never break. A break right after the header rows, with no body row on the page, is not a
+/// later fragment, when they are at most a quarter of the room the table has there, as Chromium prints
+/// (<see cref="RepeatsHeader"/>); a taller header is shown on the table's first page only. They never break. A break right after the header rows, with no body row on the page, is not a
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
 /// would be gained by moving on. On a later page whose height cannot hold the header and some body content, the header
 /// is left out, so the table always makes progress.</para>
@@ -150,7 +151,13 @@ internal static class TablePage
         var grid = table.Grid;
         var isFirst = incoming is null;
         var resume = incoming ?? new TracksBreakToken(grid.HeaderRowCount, [], false);
-        var hasHeader = grid.HeaderRowCount > 0;
+        var repeats = isFirst || grid.HeaderRowCount == 0 ? Result<bool, Error>.Success(grid.HeaderRowCount > 0) : RepeatsHeader(table, space);
+        if (repeats.IsFailure)
+        {
+            return Result<LayoutResult, Error>.Failure(repeats.Error);
+        }
+
+        var hasHeader = repeats.Value;
         var breakAt = space.BreakAt switch
         {
             null => null,
@@ -230,6 +237,26 @@ internal static class TablePage
         LineFragment line => line.Children.Any(child => HoldsSlice(child.Fragment, continuation)),
         _ => false,
     };
+
+    /// <summary>
+    /// Whether the header rows are repeated on a later page: only when they are at most a quarter of the room the table
+    /// has there, as Chromium prints (<c>tools/reference/chromium</c>, cases <c>a5-header-quarter-*</c>:
+    /// on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not; on 360 pt, 90.0 and 90.75).
+    /// CSS Tables 3 leaves the repetition to the user agent ("user agents may repeat"), so this is Chromium's own rule; it
+    /// is measured here, not taken from its source. The header's height is that of its rows, from the centre of the line
+    /// above them to the centre of the line below. The room is the page area for a table that continues at the top of the
+    /// body; for a table inside a cell or a padded block that continues, it is that box's room, a little less than the
+    /// page area, where Chromium measures against the page area (docs/architecture.md, "Known limits").
+    /// </summary>
+    private static Result<bool, Error> RepeatsHeader(TableGeometry table, ConstraintSpace space)
+    {
+        var grid = table.Grid;
+        var cells = grid.CellsStartingInRows(0, grid.HeaderRowCount - 1)
+            .Select(index => new TableSegments.ActiveCell(index, grid.Cells[index].Row, null, false)).ToImmutableArray();
+        var top = new LineAt(null, 0, new CollapsedBorders.LineContext(true, false, new HashSet<int>()), 0);
+        return TableSegments.Measure(table, 0, grid.HeaderRowCount - 1, cells, top)
+            .OnSuccessMap(header => Fitting.Fits(header.Height, space.AvailableHeight / 4));
+    }
 
     /// <summary>One try at the page, with or without the header rows on top. None when no body content fits.</summary>
     private static Result<Maybe<Outcome>, Error> Attempt(

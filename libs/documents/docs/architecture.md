@@ -513,6 +513,14 @@ Each is documented next to its code as well.
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
   continues without the header.
+- **Header rows are repeated only up to a quarter of the page area**, as Chromium prints them: a header taller than
+  that is shown on the table's first page only (`TablePage.RepeatsHeader`; `HeaderRepeatTests`, cases
+  `a5-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
+  90.0 and 90.75). CSS Tables 3 leaves repetition to the user agent; the step is measured in Chromium, not read from
+  its source. The engine compares with the room the table has on the later page: the page area for a table that
+  continues at the top of the body. A table inside a cell or a padded block that continues compares with that box's
+  room, which is smaller by the box's insets, so its header can stop repeating a little earlier than in Chromium (not
+  measured).
 - **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
   cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
   rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
@@ -588,7 +596,9 @@ Each is documented next to its code as well.
   Under a repeated header row the content is sliced right below the header, on a page after one that showed no body row
   other than slices of a piece that was itself sliced; after a page that did show one, the page holds only the header
   and the row moves on once. That page with only the header is Chromium's: the first slice starts on Chromium's page and
-  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`).
+  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
+  each with a header of at most a quarter of the page area; a taller header is not repeated (above), and the piece is
+  sliced as without a header.
   **Deliberate deviation from Chromium:** on the later pages the engine repeats the header above every slice and makes
   each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
   page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt
