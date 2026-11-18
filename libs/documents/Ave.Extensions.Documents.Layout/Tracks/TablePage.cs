@@ -144,7 +144,8 @@ internal static class TablePage
     public sealed record Outcome(Content Content, LineAt? BottomLine, TracksBreakToken? Continuation, BreakAppeal Appeal, TracksEarlyBreak? BestBreak = null)
     {
         /// <summary>True when the page ends in a cut whose cell keeps its break (<see cref="LayoutResult.Placed.KeepsItsBreak"/>):
-        /// the table keeps it too.</summary>
+        /// the table keeps it too, at the cut's appeal, in which the cell's kept appeal stands
+        /// (<see cref="LayoutResult.Placed.KeptAppeal"/>).</summary>
         public bool KeepsItsBreak { get; init; }
     }
 
@@ -211,7 +212,8 @@ internal static class TablePage
                 outcome.Value.Value.Continuation is { } next ? next with { BodyShown = ShowsBody(table, outcome.Value.Value.Content) } : null,
                 outcome.Value.Value.Appeal,
                 outcome.Value.Value.BestBreak,
-                outcome.Value.Value.KeepsItsBreak)
+                outcome.Value.Value.KeepsItsBreak,
+                outcome.Value.Value.Appeal)
             : LayoutResult.NothingFits(table.Box, space);
     }
 

@@ -26,9 +26,11 @@ internal static class SlicedBox
     /// Null when the algorithm has none; then the box never breaks there.</param>
     /// <param name="KeepsItsBreak">For content that breaks, true when it broke at a breakpoint it chose before the place
     /// where it ran out of room (<see cref="LayoutResult.Placed.KeepsItsBreak"/>).</param>
+    /// <param name="KeptAppeal">For content that keeps its break, that break's appeal for the parent's comparison
+    /// (<see cref="LayoutResult.Placed.KeptAppeal"/>).</param>
     public sealed record Content(
         ValueList<PlacedFragment> Children, double Height, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect, EarlyBreak? BestBreak = null,
-        BreakToken? AtEnd = null, bool KeepsItsBreak = false);
+        BreakToken? AtEnd = null, bool KeepsItsBreak = false, BreakAppeal KeptAppeal = BreakAppeal.Perfect);
 
     /// <summary>
     /// Lays out an algorithm's content in a content area of the given size, ending at <paramref name="breakAt"/> when
@@ -45,12 +47,14 @@ internal static class SlicedBox
     /// <param name="bestBreak">For complete content, the best breakpoint inside it.</param>
     /// <param name="atEnd">For complete content, the token that resumes after all of it (<see cref="Content.AtEnd"/>).</param>
     /// <param name="keepsItsBreak">For content that breaks, whether it broke at a breakpoint it chose (<see cref="Content.KeepsItsBreak"/>).</param>
+    /// <param name="keptAppeal">For content that keeps its break, that break's appeal for the comparison (<see cref="Content.KeptAppeal"/>).</param>
     /// <returns>The successful content result.</returns>
     public static Result<Maybe<Content>, Error> Placed(
         ValueList<PlacedFragment> children, double height, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect, EarlyBreak? bestBreak = null,
-        BreakToken? atEnd = null, bool keepsItsBreak = false) =>
+        BreakToken? atEnd = null, bool keepsItsBreak = false, BreakAppeal keptAppeal = BreakAppeal.Perfect) =>
         Result<Maybe<Content>, Error>.Success(Maybe.From(new Content(
-            children, height, continuation, appeal, continuation is null ? bestBreak : null, continuation is null ? atEnd : null, continuation is not null && keepsItsBreak)));
+            children, height, continuation, appeal, continuation is null ? bestBreak : null, continuation is null ? atEnd : null, continuation is not null && keepsItsBreak,
+            continuation is not null && keepsItsBreak ? keptAppeal : BreakAppeal.Perfect)));
 
     /// <summary>The result for a box of which not even the first piece of content fits.</summary>
     public static Result<Maybe<Content>, Error> NothingFits => Result<Maybe<Content>, Error>.Success(Maybe<Content>.None);
@@ -107,10 +111,13 @@ internal static class SlicedBox
     /// <list type="number">
     /// <item>When the content has a breakpoint inside it (its <see cref="Content.BestBreak"/>, an early break), the
     /// content is laid out once more, breaking there; a fragment that breaks has no bottom padding or border (slice), so
-    /// the content may use the whole height up to that breakpoint. The box keeps that break whatever its appeal
-    /// (<see cref="LayoutResult.Placed.KeepsItsBreak"/>): Chromium's box asks for its early break, and its parent lays
-    /// itself out again to it without comparing it with its own breakpoints (cases <c>a3-pad-*</c>, <c>fr-pad-own-break*</c>,
-    /// <c>fr-pad-against-keep</c>: <c>ia0 p0 | p1 z0</c> although a perfect break before the box exists).</item>
+    /// the content may use the whole height up to that breakpoint. The box keeps that break
+    /// (<see cref="LayoutResult.Placed.KeepsItsBreak"/>) and reports it as perfect, lowered only by the
+    /// <c>break-inside: avoid</c> of the boxes it lies inside (<see cref="BreakAvoidance.Kept"/>): a break against orphans,
+    /// widows or a keep-with-next stays inside the box although a perfect break before the box exists (cases
+    /// <c>a3-pad-*</c>, <c>fr-pad-own-break*</c>, <c>fr-pad-against-keep</c>: <c>ia0 p0 | p1 z0</c>); a break inside a box or
+    /// paragraph kept together loses to a better break before the box, which moves whole (cases <c>kb-n*</c>:
+    /// <c>i | a0 a1 a2 z</c>).</item>
     /// <item>Otherwise the box breaks before its bottom padding and border, as a last resort
     /// (<see cref="BreakAppeal.LastResort"/>): this fragment holds all the content and ends right below it (it does not
     /// fill the page), and the bottom padding and border start the next page, with what follows the box below them
@@ -193,7 +200,7 @@ internal static class SlicedBox
                     return Result<LayoutResult, Error>.Failure(LayoutErrors.EngineDefect(box, "did not break at the early break it reported"));
                 }
 
-                content = space.KeepsBottomInset ? broken.Value.Value : broken.Value.Value with { KeepsItsBreak = true };
+                content = space.KeepsBottomInset ? broken.Value.Value : broken.Value.Value with { KeepsItsBreak = true, KeptAppeal = BreakAvoidance.Kept(box, earlier) };
             }
             else if (content.AtEnd is { } atEnd && !space.KeepsBottomInset && progress)
             {
@@ -207,7 +214,7 @@ internal static class SlicedBox
             }
         }
 
-        return LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, content, fillsPage), content.Continuation, content.Appeal, content.BestBreak, content.KeepsItsBreak);
+        return LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, content, fillsPage), content.Continuation, content.Appeal, content.BestBreak, content.KeepsItsBreak, content.KeptAppeal);
     }
 
     /// <summary>

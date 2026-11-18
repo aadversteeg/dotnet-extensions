@@ -56,9 +56,10 @@ internal static class TableSegments
     /// cell of a cell … a second layout at every level would double the work at every level (review 40, B3 (d)). Returns
     /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
     /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
-    /// itself, and for a cell that keeps its break (its content broke at a breakpoint it chose,
+    /// itself; for a cell that keeps its break (its content broke at a breakpoint it chose,
     /// <see cref="LayoutResult.Placed.KeepsItsBreak"/>: the row keeps that break too, as Chromium follows such a break,
-    /// case <c>fr-f9-cell-orphans3</c>); a last resort for a cell whose lines all fit the slice and only its bottom padding
+    /// case <c>fr-f9-cell-orphans3</c>) the kept appeal, perfect unless the break lies inside a box kept together
+    /// (<see cref="LayoutResult.Placed.KeptAppeal"/>, cases <c>kb-n5-*</c>, <c>kb-n6-*</c>); a last resort for a cell whose lines all fit the slice and only its bottom padding
     /// or its share of the grid line below it does not, where its last row is the one the cut is in
     /// (<paramref name="endsAtTheCut"/>; Chromium never breaks a cell before its bottom padding: the row moves whole when
     /// it can, cases <c>fr-f4-*</c>). A cell is laid out as starting the page (<see cref="ConstraintSpace.IsAtPageStart"/>)
@@ -100,7 +101,7 @@ internal static class TableSegments
                     new CellBreak(cell.Cell, placed.Continuation, placed.Continuation is null),
                     placed.Continuation is null ? BreakAppeal.Perfect
                     : endsInItsBottomEdge ? BreakAppeal.LastResort
-                    : placed.KeepsItsBreak ? BreakAppeal.Perfect
+                    : placed.KeepsItsBreak ? placed.KeptAppeal
                     : placed.Appeal,
                     placed.Continuation is not null && placed.KeepsItsBreak && !endsInItsBottomEdge),
                 _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), endsInItsBottomEdge ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),

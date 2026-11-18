@@ -11,7 +11,8 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// Bottom padding and borders that do not fit below a box's content, and keep rules next to boxes that continue from
 /// the page before, against Chromium's print (cases <c>fr-pad-*</c>, <c>fr-border-*</c> and <c>fr-keep-*</c> of
 /// <c>tools/reference/chromium</c>; review 40, B1 and M5 items 1 to 3). The rule is Chromium's
-/// <c>FinishFragmentation</c> (SlicedBox): a box with a breakpoint inside breaks there and keeps that break; any other box
+/// <c>FinishFragmentation</c> (SlicedBox): a box with a breakpoint inside breaks there and keeps that break, unless the
+/// break lies inside a box or paragraph kept together and a better break lies before the box (<see cref="KeptBoxBreakTests"/>); any other box
 /// breaks before its bottom padding and border, which start the next page; a box that continues from the page before
 /// offers its parent no breakpoint inside it.
 /// </summary>

@@ -43,6 +43,35 @@ internal static class BreakAvoidance
     /// <summary>The worse of two appeals.</summary>
     public static BreakAppeal Worst(BreakAppeal first, BreakAppeal second) => first < second ? first : second;
 
+    /// <summary>
+    /// The appeal of a break that a box kept (<see cref="LayoutResult.Placed.KeepsItsBreak"/>: it laid itself out again
+    /// to one of its early breaks), as the box reports it to its parent: perfect, lowered by the <c>break-inside: avoid</c>
+    /// of every box inside it that the break lies inside. Chromium records the break it lays itself out again to as
+    /// perfect (<c>BlockLayoutAlgorithm</c> at the target of its early break,
+    /// <c>third_party/blink/renderer/core/layout/block_layout_algorithm.cc</c>), so the orphans, widows and
+    /// <c>break-before</c>/<c>break-after: avoid</c> that made the early break worse do not reach the parent; a
+    /// <c>break-inside: avoid</c> is not part of a box's own appeal but applied by the box around it each time it looks
+    /// (<c>CalculateBreakAppealInside</c>, <c>fragmentation_utils.cc</c>; <c>PropagateBreakInfo</c>,
+    /// <c>box_fragment_builder.cc</c>), so it does. The parent then lowers the result by the box's own
+    /// <c>break-inside</c> (<see cref="Inside"/>) and compares it with its own breakpoints as it compares any break.
+    /// </summary>
+    /// <param name="box">The box that kept the break.</param>
+    /// <param name="early">The early break it laid itself out again to, relative to its own content.</param>
+    /// <returns>The appeal.</returns>
+    public static BreakAppeal Kept(Box box, EarlyBreak early)
+    {
+        // Down the chain of early breaks, one box per level: a loop, as the chain is as deep as the boxes.
+        var appeal = BreakAppeal.Perfect;
+        var (current, at) = (box, early);
+        while (at is FlowEarlyBreak { Inside: { } inner } flow && flow.ChildIndex < current.Children.Count && current.Children[flow.ChildIndex] is Box child)
+        {
+            appeal = Inside(child, appeal);
+            (current, at) = (child, inner);
+        }
+
+        return appeal;
+    }
+
     private static bool AvoidsBefore(Box box) =>
         box.Style.BreakBefore == BreakBetween.Avoid || (box.Children.FirstOrDefault() is Box first && AvoidsBefore(first));
 
