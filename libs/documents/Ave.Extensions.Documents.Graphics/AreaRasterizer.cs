@@ -30,9 +30,11 @@ internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double
 /// a cell inside the area, the winding number takes only the values 0 and 1, or only 0 and −1: inside every outline that
 /// does not overlap itself, and wherever outlines wound the same way do not overlap. Elsewhere they are not exact.
 /// Where two contours wound the same way overlap inside a cell, the part both cover counts twice before the clamp, so
-/// the cell is up to a quarter too dark: measured on Roboto's 'Ɨ' (two crossing bars) at 2,000 random sizes and offsets,
-/// at most 63.3 of 255 steps, and only in pixels that an edge of each contour crosses inside the area. Where parts wound
-/// in opposite directions meet inside a cell they cancel, up to the whole cell:
+/// the cell is too dark by that doubly covered part: up to half the cell with two contours whose edges run together
+/// through it, more with three ((n − 1) / n with n), and under even-odd up to the whole cell; only in pixels that an edge
+/// of each contour crosses inside the area (Roboto's 'Ɨ', two crossing bars, gives at most 63.3 of 255 steps; that is
+/// the test glyph, not the bound). A known defect, repaired in the raster follow-up. Where parts wound in opposite
+/// directions meet inside a cell they cancel, up to the whole cell:
 /// two half-cell rectangles of opposite direction side by side give 0 where the non-zero rule asks for 1.</para>
 /// <para><b>Determinism.</b> The pixel path uses only addition, subtraction, multiplication, division and
 /// <see cref="Math.Sqrt"/>, which IEEE 754 requires to be correctly rounded, plus floor, ceiling and conversions, all on

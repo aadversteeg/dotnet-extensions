@@ -117,7 +117,8 @@ public class ClipBoxCoverageTests
         // The clip's top edge runs through the overlap of the stem and the bar, where the winding number is 2: the fill rule
         // is taken over the part of each cell inside the clip, so the row it crosses is exact. Exact everywhere except in
         // the two cells where an edge of each contour crosses inside the clip, the stem's sides and the bar's bottom,
-        // (20, 23) and (26, 23): the limit of overlapping contours, the same with and without the clip (pinned).
+        // (20, 23) and (26, 23): the known defect on main of overlapping contours (the doubly covered part counts
+        // twice), repaired in the raster follow-up; the same with and without the clip (pinned).
         var box = new PixelBox(11.35, top, 29.85, 34.65);
         var path = Polygons(Stem, Bar);
         var mask = Canvas.Coverage(path, Affine.Identity, rule, box).Value;
@@ -134,8 +135,8 @@ public class ClipBoxCoverageTests
     [MemberData(nameof(Rules))]
     public void Overlapping_contours_inside_the_clip_are_covered_as_without_the_clip(FillRule rule)
     {
-        // Pixel (20, 18), crossed by an edge of each contour and wholly inside the clip, keeps the value it has without the
-        // clip; so does every pixel wholly inside the clip.
+        // Pixel (20, 18), crossed by an edge of each contour and wholly inside the clip (the known defect on main of
+        // overlapping contours), keeps the value it has without the clip; so does every pixel wholly inside the clip.
         var box = new PixelBox(11.35, 10.55, 29.85, 34.65);
         var path = Polygons(Stem, Bar);
         var mask = Canvas.Coverage(path, Affine.Identity, rule, box).Value;
@@ -159,8 +160,9 @@ public class ClipBoxCoverageTests
     {
         // The same square two or three times, wound the same way: non-zero covers it, even-odd covers it for three copies and
         // leaves it empty for two; a clip box with edges inside pixels cuts it. Every cell inside the square that the clip's
-        // edges cross is exact. (The cells the square's own edges cross hold the coinciding edges of the copies, contours
-        // that meet inside a cell: the documented limit, with or without a clip; they are left out here.)
+        // edges cross is exact. (The cells the square's own edges cross hold the coinciding edges of the copies: the known
+        // defect on main of overlapping contours, with or without a clip, repaired in the raster follow-up; they are left
+        // out here.)
         var square = Rectangle(6.3, 5.2, 21.7, 19.6);
         var box = new PixelBox(9.45, 8.65, 16.25, 30.4);
         var mask = Canvas.Coverage(Polygons([.. Enumerable.Repeat(square, copies)]), Affine.Identity, rule, box).Value;
@@ -187,7 +189,7 @@ public class ClipBoxCoverageTests
     {
         // Two overlapping rectangles wound in opposite directions: the overlap has winding 0 under both rules. The clip's
         // edges cut the overlap inside pixels; exact except where an edge of each contour crosses inside the clipped part
-        // of a cell, where the parts cancel (the documented limit): (12, 12) and (18, 12) here.
+        // of a cell, where the parts cancel (the documented limit): (12, 21) and (18, 21) here.
         var first = Rectangle(5.3, 6.2, 18.7, 21.4);
         var second = Rectangle(12.6, 12.8, 27.1, 28.3, reversed: true);
         var both = Rectangle(12.6, 12.8, 18.7, 21.4);

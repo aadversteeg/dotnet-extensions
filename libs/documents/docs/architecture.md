@@ -186,8 +186,10 @@ painting order; markers draw nothing.
 
 Choices, each stated at its code: coverage is exact for straight edges where no two contours overlap or meet inside
 the part of a pixel that the clip box lets through (where two contours wound the same way overlap, a pixel crossed by
-an edge of each is up to a quarter of a pixel too dark, measured 63.3 of 255 steps on a real glyph; where contours of
-opposite direction meet inside a pixel they cancel, up to the whole pixel; `Graphics/AreaRasterizer.cs`). The fill
+an edge of each is too dark by the doubly covered part: up to half the pixel with two contours whose edges run together
+through it, more with three, under even-odd up to the whole pixel, a known defect repaired in the raster follow-up;
+where contours of opposite direction meet inside a pixel they cancel, up to the whole pixel;
+`Graphics/AreaRasterizer.cs`). The fill
 rule is taken over that part of the pixel, A · g(|a| / A) with A its area and a the integral of the winding number
 over it, so a clip edge through the inside of overlapping contours (winding 2 over part of a pixel) is exact
 (`ClipBoxCoverageTests`); curves are within 1/64 pixel; colours are
