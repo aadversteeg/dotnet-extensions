@@ -311,7 +311,8 @@ scopes when a policy is created: the scope says what the keys it hands out may d
 it. Check the scopes again after editing a policy; editing it in the nuget.org web page can reset them.
 
 `NuGet/login` asks for the API key in the name of a nuget.org user: the `NUGET_USER` value at the top of
-`release.yml`, `ahmverst`. It must be the user name of the account that created the policy (not an organization).
+`release.yml`, `aadversteeg`. It must be the user name of the account that created the policy (not the package
+owner or an organization).
 
 While the repository is private, nuget.org cannot read the repository and owner ids from GitHub. The policy is then
 temporary for 7 days, and becomes permanent at the first successful login from the workflow. For a public
