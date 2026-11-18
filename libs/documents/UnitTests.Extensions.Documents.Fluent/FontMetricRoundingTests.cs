@@ -12,8 +12,10 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <see cref="FontMetricRounding.WholePixels"/>: the fonts' ascent, descent and line gap each rounded to a whole CSS pixel
 /// and the half-leading above floored to one, as Chromium does, against Chromium's print of 40-line paragraphs
 /// (<c>tools/reference/chromium</c>, cases <c>f-*</c>; page area 276 × 180 pt, 240 px). Forty lines over several pages,
-/// so a difference of 1/64 pixel per line would show at the end. Lato here; the Theano Didot cases are measured too and
-/// are compared once the engine reads Theano's typographic metrics (USE_TYPO_METRICS) on this branch.
+/// so a difference of 1/64 pixel per line would show at the end. Lato here, whose line gap is 0: the rounding of the
+/// line gap is carried by a Layout test with Theano Didot (<c>HalfLeadingTests</c>). The Theano Didot cases and
+/// <c>f-mixed</c> are measured too and are compared once the engine reads Theano's typographic metrics
+/// (USE_TYPO_METRICS).
 /// </summary>
 public class FontMetricRoundingTests
 {
@@ -56,6 +58,45 @@ public class FontMetricRoundingTests
         engine.Select(word => (word.Page, word.Text)).Should().Equal(chromium.Select(word => (word.Page, word.Text)));
         engine.Zip(chromium).Should().AllSatisfy(pair => pair.First.Baseline.Should().BeApproximately(pair.Second.Baseline, LayoutUnit, pair.First.Text));
         exact.Zip(chromium).Max(pair => Math.Abs(pair.First.Baseline - pair.Second.Baseline)).Should().BeGreaterThan(LayoutUnit, "the case tells the two apart");
+    }
+
+    [Fact]
+    public void With_sizes_mixed_on_a_line_every_line_is_where_Chromium_puts_it()
+    {
+        // Lato 11 pt with a 13 pt word and a 9 pt bold word on every line (case f-mixed-lato): the line reaches from the
+        // largest rounded part above the baseline to the largest below it, each inline box rounded on its own.
+        static Span[] Line(int i) => [Text($"m{i} "), Text($"b{i}").FontSize(13.Pt()), Text(" "), Bold($"c{i}").FontSize(9.Pt())];
+        var paragraph = Paragraph([.. Enumerable.Range(0, 40).SelectMany(i => i == 0 ? Line(i) : [LineBreak(), .. Line(i)])]).FontSize(11.Pt());
+        var chromium = Words(PrintedPages.Chromium("f-mixed-lato"));
+        var engine = Words(Print(FontMetricRounding.WholePixels, paragraph));
+
+        engine.Select(word => (word.Page, word.Text)).Should().Equal(chromium.Select(word => (word.Page, word.Text)));
+        engine.Zip(chromium).Should().AllSatisfy(pair => pair.First.Baseline.Should().BeApproximately(pair.Second.Baseline, LayoutUnit, pair.First.Text));
+    }
+
+    [Theory]
+    [InlineData(0.37)]
+    [InlineData(0.38)]
+    public void At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does(double size)
+    {
+        // A difference, pinned (cases f-tiny, f-tiny-038): fifty lines of Lato at 0.37 or 0.38 pt, then "after" at 12 pt.
+        // Chromium draws none of the fifty lines (its print has no text-showing operator for them) and gives them no
+        // height: it floors the font size to 1/100 pixel first (0.38 pt is 0.5067 px, floored 0.50 px), and Lato's ascent
+        // at 0.50 px is 0.49 px, rounded to 0. The engine draws them; at 0.37 pt (0.4933 px) their ascent and descent
+        // round to 0 too, so "after" is where Chromium has it; at 0.38 pt (0.5067 px) the ascent is 0.5001 px and rounds to
+        // 1, so the fifty lines take 50 px and "after" comes 37.5 pt lower.
+        var tiny = Paragraph([.. Enumerable.Range(0, 50).SelectMany(i => i == 0 ? new[] { Text($"t{i}") } : [LineBreak(), Text($"t{i}")])]).FontSize(size.Pt());
+        var result = DocumentTranslator.ToModel(Document([tiny, Paragraph("after").FontSize(12.Pt())], Area, title: "Title", language: "en").FontFamily("Lato").FontMetricRounding(FontMetricRounding.WholePixels))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic))
+            .OnSuccessMap(PrintedPages.Engine);
+        var chromium = PrintedPages.Chromium(size < 0.375 ? "f-tiny" : "f-tiny-038");
+
+        chromium.PageTexts.Should().Equal("after");
+        chromium.Pages[0].Words.Single().Baseline.Should().Be(24);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        result.Value.Pages.Should().ContainSingle();
+        result.Value.Pages[0].Words.Should().HaveCount(51);
+        result.Value.Pages[0].Words.Single(word => word.Text == "after").Baseline.Should().BeApproximately(size < 0.375 ? 24 : 24 + 37.5, 1e-9);
     }
 
     [Theory]

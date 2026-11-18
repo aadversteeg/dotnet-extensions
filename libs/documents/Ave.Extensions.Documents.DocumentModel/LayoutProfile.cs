@@ -42,9 +42,14 @@ public enum FontMetricRounding
     /// so a line of <c>normal</c> height is a whole number of pixels; and the half-leading above the text floored to a whole
     /// pixel, the rest of the leading below it (<c>core/layout/inline/line_utils.cc</c>, <c>CalculateLeadingSpace</c>: "ascent_leading_spacing{((line_height
     /// - current_height.LineHeight()) / 2).Floor()}"), for <c>normal</c> and for line heights given as numbers or lengths
-    /// alike. Measured against Chromium's print (<c>tools/reference/chromium</c>, cases <c>f-*</c>). Chromium also keeps a
-    /// line height given as a number or a length in units of 1/64 pixel and paints each baseline at a whole pixel; the
-    /// engine does neither (docs/architecture.md, "Against Chromium").
+    /// alike. Measured against Chromium's print (<c>tools/reference/chromium</c>, cases <c>f-lato-*</c> and
+    /// <c>f-mixed-lato</c>: every line within 1/64 pixel). What the policy does not cover: a line height given as a
+    /// length, a percentage or a number is taken as it is given, while Chromium keeps it in its layout unit of 1/64 pixel
+    /// (a length or a percentage rounded to it, a number times the font size floored), so pages can differ; a front-end
+    /// that follows Chromium gives the line height in that unit, and then the pages are Chromium's (cases
+    /// <c>f-length-*</c>, <c>f-letter-*</c>, <c>f-number-1501</c>). Chromium also paints each text baseline at a whole
+    /// pixel, which moves ink by at most half a pixel and never a line; the engine does not (docs/architecture.md,
+    /// "Against Chromium").
     /// </summary>
     WholePixels,
 }
