@@ -16,6 +16,12 @@ namespace Ave.Extensions.Documents.Images.Jpeg;
 /// 3/16, 1/16 for 2 × 2) of libjpeg's "fancy" up-sampling; libjpeg rounds the interpolated samples to integers before the
 /// colour transform and replicates samples for other factors, this decoder keeps the interpolated value exact until the
 /// final rounding and interpolates for every factor. That is the difference the tests allow against djpeg.</para>
+/// <para><b>Narrow images.</b> A component stored at a lower resolution across whose rows have at most 2 samples is not
+/// interpolated but replicated, in both directions: full-resolution pixel x takes component sample ⌊x·Hi/Hmax⌋ (and y
+/// likewise). That is what djpeg does, measured from its output (not read from its code): for 4:2:0 and 4:2:2 its result
+/// equals its replicating mode (<c>-nosmooth</c>) exactly up to 4 pixels across, and differs from 5 on, whatever the
+/// height; for 4:4:0 no such exception shows. With it the narrow test files decode within the same bound as the
+/// others.</para>
 /// <para><b>Colour transform.</b> Three components are YCbCr unless an Adobe APP14 segment says transform 0 (then they are
 /// RGB as they are): this is the rule of PDF's DCTDecode filter (ISO 32000-1 §7.4.8, ColorTransform: default 1 for three
 /// components, and "the value provided in the encoded data", the Adobe marker, wins), so the raster shows what a PDF
@@ -37,10 +43,12 @@ internal static class JpegColor
         var output = new byte[(long)width * height * channels];
         var values = new double[channels];
         var columns = new (int Left, int Right, double Share)[channels][];
+        var replicated = new bool[channels];
         for (var channel = 0; channel < channels; channel++)
         {
             var plane = planes[channel];
-            columns[channel] = Weights(width, plane.Horizontal, maxHorizontal, plane.Width);
+            replicated[channel] = plane.Horizontal < maxHorizontal && plane.Width <= 2;
+            columns[channel] = Weights(width, plane.Horizontal, maxHorizontal, plane.Width, replicated[channel]);
         }
 
         var rows = new (int Top, int Bottom, double Share)[channels];
@@ -49,7 +57,7 @@ internal static class JpegColor
             for (var channel = 0; channel < channels; channel++)
             {
                 var plane = planes[channel];
-                rows[channel] = Weight(y, plane.Vertical, maxVertical, plane.Height);
+                rows[channel] = Weight(y, plane.Vertical, maxVertical, plane.Height, replicated[channel]);
             }
 
             for (var x = 0; x < width; x++)
@@ -88,24 +96,30 @@ internal static class JpegColor
         return ImmutableArray.Create(output);
     }
 
-    private static (int Left, int Right, double Share)[] Weights(int size, int factor, int maxFactor, int componentSize)
+    private static (int Left, int Right, double Share)[] Weights(int size, int factor, int maxFactor, int componentSize, bool replicated)
     {
         var weights = new (int, int, double)[size];
         for (var index = 0; index < size; index++)
         {
-            weights[index] = Weight(index, factor, maxFactor, componentSize);
+            weights[index] = Weight(index, factor, maxFactor, componentSize, replicated);
         }
 
         return weights;
     }
 
     /// <summary>The two component samples around full-resolution position <paramref name="index"/> and the share of the
-    /// second.</summary>
-    private static (int First, int Second, double Share) Weight(int index, int factor, int maxFactor, int componentSize)
+    /// second; when <paramref name="replicated"/>, the one sample whose cell holds the position.</summary>
+    private static (int First, int Second, double Share) Weight(int index, int factor, int maxFactor, int componentSize, bool replicated)
     {
         if (factor == maxFactor)
         {
             return (index, index, 0);
+        }
+
+        if (replicated)
+        {
+            var cell = Math.Min((int)((long)index * factor / maxFactor), componentSize - 1);
+            return (cell, cell, 0);
         }
 
         var position = (((index + 0.5) * factor) / maxFactor) - 0.5;

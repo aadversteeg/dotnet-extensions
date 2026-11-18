@@ -15,8 +15,9 @@ namespace UnitTests.Extensions.Documents.Images;
 /// <item>the colour transform: djpeg uses 16-bit fixed-point tables, this decoder doubles (<c>JpegColor</c>): at most 1
 /// more per channel;</item>
 /// <item>up-sampling: for factor 2 both use the same weights (¾, ¼), but djpeg rounds the interpolated chroma before the
-/// colour transform and this decoder does not; for other factors djpeg repeats each chroma sample and this decoder
-/// interpolates, so near a sharp change of colour the two differ by up to the size of that change.</item>
+/// colour transform and this decoder does not; where a chroma row has at most 2 samples both repeat each sample (the
+/// narrow files: 4 and 3 pixels wide, and 5 wide for contrast); for other factors djpeg repeats each chroma sample and
+/// this decoder interpolates, so near a sharp change of colour the two differ by up to the size of that change.</item>
 /// </list>
 /// Needs Docker (trait <c>Category=Reference</c>).
 /// </summary>
@@ -47,6 +48,9 @@ public sealed class JpegDecoderReferenceTests
     [InlineData("jpeg-mixed.jpg", 3)]
     [InlineData("jpeg-three-scans.jpg", 3)]
     [InlineData("jpeg-table-redefined.jpg", 3)]
+    [InlineData("jpeg-420-narrow.jpg", 3)]
+    [InlineData("jpeg-422-narrow.jpg", 3)]
+    [InlineData("jpeg-420-width5.jpg", 3)]
     public void Decodes_like_djpeg_within_the_rounding_of_the_transforms(string name, int largest)
     {
         var (decoded, expected) = BothDecodings(name);

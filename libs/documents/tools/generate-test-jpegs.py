@@ -1,10 +1,11 @@
 """Generates the JPEG test files of the decoder with libjpeg-turbo's cjpeg (an independent encoder), each in one of the
 variants the decoder must read: chroma sampling 4:4:4, 4:2:2, 4:4:0, 4:2:0, 4:1:1 and 3:1:1, mixed factors, restart
 intervals, progressive coding (libjpeg's default script: spectral selection and successive approximation), grey, RGB
-without colour transform (Adobe marker transform 0), 16-bit quantisation tables, odd sizes and a 1 x 1 image; and, by
-editing the segments of a file with one scan per component, files the decoder must refuse or read with care: frame
-components that no scan covers (with a defined and with an undefined quantisation table), and a quantisation table
-redefined between scans (T.81 §B.2.4.1: a component keeps the table in force when its first scan starts).
+without colour transform (Adobe marker transform 0), 16-bit quantisation tables, odd sizes, a 1 x 1 image and images
+narrow enough that a chroma row has 2 samples (or, for contrast, 3); and, by editing the segments of a file with one
+scan per component, files the decoder must refuse or read with care: frame components that no scan covers (with a
+defined and with an undefined quantisation table), and a quantisation table redefined between scans (T.81 §B.2.4.1: a
+component keeps the table in force when its first scan starts).
 
 Runs in the reference tools image (tools/reference/tools.Dockerfile: Pillow and libjpeg-turbo 2.1.5), from the family
 folder (libs/documents):
@@ -120,6 +121,12 @@ def main():
         photo(61, 43).save(small)
         photo(257, 193).save(large)
         photo(1, 1).save(single)
+        narrow4 = os.path.join(folder, "narrow4.ppm")
+        narrow3 = os.path.join(folder, "narrow3.ppm")
+        narrow5 = os.path.join(folder, "narrow5.ppm")
+        photo(4, 37).save(narrow4)
+        photo(3, 29).save(narrow3)
+        photo(5, 23).save(narrow5)
 
         cjpeg(small, "jpeg-444.jpg", "-quality", "85", "-sample", "1x1")
         cjpeg(small, "jpeg-422.jpg", "-quality", "85", "-sample", "2x1")
@@ -133,6 +140,10 @@ def main():
         cjpeg(small, "jpeg-rgb.jpg", "-quality", "85", "-rgb")
         cjpeg(small, "jpeg-16bit-tables.jpg", "-quality", "3")
         cjpeg(single, "jpeg-1x1.jpg", "-quality", "85")
+        # Narrow images: chroma rows of 2 samples (djpeg replicates them) and, for contrast, of 3 (djpeg interpolates).
+        cjpeg(narrow4, "jpeg-420-narrow.jpg", "-quality", "85", "-sample", "2x2")
+        cjpeg(narrow3, "jpeg-422-narrow.jpg", "-quality", "85", "-sample", "2x1")
+        cjpeg(narrow5, "jpeg-420-width5.jpg", "-quality", "85", "-sample", "2x2")
         cjpeg(large, "jpeg-progressive.jpg", "-quality", "85", "-progressive")
         cjpeg(large, "jpeg-progressive-restart.jpg", "-quality", "85", "-progressive", "-restart", "1")
         cjpeg(large, "jpeg-progressive-grey.jpg", "-quality", "85", "-progressive", "-grayscale")

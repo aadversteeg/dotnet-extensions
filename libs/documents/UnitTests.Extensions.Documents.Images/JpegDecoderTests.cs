@@ -57,30 +57,48 @@ public class JpegDecoderTests
     [Fact]
     public void Chroma_at_half_resolution_is_interpolated_with_three_quarters_and_one_quarter()
     {
-        // Luma 100 everywhere; Cb samples 128 and 228 (one row), Cr 128: full-resolution x = 0, 1, 2, 3 has Cb at component
-        // positions −0.25, 0.25, 0.75, 1.25 → 128, 153, 203, 228; B = Y + 1.772 (Cb − 128).
-        var luma = (Enumerable.Repeat((byte)100, 32).ToArray(), 32, 4, 1, 2, 1);
-        var cb = (new byte[] { 128, 228 }.Concat(new byte[14]).ToArray(), 16, 2, 1, 1, 1);
-        var cr = (Enumerable.Repeat((byte)128, 16).ToArray(), 16, 2, 1, 1, 1);
+        // Luma 100 everywhere; Cb samples 128, 228, 128 (one row), Cr 128: full-resolution x = 0 … 5 has Cb at component
+        // positions −0.25, 0.25, 0.75, 1.25, 1.75, 2.25 → 128, 153, 203, 203, 153, 128; B = Y + 1.772 (Cb − 128).
+        var luma = (Enumerable.Repeat((byte)100, 32).ToArray(), 32, 6, 1, 2, 1);
+        var cb = (new byte[] { 128, 228, 128 }.Concat(new byte[13]).ToArray(), 16, 3, 1, 1, 1);
+        var cr = (Enumerable.Repeat((byte)128, 16).ToArray(), 16, 3, 1, 1, 1);
 
-        var samples = JpegColor.Convert(4, 1, 2, 1, [luma, cb, cr], transform: true);
+        var samples = JpegColor.Convert(6, 1, 2, 1, [luma, cb, cr], transform: true);
 
-        Enumerable.Range(0, 4).Select(x => samples[(x * 3) + 2]).Should().Equal(100, 144, 233, 255);
-        Enumerable.Range(0, 4).Select(x => samples[x * 3]).Should().Equal([100, 100, 100, 100], "Cr is 128: R is Y");
+        Enumerable.Range(0, 6).Select(x => samples[(x * 3) + 2]).Should().Equal(100, 144, 233, 233, 144, 100);
+        Enumerable.Range(0, 6).Select(x => samples[x * 3]).Should().Equal([100, 100, 100, 100, 100, 100], "Cr is 128: R is Y");
     }
 
     [Theory]
-    [InlineData(3, new byte[] { 0, 0, 33, 67, 100, 100 })]
-    [InlineData(4, new byte[] { 0, 0, 13, 38, 63, 88, 100, 100 })]
+    [InlineData(3, new byte[] { 0, 0, 33, 67, 100, 67, 33, 0, 0 })]
+    [InlineData(4, new byte[] { 0, 0, 13, 38, 63, 88, 88, 63, 38, 13, 0, 0 })]
     public void Other_factors_are_interpolated_between_the_nearest_samples_too(int factor, byte[] expected)
     {
-        // A grey component stored at 1/factor of the width: samples 0 and 100. Full-resolution x lies at component
+        // A grey component stored at 1/factor of the width: samples 0, 100, 0. Full-resolution x lies at component
         // position (x + ½)/factor − ½.
-        var plane = (new byte[] { 0, 100 }.Concat(new byte[14]).ToArray(), 16, 2, 1, 1, 1);
+        var plane = (new byte[] { 0, 100, 0 }.Concat(new byte[13]).ToArray(), 16, 3, 1, 1, 1);
 
-        var samples = JpegColor.Convert(2 * factor, 1, factor, 1, [plane], transform: false);
+        var samples = JpegColor.Convert(3 * factor, 1, factor, 1, [plane], transform: false);
 
         samples.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void Chroma_rows_of_two_samples_or_fewer_are_replicated_in_both_directions()
+    {
+        // 4 × 4 at 4:2:0: Cb is 2 × 2 (128, 178 over 178, 128), so each sample covers 2 × 2 pixels, as djpeg shows them.
+        // B = Y + 1.772 (Cb − 128): 100 or 100 + 88.6.
+        var luma = (Enumerable.Repeat((byte)100, 64).ToArray(), 16, 4, 4, 2, 2);
+        var cb = (new byte[] { 128, 178, 0, 0, 0, 0, 0, 0, 178, 128, 0, 0, 0, 0, 0, 0 }, 8, 2, 2, 1, 1);
+        var cr = (Enumerable.Repeat((byte)128, 16).ToArray(), 8, 2, 2, 1, 1);
+
+        var samples = JpegColor.Convert(4, 4, 2, 2, [luma, cb, cr], transform: true);
+
+        Enumerable.Range(0, 16).Select(pixel => samples[(pixel * 3) + 2]).Should().Equal(
+            100, 100, 189, 189,
+            100, 100, 189, 189,
+            189, 189, 100, 100,
+            189, 189, 100, 100);
     }
 
     [Fact]
