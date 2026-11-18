@@ -101,7 +101,8 @@ What to do when a job fails:
 - `build` fails: nothing was released. Fix the problem (see below for the tag).
 - The approval is refused, or `publish` fails (for example at the nuget.org login): nothing was released. Fix the
   cause, then run the failed jobs again ("Re-run failed jobs"); the package from the `build` job is reused. The push
-  uses `--skip-duplicate`, so a version that already reached nuget.org does not fail the rerun.
+  uses `--skip-duplicate`, so a version that already reached nuget.org does not fail the rerun. For a failed login,
+  see "When the login to nuget.org fails" under "Trusted publishing policy on nuget.org".
 - Only `github-release` fails: the package is on nuget.org. Run that job again; do not delete or move the tag, the
   version cannot be used again.
 
@@ -355,3 +356,30 @@ it. Check the scopes again after editing a policy; editing it in the nuget.org w
 While the repository is private, nuget.org cannot read the repository and owner ids from GitHub. The policy is then
 temporary for 7 days, and becomes permanent at the first successful login from the workflow. For a public
 repository it is permanent at once. Renaming or transferring the repository breaks the policy.
+
+#### When the login to nuget.org fails
+
+When nuget.org finds no policy for the release, the publish job fails at the step "Log in to nuget.org (trusted
+publishing)" with this error:
+
+```text
+Token exchange failed (HTTP 401) at https://www.nuget.org/api/v2/token. Make sure you are using the username of
+the policy creator, not the policy owner: No matching trust policy owned by user 'ahmverst' was found.
+```
+
+The sentence about the policy creator is added to every failed login and says nothing about the cause. The last
+sentence is the answer of nuget.org. It means that the user `ahmverst` has created no policy that names this
+repository owner and repository: the policy was deleted, it was created by another account, or it names another
+repository. A permanent policy with a wrong workflow file or a wrong environment, and a temporary policy that
+expired, each give a message of their own.
+
+What to do:
+
+1. Sign in on nuget.org as `ahmverst` and open "Trusted Publishing".
+2. When the policy is gone, create it again with the values and the scopes above. When it is there, compare it
+   with the tables above.
+3. Run the failed jobs of the release again ("Re-run failed jobs") and approve the publish job. The tag stays; a
+   new tag or version is not needed.
+
+This happened on 18 November 2026 with the release `file-system-local/0.7.0-preview.11`: the policy that had
+published every release until that morning was no longer on nuget.org. Why it was gone is not known.
