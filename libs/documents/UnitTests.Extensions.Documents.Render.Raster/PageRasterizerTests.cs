@@ -294,6 +294,26 @@ public class PageRasterizerTests
     }
 
     [Fact]
+    public void An_image_drawn_many_times_is_decoded_once_per_render()
+    {
+        // 20 small draws of one JPEG cost about what one draw costs: the decoded pixels are kept for the render call.
+        var jpeg = TestImages.Load("baseline-rgb.jpg");
+        long Allocated(int draws)
+        {
+            var page = PageOf(100, 100, [.. Enumerable.Range(0, draws).Select(index => (DrawItem)new DrawImage(new Rect(new Point(index * 4, 10), new Size(4, 4)), jpeg))]);
+            Draw(page);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            Draw(page);
+            return GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+
+        var once = Allocated(1);
+        var decode = Allocated(2) - once;
+
+        (Allocated(20) - once).Should().BeLessThan(once / 2, $"one draw allocates {once} bytes; a second draw of the same image {decode} more");
+    }
+
+    [Fact]
     public void A_JPEG_is_decoded_and_drawn()
     {
         var jpeg = TestImages.Load("baseline-rgb.jpg");

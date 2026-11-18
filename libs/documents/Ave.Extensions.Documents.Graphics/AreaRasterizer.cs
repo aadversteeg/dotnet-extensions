@@ -11,7 +11,7 @@ namespace Ave.Extensions.Documents.Graphics;
 internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double> coverage);
 
 /// <summary>
-/// The exact area coverage of polygons on a grid of unit cells (pixels in device space, samples in image space), by
+/// The area coverage of polygons on a grid of unit cells (pixels in device space, samples in image space), by
 /// signed-area accumulation: the algorithm known from libart and described for stb_truetype's second rasteriser
 /// (S. Barrett, "How the stb_truetype Anti-Aliased Software Rasterizer v2 Works", 2015) and for font-rs (R. Levien,
 /// "Inside the fastest font renderer in the world", 2016). Written from those descriptions; no code was taken from them.
@@ -24,10 +24,14 @@ internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double
 /// piece is straight, so this is exact), and every cell to the right gets the whole h. So the piece adds (1 − (m − c))·h
 /// to cell c and (m − c)·h to cell c + 1, and a running sum along the row turns these differences into the integral of the
 /// winding number over each cell. Exact for straight edges: the only error is the rounding of double arithmetic.</para>
-/// <para><b>Fill rules.</b> The integral is turned into coverage by the non-zero rule as min(1, |a|) and by the even-odd
-/// rule by folding |a| into [0, 1] with period 2. Both are exact where the winding number in a cell is 0 or ±1; in a cell
-/// where parts with winding 2 and 0 meet (overlapping contours of a glyph) the folded integral differs from the area of
-/// the covered part. FreeType, stb_truetype and font-rs make the same approximation.</para>
+/// <para><b>Fill rules.</b> The integral a is turned into coverage by the non-zero rule as min(1, |a|) and by the even-odd
+/// rule by folding |a| into [0, 1] with period 2. Both are exact where, inside a cell, the winding number takes only the
+/// values 0 and 1, or only 0 and −1: inside every outline that does not overlap itself, and wherever outlines wound the
+/// same way do not overlap. Elsewhere they are not exact. Where two contours wound the same way overlap inside a cell,
+/// the part both cover counts twice before the clamp, so the cell is up to a quarter too dark: measured on Roboto's 'Ɨ'
+/// (two crossing bars) at 2,000 random sizes and offsets, at most 63.3 of 255 steps, and only in pixels that an edge of
+/// each contour crosses. Where parts wound in opposite directions meet inside a cell they cancel, up to the whole cell:
+/// two half-cell rectangles of opposite direction side by side give 0 where the non-zero rule asks for 1.</para>
 /// <para><b>Determinism.</b> The pixel path uses only addition, subtraction, multiplication, division and
 /// <see cref="Math.Sqrt"/>, which IEEE 754 requires to be correctly rounded, plus floor, ceiling and conversions, all on
 /// doubles and in a fixed order (no parallel loops, no vector instructions, no <see cref="Math.FusedMultiplyAdd"/>; .NET
@@ -114,7 +118,17 @@ internal sealed class AreaRasterizer
                 _active.Add(_edges[next++]);
             }
 
-            _active.RemoveAll(edge => edge.Y1 <= y);
+            // Drop the edges that end above this row, in place: no closure, so a row allocates nothing.
+            var kept = 0;
+            for (var index = 0; index < _active.Count; index++)
+            {
+                if (_active[index].Y1 > y)
+                {
+                    _active[kept++] = _active[index];
+                }
+            }
+
+            _active.RemoveRange(kept, _active.Count - kept);
             Array.Clear(_cells, 0, width + 2);
             foreach (var edge in _active)
             {

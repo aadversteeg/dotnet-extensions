@@ -135,6 +135,23 @@ public class ImageResamplingTests
     }
 
     [Fact]
+    public void Drawing_an_image_allocates_nothing_per_pixel()
+    {
+        // 7 × 5 samples over 400 × 300 pixels: 120 000 device pixels, each sampled through the image's grid. What a draw
+        // allocates (the path of the image's outline, the row callback) does not grow with the pixels.
+        var image = Pattern(7, 5, 6, transparent: false);
+        var canvas = Canvas.Create(400, 300, null).Value;
+        var transform = Affine.Scale(400 / 7.0, 300 / 5.0);
+        canvas.DrawImage(image, transform);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        canvas.DrawImage(image, transform);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        allocated.Should().BeLessThan(64 * 1024, "120 000 pixels must not cost an allocation each");
+    }
+
+    [Fact]
     public void A_sheared_image_with_transparency_follows_the_rule()
     {
         var image = Pattern(4, 4, 5, transparent: true);
