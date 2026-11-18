@@ -146,8 +146,8 @@ public sealed class Canvas
     /// and the image's edges are anti-aliased like a filled path. For any magnification this shows the image's pixels as
     /// sharp squares; for any reduction each image pixel counts by the area it covers.</para>
     /// <para><b>Far from the image's origin.</b> An image drawn without rotation or shear keeps this rule at any distance
-    /// in range: its preimage is a rectangle, and each axis is computed relative to the image's nearest grid line (see
-    /// <see cref="SampleAxisAligned"/>). Its edges lie where the transform maps its corners, which carries the rounding
+    /// in range: its preimage is a rectangle, and each axis is computed on its own, relative to the image's grid line
+    /// nearest to the pixel. Its edges lie where the transform maps its corners, which carries the rounding
     /// of the numbers there, as every position does (at 10^17 one step is 16). A rotated or sheared image maps each
     /// pixel's corners back to the image; there a preimage near the rounding of the image coordinates (about the image's
     /// size × 2^-52 image pixels) loses its area: measured on a 61 × 43 image, right when enlarged 10^12 times, up to 3
