@@ -23,20 +23,26 @@ public sealed record GlyphShape(ValueList<GlyphContour> Contours)
 /// imply an on-curve point midway between them (OpenType spec, "glyf", simple glyph description), so a contour can
 /// hold any number of them in a row. The last point connects back to the first.
 /// </summary>
-/// <param name="Points">The points, at least one.</param>
+/// <param name="Points">The points. The decoder gives at least one; an empty list is allowed and encloses nothing.</param>
 public sealed record GlyphContour(ValueList<OutlinePoint> Points)
 {
     /// <summary>
     /// The contour as a start point and a closed run of segments, each a straight line or one quadratic Bézier curve,
     /// with every implied on-curve point made explicit. The curves stay quadratic. The start is the first on-curve
     /// point; a contour of off-curve points only starts at the point implied between its last and its first point.
-    /// A contour of one point has no segments: it encloses nothing.
+    /// A contour of one point has no segments: it encloses nothing. An empty contour has no segments either; its start
+    /// is the origin.
     /// </summary>
     /// <returns>The segments, which end where they start.</returns>
     public ContourSegments Segments()
     {
         var points = Points.Items;
         var count = points.Length;
+        if (count == 0)
+        {
+            return new ContourSegments(new OutlinePoint(0, 0, OnCurve: true), ValueList<OutlineSegment>.Empty);
+        }
+
         if (count == 1)
         {
             return new ContourSegments(points[0] with { OnCurve = true }, ValueList<OutlineSegment>.Empty);

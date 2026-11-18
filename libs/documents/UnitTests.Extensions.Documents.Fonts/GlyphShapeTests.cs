@@ -202,6 +202,15 @@ public class GlyphShapeTests
     }
 
     [Fact]
+    public void An_empty_contour_has_no_segments()
+    {
+        var origin = new ContourSegments(new(0, 0, true), []);
+
+        new GlyphContour([]).Segments().Should().Be(origin);
+        new GlyphContour(default).Segments().Should().Be(origin);
+    }
+
+    [Fact]
     public void A_component_with_an_offset_is_moved()
     {
         var font = FontWith([], Simple(Square), Composite(new Component(1, 10, -20, ArgsAreXyValues), new Component(1, 200, 0, ArgsAreXyValues)));
