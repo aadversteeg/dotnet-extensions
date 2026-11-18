@@ -187,15 +187,17 @@ painting order; markers draw nothing.
 | Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, images mapped onto their rectangle as PDF maps an image's unit square |
 | composition | `ToPng`, `ToPngPages`, `ToImages` on a document or on its pages (`ToPages`) |
 
-Choices, each stated at its code: coverage is exact for straight edges where no two contours overlap or meet inside
-the part of a pixel that the clip box lets through (where two contours wound the same way overlap, a pixel crossed by
-an edge of each is too dark by the doubly covered part: up to half the pixel with two contours whose edges run together
-through it, more with three, under even-odd up to the whole pixel, a known defect repaired in the raster follow-up;
-where contours of opposite direction meet inside a pixel they cancel, up to the whole pixel;
-`Graphics/AreaRasterizer.cs`). The fill
-rule is taken over that part of the pixel, A · g(|a| / A) with A its area and a the integral of the winding number
-over it, so a clip edge through the inside of overlapping contours (winding 2 over part of a pixel) is exact
-(`ClipBoxCoverageTests`); curves are within 1/64 pixel; colours are
+Choices, each stated at its code: coverage is exact for straight edges, to the rounding of doubles, in every pixel and
+for both fill rules, also where contours overlap or cross inside a pixel, a contour crosses itself, or a clip box's side
+runs between them (`Graphics/AreaRasterizer.cs`). The integral of the winding number over a pixel gives its coverage
+wherever the winding number takes at most two values there, 0 and one other or two of one sign; a pixel where it may take
+more is flagged from the pieces of edges in it (`Graphics/CellFlags.cs`: one run of consecutive edges of one polygon,
+at most two pieces or monotone, is clean; everything else is flagged), and a flagged pixel gets the exact area of the
+arrangement of its pieces (`Graphics/CellArrangement.cs`), keeping the integral's value where the two differ by at most
+10^-9. `OverlapCoverageTests` holds every pixel, flagged or not, to exact rational areas computed another way (vertical
+slabs instead of rows) on degenerate and random shapes, with and without a clip box. The fill rule of a pixel the clip
+box cuts is taken over the part inside it, so a thin part does not blow up a value (`ClipBoxCoverageTests`); curves are
+within 1/64 pixel; colours are
 blended on the encoded 8-bit values, as PDFium, MuPDF and poppler blend them — blending in linear light would be more
 correct in theory and visibly different from every PDF viewer, so it is not done; an image is a grid of uniformly
 coloured squares (PDF's `/Interpolate false`), each device pixel showing the mean of the image over the part it covers;
@@ -259,7 +261,16 @@ no such items (`tools/reference/raster/README.md`). An enlarged image shows its 
 (ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. An image
 whose grid reaches farther than 2^40 device pixels from the origin (`Canvas.MaxImageReach`; at 96 dpi about
 8.25 × 10^11 pt) is refused: `Documents.Graphics.InvalidValue` from the canvas, `Documents.Raster.ImageOutOfReach` from
-the raster back-end; the PDF back-end writes such an image as the page model says. The bound is the arithmetic of
+the raster back-end; the PDF back-end writes such an image as the page model says. A fill whose exact coverage takes
+more work than a limit is refused the same way, before any of it is painted: the work of a pixel where contours may
+overlap grows with the cube of the pieces of edges in it, so `Canvas.MaxFillWork` (2^27 units for one fill),
+`Canvas.MaxCanvasWork` (2^28 units for all fills of one canvas, so of one page) and `Canvas.MaxRowPieces` (2^18
+pieces in the flagged pixels of one row) bound it; `Documents.Graphics.TooMuchWork` from the canvas and from the raster
+back-end, which reports a glyph's refused fill for its page. Measured on the development host: the largest glyph of
+eight fonts at 12 pixels per em takes 252,044 units (532 times under the fill limit), the largest sample page 2.35 ×
+10^6 units at 96 dpi (114 times under the canvas limit); a fill at its limit takes about 1.7 s, a page at the canvas
+limit about 3.6 s; a thousand thin bars through one pixel ask 7.4 × 10^9 units and are refused in 25 ms. The PDF back-end writes such
+a page as the page model says, and a viewer draws it with its own rasteriser. The bound is the arithmetic of
 placing the image's pixel edges: each is computed from terms as large as the reach, each product and sum rounds by
 2^-53 of its size, so an edge lies at most 6 · 2^-53 · reach from its exact place, within the bound 2^-10.4 pixel (under
 a fifth of an 8-bit step at full contrast); the same bound keeps the rounding of a pixel's preimage below 2^-12 of its
