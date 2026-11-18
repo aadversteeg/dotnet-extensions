@@ -28,7 +28,7 @@ public sealed record FlowEarlyBreak : EarlyBreak
     /// <param name="inside">The child's early break, or null for the break before the child.</param>
     /// <param name="appeal">The breakpoint's appeal: for a break inside the child, the child's lowered by the child's
     /// own <c>break-inside</c>.</param>
-    public FlowEarlyBreak(int childIndex, EarlyBreak? inside, BreakAppeal appeal)
+    internal FlowEarlyBreak(int childIndex, EarlyBreak? inside, BreakAppeal appeal)
         : base(appeal) => (ChildIndex, Inside) = (childIndex, inside);
 
     /// <summary>The child the break comes before or is inside.</summary>
@@ -44,7 +44,7 @@ public sealed record InlineEarlyBreak : EarlyBreak
     /// <summary>An early break before a line.</summary>
     /// <param name="lineIndex">The line that starts the next page.</param>
     /// <param name="appeal">The breakpoint's appeal.</param>
-    public InlineEarlyBreak(int lineIndex, BreakAppeal appeal)
+    internal InlineEarlyBreak(int lineIndex, BreakAppeal appeal)
         : base(appeal) => LineIndex = lineIndex;
 
     /// <summary>The line that starts the next page.</summary>
@@ -59,7 +59,7 @@ public sealed record TracksEarlyBreak : EarlyBreak
     /// <summary>An early break before a row.</summary>
     /// <param name="row">The body row that starts the next page.</param>
     /// <param name="appeal">The breakpoint's appeal.</param>
-    public TracksEarlyBreak(int row, BreakAppeal appeal)
+    internal TracksEarlyBreak(int row, BreakAppeal appeal)
         : base(appeal) => Row = row;
 
     /// <summary>The body row that starts the next page.</summary>

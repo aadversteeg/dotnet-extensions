@@ -107,5 +107,33 @@ public class LayoutErrorTests
         root.Children[1].Offset.Y.Should().Be(30);
     }
 
+    [Fact]
+    public void An_algorithm_that_makes_no_progress_is_reported_as_a_defect_of_the_engine_not_thrown()
+    {
+        // A broken root algorithm: it always asks to resume at its first child, also when it was told to resume there.
+        LayoutAlgorithm stuck = (_, box, space, _) =>
+            LayoutResult.Place(new BoxFragment(box, new Size(space.AvailableWidth, 10), []), new FlowBreakToken(0, null));
+        var environment = LayoutEnvironment.Create(TestFonts.Set).WithAlgorithm(LayoutAlgorithmId.Flow, stuck);
+
+        var result = Paginator.Paginate(environment, Document(Paragraph(1, "x")));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(LayoutErrorCodes.EngineDefect);
+        result.Error.Metadata![ErrorMetadataKeys.Value].Should().Be("made no progress: it returned the break token it was given");
+    }
+
+    [Fact]
+    public void An_algorithm_that_has_no_room_at_the_start_of_a_page_is_reported_as_a_defect_of_the_engine_not_thrown()
+    {
+        LayoutAlgorithm noRoom = (_, _, _, _) => Ave.Extensions.Functional.Result<LayoutResult, Error>.Success(LayoutResult.NoRoom.Instance);
+        var environment = LayoutEnvironment.Create(TestFonts.Set).WithAlgorithm(LayoutAlgorithmId.Flow, noRoom);
+
+        var result = Paginator.Paginate(environment, Document(Paragraph(1, "x")));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(LayoutErrorCodes.EngineDefect);
+        result.Error.Metadata![ErrorMetadataKeys.Value].Should().Be("reported no room at the start of a page");
+    }
+
     private static int CurrentLine([System.Runtime.CompilerServices.CallerLineNumber] int line = 0) => line;
 }

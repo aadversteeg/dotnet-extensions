@@ -27,4 +27,10 @@ public static class LayoutErrorCodes
     /// number of pages, up to the pass limit. Metadata: Node, Value (the page counts per pass), SourceFile,
     /// SourceLine of the first page-count reference.</summary>
     public static readonly ErrorCode NotConverging = _ / "NotConverging";
+
+    /// <summary>A defect of the engine, never a property of the document: a layout algorithm broke the contract every
+    /// algorithm keeps (it made no progress from one page to the next, reported no room at the start of a page, or did not
+    /// break at the early break it reported). Reported instead of an exception, so pagination always ends and the caller
+    /// gets an answer; a document that shows it is worth a bug report. Metadata: Value (which contract), Node.</summary>
+    public static readonly ErrorCode EngineDefect = _ / "EngineDefect";
 }

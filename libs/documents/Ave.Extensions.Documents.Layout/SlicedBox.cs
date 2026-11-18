@@ -104,7 +104,10 @@ internal static class SlicedBox
     /// page, and the content starts the next page. A parent with any better breakpoint takes that instead, so a box lower
     /// on the page moves whole; at the top of the page the box's own padding and border are the space a break leaves
     /// behind (Chromium prints both cases so). Only when the content itself starts the page
-    /// (<see cref="ContentIsAtPageStart"/>) does nothing fit on any page: <c>Documents.Layout.DoesNotFit</c>.</item>
+    /// (<see cref="ContentIsAtPageStart"/>) does nothing fit on any page: <c>Documents.Layout.DoesNotFit</c>. A box that
+    /// continues from the page before has no top border or padding here, so such a break would leave nothing of it on
+    /// the page and resume where it resumed: no progress. It has no room here instead (under a table's repeated header,
+    /// the table then goes on without the header).</item>
     /// <item>LIMIT: if even then nothing fits and the box is at the start of a page, it is placed anyway and its
     /// bottom padding and border overflow the page area; there is no earlier page where it would fit better.
     /// CSS Fragmentation 3 §4.4 would let the user agent "break anywhere in order to avoid losing content off the edge
@@ -140,7 +143,9 @@ internal static class SlicedBox
 
         if (first.Value.HasNoValue)
         {
-            return ContentIsAtPageStart(box.Style, space, incoming)
+            // A last resort that resumes where this fragment resumed leaves nothing of the box on the page: no progress, so
+            // nothing of the box fits here.
+            return ContentIsAtPageStart(box.Style, space, incoming) || start.Equals(incoming)
                 ? LayoutResult.NothingFits(box, space)
                 : LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, new Content([], 0, start, BreakAppeal.LastResort)), start, BreakAppeal.LastResort);
         }
@@ -157,9 +162,12 @@ internal static class SlicedBox
                     return Result<LayoutResult, Error>.Failure(broken.Error);
                 }
 
-                content = broken.Value.HasValue && broken.Value.Value.Continuation is not null
-                    ? broken.Value.Value
-                    : throw new InvalidOperationException($"{box.Layout} did not break at the early break it reported.");
+                if (broken.Value.HasNoValue || broken.Value.Value.Continuation is null)
+                {
+                    return Result<LayoutResult, Error>.Failure(LayoutErrors.EngineDefect(box, "did not break at the early break it reported"));
+                }
+
+                content = broken.Value.Value;
             }
             else if (!space.IsAtPageStart)
             {

@@ -39,6 +39,17 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(height))
             .WithSource(content.Source);
 
+    /// <summary>A layout algorithm broke the layout contract (<see cref="LayoutErrorCodes.EngineDefect"/>).</summary>
+    /// <param name="box">The box whose algorithm broke it.</param>
+    /// <param name="contract">Which contract, for the message and the metadata.</param>
+    public static Error EngineDefect(Box box, string contract) =>
+        new Error(
+                LayoutErrorCodes.EngineDefect,
+                $"A defect of the layout engine: the algorithm of the {box.Role} made at {box.Source} {contract}. The document is not at fault.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, contract)
+            .WithSource(box.Source);
+
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
 

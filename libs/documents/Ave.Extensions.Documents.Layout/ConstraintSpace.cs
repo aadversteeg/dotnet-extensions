@@ -35,5 +35,5 @@ public sealed record ConstraintSpace(
     /// is better than where the parent ran out of room. The box lays its content out as before up to that breakpoint and
     /// breaks there, with the breakpoint's appeal; it looks for no other break.
     /// </summary>
-    public EarlyBreak? BreakAt { get; init; }
+    public EarlyBreak? BreakAt { get; internal init; }
 }

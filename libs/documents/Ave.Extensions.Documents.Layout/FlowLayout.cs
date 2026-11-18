@@ -235,7 +235,7 @@ public static class FlowLayout
                 // A forced break between two children is taken when there is content on the page before it — in this
                 // box or before the box — even if what this box placed so far is empty (see ForcedBreaks). Margins
                 // before the break are truncated (CSS Fragmentation 3 §5.2): `pending` is dropped.
-                return Broken(SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null)));
+                return Broken(SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null) { IsForced = true }));
             }
 
             if (breakAt is { Inside: null } before && before.ChildIndex == index)
@@ -298,7 +298,7 @@ public static class FlowLayout
 
             if (inside is not null)
             {
-                throw new InvalidOperationException($"{child.Layout} did not break at the early break it reported.");
+                return Result<Maybe<Stacked>, Error>.Failure(LayoutErrors.EngineDefect(child, "did not break at the early break it reported"));
             }
 
             if (placement.BestBreak is { } early)
@@ -360,7 +360,7 @@ public static class FlowLayout
         return InFlowChild.Place(environment, child, contentWidth, inside.Top, contentHeight, inside.IsAtPageStart, inside.Resume, followsContent: inside.FollowsContent, breakAt: inside.Break)
             .OnSuccessBind(outcome => outcome is { HasValue: true, Value.Continuation: { } continuation }
                 ? SlicedBox.Placed([.. before, outcome.Value.Fragment], inside.Top + outcome.Value.Fragment.Fragment.Size.Height, new FlowBreakToken(breakpoint.Index, continuation), breakpoint.Appeal)
-                : throw new InvalidOperationException($"{child.Layout} did not break at the early break it reported."));
+                : Result<Maybe<SlicedBox.Content>, Error>.Failure(LayoutErrors.EngineDefect(child, "did not break at the early break it reported")));
     }
 
     /// <summary>
@@ -381,7 +381,10 @@ public static class FlowLayout
     /// <item>Continuing after an UNFORCED break between two children: "any margins adjoining the break are
     /// truncated to zero" (CSS Fragmentation 3 §5.2).</item>
     /// <item>Continuing after a FORCED break: "When a forced break occurs there, adjoining margins before the break
-    /// are truncated, but margins after the break are preserved." (§5.2) — they DO take space.</item>
+    /// are truncated, but margins after the break are preserved." (§5.2) — they DO take space, on the page right after
+    /// the forced break only: the token says whether the break before the child was forced
+    /// (<see cref="FlowBreakToken.IsForced"/>), and when that page ends before the same child again, the break is an
+    /// unforced one and the margin is truncated on the next page.</item>
     /// </list>
     /// A child that continues inside itself starts at the top of the page without any margin; that case is
     /// handled where the child is placed.
@@ -390,5 +393,5 @@ public static class FlowLayout
         Box box, ConstraintSpace space, BreakToken? incoming, FlowBreakToken resume, ImmutableArray<Box> children) =>
         incoming is null
             ? !space.IsNewFormattingContext && MarginCollapsing.TopAdjoinsChildren(box)
-            : resume.ChildToken is null && resume.ChildIndex < children.Length && !ForcedBreaks.Before(children[resume.ChildIndex]);
+            : resume.ChildToken is null && resume.ChildIndex < children.Length && !resume.IsForced;
 }

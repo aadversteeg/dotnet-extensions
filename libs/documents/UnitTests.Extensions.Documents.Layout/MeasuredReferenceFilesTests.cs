@@ -231,6 +231,26 @@ public class MeasuredReferenceFilesTests
         ["font-sizes.lines.txt"] = 0,
         ["font-sizes.print.txt"] = 11,
         ["font-sizes.words.txt"] = 10,
+        ["fr-forced-margin-a4.boxes.txt"] = 1,
+        ["fr-forced-margin-a4.lines.txt"] = 0,
+        ["fr-forced-margin-a4.print.txt"] = 5,
+        ["fr-forced-margin-a4.words.txt"] = 2,
+        ["fr-forced-margin.boxes.txt"] = 1,
+        ["fr-forced-margin.lines.txt"] = 0,
+        ["fr-forced-margin.print.txt"] = 5,
+        ["fr-forced-margin.words.txt"] = 2,
+        ["fr-forced-padded.boxes.txt"] = 1,
+        ["fr-forced-padded.lines.txt"] = 0,
+        ["fr-forced-padded.print.txt"] = 6,
+        ["fr-forced-padded.words.txt"] = 3,
+        ["fr-forced-table.boxes.txt"] = 1,
+        ["fr-forced-table.lines.txt"] = 6,
+        ["fr-forced-table.print.txt"] = 12,
+        ["fr-forced-table.words.txt"] = 3,
+        ["fr-header-cell-margin.boxes.txt"] = 2,
+        ["fr-header-cell-margin.lines.txt"] = 14,
+        ["fr-header-cell-margin.print.txt"] = 20,
+        ["fr-header-cell-margin.words.txt"] = 2,
         ["mf4-line-0.boxes.txt"] = 40,
         ["mf4-line-0.lines.txt"] = 106,
         ["mf4-line-0.print.txt"] = 169,
@@ -267,7 +287,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(60);
+        cases.Should().HaveCount(65);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Order(StringComparer.Ordinal), "four files per case and the versions");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

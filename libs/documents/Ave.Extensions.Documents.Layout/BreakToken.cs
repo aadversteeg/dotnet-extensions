@@ -22,7 +22,18 @@ public abstract record BreakToken
 /// <param name="ChildIndex">The index of the child that continues on the next page.</param>
 /// <param name="ChildToken">Where to resume inside that child, or null to lay it out from its start (the break
 /// fell before the child).</param>
-public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : BreakToken;
+public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : BreakToken
+{
+    /// <summary>
+    /// True when a forced break before the child ended the page (<see cref="ForcedBreaks"/>): then the margins after
+    /// the break take space on the next page ("adjoining margins before the break are truncated, but margins after the
+    /// break are preserved", CSS Fragmentation 3 §5.2). False after every unforced break, where the margins adjoining
+    /// it are truncated — also when the page after a forced break ends before the same child again, so its margin takes
+    /// space on one page only (Chromium <c>AdjustMarginsForFragmentation</c>: "Leading block margins are truncated if
+    /// they come right after an unforced break"). Part of the position: two tokens differ when only this differs.
+    /// </summary>
+    public bool IsForced { get; init; }
+}
 
 /// <summary>The break token of <see cref="InlineLayout"/>: the first line of the next fragment.</summary>
 /// <param name="LineIndex">The index of the line that starts the next page.</param>
