@@ -1,0 +1,239 @@
+using System.Text;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Graphics;
+using Ave.Extensions.Documents.Images;
+using Ave.Extensions.Documents.PageModel;
+using Ave.Extensions.Documents.Render.Raster;
+using Ave.Extensions.Documents.TestSupport;
+
+namespace UnitTests.Extensions.Documents.Render.Raster;
+
+/// <summary>
+/// The raster back-end on hand-made page models: the contract and the options, the page size in pixels, and that each
+/// item lands where the page model says, with the ink the geometry says: rectangles by their exact overlap, glyphs by the
+/// area of their outlines and at their exact (unsnapped) positions, images pixel for pixel.
+/// </summary>
+public class PageRasterizerTests
+{
+    private static readonly DocumentMetadata Metadata = new("Title", null);
+
+    private static Page PageOf(double width, double height, params DrawItem[] items) => new(new Size(width, height), [.. items]);
+
+    private static RgbaImage Draw(Page page, double resolution = 72, Color? background = null) =>
+        PageRasterizer.Render(page, new RasterOptions(resolution) { Background = background ?? Color.White }).Value;
+
+    private static byte Red(RgbaImage image, int x, int y) => image.Pixels[((y * image.Width) + x) * 4];
+
+    /// <summary>The ink of an image drawn in black on white: Σ (255 − red) / 255, in pixels.</summary>
+    private static double Ink(RgbaImage image) => image.Pixels.Where((_, index) => index % 4 == 0).Sum(value => (255 - value) / 255.0);
+
+    private static GlyphRun Run(TrueTypeFont font, double size, Point origin, string text) =>
+        new(font, size, Color.Black, origin, [.. text.Select((character, index) => new PositionedGlyph(font.GlyphFor(new Rune(character)).Value, index * size, character.ToString()))]);
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-96)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public void A_resolution_that_is_not_a_positive_finite_number_is_refused(double resolution)
+    {
+        var result = PageRasterizer.Render(PageOf(10, 10), new RasterOptions(resolution));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(RasterErrorCodes.InvalidOptions);
+    }
+
+    [Theory]
+    [InlineData(10_000, 10_000, 300)]
+    [InlineData(1e300, 10, 96)]
+    [InlineData(10, 1e300, 96)]
+    public void A_page_with_more_pixels_than_a_canvas_holds_is_refused(double width, double height, double resolution)
+    {
+        var result = PageRasterizer.Render(PageOf(width, height), new RasterOptions(resolution));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(RasterErrorCodes.TooLarge);
+    }
+
+    [Fact]
+    public void A_page_model_that_breaks_the_contract_is_refused_under_the_raster_code()
+    {
+        var page = PageOf(10, 10, Run(TestFonts.Regular, 10, new Point(double.NaN, 5), "A"));
+
+        var single = PageRasterizer.Render(page, new RasterOptions());
+        var document = PageRasterizer.Render(new PageDocument(Metadata, [page]), new RasterOptions());
+
+        single.Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel);
+        document.Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel);
+        PageRasterizer.Render(new PageDocument(Metadata, []), new RasterOptions()).Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel);
+    }
+
+    [Theory]
+    [InlineData(595.2756, 841.8898, 96, 794, 1123)]
+    [InlineData(612, 792, 72, 612, 792)]
+    [InlineData(612, 792, 300, 2550, 3300)]
+    [InlineData(0.0001, 0.0001, 96, 1, 1)]
+    public void The_image_is_the_page_size_times_the_resolution_rounded_up(double width, double height, double resolution, int pixelsAcross, int pixelsDown)
+    {
+        PageRasterizer.PixelSize(new Size(width, height), resolution).Should().Be((pixelsAcross, pixelsDown));
+        var image = Draw(PageOf(width, height), resolution);
+        (image.Width, image.Height).Should().Be((pixelsAcross, pixelsDown));
+    }
+
+    [Fact]
+    public void The_background_is_white_unless_set_and_transparent_when_null()
+    {
+        Draw(PageOf(2, 2)).Pixels.Should().OnlyContain(value => value == 255);
+        PageRasterizer.Render(PageOf(2, 2), new RasterOptions(72) { Background = null }).Value.Pixels.Should().OnlyContain(value => value == 0);
+        Draw(PageOf(1, 1), background: new Color(1, 2, 3)).Pixels.Should().Equal(1, 2, 3, 255);
+    }
+
+    [Fact]
+    public void A_rectangle_covers_each_pixel_by_its_overlap_at_the_resolution()
+    {
+        // At 144 dpi a point is two pixels: (1.25, 0.5)–(2.5, 2) points is (2.5, 1)–(5, 4) pixels.
+        var image = Draw(PageOf(4, 3, new FillRectangle(new Rect(new Point(1.25, 0.5), new Size(1.25, 1.5)), Color.Black)), 144);
+
+        Red(image, 1, 1).Should().Be(255);
+        Red(image, 2, 1).Should().Be(127, "half of the pixel: 255 − 128");
+        Red(image, 3, 2).Should().Be(0);
+        Red(image, 4, 3).Should().Be(0);
+        Red(image, 5, 2).Should().Be(255);
+        Red(image, 3, 0).Should().Be(255);
+        Ink(image).Should().BeApproximately(2.5 * 3, 4 * 0.5 / 255 + 1e-9);
+    }
+
+    [Theory]
+    [InlineData('H')]
+    [InlineData('o')]
+    [InlineData('&')]
+    public void A_glyph_puts_down_the_area_of_its_outline(char character)
+    {
+        var font = TestFonts.Regular;
+        var shape = font.Shape(font.GlyphFor(new Rune(character)).Value).Value;
+        var size = 40.0;
+        var image = Draw(PageOf(60, 60, Run(font, size, new Point(10.3, 45.7), character.ToString())), 72);
+
+        // The area enclosed by quadratic curves: the polygon of the on-curve points plus, per curve, 2/3 of the triangle
+        // its control point makes with its ends. Scaled from design units to pixels (72 dpi: points are pixels).
+        var area = Math.Abs(shape.Contours.Sum(contour =>
+        {
+            var segments = contour.Segments();
+            var sum = 0.0;
+            var from = segments.Start;
+            foreach (var segment in segments.Segments)
+            {
+                sum += (from.X * segment.End.Y) - (segment.End.X * from.Y);
+                if (segment.Control is { } c)
+                {
+                    sum += 2.0 / 3 * (((c.X - from.X) * (segment.End.Y - from.Y)) - ((segment.End.X - from.X) * (c.Y - from.Y)));
+                }
+
+                from = segment.End;
+            }
+
+            return sum / 2;
+        })) * Math.Pow(size / font.Metrics.UnitsPerEm, 2);
+
+        var edgePixels = image.Pixels.Where((value, index) => index % 4 == 0 && value is > 0 and < 255).Count();
+        Ink(image).Should().BeApproximately(area, (edgePixels * 0.5 / 255) + (edgePixels * FlatteningTolerance), $"'{character}' covers {area:F2} square pixels");
+    }
+
+    /// <summary>The flattening tolerance of Ave.Extensions.Documents.Graphics (1/64 pixel), as a bound on lost area per
+    /// pixel of outline.</summary>
+    private const double FlatteningTolerance = 1.0 / 64;
+
+    [Fact]
+    public void A_glyph_moved_by_whole_pixels_gives_the_same_pixels_moved()
+    {
+        var font = TestFonts.Regular;
+        var at = Draw(PageOf(40, 40, Run(font, 20, new Point(10.3, 30.6), "e")), 72);
+        var moved = Draw(PageOf(40, 40, Run(font, 20, new Point(13.3, 28.6), "e")), 72);
+
+        for (var y = 0; y < 30; y++)
+        {
+            for (var x = 0; x < 30; x++)
+            {
+                Red(moved, x + 3, y).Should().Be(Red(at, x, y + 2), $"pixel ({x}, {y})");
+            }
+        }
+    }
+
+    [Fact]
+    public void A_glyph_is_drawn_at_its_exact_position_without_snapping()
+    {
+        // Sixteen positions 1/16 pixel apart, across and down: no two give the same pixels, so no position is rounded to
+        // a coarser grid (PDF viewers round glyph positions to 1/8 or 1/4 pixel, or to whole pixels); the ink stays the
+        // glyph's area, to the 8-bit rounding of the partly covered pixels.
+        var font = TestFonts.Regular;
+        var images = Enumerable.Range(0, 16)
+            .Select(step => Draw(PageOf(40, 40, Run(font, 20, new Point(10 + (step / 16.0), 30 + (step / 32.0)), "e")), 72))
+            .ToList();
+
+        images.Select(image => Convert.ToHexString(image.Pixels.AsSpan())).Distinct().Should().HaveCount(16);
+        foreach (var image in images)
+        {
+            var edgePixels = image.Pixels.Where((value, index) => index % 4 == 0 && value is > 0 and < 255).Count();
+            Ink(image).Should().BeApproximately(Ink(images[0]), 2 * edgePixels * 0.5 / 255);
+        }
+    }
+
+    [Fact]
+    public void An_image_fills_its_rectangle_pixel_for_pixel()
+    {
+        // rgba8.png is 7 × 5 pixels; drawn into 7 × 5 points at 72 dpi on a transparent page, every pixel is the image's.
+        var image = TestImages.Load("rgba8.png");
+        var raster = (RasterImage)image;
+        var drawn = PageRasterizer.Render(PageOf(9, 7, new DrawImage(new Rect(new Point(1, 2), new Size(7, 5)), image)), new RasterOptions(72) { Background = null }).Value;
+
+        for (var y = 0; y < 5; y++)
+        {
+            for (var x = 0; x < 7; x++)
+            {
+                var offset = (((y + 2) * drawn.Width) + x + 1) * 4;
+                var alpha = raster.Alpha!.Value[(y * 7) + x];
+                drawn.Pixels[offset + 3].Should().Be(alpha);
+                if (alpha > 0)
+                {
+                    drawn.Pixels.Skip(offset).Take(3).Should().Equal(raster.Samples.Skip(((y * 7) + x) * 3).Take(3), $"pixel ({x}, {y})");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void A_JPEG_is_decoded_and_drawn()
+    {
+        var jpeg = TestImages.Load("baseline-rgb.jpg");
+        var samples = ImageDecoder.DecodeSamples(jpeg).Value;
+
+        var drawn = Draw(PageOf(40, 30, new DrawImage(new Rect(new Point(0, 0), new Size(40, 30)), jpeg)), 72);
+
+        drawn.Pixels.Where((_, index) => index % 4 != 3).Should().Equal(samples.Samples);
+    }
+
+    [Fact]
+    public void Markers_draw_nothing()
+    {
+        var start = new StructureStart(new NodeId(1), SemanticRole.Paragraph, new SourceLocation("x.cs", 1));
+
+        var image = Draw(PageOf(3, 3, new ArtifactStart(ArtifactKind.Layout), ArtifactEnd.Instance, start, new StructureEnd(new NodeId(1))));
+
+        image.Pixels.Should().OnlyContain(value => value == 255);
+    }
+
+    [Fact]
+    public void A_glyph_whose_outline_cannot_be_decoded_is_the_font_layer_s_error()
+    {
+        var bytes = FontFiles.WithGlyphs(TestFonts.Bytes("Lato-Regular.ttf"), [[], [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]]);
+        var font = FontParser.Parse(bytes).Value;
+        var run = new GlyphRun(font, 10, Color.Black, new Point(1, 8), [new PositionedGlyph(new GlyphId(1), 0, "x")]);
+
+        var result = PageRasterizer.Render(PageOf(10, 10, run), new RasterOptions());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Is(FontErrorCodes.Parse._).Should().BeTrue();
+        result.Error.Metadata!.Should().ContainKey(ErrorMetadataKeys.FontName);
+    }
+}

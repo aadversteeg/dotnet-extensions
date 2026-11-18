@@ -10,6 +10,7 @@
   <Project Path="Ave.Extensions.Documents.PageModel/Ave.Extensions.Documents.PageModel.csproj" />
   <Project Path="Ave.Extensions.Documents.Pdf/Ave.Extensions.Documents.Pdf.csproj" />
   <Project Path="Ave.Extensions.Documents.Render.Pdf/Ave.Extensions.Documents.Render.Pdf.csproj" />
+  <Project Path="Ave.Extensions.Documents.Render.Raster/Ave.Extensions.Documents.Render.Raster.csproj" />
   <Project Path="Ave.Extensions.Documents.TestSupport/Ave.Extensions.Documents.TestSupport.csproj" />
   <Project Path="Ave.Extensions.Documents.Typesetting/Ave.Extensions.Documents.Typesetting.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Architecture/UnitTests.Extensions.Documents.Architecture.csproj" />
@@ -23,6 +24,7 @@
   <Project Path="UnitTests.Extensions.Documents.PageModel/UnitTests.Extensions.Documents.PageModel.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Pdf/UnitTests.Extensions.Documents.Pdf.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Render.Pdf/UnitTests.Extensions.Documents.Render.Pdf.csproj" />
+  <Project Path="UnitTests.Extensions.Documents.Render.Raster/UnitTests.Extensions.Documents.Render.Raster.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Samples/UnitTests.Extensions.Documents.Samples.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Typesetting/UnitTests.Extensions.Documents.Typesetting.csproj" />
   <Folder Name="/samples/">

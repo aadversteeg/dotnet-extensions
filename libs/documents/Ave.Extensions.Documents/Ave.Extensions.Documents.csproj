@@ -11,6 +11,7 @@
     <PackageReference Include="Ave.Extensions.Documents.Fluent" />
     <PackageReference Include="Ave.Extensions.Documents.Layout" />
     <PackageReference Include="Ave.Extensions.Documents.Render.Pdf" />
+    <PackageReference Include="Ave.Extensions.Documents.Render.Raster" />
   </ItemGroup>
 
 </Project>

@@ -30,6 +30,7 @@
     <PackageVersion Include="Ave.Extensions.Documents.PageModel" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Layout" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Render.Pdf" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Render.Raster" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Fluent" Version="0.1.0-preview.2" />
   </ItemGroup>
 
