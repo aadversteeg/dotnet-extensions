@@ -84,6 +84,15 @@ paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with th
 is left. When the document shows its page count, it repeats the whole document until that count settles (at most 5
 passes); otherwise one pass is all.
 
+The four algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
+that another box's layout returned. Each algorithm checks the token it is given, and a token it cannot have returned for
+the box — another algorithm's kind, a child, line, row or cell the box does not have, a height shown that is negative or
+not finite — is the error `Documents.Layout.InvalidBreakToken`, never an exception; a token inside a child or a cell is
+checked by that child's algorithm, and a table's token does not carry its grid over to another table
+(`BreakTokenCheckTests`). The token types keep their public constructors: a check is needed in any case, because a
+caller can pass one box's token to another box, so closing the constructors would not close the hole. Pagination never
+meets the error: it hands each box the token that box's own layout returned.
+
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
 engine ships four algorithms (flow, inline, tracks, image) and registering another is internal

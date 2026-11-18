@@ -37,12 +37,12 @@ public static class InlineLayout
     /// <returns>The fragment and continuation, NoRoom, or an error (missing font or glyph, with the run's location).</returns>
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming)
     {
-        var start = incoming switch
+        if (incoming is not null && InvalidToken(incoming) is { } reason)
         {
-            null => new InlineBreakToken(0),
-            InlineBreakToken token => token,
-            _ => throw new ArgumentException($"Inline received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
-        };
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, incoming, reason));
+        }
+
+        var start = (InlineBreakToken?)incoming ?? new InlineBreakToken(0);
 
         // A first line taller than the page area that starts the page is sliced when the profile says so (MonolithicSlices).
         var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
@@ -55,6 +55,19 @@ public static class InlineLayout
                     _ => throw new ArgumentException($"Inline received a {breakAt.GetType().Name} it did not report.", nameof(space)),
                 }))));
     }
+
+    /// <summary>Why a paragraph cannot resume from <paramref name="token"/>, or null when it can: a token of another
+    /// algorithm, a negative line index, or a height shown that no slices can have shown (negative, not finite, or shown
+    /// without a slice). A line index past the last line is a position the paragraph can be given: the next page breaks
+    /// its lines again in that page's width, and the paragraph is then complete.</summary>
+    private static string? InvalidToken(BreakToken token) => token switch
+    {
+        not InlineBreakToken => "it is the token of another layout algorithm",
+        InlineBreakToken { LineIndex: < 0 } line => $"line {line.LineIndex} is outside the paragraph",
+        InlineBreakToken line when !(line.Shown >= 0 && double.IsFinite(line.Shown)) || line.Slices < 0 || (line.Shown > 0) != (line.Slices > 0) =>
+            $"{line.Slices} slices cannot have shown {InvariantNumber.Format(line.Shown)}pt of a line",
+        _ => null,
+    };
 
     /// <summary>The paragraph's strut (CSS 2.1 §10.8.1), with its font resolved like a run's; null when the model gives
     /// the paragraph no text properties (<see cref="BoxStyle.Text"/>). A missing font is the error a run would get, at the

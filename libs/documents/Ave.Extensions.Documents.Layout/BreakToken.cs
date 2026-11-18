@@ -7,13 +7,15 @@ namespace Ave.Extensions.Documents.Layout;
 /// <summary>
 /// Where a box was broken at the end of a page, so its layout can continue on the next page. Break tokens are the
 /// only state pagination carries from page to page, so every layout call stays a pure function. Each of the four
-/// algorithms defines its own token type and only ever receives tokens it produced itself. Tokens are values: two
-/// tokens for the same position are equal.
+/// algorithms defines its own token type; pagination hands each box the token that box's own layout returned. A caller
+/// of an algorithm can build a token, or pass one box's token to another box: the algorithm checks the token it is
+/// given, and one it cannot have returned for the box (another algorithm's kind, a position the box does not have) is
+/// the error <c>Documents.Layout.InvalidBreakToken</c>, never an exception. Tokens are values: two tokens for the same
+/// position are equal.
 /// </summary>
 public abstract record BreakToken
 {
-    // Only the algorithms of this assembly define tokens (one type each); a token an algorithm did not produce is a
-    // programming error, never input.
+    // Only the algorithms of this assembly define token types (one each).
     private protected BreakToken()
     {
     }

@@ -50,6 +50,18 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, contract)
             .WithSource(box.Source);
 
+    /// <summary>A break token the box's algorithm cannot have returned for it (<see cref="LayoutErrorCodes.InvalidBreakToken"/>).</summary>
+    /// <param name="box">The box the token was given with.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="reason">What does not belong to the box, for the message.</param>
+    public static Error InvalidBreakToken(Box box, BreakToken token, string reason) =>
+        new Error(
+                LayoutErrorCodes.InvalidBreakToken,
+                $"{Describe(box)} cannot resume from the {token.GetType().Name} it was given: {reason}. A break token resumes only the box whose layout returned it.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, token.GetType().Name)
+            .WithSource(box.Source);
+
     /// <summary>Content taller than the page area that would need more than <see cref="MonolithicSlices.MaxSlices"/>
     /// slices.</summary>
     /// <param name="box">The box the content belongs to.</param>

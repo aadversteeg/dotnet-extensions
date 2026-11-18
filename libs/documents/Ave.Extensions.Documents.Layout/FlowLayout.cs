@@ -73,14 +73,14 @@ public static class FlowLayout
             return Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidContent(box, "flow layout needs box children; text belongs in an inline box."));
         }
 
-        var resume = incoming switch
-        {
-            null => new FlowBreakToken(0, null),
-            FlowBreakToken token => token,
-            _ => throw new ArgumentException($"Flow received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
-        };
-
         var children = box.Children.Cast<Box>().ToImmutableArray();
+        if (incoming is not null && InvalidToken(incoming, children.Length) is { } reason)
+        {
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, incoming, reason));
+        }
+
+        var resume = (FlowBreakToken?)incoming ?? new FlowBreakToken(0, null);
+
         return SlicedBox.Layout(box, space, incoming, resume, (width, height, breakAt) =>
             StackChildren(environment, box, space, incoming, resume, children, width, height, breakAt switch
             {
@@ -89,6 +89,19 @@ public static class FlowLayout
                 _ => throw new ArgumentException($"Flow received a {breakAt.GetType().Name} it did not report.", nameof(space)),
             }));
     }
+
+    /// <summary>Why a flow box of <paramref name="childCount"/> children cannot resume from <paramref name="token"/>, or null
+    /// when it can: a token of another algorithm, or a child index outside the box. The index may be the child count (the
+    /// box is complete) only with nothing to resume inside a child. What lies inside the child is the child's algorithm's
+    /// to check.</summary>
+    private static string? InvalidToken(BreakToken token, int childCount) => token switch
+    {
+        not FlowBreakToken => "it is the token of another layout algorithm",
+        FlowBreakToken { ChildIndex: < 0 } flow => $"child {flow.ChildIndex} is outside the box's {childCount} children",
+        FlowBreakToken flow when flow.ChildIndex > childCount || (flow.ChildIndex == childCount && flow.ChildToken is not null) =>
+            $"child {flow.ChildIndex} is outside the box's {childCount} children",
+        _ => null,
+    };
 
     /// <summary>
     /// The intrinsic widths of a flow box (CSS Sizing 3 §5.1, contributions §5.2): the widest child decides, each child counted with its

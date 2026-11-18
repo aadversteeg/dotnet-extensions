@@ -34,6 +34,13 @@ public static class LayoutErrorCodes
     /// SourceLine of the first page-count reference.</summary>
     public static readonly ErrorCode NotConverging = _ / "NotConverging";
 
+    /// <summary>A break token a layout algorithm cannot have returned for the box it is given: a token of another
+    /// algorithm's kind, or a position the box does not have (a child, line, row or cell outside it, a height shown that is
+    /// negative or not finite). Only a caller of the algorithms themselves (<c>FlowLayout.Layout</c> and the other three)
+    /// meets it: pagination hands each box the token that box's own layout returned. Metadata: Node, Value (the token's
+    /// type), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode InvalidBreakToken = _ / "InvalidBreakToken";
+
     /// <summary>A defect of the engine, never a property of the document: a layout algorithm broke the contract every
     /// algorithm keeps (it made no progress from one page to the next, reported no room at the start of a page, or did not
     /// break at the early break it reported). Reported instead of an exception, so pagination always ends and the caller

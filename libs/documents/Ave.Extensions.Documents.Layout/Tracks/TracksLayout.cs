@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
@@ -38,17 +38,51 @@ public static class TracksLayout
     {
         if (incoming is not (null or TracksBreakToken))
         {
-            throw new ArgumentException($"Tracks received a {incoming.GetType().Name} it did not produce.", nameof(incoming));
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, incoming, "it is the token of another layout algorithm"));
         }
 
+        // A token carries the grid of the table whose layout returned it; another table prepares its own.
         var token = (TracksBreakToken?)incoming;
-        var preparation = token?.Prepared is { } prepared && prepared.AvailableWidth == space.AvailableWidth
+        var preparation = token?.Prepared is { } prepared && ReferenceEquals(prepared.Table, box) && prepared.AvailableWidth == space.AvailableWidth
             ? Result<TablePreparation, Error>.Success(prepared)
             : TableGrid.Build(box).OnSuccessBind(grid => Prepare(environment, box, grid, space.AvailableWidth));
-        return preparation.OnSuccessBind(table => TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets }, space, token)
+        return preparation.OnSuccessBind(table => token is not null && InvalidToken(table.Grid, token) is { } reason
+            ? Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, token, reason))
+            : TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets }, space, token)
             .OnSuccessMap(result => result is LayoutResult.Placed { Continuation: TracksBreakToken next } placed
                 ? placed with { Continuation = next with { Prepared = table } }
                 : result));
+    }
+
+    /// <summary>
+    /// Why a table cannot resume from <paramref name="token"/>, or null when it can: the next row is a body row of the
+    /// table or its end, and every cut cell is a cell of the table, given once, that covers the next row (it started
+    /// before it, or in it when the break fell inside the row). What lies inside a cell is the cell's algorithm's to
+    /// check. Linear in the cut cells.
+    /// </summary>
+    private static string? InvalidToken(TableGrid grid, TracksBreakToken token)
+    {
+        if (token.NextRow < grid.HeaderRowCount || token.NextRow > grid.Rows.Length)
+        {
+            return $"row {token.NextRow} is not a body row of the table's {grid.Rows.Length} rows";
+        }
+
+        var seen = new HashSet<int>();
+        foreach (var cut in token.Cells)
+        {
+            if (cut.Cell < 0 || cut.Cell >= grid.Cells.Length || !seen.Add(cut.Cell))
+            {
+                return $"cell {cut.Cell} is not a cell of the table, or is given twice";
+            }
+
+            var cell = grid.Cells[cut.Cell];
+            if (cell.LastRow < token.NextRow || cell.Row > token.NextRow || (cell.Row == token.NextRow && !token.RowIsSplit))
+            {
+                return $"cell {cut.Cell} does not continue in row {token.NextRow}";
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -131,19 +165,21 @@ public static class TracksLayout
             }
 
             var lineX = x.MoveToImmutable();
-            return Result<TablePreparation, Error>.Success(new TablePreparation(grid, lineX, lines, lineX[^1] + lines[^1] / 2, availableWidth));
+            return Result<TablePreparation, Error>.Success(new TablePreparation(box, grid, lineX, lines, lineX[^1] + lines[^1] / 2, availableWidth));
         });
     }
 }
 
 /// <summary>What a tracks box's pages share, prepared once per layout pass: the grid and the placed columns.</summary>
+/// <param name="Table">The tracks box they were prepared for (compared by reference: a token of another table does not
+/// carry its grid over).</param>
 /// <param name="Grid">The grid.</param>
 /// <param name="LineX">The x of every vertical grid line's centre, from the table's left edge; column j runs from
 /// LineX[j] to LineX[j + 1].</param>
 /// <param name="LineWidths">The width of every vertical grid line.</param>
 /// <param name="Width">The table's border-box width.</param>
 /// <param name="AvailableWidth">The width the columns were placed in; a page of another width prepares again.</param>
-internal sealed record TablePreparation(TableGrid Grid, ImmutableArray<double> LineX, ImmutableArray<double> LineWidths, double Width, double AvailableWidth);
+internal sealed record TablePreparation(Box Table, TableGrid Grid, ImmutableArray<double> LineX, ImmutableArray<double> LineWidths, double Width, double AvailableWidth);
 
 /// <summary>A tracks box with its grid and columns placed, on the current page: everything a page of it needs.</summary>
 /// <param name="Environment">The fonts, algorithms and current page.</param>
