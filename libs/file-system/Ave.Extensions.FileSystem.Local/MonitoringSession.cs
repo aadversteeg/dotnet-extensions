@@ -190,13 +190,15 @@ namespace Ave.Extensions.FileSystem.Local
                     }
 
                     var physicalPath = systemPathResult.Value;
-                    if (!Directory.Exists(physicalPath))
+                    if (!Directory.Exists(WindowsLongPath.ToSystemPath(physicalPath)))
                     {
                         PublishError(new DirectoryNotFoundException($"Directory not found: {_options.Path.Value}"));
                         return;
                     }
 
-                    // Create single watcher for all files
+                    // Create single watcher for all files. The watcher gets the path without the long path prefix:
+                    // on .NET Framework it refuses a prefixed path (NotSupportedException), so the watched folder
+                    // itself must stay below the folder limit there. Changes deeper down arrive with long paths.
                     _watcher = CreateWatcher(physicalPath);
                     if (_watcher != null)
                     {
@@ -259,7 +261,7 @@ namespace Ave.Extensions.FileSystem.Local
                         break;
                 }
 
-                var canonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
+                var canonicalPathResult = _pathMapper.MapToCanonicalPath(WindowsLongPath.RemovePrefix(e.FullPath));
                 if (canonicalPathResult.IsFailure)
                 {
                     // Path mapping failure is a critical error in monitoring
@@ -285,8 +287,8 @@ namespace Ave.Extensions.FileSystem.Local
             try
             {
                 // Emit both delete (old name) and create (new name) events for renames
-                var oldCanonicalPathResult = _pathMapper.MapToCanonicalPath(e.OldFullPath);
-                var newCanonicalPathResult = _pathMapper.MapToCanonicalPath(e.FullPath);
+                var oldCanonicalPathResult = _pathMapper.MapToCanonicalPath(WindowsLongPath.RemovePrefix(e.OldFullPath));
+                var newCanonicalPathResult = _pathMapper.MapToCanonicalPath(WindowsLongPath.RemovePrefix(e.FullPath));
                 
                 if (oldCanonicalPathResult.IsFailure)
                 {
@@ -339,7 +341,7 @@ namespace Ave.Extensions.FileSystem.Local
                         $"Failed to map canonical path to system path during filtering: {systemPathResult.Error.Message}");
                 }
 
-                var systemPath = systemPathResult.Value;
+                var systemPath = WindowsLongPath.ToSystemPath(systemPathResult.Value);
 
                 // Check hidden/system file filters
                 if (File.Exists(systemPath))

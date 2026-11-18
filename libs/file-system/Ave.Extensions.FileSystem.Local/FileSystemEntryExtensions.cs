@@ -24,9 +24,10 @@ namespace Ave.Extensions.FileSystem.Local
             if (pathMapper == null)
                 throw new ArgumentNullException(nameof(pathMapper));
 
-            var result = pathMapper.MapToCanonicalPath(fileInfo.FullName);
+            var fullName = WindowsLongPath.RemovePrefix(fileInfo.FullName);
+            var result = pathMapper.MapToCanonicalPath(fullName);
             if (result.IsFailure)
-                throw new ArgumentException($"Invalid file path: {fileInfo.FullName}", nameof(fileInfo));
+                throw new ArgumentException($"Invalid file path: {fullName}", nameof(fileInfo));
             
             var path = result.Value;
 
@@ -57,9 +58,10 @@ namespace Ave.Extensions.FileSystem.Local
             if (pathMapper == null)
                 throw new ArgumentNullException(nameof(pathMapper));
 
-            var result = pathMapper.MapToCanonicalPath(directoryInfo.FullName);
+            var fullName = WindowsLongPath.RemovePrefix(directoryInfo.FullName);
+            var result = pathMapper.MapToCanonicalPath(fullName);
             if (result.IsFailure)
-                throw new ArgumentException($"Invalid directory path: {directoryInfo.FullName}", nameof(directoryInfo));
+                throw new ArgumentException($"Invalid directory path: {fullName}", nameof(directoryInfo));
             
             var path = result.Value;
 

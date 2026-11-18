@@ -65,8 +65,8 @@ dotnet test dotnet-extensions.slnx -p:UseNet48=true
 In that mode the test projects target `net48` instead of `net10.0`. Every test project runs `NS20-001`, and also
 `NET48-001`, which fails unless the tests run on .NET Framework. A few APIs that the test code uses do not exist on
 .NET Framework; `eng/Net48Polyfills.cs` provides them in this mode only. On .NET Framework,
-`Ave.Extensions.FileSystem.Local` cannot use long paths unless Windows allows it; see "Long paths on .NET
-Framework" in the [file-system README](libs/file-system/README.md#long-paths-on-net-framework).
+`Ave.Extensions.FileSystem.Local` handles long paths itself, within the limits in "Long paths on .NET Framework" in
+the [file-system README](libs/file-system/README.md#long-paths-on-net-framework).
 
 Use one switch at a time; together they stop the build with an error. `UnitTests.Extensions.ErrorPaths.AspNetCore`
 and the documents tests are left as they are in all three modes, because their libraries have no `netstandard2.0`
