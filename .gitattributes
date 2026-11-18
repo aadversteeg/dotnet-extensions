@@ -9,5 +9,6 @@
 # checkout, so a Windows checkout does not turn a generated document or a measured file into a different one.
 libs/documents/docs/html-css-profile.md text eol=lf
 libs/documents/tools/reference/chromium/computed-style/** text eol=lf
+libs/documents/tools/reference/chromium/html-tree/** text eol=lf
 libs/documents/Ave.Extensions.Documents.Html/UserAgent/*.css text eol=lf
 libs/documents/Ave.Extensions.Documents.Html.Parsing/Tokenizing/*.txt text eol=lf

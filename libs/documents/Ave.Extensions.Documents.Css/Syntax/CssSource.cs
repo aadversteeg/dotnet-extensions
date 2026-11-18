@@ -16,11 +16,14 @@ internal sealed class CssSource
 {
     private readonly int[] _lineStarts;
 
-    private CssSource(string text, int[] lineStarts, TextPosition origin)
+    private readonly Func<int, TextPosition>? _positions;
+
+    private CssSource(string text, int[] lineStarts, TextPosition origin, Func<int, TextPosition>? positions)
     {
         Text = text;
         _lineStarts = lineStarts;
         Origin = origin;
+        _positions = positions;
     }
 
     /// <summary>The text, carriage returns normalised.</summary>
@@ -33,8 +36,10 @@ internal sealed class CssSource
     /// <summary>Reads a text.</summary>
     /// <param name="text">The style sheet.</param>
     /// <param name="origin">Where it starts in its document (null: 1:1).</param>
+    /// <param name="positions">Where each index was written, when it is not one run from the origin (an HTML
+    /// attribute value); null to count from the origin.</param>
     /// <returns>The source.</returns>
-    public static CssSource Of(string text, TextPosition? origin = null)
+    public static CssSource Of(string text, TextPosition? origin = null, Func<int, TextPosition>? positions = null)
     {
         var normalised = text.Contains('\r', StringComparison.Ordinal) ? Normalise(text) : text;
         var starts = new List<int> { 0 };
@@ -46,13 +51,19 @@ internal sealed class CssSource
             }
         }
 
-        return new CssSource(normalised, [.. starts], origin ?? TextPosition.Start);
+        // The map is of the text as given; it holds no carriage return when it comes from HTML, so the indices agree.
+        return new CssSource(normalised, [.. starts], origin ?? TextPosition.Start, normalised.Length == text.Length ? positions : null);
     }
 
     /// <summary>The line and column of an index (the length of the text, the end, is a position too), counted from
     /// <see cref="Origin"/>: the first line continues the origin's line at its column.</summary>
     public TextPosition PositionOf(int index)
     {
+        if (_positions is not null)
+        {
+            return _positions(index);
+        }
+
         var line = Array.BinarySearch(_lineStarts, index);
         if (line < 0)
         {

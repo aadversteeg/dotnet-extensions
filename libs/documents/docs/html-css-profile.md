@@ -8,7 +8,14 @@ reference is Chromium 159; see `docs/architecture.md`, "HTML/CSS front-end".
 
 ## Properties
 
-Longhands with every value the engine supports. A value CSS defines that is not listed is refused.
+Longhands with every value the engine supports. A value CSS defines that is not listed is refused. So is a value that
+does not match the engine's grammar of a known property: a typing error such as `color: 12px`, or valid CSS beyond this
+profile such as `vertical-align: 5px`. The engine cannot tell the two apart, and a browser drops the first and uses the
+second, so both get the one answer "not valid or not supported in this profile". The same holds for a selector or media
+query that does not parse and an unknown at-rule. Dropped with a warning, as in a browser, is only what CSS Syntax 3
+recovers from (an unclosed block, a declaration without a colon), a top-level `!` other than `!important`, a rule in a
+place CSS does not allow, another browser engine's property (`-moz-`, `-ms-`, `-o-`) and a `var()` that is cyclic or
+names nothing.
 
 | Property | Inherited | Initial | Supported values | Defined in |
 | --- | --- | --- | --- | --- |
@@ -55,7 +62,7 @@ Longhands with every value the engine supports. A value CSS defines that is not 
 | `max-width` | no | `none` | `none \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
 | `min-width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
 | `orphans` | yes | `2` | `<integer [1,∞]>` | CSS Fragmentation 3 §3.3 |
-| `outline-color` | no | `currentcolor` | `<color> \| auto (nothing is drawn: outline-style is only none)` | CSS UI 4 §3.4 |
+| `outline-color` | no | `currentcolor` | `<color> (nothing is drawn: outline-style is only none; Chromium 159 does not take auto)` | CSS UI 4 §3.4 |
 | `outline-offset` | no | `0pt` | `<length> (nothing is drawn: outline-style is only none)` | CSS UI 4 §3.5 |
 | `outline-width` | no | `2.25pt` | `<line-width> (nothing is drawn: outline-style is only none)` | CSS UI 4 §3.2 |
 | `overflow-x` | no | `visible` | `visible \| hidden \| clip` | CSS Overflow 3 §3.1 |
@@ -214,94 +221,96 @@ the user-agent style sheet are not refused); any other value is refused.
 
 ### Ignored by rule
 
-| Property | Why |
-| --- | --- |
-| `-moz-osx-font-smoothing` | screen rendering hints; they do not change what is drawn on a page |
-| `-moz-text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |
-| `-ms-text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |
-| `-webkit-appearance` | interaction with a pointer or keyboard; a static document has none |
-| `-webkit-font-smoothing` | screen rendering hints; they do not change what is drawn on a page |
-| `-webkit-tap-highlight-color` | interaction with a pointer or keyboard; a static document has none |
-| `-webkit-text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |
-| `-webkit-touch-callout` | interaction with a pointer or keyboard; a static document has none |
-| `-webkit-user-drag` | interaction with a pointer or keyboard; a static document has none |
-| `-webkit-user-modify` | interaction with a pointer or keyboard; a static document has none |
-| `-webkit-user-select` | interaction with a pointer or keyboard; a static document has none |
-| `accent-color` | interaction with a pointer or keyboard; a static document has none |
-| `animation` | animation and transition; a static document shows the state without them |
-| `animation-composition` | animation and transition; a static document shows the state without them |
-| `animation-delay` | animation and transition; a static document shows the state without them |
-| `animation-direction` | animation and transition; a static document shows the state without them |
-| `animation-duration` | animation and transition; a static document shows the state without them |
-| `animation-fill-mode` | animation and transition; a static document shows the state without them |
-| `animation-iteration-count` | animation and transition; a static document shows the state without them |
-| `animation-name` | animation and transition; a static document shows the state without them |
-| `animation-play-state` | animation and transition; a static document shows the state without them |
-| `animation-range` | animation and transition; a static document shows the state without them |
-| `animation-range-end` | animation and transition; a static document shows the state without them |
-| `animation-range-start` | animation and transition; a static document shows the state without them |
-| `animation-timeline` | animation and transition; a static document shows the state without them |
-| `animation-timing-function` | animation and transition; a static document shows the state without them |
-| `appearance` | interaction with a pointer or keyboard; a static document has none |
-| `caret` | interaction with a pointer or keyboard; a static document has none |
-| `caret-animation` | interaction with a pointer or keyboard; a static document has none |
-| `caret-color` | interaction with a pointer or keyboard; a static document has none |
-| `caret-shape` | interaction with a pointer or keyboard; a static document has none |
-| `cursor` | interaction with a pointer or keyboard; a static document has none |
-| `field-sizing` | interaction with a pointer or keyboard; a static document has none |
-| `font-smooth` | screen rendering hints; they do not change what is drawn on a page |
-| `forced-color-adjust` | screen rendering hints; they do not change what is drawn on a page |
-| `interactivity` | interaction with a pointer or keyboard; a static document has none |
-| `overflow-anchor` | scrolling; a paged document does not scroll |
-| `overscroll-behavior` | scrolling; a paged document does not scroll |
-| `overscroll-behavior-block` | scrolling; a paged document does not scroll |
-| `overscroll-behavior-inline` | scrolling; a paged document does not scroll |
-| `overscroll-behavior-x` | scrolling; a paged document does not scroll |
-| `overscroll-behavior-y` | scrolling; a paged document does not scroll |
-| `pointer-events` | interaction with a pointer or keyboard; a static document has none |
-| `resize` | interaction with a pointer or keyboard; a static document has none |
-| `scroll-behavior` | scrolling; a paged document does not scroll |
-| `scroll-margin` | scrolling; a paged document does not scroll |
-| `scroll-margin-block` | scrolling; a paged document does not scroll |
-| `scroll-margin-bottom` | scrolling; a paged document does not scroll |
-| `scroll-margin-inline` | scrolling; a paged document does not scroll |
-| `scroll-margin-left` | scrolling; a paged document does not scroll |
-| `scroll-margin-right` | scrolling; a paged document does not scroll |
-| `scroll-margin-top` | scrolling; a paged document does not scroll |
-| `scroll-padding` | scrolling; a paged document does not scroll |
-| `scroll-padding-block` | scrolling; a paged document does not scroll |
-| `scroll-padding-bottom` | scrolling; a paged document does not scroll |
-| `scroll-padding-inline` | scrolling; a paged document does not scroll |
-| `scroll-padding-left` | scrolling; a paged document does not scroll |
-| `scroll-padding-right` | scrolling; a paged document does not scroll |
-| `scroll-padding-top` | scrolling; a paged document does not scroll |
-| `scroll-snap-align` | scrolling; a paged document does not scroll |
-| `scroll-snap-stop` | scrolling; a paged document does not scroll |
-| `scroll-snap-type` | scrolling; a paged document does not scroll |
-| `scroll-timeline` | scrolling; a paged document does not scroll |
-| `scroll-timeline-axis` | scrolling; a paged document does not scroll |
-| `scroll-timeline-name` | scrolling; a paged document does not scroll |
-| `scrollbar-color` | scrolling; a paged document does not scroll |
-| `scrollbar-gutter` | scrolling; a paged document does not scroll |
-| `scrollbar-width` | scrolling; a paged document does not scroll |
-| `speak` | screen rendering hints; they do not change what is drawn on a page |
-| `speak-as` | screen rendering hints; they do not change what is drawn on a page |
-| `text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |
-| `touch-action` | interaction with a pointer or keyboard; a static document has none |
-| `transition` | animation and transition; a static document shows the state without them |
-| `transition-behavior` | animation and transition; a static document shows the state without them |
-| `transition-delay` | animation and transition; a static document shows the state without them |
-| `transition-duration` | animation and transition; a static document shows the state without them |
-| `transition-property` | animation and transition; a static document shows the state without them |
-| `transition-timing-function` | animation and transition; a static document shows the state without them |
-| `user-select` | interaction with a pointer or keyboard; a static document has none |
-| `view-timeline` | scrolling; a paged document does not scroll |
-| `view-timeline-axis` | scrolling; a paged document does not scroll |
-| `view-timeline-name` | scrolling; a paged document does not scroll |
-| `view-transition-class` | animation and transition; a static document shows the state without them |
-| `view-transition-name` | animation and transition; a static document shows the state without them |
-| `will-change` | animation and transition; a static document shows the state without them |
-| `zoom` | screen rendering hints; they do not change what is drawn on a page |
+Each was checked against Chromium 159's print rendering; the values that change it are refused instead.
+
+| Property | Why | Refused instead |
+| --- | --- | --- |
+| `-moz-osx-font-smoothing` | screen rendering hints; they do not change what is drawn on a page |  |
+| `-moz-text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |  |
+| `-ms-text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |  |
+| `-webkit-appearance` | interaction with a pointer or keyboard; a static document has none |  |
+| `-webkit-font-smoothing` | screen rendering hints; they do not change what is drawn on a page |  |
+| `-webkit-tap-highlight-color` | interaction with a pointer or keyboard; a static document has none |  |
+| `-webkit-text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |  |
+| `-webkit-touch-callout` | interaction with a pointer or keyboard; a static document has none |  |
+| `-webkit-user-drag` | interaction with a pointer or keyboard; a static document has none |  |
+| `-webkit-user-modify` | interaction with a pointer or keyboard; a static document has none |  |
+| `-webkit-user-select` | interaction with a pointer or keyboard; a static document has none |  |
+| `accent-color` | interaction with a pointer or keyboard; a static document has none |  |
+| `animation` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page | a value that names an animation: Chromium 159 prints the animated state |
+| `animation-composition` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-delay` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-direction` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-duration` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-fill-mode` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-iteration-count` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-name` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page | any value but none: Chromium 159 prints the animated state |
+| `animation-play-state` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-range` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-range-end` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-range-start` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-timeline` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `animation-timing-function` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `appearance` | interaction with a pointer or keyboard; a static document has none |  |
+| `caret` | interaction with a pointer or keyboard; a static document has none |  |
+| `caret-animation` | interaction with a pointer or keyboard; a static document has none |  |
+| `caret-color` | interaction with a pointer or keyboard; a static document has none |  |
+| `caret-shape` | interaction with a pointer or keyboard; a static document has none |  |
+| `cursor` | interaction with a pointer or keyboard; a static document has none |  |
+| `field-sizing` | interaction with a pointer or keyboard; a static document has none |  |
+| `font-smooth` | screen rendering hints; they do not change what is drawn on a page |  |
+| `forced-color-adjust` | screen rendering hints; they do not change what is drawn on a page |  |
+| `interactivity` | interaction with a pointer or keyboard; a static document has none |  |
+| `overflow-anchor` | scrolling; a paged document does not scroll |  |
+| `overscroll-behavior` | scrolling; a paged document does not scroll |  |
+| `overscroll-behavior-block` | scrolling; a paged document does not scroll |  |
+| `overscroll-behavior-inline` | scrolling; a paged document does not scroll |  |
+| `overscroll-behavior-x` | scrolling; a paged document does not scroll |  |
+| `overscroll-behavior-y` | scrolling; a paged document does not scroll |  |
+| `pointer-events` | interaction with a pointer or keyboard; a static document has none |  |
+| `resize` | interaction with a pointer or keyboard; a static document has none | any value but none: Chromium 159 prints the resize handle |
+| `scroll-behavior` | scrolling; a paged document does not scroll |  |
+| `scroll-margin` | scrolling; a paged document does not scroll |  |
+| `scroll-margin-block` | scrolling; a paged document does not scroll |  |
+| `scroll-margin-bottom` | scrolling; a paged document does not scroll |  |
+| `scroll-margin-inline` | scrolling; a paged document does not scroll |  |
+| `scroll-margin-left` | scrolling; a paged document does not scroll |  |
+| `scroll-margin-right` | scrolling; a paged document does not scroll |  |
+| `scroll-margin-top` | scrolling; a paged document does not scroll |  |
+| `scroll-padding` | scrolling; a paged document does not scroll |  |
+| `scroll-padding-block` | scrolling; a paged document does not scroll |  |
+| `scroll-padding-bottom` | scrolling; a paged document does not scroll |  |
+| `scroll-padding-inline` | scrolling; a paged document does not scroll |  |
+| `scroll-padding-left` | scrolling; a paged document does not scroll |  |
+| `scroll-padding-right` | scrolling; a paged document does not scroll |  |
+| `scroll-padding-top` | scrolling; a paged document does not scroll |  |
+| `scroll-snap-align` | scrolling; a paged document does not scroll |  |
+| `scroll-snap-stop` | scrolling; a paged document does not scroll |  |
+| `scroll-snap-type` | scrolling; a paged document does not scroll |  |
+| `scroll-timeline` | scrolling; a paged document does not scroll |  |
+| `scroll-timeline-axis` | scrolling; a paged document does not scroll |  |
+| `scroll-timeline-name` | scrolling; a paged document does not scroll |  |
+| `scrollbar-color` | scrolling; a paged document does not scroll |  |
+| `scrollbar-gutter` | scrolling; a paged document does not scroll | any value but auto: Chromium 159 keeps the gutter's width out of the box also when printing |
+| `scrollbar-width` | scrolling; a paged document does not scroll |  |
+| `speak` | screen rendering hints; they do not change what is drawn on a page |  |
+| `speak-as` | screen rendering hints; they do not change what is drawn on a page |  |
+| `text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |  |
+| `touch-action` | interaction with a pointer or keyboard; a static document has none |  |
+| `transition` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `transition-behavior` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `transition-delay` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `transition-duration` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `transition-property` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `transition-timing-function` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `user-select` | interaction with a pointer or keyboard; a static document has none |  |
+| `view-timeline` | scrolling; a paged document does not scroll |  |
+| `view-timeline-axis` | scrolling; a paged document does not scroll |  |
+| `view-timeline-name` | scrolling; a paged document does not scroll |  |
+| `view-transition-class` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `view-transition-name` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page |  |
+| `will-change` | a hint for the browser's compositor | any value but auto, scroll-position and contents: Chromium 159 paints the element in a layer of its own, which changes the printed rendering |
+| `zoom` | screen rendering hints; they do not change what is drawn on a page | any value but normal, 1 and 100%: Chromium 159 scales the box when printing |
 
 ## Values
 
@@ -406,12 +415,12 @@ selector & (CSS Nesting 1). Pseudo-classes:
 | `:window-inactive` | never matches (ignored by rule) | window focus |
 | `:xr-overlay` | never matches (ignored by rule) | an immersive session |
 
-Pseudo-elements, all refused: `::before`, `::after`, `::first-line`, `::first-letter`, `::marker`, `::placeholder`, `::selection`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`, `::highlight()`, `::backdrop`, `::file-selector-button`, `::cue`, `::cue()`, `::part()`, `::slotted()`, `::details-content`, `::picker()`, `::picker-icon`, `::checkmark`, `::column`, `::scroll-marker`, `::scroll-marker-group`, `::scroll-button()`, `::view-transition`, `::view-transition-group()`, `::view-transition-image-pair()`, `::view-transition-old()`, `::view-transition-new()`, `::view-transition-group-children()`, and Chromium's `::-webkit-*`.
+Pseudo-elements never draw in an accepted document and are ignored by rule: `::placeholder`, `::selection`, `::-webkit-scrollbar`, `::-webkit-scrollbar-button`, `::-webkit-scrollbar-thumb`, `::-webkit-scrollbar-track`, `::-webkit-scrollbar-track-piece`, `::-webkit-scrollbar-corner`, `::-webkit-resizer`. The others are refused: `::before`, `::after`, `::first-line`, `::first-letter`, `::marker`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`, `::highlight()`, `::backdrop`, `::file-selector-button`, `::cue`, `::cue()`, `::part()`, `::slotted()`, `::details-content`, `::picker()`, `::picker-icon`, `::checkmark`, `::column`, `::scroll-marker`, `::scroll-marker-group`, `::scroll-button()`, `::view-transition`, `::view-transition-group()`, `::view-transition-image-pair()`, `::view-transition-old()`, `::view-transition-new()`, `::view-transition-group-children()`, and Chromium's other `::-webkit-*`.
 
 ## At-rules
 
-- Supported: @media (media types; the width and height features, other features refused), @supports (answered
-  as Chromium would), @import (through the caller's resolver, with layer() and supports()), @layer, @font-face and
+- Supported: @media (media types; the width and height features with Chromium's 1/64px tolerance, other features
+  refused), @supports (answered as Chromium 159 would where the engine can tell, refused where it cannot), @import (through the caller's resolver, with layer() and supports()), @layer, @font-face and
   @page (read as values for the layout), CSS Nesting 1 inside style rules.
 - Ignored by rule: @-webkit-keyframes, @keyframes.
 - Refused: @color-profile, @container, @counter-style, @document, @font-feature-values, @font-palette-values, @function, @namespace, @position-try, @property, @scope, @starting-style, @view-transition.
@@ -422,6 +431,10 @@ Pseudo-elements, all refused: `::before`, `::after`, `::first-line`, `::first-le
   applies it).
 - A document in quirks mode is refused (add `<!DOCTYPE html>`).
 - Refused when drawn (display not none): input, button, select, textarea, meter, progress.
+- Refused wherever they are: audio, canvas, details, embed, iframe, marquee, noscript, object, optgroup, option, summary, svg and math (their own
+  matching and style rules), and an element whose user-agent style is outside the profile (sub, sup, del, s, ruby …).
+- Scripts are not run, so a script element a browser runs (no type, a JavaScript type, module, importmap) and every
+  event handler attribute (`on…`) are refused; a data block (any other type) is not.
 - Style sheets: style elements, link rel=stylesheet (not alternate; the preferred title set), with media and type;
   linked sheets and imports through the caller's `ResourceResolver`; a sheet it does not give is refused.
 
@@ -429,19 +442,20 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 
 | Element | Mapped | Refused |
 | --- | --- | --- |
-| body | bgcolor, text, link (the colour of links), marginheight/topmargin, marginwidth/leftmargin | background |
-| table | width, height, bgcolor, bordercolor, border (outset, or solid with bordercolor), cellspacing, align=center | align=left/right (float), background, frame, rules |
+| body | bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag) | background |
+| table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right (float), background, frame, rules |
 | caption | align=top | align=bottom/left/right |
-| col, colgroup | width |  |
-| thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, justify), valign | background |
-| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding and border (1px inset, or solid with bordercolor) | background |
-| div, p | align (-webkit-left/right/center, justify) |  |
-| h1–h6 | align (left, right, center, justify) |  |
-| hr | align, color (solid border and background), noshade (gray), size, width |  |
-| img | width, height (and aspect-ratio auto w / h), border, hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom | align=left/right (float), texttop, middle/center |
+| col, colgroup | width, align (-webkit-left/right/center, or one text-align value) |  |
+| thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign | background |
+| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (the integer it starts with, at least 0) and border (1px inset, or solid with bordercolor) | background |
+| div, p | align (-webkit-left/right/center, or one text-align value) |  |
+| h1–h6 | align (middle as center, or one text-align value) |  |
+| hr | align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width |  |
+| img | width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom | align=left/right (float), texttop, middle/center |
 | ol, ul, li | type | ol start, ol reversed, li value |
 | pre | wrap |  |
 | br |  | clear |
-| font | color, face, size |  |
+| font | color, face (one font-family value), size |  |
 | legend |  | align |
 | iframe, embed, object, video, canvas, input, marquee, applet, frame |  | width, height, align, hspace, vspace, border |
+| every element |  | contenteditable (empty, true or plaintext-only) |

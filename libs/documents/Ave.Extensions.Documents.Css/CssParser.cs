@@ -17,6 +17,12 @@ public sealed record CssSourceOptions(string SourceName)
     /// diagnostics point into the document; 1:1 for a style sheet of its own.</summary>
     public TextPosition Origin { get; init; } = TextPosition.Start;
 
+    /// <summary>Where each character of the text was written in its document, when that is not one run from
+    /// <see cref="Origin"/>: the value of an HTML attribute with character references or line feeds, a style element of
+    /// several text nodes. Given an index of the text (0 to its length), its place. Null: counted from
+    /// <see cref="Origin"/>.</summary>
+    public Func<int, TextPosition>? Positions { get; init; }
+
     /// <summary>The encoding label the protocol gave (the charset of a Content-Type), or null (CSS Syntax 3 §3.2).</summary>
     public string? ProtocolEncoding { get; init; }
 
@@ -44,7 +50,7 @@ public static class CssParser
             return TooLarge(options);
         }
 
-        var source = CssSource.Of(text, options.Origin);
+        var source = CssSource.Of(text, options.Origin, options.Positions);
         var (rules, tooDeepAt) = SyntaxParser.ParseStyleSheet(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
@@ -97,7 +103,7 @@ public static class CssParser
             return new CssResult<ValueList<Declaration>>([], TooLarge(options).Diagnostics);
         }
 
-        var source = CssSource.Of(text, options.Origin);
+        var source = CssSource.Of(text, options.Origin, options.Positions);
         var (items, tooDeepAt) = SyntaxParser.ParseDeclarationList(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
@@ -129,14 +135,14 @@ public static class CssParser
         var diagnostics = new DiagnosticCollector();
         if (text.Length > CssInputLimits.MaxCharacters)
         {
-            return new CssResult<MediaQueryList>(MediaQueryList.All, TooLarge(options).Diagnostics);
+            return new CssResult<MediaQueryList>(MediaQueryList.None, TooLarge(options).Diagnostics);
         }
 
-        var source = CssSource.Of(text, options.Origin);
+        var source = CssSource.Of(text, options.Origin, options.Positions);
         var (values, tooDeepAt) = SyntaxParser.ParseComponentValues(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
-            return new CssResult<MediaQueryList>(MediaQueryList.All, [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
+            return new CssResult<MediaQueryList>(MediaQueryList.None, [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
         }
 
         var list = MediaQueries.Parse(values, options.SourceName, diagnostics);

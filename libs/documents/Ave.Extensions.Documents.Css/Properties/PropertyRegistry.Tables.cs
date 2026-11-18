@@ -76,13 +76,18 @@ public static partial class PropertyRegistry
                 name, inherited: true, new CssNumber(2, IsInteger: true), "block containers that establish an inline formatting context",
                 "<integer [1,∞]>", PropertySupport.Supported, "CSS Fragmentation 3 §3.3",
                 reader => reader.Count == 1 && reader.Integer() is { } count && count >= 1
-                    ? ParsedValue.Of(new CssNumber(count, IsInteger: true))
+                    ? count <= MaxShortInteger
+                        ? ParsedValue.Of(new CssNumber(count, IsInteger: true))
+                        : ParsedValue.Refused($"{name} above {MaxShortInteger}: Chromium 159 clamps it to {MaxShortInteger} (measured, review 39 F9)")
                     : ParsedValue.Invalid($"{name} is an integer of at least 1"),
                 AsSpecified);
         }
 
         yield return Keywords("box-decoration-break", inherited: false, "slice", ["slice", "clone"], [], "all elements", "CSS Fragmentation 3 §5.4");
     }
+
+    /// <summary>The largest orphans and widows Chromium keeps: it stores them in 16 bits.</summary>
+    private const int MaxShortInteger = 32767;
 
     /// <summary>border-spacing: one length for both directions, or horizontal then vertical.</summary>
     private static ParsedValue ParseBorderSpacing(ValueReader reader)

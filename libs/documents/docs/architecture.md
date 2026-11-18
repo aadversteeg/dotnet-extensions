@@ -165,7 +165,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | an HTML document | 2^24 UTF-16 code units (bytes are checked against the same number); nesting 512 elements, the depth at which Chromium stops nesting; selectedcontent clones 4 nodes and characters per input character; 10 000 diagnostics kept | `Html.Parsing/HtmlInputLimits.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic; the style resolution refuses) |
 | a style sheet | 2^24 UTF-16 code units; nesting of blocks, functions and rules 64 (the readers recurse once per level: 252 nested `@media` overflowed a 256 KB thread at the old limit of 256, 64 fit with room) | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (a refusal; the sheet is empty) |
 | nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels: the only recursion of selector matching and specificity, kept well inside the stack of a 256 KB thread | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the rule is refused) |
-| selector matching of one cascade | 2^28 tested facts and simple selectors, a few seconds of work, far above what real documents need; 2^22 facts remembered (a bound on the memory) | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
+| selector matching and collecting of one cascade | 2^26 units (a simple selector tested, a fact remembered, a matched rule or declaration collected): about 3 s on the development machine for 1 000 rules matching each of 10 000 elements; 2^22 facts remembered (a bound on the memory) | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
 | imported style sheets of one cascade | 1 024, counted over every import followed | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
 | one var() substitution | 2 097 152 characters of text, Chromium 159's limit (measured) | `Css/CssInputLimits.cs` | past it: invalid at computed-value time, as in Chromium (`Documents.Css.Invalid.ComputedValue`); where the engine's measure cannot tell (within 8 characters per substitution of the limit): `Documents.Css.TooLarge` |
 | all var() substitutions of one cascade | 2^26 characters | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
@@ -234,13 +234,22 @@ Where each rule lives:
 | which diagnostic refuses a document | `Css/CssDiagnostics.ClassOf`, `Html/HtmlStyleErrorCodes.cs` (`HtmlStyleDiagnostics.ClassOf`) |
 
 Who checks what: the HTML parser reports parse errors (warnings: it recovers as the standard says, as a browser
-does) and fails only past its limits. The CSS reader reports what CSS drops (warnings) where it is written; the
+does) and fails only past its limits or on bytes it would decode differently from a browser. The CSS reader reports
+where it is written what CSS Syntax 3 recovers from and the few things it knows Chromium drops as well (warnings: a
+top-level `!` other than `!important`, a rule in the wrong place, another engine's prefix, a `var()` cycle); the
 cascade reports what it ignores by rule and what it refuses **when it applies** (a refused declaration that would
-win, a rule with an unknown property that matches an element), once per declaration. Refusal is decided by the
-diagnostic's code alone; `HtmlStyleOptions.Unsupported` chooses whether refusals fail the document (the default) or
-are only reported. The policy for each refusal: the engine refuses valid CSS it does not implement and never takes a
-value Chromium drops; a refused declaration that would win is skipped, so the next one applies, as in a browser that
-does not know the value.
+win, a rule with an unknown property that matches an element), once per declaration (per element for the user-agent
+sheet, so the element is named). Refusal is decided by the diagnostic's code alone; `HtmlStyleOptions.Unsupported`
+chooses whether refusals fail the document (the default) or are only reported.
+
+The policy for each refusal (review 39, ruling D-b): input above CSS Syntax 3 that the engine cannot read is either
+invalid, which a browser drops, or valid CSS beyond this profile, which a browser uses, and the engine cannot tell
+which. Its one answer to both is a refusal, "not valid or not supported in this profile": a value that does not match
+its grammar of a known property (`vertical-align: 5px`, `color: 12px`), also after `var()` substitution; a selector or
+media query that does not parse; an unknown at-rule; a media feature it does not evaluate; an `@supports` condition it
+cannot answer as Chromium. Valid CSS the engine does not implement is refused as before. A refused declaration that
+would win is skipped, so the next one applies, as in a browser that does not know the value. So the engine refuses
+what it cannot read and never takes, without a diagnostic, a value Chromium drops.
 
 The reference is Chromium 159 (`tools/reference/chromium/computed-style`): its verdicts on the web-platform-tests
 cases and `getComputedStyle` of every registered property on every element of a corpus, measured unrendered. The
@@ -252,19 +261,42 @@ mapped in the comparison.
 
 Known limits of stage 3 (also in the profile document):
 
-- Quirks-mode documents and form controls are refused; template contents are not styled; `<template
-  shadowrootmode>` stays a template (no declarative shadow DOM); `noscript` is shown (the parser runs with scripting
-  off, Chromium with it on).
-- Encodings: the HTML parser and the CSS reader decode UTF-8 and UTF-16; a style sheet in another encoding is read
-  only when its bytes are ASCII, else refused.
+- Refused, not implemented: quirks-mode documents; form controls that are drawn; the elements Chromium gives rules or
+  a layout of their own (details, summary, marquee, option, optgroup, audio, canvas, embed, iframe, object, svg, math)
+  and every element whose user-agent style is outside the profile (sub, sup, del, s, ruby, dialog …), also when it is
+  not drawn (only a form control that is not drawn is accepted); `noscript` (the parser runs with scripting off,
+  Chromium with it on, so their trees differ); a script a browser would run and every event handler attribute, since
+  the engine runs no scripts (a data block is accepted).
+- Template contents are not styled; `<template shadowrootmode>` stays a template (no declarative shadow DOM).
+- Encodings: the HTML parser decodes UTF-8 and UTF-16. It refuses a `meta` element or an XML declaration that names
+  another encoding, and bytes that are not UTF-8 with nothing declaring an encoding, which a browser would decode by a
+  detected legacy encoding. Valid UTF-8 with no declaration is read as UTF-8, as Chromium 159 reads a local file; over
+  HTTP Chromium would detect windows-1252 for it (E-1). Of two `charset` attributes on one `meta`, the last counts in
+  the first 1024 bytes, as in Chromium; past them tree construction sees only the first (the tokenizer drops a
+  repeated attribute). The CSS reader decodes UTF-8 and UTF-16; a style sheet in another encoding is read only when
+  its bytes are ASCII, else refused.
+- The parser follows Chromium 159 where it differs from the HTML Standard and the difference is cheap to take (a NUL
+  in the data state, after `<` and in CDATA; U+FFFD and frameset-ok; `search` not special; formatting elements with
+  `is`; a NUL in a processing instruction; the selectedcontent clone of script, object, iframe and embed; a UTF-16
+  tail). It keeps the standard, a listed limit, where the input is rare and the tree is not styled: head elements
+  inside `template` (HD-6); an HTML element named like a camel-case SVG element closed from inside SVG (HD-7);
+  fragment parsing in a `template`, `textarea`, `title` or `select` context (HD-8); an `<option>` opened inside an open
+  `<selectedcontent>` (HD-10, behind the refused `select`); white space after a row with an open formatting element
+  in a template (HD-11). Each is a case of `tools/reference/chromium/html-tree/cases.tsv`, pinned as still
+  different.
 - No pseudo-elements, no `:has()`, `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
   attribute modifier, `:heading`).
 - A computed `calc()` that keeps a length and a percentage is refused (the document model's length holds one of
   them); typed arithmetic and the math functions other than calc, min, max and clamp are refused; ex and ch need the
   caller's font metrics.
 - A value of a feature outside v0 is refused without its grammar being checked, so input Chromium drops as invalid
-  can be refused (never accepted): 173 of the 414 web-platform-tests value cases taken.
+  can be refused (never accepted), as can any value the grammar does not read (ruling D-b above).
 - Declarations in a subtree that is not drawn (inside display: none) are still cascaded, so their refusals count.
+- Values the engine refuses because Chromium computes them by a rule it does not keep: a font size from a relative
+  value below 6px (Chromium's minimum logical font size) and above 10 000px; a length past 2^24 px; orphans and
+  widows past 32 767; a hue past 2^24 degrees; a `none` colour component; `overflow` visible beside a scrolling axis
+  (it computes to auto); `zoom` other than 1, a named animation, `resize`, `scrollbar-gutter` and `will-change` that
+  makes a layer (each changes Chromium's printed rendering, measured).
 - `-webkit-left`, `-webkit-right`, `-webkit-center` (from align attributes and the caption) must align descendant
   blocks as well as text; `border-style: inset` and `outset` (hr, table border) are drawn in two shades by Chromium;
   `overflow: hidden | clip` (hr, img) clips; `unicode-bidi: isolate` is accepted as it changes nothing in

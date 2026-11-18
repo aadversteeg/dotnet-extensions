@@ -469,7 +469,8 @@ internal sealed partial class TreeBuilder
 
         ReconstructFormatting();
         InsertCharacter(t.Char, t.Source);
-        if (!t.IsWhitespace)
+        // Chromium 159 does not count U+FFFD as a character that makes a frameset not ok (review 39 HD-3, measured).
+        if (!t.IsWhitespace && t.Char != 0xFFFD)
         {
             _framesetOk = false;
         }
@@ -839,7 +840,7 @@ internal sealed partial class TreeBuilder
         {
             if (element.Attribute(attribute.Name) is null)
             {
-                element.AddAttribute(new HtmlAttribute(AttributeNamespace.None, null, attribute.Name, attribute.Value, Position(attribute.Start)));
+                element.AddAttribute(Attribute(attribute));
             }
         }
     }
@@ -1196,7 +1197,7 @@ internal sealed partial class TreeBuilder
                     continue;
                 }
 
-                var replacement = CreateElement(node.Token, ElementNamespace.Html);
+                var replacement = CreateElement(node.Token, ElementNamespace.Html, null, _inputSource);
                 SetFormatting(inList, replacement);
                 _stack[nodeIndex] = replacement;
                 replacement.OnStack = true;
@@ -1220,7 +1221,7 @@ internal sealed partial class TreeBuilder
 
             target.Insert(lastNode, before);
 
-            var newElement = CreateElement(formattingElement.Token, ElementNamespace.Html);
+            var newElement = CreateElement(formattingElement.Token, ElementNamespace.Html, null, _inputSource);
             foreach (var child in furthestBlock.Children())
             {
                 newElement.Insert(child, null);

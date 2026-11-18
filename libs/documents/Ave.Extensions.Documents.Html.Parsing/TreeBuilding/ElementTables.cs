@@ -11,14 +11,16 @@ namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
 /// </summary>
 internal static class ElementTables
 {
-    /// <summary>The HTML elements in the special category (§13.2.4.2).</summary>
+    /// <summary>The HTML elements in the special category (§13.2.4.2), as Chromium 159 has them: without search, which
+    /// the standard lists and Chromium does not (review 39 HD-4, measured: a list item or formatting element stays open
+    /// through it).</summary>
     private static readonly FrozenSet<string> SpecialHtml = FrozenSet.Create(StringComparer.Ordinal,
         "address", "applet", "area", "article", "aside", "base", "basefont", "bgsound", "blockquote", "body", "br",
         "button", "caption", "center", "col", "colgroup", "dd", "details", "dir", "div", "dl", "dt", "embed",
         "fieldset", "figcaption", "figure", "footer", "form", "frame", "frameset", "h1", "h2", "h3", "h4", "h5", "h6",
         "head", "header", "hgroup", "hr", "html", "iframe", "img", "input", "keygen", "li", "link", "listing", "main",
         "marquee", "menu", "meta", "nav", "noembed", "noframes", "noscript", "object", "ol", "p", "param", "plaintext",
-        "pre", "script", "search", "section", "select", "source", "style", "summary", "table", "tbody", "td",
+        "pre", "script", "section", "select", "source", "style", "summary", "table", "tbody", "td",
         "template", "textarea", "tfoot", "th", "thead", "title", "tr", "track", "ul", "wbr", "xmp");
 
     /// <summary>The formatting elements (§13.2.4.2).</summary>

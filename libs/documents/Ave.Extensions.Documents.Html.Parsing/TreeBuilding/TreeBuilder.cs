@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Html.Parsing.Tokenizing;
 
 namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
@@ -35,6 +37,10 @@ internal sealed partial class TreeBuilder
     private InsertionMode _originalMode;
     private MutableElement? _head;
     private MutableElement? _form;
+
+    /// <summary>Where the token being processed starts: the place of the elements it makes the parser create again
+    /// (reconstruction, the adoption agency algorithm).</summary>
+    private int _inputSource;
     private bool _framesetOk = true;
     private bool _fosterParenting;
     private bool _skipNextLineFeed;
@@ -98,6 +104,13 @@ internal sealed partial class TreeBuilder
         }
 
         ResetInsertionMode();
+        // §13.4 step 13: the form element pointer is the nearest form at or above the context element; the context has
+        // no ancestors here, so it is the context itself when that is a form (review 39 HD-8).
+        if (_context.IsHtml("form"))
+        {
+            _form = _context;
+        }
+
         Run();
 
         var fragment = new MutableFragment();
@@ -184,6 +197,7 @@ internal sealed partial class TreeBuilder
             return;
         }
 
+        _inputSource = t.Source;
         var node = AdjustedCurrentNode;
         if (node is null
             || node.Namespace == ElementNamespace.Html
@@ -193,6 +207,15 @@ internal sealed partial class TreeBuilder
             || (ElementTables.IsHtmlIntegrationPoint(node) && t.Kind is TokenKind.StartTag or TokenKind.Characters)
             || t.Kind == TokenKind.EndOfFile)
         {
+            // Chromium 159 drops a U+0000 of the data state before the HTML content rules see it (the tokenizer has
+            // reported it), so it never counts as text: a NUL before the doctype keeps the doctype and the document's
+            // mode (review 39 HD-1, measured). Every mode of the standard that is not before or after the body ignores it
+            // anyway; the others would take it as text. Other states make U+FFFD of it, and foreign content keeps its rule.
+            if (t.Kind == TokenKind.Characters && t.Char == 0)
+            {
+                return;
+            }
+
             ProcessIn(_mode, t);
         }
         else
@@ -397,9 +420,16 @@ internal sealed partial class TreeBuilder
         }
     }
 
-    /// <summary>"Push onto the list of active formatting elements", with the Noah's Ark clause.</summary>
+    /// <summary>"Push onto the list of active formatting elements", with the Noah's Ark clause. Chromium 159 leaves an
+    /// element with an <c>is</c> attribute (a customized built-in element) off the list, so it is never reconstructed
+    /// nor found by the adoption agency algorithm (review 39 HD-5, measured).</summary>
     private void PushFormatting(MutableElement element)
     {
+        if (element.Token.HasAttribute("is"))
+        {
+            return;
+        }
+
         var same = 0;
         var earliest = -1;
         for (var i = _formatting.Count - 1; i >= 0 && _formatting[i] is { } entry; i--)
@@ -451,10 +481,12 @@ internal sealed partial class TreeBuilder
             index--;
         }
 
+        // A reopened element is placed where the token that reopened it is (HtmlNode: "the position of the token that
+        // made the parser insert it"), not at the tag it repeats (review 39 HR-P1).
         for (; index < _formatting.Count; index++)
         {
             var entry = _formatting[index]!;
-            SetFormatting(index, InsertHtmlElement(entry.Token));
+            SetFormatting(index, InsertForeignElement(entry.Token, ElementNamespace.Html, null, _inputSource));
         }
     }
 
@@ -520,16 +552,17 @@ internal sealed partial class TreeBuilder
 
     /// <summary>"Create an element for a token" in a namespace, with the attributes as the token has them (adjusted
     /// for foreign content where the caller adjusted the token).</summary>
-    private MutableElement CreateElement(Token token, ElementNamespace ns, string? localName = null)
+    private MutableElement CreateElement(Token token, ElementNamespace ns, string? localName = null, int start = -1)
     {
         var name = localName ?? token.Name!;
+        start = start >= 0 ? start : token.Start;
         var element = new MutableElement
         {
             Namespace = ns,
             LocalName = name,
             Token = token,
-            Start = token.Start,
-            Content = ns == ElementNamespace.Html && name == "template" ? new MutableFragment { Start = token.Start } : null,
+            Start = start,
+            Content = ns == ElementNamespace.Html && name == "template" ? new MutableFragment { Start = start } : null,
         };
         foreach (var attribute in token.Attributes)
         {
@@ -551,11 +584,18 @@ internal sealed partial class TreeBuilder
         var position = Position(attribute.Start);
         if (ns != ElementNamespace.Html && ElementTables.ForeignAttributes.TryGetValue(attribute.Name, out var adjusted))
         {
-            return new HtmlAttribute(adjusted.Namespace, adjusted.Prefix, adjusted.LocalName, attribute.Value, position);
+            return new HtmlAttribute(adjusted.Namespace, adjusted.Prefix, adjusted.LocalName, attribute.Value, position) { ValueAnchors = Anchors(attribute) };
         }
 
-        return new HtmlAttribute(AttributeNamespace.None, null, attribute.Name, attribute.Value, position);
+        return Attribute(attribute);
     }
+
+    /// <summary>An attribute in no namespace, with the places of its value's characters.</summary>
+    private HtmlAttribute Attribute(TokenAttribute attribute) =>
+        new(AttributeNamespace.None, null, attribute.Name, attribute.Value, Position(attribute.Start)) { ValueAnchors = Anchors(attribute) };
+
+    private ValueList<HtmlValueAnchor> Anchors(TokenAttribute attribute) =>
+        attribute.Anchors.Length == 0 ? [] : [.. attribute.Anchors.Select(anchor => new HtmlValueAnchor(anchor.Offset, Position(anchor.Source), anchor.Contiguous))];
 
     /// <summary>§13.2.6.1, "create an element for a token": an xmlns attribute whose value is not the element's
     /// namespace, or an xmlns:xlink that is not the XLink namespace, is a parse error.</summary>
@@ -596,9 +636,9 @@ internal sealed partial class TreeBuilder
     }
 
     /// <summary>"Insert a foreign element" (and "insert an HTML element"): create, insert, push.</summary>
-    private MutableElement InsertForeignElement(Token token, ElementNamespace ns, string? localName = null)
+    private MutableElement InsertForeignElement(Token token, ElementNamespace ns, string? localName = null, int start = -1)
     {
-        var element = CreateElement(token, ns, localName);
+        var element = CreateElement(token, ns, localName, start);
         InsertAtPlace(element);
         Push(element);
         return element;

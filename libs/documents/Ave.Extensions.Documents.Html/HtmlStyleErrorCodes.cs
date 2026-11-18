@@ -24,14 +24,34 @@ public static class HtmlStyleErrorCodes
         /// attribute), SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Attribute = _ / "Attribute";
 
-        /// <summary>An element outside the v0 set that would be drawn (its display is not none): the form controls
-        /// (input, button, select, textarea, meter, progress) have a native appearance and widget styles the engine
-        /// does not have. Metadata: Value (the element's name), SourceFile, SourceLine, SourceColumn.</summary>
+        /// <summary>An element outside the v0 set: a form control that would be drawn (input, button, select, textarea,
+        /// meter, progress have a native appearance and widget styles the engine does not have); an element Chromium
+        /// gives rules or a layout of its own (details, summary, option, svg, math …); an element whose user-agent
+        /// style the engine does not support (sub, del …). Metadata: Value (the element's name), SourceFile,
+        /// SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Element = _ / "Element";
+
+        /// <summary>A script a browser would run (a script element with no type, a JavaScript type, module or
+        /// importmap; an event handler attribute such as <c>onload</c>): the engine runs no scripts, so what the script
+        /// changes would be missing. Metadata: Value (<c>script</c> or the attribute), SourceFile, SourceLine,
+        /// SourceColumn.</summary>
+        public static readonly ErrorCode Script = _ / "Script";
 
         /// <summary>A document in quirks mode (no doctype, or a legacy one): its rendering has rules the engine does not
         /// implement (HTML Standard §15.3.9 margin collapsing, the quirks of CSS). Metadata: SourceFile.</summary>
         public static readonly ErrorCode QuirksMode = _ / "QuirksMode";
+    }
+
+    /// <summary>Parts of the document that do not apply, as in a browser: listed, never refused.</summary>
+    public static class Ignored
+    {
+        /// <summary><c>Documents.Html.Ignored</c>.</summary>
+        public static readonly ErrorCode _ = HtmlStyleErrorCodes._ / "Ignored";
+
+        /// <summary>A style or link element whose style sheet does not apply: an alternate or disabled link, a type
+        /// other than CSS, media that do not match, a title outside the preferred style sheet set. Metadata: Value (the
+        /// element's name), SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode StyleSheet = _ / "StyleSheet";
     }
 
     /// <summary>Resources the document names.</summary>
@@ -61,6 +81,11 @@ public static class HtmlStyleDiagnostics
             || code == HtmlStyleErrorCodes.Resource.NotFound)
         {
             return Css.DiagnosticClass.Refusal;
+        }
+
+        if (code == HtmlStyleErrorCodes.Ignored._ || code.IsChildOf(HtmlStyleErrorCodes.Ignored._))
+        {
+            return Css.DiagnosticClass.Ignored;
         }
 
         return Css.CssDiagnostics.ClassOf(code);

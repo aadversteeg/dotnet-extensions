@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.ErrorPaths;
 
@@ -112,10 +113,18 @@ public sealed class ShorthandDefinition
     public override string ToString() => Name;
 }
 
-/// <summary>A property that has no effect in a static paged document: declarations of it are ignored by rule.</summary>
+/// <summary>A property that has no effect in a static paged document: declarations of it are ignored by rule, except the
+/// values that do change what Chromium 159 prints, which are refused.</summary>
 /// <param name="Name">The property name, lowercase.</param>
 /// <param name="Reason">Why it has no effect.</param>
-public sealed record IgnoredProperty(string Name, string Reason);
+public sealed record IgnoredProperty(string Name, string Reason)
+{
+    /// <summary>The values refused instead, in words, with why; null when every value is ignored.</summary>
+    public string? RefusedValues { get; init; }
+
+    /// <summary>Whether a value is one of <see cref="RefusedValues"/>.</summary>
+    internal Func<IReadOnlyList<Syntax.ComponentValue>, bool>? Refuses { get; init; }
+}
 
 /// <summary>The result of parsing a value: a value, invalid CSS, or valid CSS the engine refuses.</summary>
 /// <param name="Value">The specified value, when valid and supported.</param>

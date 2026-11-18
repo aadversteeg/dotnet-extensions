@@ -70,10 +70,17 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     continue;
             }
 
-            importsAllowed = false;
-            if (Rule(rule, nested: false) is { } built)
+            var built = Rule(rule, nested: false);
+            if (built is not null)
             {
                 result.Add(built);
+            }
+
+            // Only a valid rule closes the place for @import (CSS Cascade 5 §2): one the engine skips as unreadable
+            // does not, as a browser drops it before it counts.
+            if (built is not null || (rule is SyntaxAtRule known && (UnsupportedAtRules.Contains(Ascii.ToLower(known.Name)) || IgnoredAtRules.Contains(Ascii.ToLower(known.Name)))))
+            {
+                importsAllowed = false;
             }
         }
 
@@ -108,7 +115,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             }
             else
             {
-                Report(CssErrorCodes.Invalid.Selector, $"The selector is invalid ({parsed.Error}); the rule is dropped (Selectors 4 §3.9).", parsed.ErrorPosition);
+                Report(CssErrorCodes.Unsupported.Selector, $"The selector '{CssSerializer.Shortened(rule.Prelude)}' is not valid or not supported in this profile ({parsed.Error}); the rule is skipped.", parsed.ErrorPosition);
             }
 
             return null;
@@ -188,7 +195,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             case "supports" when at.Block is not null:
                 if (SupportsConditions.Parse(at.Prelude) is not { } condition)
                 {
-                    Report(CssErrorCodes.Invalid.Rule, "The @supports condition does not parse; the rule is dropped.", at.Position);
+                    Report(CssErrorCodes.Unsupported.AtRule, $"'@supports {CssSerializer.Shortened(at.Prelude)}' is not valid or not supported in this profile; the rule is skipped.", at.Position);
                     return null;
                 }
 
@@ -197,7 +204,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                 var names = LayerNames(at);
                 if (names is null || names.Count > 1)
                 {
-                    Report(CssErrorCodes.Invalid.Rule, "A @layer block takes one layer name or none.", at.Position);
+                    Report(CssErrorCodes.Unsupported.AtRule, $"'@layer {CssSerializer.Shortened(at.Prelude)}' is not valid or not supported in this profile (a @layer block takes one layer name or none); the rule is skipped.", at.Position);
                     return null;
                 }
 
@@ -219,11 +226,11 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         }
         else if (IgnoredAtRules.Contains(name))
         {
-            Report(CssErrorCodes.Ignored.AtRule, $"@{at.Name} only drives animations, which have no effect in a static document.", at.Position);
+            Report(CssErrorCodes.Ignored.AtRule, $"@{at.Name} is read for nothing: it only drives animations, and an animation that names it is refused.", at.Position);
         }
         else
         {
-            Report(CssErrorCodes.Invalid.Rule, $"@{at.Name} is not a valid at-rule here; it is dropped.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, $"'@{at.Name}' is not valid or not supported in this profile" + (nested ? " inside a style rule" : string.Empty) + "; the rule is skipped.", at.Position);
         }
 
         return null;
@@ -235,7 +242,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         var names = LayerNames(at);
         if (names is null || names.Count == 0)
         {
-            Report(CssErrorCodes.Invalid.Rule, "A @layer statement needs layer names.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, $"'@layer {CssSerializer.Shortened(at.Prelude)};' is not valid or not supported in this profile (a @layer statement needs layer names); the rule is skipped.", at.Position);
             return null;
         }
 
@@ -332,7 +339,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         } : null;
         if (url is null || at.Block is not null)
         {
-            Report(CssErrorCodes.Invalid.Rule, "An @import needs a URL or a string, and no block.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, $"'@import {CssSerializer.Shortened(at.Prelude)}' is not valid or not supported in this profile (an @import needs a URL or a string, and no block); the rule is skipped.", at.Position);
             return null;
         }
 
@@ -349,7 +356,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             var names = LayerNames(at with { Prelude = layerFunction.Values });
             if (names is not { Count: 1 })
             {
-                Report(CssErrorCodes.Invalid.Rule, "layer() in @import takes one layer name.", layerFunction.Position);
+                Report(CssErrorCodes.Unsupported.AtRule, $"'@import {CssSerializer.Shortened(at.Prelude)}' is not valid or not supported in this profile (layer() takes one layer name); the rule is skipped.", layerFunction.Position);
                 return null;
             }
 
@@ -365,7 +372,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                 ?? (SyntaxParser.DeclarationFrom(supportsFunction.Values) is { } declaration ? new SupportsDeclaration(declaration) : null);
             if (supports is null)
             {
-                Report(CssErrorCodes.Invalid.Rule, "supports() in @import does not parse.", supportsFunction.Position);
+                Report(CssErrorCodes.Unsupported.AtRule, $"'@import {CssSerializer.Shortened(at.Prelude)}' is not valid or not supported in this profile (its supports() condition); the rule is skipped.", supportsFunction.Position);
                 return null;
             }
 
@@ -421,14 +428,14 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{declaration.Name}' is not supported.", declaration.Position);
                     break;
                 default:
-                    Report(CssErrorCodes.Invalid.Value, $"'{declaration.Name}' is not a @font-face descriptor.", declaration.Position);
+                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{declaration.Name}' is not valid or not supported in this profile.", declaration.Position);
                     break;
             }
         }
 
         if (family is null || sources.Count == 0)
         {
-            Report(CssErrorCodes.Invalid.Rule, "A @font-face needs font-family and a url() source; it is dropped.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, "This @font-face is not valid or not supported in this profile (it needs a font-family and a url() source); the rule is skipped.", at.Position);
             return null;
         }
 
@@ -526,7 +533,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             {
                 if (PageSelectorOf(part) is not { } selector)
                 {
-                    Report(CssErrorCodes.Invalid.Selector, "The @page selector is invalid; the rule is dropped.", at.Position);
+                    Report(CssErrorCodes.Unsupported.Selector, $"The @page selector '{CssSerializer.Shortened(at.Prelude)}' is not valid or not supported in this profile; the rule is skipped.", at.Position);
                     return null;
                 }
 
@@ -547,7 +554,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     margins.Add(new PageMarginRule(Ascii.ToLower(margin.Name), SyntaxParser.Materialise(margin.Contents).Declarations, margin.Position));
                     break;
                 case SyntaxAtRule other:
-                    Report(CssErrorCodes.Invalid.Rule, $"@{other.Name} is not a page-margin rule.", other.Position);
+                    Report(CssErrorCodes.Unsupported.AtRule, $"'@{other.Name}' in @page is not valid or not supported in this profile (it is not a page-margin rule); the rule is skipped.", other.Position);
                     break;
             }
         }

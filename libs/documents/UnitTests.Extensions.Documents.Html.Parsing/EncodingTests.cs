@@ -42,14 +42,66 @@ public class EncodingTests
     }
 
     [Fact]
-    public void Bytes_that_are_not_utf8_become_replacement_characters_with_a_diagnostic()
+    public void Bytes_that_are_not_utf8_under_a_utf8_declaration_become_replacement_characters_with_a_diagnostic()
     {
-        var result = Parse([.. Utf8("<body>\na"), 0xC3, 0x28, .. Utf8("b")]);
+        var result = Parse([.. Utf8("<meta charset=utf-8><body>\na"), 0xC3, 0x28, .. Utf8("b")]);
 
         BodyText(result).Should().Be("\na�(b");
         var diagnostic = result.Match(parsed => parsed.Diagnostics, _ => []).Single(error => (string)error.Metadata![ErrorMetadataKeys.Value] == "invalid-byte-sequence");
         diagnostic.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(2);
         diagnostic.Metadata![ErrorMetadataKeys.SourceColumn].Should().Be(2);
+    }
+
+    [Fact]
+    public void Bytes_that_are_not_utf8_with_nothing_declared_are_refused()
+    {
+        // Chromium 159 detects windows-1252 for these bytes and shows café (review 39 HD-16).
+        var error = Failed(Parse([.. Utf8("<!DOCTYPE html>\n<p>caf"), 0xE9, .. Utf8("</p>")]));
+
+        error.Code.Should().Be(HtmlErrorCodes.Encoding);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be("(undeclared)");
+        (error.Metadata![ErrorMetadataKeys.SourceLine], error.Metadata![ErrorMetadataKeys.SourceColumn]).Should().Be((2, 7));
+    }
+
+    [Theory]
+    [InlineData("<?xml version=\"1.0\" encoding=\"iso-8859-2\"?>", "iso-8859-2")]
+    [InlineData("<?xml version='1.0' encoding='windows-1251'?>", "windows-1251")]
+    public void An_xml_declaration_that_names_another_encoding_is_refused(string declaration, string label)
+    {
+        // Chromium 159 decodes an HTML document by an XML declaration at its start (review 39 HD-13).
+        var error = Failed(Parse(Utf8(declaration + "<!DOCTYPE html><p>café")));
+
+        error.Code.Should().Be(HtmlErrorCodes.Encoding);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be(label);
+    }
+
+    [Fact]
+    public void An_xml_declaration_that_names_utf8_is_accepted() =>
+        BodyText(Parse(Utf8("<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE html><body>café"))).Should().Be("café");
+
+    [Theory]
+    [InlineData("<meta charset=latin1 charset=utf-8>", true)]
+    [InlineData("<meta charset=utf-8 charset=latin1>", false)]
+    public void Of_two_charset_attributes_the_last_one_counts(string meta, bool accepted)
+    {
+        // Chromium 159 takes the last (review 39 HD-14); the prescan of the standard would take the first.
+        var result = Parse(Utf8("<head>" + meta + "</head><body>x"));
+
+        result.Match(_ => true, error => error.Code != HtmlErrorCodes.Encoding).Should().Be(accepted);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Utf16_that_ends_inside_a_character_drops_the_rest(bool bigEndian)
+    {
+        // Chromium 159 drops a last odd byte and a high surrogate without its pair (review 39 HD-15).
+        var encoding = new UnicodeEncoding(bigEndian, byteOrderMark: true);
+        var whole = encoding.GetPreamble().Concat(encoding.GetBytes("<body>ab")).ToArray();
+        byte[] surrogate = bigEndian ? [0xD8, 0x3D] : [0x3D, 0xD8];
+
+        BodyText(Parse([.. whole, 0x41])).Should().Be("ab");
+        BodyText(Parse([.. whole, .. surrogate])).Should().Be("ab");
     }
 
     [Theory]

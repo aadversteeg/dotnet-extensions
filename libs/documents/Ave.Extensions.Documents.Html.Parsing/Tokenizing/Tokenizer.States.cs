@@ -193,6 +193,16 @@ internal sealed partial class Tokenizer
                     CreateTag(endTag: false);
                     Reconsume(TokenizerState.TagName);
                 }
+                else if (c == 0)
+                {
+                    // Chromium 159 keeps a U+0000 right after '<' as U+FFFD text (review 39 HD-2, measured), where the
+                    // standard reconsumes it in the data state, which drops it.
+                    Error("invalid-first-character-of-tag-name");
+                    EmitCharacter('<', _markupStart);
+                    Error("unexpected-null-character");
+                    EmitCharacter(0xFFFD, _currentStart);
+                    State = TokenizerState.Data;
+                }
                 else
                 {
                     Error("invalid-first-character-of-tag-name");
@@ -726,14 +736,14 @@ internal sealed partial class Tokenizer
                 break;
             case 0:
                 Error("unexpected-null-character");
-                _attributeValue.Append('�');
+                AppendValue('�', _currentStart);
                 break;
             case EndOfFile:
                 Error("eof-in-tag");
                 EmitEndOfFile();
                 break;
             default:
-                AppendCodePoint(_attributeValue, c);
+                AppendValue(c, _currentStart);
                 break;
         }
     }
@@ -756,18 +766,18 @@ internal sealed partial class Tokenizer
                 break;
             case 0:
                 Error("unexpected-null-character");
-                _attributeValue.Append('�');
+                AppendValue('�', _currentStart);
                 break;
             case '"' or '\'' or '<' or '=' or '`':
                 Error("unexpected-character-in-unquoted-attribute-value");
-                _attributeValue.Append((char)c);
+                AppendValue(c, _currentStart);
                 break;
             case EndOfFile:
                 Error("eof-in-tag");
                 EmitEndOfFile();
                 break;
             default:
-                AppendCodePoint(_attributeValue, c);
+                AppendValue(c, _currentStart);
                 break;
         }
     }
@@ -1451,6 +1461,11 @@ internal sealed partial class Tokenizer
                 Error("eof-in-cdata");
                 EmitEndOfFile();
                 break;
+            case 0:
+                // Chromium 159 reads a U+0000 of a CDATA section as U+FFFD, also where an HTML integration point would
+                // drop a U+0000 (review 39 HD-1, measured on plain-text-unsafe.dat:397); the standard passes it on.
+                EmitCharacter(0xFFFD, _currentStart);
+                break;
             default:
                 EmitCurrent();
                 break;
@@ -1577,6 +1592,11 @@ internal sealed partial class Tokenizer
                 Error("eof-in-processing-instruction");
                 EmitEndOfFile();
                 break;
+            case 0:
+                // As in the other data-holding states; Chromium 159 makes it U+FFFD too (review 39 HD-9, measured).
+                Error("unexpected-null-character");
+                _data.Append('\uFFFD');
+                break;
             default:
                 AppendCodePoint(_data, c);
                 break;
@@ -1677,7 +1697,7 @@ internal sealed partial class Tokenizer
         {
             if (ReferenceInAttribute)
             {
-                _attributeValue.Append((char)c);
+                AppendValue(c, _currentStart);
             }
             else
             {

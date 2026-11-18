@@ -8,6 +8,8 @@ Nothing here is part of the engine or its build. The tests do not run Chromium; 
 
 `computed-style/` is the same for the HTML/CSS front-end: Chromium's verdicts on the extracted web-platform-tests CSS
 cases and its computed styles of a corpus of documents (see the README there). It uses this folder's npm packages.
+`html-tree/` measures the trees Chromium builds from HTML, for the parser: the tree-construction tests where Chromium
+differs from the suite, and the parser's own cases (see the README there). It uses this folder's npm packages too.
 
 ## Run it
 

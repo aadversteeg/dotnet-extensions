@@ -118,6 +118,38 @@ public static partial class PropertyRegistry
     /// tools/reference/chromium/computed-style, case fonts-tables-lists).</remarks>
     internal static ComputedResult ComputeFontSize(CssValue value, ComputeContext context)
     {
+        var size = UnboundedFontSize(value, context);
+        if (size.Value is not CssLength length)
+        {
+            return size;
+        }
+
+        // Chromium 159's font-size bounds (measured, review 39 F9 and F13): it computes at most 10 000px, and raises a
+        // size made from a relative value (em, %, larger, smaller of a size that was never absolute) above 0 and below
+        // 6px, its minimum logical font size, to 6px, while children inherit the size before the change. The engine
+        // keeps neither rule's second size, so it refuses both cases instead.
+        var pixels = length.Points / 0.75;
+        if (pixels > MaxFontSizePixels)
+        {
+            return ComputedResult.Refused($"a font size above {MaxFontSizePixels}px (Chromium 159 clamps it to {MaxFontSizePixels}px)");
+        }
+
+        if (pixels is > 0 and < MinLogicalFontSizePixels && !context.FontSizeSource.Absolute)
+        {
+            return ComputedResult.Refused($"a font size below {MinLogicalFontSizePixels}px made from a relative size (Chromium 159 raises it to {MinLogicalFontSizePixels}px and lets children inherit the smaller size)");
+        }
+
+        return size;
+    }
+
+    /// <summary>The largest computed font size of Chromium 159, in px.</summary>
+    private const double MaxFontSizePixels = 10000;
+
+    /// <summary>Chromium 159's minimum logical font size, in px: the least it computes for a relative size.</summary>
+    private const double MinLogicalFontSizePixels = 6;
+
+    private static ComputedResult UnboundedFontSize(CssValue value, ComputeContext context)
+    {
         var parentSource = context.ParentFontSizeSource;
         // em, percentages, larger and smaller scale the parent's size, first taken to the element's family.
         var parent = context.ParentFontSize * FamilyScale(context, parentSource);
@@ -270,9 +302,33 @@ public static partial class PropertyRegistry
 
     /// <summary>The computed line height (CSS Inline 3 §5.1): normal and numbers as specified; a length absolute; a
     /// percentage of the element's font size.</summary>
-    private static ComputedResult ComputeLineHeight(CssValue value, ComputeContext context) => value switch
+    /// <remarks>Chromium 159 keeps a calc() that mixes a length and a percentage in its layout unit, 1/64 px, rounded
+    /// down: calc(1px + 10%) at 16px is 2.59375px, not 2.6px; a percentage or a length alone is kept as it is
+    /// (measured, review 39).</remarks>
+    private static ComputedResult ComputeLineHeight(CssValue value, ComputeContext context)
     {
-        CssKeyword or CssNumber => value,
-        _ => context.LengthPercentage(value, percentBasis: context.FontSize),
+        if (value is CssKeyword or CssNumber)
+        {
+            return value;
+        }
+
+        var computed = context.LengthPercentage(value, percentBasis: context.FontSize);
+        if (value is CssCalc calc && Mixes(calc.Expression) == (true, true) && computed.Value is CssLength length)
+        {
+            return new CssLength(Length.FromPoints(Math.Floor(length.Points / 0.75 * 64) / 64 * 0.75));
+        }
+
+        return computed;
+    }
+
+    /// <summary>Whether a calc() expression has a length and a percentage in it. Its depth is bounded by the reader
+    /// (CssInputLimits.MaxDepth).</summary>
+    private static (bool Length, bool Percentage) Mixes(CalcNode node) => node switch
+    {
+        CalcLeaf leaf => (leaf.Unit is not ("" or "%"), leaf.Unit == "%"),
+        CalcSum sum => sum.Terms.Select(term => Mixes(term.Term)).Aggregate((false, false), (all, one) => (all.Item1 || one.Length, all.Item2 || one.Percentage)),
+        CalcProduct product => product.Factors.Select(factor => Mixes(factor.Factor)).Aggregate((false, false), (all, one) => (all.Item1 || one.Length, all.Item2 || one.Percentage)),
+        CalcFunction function => function.Arguments.Select(Mixes).Aggregate((false, false), (all, one) => (all.Item1 || one.Length, all.Item2 || one.Percentage)),
+        _ => (false, false),
     };
 }

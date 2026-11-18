@@ -286,7 +286,7 @@ internal sealed partial class TreeBuilder
         }
     }
 
-    /// <summary>A shallow clone, or null for the elements the clone leaves out (and when the budget runs out).</summary>
+    /// <summary>A shallow clone, or null when the budget runs out.</summary>
     private MutableNode? CloneOne(MutableNode node)
     {
         if (!Charge(1 + node switch { MutableText text => text.Data.Length, MutableElement element => element.Attributes.Count, _ => 0 }))
@@ -297,12 +297,7 @@ internal sealed partial class TreeBuilder
         switch (node)
         {
             case MutableElement element:
-                if ((element.Namespace == ElementNamespace.Html && element.LocalName is "script" or "frame" or "iframe" or "embed" or "object")
-                    || element.Is(ElementNamespace.Svg, "script"))
-                {
-                    return null;
-                }
-
+                // Chromium 159 clones every element, script, object, iframe and embed too (review 39 HD-12, measured).
                 var copy = new MutableElement
                 {
                     Namespace = element.Namespace,

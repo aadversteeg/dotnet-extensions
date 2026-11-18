@@ -125,7 +125,8 @@ public class CssBoundedWorkTests
     [Fact]
     public void A_long_word_list_is_split_once_per_element()
     {
-        var rules = string.Concat(Enumerable.Range(0, 1_000).Select(i => $"[title~='b{i}']{{color:red}}"));
+        // 4 000 rules against one 500 KB word list: before the fix each rule split the list again (36 s for 1 000).
+        var rules = string.Concat(Enumerable.Range(0, 4_000).Select(i => $"[title~='b{i}']{{color:red}}"));
         var styled = StyledOnSmallStack(Doc(rules, $"<p id=last title='{Repeat("a ", 250_000)}'>"));
 
         Last(styled, "color").Should().Be("rgb(0, 0, 0)");
@@ -134,8 +135,9 @@ public class CssBoundedWorkTests
     [Fact]
     public void Many_classes_against_many_class_rules_cost_their_sum()
     {
-        var rules = string.Concat(Enumerable.Range(0, 100_000).Select(i => $".c{i}{{margin-top:1px}}"));
-        var styled = StyledOnSmallStack(Doc(rules, $"<p id=last class='{string.Join(' ', Enumerable.Range(0, 100_000).Select(i => "c" + i))}'>"));
+        // The review's input had 100 000 of each (36 s before the fix); 150 000 is about 4 s now.
+        var rules = string.Concat(Enumerable.Range(0, 150_000).Select(i => $".c{i}{{margin-top:1px}}"));
+        var styled = StyledOnSmallStack(Doc(rules, $"<p id=last class='{string.Join(' ', Enumerable.Range(0, 150_000).Select(i => "c" + i))}'>"));
 
         Last(styled, "margin-top").Should().Be("1px");
     }
@@ -147,6 +149,36 @@ public class CssBoundedWorkTests
 
         Last(styled, "color").Should().Be("rgb(0, 0, 0)");
         styled.Diagnostics.Should().NotContain(error => error.Code == CssErrorCodes.TooLarge);
+    }
+
+    [Fact]
+    public void Many_rules_with_is_against_more_elements_end_at_the_work_limit_in_a_refusal()
+    {
+        // The review's input (CR-16): 1 000 rules against 20 000 elements took 45 s; past the stated limit it is refused.
+        var html = Doc(Repeat("p:is(.x,.y,.z){color:red}", 1_000), Repeat("<p class=x>", 20_000) + "<p id=last>");
+        StyledHtmlDocument? styled = null;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var thread = new Thread(() => styled = Styled(html, Warn), 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        watch.Elapsed.Should().BeLessThan(Generous);
+        styled!.Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.TooLarge);
+        HtmlStyleDiagnostics.ClassOf(CssErrorCodes.TooLarge).Should().Be(DiagnosticClass.Refusal);
+    }
+
+    [Fact]
+    public void A_style_sheet_nested_past_the_limit_is_refused_on_a_256_KB_stack()
+    {
+        // 252 nested @media overflowed a 256 KB stack at the old limit of 256 (the process died); past 64 it is refused.
+        var css = Repeat("@media print{", 252) + "#last{padding-top:4px}" + Repeat("}", 252);
+        StyledHtmlDocument? styled = null;
+        var thread = new Thread(() => styled = Styled(Doc(css, "<p id=last>x"), Warn), 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        styled!.Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.TooDeep);
+        Last(styled, "padding-top").Should().Be("0px");
     }
 
     [Fact]

@@ -25,6 +25,14 @@ internal static class CssSerializer
         return text.ToString();
     }
 
+    /// <summary>The text of component values for a message: trimmed, at most 100 characters (a value can be
+    /// megabytes).</summary>
+    public static string Shortened(IEnumerable<ComponentValue> values)
+    {
+        var text = Serialize(values).Trim();
+        return text.Length <= 100 ? text : text[..100] + "…";
+    }
+
     /// <summary>What kind of text the last write ended with, for the comment rule of §10.</summary>
     private enum Piece
     {

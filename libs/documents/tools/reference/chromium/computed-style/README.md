@@ -63,14 +63,17 @@ replaced element only).
 | `selectors` | every selector form of the v0 set, and the ones that never match |
 | `cascade` | origins and importance, the style attribute, specificity and order, layers, revert and revert-layer, nesting, custom properties, inheritance and defaulting, calc(), @media, @supports, media attributes |
 | `hints` | the presentational attributes of the v0 elements |
+| `elements` | every element of the HTML Standard's element index, in its usual place: the ones outside v0 are refused |
 
 ## How the tests compare
 
 `UnitTests.Extensions.Documents.Html/ChromiumCorpusTests.cs` compares every measured line with the engine's computed
 value, written as getComputedStyle writes it (`ComputedText.cs`, the one place for these rules): lengths in px with six
-significant digits; `currentcolor` as the element's colour; `min-width` and `min-height` `auto` as `0px`; a number
+significant digits (in exponent form below 1e-4 and from 1e6 on, as C's %g); `currentcolor` as the element's colour; `min-width` and `min-height` `auto` as `0px`; a number
 `line-height` as number × font size (the used value above); family names quoted as Chromium quotes them. Nothing else
-is changed and nothing is skipped: every value must be equal. Where Chromium computes a value of its own
+is changed. Each value is equal, or refused (the engine refuses its element or one around it, at a start tag or an
+attribute), never different; the number of values and of each outcome is pinned per case, and so is the number of
+refusals of the default mode. Where Chromium computes a value of its own
 (`text-align: -webkit-center` from `align=center`), the engine computes the same value.
 
 `WptComputedValueTests.cs` compares the test_computed_value cases with the `computed` part of `wpt-css-verdicts.json`;

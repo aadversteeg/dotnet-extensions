@@ -46,6 +46,20 @@ public class HtmlParserTests
     }
 
     [Fact]
+    public void A_reopened_or_cloned_formatting_element_takes_the_position_of_the_token_that_reopened_it()
+    {
+        // Review 39 HR-P1: the second b is made for the line feed that ends line 1 (it holds "\ny"), not at the <b>.
+        var body = Body(Parsed("<p><b>x</p>\ny").Document);
+        var reopened = body.Children.OfType<HtmlElement>().Single(element => element.IsHtml("b"));
+        reopened.Position.Should().Be(new TextPosition(1, 12));
+
+        // The adoption agency algorithm's new element is placed at the end tag that runs it.
+        var adopted = Body(Parsed("<b>1<p>2</b>3").Document).Children.OfType<HtmlElement>().Single(element => element.IsHtml("p"))
+            .Children.OfType<HtmlElement>().Single(element => element.IsHtml("b"));
+        adopted.Position.Should().Be(new TextPosition(1, 9));
+    }
+
+    [Fact]
     public void A_column_counts_utf16_code_units()
     {
         // U+1F600 takes two code units, so the b after it is at column 4 of line 1 (after "<p>" it is column 6).
@@ -156,14 +170,15 @@ public class HtmlParserTests
     // ---- selectedcontent (forms §4.10.17) and its budget ----
 
     [Fact]
-    public void The_selected_options_content_is_cloned_into_selectedcontent_without_scripts()
+    public void The_selected_options_content_is_cloned_into_selectedcontent_scripts_and_frames_too()
     {
+        // Chromium 159 clones every element (review 39 HD-12, measured): tools/reference/chromium/html-tree, hd12-clone.
         var text = "<select><button><selectedcontent></selectedcontent></button><option>a<script>s</script><b>b</b><option selected>c<iframe></iframe>d</select>";
 
         var select = (HtmlElement)Body(Parsed(text).Document).Children[0];
         var selectedContent = (HtmlElement)((HtmlElement)select.Children[0]).Children[0];
 
-        selectedContent.Children.Select(node => node switch { HtmlText t => t.Data, HtmlElement e => $"<{e.LocalName}>", _ => "?" }).Should().Equal("c", "d");
+        selectedContent.Children.Select(node => node switch { HtmlText t => t.Data, HtmlElement e => $"<{e.LocalName}>", _ => "?" }).Should().Equal("c", "<iframe>", "d");
     }
 
     [Fact]

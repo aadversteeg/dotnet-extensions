@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using Ave.Extensions.Documents.Html.Parsing;
 using Ave.Extensions.Functional;
 using Xunit.Abstractions;
@@ -13,11 +14,37 @@ namespace UnitTests.Extensions.Documents.Html.Parsing;
 /// lists are html5lib's own and are not compared. One rule skips tests: those marked <c>#script-on</c> need the
 /// scripting flag on; this parser has it off.
 /// </summary>
+/// <remarks>The reference is Chromium 159, also against the suite (review 39, ruling D-d): where Chromium's tree differs
+/// from the suite's (measured into <c>tools/reference/chromium/html-tree/measured</c>), the parser must build
+/// Chromium's tree, except in the listed limits below, where it builds the suite's (the standard's). Each case is one of
+/// three outcomes, and their numbers are pinned.</remarks>
 public class TreeConstructionSuiteTests(ITestOutputHelper output)
 {
     private sealed record TreeTest(string File, int Line, string Data, string? Fragment, bool ScriptOn, string Document);
 
     public static TheoryData<string> Files => [.. FileNames()];
+
+    /// <summary>The cases where Chromium's innerHTML differs from the standard and the parser keeps the standard: fragment
+    /// parsing (<c>HtmlParser.ParseFragment</c>, which the style front-end does not use; review 39 HD-8). A NUL in a
+    /// textarea or title fragment, which Chromium drops and the standard makes U+FFFD; a form start tag in a template
+    /// fragment, and the end of a form in one; an input in a select fragment, which customizable select keeps.</summary>
+    private static readonly HashSet<string> StandardWhereChromiumDiffers =
+    [
+        "plain-text-unsafe.dat:712", "plain-text-unsafe.dat:723", "template.dat:1764", "template.dat:1817", "tests_innerHTML_1.dat:790",
+    ];
+
+    private static readonly Lazy<Dictionary<string, string>> Chromium = new(() =>
+    {
+        using var json = JsonDocument.Parse(File.ReadAllText(Suites.ChromiumTrees()));
+        return json.RootElement.GetProperty("differ").EnumerateArray()
+            .ToDictionary(item => item.GetProperty("case").GetString()!, item => item.GetProperty("tree").GetString()!);
+    });
+
+    /// <summary>The tree a test must build: Chromium's where it differs from the suite and that is not a listed limit.</summary>
+    private static string Expected(TreeTest test) =>
+        Chromium.Value.TryGetValue($"{test.File}:{test.Line}", out var chromium) && !StandardWhereChromiumDiffers.Contains($"{test.File}:{test.Line}")
+            ? chromium
+            : test.Document;
 
     private static IEnumerable<string> FileNames() =>
         Directory.GetFiles(Suites.TreeConstruction, "*.dat").Select(path => Path.GetFileName(path)).Order(StringComparer.Ordinal);
@@ -31,13 +58,15 @@ public class TreeConstructionSuiteTests(ITestOutputHelper output)
         foreach (var test in tests.Where(test => !test.ScriptOn))
         {
             var actual = Run(test);
-            if (actual != test.Document)
+            var expected = Expected(test);
+            if (actual != expected)
             {
-                failures.Add($"{file}:{test.Line}{(test.Fragment is null ? string.Empty : $" (fragment {test.Fragment})")}\n#data\n{test.Data}\n#expected\n{test.Document}#actual\n{actual}");
+                failures.Add($"{file}:{test.Line}{(test.Fragment is null ? string.Empty : $" (fragment {test.Fragment})")}\n#data\n{test.Data}\n#expected\n{expected}#actual\n{actual}");
             }
         }
 
-        output.WriteLine($"{file}: {tests.Count} tests, {tests.Count(test => test.ScriptOn)} skipped (script on), {failures.Count} failed");
+        var chromium = tests.Count(test => !test.ScriptOn && Chromium.Value.ContainsKey($"{file}:{test.Line}") && !StandardWhereChromiumDiffers.Contains($"{file}:{test.Line}"));
+        output.WriteLine($"{file}: {tests.Count} tests, {tests.Count(test => test.ScriptOn)} skipped (script on), {chromium} built as Chromium where the suite differs, {failures.Count} failed");
         foreach (var failure in failures.Take(30))
         {
             output.WriteLine(failure);
@@ -54,6 +83,21 @@ public class TreeConstructionSuiteTests(ITestOutputHelper output)
         // 1 973 tests in the 62 files at 93494ff (lines "#data"); 14 of them need scripting on.
         tests.Should().HaveCount(1973);
         tests.Count(test => test.ScriptOn).Should().Be(14);
+    }
+
+    [Fact]
+    public void Chromium_differs_from_the_suite_in_seventeen_cases_and_the_parser_follows_it_in_twelve()
+    {
+        var tests = FileNames().SelectMany(Read).Where(test => !test.ScriptOn).ToList();
+        var differ = tests.Where(test => Chromium.Value.ContainsKey($"{test.File}:{test.Line}")).ToList();
+
+        // Measured in Chromium 159 (1 959 cases): NUL handling (HD-1 .. HD-3) and search (HD-4) are built as Chromium
+        // builds them; five fragment cases keep the standard (the listed limit above).
+        tests.Should().HaveCount(1959);
+        differ.Should().HaveCount(17);
+        differ.Count(test => StandardWhereChromiumDiffers.Contains($"{test.File}:{test.Line}")).Should().Be(5);
+        differ.Where(test => !StandardWhereChromiumDiffers.Contains($"{test.File}:{test.Line}")).Select(test => test.File).Distinct()
+            .Should().BeEquivalentTo("plain-text-unsafe.dat", "search-element.dat", "tests19.dat");
     }
 
     private static string Run(TreeTest test)

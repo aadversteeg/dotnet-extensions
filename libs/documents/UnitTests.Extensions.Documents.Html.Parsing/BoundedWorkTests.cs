@@ -111,6 +111,7 @@ public class BoundedWorkTests
         parsed.Diagnostics.Count.Should().Be(HtmlInputLimits.MaxDiagnostics + 1);
         var last = parsed.Diagnostics[^1];
         last.Code.Should().Be(Ave.Extensions.Documents.Core.DocumentErrorCodes.TooManyDiagnostics);
-        ((int)last.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value]!).Should().BeGreaterThan(HtmlInputLimits.MaxCharacters);
+        // One unexpected-null-character per NUL (and a few for the missing doctype and elements), all counted.
+        ((int)last.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value]! + HtmlInputLimits.MaxDiagnostics).Should().BeGreaterThanOrEqualTo(HtmlInputLimits.MaxCharacters);
     }
 }

@@ -317,46 +317,54 @@ public sealed class CascadeIndex
         }
 
         /// <summary>
-        /// Evaluates a supports condition as Chromium would (CSS Conditional 3 §6): a declaration holds when it is
-        /// valid CSS, which here means the registry parses it as supported or refuses it (a refused value is valid
-        /// CSS that the rules inside then use, and are refused for); a selector holds when it parses. A property the
-        /// registry does not know cannot be answered for Chromium: it is refused and the condition is false.
+        /// Evaluates a supports condition as Chromium 159 would (<see cref="SupportsConditions.Evaluate"/>); where the
+        /// engine cannot tell what Chromium answers, the condition is refused and taken as false.
         /// </summary>
-        private bool Supports(SupportsCondition condition, string sourceName, TextPosition position) =>
-            SupportsConditions.Evaluate(condition, declaration => Holds(declaration, sourceName, position));
-
-        private bool Holds(Declaration declaration, string sourceName, TextPosition position)
+        private bool Supports(SupportsCondition condition, string sourceName, TextPosition position)
         {
-            if (declaration.IsCustomProperty || DeclarationPreparer.ContainsFunction(declaration.Value, "var") || DeclarationPreparer.WideKeyword(declaration.Value) is not null)
+            if (SupportsConditions.Evaluate(condition, Holds) is { } answer)
             {
-                return true;
+                return answer;
             }
 
-            var name = Ascii.ToLower(declaration.Name);
-            if (PropertyRegistry.Find(name) is { } longhand)
-            {
-                var parsed = longhand.Parse(new ValueReader(declaration.Value));
-                return parsed.IsValid || parsed.Unsupported;
-            }
-
-            if (PropertyRegistry.FindShorthand(name) is { } shorthand)
-            {
-                var parsed = shorthand.Parse(new ValueReader(declaration.Value));
-                return parsed.Values is not null || parsed.Unsupported;
-            }
-
-            if (PropertyRegistry.FindIgnored(name) is not null)
-            {
-                return true;
-            }
-
-            if (!(name.StartsWith("-moz-", System.StringComparison.Ordinal) || name.StartsWith("-ms-", System.StringComparison.Ordinal) || name.StartsWith("-o-", System.StringComparison.Ordinal)))
-            {
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.Property, $"@supports asks about '{declaration.Name}', a property the engine does not know; the condition is taken as false.", sourceName, position)
-                    .With(ErrorMetadataKeys.Property, name));
-            }
-
+            Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.AtRule, "The @supports condition asks about CSS this profile does not read, so its answer in a browser is not known; it is taken as false.", sourceName, position));
             return false;
+        }
+
+        /// <summary>Whether Chromium 159 supports a declaration: true for a value of a known property the engine reads
+        /// and supports, or a var() or CSS-wide keyword in one (Chromium accepts those at parse time), and for a
+        /// custom property with an ordinary value; false for another engine's property; null where the engine cannot
+        /// tell (a value it does not read or support, an ignored property's value, an unknown property, which is
+        /// refused).</summary>
+        private bool? Holds(Declaration declaration)
+        {
+            var name = Ascii.ToLower(declaration.Name);
+            if (declaration.IsCustomProperty)
+            {
+                return name.Length > 2 && declaration.Value.All(value => value is not CssToken { Kind: CssTokenKind.CloseCurly or CssTokenKind.CloseSquare or CssTokenKind.CloseParen or CssTokenKind.BadString or CssTokenKind.BadUrl } and not CssToken { Kind: CssTokenKind.Delim, Text: "!" })
+                    ? true
+                    : null;
+            }
+
+            var longhand = PropertyRegistry.Find(name);
+            var shorthand = longhand is null ? PropertyRegistry.FindShorthand(name) : null;
+            if (longhand is not null || shorthand is not null || name == "all")
+            {
+                if (DeclarationPreparer.ContainsFunction(declaration.Value, "var") || DeclarationPreparer.WideKeyword(declaration.Value) is not null)
+                {
+                    return true;
+                }
+
+                return longhand is not null ? (longhand.Parse(new ValueReader(declaration.Value)).IsValid ? true : null)
+                    : shorthand is not null && shorthand.Parse(new ValueReader(declaration.Value)).Values is not null ? true : null;
+            }
+
+            if (name.StartsWith("-moz-", System.StringComparison.Ordinal) || name.StartsWith("-ms-", System.StringComparison.Ordinal) || name.StartsWith("-o-", System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return null;
         }
     }
 }

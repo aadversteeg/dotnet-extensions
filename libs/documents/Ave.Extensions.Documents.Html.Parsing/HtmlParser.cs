@@ -50,10 +50,23 @@ public static class HtmlParser
 
         var decoded = ByteDecoding.Decode(bytes.Span);
         var source = SourceText.Of(decoded.Text);
-        if (!decoded.HasByteOrderMark && MetaPrescan.Run(bytes.Span) is { } found && found.Encoding != EncodingLabels.Utf8)
+        var found = decoded.HasByteOrderMark ? null : MetaPrescan.Run(bytes.Span);
+        if (found is not null && found.Encoding != EncodingLabels.Utf8)
         {
             var index = SourceText.NormalisedIndices(decoded.Text, [ByteDecoding.Utf8Length(bytes.Span, found.Offset)]);
             return EncodingError(options, found.Label, source.PositionOf(index.Count > 0 ? index[0] : 0));
+        }
+
+        // Bytes that are not UTF-8, with no byte order mark and nothing that declares UTF-8: a browser detects a legacy
+        // encoding for them (Chromium 159 reads caf\xe9 as windows-1252 café, review 39 HD-16), the parser would make
+        // U+FFFD of them. Refused, as a declared legacy encoding is.
+        if (!decoded.HasByteOrderMark && found is null && decoded.Replacements.Count > 0)
+        {
+            var at = SourceText.NormalisedIndices(decoded.Text, [decoded.Replacements[0]]);
+            return Result<HtmlParseResult, Error>.Failure(
+                new Error(HtmlErrorCodes.Encoding, "The bytes are not UTF-8 and nothing declares an encoding: a browser would detect a legacy encoding for them, the parser reads UTF-8 and UTF-16 only. Convert the document to UTF-8, or declare it with <meta charset=\"utf-8\">.")
+                    .With(ErrorMetadataKeys.Value, "(undeclared)")
+                    .WithSource(options.SourceName, source.PositionOf(at.Count > 0 ? at[0] : 0)));
         }
 
         var replaced = new Diagnostics();
@@ -62,7 +75,9 @@ public static class HtmlParser
             replaced.Add(new Diagnostic("invalid-byte-sequence", index, null));
         }
 
-        return ParseText(source, options, replaced, checkMeta: !decoded.HasByteOrderMark);
+        // The meta the prescan read is decided (it takes the last charset, as Chromium); tree construction checks the others.
+        var decided = found is null ? -1 : SourceText.NormalisedIndices(decoded.Text, [ByteDecoding.Utf8Length(bytes.Span, found.Offset)]) is [var at0] ? at0 : -1;
+        return ParseText(source, options, replaced, checkMeta: !decoded.HasByteOrderMark, decided);
     }
 
     /// <summary>The HTML fragment parsing algorithm (§13.4): the text as the content of a context element.</summary>
@@ -123,7 +138,7 @@ public static class HtmlParser
         }
     }
 
-    private static Result<HtmlParseResult, Error> ParseText(SourceText source, HtmlParseOptions options, Diagnostics diagnostics, bool checkMeta)
+    private static Result<HtmlParseResult, Error> ParseText(SourceText source, HtmlParseOptions options, Diagnostics diagnostics, bool checkMeta, int decidedMeta = -1)
     {
         var tokenizer = new Tokenizer(source, (name, index) => diagnostics.Add(new Diagnostic(name, index, null)));
         Error? encoding = null;
@@ -131,7 +146,7 @@ public static class HtmlParser
         {
             Position = source.PositionOf,
             InputLength = source.Length,
-            MetaEncoding = checkMeta ? meta => encoding ??= MetaEncodingError(meta, options, source) : null,
+            MetaEncoding = checkMeta ? meta => encoding ??= meta.Start == decidedMeta ? null : MetaEncodingError(meta, options, source) : null,
         };
         var document = builder.ParseDocument();
         if (encoding is { } failure)

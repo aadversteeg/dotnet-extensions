@@ -45,6 +45,8 @@ internal sealed partial class Tokenizer
     private bool _selfClosing;
     private readonly StringBuilder _attributeName = new();
     private readonly StringBuilder _attributeValue = new();
+    private readonly List<(int Offset, int Source, bool Contiguous)> _valueAnchors = [];
+    private int _valueNext = -1;
     private bool _attributeOpen;
     private bool _attributeDropped;
     private int _attributeStart;
@@ -298,6 +300,8 @@ internal sealed partial class Tokenizer
         CommitAttribute();
         _attributeName.Clear();
         _attributeValue.Clear();
+        _valueAnchors.Clear();
+        _valueNext = -1;
         _attributeOpen = true;
         _attributeDropped = false;
         _attributeStart = start;
@@ -319,7 +323,7 @@ internal sealed partial class Tokenizer
     {
         if (_attributeOpen && !_attributeDropped)
         {
-            _tag!.AddAttribute(new TokenAttribute { Name = _finishedAttributeName, Value = _attributeValue.ToString(), Start = _attributeStart });
+            _tag!.AddAttribute(new TokenAttribute { Name = _finishedAttributeName, Value = _attributeValue.ToString(), Start = _attributeStart, Anchors = [.. _valueAnchors] });
         }
 
         _attributeOpen = false;
@@ -403,7 +407,10 @@ internal sealed partial class Tokenizer
     {
         if (ReferenceInAttribute)
         {
-            _attributeValue.Append(_buffer);
+            for (var i = 0; i < _buffer.Length; i++)
+            {
+                AppendValue(_buffer[i], _referenceStart + i);
+            }
         }
         else
         {
@@ -420,12 +427,27 @@ internal sealed partial class Tokenizer
     {
         if (ReferenceInAttribute)
         {
+            _valueAnchors.Add((_attributeValue.Length, _referenceStart, false));
             _attributeValue.Append(characters);
+            _valueNext = -1;
         }
         else
         {
             EmitReference(characters, _referenceStart);
         }
+    }
+
+    /// <summary>Appends a character of the source, written at <paramref name="source"/>, to the attribute value, with an
+    /// anchor when it does not follow the last one (after a reference, after a line feed, at the start).</summary>
+    private void AppendValue(int codePoint, int source)
+    {
+        if (source != _valueNext)
+        {
+            _valueAnchors.Add((_attributeValue.Length, source, true));
+        }
+
+        AppendCodePoint(_attributeValue, codePoint);
+        _valueNext = codePoint == '\n' ? -1 : source + (codePoint > 0xFFFF ? 2 : 1);
     }
 
     private static void AppendCodePoint(StringBuilder builder, int codePoint)

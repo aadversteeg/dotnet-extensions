@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Ave.Extensions.Documents.Css.Syntax;
 
 namespace Ave.Extensions.Documents.Css.Values;
@@ -248,6 +249,14 @@ internal static partial class Colors
 
     private static bool IsNone(ComponentValue value) => value is CssToken token && token.IsIdent("none");
 
+    /// <summary>A refusal when a modern colour function has a <c>none</c> component: Chromium 159 keeps it missing and
+    /// writes the colour as <c>color(srgb none none none)</c> or <c>hsl(none 50% 50%)</c> (measured, review 39), where
+    /// the engine would compute zero.</summary>
+    private static string? HasNone(IReadOnlyList<ComponentValue> channels, ComponentValue? alpha, bool legacy) =>
+        !legacy && (channels.Any(IsNone) || (alpha is not null && IsNone(alpha)))
+            ? "a 'none' component of a colour is not supported"
+            : null;
+
     /// <summary>&lt;alpha-value&gt; = &lt;number&gt; | &lt;percentage&gt;, clamped to 0–1.</summary>
     private static double? Alpha(ComponentValue? value, bool legacy)
     {
@@ -285,6 +294,12 @@ internal static partial class Colors
             }
 
             return ColorOutcome.Invalid;
+        }
+
+        if (HasNone(channels, alphaValue, legacy) is { } none)
+        {
+            message = none;
+            return ColorOutcome.Unsupported;
         }
 
         var parsed = new double[3];
@@ -344,6 +359,12 @@ internal static partial class Colors
             return ColorOutcome.Invalid;
         }
 
+        if (HasNone(channels, alphaValue, legacy) is { } none)
+        {
+            message = none;
+            return ColorOutcome.Unsupported;
+        }
+
         double hue;
         if (!legacy && IsNone(channels[0]))
         {
@@ -351,6 +372,14 @@ internal static partial class Colors
         }
         else if (Hue(channels[0]) is { } degrees)
         {
+            // A hue is periodic, so a huge one has no reliable remainder in a double: Chromium 159 gives red for
+            // hsl(1e999, 100%, 50%) (measured, review 39 CR-8), which no rule of CSS Color 4 explains. Refused instead.
+            if (!(Math.Abs(degrees) <= MaxHueDegrees))
+            {
+                message = $"a hue beyond {MaxHueDegrees} degrees either way is not supported";
+                return ColorOutcome.Unsupported;
+            }
+
             hue = degrees;
         }
         else
@@ -385,6 +414,9 @@ internal static partial class Colors
         color = new CssColor(red * 255, green * 255, blue * 255, alpha);
         return ColorOutcome.Color;
     }
+
+    /// <summary>The largest hue the engine takes, in degrees either way: 2^24.</summary>
+    private const double MaxHueDegrees = 1 << 24;
 
     /// <summary>&lt;hue&gt; = &lt;number&gt; | &lt;angle&gt;, in degrees.</summary>
     private static double? Hue(ComponentValue value) => value switch

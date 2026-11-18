@@ -17,6 +17,10 @@ internal sealed class DiagnosticCollector
     /// <summary>The number kept so far.</summary>
     public int Count => _kept.Count;
 
+    /// <summary>The diagnostic kept at a place.</summary>
+    /// <param name="index">The place, below <see cref="Count"/>.</param>
+    public Error this[int index] => _kept[index];
+
     /// <summary>Adds a diagnostic, or counts it past the limit.</summary>
     public void Add(Error error)
     {

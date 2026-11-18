@@ -18,7 +18,7 @@ internal sealed partial class TreeBuilder
                 }
 
                 InsertCharacter(t.Char, t.Source);
-                if (!t.IsWhitespace)
+                if (!t.IsWhitespace && t.Char != 0xFFFD)
                 {
                     _framesetOk = false;
                 }

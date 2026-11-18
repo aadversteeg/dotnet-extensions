@@ -31,9 +31,10 @@ public static class HtmlErrorCodes
         public static readonly ErrorCode Syntax = _ / "Syntax";
     }
 
-    /// <summary>Bytes whose encoding is not UTF-8: a <c>meta</c> element names another encoding (HTML Standard
-    /// §13.2.3.2 and §13.2.6.4.4), and the parser does not guess. Metadata: Value (the label), SourceFile, SourceLine,
-    /// SourceColumn.</summary>
+    /// <summary>Bytes whose encoding is not UTF-8: a <c>meta</c> element or an XML declaration names another encoding
+    /// (HTML Standard §13.2.3.2 and §13.2.6.4.4), or the bytes are not UTF-8 and nothing declares an encoding (a browser
+    /// would detect one); the parser does not guess. Metadata: Value (the label, or <c>(undeclared)</c>), SourceFile,
+    /// SourceLine, SourceColumn.</summary>
     public static readonly ErrorCode Encoding = _ / "Encoding";
 
     /// <summary>A text longer than <see cref="HtmlInputLimits.MaxCharacters"/> (or bytes longer than that many).

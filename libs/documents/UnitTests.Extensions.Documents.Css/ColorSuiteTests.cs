@@ -14,7 +14,8 @@ namespace UnitTests.Extensions.Documents.Css;
 /// for the shortest decimal that rounds to the same 8-bit value, so alpha is compared as that byte. The suite keeps
 /// fractional channels for hsl(); Chromium 159 stores rgb() and hsl() colours with 8-bit channels and serialises them
 /// rounded (in the pinned container hsl(0 0% 12.5%) is rgb(32, 32, 32)), and so does the engine, so channels are
-/// compared after rounding the expected ones half away from zero.
+/// compared after rounding the expected ones half away from zero. A colour the engine refuses (a <c>none</c> component,
+/// a hue past its range) is its own outcome, never "agree": its number per file is pinned.
 /// </summary>
 public class ColorSuiteTests(ITestOutputHelper output)
 {
@@ -24,6 +25,13 @@ public class ColorSuiteTests(ITestOutputHelper output)
         "color_hsl_3.json", "color_hsl_4.json",
     ];
 
+    /// <summary>The cases of each file the engine refuses, counted when they were last read.</summary>
+    private static readonly Dictionary<string, int> Refused = new()
+    {
+        ["color_hexadecimal_3.json"] = 0, ["color_hexadecimal_4.json"] = 0, ["color_keywords_3.json"] = 0,
+        ["color_keywords_4.json"] = 0, ["color_hsl_3.json"] = 0, ["color_hsl_4.json"] = 244,
+    };
+
     [Theory]
     [MemberData(nameof(Files))]
     public void Every_case_of_the_file_passes(string file)
@@ -31,20 +39,26 @@ public class ColorSuiteTests(ITestOutputHelper output)
         using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(Suites.CssParsingTests, file)));
         var items = json.RootElement.EnumerateArray().ToList();
         var failures = new List<string>();
+        var refused = 0;
         for (var i = 0; i < items.Count; i += 2)
         {
             var input = items[i].GetString()!;
             var expected = items[i + 1].ValueKind == JsonValueKind.Null ? "null" : items[i + 1].GetString()!;
             var actual = Serialise(input);
-            if (!SameColor(actual, expected))
+            if (actual == "refused")
+            {
+                refused++;
+            }
+            else if (!SameColor(actual, expected))
             {
                 failures.Add($"{JsonSerializer.Serialize(input)}: expected {expected}, actual {actual}");
             }
         }
 
-        output.WriteLine($"{file}: {items.Count / 2} cases, {failures.Count} failed");
+        output.WriteLine($"{file}: {items.Count / 2} cases, {items.Count / 2 - refused - failures.Count} equal, {refused} refused, {failures.Count} failed");
         failures.Take(40).ToList().ForEach(output.WriteLine);
         failures.Should().BeEmpty();
+        refused.Should().Be(Refused[file]);
     }
 
     /// <summary>Equal colours: channels rounded half away from zero, alpha compared as round(alpha × 255).</summary>
@@ -84,6 +98,7 @@ public class ColorSuiteTests(ITestOutputHelper output)
         {
             ColorOutcome.Color => color.ToString(),
             ColorOutcome.CurrentColor => "currentcolor",
+            ColorOutcome.Unsupported => "refused",
             _ => "null",
         };
     }

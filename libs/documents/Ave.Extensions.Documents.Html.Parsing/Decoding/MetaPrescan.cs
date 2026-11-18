@@ -27,6 +27,11 @@ internal static class MetaPrescan
     public static Found? Run(ReadOnlySpan<byte> bytes)
     {
         bytes = bytes[..Math.Min(bytes.Length, Length)];
+        if (XmlDeclaration(bytes) is { } declared)
+        {
+            return declared;
+        }
+
         var position = 0;
         while (position < bytes.Length)
         {
@@ -93,6 +98,35 @@ internal static class MetaPrescan
         return null;
     }
 
+    /// <summary>An XML declaration that starts the bytes and names an encoding (<c>&lt;?xml version="1.0"
+    /// encoding="iso-8859-2"?&gt;</c>): Chromium 159 decodes an HTML document by it (review 39 HD-13, measured), which
+    /// the prescan of the standard does not; the parser refuses a non-UTF-8 one as it refuses a meta element.</summary>
+    private static Found? XmlDeclaration(ReadOnlySpan<byte> bytes)
+    {
+        if (!bytes.StartsWith("<?xml"u8) || bytes.Length < 6 || !(Ascii.IsWhitespace(bytes[5])))
+        {
+            return null;
+        }
+
+        var end = bytes.IndexOf("?>"u8);
+        var declaration = System.Text.Encoding.ASCII.GetString(end < 0 ? bytes : bytes[..end]);
+        var at = declaration.IndexOf("encoding", StringComparison.Ordinal);
+        if (at < 0)
+        {
+            return null;
+        }
+
+        var rest = declaration[(at + "encoding".Length)..].TrimStart(' ', '\t', '\n', '\r');
+        if (!rest.StartsWith('=') || rest[1..].TrimStart(' ', '\t', '\n', '\r') is not { Length: > 0 } quoted || quoted[0] is not ('"' or '\''))
+        {
+            return null;
+        }
+
+        var close = quoted.IndexOf(quoted[0], 1);
+        var label = close < 0 ? null : quoted[1..close];
+        return label is not null && EncodingLabels.Resolve(label) is { } encoding ? new Found(label, EncodingLabels.ForMeta(encoding), 0) : null;
+    }
+
     /// <summary>The attributes of one meta element, and what they say (the steps after "Let attribute list be an
     /// empty list of strings").</summary>
     private static Found? Meta(ReadOnlySpan<byte> bytes, ref int position, int start)
@@ -104,7 +138,9 @@ internal static class MetaPrescan
         string? label = null;
         while (Attribute(bytes, ref position) is { } attribute)
         {
-            if (!names.Add(attribute.Name))
+            // A repeated attribute is skipped (§13.2.3.2), except charset: Chromium 159 takes the last one (review 39
+            // HD-14, measured).
+            if (!names.Add(attribute.Name) && attribute.Name != "charset")
             {
                 continue;
             }

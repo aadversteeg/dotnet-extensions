@@ -58,14 +58,14 @@ public static partial class PropertyRegistry
             "outline-width", false, new CssLength(Length.FromPoints(2.25)), "all elements", "<line-width> (nothing is drawn: outline-style is only none)",
             PropertySupport.Supported, "CSS UI 4 §3.2", reader => ParseBorderWidth(reader, "outline-width"), (value, context) => SnappedLineWidth(value, context));
         yield return new PropertyDefinition(
-            "outline-color", false, new CssKeyword("currentcolor"), "all elements", "<color> | auto (nothing is drawn: outline-style is only none)",
+            "outline-color", false, new CssKeyword("currentcolor"), "all elements", "<color> (nothing is drawn: outline-style is only none; Chromium 159 does not take auto)",
             PropertySupport.Supported, "CSS UI 4 §3.4",
-            reader => reader.Count == 1 && reader.Keyword("auto") is not null ? ParsedValue.Of(new CssKeyword("auto")) : Whole(reader, reader.Color(), "outline-color"),
+            reader => Whole(reader, reader.Color(), "outline-color"),
             AsSpecified);
         yield return new PropertyDefinition(
             "outline-offset", false, Zero, "all elements", "<length> (nothing is drawn: outline-style is only none)", PropertySupport.Supported,
             "CSS UI 4 §3.5", reader => Whole(reader, reader.Length(percentages: false, nonNegative: false, "outline-offset"), "outline-offset"),
-            (value, context) => context.LengthPercentage(value));
+            SnappedOffset);
 
         // Text.
         yield return InitialZero("text-indent", true, "0", "block containers", "CSS Text 3 §8.1");
@@ -75,8 +75,9 @@ public static partial class PropertyRegistry
             "word-spacing", inherited: true, Zero, "text", "normal | 0", PropertySupport.InitialOnly, "CSS Text 4 §7.1",
             reader => reader.Count == 1 && reader.Keyword("normal") is not null
                 ? ParsedValue.Of(Zero)
-                : reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "word-spacing") is { Value: CssLength { Points: 0 } or CssPercentage { Value: 0 } }
-                    ? ParsedValue.Of(Zero)
+                : reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "word-spacing") is { Value: CssLength { Points: 0 } or CssPercentage { Value: 0 } } zero
+                    // Chromium 159 keeps 0% as 0% (measured, review 39); 0 and 0px are 0px.
+                    ? ParsedValue.Of(zero.Value is CssPercentage ? new CssPercentage(0) : Zero)
                     : ParsedValue.Refused("'word-spacing' is supported only at its initial value, normal"),
             AsSpecified);
         yield return InitialKeyword("text-transform", true, "none", ["capitalize", "uppercase", "lowercase", "full-width", "full-size-kana", "math-auto"], true, "text", "CSS Text 3 §2.1");
@@ -169,8 +170,9 @@ public static partial class PropertyRegistry
     /// <summary>A background position axis the engine implements only at its initial value, 0%.</summary>
     private static PropertyDefinition InitialPercentPair(string name, string appliesTo, string specification) =>
         new(name, false, new CssPercentage(0), appliesTo, "0%", PropertySupport.InitialOnly, specification,
-            reader => reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, name) is { Value: CssPercentage { Value: 0 } or CssLength { Points: 0 } }
-                ? ParsedValue.Of(new CssPercentage(0))
+            // A zero length is the same position, and Chromium 159 keeps it as written: 0px, not 0% (measured, review 39).
+            reader => reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, name) is { Value: (CssPercentage { Value: 0 } or CssLength { Points: 0 }) and var zero }
+                ? ParsedValue.Of(zero)
                 : ParsedValue.Refused($"'{name}' is supported only at its initial value, 0%"),
             AsSpecified);
 

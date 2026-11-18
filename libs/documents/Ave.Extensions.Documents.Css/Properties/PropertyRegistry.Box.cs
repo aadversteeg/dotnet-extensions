@@ -228,6 +228,21 @@ public static partial class PropertyRegistry
         return new CssLength(Length.FromPoints(snapped * 0.75));
     }
 
+    /// <summary>outline-offset snapped as Chromium 159 snaps it: above 0 and below 1px is 1px, anything else is floored
+    /// to whole pixels (1.5px is 1px, 0.4px is 1px, -0.5px is -1px; measured, review 39 F14).</summary>
+    private static ComputedResult SnappedOffset(CssValue value, ComputeContext context)
+    {
+        var computed = context.LengthPercentage(value);
+        if (computed.Value is not CssLength length)
+        {
+            return computed;
+        }
+
+        var pixels = length.Points / 0.75;
+        var snapped = pixels is > 0 and < 1 ? 1 : Math.Floor(pixels);
+        return new CssLength(Length.FromPoints(snapped * 0.75));
+    }
+
     /// <summary>The computed display (CSS Display 3 §2.7): the root element is blockified (inline and the internal table
     /// values become block; list-item stays).</summary>
     private static ComputedResult ComputeDisplay(CssValue value, ComputeContext context)

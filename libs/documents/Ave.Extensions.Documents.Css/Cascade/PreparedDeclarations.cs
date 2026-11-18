@@ -87,9 +87,17 @@ internal static class DeclarationPreparer
         var name = declaration.IsCustomProperty ? declaration.Name : Ascii.ToLower(declaration.Name);
         var prepared = new PreparedDeclaration(declaration, sourceName, name, declaration.Important && origin != CascadeOrigin.PresentationalHint, order);
         var wide = WideKeyword(declaration.Value);
+        if (declaration.Value.Any(value => value is CssToken token && token.IsDelim('!')))
+        {
+            // A top-level '!' other than !important is not a <declaration-value> (CSS Syntax 3 §8.2): no property's
+            // grammar takes it, a custom property's included, so Chromium drops the declaration (review 39 F8).
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A '!' that is not !important makes the declaration of '{declaration.Name}' invalid; it is dropped (CSS Syntax 3 §8.2).", prepared));
+            return;
+        }
+
         if (ContainsFunction(declaration.Value, "var") && !VarSubstitution.IsWellFormed(declaration.Value))
         {
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A var() in '{declaration.Name}' does not match var( --name [, fallback]? ); the declaration is dropped.", prepared));
+            diagnostics.Add(Diagnostic(CssErrorCodes.Unsupported.Value, NotReadable(prepared, "a var() that does not match var( --name [, fallback]? )") + "; the declaration is skipped.", prepared));
             return;
         }
 
@@ -107,7 +115,9 @@ internal static class DeclarationPreparer
         {
             if (PropertyRegistry.FindIgnored(name) is { } ignored)
             {
-                whenApplied.Add(Diagnostic(CssErrorCodes.Ignored.Property, $"'{declaration.Name}' is ignored: it concerns {ignored.Reason}.", prepared));
+                whenApplied.Add(ignored.Refuses?.Invoke(declaration.Value) == true
+                    ? Diagnostic(CssErrorCodes.Unsupported.Value, $"'{declaration.Name}: {CssSerializer.Shortened(declaration.Value)}' is not supported: {ignored.RefusedValues}.", prepared)
+                    : Diagnostic(CssErrorCodes.Ignored.Property, $"'{declaration.Name}' is ignored: it concerns {ignored.Reason}.", prepared));
             }
             else if (name.StartsWith("-moz-", StringComparison.Ordinal) || name.StartsWith("-ms-", StringComparison.Ordinal) || name.StartsWith("-o-", StringComparison.Ordinal))
             {
@@ -149,7 +159,7 @@ internal static class DeclarationPreparer
 
         if (isAll)
         {
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, "'all' takes only a CSS-wide keyword; the declaration is dropped.", prepared));
+            diagnostics.Add(Diagnostic(CssErrorCodes.Unsupported.Value, NotReadable(prepared, "'all' takes only a CSS-wide keyword") + "; the declaration is skipped.", prepared));
             return;
         }
 
@@ -165,7 +175,10 @@ internal static class DeclarationPreparer
             return;
         }
 
-        if (origin != CascadeOrigin.UserAgent && ContainsInternalKeyword(declaration.Value))
+        // Chromium keeps its -internal- keywords for its own style sheet: an author's text-align: -internal-center is
+        // dropped. Where a property takes a name (font-family, counter names, list-style-type, page), Chromium 159 reads
+        // -internal-… as an ordinary name (measured, review 39), so that is left to the property's grammar.
+        if (origin != CascadeOrigin.UserAgent && name == "text-align" && ContainsInternalKeyword(declaration.Value))
         {
             diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; the declaration of '{declaration.Name}' is dropped.", prepared));
             return;
@@ -184,7 +197,7 @@ internal static class DeclarationPreparer
             }
             else
             {
-                diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"The value of '{declaration.Name}' is invalid ({parsed.Problem}); the declaration is dropped.", prepared));
+                entries.Add(new Entry(longhand, null, new RefusedEntry(CssErrorCodes.Unsupported.Value, NotReadable(prepared, parsed.Problem)), prepared));
             }
 
             return;
@@ -205,9 +218,19 @@ internal static class DeclarationPreparer
         }
         else
         {
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"The value of '{declaration.Name}' is invalid ({expanded.Problem}); the declaration is dropped.", prepared));
+            AddAll(new RefusedEntry(CssErrorCodes.Unsupported.Value, NotReadable(prepared, expanded.Problem)));
         }
     }
+
+    /// <summary>The one answer for a value the engine's grammar does not read (above CSS Syntax 3): the engine cannot
+    /// tell CSS a browser drops from valid CSS beyond this profile (docs/html-css-profile.md), so it refuses both, in the
+    /// author's words.</summary>
+    /// <param name="declaration">The declaration.</param>
+    /// <param name="problem">What the grammar found, or null.</param>
+    /// <returns>The message, without the consequence.</returns>
+    public static string NotReadable(PreparedDeclaration declaration, string? problem) =>
+        $"'{declaration.Source.Name}: {CssSerializer.Serialize(Trim(declaration.Source.Value))}' is not valid or not supported in this profile"
+        + (problem is null ? string.Empty : $" ({problem})");
 
     /// <summary>A diagnostic about a declaration: at its place, with its property and value.</summary>
     public static Error Diagnostic(ErrorCode code, string message, PreparedDeclaration declaration) =>

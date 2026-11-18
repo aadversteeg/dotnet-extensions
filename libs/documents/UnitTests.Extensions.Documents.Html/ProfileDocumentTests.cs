@@ -40,6 +40,7 @@ public class ProfileDocumentTests
         attributes.Should().Contain([
             "libs/documents/docs/html-css-profile.md text eol=lf",
             "libs/documents/tools/reference/chromium/computed-style/** text eol=lf",
+            "libs/documents/tools/reference/chromium/html-tree/** text eol=lf",
             "libs/documents/Ave.Extensions.Documents.Html/UserAgent/*.css text eol=lf",
             "libs/documents/Ave.Extensions.Documents.Html.Parsing/Tokenizing/*.txt text eol=lf",
         ]);
@@ -61,7 +62,14 @@ public class ProfileDocumentTests
         Line();
         Line("## Properties");
         Line();
-        Line("Longhands with every value the engine supports. A value CSS defines that is not listed is refused.");
+        Line("Longhands with every value the engine supports. A value CSS defines that is not listed is refused. So is a value that");
+        Line("does not match the engine's grammar of a known property: a typing error such as `color: 12px`, or valid CSS beyond this");
+        Line("profile such as `vertical-align: 5px`. The engine cannot tell the two apart, and a browser drops the first and uses the");
+        Line("second, so both get the one answer \"not valid or not supported in this profile\". The same holds for a selector or media");
+        Line("query that does not parse and an unknown at-rule. Dropped with a warning, as in a browser, is only what CSS Syntax 3");
+        Line("recovers from (an unclosed block, a declaration without a colon), a top-level `!` other than `!important`, a rule in a");
+        Line("place CSS does not allow, another browser engine's property (`-moz-`, `-ms-`, `-o-`) and a `var()` that is cyclic or");
+        Line("names nothing.");
         Line();
         Line("| Property | Inherited | Initial | Supported values | Defined in |");
         Line("| --- | --- | --- | --- | --- |");
@@ -98,11 +106,13 @@ public class ProfileDocumentTests
         Line();
         Line("### Ignored by rule");
         Line();
-        Line("| Property | Why |");
-        Line("| --- | --- |");
+        Line("Each was checked against Chromium 159's print rendering; the values that change it are refused instead.");
+        Line();
+        Line("| Property | Why | Refused instead |");
+        Line("| --- | --- | --- |");
         foreach (var ignored in PropertyRegistry.Ignored.OrderBy(ignored => ignored.Name, StringComparer.Ordinal))
         {
-            Line($"| `{ignored.Name}` | {Escape(ignored.Reason)} |");
+            Line($"| `{ignored.Name}` | {Escape(ignored.Reason)} | {Escape(ignored.RefusedValues ?? string.Empty)} |");
         }
 
         Line();
@@ -129,12 +139,13 @@ public class ProfileDocumentTests
         }
 
         Line();
-        Line("Pseudo-elements, all refused: " + string.Join(", ", PseudoClasses.AllElements.Select(entry => $"`::{entry.Name}{(entry.Functional ? "()" : string.Empty)}`").Distinct()) + ", and Chromium's `::-webkit-*`.");
+        Line("Pseudo-elements never draw in an accepted document and are ignored by rule: " + string.Join(", ", PseudoClasses.AllElements.Where(entry => entry.Support == SelectorSupport.NeverMatches).Select(entry => $"`::{entry.Name}{(entry.Functional ? "()" : string.Empty)}`").Distinct()) + ". The others are refused: "
+            + string.Join(", ", PseudoClasses.AllElements.Where(entry => entry.Support != SelectorSupport.NeverMatches).Select(entry => $"`::{entry.Name}{(entry.Functional ? "()" : string.Empty)}`").Distinct()) + ", and Chromium's other `::-webkit-*`.");
         Line();
         Line("## At-rules");
         Line();
-        Line("- Supported: @media (media types; the width and height features, other features refused), @supports (answered");
-        Line("  as Chromium would), @import (through the caller's resolver, with layer() and supports()), @layer, @font-face and");
+        Line("- Supported: @media (media types; the width and height features with Chromium's 1/64px tolerance, other features");
+        Line("  refused), @supports (answered as Chromium 159 would where the engine can tell, refused where it cannot), @import (through the caller's resolver, with layer() and supports()), @layer, @font-face and");
         Line("  @page (read as values for the layout), CSS Nesting 1 inside style rules.");
         Line("- Ignored by rule: " + string.Join(", ", RuleBuilder.IgnoredAtRules.Order(StringComparer.Ordinal).Select(name => "@" + name)) + ".");
         Line("- Refused: " + string.Join(", ", RuleBuilder.UnsupportedAtRules.Order(StringComparer.Ordinal).Select(name => "@" + name)) + ".");
@@ -145,6 +156,10 @@ public class ProfileDocumentTests
         Line("  applies it).");
         Line("- A document in quirks mode is refused (add `<!DOCTYPE html>`).");
         Line("- Refused when drawn (display not none): " + string.Join(", ", HtmlStyleResolver.FormControls) + ".");
+        Line("- Refused wherever they are: " + string.Join(", ", HtmlStyleResolver.OutsideProfile.Keys.Order(StringComparer.Ordinal)) + ", svg and math (their own");
+        Line("  matching and style rules), and an element whose user-agent style is outside the profile (sub, sup, del, s, ruby …).");
+        Line("- Scripts are not run, so a script element a browser runs (no type, a JavaScript type, module, importmap) and every");
+        Line("  event handler attribute (`on…`) are refused; a data block (any other type) is not.");
         Line("- Style sheets: style elements, link rel=stylesheet (not alternate; the preferred title set), with media and type;");
         Line("  linked sheets and imports through the caller's `ResourceResolver`; a sheet it does not give is refused.");
         Line();

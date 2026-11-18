@@ -153,7 +153,8 @@ public class CascadeTests
             @media screen { p { color: red } }
             @media print and (min-width: 100mm) { p { margin-top: 1px } }
             @media (max-width: 100mm) { p { margin-top: 2px } }
-            @supports (display: flex) { p { margin-bottom: 1px } }
+            @supports (display: block) and (not (-moz-binding: none)) { p { margin-bottom: 1px } }
+            @supports (display: flex) { p { margin-left: 1px } }
             @supports not (colour: red) { p { padding-top: 1px } }
             """;
         var computed = Compute(root, css);
@@ -161,8 +162,11 @@ public class CascadeTests
         computed.Value(root["x"], "color").Should().Be("rgb(0, 0, 0)");
         computed.Value(root["x"], "margin-top").Should().Be("0.75pt");
         computed.Value(root["x"], "margin-bottom").Should().Be("0.75pt");
-        computed.Value(root["x"], "padding-top").Should().Be("0.75pt");
-        computed.Coded(CssErrorCodes.Unsupported.Property).Should().ContainSingle(error => error.Message.Contains("colour"));
+        // A value the engine does not support may or may not be one Chromium 159 supports (display: run-in is not), and
+        // an unknown property cannot be answered for Chromium either: both conditions are refused and taken as false.
+        computed.Value(root["x"], "margin-left").Should().Be("0pt");
+        computed.Value(root["x"], "padding-top").Should().Be("0pt");
+        computed.Coded(CssErrorCodes.Unsupported.AtRule).Should().HaveCount(2);
     }
 
     [Fact]
@@ -192,7 +196,10 @@ public class CascadeTests
 
         computed.Value(root["x"], "color").Should().Be("rgb(0, 0, 255)");
         computed.Value(root["x"], "margin-top").Should().Be("0pt");
-        computed.Coded(CssErrorCodes.Invalid.ComputedValue).Should().HaveCount(2);
+        // A missing custom property is invalid in every browser; a value the grammar does not read is the one answer
+        // "not valid or not supported in this profile", a refusal (review 39, ruling D-b).
+        computed.Coded(CssErrorCodes.Invalid.ComputedValue).Should().ContainSingle().Which.Message.Should().Contain("'margin-top'");
+        computed.Coded(CssErrorCodes.Unsupported.Value).Should().ContainSingle().Which.Message.Should().Contain("not valid or not supported in this profile");
     }
 
     [Fact]
@@ -267,17 +274,20 @@ public class CascadeTests
     }
 
     [Fact]
-    public void Invalid_declarations_are_dropped_and_reported_where_they_are()
+    public void Values_the_grammar_does_not_read_are_refused_and_reported_where_they_are()
     {
         var root = Doc(E("p", A("id", "x")));
         var computed = Compute(root, "p {\n  color: red;\n  color: 12px;\n  text-align: -internal-center;\n  -moz-box-sizing: border-box }");
 
         computed.Value(root["x"], "color").Should().Be("rgb(255, 0, 0)");
         computed.Value(root["x"], "text-align").Should().Be("start");
-        var invalid = computed.Coded(CssErrorCodes.Invalid.Value).ToList();
-        invalid.Should().HaveCount(2);
-        invalid[0].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceLine].Should().Be(3);
-        invalid[0].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceColumn].Should().Be(3);
+        var refused = computed.Coded(CssErrorCodes.Unsupported.Value).Should().ContainSingle().Subject;
+        refused.Message.Should().StartWith("'color: 12px' is not valid or not supported in this profile");
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceLine].Should().Be(3);
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceColumn].Should().Be(3);
+        CssDiagnostics.ClassOf(refused.Code).Should().Be(DiagnosticClass.Refusal);
+        // What Chromium drops for certain stays a warning: -internal- keywords and other engines' properties.
+        computed.Coded(CssErrorCodes.Invalid.Value).Should().ContainSingle().Which.Message.Should().Contain("-internal-");
         computed.Coded(CssErrorCodes.Invalid.Property).Should().ContainSingle();
     }
 

@@ -10,8 +10,10 @@ namespace Ave.Extensions.Documents.Css.Media;
 /// Media Queries 4: parsing (§3, with the error recovery of §3.2: a query that does not match the grammar becomes
 /// <c>not all</c>) and evaluation (§3.1, three-valued). The engine evaluates the media type and the width and height
 /// features (§4.1, §4.2, with their <c>min-</c>/<c>max-</c> forms and the range syntax); every other feature CSS defines
-/// is refused (<see cref="CssErrorCodes.Unsupported.MediaFeature"/>) and evaluates as unknown, and an unknown feature
-/// makes the query <c>not all</c>, as in a browser.
+/// is refused (<see cref="CssErrorCodes.Unsupported.MediaFeature"/>) and evaluates as unknown. A feature or query the
+/// engine cannot read is refused the same way: it is either invalid (a browser makes it unknown or <c>not all</c>) or a
+/// feature beyond this profile that a browser evaluates (Chromium's <c>-webkit-min-device-pixel-ratio</c>), and the
+/// engine cannot tell which. With warnings only, it evaluates as unknown.
 /// </summary>
 public static class MediaQueries
 {
@@ -20,6 +22,10 @@ public static class MediaQueries
     private static readonly FrozenSet<string> OtherRangeFeatures = FrozenSet.Create(
         "aspect-ratio", "device-width", "device-height", "device-aspect-ratio", "resolution", "color", "color-index",
         "monochrome", "-webkit-device-pixel-ratio", "horizontal-viewport-segments", "vertical-viewport-segments");
+
+    /// <summary>Chromium's prefixed range features, whose min-/max- comes after the vendor prefix.</summary>
+    private static readonly FrozenSet<string> VendorRangeForms = FrozenSet.Create(
+        "-webkit-min-device-pixel-ratio", "-webkit-max-device-pixel-ratio");
 
     private static readonly FrozenSet<string> OtherDiscreteFeatures = FrozenSet.Create(
         "orientation", "scan", "grid", "update", "overflow-block", "overflow-inline", "color-gamut", "pointer", "hover",
@@ -68,7 +74,7 @@ public static class MediaQueries
             }
             else
             {
-                diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, "A media query that does not parse; it is 'not all' (Media Queries 4 §3.2).", sourceName, position));
+                diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"The media query '{CssSerializer.Shortened(part)}' is not valid or not supported in this profile; it is taken as 'not all'.", sourceName, position));
                 queries.Add(MediaQuery.NotAll(position));
             }
         }
@@ -170,6 +176,9 @@ public static class MediaQueries
         }
     }
 
+    /// <summary>Chromium's tolerance for the inclusive comparisons of media features: 1/64 px, in points.</summary>
+    private const double Tolerance = 0.75 / 64;
+
     private static Kleene Test(MediaFeatureTest test, MediaContext context)
     {
         var actual = test.Feature == "width" ? context.Width.Points : context.Height.Points;
@@ -178,12 +187,15 @@ public static class MediaQueries
             return actual != 0 ? Kleene.True : Kleene.False;
         }
 
-        if (test.Lower is { } lower && Points(lower.Length, context) is var low && (lower.Inclusive ? actual < low : actual <= low))
+        // Chromium 159 compares the inclusive forms (min-, max-, =, <=, >=) with a tolerance of 1/64 px, its layout
+        // unit, and the strict ones (<, >) exactly: (max-width: 793.99px) holds at 794px, (width < 793.99px) does not
+        // (measured, review 39 F22).
+        if (test.Lower is { } lower && Points(lower.Length, context) is var low && (lower.Inclusive ? actual < low - Tolerance : actual <= low))
         {
             return Kleene.False;
         }
 
-        if (test.Upper is { } upper && Points(upper.Length, context) is var high && (upper.Inclusive ? actual > high : actual >= high))
+        if (test.Upper is { } upper && Points(upper.Length, context) is var high && (upper.Inclusive ? actual > high + Tolerance : actual >= high))
         {
             return Kleene.False;
         }
@@ -317,7 +329,7 @@ public static class MediaQueries
                     return Feature([.. inner], block.Position);
                 case FunctionValue function:
                     _index++;
-                    return new MediaUnknown(function.Name + "()");
+                    return Unknown($"'{function.Name}()'", function.Position);
                 default:
                     return null;
             }
@@ -339,7 +351,7 @@ public static class MediaQueries
             var name = lower[prefix.Length..];
             if (name is not ("width" or "height"))
             {
-                if (OtherDiscreteFeatures.Contains(lower) || OtherRangeFeatures.Contains(name))
+                if (OtherDiscreteFeatures.Contains(lower) || OtherRangeFeatures.Contains(name) || VendorRangeForms.Contains(lower))
                 {
                     diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"The media feature '{nameToken.Text}' is not supported; only width and height are.", sourceName, nameToken.Position));
                     return new MediaUnknown(lower);
@@ -493,7 +505,7 @@ public static class MediaQueries
 
         private MediaUnknown Unknown(string what, TextPosition position)
         {
-            diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"Media query: {what}; its value is unknown (Media Queries 4 §3.2).", sourceName, position));
+            diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"Media query: {what} is not valid or not supported in this profile; its value is taken as unknown.", sourceName, position));
             return new MediaUnknown(what);
         }
     }

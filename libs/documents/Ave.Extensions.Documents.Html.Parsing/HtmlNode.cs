@@ -107,7 +107,53 @@ public sealed record HtmlProcessingInstruction(string Target, string Data, TextP
 /// whose case the standard restores (<c>viewBox</c>, <c>definitionURL</c>).</param>
 /// <param name="Value">Its value, with character references resolved.</param>
 /// <param name="Position">Where its name starts.</param>
-public sealed record HtmlAttribute(AttributeNamespace Namespace, string? Prefix, string LocalName, string Value, TextPosition Position);
+public sealed record HtmlAttribute(AttributeNamespace Namespace, string? Prefix, string LocalName, string Value, TextPosition Position)
+{
+    /// <summary>Where the value's characters were written, from the parser (empty for an attribute made in code): see
+    /// <see cref="PositionOf"/>.</summary>
+    internal ValueList<HtmlValueAnchor> ValueAnchors { get; init; } = [];
+
+    /// <summary>Where a character of <see cref="Value"/> was written in the source: its own place for a character
+    /// written as itself, the ampersand for the characters of a character reference; an offset at the end of the
+    /// value is just after its last character. For an attribute made in code, its <see cref="Position"/>.</summary>
+    /// <param name="offset">An offset in <see cref="Value"/>, from 0 to its length.</param>
+    /// <returns>The line and column.</returns>
+    public TextPosition PositionOf(int offset)
+    {
+        var anchors = ValueAnchors;
+        int low = 0, high = anchors.Count - 1, found = -1;
+        while (low <= high)
+        {
+            var middle = (low + high) / 2;
+            if (anchors[middle].Offset <= offset)
+            {
+                found = middle;
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        if (found < 0)
+        {
+            return Position;
+        }
+
+        var anchor = anchors[found];
+        return anchor.Contiguous
+            ? new TextPosition(anchor.Position.Line, anchor.Position.Column + offset - anchor.Offset)
+            : anchor.Position;
+    }
+}
+
+/// <summary>From <paramref name="Offset"/> in an attribute value on, where its characters were written: at
+/// <paramref name="Position"/> and one by one after it on the same line, or all at that place.</summary>
+/// <param name="Offset">The offset in the value.</param>
+/// <param name="Position">The place in the source.</param>
+/// <param name="Contiguous">Whether the characters follow one by one (else they are one character reference).</param>
+internal readonly record struct HtmlValueAnchor(int Offset, TextPosition Position, bool Contiguous);
 
 /// <summary>The namespace of an element (Infra Standard §8, namespaces).</summary>
 public enum ElementNamespace

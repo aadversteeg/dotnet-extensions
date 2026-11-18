@@ -149,4 +149,10 @@ internal sealed class TokenAttribute
 
     /// <summary>Where the name starts in the source.</summary>
     public int Start { get; init; }
+
+    /// <summary>Where the value's characters were written: from each anchor's offset in <see cref="Value"/> on, at its
+    /// source index and one by one after it (contiguous), or all at that index (the characters of a character
+    /// reference, at its ampersand). An anchor starts the value, follows each reference and each line feed. Empty for
+    /// an empty value.</summary>
+    public (int Offset, int Source, bool Contiguous)[] Anchors { get; init; } = [];
 }

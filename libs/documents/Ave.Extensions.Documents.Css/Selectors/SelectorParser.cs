@@ -22,6 +22,10 @@ public sealed record SelectorParseResult(SelectorList? List, string? Error, Text
     /// <summary>Whether the selector was not read because it nests deeper than
     /// <see cref="CssInputLimits.MaxSelectorNesting"/> (a limit of the engine, not invalid CSS).</summary>
     public bool TooDeep { get; init; }
+
+    /// <summary>Whether a forgiving list (<c>:is()</c>, <c>:where()</c>) dropped an item or was empty: valid in a style
+    /// rule, but not a selector <c>@supports selector()</c> holds for in Chromium 159 (measured, review 39 F20).</summary>
+    public bool Forgave { get; init; }
 }
 
 /// <summary>
@@ -45,7 +49,7 @@ public static class SelectorParser
         var list = ParseList(values, relative, forgiving: false, allowPseudoElements: true, context, start);
         return list is null
             ? new SelectorParseResult(null, context.Error, context.ErrorPosition, []) { TooDeep = context.TooDeep }
-            : new SelectorParseResult(list, null, start, [.. context.Findings]);
+            : new SelectorParseResult(list, null, start, [.. context.Findings]) { Forgave = context.Forgave };
     }
 
     /// <summary>The first reason a selector is invalid, and the findings so far.</summary>
@@ -66,6 +70,9 @@ public static class SelectorParser
 
         /// <summary>Whether a list nested deeper than the limit was met.</summary>
         public bool TooDeep { get; set; }
+
+        /// <summary>Whether a forgiving list dropped an item or was empty.</summary>
+        public bool Forgave { get; set; }
 
         /// <summary>A context for one item of a forgiving list or one compound argument: same nesting, own error.</summary>
         public Context Child() => new() { InHas = InHas, Depth = Depth };
@@ -128,8 +135,13 @@ public static class SelectorParser
                 context.TooDeep = true;
                 return context.Fail<SelectorList>(own.Error!, own.ErrorPosition);
             }
+            else
+            {
+                context.Forgave = true;
+            }
         }
 
+        context.Forgave |= forgiving && selectors.Count == 0;
         return new SelectorList([.. selectors]);
     }
 
@@ -650,11 +662,14 @@ public static class SelectorParser
     }
 
     /// <summary>Whether the selector lists inside a compound's pseudo-classes hold compound selectors only, and no
-    /// :has(): Chromium's rule for the arguments of :host(), :host-context() and ::slotted().</summary>
+    /// :has(): Chromium's rule for the arguments of :host(), :host-context() and ::slotted(). The forgiving lists of
+    /// :is() and :where() drop a complex selector instead (Chromium 159 keeps the rule with
+    /// <c>:host(:is(div .foo))</c>, measured, review 39 SU-5); :not() is not forgiving.</summary>
     private static bool OnlyCompounds(CompoundSelector compound) =>
         compound.Selectors.All(simple => simple switch
         {
             PseudoClassSelector { Name: "has" } => false,
+            PseudoClassSelector { Name: "is" or "where", Selectors: { } forgiving } => forgiving.Selectors.All(selector => selector.Steps.Count != 1 || OnlyCompounds(selector.Steps[0].Compound)),
             PseudoClassSelector { Selectors: { } list } => list.Selectors.All(selector => selector.Steps.Count == 1 && OnlyCompounds(selector.Steps[0].Compound)),
             _ => true,
         });

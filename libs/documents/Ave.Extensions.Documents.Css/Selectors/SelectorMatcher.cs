@@ -78,6 +78,11 @@ public sealed class SelectorMatcher
         public int Phase;
     }
 
+    /// <summary>Charges work done for the matches outside the matcher (the cascade collecting the declarations of the
+    /// rules that matched) to the same limit.</summary>
+    /// <param name="work">The units: one per rule and declaration collected.</param>
+    internal void Spend(long work) => Charge(work);
+
     private bool Charge(long work)
     {
         _work += work;

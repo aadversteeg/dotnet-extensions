@@ -55,10 +55,13 @@ public class HtmlStyleResolverTests
         var p = styled.ByName("p");
         p.Value("color").Should().Be("rgb(1, 2, 3)");
         p.Value("margin-top").Should().Be("3px");
-        styled.Diagnostics.Should().BeEmpty();
         p.Value("margin-left").Should().Be("4px");
         asked.Should().BeEquivalentTo(["https://example.org/css/site.css", "https://example.org/css/parts/colours.css", "https://example.org/other.css"]).And.OnlyHaveUniqueItems();
-        styled.Diagnostics.Should().BeEmpty();
+        // The two sheets that do not apply say why (review 39 F19), as class Ignored.
+        styled.Diagnostics.Select(error => error.Message).Should().Equal(
+            "The style sheet of this link element does not apply: it is an alternate style sheet.",
+            "The style sheet of this link element does not apply: its media 'screen' do not match.");
+        styled.Diagnostics.Should().OnlyContain(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Ignored);
     }
 
     [Fact]
@@ -89,12 +92,27 @@ public class HtmlStyleResolverTests
     {
         var styled = Styled(Doctype + "\n<style>\np { color: 12px }\n</style>\n<p style=\"margin-top: nope\">x</p>");
 
-        var invalid = styled.Diagnostics.Where(error => error.Code == CssErrorCodes.Invalid.Value).ToList();
-        invalid.Should().HaveCount(2);
-        invalid[0].Metadata![ErrorMetadataKeys.SourceLine].Should().Be(3);
-        invalid[0].Metadata![ErrorMetadataKeys.SourceColumn].Should().Be(5);
-        invalid[1].Metadata![ErrorMetadataKeys.SourceLine].Should().Be(5);
-        invalid.Should().OnlyContain(error => (string)error.Metadata![ErrorMetadataKeys.SourceFile]! == "doc.html");
+        var places = styled.Diagnostics.Where(error => error.Code == CssErrorCodes.Unsupported.Value)
+            .Select(error => ((int)error.Metadata![ErrorMetadataKeys.SourceLine]!, (int)error.Metadata![ErrorMetadataKeys.SourceColumn]!)).Order().ToList();
+        places.Should().Equal((3, 5), (5, 11));
+        styled.Diagnostics.Should().OnlyContain(error => (string)error.Metadata![ErrorMetadataKeys.SourceFile]! == "doc.html");
+    }
+
+    [Theory]
+    [InlineData("<p style=\"bogus:1\">x", 2, 11)]
+    [InlineData("<p style=\"color:red&#59; bogus:1\">x", 2, 26)]
+    [InlineData("<p style=\"color: red;&#10;  bogus: 1\">x", 2, 29)]
+    [InlineData("<p style=\"color: red;\n  bogus: 1\">x", 3, 3)]
+    [InlineData("<p style='&#x62;ogus: 1'>x", 2, 11)]
+    [InlineData("<p style=bogus:1>x", 2, 10)]
+    [InlineData("<style media=\"(bogus-feature)\"></style>", 2, 16)]
+    public void Diagnostics_of_style_and_media_attributes_point_at_what_the_author_wrote(string markup, int line, int column)
+    {
+        var styled = Styled(Doctype + "\n" + markup, Warn);
+
+        // Review 39 M16: the place of the character in the attribute value, through character references and line feeds.
+        var diagnostic = styled.Diagnostics.First(error => error.Code != HtmlStyleErrorCodes.Ignored.StyleSheet);
+        ((int)diagnostic.Metadata![ErrorMetadataKeys.SourceLine]!, (int)diagnostic.Metadata![ErrorMetadataKeys.SourceColumn]!).Should().Be((line, column));
     }
 
     [Fact]

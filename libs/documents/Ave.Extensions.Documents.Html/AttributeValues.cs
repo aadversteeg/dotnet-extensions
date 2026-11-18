@@ -31,7 +31,12 @@ internal static class AttributeValues
 
     /// <summary>"Rules for parsing non-negative integers" (§2.3.4.2, through §2.3.4.1): leading white space, an optional
     /// sign, digits; what follows the digits is ignored. Null for an error or a negative number.</summary>
-    public static long? NonNegativeInteger(string input)
+    public static long? NonNegativeInteger(string input) => Integer(input) is { } value && value >= 0 ? value : null;
+
+    /// <summary>"Rules for parsing integers" (§2.3.4.1): leading white space, an optional sign, digits; what follows the
+    /// digits is ignored (<c>5abc</c> is 5, <c>7.9</c> is 7). Null for an error; the magnitude is clamped to
+    /// int.MaxValue.</summary>
+    public static long? Integer(string input)
     {
         var position = SkipWhitespace(input, 0);
         var negative = false;
@@ -55,11 +60,12 @@ internal static class AttributeValues
             return null;
         }
 
-        return negative && value != 0 ? null : value;
+        return negative ? -value : value;
     }
 
     /// <summary>"Rules for parsing dimension values" (§2.3.4.4): digits with an optional fraction, then a percentage
-    /// sign or not; null for an error.</summary>
+    /// sign or not; null for an error. A relative dimension (digits then <c>*</c>, as in <c>width="3*"</c>) is no value
+    /// either: Chromium 159 gives it no hint (measured on td and img, review 39 F5).</summary>
     public static HtmlDimension? Dimension(string input)
     {
         var position = SkipWhitespace(input, 0);
@@ -71,7 +77,8 @@ internal static class AttributeValues
         double value = 0;
         while (position < input.Length && char.IsAsciiDigit(input[position]))
         {
-            value = value * 10 + (input[position] - '0');
+            // Past 2^53 more digits change nothing a double keeps; stopping there keeps the value finite.
+            value = Math.Min(value * 10 + (input[position] - '0'), 9007199254740992);
             position++;
         }
 
@@ -85,6 +92,11 @@ internal static class AttributeValues
                 value += (input[position] - '0') / divisor;
                 position++;
             }
+        }
+
+        if (position < input.Length && input[position] == '*')
+        {
+            return null;
         }
 
         return new HtmlDimension(value, position < input.Length && input[position] == '%');

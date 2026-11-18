@@ -20,6 +20,11 @@ public sealed record ElementDeclarations(ValueList<Declaration> StyleAttribute, 
 {
     /// <summary>No declarations.</summary>
     public static ElementDeclarations None { get; } = new([], [], string.Empty);
+
+    /// <summary>Whether text-align -webkit-left, -webkit-center and -webkit-right compute to start on this element: a
+    /// rule of the front-end's language, not of CSS (Chromium 159 does it for an HTML table, so a table inside
+    /// <c>center</c> is not centred inside).</summary>
+    public bool ResetsLegacyAlignment { get; init; }
 }
 
 /// <summary>
@@ -47,6 +52,13 @@ public sealed class StyleComputer
     private readonly DiagnosticCollector _diagnostics = new();
     private readonly HashSet<object> _reported = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<(PreparedDeclaration, ErrorCode)> _reportedAt = [];
+
+    /// <summary>The user-agent declarations refused, by element: each element they refuse is reported, so a front-end
+    /// can name the element (an author's declaration is reported once).</summary>
+    private readonly HashSet<(PreparedDeclaration, IStyleElement)> _reportedFor = new(new ReportedForComparer());
+
+    /// <summary>The element being computed.</summary>
+    private IStyleElement? _element;
     private readonly Dictionary<IStyleElement, ComputedStyle> _styles = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<(PreparedDeclaration Declaration, object Custom), (VarSubstitution.Outcome Outcome, ValueList<ComponentValue> Values)> _substituted =
         new(new SubstitutionComparer());
@@ -69,6 +81,15 @@ public sealed class StyleComputer
     /// <summary>The diagnostics so far, in the order they were found.</summary>
     public ValueList<Error> Diagnostics => _diagnostics.ToValueList();
 
+    /// <summary>The number of diagnostics kept so far: with <see cref="DiagnosticAt"/>, what one call of
+    /// <see cref="Compute"/> found, without copying the list.</summary>
+    public int DiagnosticCount => _diagnostics.Count;
+
+    /// <summary>A diagnostic kept so far, by its place in <see cref="Diagnostics"/>.</summary>
+    /// <param name="index">The place, below <see cref="DiagnosticCount"/>.</param>
+    /// <returns>The diagnostic.</returns>
+    public Error DiagnosticAt(int index) => _diagnostics[index];
+
     /// <summary>The order the longhands are computed in: the font first, as <c>em</c>, <c>ex</c> and <c>ch</c> need it
     /// (CSS Values 4 §6.1.1); then the registry order (where a border's style comes before its width).</summary>
     private static readonly PropertyDefinition[] ComputeOrder =
@@ -85,6 +106,7 @@ public sealed class StyleComputer
     /// <returns>Its computed style.</returns>
     public ComputedStyle Compute(IStyleElement element, ElementDeclarations? own = null)
     {
+        _element = element;
         var parent = element.Parent is { } parentElement && _styles.TryGetValue(parentElement, out var parentStyle) ? parentStyle : null;
         var candidates = Collect(element, own ?? ElementDeclarations.None);
         var context = new ComputeContext(parent, _rootFontSize, _values, element.IsRoot);
@@ -94,6 +116,8 @@ public sealed class StyleComputer
         {
             context.Set(property, Value(property, candidates.Longhands[property.Index], context, custom, shorthands));
         }
+
+        Adjust(context, own?.ResetsLegacyAlignment == true);
 
         var style = new ComputedStyle([.. PropertyRegistry.Longhands.Select(property => context.Own(property)!)], custom, context.FontSizeSource);
         if (element.IsRoot)
@@ -178,6 +202,8 @@ public sealed class StyleComputer
                 continue;
             }
 
+            // Collecting is work too: elements times the rules that match them, so it counts against the same limit.
+            _matcher.Spend(1 + rule.Block.Entries.Count);
             Applied(rule.Block);
             foreach (var entry in rule.Block.Entries)
             {
@@ -256,6 +282,13 @@ public sealed class StyleComputer
 
             switch (candidate.Entry.Value)
             {
+                case RefusedEntry refused when candidate.Origin == CascadeOrigin.UserAgent:
+                    if (_reportedFor.Add((candidate.Entry.Declaration, _element!)))
+                    {
+                        _diagnostics.Add(DeclarationPreparer.Diagnostic(refused.Code, $"{refused.Problem}; the declaration is skipped.", candidate.Entry.Declaration));
+                    }
+
+                    continue;
                 case RefusedEntry refused:
                     Report(candidate.Entry.Declaration, refused.Code, $"{refused.Problem}; the declaration is skipped.");
                     continue;
@@ -492,12 +525,14 @@ public sealed class StyleComputer
         CssValue Unset() => property == PropertyRegistry.FontSize
             ? PropertyRegistry.InheritFontSize(context)
             : property.Inherited ? context.Inherited(property) : InitialOf(property, context);
+        _declaredBy[property.Index] = null;
         if (Winner(candidates) is not { } winner)
         {
             return Unset();
         }
 
         var declaration = winner.Entry.Declaration;
+        _declaredBy[property.Index] = declaration;
         switch (winner.Entry.Value)
         {
             case WideKeywordEntry wide:
@@ -508,6 +543,51 @@ public sealed class StyleComputer
                 return Substituted(property, pending, declaration, context, custom, shorthands) ?? Unset();
             default:
                 return Unset();
+        }
+    }
+
+    /// <summary>The declaration that won the cascade for each longhand of the element being computed, or null.</summary>
+    private readonly PreparedDeclaration?[] _declaredBy = new PreparedDeclaration?[PropertyRegistry.Longhands.Count];
+
+    private static readonly PropertyDefinition OverflowX = PropertyRegistry.Find("overflow-x")!;
+    private static readonly PropertyDefinition OverflowY = PropertyRegistry.Find("overflow-y")!;
+
+    /// <summary>The computed values that depend on other computed values of the element, after the cascade:
+    /// <list type="bullet">
+    /// <item>CSS Overflow 3 §3.1, as Chromium 159 applies it: when one axis is neither visible nor clip, visible on the
+    /// other computes to auto (which the engine does not support: refused). Chromium keeps clip beside hidden, where
+    /// the specification says hidden (measured, corpus case properties), and so does the engine.</item>
+    /// <item>An element the front-end marks (<see cref="ElementDeclarations.ResetsLegacyAlignment"/>): text-align
+    /// -webkit-left, -webkit-center and -webkit-right compute to start.</item>
+    /// </list></summary>
+    private void Adjust(ComputeContext context, bool resetsLegacyAlignment)
+    {
+        var x = (context.Own(OverflowX) as CssKeyword)?.Name;
+        var y = (context.Own(OverflowY) as CssKeyword)?.Name;
+        static bool Scrolls(string? value) => value is not ("visible" or "clip");
+        if (Scrolls(x) != Scrolls(y))
+        {
+            var (scrolling, other, otherValue) = Scrolls(x) ? (OverflowX, OverflowY, y) : (OverflowY, OverflowX, x);
+            if (otherValue == "visible")
+            {
+                context.Set(other, new CssKeyword("auto"));
+                var by = _declaredBy[scrolling.Index];
+                var message = $"'{scrolling.Name}: {(context.Own(scrolling) as CssKeyword)?.Name}' makes {other.Name} compute to auto (CSS Overflow 3 §3.1), which is not supported; the property is kept.";
+                if (by is not null)
+                {
+                    Report(by, CssErrorCodes.Unsupported.Value, message);
+                }
+                else
+                {
+                    _diagnostics.Add(new Error(CssErrorCodes.Unsupported.Value, message).With(ErrorMetadataKeys.Property, other.Name));
+                }
+            }
+        }
+
+        if (resetsLegacyAlignment
+            && context.Own(PropertyRegistry.TextAlign) is CssKeyword { Name: "-webkit-left" or "-webkit-center" or "-webkit-right" })
+        {
+            context.Set(PropertyRegistry.TextAlign, new CssKeyword("start"));
         }
     }
 
@@ -546,7 +626,7 @@ public sealed class StyleComputer
 
         if (pending.IsAll)
         {
-            Report(declaration, CssErrorCodes.Invalid.ComputedValue, "'all' takes only a CSS-wide keyword; after var() substitution it is not one, so every property is unset.");
+            Report(declaration, CssErrorCodes.Unsupported.Value, $"'all' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ('all' takes only a CSS-wide keyword); every property is unset.");
             return null;
         }
 
@@ -579,7 +659,9 @@ public sealed class StyleComputer
         }
         else
         {
-            Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"'{declaration.Name}' after var() substitution is invalid ({parsed.Problem}); the property is unset (CSS Variables 1 §3.1).");
+            // The engine cannot tell a value a browser finds invalid at computed-value time from a valid one beyond this
+            // profile (env(), a vendor keyword): the one answer for both is a refusal.
+            Report(declaration, CssErrorCodes.Unsupported.Value, $"'{declaration.Name}' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ({parsed.Problem}); the property is unset.");
         }
 
         return null;
@@ -604,6 +686,16 @@ public sealed class StyleComputer
         {
             _diagnostics.Add(DeclarationPreparer.Diagnostic(code, message, declaration));
         }
+    }
+
+    /// <summary>Compares (declaration, element) keys by identity.</summary>
+    private sealed class ReportedForComparer : IEqualityComparer<(PreparedDeclaration Declaration, IStyleElement Element)>
+    {
+        public bool Equals((PreparedDeclaration Declaration, IStyleElement Element) x, (PreparedDeclaration Declaration, IStyleElement Element) y) =>
+            ReferenceEquals(x.Declaration, y.Declaration) && ReferenceEquals(x.Element, y.Element);
+
+        public int GetHashCode((PreparedDeclaration Declaration, IStyleElement Element) obj) =>
+            HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Declaration), System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Element));
     }
 
     /// <summary>Compares substitution keys by the identity of the declaration and the table.</summary>

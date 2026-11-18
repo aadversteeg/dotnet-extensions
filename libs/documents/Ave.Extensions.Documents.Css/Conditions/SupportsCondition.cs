@@ -60,23 +60,67 @@ public static class SupportsConditions
         return condition is not null && index == tokens.Count ? condition : null;
     }
 
-    /// <summary>Evaluates a condition. <paramref name="declaration"/> answers for a declaration: true when the engine
-    /// supports it.</summary>
+    /// <summary>Evaluates a condition as Chromium 159 would, or says it cannot: true, false, or null when one of its
+    /// tests is one the engine cannot answer for Chromium (CSS Conditional 3 §6, in three-valued logic: not null is
+    /// null; and is false when one operand is false, else null when one is null; or is true when one is true).
+    /// <paramref name="declaration"/> answers for a declaration.</summary>
     /// <param name="condition">The condition.</param>
-    /// <param name="declaration">The answer for a declaration.</param>
-    /// <returns>Whether it holds.</returns>
-    public static bool Evaluate(SupportsCondition condition, System.Func<Declaration, bool> declaration) => condition switch
+    /// <param name="declaration">The answer for a declaration: true, false, or null when the engine cannot tell.</param>
+    /// <returns>Whether it holds, or null.</returns>
+    public static bool? Evaluate(SupportsCondition condition, System.Func<Declaration, bool?> declaration)
     {
-        SupportsNot not => !Evaluate(not.Operand, declaration),
-        SupportsAnd and => and.Operands.All(operand => Evaluate(operand, declaration)),
-        SupportsOr or => or.Operands.Any(operand => Evaluate(operand, declaration)),
-        SupportsDeclaration test => declaration(test.Declaration),
-        // As Chromium answers: a selector that parses holds, also one the engine refuses or that never matches here
-        // (the rules inside are then refused or never match, which is visible; the other answer would silently take
-        // the author's fallback where Chromium does not).
-        SupportsSelector selector => selector.Selector.List is not null,
-        _ => false,
-    };
+        switch (condition)
+        {
+            case SupportsNot not:
+                return !Evaluate(not.Operand, declaration);
+            case SupportsAnd and:
+                var all = (bool?)true;
+                foreach (var operand in and.Operands)
+                {
+                    var value = Evaluate(operand, declaration);
+                    if (value == false)
+                    {
+                        return false;
+                    }
+
+                    all = value is null ? null : all;
+                }
+
+                return all;
+            case SupportsOr or:
+                var any = (bool?)false;
+                foreach (var operand in or.Operands)
+                {
+                    var value = Evaluate(operand, declaration);
+                    if (value == true)
+                    {
+                        return true;
+                    }
+
+                    any = value is null ? null : any;
+                }
+
+                return any;
+            case SupportsDeclaration test:
+                return declaration(test.Declaration);
+            case SupportsSelector { Selector: var selector }:
+                // selector() takes one complex selector: a list is false. One the engine reads, with no item forgiven
+                // and nothing it does not support, holds; for the rest Chromium 159 may answer either way (measured,
+                // review 39 F20: :is(p, :bogus) is false), so the engine cannot tell.
+                if (selector.List is { Selectors.Count: > 1 })
+                {
+                    return false;
+                }
+
+                return selector.List is not null && !selector.Forgave && selector.Findings.All(finding => finding.Support != SelectorSupport.Unsupported)
+                    ? true
+                    : null;
+            default:
+                // font-tech(), font-format() and anything in parentheses the engine does not read: Chromium answers
+                // some of them true, so the engine cannot tell.
+                return null;
+        }
+    }
 
     private static SupportsCondition? Condition(List<ComponentValue> tokens, ref int index)
     {

@@ -11,7 +11,9 @@ namespace UnitTests.Extensions.Documents.Html.Parsing;
 /// The tokenizer tests of html5lib-tests (vendored at commit c5495c5, MIT): every test in every initial state it names.
 /// A run passes when the tokens are the same (adjacent characters coalesced) and the parse errors are the same, by
 /// name and in order, and at the line and column the test gives. One rule skips tests: <c>xmlViolation.test</c> expects
-/// the "coercing an HTML DOM into an infoset" tweaks of HTML Standard §13.2.9, which are not the HTML parser.
+/// the "coercing an HTML DOM into an infoset" tweaks of HTML Standard §13.2.9, which are not the HTML parser. Where
+/// the tokenizer follows Chromium 159 instead of the standard, the run is listed and pinned, not bent: a U+0000 right
+/// after <c>&lt;</c> and in a CDATA section is U+FFFD (Chromium's trees have it, measured, review 39 HD-1, HD-2).
 /// </summary>
 public class TokenizerSuiteTests(ITestOutputHelper output)
 {
@@ -53,6 +55,15 @@ public class TokenizerSuiteTests(ITestOutputHelper output)
                     continue;
                 }
 
+                if (((state == "Data state" && input.Contains("<\0", StringComparison.Ordinal)
+                        && tokens == expectedTokens.Replace("<\\u0000", "<\\uFFFD", StringComparison.Ordinal))
+                    || (state == "CDATA section state" && tokens == expectedTokens.Replace("\\u0000", "\\uFFFD", StringComparison.Ordinal)))
+                    && actualErrors.SequenceEqual(expectedErrors))
+                {
+                    ChromiumDifferences.Add($"{file}: {Write(input)}");
+                    continue;
+                }
+
                 if (tokens != expectedTokens || !actualErrors.SequenceEqual(expectedErrors))
                 {
                     failures.Add($"{test.GetProperty("description").GetString()} [{state}]\n  input:    {Write(input)}\n  tokens:   {tokens}\n  expected: {expectedTokens}\n  errors:   {string.Join(", ", actualErrors)}\n  expected: {string.Join(", ", expectedErrors)}");
@@ -67,6 +78,19 @@ public class TokenizerSuiteTests(ITestOutputHelper output)
         }
 
         failures.Should().BeEmpty();
+    }
+
+    /// <summary>The runs where the tokenizer follows Chromium 159 and not the suite (listed, not bent).</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentBag<string> ChromiumDifferences = [];
+
+    [Fact]
+    public void The_two_runs_that_follow_Chromium_are_a_null_after_a_less_than_sign_and_in_cdata()
+    {
+        ChromiumDifferences.Clear();
+        Every_test_of_the_file_passes("test3.test");
+        Every_test_of_the_file_passes("domjs.test");
+
+        ChromiumDifferences.Distinct().Order(StringComparer.Ordinal).Should().Equal("domjs.test: \"\\u0000]]>\"", "test3.test: \"<\\u0000\"");
     }
 
     /// <summary>The runs where the suite's place for an error differs from the standard's (listed, not bent).</summary>

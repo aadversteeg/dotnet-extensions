@@ -11,13 +11,17 @@ namespace Ave.Extensions.Documents.Css;
 /// <para>Four classes, told apart by their branch (<see cref="CssDiagnostics.ClassOf"/> is the one function that says
 /// which):</para>
 /// <list type="bullet">
-/// <item><see cref="Parse"/>: a syntax error CSS Syntax 3 recovers from; and <see cref="Invalid"/>: a declaration,
-/// selector or rule that CSS says to drop. A browser does the same, so these are warnings.</item>
+/// <item><see cref="Parse"/>: a syntax error CSS Syntax 3 recovers from; and <see cref="Invalid"/>: the few things
+/// above CSS Syntax 3 that the engine knows Chromium drops as well (a rule in the wrong place, another engine's
+/// property, a <c>var()</c> cycle). The result is the browser's, so these are warnings.</item>
 /// <item><see cref="Ignored"/>: something valid that has no effect in a static paged document (<c>cursor</c>, a
 /// transition, <c>:hover</c>); listed, not refused.</item>
-/// <item><see cref="Unsupported"/>: valid CSS this engine does not implement; and <see cref="TooLarge"/> and
-/// <see cref="TooDeep"/>: input past the reader's limits. A front-end refuses the document by default, because the
-/// result would differ from a browser's.</item>
+/// <item><see cref="Unsupported"/>: valid CSS this engine does not implement, and input above CSS Syntax 3 that the
+/// engine cannot read: a value that does not match its grammar of a known property, a selector or media query that
+/// does not parse, an unknown at-rule. That input is either invalid (a browser drops it) or valid CSS beyond this
+/// profile (a browser uses it); the engine cannot tell which, so its one answer is "not valid or not supported in
+/// this profile". And <see cref="TooLarge"/> and <see cref="TooDeep"/>: input past the reader's limits. A front-end
+/// refuses the document by default, because the result could differ from a browser's.</item>
 /// </list>
 /// </remarks>
 public static class CssErrorCodes
@@ -36,14 +40,17 @@ public static class CssErrorCodes
         public static readonly ErrorCode Syntax = _ / "Syntax";
     }
 
-    /// <summary>Things CSS says to drop (warnings): the rest of the style sheet is used.</summary>
+    /// <summary>Things CSS says to drop and Chromium drops as well (warnings): the rest of the style sheet is
+    /// used.</summary>
     public static class Invalid
     {
         /// <summary><c>Documents.Css.Invalid</c>.</summary>
         public static readonly ErrorCode _ = CssErrorCodes._ / "Invalid";
 
-        /// <summary>A declaration whose value does not match the property's grammar (CSS Syntax 3 §5.5.6, "valid in the
-        /// current context"). Metadata: Property, Value, SourceFile, SourceLine, SourceColumn.</summary>
+        /// <summary>A declaration Chromium drops for certain: a top-level <c>!</c> that is not <c>!important</c>
+        /// (CSS Syntax 3 §8.2, the old <c>!ie</c> hack); a keyword that starts with <c>-internal-</c> in an author or
+        /// presentational-hint declaration (Chromium keeps those for its own style sheet). Metadata: Property, Value,
+        /// SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Value = _ / "Value";
 
         /// <summary>A property with a vendor prefix of an engine other than Chromium's (<c>-moz-</c>, <c>-ms-</c>,
@@ -51,18 +58,16 @@ public static class CssErrorCodes
         /// SourceColumn.</summary>
         public static readonly ErrorCode Property = _ / "Property";
 
-        /// <summary>A selector that does not parse, so its whole rule is dropped (Selectors 4 §3.9). Metadata: Value,
-        /// SourceFile, SourceLine, SourceColumn.</summary>
-        public static readonly ErrorCode Selector = _ / "Selector";
-
-        /// <summary>An at-rule whose prelude or place is not valid (an <c>@import</c> after a style rule, an
-        /// <c>@media</c> query list that does not parse), dropped. Metadata: Value, SourceFile, SourceLine,
-        /// SourceColumn.</summary>
+        /// <summary>A rule in a place CSS does not allow (an <c>@import</c> after a style rule, an <c>@import</c> or
+        /// <c>@charset</c> inside a block, declarations directly in a top-level conditional rule), dropped; and an
+        /// <c>@import</c> that is not followed (the caller follows no imports, or the sheet imports itself). Metadata:
+        /// Value, SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Rule = _ / "Rule";
 
-        /// <summary>A value that is invalid at computed-value time (CSS Variables 1 §3.1): a <c>var()</c> that refers to
-        /// a missing or cyclic custom property without a fallback, or whose substitution does not match the property's
-        /// grammar. The property then behaves as <c>unset</c>, as in a browser. Metadata: Property, Value, SourceFile,
+        /// <summary>A value that is invalid at computed-value time (CSS Variables 1 §3.1) for a reason Chromium shares:
+        /// a <c>var()</c> that refers to a missing or cyclic custom property without a fallback, or a substitution longer
+        /// than Chromium's limit. The property then behaves as <c>unset</c>, as in a browser. (A substitution that does
+        /// not match the engine's grammar is <see cref="Unsupported.Value"/>.) Metadata: Property, Value, SourceFile,
         /// SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode ComputedValue = _ / "ComputedValue";
     }
@@ -98,19 +103,25 @@ public static class CssErrorCodes
         public static readonly ErrorCode Property = _ / "Property";
 
         /// <summary>A value of a supported property that the engine does not support (<c>display: flex</c>, a dashed
-        /// border). Metadata: Property, Value, SourceFile, SourceLine, SourceColumn.</summary>
+        /// border), or that does not match the engine's grammar of the property ("not valid or not supported in this
+        /// profile": <c>vertical-align: 5px</c>, <c>color: 12px</c>), also after <c>var()</c> substitution; and a
+        /// <c>@font-face</c> descriptor the engine does not read. Metadata: Property, Value, SourceFile, SourceLine,
+        /// SourceColumn.</summary>
         public static readonly ErrorCode Value = _ / "Value";
 
-        /// <summary>A selector that is valid but outside the supported set (<c>:has()</c>, a pseudo-element). Metadata:
-        /// Value, SourceFile, SourceLine, SourceColumn.</summary>
+        /// <summary>A selector that is valid but outside the supported set (<c>:has()</c>, a pseudo-element), or one that
+        /// does not parse ("not valid or not supported in this profile"). Metadata: Value, SourceFile, SourceLine,
+        /// SourceColumn.</summary>
         public static readonly ErrorCode Selector = _ / "Selector";
 
-        /// <summary>An at-rule the engine does not support (<c>@container</c>, <c>@property</c> …). Metadata: Value,
-        /// SourceFile, SourceLine, SourceColumn.</summary>
+        /// <summary>An at-rule the engine does not support (<c>@container</c>, <c>@property</c> …), an unknown at-rule,
+        /// or a known one whose prelude the engine cannot read ("not valid or not supported in this profile").
+        /// Metadata: Value, SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode AtRule = _ / "AtRule";
 
-        /// <summary>A media feature other than the width and height features (Media Queries 4). Metadata: Value,
-        /// SourceFile, SourceLine, SourceColumn.</summary>
+        /// <summary>A media feature other than the width and height features (Media Queries 4), or a media feature or
+        /// query the engine cannot read ("not valid or not supported in this profile"). Metadata: Value, SourceFile,
+        /// SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode MediaFeature = _ / "MediaFeature";
 
         /// <summary>A <c>calc()</c> that still mixes a percentage with a length after computing, or a math function

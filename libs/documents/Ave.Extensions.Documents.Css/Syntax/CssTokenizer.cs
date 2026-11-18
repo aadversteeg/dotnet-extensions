@@ -495,9 +495,11 @@ internal sealed class CssTokenizer
         }
 
         // The numeric value: the number part times 10 to the exponent, computed by the runtime's parser, which rounds
-        // correctly (an exponent too large for a double gives infinity, which the value parsers refuse).
+        // correctly. A number too large for a double is the largest one, with its sign (CSS Values 4 §5: a value past
+        // the supported range becomes the closest supported value), so no token is infinite or NaN; the value
+        // computation refuses what is past its own range (CssInputLimits.MaxLengthPixels).
         var text = exponent.Length == 0 ? number.ToString() : $"{number}e{exponent}";
-        var value = double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture);
+        var value = Math.Clamp(double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture), -double.MaxValue, double.MaxValue);
         return (value, isInteger, sign, _text[start.._index]);
     }
 

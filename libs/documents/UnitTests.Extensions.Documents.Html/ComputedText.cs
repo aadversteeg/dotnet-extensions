@@ -41,7 +41,8 @@ internal static class ComputedText
 
     public static string Pixels(double pixels) => Number(pixels) + "px";
 
-    /// <summary>A number with at most six significant digits, as Chromium writes them.</summary>
+    /// <summary>A number with at most six significant digits, as Chromium writes them: C's %g, so in exponent form when
+    /// the exponent is below -4 or at least 6 (1.23457e+06, 1e-07; review 39 N2).</summary>
     public static string Number(double value)
     {
         if (value == 0)
@@ -49,7 +50,13 @@ internal static class ComputedText
             return "0";
         }
 
-        var digits = 6 - (int)Math.Floor(Math.Log10(Math.Abs(value))) - 1;
+        var exponent = (int)Math.Floor(Math.Log10(Math.Abs(value)));
+        if (exponent is < -4 or >= 6)
+        {
+            return value.ToString("G6", CultureInfo.InvariantCulture).Replace("E", "e", StringComparison.Ordinal);
+        }
+
+        var digits = 6 - exponent - 1;
         var rounded = Math.Round(value, Math.Clamp(digits, 0, 15), MidpointRounding.AwayFromZero);
         return rounded.ToString("0.###############", CultureInfo.InvariantCulture);
     }

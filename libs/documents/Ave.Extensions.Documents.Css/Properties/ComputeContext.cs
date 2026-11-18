@@ -1,3 +1,4 @@
+using System;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Cascade;
 using Ave.Extensions.Documents.Css.Values;
@@ -108,7 +109,21 @@ internal sealed class ComputeContext
     /// is resolved, and refused when a length and a percentage of something not yet known stay mixed (the document
     /// model's length cannot carry both).
     /// </summary>
-    public ComputedResult LengthPercentage(CssValue value, bool forFontSize = false, double? percentBasis = null)
+    public ComputedResult LengthPercentage(CssValue value, bool forFontSize = false, double? percentBasis = null) =>
+        InRange(Unbounded(value, forFontSize, percentBasis));
+
+    /// <summary>A computed length or percentage the engine keeps: finite, and at most
+    /// <see cref="CssInputLimits.MaxLengthPixels"/> px or percent either way; past that, refused.</summary>
+    private static ComputedResult InRange(ComputedResult result) => result.Value switch
+    {
+        CssLength length when !(Math.Abs(length.Points / 0.75) <= CssInputLimits.MaxLengthPixels) =>
+            ComputedResult.Refused($"a length beyond {CssInputLimits.MaxLengthPixels} px either way (Chromium 159 clamps lengths near 3.36e7 px)"),
+        CssPercentage percentage when !(Math.Abs(percentage.Value) <= CssInputLimits.MaxLengthPixels) =>
+            ComputedResult.Refused($"a percentage beyond {CssInputLimits.MaxLengthPixels}% either way"),
+        _ => result,
+    };
+
+    private ComputedResult Unbounded(CssValue value, bool forFontSize, double? percentBasis)
     {
         switch (value)
         {

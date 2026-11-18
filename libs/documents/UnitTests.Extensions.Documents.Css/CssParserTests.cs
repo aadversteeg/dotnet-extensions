@@ -91,12 +91,13 @@ public class CssParserTests
     }
 
     [Fact]
-    public void Unsupported_at_rules_are_refused_and_keyframes_ignored()
+    public void Unsupported_and_unknown_at_rules_are_refused_and_keyframes_ignored()
     {
         var result = CssParser.ParseStyleSheet("@container (width > 1px) { p {} } @keyframes k { from {} } @property --x { syntax: '*' } @foo;", Options);
 
         result.Diagnostics.Select(error => error.Code).Should().Equal(
-            CssErrorCodes.Unsupported.AtRule, CssErrorCodes.Ignored.AtRule, CssErrorCodes.Unsupported.AtRule, CssErrorCodes.Invalid.Rule);
+            CssErrorCodes.Unsupported.AtRule, CssErrorCodes.Ignored.AtRule, CssErrorCodes.Unsupported.AtRule, CssErrorCodes.Unsupported.AtRule);
+        result.Diagnostics[^1].Message.Should().Be("'@foo' is not valid or not supported in this profile; the rule is skipped.");
     }
 
     [Fact]
