@@ -177,11 +177,11 @@ public class PageAndTableRuleTests
     }
 
     /// <summary>
-    /// An empty block with padding and a background draws: it takes room and shows its background. So a row whose text
-    /// cell places nothing yet is still cut where that block fits (a row is cut inside itself only when some cell draws
-    /// something below the row's top on this page, and something of the row is left for the next): the page ends with
-    /// the 6 pt coloured block, and the text and the rest of the row go on to the next page. The same block without a
-    /// background draws nothing and never makes that cut (probe run 35, SP-1; Fluent <c>TableRowCutTests</c>).
+    /// A row whose text cell has no line on the page yet moves to the next page whole, also where an empty block with
+    /// padding and a background beside it fits: cutting the row there would break the text cell before its first line, a
+    /// last resort, and the break before the row is perfect. Chromium prints the same (cases <c>c-cell-first-line</c> and
+    /// <c>fr-cell-first-line-block-fits</c>, Fluent <c>OrphansWidowsTests</c>). Milestone 1 cut the row there and ended the
+    /// page with the coloured block alone (probe run 35, SP-1).
     /// </summary>
     [Fact]
     public void A_row_whose_cell_has_no_line_on_the_page_yet_moves_whole_although_a_coloured_block_beside_it_fits()

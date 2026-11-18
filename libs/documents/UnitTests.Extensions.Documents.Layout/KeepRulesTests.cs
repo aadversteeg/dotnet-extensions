@@ -95,4 +95,19 @@ public class KeepRulesTests
 
         Contents(pages).Should().Equal("#1:5", "#2:1 #3:1");
     }
+    [Theory]
+    [InlineData(BreakAppeal.LastResort, BreakAppeal.LastResort)]
+    [InlineData(BreakAppeal.ViolatesAvoid, BreakAppeal.ViolatesAvoid)]
+    [InlineData(BreakAppeal.ViolatesOrphansWidows, BreakAppeal.ViolatesAvoid)]
+    [InlineData(BreakAppeal.Perfect, BreakAppeal.ViolatesAvoid)]
+    public void Break_inside_avoid_lowers_a_break_inside_the_box_but_never_raises_a_last_resort(BreakAppeal achieved, BreakAppeal expected)
+    {
+        // Review 40, surviving mutant PS16 (the builder's candidate M5): "violates avoid" in place of the worse of the two
+        // raised a last-resort break inside a box kept together, and 33 of 12,000 random documents paginated otherwise.
+        var kept = Paragraph(1, "x", BoxStyle.Initial with { BreakInside = BreakInside.Avoid });
+        var free = Paragraph(2, "y");
+
+        BreakAvoidance.Inside(kept, achieved).Should().Be(expected);
+        BreakAvoidance.Inside(free, achieved).Should().Be(achieved);
+    }
 }

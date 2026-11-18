@@ -9,7 +9,7 @@ namespace Ave.Extensions.Documents.Layout;
 /// inside a box. §4.4 "Unforced Breaks" has four rules. Rule 1: "A fragmented flow may break at a class A break point
 /// only if all the break-after and break-before values applicable to this break point allow it, which is when at least
 /// one of them forces a break or when none of them forbid it". Rule 2: with all of them auto, not when "a common
-/// ancestor of all the elements has a break-inside value of avoid". Rule 3 is orphans and widows (not implemented).
+/// ancestor of all the elements has a break-inside value of avoid". Rule 3 is orphans and widows (InlineLayout, BreakAppeal.ViolatesOrphansWidows).
 /// Rule 4: class B and C breaks only when "the break-inside property of all ancestors is auto". The rules are then
 /// relaxed in order — first rule 3 is dropped, and if that still does not lead to sufficient break points, rules 1, 2
 /// and 4 — so here a disallowed break keeps a lower appeal instead of being impossible, and is still used when nothing

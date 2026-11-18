@@ -157,4 +157,79 @@ public class LineHeightTests
             hheaPitch.Should().NotBe(chromiumPitch, "the case tells the two tables apart");
         }
     }
+    [Fact]
+    public void Every_line_starts_with_the_paragraph_s_strut_also_where_no_line_break_carries_its_line_height()
+    {
+        // Review 40, surviving mutant LH1 (no strut): in d-strut every line holds a line break, a run with the
+        // paragraph's own font and line height, which hid a missing strut. Here a 24 pt paragraph holds one 6 pt run
+        // that wraps: only the strut makes the lines 28.8 pt apart (Lato's 1.2 em at 24 pt), not 7.2 pt.
+        var words = string.Join(" ", Enumerable.Range(0, 60).Select(index => $"w{index}"));
+        var pages = Model(Paragraph([Text(words).FontSize(6.Pt())]).FontSize(24.Pt()))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine).Value;
+
+        Pitches(pages).Should().HaveCountGreaterThan(1).And.AllSatisfy(distance => distance.Should().BeApproximately(28.8, 1e-9, "the strut of the 24 pt paragraph"));
+    }
+
+    [Fact]
+    public void A_percentage_is_a_share_of_the_element_s_own_font_size()
+    {
+        // Review 40, surviving mutants LH10 and LH18: 150 % on a 20 pt paragraph is 30 pt (CSS 2.1 §10.8.1, "Percentages:
+        // refer to the font size of the element itself"), not 150 % of the 12 pt around it.
+        var pages = Model(Paragraph(Lines(4, "l")).FontSize(20.Pt()).LineHeightPercent(150))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine).Value;
+
+        Pitches(pages).Should().AllSatisfy(distance => distance.Should().BeApproximately(30, 1e-9));
+    }
+
+    [Fact]
+    public void Orphans_widows_and_line_height_set_on_a_shared_style_reach_the_model()
+    {
+        // Review 40, surviving mutants OW20, OW21 and LH15: the three new values of a shared style were not pinned.
+        var shared = Style.Empty.Orphans(10).Widows(5).LineHeight(30.Pt());
+        var model = Model(Paragraph("a").With(shared));
+
+        model.IsSuccess.Should().BeTrue();
+        var paragraph = (Box)model.Value.Root.Children[0];
+        (paragraph.Style.Orphans, paragraph.Style.Widows).Should().Be((10, 5));
+        paragraph.Style.Text!.LineHeight.Should().Be(new LineHeight.Fixed(30.Pt()));
+    }
+
+    [Fact]
+    public void A_line_height_beyond_the_longest_length_is_refused_and_one_at_it_is_accepted()
+    {
+        // Review 40 (should-fix): the upper bound of every form was not pinned. 14 400 pt is InputLimits.MaxLength; a
+        // number is at most that many times the font size, a percentage at most 100 times that.
+        Model(Paragraph("a").LineHeight(14_400.Pt())).IsSuccess.Should().BeTrue();
+        Model(Paragraph("a").LineHeight(14_400.0)).IsSuccess.Should().BeTrue();
+        Model(Paragraph("a").LineHeightPercent(1_440_000)).IsSuccess.Should().BeTrue();
+        foreach (var refused in new[] { Paragraph("a").LineHeight(14_400.5.Pt()), Paragraph("a").LineHeight(14_400.5), Paragraph("a").LineHeightPercent(1_440_050) })
+        {
+            Model(refused).Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LineHeight);
+        }
+    }
+    [Fact]
+    public void Words_are_where_Chromium_prints_them_across_the_line_and_down_the_page()
+    {
+        // Review 40: no test compared x positions or absolute baselines with Chromium (a planted "all leading below the
+        // line" left 860 of 861 tests green). Case fr-positions: Lato 12 pt on 18 pt lines (Chromium keeps both exact),
+        // left, centred and padded lines, and a 24 pt line of 36 pt. Across the line the words start where Chromium starts
+        // them. Down the page every baseline is lower than Chromium's by what the font metrics make it (Chromium rounds
+        // ascent and descent to whole pixels and floors the half-leading: 0.144 pt on the 18 pt lines, 0.288 pt on the 36 pt
+        // line; docs/architecture.md, "Against Chromium"), never by more.
+        var printed = DocumentTranslator.ToModel(Document(
+                [Paragraph("alpha beta gamma delta"), Paragraph("epsilon zeta eta").TextAlign(TextAlign.Center), Paragraph("theta iota kappa lambda").PaddingLeft(24.Pt()), Paragraph("mu nu").FontSize(24.Pt()).LineHeight(36.Pt())],
+                Area, title: "Title", language: "en").FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt()))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine).Value;
+        var chromium = PrintedPages.Chromium("fr-positions");
+
+        var pairs = printed.Pages[0].Words.Zip(chromium.Pages[0].Words).ToList();
+        pairs.Should().HaveCount(13);
+        foreach (var (mine, theirs) in pairs)
+        {
+            mine.Text.Should().Be(theirs.Text);
+            mine.X0.Should().BeApproximately(theirs.X0, 0.01, $"where {mine.Text} starts on its line");
+            var allowed = mine.FontSize > 12 ? 0.288 : 0.144;
+            (mine.Baseline - theirs.Baseline).Should().BeInRange(0, allowed + 0.001, $"the baseline of {mine.Text}, engine − Chromium");
+        }
+    }
 }

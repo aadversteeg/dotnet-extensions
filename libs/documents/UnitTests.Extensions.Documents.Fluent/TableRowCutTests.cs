@@ -255,15 +255,37 @@ public class TableRowCutTests
         // Review 36, surviving mutant IM1: with a rule or an image counted wherever it lies, a label that holds only a
         // small nested table with lines (rules) or a small image, all within its first row, made a cut inside the
         // rows below it, and 91 of 120 pages ended with an empty strip. What the label draws lies above those rows.
+        // The table is the one of the twin test below (review 40: with one-line rows the row is never cut any more, so
+        // the question was never asked): the second row's cell starts with a line that shows nothing, so a cut there is
+        // a real breakpoint, and only what the label draws can make it show something.
         Element Label() => kind == "small table with lines"
             ? Table(Columns(Fill(1)), [TableRow([Cell([Block([]).Padding(2.Pt())])])]).GridLines(2.Pt(), Color.Black)
             : Image(TestImages.Bytes("rgb8.png")).Width(6.Pt()).Height(6.Pt()).Decorative();
+        var (table, words) = LabelOverAnInvisibleLine(Label);
+        var (control, controlWords) = LabelOverAnInvisibleLine(() => Block([]).PaddingTop(28.Pt()).BorderBottom(2.Pt(), Color.Black));
+        var asked = 0;
         for (var offset = 0.0; offset < 60; offset += 0.5)
         {
-            var (table, words) = LabelHolding(Label);
             NoEmptyStrip(table, words, offset, $"label holds only a {kind}, offset {offset}");
+            asked += TextlessCuts(NoEmptyStrip(control, controlWords, offset, $"control label, offset {offset}"));
         }
+
+        // Not vacuous: with a label that draws in the second row (a bottom border), the same offsets do cut there.
+        asked.Should().BePositive("the offsets reach the cut whose only drawing would be the label's");
     }
+
+    /// <summary>The table of <see cref="The_bottom_border_of_a_box_counts_as_drawn_at_the_bottom_of_the_box"/> with
+    /// another label: a label over three rows beside 14 pt text, whose second row's cell starts with a line that shows
+    /// nothing (a zero width space). Eighteen rows; returns the table and its words.</summary>
+    private static (TableElement Table, string[] Words) LabelOverAnInvisibleLine(Func<Element> label) =>
+        (Table(
+            Columns(40.Pt(), Fill(1)),
+            [.. Enumerable.Range(0, 18).Select(i => (TablePart)(i % 3 == 0
+                ? TableRow([Cell([label()]).RowSpan(3), Cell($"r{i:00}").FontSize(14.Pt())])
+                : i % 3 == 1
+                    ? TableRow([Cell([Paragraph("\u200B"), Paragraph($"r{i:00}")]).FontSize(14.Pt())])
+                    : TableRow([Cell($"r{i:00}").FontSize(14.Pt())])))]),
+            [.. Enumerable.Range(0, 18).Select(i => $"r{i:00}")]);
 
     [Fact]
     public void The_bottom_border_of_a_box_counts_as_drawn_at_the_bottom_of_the_box()

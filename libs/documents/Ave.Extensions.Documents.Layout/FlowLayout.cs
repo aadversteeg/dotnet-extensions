@@ -313,6 +313,10 @@ public static class FlowLayout
                 return Result<Maybe<Stacked>, Error>.Failure(LayoutErrors.EngineDefect(child, "did not break at the early break it reported"));
             }
 
+            // Not inside a child that continues from the page before: Chromium never breaks before such a child and
+            // records no breakpoint inside it ("Once we've found room for the first fragment, we cannot skip
+            // fragmentainers afterwards", MovePastBreakpoint, fragmentation_utils.cc), so a keep rule never reaches back
+            // into it (case fr-keep-continued-*).
             if (placement.BestBreak is { } early && childResume is null)
             {
                 // A breakpoint inside the child, which came after the one before it and before the one after it.

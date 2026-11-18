@@ -135,5 +135,20 @@ public class LayoutErrorTests
         result.Error.Metadata![ErrorMetadataKeys.Value].Should().Be("reported no room at the start of a page");
     }
 
+    [Fact]
+    public void A_root_whose_top_margin_leaves_no_room_says_so_and_reports_the_room_it_had()
+    {
+        // Review 40: the wording "which has no room left for it" and the metadata value of DoesNotFit were asserted
+        // nowhere. A root box with a 90 pt top margin on an 80 pt page area has -10 pt left for its content.
+        var document = Document(Paragraph(1, "x"));
+        document = document with { Root = document.Root with { Style = BoxStyle.Initial with { Margin = new Edges(90.Pt(), 0.Pt(), 0.Pt(), 0.Pt()), Padding = Edges.All(1.Pt()) } } };
+
+        var error = Fail(document);
+
+        error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+        error.Message.Should().Contain("does not fit in the page, which has no room left for it, and cannot be broken");
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be("-10");
+    }
+
     private static int CurrentLine([System.Runtime.CompilerServices.CallerLineNumber] int line = 0) => line;
 }
