@@ -744,6 +744,12 @@ namespace IntegrationTests.FileSystem.Local
             {
                 if (Directory.Exists(_testRoot))
                 {
+                    // Clear readonly attributes to allow deletion (LFSMC-008)
+                    foreach (var file in Directory.GetFiles(_testRoot, "*", SearchOption.AllDirectories))
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                    }
+
                     // Handle Windows file locking
                     int retries = 3;
                     while (retries > 0)
