@@ -19,4 +19,20 @@ public static class ImageDecoder
         PngDecoder.HasSignature(file.Span) ? PngDecoder.Decode(file)
         : JpegReader.HasSignature(file.Span) ? JpegReader.Read(file)
         : ImageErrors.Unsupported<ImageData>("a format other than PNG or JPEG");
+
+    /// <summary>
+    /// The decoded samples of an image: a <see cref="RasterImage"/> as it is; a <see cref="JpegImage"/> decoded (ITU-T
+    /// T.81: baseline, extended sequential and progressive Huffman coding, 8-bit, grey or three components; see the
+    /// decoder's remarks for the up-sampling and colour rules). For a back-end that draws pixels itself instead of
+    /// embedding the file.
+    /// </summary>
+    /// <param name="image">The image.</param>
+    /// <returns>The samples (8-bit grey or RGB, plus alpha for a PNG that has it), or a <c>Documents.Image</c> error for
+    /// damaged JPEG data or one above <see cref="ImageLimits.MaxPixels"/>.</returns>
+    public static Result<RasterImage, Error> DecodeSamples(ImageData image) => image switch
+    {
+        RasterImage raster => Result<RasterImage, Error>.Success(raster),
+        JpegImage jpeg => JpegDecoder.Decode(jpeg),
+        _ => throw new ArgumentException($"Unknown image type {image?.GetType().Name ?? "null"}.", nameof(image)),
+    };
 }

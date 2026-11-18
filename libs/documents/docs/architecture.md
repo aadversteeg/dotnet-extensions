@@ -30,7 +30,7 @@ test-only package in a product assembly".
 | `Ave.Extensions.Documents.Pdf` | PDF objects and writer, content operators, XMP writer, sRGB ICC profile, `PdfProfile`; knows nothing about layout |
 | `Ave.Extensions.Documents.Fonts` | TrueType reader (with GSUB, GPOS, GDEF, kern) and subsetter |
 | `Ave.Extensions.Documents.Graphics` | 2D graphics: paths, affine transforms, filling with exact-area anti-aliasing, an 8-bit RGBA canvas with source-over compositing, image drawing with an exact box filter |
-| `Ave.Extensions.Documents.Images` | PNG decoder and JPEG header reader |
+| `Ave.Extensions.Documents.Images` | PNG decoder and encoder, JPEG header reader and decoder |
 | `Ave.Extensions.Documents.Core` | shared vocabulary: lengths, geometry, colour, `ValueList<T>`, source locations, roles, metadata, attachments, the error-code tree |
 
 The pipeline is four pure functions in a row (`Ave.Extensions.Documents/DocumentRendering.cs`). The composition lives in its
@@ -97,6 +97,8 @@ the three places to open, with that front-end as their first user.
 | alignment and justification | `Typesetting/LineJustification.cs` | CSS Text 3 §6.1, §6.4 (inter-word) |
 | font parsing and subsetting | `Fonts/FontParser.cs`, `Tables/`, `OpenType/`, `FontSubsetter.cs` | OpenType specification per table |
 | glyph outlines (simple and composite glyphs, no hinting) | `Fonts/Tables/GlyphOutlineDecoder.cs`, `GlyphShape.cs` | OpenType "glyf — Glyph data" |
+| PNG encoding (filter choice, chunks) | `Images/Png/PngEncoder.cs` | PNG §9, §11.2, §11.3.3.5, §12.8 |
+| JPEG decoding (sequential and progressive Huffman, inverse DCT, up-sampling, colour) | `Images/Jpeg/JpegDecoder.cs`, `InverseDct.cs`, `JpegColor.cs` | ITU-T T.81 Annex A, B, F.2, G.1.2; T.871 §7; ISO 32000-1 §7.4.8 (ColorTransform) |
 | PDF syntax and file structure | `Pdf/PdfSerializer.cs`, `PdfWriter.cs` | ISO 32000-1 §7.3, §7.5 |
 | fonts and images in PDF | `Render.Pdf/FontEmbedding.cs`, `ToUnicodeCMap.cs`, `ImageEmbedding.cs` | ISO 32000-1 §9.7–§9.10, §8.9 |
 | conformance profiles | `Pdf/PdfProfile.cs` (what each standard adds), `Render.Pdf/ConformanceRules.cs` and `Tagging/TableRegularity.cs` (what it refuses) | ISO 19005-3, ISO 14289-1; rule ids from veraPDF |
@@ -147,7 +149,8 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
    the same way: every glyph a lookup looks at and every subtable it tries (`Shaping/ShapingBudget.cs`); every search
    in the shaper is linear in the text, so the budget, a number per glyph, refuses only a font's work.
 2. **Check a count against the bytes that must hold it** before allocating for it (`TableReader.Count` and `Fits`; a
-   PNG header's size against `ImageLimits` before anything is inflated; a JPEG is embedded without being decoded).
+   PNG header's size against `ImageLimits` before anything is inflated; a JPEG frame's size before its coefficients are
+   allocated — a JPEG that is only embedded is never decoded).
 3. **Name a limit where a number decides the size** — decoded pixels, glyphs made by substitutions, lookup operations,
    spans, the PDF/UA grid, nesting, lengths — check it before the work, and give it an error code (table below). A
    limit holds for the whole input it protects (one text, not each piece of it).
@@ -156,7 +159,8 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | Limit | Value | Where | Error |
 | --- | --- | --- | --- |
 | work of a layout table parse | 8 units per byte, at least 16 384 | `Fonts/OpenType/TableReader.cs` | `Documents.Font.Parse.InvalidValue` |
-| decoded image | 2^26 pixels | `Images/ImageLimits.cs` | `Documents.Image.TooLarge` |
+| decoded image (PNG, and JPEG decoded to samples) | 2^26 pixels | `Images/ImageLimits.cs` | `Documents.Image.TooLarge` |
+| blocks the scans of one JPEG visit together | 32 times the blocks of its frame | `Images/Jpeg/JpegDecoder.cs` | `Documents.Image.TooLarge` |
 | glyphs of one text | 64 per input glyph, at least 16 384 | `Typesetting/Shaping/GlyphSubstitution.cs` | `Documents.Typesetting.TooManyGlyphs` |
 | shaping operations of one text | 1 024 per input glyph, at least 65 536 | `Typesetting/Shaping/ShapingBudget.cs` | `Documents.Typesetting.TooMuchWork` |
 | cell span | 1 000 columns, 65 534 rows | `Core/TableSlots.cs` | `Documents.Input.Invalid.Table`, `Documents.Pdf.Write.InvalidPageModel` |
@@ -188,7 +192,8 @@ content).
 
 Same input, same bytes: dates and file identifier are inputs (the identifier defaults to a hash of the content), no
 clock, no machine state, dictionaries keep insertion order, object numbers come from `ObjectPlan`. Flate
-compression comes from the .NET runtime, so bytes are identical on the same runtime version only. Tests:
+compression (PDF streams, PNG files) comes from the .NET runtime's zlib-ng; its output was checked equal on Linux x64
+(runtime 10.0.12) and Windows x64 (10.0.15) at all three compression levels (2026-11-18), not on arm64. Tests:
 `Same_input_gives_byte_identical_output…`, `A_tagged_file_is_deterministic`, `Two_runs_give_byte_identical_PDFs…`.
 
 ## Known limits (all stages)
@@ -326,6 +331,8 @@ Each is documented next to its code as well.
 | line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Extensions.Documents.Typesetting` |
 | shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
 | glyph outlines | fontTools 4.57.0 in the reference tools image, every glyph of the test fonts and hand-made composites, point for point and exactly | `UnitTests.Extensions.Documents.Fonts/GlyphShapeReferenceTests.cs` |
+| JPEG decoding | the ITU-T T.83 compliance streams A1, C1, C2, G1, K1 (downloaded on first use, SHA-256 pinned): coefficients equal EREF, re-transformed samples equal DREF, exactly; libjpeg-turbo 2.1.5 `djpeg -dct int` on cjpeg-made files, within a stated difference per case | `UnitTests.Extensions.Documents.Images/JpegConformanceTests.cs`, `JpegDecoderReferenceTests.cs` |
+| PNG encoding | the engine's decoder and Pillow read every pixel back; bytes pinned | `UnitTests.Extensions.Documents.Images/PngEncoderTests.cs` |
 | table layout | numbers measured in Chromium 159 in the pinned Playwright container with font hinting off, and pinned; compared within n layout units (1/64 px), n counted from the structure of each case; the cases, the measuring script and the rule are in `tools/reference/chromium/` | `UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs` |
 | text in the PDF | PdfPig reads every glyph back at the position the page model says | `TestSupport/PdfReadBack.cs` |
 | structure tree | PdfPig reads the structure tree and marked content back (roles, order, attributes, text per element; every glyph marked) | `TestSupport/PdfStructureReadBack.cs`, `UnitTests.Extensions.Documents.Samples/TaggedPdfTests.cs`, `UnitTests.Extensions.Documents.Render.Pdf/TaggingTests.cs` |

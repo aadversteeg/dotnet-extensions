@@ -34,8 +34,12 @@ Written from the specifications:
   CSS Box Model 3, CSS Sizing 3 (§5), the HTML Standard's rendering section (heading sizes) and table model (slot
   filling).
 - Images: the PNG Specification, Second Edition (ISO/IEC 15948:2004) — chunks §5, filtering §9, IHDR/PLTE/IDAT/IEND
-  §11.2, tRNS §11.3.2.1; JPEG: ITU-T T.81 (ISO/IEC 10918-1) Annex B, marker and frame header syntax; PDF image
-  XObjects and soft masks: ISO 32000-1 §8.9, §11.6.5.3.
+  §11.2, tRNS §11.3.2.1, sRGB §11.3.3.5, filter selection §12.8; JPEG: ITU-T T.81 (ISO/IEC 10918-1) Annex A (DCT,
+  zig-zag order), Annex B (syntax), Annex C (Huffman tables), Annex F.2 (sequential decoding), Annex G.1.2 (progressive
+  decoding), and ITU-T T.871 (JFIF) §7 for the YCbCr transform; PDF image XObjects and soft masks: ISO 32000-1 §8.9,
+  §11.6.5.3, DCTDecode §7.4.8. No code of libjpeg, libjpeg-turbo, stb_image or another decoder was read or used.
+  The ITU-T T.83 compliance test data (© ITU & ISO/IEC 1994) is downloaded by a test on first use and is not part of
+  this repository.
 - Graphics (`Ave.Extensions.Documents.Graphics`): paths, fill rules and image space as ISO 32000-1 §8.3.3, §8.5.2,
   §8.5.3.3 and §8.9.5.3 define them; exact-area anti-aliasing by signed-area accumulation as described (in words, not
   code) by S. Barrett, "How the stb_truetype Anti-Aliased Software Rasterizer v2 Works" (2015) and R. Levien, "Inside
@@ -87,7 +91,10 @@ gap.
 
 Tools used outside the build, in `tools/verify-samples.ps1` and in the reference tests, inside throw-away
 containers: veraPDF 1.30.4 (`verapdf/cli`, GPL-3.0-or-later / MPL-2.0), qpdf (Apache-2.0), poppler-utils (GPL-2.0),
-MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They are run, not linked or distributed. `tools/generate-test-images.py` uses Pillow to write the image test files.
+MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets), fontTools (MIT, the outline reference),
+libjpeg-turbo's cjpeg and djpeg (IJG, BSD-3-Clause and zlib licences; the JPEG reference). They are run, not linked or
+distributed. `tools/generate-test-images.py` uses Pillow to write the image test files, `tools/generate-test-jpegs.py`
+cjpeg to write the JPEG test files (`UnitTests.Extensions.Documents.Images/Assets/jpeg-*.jpg`).
 
 ## Sample data
 
