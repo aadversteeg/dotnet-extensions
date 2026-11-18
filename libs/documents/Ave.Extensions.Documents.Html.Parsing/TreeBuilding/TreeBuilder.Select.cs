@@ -313,19 +313,19 @@ internal sealed partial class TreeBuilder
                     Start = element.Start,
                     Content = element.Content is null ? null : new MutableFragment { Start = element.Content.Start },
                 };
-                foreach (var attribute in element.Attributes)
-                {
-                    copy.AddAttribute(attribute);
-                }
-
+                copy.ShareAttributesOf(element);
+                Made(element: true);
                 return copy;
             case MutableText original:
                 var textCopy = new MutableText { Start = original.Start };
                 textCopy.Data.Append(original.Data);
+                Made(element: false);
                 return textCopy;
             case MutableComment comment:
+                Made(element: false);
                 return new MutableComment { Data = comment.Data, Start = comment.Start };
             case MutableProcessingInstruction instruction:
+                Made(element: false);
                 return new MutableProcessingInstruction { Target = instruction.Target, Data = instruction.Data, Start = instruction.Start };
             default:
                 return null;

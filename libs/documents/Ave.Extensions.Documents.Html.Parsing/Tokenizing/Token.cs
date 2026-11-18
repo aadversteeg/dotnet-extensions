@@ -38,6 +38,10 @@ internal sealed class Token
     /// <summary>The kind.</summary>
     public TokenKind Kind { get; init; }
 
+    /// <summary>For a start tag: the first HTML element tree construction made for it, whose attributes an element made
+    /// again for the same token shares.</summary>
+    public TreeBuilding.MutableElement? MadeElement { get; set; }
+
     /// <summary>The index in the source text where the token starts (its <c>&lt;</c>, or its first character).</summary>
     public int Start { get; init; }
 

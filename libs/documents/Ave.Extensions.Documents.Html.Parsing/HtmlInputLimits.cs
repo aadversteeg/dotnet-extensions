@@ -31,6 +31,20 @@ public static class HtmlInputLimits
     /// refuses the document instead (<see cref="HtmlErrorCodes.TooDeep"/>), so it is never silently different.</summary>
     public const int MaxDepth = 512;
 
+    /// <summary>The most elements one parse makes: 2^18 (262 144), counting every element the parser makes, also the
+    /// formatting elements it reopens, those the adoption agency algorithm makes and the clones in selectedcontent
+    /// elements. Every element is styled later, and its computed style is most of its memory: measured on yvain, parse
+    /// plus resolve of 2^18 elements that each have a style of their own takes about 0.81 GB resident (2.9 KB per
+    /// element), and 2^19 such elements 1.7 GB. Past it the document is refused (<see cref="HtmlErrorCodes.TooLarge"/>).
+    /// </summary>
+    public const int MaxElements = 1 << 18;
+
+    /// <summary>The most nodes one parse makes: 2^20 (1 048 576), elements, text, comments, processing instructions and
+    /// the doctype together, clones included. A node that is not an element costs about 100 bytes; 2^18 elements with a
+    /// style of their own and three more nodes each take about 0.88 GB resident (measured on yvain). Past it the
+    /// document is refused (<see cref="HtmlErrorCodes.TooLarge"/>).</summary>
+    public const int MaxNodes = 1 << 20;
+
     /// <summary>The most diagnostics one parse keeps: 10 000, far more than a person reads (the corpus documents have
     /// none). Past the limit one <see cref="Core.DocumentErrorCodes.TooManyDiagnostics"/> says how many were left out, so the
     /// memory a text can cost through its errors is a constant, not one diagnostic per character.</summary>

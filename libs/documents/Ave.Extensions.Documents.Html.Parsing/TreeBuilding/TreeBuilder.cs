@@ -46,6 +46,35 @@ internal sealed partial class TreeBuilder
     private bool _skipNextLineFeed;
     private bool _stopped;
 
+    private long _elements;
+    private long _nodes;
+
+    /// <summary>The most elements the parser makes (<see cref="HtmlInputLimits.MaxElements"/>; smaller in tests).</summary>
+    internal long MaxElements { get; init; } = HtmlInputLimits.MaxElements;
+
+    /// <summary>The most nodes the parser makes (<see cref="HtmlInputLimits.MaxNodes"/>; smaller in tests).</summary>
+    internal long MaxNodes { get; init; } = HtmlInputLimits.MaxNodes;
+
+    /// <summary>Which limit the document passed, "elements" or "nodes", or null: parsing stopped there.</summary>
+    public string? TooMany { get; private set; }
+
+    /// <summary>Counts a node the parser makes (an element made again or cloned counts as one more); past a limit
+    /// parsing stops.</summary>
+    private void Made(bool element)
+    {
+        _nodes++;
+        if (element)
+        {
+            _elements++;
+        }
+
+        if (TooMany is null && (_elements > MaxElements || _nodes > MaxNodes))
+        {
+            TooMany = _elements > MaxElements ? "elements" : "nodes";
+            _stopped = true;
+        }
+    }
+
     /// <summary>Set when the end of the file closed a template and must be processed again (§13.2.6.4.16).</summary>
     private bool _endOfFileAgain;
     private MutableElement? _context;
@@ -157,7 +186,7 @@ internal sealed partial class TreeBuilder
         }
 
         // "The end" (§13.2.7): pop all the nodes off the stack of open elements (each finishes parsing its children).
-        if (TooDeepAt is null && !CloneBudgetExceeded)
+        if (TooDeepAt is null && !CloneBudgetExceeded && TooMany is null)
         {
             while (_stack.Count > 0)
             {
@@ -573,9 +602,24 @@ internal sealed partial class TreeBuilder
             Start = start,
             Content = ns == ElementNamespace.Html && name == "template" ? new MutableFragment { Start = start } : null,
         };
-        foreach (var attribute in token.Attributes)
+        Made(element: true);
+        if (ns == ElementNamespace.Html && token.MadeElement is { } first)
         {
-            element.AddAttribute(ForeignAttribute(attribute, ns));
+            // Made again for the same token (a reopened formatting element, the adoption agency algorithm): the
+            // attributes are shared, not copied.
+            element.ShareAttributesOf(first);
+        }
+        else
+        {
+            foreach (var attribute in token.Attributes)
+            {
+                element.AddAttribute(ForeignAttribute(attribute, ns));
+            }
+
+            if (ns == ElementNamespace.Html)
+            {
+                token.MadeElement = element;
+            }
         }
 
         if (ns != ElementNamespace.Html)
@@ -679,6 +723,7 @@ internal sealed partial class TreeBuilder
         if (previous is not MutableText text)
         {
             text = new MutableText { Start = source };
+            Made(element: false);
             parent.Insert(text, before);
         }
 
@@ -701,6 +746,7 @@ internal sealed partial class TreeBuilder
             before = null;
         }
 
+        Made(element: false);
         target.Insert(new MutableComment { Data = token.Data, Start = token.Start }, before);
     }
 
@@ -713,6 +759,7 @@ internal sealed partial class TreeBuilder
             before = null;
         }
 
+        Made(element: false);
         target.Insert(new MutableProcessingInstruction { Target = token.Name!, Data = token.Data, Start = token.Start }, before);
     }
 

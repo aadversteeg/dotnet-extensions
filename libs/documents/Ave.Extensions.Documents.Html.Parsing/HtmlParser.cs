@@ -113,6 +113,11 @@ public static class HtmlParser
             return Result<HtmlFragmentResult, Error>.Failure(CloneBudgetError(options));
         }
 
+        if (builder.TooMany is { } fragmentUnit)
+        {
+            return Result<HtmlFragmentResult, Error>.Failure(TooManyError(options, fragmentUnit));
+        }
+
         var freezer = new TreeFreezer(source.PositionOf);
         var frozen = freezer.Fragment(fragment);
         return (builder.TooDeepAt ?? freezer.TooDeepAt) is { } deep
@@ -166,6 +171,11 @@ public static class HtmlParser
         if (builder.CloneBudgetExceeded)
         {
             return Result<HtmlParseResult, Error>.Failure(CloneBudgetError(options));
+        }
+
+        if (builder.TooMany is { } unit)
+        {
+            return Result<HtmlParseResult, Error>.Failure(TooManyError(options, unit));
         }
 
         var freezer = new TreeFreezer(source.PositionOf);
@@ -233,6 +243,16 @@ public static class HtmlParser
         new Error(HtmlErrorCodes.TooLarge, $"The selected options' content cloned into selectedcontent elements exceeds {TreeBuilder.CloneWorkPerCharacter} nodes and characters per character of input.")
             .With(ErrorMetadataKeys.Value, TreeBuilder.CloneWorkPerCharacter)
             .With(ErrorMetadataKeys.SourceFile, options.SourceName);
+
+    private static Error TooManyError(HtmlParseOptions options, string unit)
+    {
+        var limit = unit == "elements" ? HtmlInputLimits.MaxElements : HtmlInputLimits.MaxNodes;
+        return new Error(HtmlErrorCodes.TooLarge, unit == "elements"
+                ? $"The document makes more than {limit} elements (reopened formatting elements and clones included), the most the parser makes."
+                : $"The document makes more than {limit} nodes (elements, text, comments; reopened formatting elements and clones included), the most the parser makes.")
+            .With(ErrorMetadataKeys.Value, limit)
+            .With(ErrorMetadataKeys.SourceFile, options.SourceName);
+    }
 
     private static Error TooDeepError(HtmlParseOptions options, TextPosition position) =>
         new Error(HtmlErrorCodes.TooDeep, $"Elements are nested more than {HtmlInputLimits.MaxDepth} deep; the parser refuses the document instead of flattening it.")

@@ -100,9 +100,9 @@ internal sealed class TreeFreezer
 
             var owner = (MutableElement)frame.Parent;
             var frozen = frame.InContent
-                ? new HtmlElement(owner.Namespace, owner.LocalName, [.. owner.Attributes], frame.ElementChildren!.Value,
+                ? new HtmlElement(owner.Namespace, owner.LocalName, owner.FrozenAttributes(), frame.ElementChildren!.Value,
                     new HtmlDocumentFragment(children, _position(owner.Content!.Start)), _position(owner.Start))
-                : new HtmlElement(owner.Namespace, owner.LocalName, [.. owner.Attributes], children,
+                : new HtmlElement(owner.Namespace, owner.LocalName, owner.FrozenAttributes(), children,
                     owner.Content is null ? null : new HtmlDocumentFragment([], _position(owner.Content.Start)), _position(owner.Start));
             stack.Peek().Children.Add(frozen);
         }

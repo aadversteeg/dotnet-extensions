@@ -82,6 +82,7 @@ internal sealed partial class TreeBuilder
 
         if (!_document.HasElementChild() && !HasDoctypeChild())
         {
+            Made(element: false);
             _document.Insert(new MutableDocumentType { Name = name ?? string.Empty, PublicId = token.PublicId ?? string.Empty, SystemId = token.SystemId ?? string.Empty, Start = token.Start }, null);
         }
 

@@ -150,47 +150,70 @@ internal sealed class MutableElement : MutableParent
     /// <summary>Its local name.</summary>
     public required string LocalName { get; init; }
 
-    private readonly List<HtmlAttribute> _attributes = [];
-    private Dictionary<string, int>? _index;
+    private AttributeSet _set = new();
+    private bool _shared;
 
     /// <summary>Its attributes, in order. Add with <see cref="AddAttribute"/>.</summary>
-    public IReadOnlyList<HtmlAttribute> Attributes => _attributes;
+    public IReadOnlyList<HtmlAttribute> Attributes => _set.List;
+
+    /// <summary>The attributes as the frozen tree keeps them: made once per set, so elements that share their attributes
+    /// share this list too.</summary>
+    public Core.ValueList<HtmlAttribute> FrozenAttributes() => _set.Frozen ??= [.. _set.List];
+
+    /// <summary>Takes the attributes of another element made for the same token, without a copy (an element the parser
+    /// makes again: a reopened formatting element, a clone): they are copied only if one of the two changes.</summary>
+    /// <param name="other">The element made first.</param>
+    public void ShareAttributesOf(MutableElement other)
+    {
+        _set = other._set;
+        _shared = true;
+        other._shared = true;
+    }
 
     /// <summary>Adds an attribute.</summary>
     /// <param name="attribute">The attribute.</param>
     public void AddAttribute(HtmlAttribute attribute)
     {
-        _attributes.Add(attribute);
+        if (_shared)
+        {
+            _set = _set.Copy();
+            _shared = false;
+        }
+
+        _set.Frozen = null;
+        _set.List.Add(attribute);
         if (attribute.Namespace == AttributeNamespace.None)
         {
-            _index?.TryAdd(attribute.LocalName, _attributes.Count - 1);
+            _set.Index?.TryAdd(attribute.LocalName, _set.List.Count - 1);
         }
     }
 
     /// <summary>The value of the attribute in no namespace with this local name, or null. Constant work once there are
-    /// more than eight attributes (they are then indexed by name), so a lookup per later token stays linear.</summary>
+    /// more than eight attributes (they are then indexed by name, once per set), so a lookup per later token stays
+    /// linear.</summary>
     /// <param name="localName">The name.</param>
     /// <returns>The value, or null.</returns>
     public string? Attribute(string localName)
     {
-        if (_attributes.Count > 8)
+        var attributes = _set.List;
+        if (attributes.Count > 8)
         {
-            if (_index is null)
+            if (_set.Index is null)
             {
-                _index = new Dictionary<string, int>(_attributes.Count, System.StringComparer.Ordinal);
-                for (var i = 0; i < _attributes.Count; i++)
+                _set.Index = new Dictionary<string, int>(attributes.Count, System.StringComparer.Ordinal);
+                for (var i = 0; i < attributes.Count; i++)
                 {
-                    if (_attributes[i].Namespace == AttributeNamespace.None)
+                    if (attributes[i].Namespace == AttributeNamespace.None)
                     {
-                        _index.TryAdd(_attributes[i].LocalName, i);
+                        _set.Index.TryAdd(attributes[i].LocalName, i);
                     }
                 }
             }
 
-            return _index.TryGetValue(localName, out var at) ? _attributes[at].Value : null;
+            return _set.Index.TryGetValue(localName, out var at) ? attributes[at].Value : null;
         }
 
-        foreach (var attribute in _attributes)
+        foreach (var attribute in attributes)
         {
             if (attribute.Namespace == AttributeNamespace.None && attribute.LocalName == localName)
             {
@@ -199,6 +222,18 @@ internal sealed class MutableElement : MutableParent
         }
 
         return null;
+    }
+
+    /// <summary>The attributes of one or more elements: the list, its index by name, its frozen form.</summary>
+    private sealed class AttributeSet
+    {
+        public List<HtmlAttribute> List { get; private init; } = [];
+
+        public Dictionary<string, int>? Index { get; set; }
+
+        public Core.ValueList<HtmlAttribute>? Frozen { get; set; }
+
+        public AttributeSet Copy() => new() { List = [.. List] };
     }
 
     /// <summary>Whether it is on the list of active formatting elements now (kept by the list, so the check is constant

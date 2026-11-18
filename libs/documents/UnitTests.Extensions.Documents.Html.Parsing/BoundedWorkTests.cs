@@ -52,7 +52,7 @@ public class BoundedWorkTests
 
     [Theory]
     [InlineData(30_000)]
-    [InlineData(250_000)]
+    [InlineData((HtmlInputLimits.MaxElements / 2) - 8)]
     public void Many_selectedcontent_elements_and_selected_options_cost_one_fill_each(int n)
     {
         var parsed = ParsedWithin("<select>" + Repeat("<selectedcontent></selectedcontent>", n) + Repeat("<option selected>", n));
@@ -60,11 +60,20 @@ public class BoundedWorkTests
         parsed.Document.DocumentElement!.Should().NotBeNull();
     }
 
-    [Theory]
-    [InlineData(400_000)]
-    [InlineData(830_000)]
-    public void Markers_left_on_the_list_of_active_formatting_elements_are_not_scanned_per_tag(int n) =>
-        ParsedWithin("<table><tr>" + Repeat("<td><applet>", n) + Repeat("<b></b>", n)).Document.Should().NotBeNull();
+    [Fact]
+    public void Markers_left_on_the_list_of_active_formatting_elements_are_not_scanned_per_tag() =>
+        // Three elements per n (td, applet, b): the largest n inside the element limit.
+        ParsedWithin("<table><tr>" + Repeat("<td><applet>", (HtmlInputLimits.MaxElements / 3) - 10) + Repeat("<b></b>", (HtmlInputLimits.MaxElements / 3) - 10)).Document.Should().NotBeNull();
+
+    [Fact]
+    public void The_markers_input_at_the_size_limit_is_refused_by_the_element_limit()
+    {
+        var watch = Stopwatch.StartNew();
+        var result = HtmlParser.Parse("<table><tr>" + Repeat("<td><applet>", 830_000) + Repeat("<b></b>", 830_000));
+
+        watch.Elapsed.Should().BeLessThan(Generous);
+        result.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+    }
 
     [Theory]
     [InlineData(80_000)]
@@ -180,6 +189,61 @@ public class BoundedWorkTests
 
         HtmlTreeText.Format(parsed.Document).Should().Be(
             "| <!DOCTYPE html>\n| <html>\n|   <head>\n|     <template>\n|       a=\"1\"\n|       content\n|         <p>\n|           \"x\"\n|   <body>\n|     <i>\n|       \"y\"\n");
+    }
+
+    [Fact]
+    public void The_element_limit_is_exact()
+    {
+        // html, head and body, and the br elements.
+        HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<br>", HtmlInputLimits.MaxElements - 3)).IsSuccess.Should().BeTrue();
+        var refused = HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<br>", HtmlInputLimits.MaxElements - 2));
+
+        refused.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+        refused.Error.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be(HtmlInputLimits.MaxElements);
+    }
+
+    [Fact]
+    public void The_node_limit_is_exact()
+    {
+        // The doctype, the comments, and html, head and body.
+        HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<!---->", HtmlInputLimits.MaxNodes - 4)).IsSuccess.Should().BeTrue();
+        var refused = HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<!---->", HtmlInputLimits.MaxNodes - 3));
+
+        refused.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+        refused.Error.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be(HtmlInputLimits.MaxNodes);
+    }
+
+    [Theory]
+    [InlineData("<p>", 500, 20_000)]
+    [InlineData("<select><option selected>", 0, 0)]
+    public void Elements_the_parser_makes_again_count_towards_the_element_limit(string start, int formatting, int paragraphs)
+    {
+        // 500 formatting elements reopened for every <p>x: ten million elements from 84 KB. And the content of a
+        // selected option cloned into twelve selectedcontent elements: 15.6 million elements from 3.6 MB.
+        var text = formatting > 0
+            ? start + string.Concat(Enumerable.Range(0, formatting).Select(i => $"<b a{i}>")) + Repeat("<p>x", paragraphs)
+            : start + Repeat("<p>", 1_200_000) + "</p></option><button>" + Repeat("<selectedcontent></selectedcontent>", 12);
+        var watch = Stopwatch.StartNew();
+
+        var result = HtmlParser.Parse(text);
+
+        watch.Elapsed.Should().BeLessThan(Generous);
+        result.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+    }
+
+    [Fact]
+    public void An_element_made_again_for_a_token_shares_its_attributes()
+    {
+        // <b> with 8 000 attributes reopened for 8 000 paragraphs: 64 million attribute copies (an out-of-memory
+        // exception at a 4 GB heap) before; now each reopened b shares the first one's list.
+        var text = "<p><b" + string.Concat(Enumerable.Range(0, 8_000).Select(i => $" a{i}")) + ">" + Repeat("<p>x", 8_000);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var parsed = HtmlParser.Parse(text).Value;
+
+        (GC.GetAllocatedBytesForCurrentThread() - before).Should().BeLessThan(300L << 20);
+        parsed.Document.DocumentElement!.Children.OfType<HtmlElement>().Last().Children.OfType<HtmlElement>().Last()
+            .Children.OfType<HtmlElement>().Single().Attributes.Count.Should().Be(8_000);
     }
 
     [Fact]
