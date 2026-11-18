@@ -593,6 +593,16 @@ Each is documented next to its code as well.
   each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
   page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt
   of the content that are never shown (`a4-header-row-image-row`).
+  A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
+  grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
+  taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases
+  `a4-cell-pad3-image-177`, `a4-cell-pad3-line-177`, `a4-cell-image-179-5`). Before, 83 of 600 random documents whose
+  pieces each fit a page were refused under `Slice` for this shape. **Listed difference from Chromium:** Chromium does
+  not slice such a piece; it moves it whole to the top of the next page and lets the cell's bottom padding and grid line
+  pass the page end. The engine has the same pages and words, but the piece in two slices (176.625 and 0.375 pt for a
+  177 pt image in a cell with 3 pt padding), and what follows starts lower on the next page. Under `Refuse` such a piece
+  is refused as before. A block outside a table whose bottom padding does not fit below such a piece at the top of a
+  page keeps the piece whole and lets the padding pass, as Chromium does.
   Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
   precomposed, decompose what it lacks), except that enclosing marks (Me) do not count as marks and HarfBuzz's fallbacks
