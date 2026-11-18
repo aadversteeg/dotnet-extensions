@@ -30,7 +30,7 @@ public class PreviewTests
 
         images.IsSuccess.Should().BeTrue(images.IsFailure ? images.Error.ToString() : string.Empty);
         var image = images.Value[page - 1];
-        Golden.ComparePixels($"{name}.page{page}.96dpi.png", image.Width, image.Height, image.Pixels.AsSpan()).Should().BeNull();
+        GoldenImages.ComparePixels($"{name}.page{page}.96dpi.png", image.Width, image.Height, image.Pixels.AsSpan()).Should().BeNull();
     }
 
     [Fact]
