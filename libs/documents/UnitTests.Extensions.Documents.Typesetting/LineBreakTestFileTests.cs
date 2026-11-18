@@ -67,7 +67,7 @@ public class LineBreakTestFileTests(ITestOutputHelper output)
             output.WriteLine($"line {test.LineNumber}: {test.Source}  expected [{string.Join(",", test.Breaks)}] got [{string.Join(",", actual)}]");
         }
 
-        cases.Count.Should().BeGreaterThan(10_000, "the whole file was read");
+        cases.Count.Should().Be(19_346, "the whole file was read: LineBreakTest-18.0.0.txt holds 19 346 cases");
         failures.Should().BeEmpty();
     }
 }

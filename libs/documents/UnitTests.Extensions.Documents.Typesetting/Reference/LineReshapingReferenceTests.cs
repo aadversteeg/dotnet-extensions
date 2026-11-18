@@ -47,7 +47,8 @@ public class LineReshapingReferenceTests(ITestOutputHelper output)
         }
 
         results.SelectMany(result => result.Differences).Should().BeEmpty();
-        results.Sum(result => result.ShapedAgain).Should().BeGreaterThan(50, "the sweep breaks inside ligatures, at kerning pairs and at shown hyphens");
+        results.Sum(result => result.Lines).Should().Be(14_297, "every paragraph was broken at every width of the sweep");
+        results.Sum(result => result.ShapedAgain).Should().Be(8_669, "the sweep breaks inside ligatures, at kerning pairs and at shown hyphens");
     }
 
     [Fact]
