@@ -15,10 +15,15 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <c>a1-*</c> reference cases. For every document: it is laid out (no refusal: nothing in it is taller than a page),
 /// every word is on some page exactly once, nothing passes the end of the page area, and no part of a table row that
 /// shows nothing is left at a page end or start — except where the row shows nothing over a whole page, which no layout
-/// can avoid. The generator is deterministic; the counts go to the test output.
+/// can avoid. The words a page must show come from the input document, not from a layout (review 40, B1: an oracle made
+/// by the engine missed content the engine lost at every offset). Pieces with bottom padding or a bottom border in block
+/// flow, and a paragraph after every piece, test that nothing after a box that does not fit is lost. The generator is
+/// deterministic, and the numbers of documents and pages are pinned.
 /// </summary>
 public class PageStartSweepTests(ITestOutputHelper output)
 {
+    private const int PagesPinned = 13_964;
+
     private const double AreaHeight = 150;
 
     private static PageSetup Area => Page(300.Pt(), 174.Pt()).Margin(12.Pt());
@@ -70,7 +75,21 @@ public class PageStartSweepTests(ITestOutputHelper output)
             })]).GridLines(1.Pt(), Color.Black)),
         ("a row with a cell of three lines kept together beside nine lines", () => Lined(Table(Columns(Fill(1), Fill(1)),
             [TableRow([Cell([Lines(3, "c")]).KeepTogether(), Cell([Lines(9, "d")])]), TableRow([Cell("after"), Cell("z")])]))),
+        ("a block with 51 pt bottom padding around a line", () => Block([Paragraph("pad")]).PaddingBottom(51.Pt()).Background(Grey)),
+        ("a paragraph of four lines with a 24 pt bottom border", () => Lines(4, "bb").BorderBottom(24.Pt(), Color.Black)),
+        ("a block with 60 pt bottom padding around a line with a 40 pt bottom margin", () => Block([Paragraph("mb").MarginBottom(40.Pt())]).PaddingBottom(60.Pt())),
+        ("a block with 3 pt bottom padding around two two-line paragraphs", () => Block([Lines(2, "q"), Lines(2, "u")]).PaddingBottom(3.Pt())),
     ];
+
+    /// <summary>The words of the input document: every run's text split at white space, the words that have a letter or
+    /// a digit; a table's header row is input once.</summary>
+    private static IEnumerable<string> InputWords(global::Ave.Extensions.Documents.DocumentModel.Node node) => node switch
+    {
+        global::Ave.Extensions.Documents.DocumentModel.Box box => box.Children.SelectMany(InputWords),
+        global::Ave.Extensions.Documents.DocumentModel.TextRun run => run.Text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(word => word.Split('\u2028', StringSplitOptions.RemoveEmptyEntries)).Where(word => word.Any(char.IsLetterOrDigit)),
+        _ => [],
+    };
 
     /// <summary>The words of a fragment tree; a repeated header row is a copy, not words of its own.</summary>
     private static IEnumerable<string> Words(Fragment fragment) => fragment switch
@@ -100,15 +119,15 @@ public class PageStartSweepTests(ITestOutputHelper output)
         {
             foreach (var (pieceName, piece) in Pieces)
             {
-                // The words of the document without leading space: the same words, whatever the offset.
-                var expected = Paginate([.. leading(0, piece())]).Value.SelectMany(page => Words(page.Root.Fragment))
-                    .OrderBy(word => word, StringComparer.Ordinal).ToList();
+                // The words of the input document, with the paragraph that follows the piece.
+                var expected = DocumentTranslator.ToModel(Document([.. leading(0, piece()), Paragraph("omega")], Area, title: "Title", language: "en").FontFamily("Lato"))
+                    .Value.Root.Children.SelectMany(InputWords).OrderBy(word => word, StringComparer.Ordinal).ToList();
                 for (var step = 0; step <= 50; step++)
                 {
                     var offset = step * 3.0;
                     var because = $"{leadingName}, {pieceName}, offset {offset}";
                     documents++;
-                    var result = Paginate([.. leading(offset, piece())]);
+                    var result = Paginate([.. leading(offset, piece()), Paragraph("omega")]);
                     if (result.IsFailure)
                     {
                         problems.Add($"{because}: refused {result.Error.Code}: {result.Error.Message}");
@@ -145,7 +164,8 @@ public class PageStartSweepTests(ITestOutputHelper output)
         }
 
         problems.Should().BeEmpty();
-        documents.Should().Be(Leading.Length * Pieces.Length * 51);
+        documents.Should().Be(6_528, "8 kinds of leading space × 16 first pieces × 51 offsets");
+        pages.Should().Be(PagesPinned, "the pages of the sweep, pinned: a change of the generator or of the layout is a deliberate edit");
     }
 
     /// <summary>A part of a row that shows nothing which no layout can avoid: the row shows nothing on any of its pages
