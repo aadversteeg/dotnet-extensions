@@ -43,6 +43,21 @@ internal sealed class ComputeContext
     /// <summary>The element's own computed font size in points; computed before every other property.</summary>
     public double FontSize => _own[PropertyRegistry.FontSize.Index] is CssLength size ? size.Points : ParentFontSize;
 
+    /// <summary>Where the element's computed font size comes from, set when font-size is computed.</summary>
+    public FontSizeSource FontSizeSource { get; set; } = FontSizeSource.Medium;
+
+    /// <summary>Where the parent's font size comes from; medium for the root (its parent is the initial value).</summary>
+    public FontSizeSource ParentFontSizeSource => Parent is { } parent ? parent.FontSizeSource : FontSizeSource.Medium;
+
+    /// <summary>Whether the parent's computed font family is monospace alone (false for the root).</summary>
+    public bool ParentIsMonospace => Parent is { } parent && IsMonospaceFamily(parent[PropertyRegistry.FontFamily]);
+
+    /// <summary>Whether the element's computed font family is the one generic family monospace, written without quotes
+    /// (font-family is computed before font-size).</summary>
+    public bool IsMonospace => IsMonospaceFamily(Own(PropertyRegistry.FontFamily));
+
+    private static bool IsMonospaceFamily(CssValue? family) => family is CssList { Items: [CssKeyword { Name: "monospace" }] };
+
     /// <summary>The element's own computed value of a property computed earlier, or null.</summary>
     public CssValue? Own(PropertyDefinition property) => _own[property.Index];
 

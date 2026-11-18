@@ -62,6 +62,10 @@ public enum CalcType
 
     /// <summary>No consistent type (invalid).</summary>
     Invalid,
+
+    /// <summary>A product or quotient of dimensions (CSS Values 4 §10.9, typed arithmetic: <c>1em / 1px</c> is a number):
+    /// valid, and evaluated by Chromium; not supported here.</summary>
+    TypedArithmetic,
 }
 
 /// <summary>A resolved calculation: a number, or points plus a percentage of something not yet known.</summary>
@@ -79,7 +83,7 @@ public readonly record struct CalcResult(double Number, double Points, double Pe
 public static class Calc
 {
     /// <summary>The math function names CSS defines (for "valid but unsupported").</summary>
-    private static readonly HashSet<string> OtherMathFunctions =
+    internal static readonly HashSet<string> OtherMathFunctions =
         ["round", "mod", "rem", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "abs", "sign", "progress", "calc-size", "random", "sibling-index", "sibling-count"];
 
     /// <summary>Whether a function is a math function (supported or not).</summary>
@@ -298,9 +302,14 @@ public static class Calc
                 foreach (var (factor, inverted) in product.Factors)
                 {
                     var factorType = TypeOf(factor);
-                    if (factorType == CalcType.Invalid || (inverted && factorType != CalcType.Number))
+                    if (factorType is CalcType.Invalid or CalcType.TypedArithmetic)
                     {
-                        return CalcType.Invalid;
+                        return factorType;
+                    }
+
+                    if (inverted && factorType != CalcType.Number)
+                    {
+                        return CalcType.TypedArithmetic;
                     }
 
                     if (factorType == CalcType.Number)
@@ -310,7 +319,7 @@ public static class Calc
 
                     if (type != CalcType.Number)
                     {
-                        return CalcType.Invalid;
+                        return CalcType.TypedArithmetic;
                     }
 
                     type = factorType;
@@ -329,6 +338,11 @@ public static class Calc
         if (left == CalcType.Invalid || right == CalcType.Invalid)
         {
             return CalcType.Invalid;
+        }
+
+        if (left == CalcType.TypedArithmetic || right == CalcType.TypedArithmetic)
+        {
+            return CalcType.TypedArithmetic;
         }
 
         if (left == right)

@@ -1,0 +1,9 @@
+@import "theme.css";
+
+@page { size: A4; margin: 2cm }
+
+body { font-family: "Lato", sans-serif; font-size: 10pt; color: var(--ink) }
+h1 { font-size: 18pt; margin: 0 0 12pt }
+table { border-collapse: collapse; width: 100% }
+th, td { padding: 4pt 6pt; border-bottom: 0.5pt solid #ccc }
+th { text-align: left; background-color: var(--band) }

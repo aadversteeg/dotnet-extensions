@@ -398,9 +398,7 @@ public static class SelectorParser
                 case "i":
                     modifier = AttributeCase.Insensitive;
                     break;
-                case "s":
-                    modifier = AttributeCase.Sensitive;
-                    break;
+                // Selectors 4 also has s (case-sensitive); Chromium 159 rejects it (measured), so it is invalid here too.
                 default:
                     return context.Fail<AttributeSelector>($"an unknown attribute selector modifier '{flag.Text}'", flag.Position);
             }

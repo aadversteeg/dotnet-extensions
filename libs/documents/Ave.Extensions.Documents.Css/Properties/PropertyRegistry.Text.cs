@@ -15,7 +15,7 @@ public static partial class PropertyRegistry
             ComputeColor);
 
         yield return new PropertyDefinition(
-            "text-align", inherited: true, new CssKeyword("start"), "block containers", "start | end | left | right | center | justify | match-parent",
+            "text-align", inherited: true, new CssKeyword("start"), "block containers", "start | end | left | right | center | justify | match-parent | -webkit-left | -webkit-right | -webkit-center",
             PropertySupport.Supported, "CSS Text 3 §6.1",
             ParseTextAlign,
             ComputeTextAlign);
@@ -25,8 +25,16 @@ public static partial class PropertyRegistry
             "inline-level and table-cell boxes", "CSS 2.1 §10.8.1; CSS Inline 3 §4");
 
         yield return Keywords(
-            "white-space", inherited: true, "normal", ["normal", "pre", "nowrap", "pre-wrap"], ["pre-line", "break-spaces"],
-            "text", "CSS Text 3 §3");
+            "white-space-collapse", inherited: true, "collapse", ["collapse", "preserve"], ["discard", "preserve-breaks", "preserve-spaces", "break-spaces"],
+            "text", "CSS Text 4 §3.1");
+
+        yield return Keywords("text-wrap-mode", inherited: true, "wrap", ["wrap", "nowrap"], [], "text", "CSS Text 4 §6.1");
+
+        // The engine is left-to-right only (bidi is out of v0): isolating a box changes nothing in such text, and the
+        // user-agent style sheet isolates most block elements (HTML Standard §15.3.5), so isolate is accepted.
+        yield return Keywords(
+            "unicode-bidi", inherited: false, "normal", ["normal", "isolate"], ["embed", "bidi-override", "isolate-override", "plaintext"],
+            "all elements", "CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text");
 
         yield return new PropertyDefinition(
             "text-decoration-line", inherited: false, new CssKeyword("none"), "all elements", "none | underline", PropertySupport.Supported,
@@ -71,7 +79,10 @@ public static partial class PropertyRegistry
     private static ComputedResult ComputeColor(CssValue value, ComputeContext context) =>
         value is CssKeyword { Name: "currentcolor" } ? context.Inherited(Color) : value;
 
-    /// <summary>text-align (CSS Text 3 §6.1). The user agent's <c>-internal-center</c> for th (HTML Standard §15.3.8:
+    /// <summary>text-align (CSS Text 3 §6.1), with Chromium's <c>-webkit-left</c>, <c>-webkit-right</c> and
+    /// <c>-webkit-center</c>: they align the text as left, right and center do, and also align the block children whose
+    /// width leaves room ("align descendants", HTML Standard §15.2); the HTML align attribute and the caption of the
+    /// user-agent style sheet use them. Layout must do both, or refuse them. The user agent's <c>-internal-center</c> for th (HTML Standard §15.3.8:
     /// centred where the parent's text-align is its initial value) is accepted from the user-agent style sheet only,
     /// which the parser knows by the keyword's form: authors cannot write a name starting with -internal- in a way that
     /// matters, since Chromium rejects it for them too.</summary>
@@ -84,12 +95,13 @@ public static partial class PropertyRegistry
 
         return reader.Count == 1 && reader.Peek is Syntax.CssToken { Kind: Syntax.CssTokenKind.String }
             ? ParsedValue.Refused("text-align with a string is not supported")
-            : OneKeyword(reader, "text-align", ["start", "end", "left", "right", "center", "justify", "match-parent"], ["justify-all"]);
+            : OneKeyword(reader, "text-align", ["start", "end", "left", "right", "center", "justify", "match-parent", "-webkit-left", "-webkit-right", "-webkit-center"], ["justify-all", "-webkit-match-parent", "-webkit-auto"]);
     }
 
-    /// <summary>The computed text-align: <c>match-parent</c> is the parent's computed value with start and end made left
-    /// and right (CSS Text 3 §6.1; the engine is left-to-right only); <c>-internal-center</c> is center when the parent's
-    /// value is start, else the parent's value.</summary>
+    /// <summary>The computed text-align: <c>match-parent</c> is the parent's computed value (CSS Text 3 §6.1 resolves
+    /// start and end against the parent's direction; Chromium 159 keeps them as they are, measured, and the engine is
+    /// left-to-right only, where start is left); <c>-internal-center</c> is center when the parent's value is start,
+    /// else the parent's value.</summary>
     private static ComputedResult ComputeTextAlign(CssValue value, ComputeContext context)
     {
         var parent = context.Inherited(TextAlign) as CssKeyword;
@@ -97,10 +109,8 @@ public static partial class PropertyRegistry
         {
             CssKeyword { Name: "match-parent" } => parent?.Name switch
             {
-                "start" => new CssKeyword("left"),
-                "end" => new CssKeyword("right"),
                 "-internal-center" => new CssKeyword("center"),
-                _ => parent ?? new CssKeyword("left"),
+                _ => parent ?? new CssKeyword("start"),
             },
             CssKeyword { Name: "-internal-center" } => parent is null or { Name: "start" } ? new CssKeyword("center") : parent,
             _ => value,

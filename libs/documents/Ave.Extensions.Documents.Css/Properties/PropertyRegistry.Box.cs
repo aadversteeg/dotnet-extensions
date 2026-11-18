@@ -52,10 +52,12 @@ public static partial class PropertyRegistry
         }
 
         // Styles before widths: a border width computes to zero when its style is none (CSS Backgrounds 3 §3.3).
+        // inset and outset are in because the user-agent style sheet draws hr with them (HTML Standard §15.3.11): the
+        // layout paints them in two shades as Chromium does. hidden is none, except that it wins in collapsed borders.
         foreach (var side in Sides)
         {
             yield return Keywords(
-                $"border-{side}-style", inherited: false, "none", ["none", "solid"], ["hidden", "dotted", "dashed", "double", "groove", "ridge", "inset", "outset"],
+                $"border-{side}-style", inherited: false, "none", ["none", "hidden", "solid", "inset", "outset"], ["dotted", "dashed", "double", "groove", "ridge"],
                 "all elements", "CSS Backgrounds 3 §3.2");
         }
 
@@ -108,6 +110,15 @@ public static partial class PropertyRegistry
             (value, context) => context.LengthPercentage(value));
 
         yield return Keywords("box-sizing", inherited: false, "content-box", ["content-box", "border-box"], [], "all elements that accept width or height", "CSS Box Model 3 §4.3");
+
+        // hidden and clip clip the content to the padding box; the user-agent style sheet sets them on hr and img.
+        // A paged document does not scroll, so scroll and auto are refused (Chromium prints them clipped as well, but
+        // with scroll bars on screen media).
+        foreach (var axis in new[] { "x", "y" })
+        {
+            yield return Keywords($"overflow-{axis}", inherited: false, "visible", ["visible", "hidden", "clip"], ["scroll", "auto", "overlay"],
+                "block containers, flex containers, grid containers", "CSS Overflow 3 §3.1");
+        }
     }
 
     private static CssValue Zero => new CssLength(Length.Zero);
@@ -192,6 +203,14 @@ public static partial class PropertyRegistry
             return new CssLength(Length.Zero);
         }
 
+        return SnappedLineWidth(value, context);
+    }
+
+    /// <summary>A &lt;line-width&gt; computed and snapped as Chromium snaps border widths (thin, medium and thick are
+    /// 1px, 3px and 5px; above 0 and below 1px is 1px; else floored to whole pixels). outline-width computes the same,
+    /// without the style rule (Chromium 159 keeps 3px for outline-style none, measured).</summary>
+    private static ComputedResult SnappedLineWidth(CssValue value, ComputeContext context)
+    {
         var computed = value switch
         {
             CssKeyword { Name: "thin" } => new CssLength(Length.FromPoints(0.75)),

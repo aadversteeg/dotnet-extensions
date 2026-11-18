@@ -86,6 +86,32 @@ public static partial class PropertyRegistry
             "<text-decoration-line> || <text-decoration-style> || <color>", "CSS Text Decoration 3 §2.4", ParseTextDecoration));
 
         shorthands.Add(new ShorthandDefinition(
+            "white-space", ["white-space-collapse", "text-wrap-mode"], "normal | pre | nowrap | pre-wrap | <white-space-collapse> || <text-wrap-mode>",
+            "CSS Text 4 §3", ParseWhiteSpace));
+
+        shorthands.Add(new ShorthandDefinition(
+            "text-wrap", ["text-wrap-mode", "text-wrap-style"], "<text-wrap-mode> || <text-wrap-style>", "CSS Text 4 §6.3",
+            reader =>
+            {
+                var values = new Dictionary<string, CssValue>();
+                foreach (var item in reader.Remaining)
+                {
+                    var single = new ValueReader([item]);
+                    var parsed = !values.ContainsKey("text-wrap-mode") && single.Keyword("wrap", "nowrap") is { } mode
+                        ? (Name: "text-wrap-mode", Value: ParsedValue.Of(new CssKeyword(mode)))
+                        : (Name: "text-wrap-style", Value: values.ContainsKey("text-wrap-style") ? ParsedValue.Invalid("not a value of text-wrap") : Find("text-wrap-style")!.Parse(new ValueReader([item])));
+                    if (!parsed.Value.IsValid)
+                    {
+                        return ShorthandParse.Failed(parsed.Value, "not a value of text-wrap");
+                    }
+
+                    values[parsed.Name] = parsed.Value.Value!;
+                }
+
+                return reader.Count == 0 ? ShorthandParse.Invalid("text-wrap needs a value") : Expand(["text-wrap-mode", "text-wrap-style"], values);
+            }));
+
+        shorthands.Add(new ShorthandDefinition(
             "gap", ["row-gap", "column-gap"], "normal", "CSS Box Alignment 3 §8.3", reader => Pair(reader, "row-gap", "column-gap")));
 
         shorthands.Add(new ShorthandDefinition(
@@ -578,6 +604,43 @@ public static partial class PropertyRegistry
         }
 
         return Expand(["list-style-position", "list-style-image", "list-style-type"], values);
+    }
+
+    /// <summary>white-space (CSS Text 4 §3): the CSS 2 keywords, each a pair of white-space-collapse and text-wrap-mode
+    /// (normal = collapse wrap, pre = preserve nowrap, nowrap = collapse nowrap, pre-wrap = preserve wrap; pre-line and
+    /// break-spaces keep line breaks or spaces the layout does not), or the longhands' values in any order.</summary>
+    private static ShorthandParse ParseWhiteSpace(ValueReader reader)
+    {
+        static ShorthandParse Pair(string collapse, string wrap) =>
+            new(new Dictionary<string, CssValue> { ["white-space-collapse"] = new CssKeyword(collapse), ["text-wrap-mode"] = new CssKeyword(wrap) }, null, false);
+
+        if (reader.Count == 1 && reader.Keyword("normal", "pre", "nowrap", "pre-wrap", "pre-line", "break-spaces") is { } keyword)
+        {
+            return keyword switch
+            {
+                "normal" => Pair("collapse", "wrap"),
+                "pre" => Pair("preserve", "nowrap"),
+                "nowrap" => Pair("collapse", "nowrap"),
+                "pre-wrap" => Pair("preserve", "wrap"),
+                _ => ShorthandParse.Refused($"'white-space: {keyword}' is not supported"),
+            };
+        }
+
+        var values = new Dictionary<string, CssValue>();
+        foreach (var item in reader.Remaining)
+        {
+            var collapse = Find("white-space-collapse")!.Parse(new ValueReader([item]));
+            var wrap = Find("text-wrap-mode")!.Parse(new ValueReader([item]));
+            var (name, value) = collapse.IsValid || collapse.Unsupported ? ("white-space-collapse", collapse) : ("text-wrap-mode", wrap);
+            if (!value.IsValid || values.ContainsKey(name))
+            {
+                return value.Unsupported ? ShorthandParse.Failed(value) : ShorthandParse.Invalid("not a value of white-space");
+            }
+
+            values[name] = value.Value!;
+        }
+
+        return reader.Count == 0 ? ShorthandParse.Invalid("white-space needs a value") : Expand(["white-space-collapse", "text-wrap-mode"], values);
     }
 
     /// <summary>text-decoration (CSS Text Decoration 3 §2.4): line || style || color.</summary>

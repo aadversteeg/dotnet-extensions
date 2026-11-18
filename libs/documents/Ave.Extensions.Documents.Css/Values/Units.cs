@@ -10,7 +10,7 @@ namespace Ave.Extensions.Documents.Css.Values;
 public static class Units
 {
     /// <summary>The absolute units in points (CSS Values 4 §6.2: 1in = 2.54cm = 25.4mm = 101.6Q = 72pt = 6pc = 96px).</summary>
-    private static readonly FrozenDictionary<string, double> Absolute = new Dictionary<string, double>
+    internal static readonly FrozenDictionary<string, double> Absolute = new Dictionary<string, double>
     {
         ["px"] = 0.75,
         ["pt"] = 1,

@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Css" />
+    <!-- The HTML front-end's tests generate docs/html-css-profile.md from the CSS reader's catalogs too. -->
+    <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Html" />
   </ItemGroup>
 
 </Project>

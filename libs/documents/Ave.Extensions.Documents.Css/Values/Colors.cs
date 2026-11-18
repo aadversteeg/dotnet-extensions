@@ -31,7 +31,7 @@ internal static partial class Colors
 {
     /// <summary>The system colours the engine resolves (CSS Color 4 §6.2), with Chromium 159's values in a light colour
     /// scheme (the HTML Standard §15.3.4 gives the link colours; a printed page is white).</summary>
-    private static readonly Dictionary<string, CssColor> SystemColors = new(StringComparer.Ordinal)
+    internal static readonly Dictionary<string, CssColor> SystemColors = new(StringComparer.Ordinal)
     {
         ["canvas"] = new(255, 255, 255, 1),
         ["canvastext"] = new(0, 0, 0, 1),
@@ -52,8 +52,12 @@ internal static partial class Colors
     ];
 
     /// <summary>The colour functions of CSS Color 4 and 5 the engine refuses.</summary>
-    private static readonly HashSet<string> OtherFunctions =
+    internal static readonly HashSet<string> OtherFunctions =
         ["hwb", "lab", "lch", "oklab", "oklch", "color", "color-mix", "light-dark", "contrast-color", "device-cmyk", "-webkit-image-set"];
+
+    /// <summary>The named colour of CSS Color 4 §6.1 with this name (ASCII case-insensitive), or null.</summary>
+    public static CssColor? NamedColor(string name) =>
+        Named.TryGetValue(Ascii.ToLower(name), out var rgb) ? new CssColor(rgb.Red, rgb.Green, rgb.Blue, 1) : null;
 
     /// <summary>Reads one component value as a &lt;color&gt;.</summary>
     /// <param name="value">The value.</param>

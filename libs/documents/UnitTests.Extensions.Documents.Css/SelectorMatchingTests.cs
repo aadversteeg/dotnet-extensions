@@ -46,7 +46,6 @@ public class SelectorMatchingTests
     [InlineData("[title$=rld]", "p2")]
     [InlineData("[title*='o W']", "p2")]
     [InlineData("[type=text]", "i1")]
-    [InlineData("[type=text s]", "")]
     [InlineData(":root", "html")]
     [InlineData(":empty", "p1 p2 s1 p3 a1 i1 e1")]
     [InlineData("div > :first-child", "p1 a1")]
@@ -101,5 +100,18 @@ public class SelectorMatchingTests
 
         parsed.Findings.Select(finding => (finding.Support, finding.Name)).Should().Equal(
             (SelectorSupport.NeverMatches, ":hover"), (SelectorSupport.Unsupported, ":has()"), (SelectorSupport.Unsupported, "::before"));
+    }
+
+    [Theory]
+    [InlineData("[type=text s]")]
+    [InlineData("::before + p")]
+    [InlineData(":has(:has(a))")]
+    [InlineData("::slotted(.a .b)")]
+    [InlineData(":heading")]
+    public void Selectors_Chromium_159_rejects_are_invalid(string selector)
+    {
+        var values = SyntaxParser.ParseComponentValues(CssSource.Of(selector), (_, _) => { }).Values;
+
+        SelectorParser.Parse(values, relative: false, TextPosition.Start).List.Should().BeNull();
     }
 }

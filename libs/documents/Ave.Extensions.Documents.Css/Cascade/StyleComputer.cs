@@ -88,7 +88,7 @@ public sealed class StyleComputer
             context.Set(property, Value(property, candidates.Longhands[property.Index], context, custom, shorthands));
         }
 
-        var style = new ComputedStyle([.. PropertyRegistry.Longhands.Select(property => context.Own(property)!)], custom);
+        var style = new ComputedStyle([.. PropertyRegistry.Longhands.Select(property => context.Own(property)!)], custom, context.FontSizeSource);
         if (element.IsRoot)
         {
             _rootFontSize = ((CssLength)style[PropertyRegistry.FontSize]).Points;
@@ -379,33 +379,44 @@ public sealed class StyleComputer
     /// inherited or initial value when nothing is declared.</summary>
     private CssValue Value(PropertyDefinition property, List<Candidate>? candidates, ComputeContext context, Dictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
     {
-        var unset = property.Inherited ? context.Inherited(property) : property.Initial;
+        CssValue Unset() => property == PropertyRegistry.FontSize
+            ? PropertyRegistry.InheritFontSize(context)
+            : property.Inherited ? context.Inherited(property) : InitialOf(property, context);
         if (Winner(candidates) is not { } winner)
         {
-            return unset;
+            return Unset();
         }
 
         var declaration = winner.Entry.Declaration;
         switch (winner.Entry.Value)
         {
             case WideKeywordEntry wide:
-                return Keyword(wide.Keyword, property, context) ?? unset;
+                return Keyword(wide.Keyword, property, context) ?? Unset();
             case SpecifiedEntry specified:
-                return Computed(property, specified.Value, context, declaration) ?? unset;
+                return Computed(property, specified.Value, context, declaration) ?? Unset();
             case PendingEntry pending:
-                return Substituted(property, pending, declaration, context, custom, shorthands) ?? unset;
+                return Substituted(property, pending, declaration, context, custom, shorthands) ?? Unset();
             default:
-                return unset;
+                return Unset();
         }
     }
 
-    /// <summary>initial, inherit and unset (§7.3.1, §7.3.2); null for unset.</summary>
-    private static CssValue? Keyword(string keyword, PropertyDefinition property, ComputeContext context) => keyword switch
+    /// <summary>initial, inherit and unset (§7.3.1, §7.3.2); null for unset. font-size goes through its compute
+    /// function either way, because a keyword-derived size depends on the element's own family.</summary>
+    private static CssValue? Keyword(string keyword, PropertyDefinition property, ComputeContext context) => (keyword, property == PropertyRegistry.FontSize) switch
     {
-        "initial" => property.Initial,
-        "inherit" => context.Inherited(property),
+        ("initial", true) => PropertyRegistry.ComputeFontSize(new CssKeyword("medium"), context).Value,
+        ("inherit", true) => PropertyRegistry.InheritFontSize(context),
+        ("initial", false) => InitialOf(property, context),
+        ("inherit", false) => context.Inherited(property),
         _ => null,
     };
+
+    /// <summary>The initial value, computed for the element: most initial values are computed values already, but some
+    /// computed values depend on others (a border width is zero while its style is none, CSS Backgrounds 3 §3.3; the root
+    /// is blockified, CSS Display 3 §2.7).</summary>
+    private static CssValue InitialOf(PropertyDefinition property, ComputeContext context) =>
+        property.Compute(property.Initial, context).Value ?? property.Initial;
 
     /// <summary>A pending value after var() substitution: parsed as the longhand, or as its shorthand (once per
     /// declaration and element); invalid at computed-value time when it does not parse (CSS Variables 1 §3.1).</summary>
@@ -449,7 +460,7 @@ public sealed class StyleComputer
 
         if (parsed.IsValid)
         {
-            return parsed.Value is CssKeyword { Name: "initial" } ? property.Initial : Computed(property, parsed.Value!, context, declaration);
+            return parsed.Value is CssKeyword { Name: "initial" } ? Keyword("initial", property, context) : Computed(property, parsed.Value!, context, declaration);
         }
 
         if (parsed.Unsupported)

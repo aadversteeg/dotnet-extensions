@@ -20,12 +20,12 @@ namespace Ave.Extensions.Documents.Css.Rules;
 internal sealed class RuleBuilder(string sourceName, List<Error> diagnostics)
 {
     /// <summary>At-rules CSS defines that the engine does not implement: refused.</summary>
-    private static readonly FrozenSet<string> UnsupportedAtRules = FrozenSet.Create(
+    internal static readonly FrozenSet<string> UnsupportedAtRules = FrozenSet.Create(
         "namespace", "property", "container", "scope", "starting-style", "counter-style", "font-feature-values",
         "font-palette-values", "view-transition", "position-try", "function", "color-profile", "document");
 
     /// <summary>At-rules that only drive what the engine ignores by rule (animations): ignored.</summary>
-    private static readonly FrozenSet<string> IgnoredAtRules = FrozenSet.Create("keyframes", "-webkit-keyframes");
+    internal static readonly FrozenSet<string> IgnoredAtRules = FrozenSet.Create("keyframes", "-webkit-keyframes");
 
     /// <summary>The page-margin rules of CSS Paged Media 3 §4.2.</summary>
     private static readonly FrozenSet<string> MarginRules = FrozenSet.Create(

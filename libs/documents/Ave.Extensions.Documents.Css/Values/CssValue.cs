@@ -100,6 +100,15 @@ public sealed record CssTokens(ValueList<ComponentValue> Tokens, string Text) : 
     public override string ToString() => Text;
 }
 
+/// <summary>A &lt;ratio&gt; (CSS Values 4 §7.8): width / height.</summary>
+/// <param name="Width">The first number.</param>
+/// <param name="Height">The second number (1 when only one was written).</param>
+public sealed record CssRatio(double Width, double Height) : CssValue
+{
+    /// <summary>Formats as <c>w / h</c>, as Chromium writes it.</summary>
+    public override string ToString() => $"{InvariantNumber.Format(Width)} / {InvariantNumber.Format(Height)}";
+}
+
 /// <summary>A math function (CSS Values 4 §10) whose value is known only when computing (it holds relative lengths or
 /// percentages).</summary>
 /// <param name="Expression">The calculation tree.</param>
@@ -125,6 +134,12 @@ public readonly record struct CssColor(double Red, double Green, double Blue, do
 
     /// <summary>Opaque black.</summary>
     public static CssColor Black => new(0, 0, 0, 1);
+
+    /// <summary>The named colour of CSS Color 4 §6.1 (one of the 148, ASCII case-insensitive), or null; for the HTML
+    /// Standard's legacy colour values (§2.3.6), which accept these names and nothing else of CSS.</summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The colour, or null.</returns>
+    public static CssColor? Named(string name) => Colors.NamedColor(name);
 
     /// <summary>
     /// Formats as Chromium serialises a computed sRGB colour (CSS Color 4 §15.2, "serializing sRGB values"): rgb(r, g,

@@ -153,7 +153,6 @@ public sealed class SelectorMatcher
         var ignoreCase = selector.Case switch
         {
             AttributeCase.Insensitive => true,
-            AttributeCase.Sensitive => false,
             _ => element.IsHtml && element.IsCaseInsensitiveAttributeValue(name),
         };
         var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;

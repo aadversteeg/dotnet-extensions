@@ -137,7 +137,6 @@ transform
 unicode-bidi
 vertical-align
 visibility
-white-space
 white-space-collapse
 widows
 width

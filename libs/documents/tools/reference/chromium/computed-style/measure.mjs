@@ -39,8 +39,9 @@ if (step === 'all' || step === 'corpus') {
   const properties = readFileSync(join(here, 'properties.txt'), 'utf8').split('\n').map((line) => line.trim()).filter((line) => line && !line.startsWith('#'));
   const names = readdirSync(join(here, 'cases')).filter((file) => file.endsWith('.html')).map((file) => file.slice(0, -5))
     .filter((name) => wanted.length === 0 || wanted.includes(name)).sort();
-  const page = await printPage();
   for (const name of names) {
+    // A new page per case: setContent keeps the Document, and with it state such as a body's link colour.
+    const page = await printPage();
     const html = readFileSync(join(here, 'cases', `${name}.html`), 'utf8');
     // Unrendered: with the root not rendered, getComputedStyle returns computed values, not used ones (CSSOM §9,
     // "resolved value"); the root's own display is then the none set here, so it is not measured (README.md).
@@ -68,8 +69,8 @@ if (step === 'all' || step === 'corpus') {
     }, properties);
     writeFileSync(join(out, `${name}.txt`), lines.join('\n') + '\n');
     console.log(`${name}: ${lines.length} values`);
+    await page.close();
   }
-  await page.close();
 }
 
 if (step === 'all' || step === 'wpt') {

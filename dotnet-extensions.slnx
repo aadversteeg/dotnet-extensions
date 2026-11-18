@@ -53,6 +53,7 @@
     <Project Path="libs/documents/Ave.Extensions.Documents/Ave.Extensions.Documents.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Core/Ave.Extensions.Documents.Core.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Css/Ave.Extensions.Documents.Css.csproj" />
+    <Project Path="libs/documents/Ave.Extensions.Documents.Html/Ave.Extensions.Documents.Html.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.DocumentModel/Ave.Extensions.Documents.DocumentModel.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Fluent/Ave.Extensions.Documents.Fluent.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Fonts/Ave.Extensions.Documents.Fonts.csproj" />
@@ -67,6 +68,7 @@
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Architecture/UnitTests.Extensions.Documents.Architecture.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Core/UnitTests.Extensions.Documents.Core.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Css/UnitTests.Extensions.Documents.Css.csproj" />
+    <Project Path="libs/documents/UnitTests.Extensions.Documents.Html/UnitTests.Extensions.Documents.Html.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.DocumentModel/UnitTests.Extensions.Documents.DocumentModel.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Fluent/UnitTests.Extensions.Documents.Fluent.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Fonts/UnitTests.Extensions.Documents.Fonts.csproj" />
@@ -81,5 +83,6 @@
   </Folder>
   <Folder Name="/documents/samples/">
     <Project Path="libs/documents/samples/Ave.Extensions.Documents.Samples/Ave.Extensions.Documents.Samples.csproj" />
+    <Project Path="libs/documents/samples/Ave.Extensions.Documents.Samples.HtmlStyles/Ave.Extensions.Documents.Samples.HtmlStyles.csproj" />
   </Folder>
 </Solution>

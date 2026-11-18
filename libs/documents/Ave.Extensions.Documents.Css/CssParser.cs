@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ave.Extensions.Documents.Core;
-using Ave.Extensions.Documents.Css.Cascade;
+using Ave.Extensions.Documents.Css.Media;
 using Ave.Extensions.Documents.Css.Rules;
 using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.ErrorPaths;
@@ -118,6 +118,29 @@ public static class CssParser
         }
 
         return new CssResult<ValueList<Declaration>>([.. declarations], [.. diagnostics]);
+    }
+
+    /// <summary>"Parse a media query list" (Media Queries 4 §3) from text: a media attribute of HTML, for one.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="options">Its name and place.</param>
+    /// <returns>The list and the diagnostics.</returns>
+    public static CssResult<MediaQueryList> ParseMediaQueryList(string text, CssSourceOptions options)
+    {
+        var diagnostics = new List<Error>();
+        if (text.Length > CssInputLimits.MaxCharacters)
+        {
+            return new CssResult<MediaQueryList>(MediaQueryList.All, TooLarge(options).Diagnostics);
+        }
+
+        var source = CssSource.Of(text, options.Origin);
+        var (values, tooDeepAt) = SyntaxParser.ParseComponentValues(source, Syntax(source, options, diagnostics));
+        if (tooDeepAt is { } deep)
+        {
+            return new CssResult<MediaQueryList>(MediaQueryList.All, [.. diagnostics, TooDeep(source, deep, options)]);
+        }
+
+        var list = MediaQueries.Parse(values, options.SourceName, diagnostics);
+        return new CssResult<MediaQueryList>(list, [.. diagnostics]);
     }
 
     private static Action<string, int> Syntax(CssSource source, CssSourceOptions options, List<Error> diagnostics) =>

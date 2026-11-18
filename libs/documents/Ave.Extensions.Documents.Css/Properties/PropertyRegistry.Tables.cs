@@ -59,12 +59,14 @@ public static partial class PropertyRegistry
 
     private static IEnumerable<PropertyDefinition> FragmentationProperties()
     {
-        string[] refusedBreaks = ["left", "right", "recto", "verso", "column", "avoid-column", "region", "avoid-region", "all"];
-        yield return Keywords("break-before", inherited: false, "auto", ["auto", "avoid", "avoid-page", "page", "always"], refusedBreaks,
+        // The values Chromium 159 takes (measured): always, all and the region values of CSS Fragmentation 4 are
+        // invalid there, so they are invalid here too.
+        string[] refusedBreaks = ["left", "right", "recto", "verso", "column", "avoid-column"];
+        yield return Keywords("break-before", inherited: false, "auto", ["auto", "avoid", "avoid-page", "page"], refusedBreaks,
             "block-level boxes, grid items, flex items, table row groups, table rows", "CSS Fragmentation 3 §3.1");
-        yield return Keywords("break-after", inherited: false, "auto", ["auto", "avoid", "avoid-page", "page", "always"], refusedBreaks,
+        yield return Keywords("break-after", inherited: false, "auto", ["auto", "avoid", "avoid-page", "page"], refusedBreaks,
             "block-level boxes, grid items, flex items, table row groups, table rows", "CSS Fragmentation 3 §3.1");
-        yield return Keywords("break-inside", inherited: false, "auto", ["auto", "avoid", "avoid-page"], ["avoid-column", "avoid-region"],
+        yield return Keywords("break-inside", inherited: false, "auto", ["auto", "avoid", "avoid-page"], ["avoid-column"],
             "all elements except inline-level boxes, internal ruby boxes, table column boxes, table column group boxes, absolutely-positioned boxes",
             "CSS Fragmentation 3 §3.2");
 

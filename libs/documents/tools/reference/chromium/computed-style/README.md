@@ -44,5 +44,34 @@ computed values (`width: 50%` stays `50%`). The root's own `display` is therefor
 harness set); every other property of the root is.
 
 One property still comes back as a used value unrendered: `line-height` with a number (`line-height: 1.5` gives
-`24px` at a 16px font, where the computed value is the number). The comparison takes this into account per property;
-see the test that reads the corpus.
+`24px` at a 16px font, where the computed value is the number).
+
+Each case is measured in a new page: Playwright's `setContent` keeps the Document, and with it state such as the link
+colour a body's `link` attribute sets, which then leaks into the next case.
+
+The images of the cases are `data:` URLs, so they load: for an image that does not load, Chromium draws the
+alternative text and drops the image's width, height and align attributes (they are presentational hints of a
+replaced element only).
+
+## The cases
+
+| Case | Covers |
+| --- | --- |
+| `ua-bare` | the user-agent style sheet: every v0 element, no author style |
+| `properties` | every supported value of the box, colour, text and white-space properties, shorthands, units, math functions |
+| `fonts-tables-lists` | font sizes (keywords, relative sizes, monospace), families, weights, line heights, the font shorthand, tables, lists, breaks |
+| `selectors` | every selector form of the v0 set, and the ones that never match |
+| `cascade` | origins and importance, the style attribute, specificity and order, layers, revert and revert-layer, nesting, custom properties, inheritance and defaulting, calc(), @media, @supports, media attributes |
+| `hints` | the presentational attributes of the v0 elements |
+
+## How the tests compare
+
+`UnitTests.Extensions.Documents.Html/ChromiumCorpusTests.cs` compares every measured line with the engine's computed
+value, written as getComputedStyle writes it (`ComputedText.cs`, the one place for these rules): lengths in px with six
+significant digits; `currentcolor` as the element's colour; `min-width` and `min-height` `auto` as `0px`; a number
+`line-height` as number × font size (the used value above); family names quoted as Chromium quotes them. Nothing else
+is changed and nothing is skipped: every value must be equal. Where Chromium computes a value of its own
+(`text-align: -webkit-center` from `align=center`), the engine computes the same value.
+
+`WptComputedValueTests.cs` compares the test_computed_value cases with the `computed` part of `wpt-css-verdicts.json`;
+`UnitTests.Extensions.Documents.Css/WptCssSuiteTests.cs` the value and selector cases with its `values` part.

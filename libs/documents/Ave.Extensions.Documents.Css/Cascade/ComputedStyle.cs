@@ -14,14 +14,18 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
 {
     private readonly CssValue[] _values;
 
-    internal ComputedStyle(CssValue[] values, IReadOnlyDictionary<string, CssTokens> custom)
+    internal ComputedStyle(CssValue[] values, IReadOnlyDictionary<string, CssTokens> custom, FontSizeSource fontSizeSource)
     {
         _values = values;
         CustomProperties = custom;
+        FontSizeSource = fontSizeSource;
     }
 
     /// <summary>The initial style: every property at its initial value, no custom properties.</summary>
-    public static ComputedStyle Initial { get; } = new([.. PropertyRegistry.Longhands.Select(property => property.Initial)], new Dictionary<string, CssTokens>());
+    public static ComputedStyle Initial { get; } = new([.. PropertyRegistry.Longhands.Select(property => property.Initial)], new Dictionary<string, CssTokens>(), Properties.FontSizeSource.Medium);
+
+    /// <summary>Where the font size comes from (<see cref="Properties.FontSizeSource"/>), for the children's sizes.</summary>
+    internal FontSizeSource FontSizeSource { get; }
 
     /// <summary>The computed custom properties, by name (with the two hyphens).</summary>
     public IReadOnlyDictionary<string, CssTokens> CustomProperties { get; }

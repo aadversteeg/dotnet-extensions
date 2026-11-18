@@ -26,10 +26,7 @@ public static partial class PropertyRegistry
         yield return InitialKeyword("float", false, "none", ["left", "right", "inline-start", "inline-end"], false, "all elements", "CSS 2.1 §9.5.1");
         yield return InitialKeyword("clear", false, "none", ["left", "right", "both", "inline-start", "inline-end"], false, "block-level elements", "CSS 2.1 §9.5.2");
 
-        // Overflow, visibility, effects.
-        string[] overflows = ["hidden", "clip", "scroll", "auto", "overlay"];
-        yield return InitialKeyword("overflow-x", false, "visible", overflows, false, "block containers, flex containers, grid containers", "CSS Overflow 3 §3.1");
-        yield return InitialKeyword("overflow-y", false, "visible", overflows, false, "block containers, flex containers, grid containers", "CSS Overflow 3 §3.1");
+        // Visibility, effects.
         yield return InitialKeyword("visibility", true, "visible", ["hidden", "collapse"], false, "all elements", "CSS Display 3 §4");
         yield return InitialNumber("opacity", inherited: false, 1, "all elements", "CSS Color 4 §11.2");
         yield return InitialKeyword("transform", false, "none", [], true, "transformable elements", "CSS Transforms 1 §5");
@@ -59,7 +56,7 @@ public static partial class PropertyRegistry
         yield return InitialKeyword("outline-style", false, "none", ["auto", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset", "hidden"], false, "all elements", "CSS UI 4 §3.3");
         yield return new PropertyDefinition(
             "outline-width", false, new CssLength(Length.FromPoints(2.25)), "all elements", "<line-width> (nothing is drawn: outline-style is only none)",
-            PropertySupport.Supported, "CSS UI 4 §3.2", reader => ParseBorderWidth(reader, "outline-width"), AsSpecified);
+            PropertySupport.Supported, "CSS UI 4 §3.2", reader => ParseBorderWidth(reader, "outline-width"), (value, context) => SnappedLineWidth(value, context));
         yield return new PropertyDefinition(
             "outline-color", false, new CssKeyword("currentcolor"), "all elements", "<color> | auto (nothing is drawn: outline-style is only none)",
             PropertySupport.Supported, "CSS UI 4 §3.4",
@@ -73,21 +70,26 @@ public static partial class PropertyRegistry
         // Text.
         yield return InitialZero("text-indent", true, "0", "block containers", "CSS Text 3 §8.1");
         yield return InitialZero("letter-spacing", true, "normal", "inline boxes and text", "CSS Text 3 §7.2");
-        yield return InitialZero("word-spacing", true, "normal", "text", "CSS Text 3 §7.1");
+        // word-spacing: normal computes to zero (CSS Text 4 §7.1; Chromium writes 0px).
+        yield return new PropertyDefinition(
+            "word-spacing", inherited: true, Zero, "text", "normal | 0", PropertySupport.InitialOnly, "CSS Text 4 §7.1",
+            reader => reader.Count == 1 && reader.Keyword("normal") is not null
+                ? ParsedValue.Of(Zero)
+                : reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "word-spacing") is { Value: CssLength { Points: 0 } or CssPercentage { Value: 0 } }
+                    ? ParsedValue.Of(Zero)
+                    : ParsedValue.Refused("'word-spacing' is supported only at its initial value, normal"),
+            AsSpecified);
         yield return InitialKeyword("text-transform", true, "none", ["capitalize", "uppercase", "lowercase", "full-width", "full-size-kana", "math-auto"], true, "text", "CSS Text 3 §2.1");
         yield return InitialKeyword("text-overflow", false, "clip", ["ellipsis"], true, "block containers", "CSS Overflow 3 §5.1");
         yield return InitialKeyword("text-align-last", true, "auto", ["start", "end", "left", "right", "center", "justify", "match-parent"], false, "block containers", "CSS Text 3 §6.2");
         yield return InitialKeyword("text-justify", true, "auto", ["none", "inter-word", "inter-character", "distribute"], false, "text", "CSS Text 3 §6.4");
         yield return InitialKeyword("direction", true, "ltr", ["rtl"], false, "all elements", "CSS Writing Modes 4 §2.1");
-        yield return InitialKeyword("unicode-bidi", false, "normal", ["embed", "isolate", "bidi-override", "isolate-override", "plaintext"], false, "all elements", "CSS Writing Modes 4 §2.2");
         yield return InitialKeyword("writing-mode", true, "horizontal-tb", ["vertical-rl", "vertical-lr", "sideways-rl", "sideways-lr", "lr", "lr-tb", "rl", "rl-tb", "tb", "tb-rl"], false, "all elements except table row groups, rows, column groups, and columns", "CSS Writing Modes 4 §3.1");
         yield return InitialKeyword("hyphens", true, "manual", ["none", "auto"], false, "text", "CSS Text 3 §5.4");
         yield return InitialKeyword("overflow-wrap", true, "normal", ["break-word", "anywhere"], false, "text", "CSS Text 3 §5.5");
         yield return InitialKeyword("word-break", true, "normal", ["break-all", "keep-all", "break-word", "auto-phrase"], false, "text", "CSS Text 3 §5.2");
         yield return InitialKeyword("line-break", true, "auto", ["loose", "normal", "strict", "anywhere"], false, "text", "CSS Text 3 §5.3");
         yield return InitialNumber("tab-size", inherited: true, 8, "text", "CSS Text 3 §4.2");
-        yield return InitialKeyword("white-space-collapse", true, "collapse", ["discard", "preserve", "preserve-breaks", "preserve-spaces", "break-spaces"], false, "text", "CSS Text 4 §3.1");
-        yield return InitialKeyword("text-wrap-mode", true, "wrap", ["nowrap"], false, "text", "CSS Text 4 §6.1");
         yield return InitialKeyword("text-wrap-style", true, "auto", ["balance", "stable", "pretty", "avoid-orphans"], false, "block containers", "CSS Text 4 §6.2");
         yield return InitialKeyword("text-rendering", true, "auto", ["optimizespeed", "optimizelegibility", "geometricprecision"], false, "text", "SVG 2 §11.9");
         yield return InitialKeyword("text-decoration-thickness", false, "auto", ["from-font"], true, "all elements", "CSS Text Decoration 4 §2.4");
@@ -107,7 +109,13 @@ public static partial class PropertyRegistry
         yield return InitialKeyword("font-variant-emoji", true, "normal", ["text", "emoji", "unicode"], false, "all elements and text", "CSS Fonts 4 §6.11");
         yield return InitialKeyword("font-feature-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.1");
         yield return InitialKeyword("font-variation-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.2");
-        yield return InitialKeyword("font-stretch", true, "normal", ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"], true, "all elements and text", "CSS Fonts 4 §2.3");
+        // font-stretch: normal is 100% (CSS Fonts 4 §2.3, the computed value is a percentage; Chromium writes 100%).
+        yield return new PropertyDefinition(
+            "font-stretch", inherited: true, new CssPercentage(100), "all elements and text", "normal | 100%", PropertySupport.InitialOnly, "CSS Fonts 4 §2.3",
+            reader => reader.Count == 1 && (reader.Keyword("normal") is not null || reader.Peek is Syntax.CssToken { Kind: Syntax.CssTokenKind.Percentage, Number: 100 })
+                ? ParsedValue.Of(new CssPercentage(100))
+                : ParsedValue.Refused("'font-stretch' is supported only at its initial value, normal (100%)"),
+            AsSpecified);
         yield return InitialKeyword("font-size-adjust", true, "none", [], true, "all elements and text", "CSS Fonts 5 §2.1");
         yield return InitialKeyword("font-kerning", true, "auto", ["normal", "none"], false, "all elements and text", "CSS Fonts 4 §6.3");
         yield return InitialKeyword("font-optical-sizing", true, "auto", ["none"], false, "all elements and text", "CSS Fonts 4 §2.6");
@@ -119,7 +127,12 @@ public static partial class PropertyRegistry
         // Sizes and layout features outside the supported set.
         yield return InitialKeyword("min-height", false, "auto", [], true, "all elements that accept width or height", "CSS Sizing 3 §3.2");
         yield return InitialKeyword("max-height", false, "none", [], true, "all elements that accept width or height", "CSS Sizing 3 §3.2");
-        yield return InitialKeyword("aspect-ratio", false, "auto", [], true, "all elements except inline boxes and internal ruby or table boxes", "CSS Sizing 4 §2.1");
+        // aspect-ratio: auto, and auto with a ratio, which the HTML width and height attributes of img make (HTML Standard
+        // §15.4.3): a replaced element with a natural aspect ratio uses that, so auto w / h is auto for an image that
+        // loads; a ratio without auto is refused.
+        yield return new PropertyDefinition(
+            "aspect-ratio", inherited: false, new CssKeyword("auto"), "all elements except inline boxes and internal ruby or table boxes",
+            "auto | auto && <ratio>", PropertySupport.InitialOnly, "CSS Sizing 4 §2.1", ParseAspectRatio, AsSpecified);
         yield return InitialKeyword("object-fit", false, "fill", ["contain", "cover", "none", "scale-down"], false, "replaced elements", "CSS Images 3 §5.5");
         yield return InitialKeyword("image-rendering", true, "auto", ["smooth", "high-quality", "crisp-edges", "pixelated", "optimizespeed", "optimizequality", "-webkit-optimize-contrast"], false, "all elements", "CSS Images 3 §5.3");
         yield return InitialKeyword("column-count", false, "auto", [], true, "block containers except table wrapper boxes", "CSS Multi-column 1 §3.2");
@@ -160,4 +173,40 @@ public static partial class PropertyRegistry
                 ? ParsedValue.Of(new CssPercentage(0))
                 : ParsedValue.Refused($"'{name}' is supported only at its initial value, 0%"),
             AsSpecified);
+
+    /// <summary>aspect-ratio = auto || &lt;ratio&gt;, &lt;ratio&gt; = &lt;number [0,∞]&gt; [ / &lt;number [0,∞]&gt; ]? (CSS Values 4
+    /// §7.8). Only auto, alone or with a ratio, is supported.</summary>
+    private static ParsedValue ParseAspectRatio(ValueReader reader)
+    {
+        var auto = reader.Keyword("auto") is not null;
+        CssRatio? ratio = null;
+        if (reader.Number() is { } width && width >= 0)
+        {
+            var height = 1.0;
+            if (reader.Delim('/'))
+            {
+                if (reader.Number() is not { } second || second < 0)
+                {
+                    return ParsedValue.Invalid("not a value of aspect-ratio");
+                }
+
+                height = second;
+            }
+
+            ratio = new CssRatio(width, height);
+        }
+
+        auto |= reader.Keyword("auto") is not null;
+        if (!reader.AtEnd || (!auto && ratio is null))
+        {
+            return ParsedValue.Invalid("not a value of aspect-ratio");
+        }
+
+        if (!auto)
+        {
+            return ParsedValue.Refused("'aspect-ratio' with a ratio and without auto is not supported");
+        }
+
+        return ParsedValue.Of(ratio is { } value ? new CssList([new CssKeyword("auto"), value], CommaSeparated: false) : new CssKeyword("auto"));
+    }
 }

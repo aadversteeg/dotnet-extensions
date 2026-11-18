@@ -159,6 +159,12 @@ internal static class DeclarationPreparer
             return;
         }
 
+        if (UnsupportedMath(declaration.Value) is { } math)
+        {
+            AddAll(new RefusedEntry(CssErrorCodes.Unsupported.Calc, math));
+            return;
+        }
+
         if (origin != CascadeOrigin.UserAgent && ContainsInternalKeyword(declaration.Value))
         {
             diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; the declaration of '{declaration.Name}' is dropped.", prepared));
@@ -272,6 +278,37 @@ internal static class DeclarationPreparer
         }
 
         return false;
+    }
+
+    /// <summary>Why a math function in the values is refused (one the engine does not evaluate, typed arithmetic), or
+    /// null: checked for every property at once, so a value Chromium computes is never dropped as invalid.</summary>
+    private static string? UnsupportedMath(IEnumerable<ComponentValue> values)
+    {
+        foreach (var value in values)
+        {
+            switch (value)
+            {
+                case FunctionValue function when Calc.IsMathFunction(function):
+                    var node = Calc.Parse(function, out var problem);
+                    if (node is null && problem is not null && problem.StartsWith("unsupported:", StringComparison.Ordinal))
+                    {
+                        return problem["unsupported:".Length..];
+                    }
+
+                    if (node is not null && Calc.TypeOf(node) == CalcType.TypedArithmetic)
+                    {
+                        return $"{function.Name}() multiplies or divides dimensions (typed arithmetic), which is not supported";
+                    }
+
+                    break;
+                case FunctionValue function when UnsupportedMath(function.Values) is { } inner:
+                    return inner;
+                case SimpleBlock block when UnsupportedMath(block.Values) is { } inner:
+                    return inner;
+            }
+        }
+
+        return null;
     }
 
     private static bool ContainsInternalKeyword(IEnumerable<ComponentValue> values)

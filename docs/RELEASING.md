@@ -138,7 +138,7 @@ its own; only a change across two packages needs the order described above.
 
 ## First release of the documents family
 
-The documents family (`libs/documents`) is new on nuget.org. Its first release is `0.1.0-preview.2` of all 11
+The documents family (`libs/documents`) is new on nuget.org. Its first release is `0.1.0-preview.2` of all 14
 packages. The minimum versions of its own packages in `Directory.Packages.props` are already `0.1.0-preview.2`, so
 nothing has to be raised between the steps; but in release mode a package restores the packages below it from
 nuget.org, so each step starts only when the packages of the step before are on nuget.org (indexing can take a few
@@ -160,13 +160,16 @@ The tag names are the package ids without `Ave.Extensions.`, as for every packag
 | `documents-render-pdf` | `Ave.Extensions.Documents.Render.Pdf` |
 | `documents-fluent` | `Ave.Extensions.Documents.Fluent` |
 | `documents` | `Ave.Extensions.Documents` |
+| `documents-html-parsing` | `Ave.Extensions.Documents.Html.Parsing` |
+| `documents-css` | `Ave.Extensions.Documents.Css` |
+| `documents-html` | `Ave.Extensions.Documents.Html` |
 
 Release order, lowest layer first (the packages of one step can go in any order):
 
 1. `documents-core` (it needs `Ave.Extensions.Functional` 0.1.0-preview.3 and `Ave.Extensions.ErrorPaths`
    0.0.3-preview.1, both on nuget.org);
-2. `documents-fonts`, `documents-images`;
-3. `documents-page-model`;
+2. `documents-fonts`, `documents-images`, `documents-html-parsing`, `documents-css` (these two need only Core);
+3. `documents-page-model`, `documents-html` (it needs Html.Parsing and Css);
 4. `documents-pdf`, `documents-typesetting`, `documents-document-model`: their tests use
    `Ave.Extensions.Documents.TestSupport`, which needs Fonts, Images and PageModel;
 5. `documents-layout`, `documents-render-pdf` (its tests also use Typesetting), `documents-fluent`;

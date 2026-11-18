@@ -351,4 +351,14 @@ public class CascadeTests
 
         computed.Value(root["x"], "color").Should().Be("rgb(0, 0, 0)");
     }
+
+    [Fact]
+    public void A_math_function_the_engine_does_not_evaluate_is_refused_in_every_property()
+    {
+        var root = Doc(E("p", A("id", "x")));
+        var computed = Compute(root, "p { font-weight: calc(1em / 1px); margin-top: round(1.5px); color: rgb(random(0, 255) 0 0) }");
+
+        computed.Value(root["x"], "font-weight").Should().Be("400");
+        computed.Coded(CssErrorCodes.Unsupported.Calc).Should().HaveCount(3);
+    }
 }

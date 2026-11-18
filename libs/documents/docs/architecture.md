@@ -30,6 +30,7 @@ test-only package in a product assembly".
 | `Ave.Extensions.Documents.Pdf` | PDF objects and writer, content operators, XMP writer, sRGB ICC profile, `PdfProfile`; knows nothing about layout |
 | `Ave.Extensions.Documents.Fonts` | TrueType reader (with GSUB, GPOS, GDEF, kern) and subsetter |
 | `Ave.Extensions.Documents.Images` | PNG decoder and JPEG header reader |
+| `Ave.Extensions.Documents.Html` | HTML front-end, first part: the user-agent style sheet, presentational hints, the document's style sheets through a caller's resolver, the cascade to a styled tree with the computed value of every registered property (no layout yet) |
 | `Ave.Extensions.Documents.Css` | CSS: Syntax 3 parser, Selectors 4, media and supports conditions, the cascade (origins, layers, nesting, `var()`) and the one property registry with its computed values; knows nothing about HTML |
 | `Ave.Extensions.Documents.Html.Parsing` | the HTML Standard's parser (§13.2, scripting off): tokenizer, tree construction, an immutable tree with line and column on every node, parse errors as diagnostics |
 | `Ave.Extensions.Documents.Core` | shared vocabulary: lengths, geometry, colour, `ValueList<T>`, source locations, roles, metadata, attachments, the error-code tree |
@@ -161,6 +162,16 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | nesting of arrays and dictionaries in one PDF object | 64 levels | `Pdf/PdfSerializer.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | nesting of arrays and structures in one XMP property | 64 levels | `Pdf/Xmp/XmpPacket.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
+| an HTML document | 2^24 UTF-16 code units; nesting 512 elements; template and selectedcontent clones 4 per character | `Html.Parsing/HtmlInputLimits.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails) |
+| a style sheet | 2^24 UTF-16 code units; nesting of blocks and functions 256 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (a refusal; the sheet is empty) |
+| imported style sheets of one cascade | 1 024 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
+| one var() substitution | 65 536 component values | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` (the property is unset) |
+
+Selector matching is bounded by the input: a complex selector's steps are matched once per element (remembered for
+the call), the arguments of `:is()`, `:where()` and `:not()` once per element and `:nth-child(of S)` once per parent
+for the whole cascade (`Css/Selectors/SelectorMatcher.cs`), so the `:is()` chains that nesting desugars into do not
+multiply. An element is matched only against the rules bucketed under its ID, its classes, its type, and the rules
+that name none of these (`Css/Cascade/CascadeIndex.cs`).
 
 One reader is bounded by a constant rather than by its input: the `cmap` formats 4 and 12 are expanded into one entry
 per mapped code point, so a few groups of 12 bytes can fill all 1 114 112 code points of Unicode (tens of MiB). The
@@ -183,6 +194,70 @@ Same input, same bytes: dates and file identifier are inputs (the identifier def
 clock, no machine state, dictionaries keep insertion order, object numbers come from `ObjectPlan`. Flate
 compression comes from the .NET runtime, so bytes are identical on the same runtime version only. Tests:
 `Same_input_gives_byte_identical_output…`, `A_tagged_file_is_deterministic`, `Two_runs_give_byte_identical_PDFs…`.
+
+## HTML/CSS front-end (stage 3: text to computed styles)
+
+```
+HTML text ──HtmlParser.Parse──▶ HtmlParseResult ─┐
+CSS text  ──CssParser.ParseStyleSheet──▶ StyleSheet ┴─ HtmlStyleResolver.Resolve ──▶ StyledHtmlDocument (+ diagnostics)
+                                     (CascadeIndex.Build + StyleComputer.Compute)
+```
+
+Three libraries, each below the next: `Html.Parsing` (Core only) is the HTML Standard's parser; `Css` (Core only)
+knows nothing about HTML, and matches selectors on `IStyleElement`, which the HTML front-end implements; `Html`
+(Core, Html.Parsing, Css) does style resolution. Stage 4 adds box generation to `Html`.
+
+Where each rule lives:
+
+| Rule | Place |
+| --- | --- |
+| tokenizer, tree construction, encoding sniffing, parse errors | `Html.Parsing/Tokenizing`, `TreeBuilding`, `Decoding` (HTML Standard §13.2) |
+| CSS tokens, rules, declarations, error recovery, byte decoding | `Css/Syntax` (CSS Syntax 3) |
+| the typed rules, @import order, @layer names, refused and ignored at-rules | `Css/Rules/RuleBuilder.cs` |
+| selectors, their support class, specificity, matching | `Css/Selectors` (`PseudoClasses.cs` is the catalog, with the rules Chromium 159 applies after pseudo-elements) |
+| media queries and @supports | `Css/Media`, `Css/Conditions`, answered in `Css/Cascade/CascadeIndex.cs` |
+| every property: name, initial value, inheritance, supported values, computed value | `Css/Properties/PropertyRegistry*.cs` (the one registry; `docs/html-css-profile.md` is generated from it) |
+| origins, importance, layers, nesting, specificity and order; revert, revert-layer, var(), defaulting | `Css/Cascade` (`DeclarationPreparer`, `CascadeIndex`, `StyleComputer`) |
+| the user-agent style sheet | `Html/UserAgent/html.css` (HTML Standard §15 as Chromium 159 applies it) |
+| presentational hints | `Html/PresentationalHints.cs` (with `AttributeValues.cs` for the HTML microsyntaxes) |
+| which diagnostic refuses a document | `Css/CssDiagnostics.ClassOf`, `Html/HtmlStyleErrorCodes.cs` (`HtmlStyleDiagnostics.ClassOf`) |
+
+Who checks what: the HTML parser reports parse errors (warnings: it recovers as the standard says, as a browser
+does) and fails only past its limits. The CSS reader reports what CSS drops (warnings) where it is written; the
+cascade reports what it ignores by rule and what it refuses **when it applies** (a refused declaration that would
+win, a rule with an unknown property that matches an element), once per declaration. Refusal is decided by the
+diagnostic's code alone; `HtmlStyleOptions.Unsupported` chooses whether refusals fail the document (the default) or
+are only reported. The policy for each refusal: the engine refuses valid CSS it does not implement and never takes a
+value Chromium drops; a refused declaration that would win is skipped, so the next one applies, as in a browser that
+does not know the value.
+
+The reference is Chromium 159 (`tools/reference/chromium/computed-style`): its verdicts on the web-platform-tests
+cases and `getComputedStyle` of every registered property on every element of a corpus, measured unrendered. The
+comparison writes the engine's computed values as getComputedStyle does (`UnitTests.Extensions.Documents.Html/
+ComputedText.cs`): lengths in px, currentcolor as the element's colour, min-width and min-height auto as 0px, and a
+number line-height as number × font size, the used value Chromium returns even unrendered. The engine keeps
+Chromium's own values where Chromium computes one (`-webkit-center`, `-webkit-left`, `-webkit-right`), so no value is
+mapped in the comparison.
+
+Known limits of stage 3 (also in the profile document):
+
+- Quirks-mode documents and form controls are refused; template contents are not styled; `<template
+  shadowrootmode>` stays a template (no declarative shadow DOM); `noscript` is shown (the parser runs with scripting
+  off, Chromium with it on).
+- Encodings: the HTML parser and the CSS reader decode UTF-8 and UTF-16; a style sheet in another encoding is read
+  only when its bytes are ASCII, else refused.
+- No pseudo-elements, no `:has()`, `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
+  attribute modifier, `:heading`).
+- A computed `calc()` that keeps a length and a percentage is refused (the document model's length holds one of
+  them); typed arithmetic and the math functions other than calc, min, max and clamp are refused; ex and ch need the
+  caller's font metrics.
+- A value of a feature outside v0 is refused without its grammar being checked, so input Chromium drops as invalid
+  can be refused (never accepted): 173 of the 414 web-platform-tests value cases taken.
+- Declarations in a subtree that is not drawn (inside display: none) are still cascaded, so their refusals count.
+- `-webkit-left`, `-webkit-right`, `-webkit-center` (from align attributes and the caption) must align descendant
+  blocks as well as text; `border-style: inset` and `outset` (hr, table border) are drawn in two shades by Chromium;
+  `overflow: hidden | clip` (hr, img) clips; `unicode-bidi: isolate` is accepted as it changes nothing in
+  left-to-right text. Stage 4 implements these or refuses them.
 
 ## Known limits (all stages)
 

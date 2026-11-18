@@ -24,6 +24,30 @@ public static partial class PropertyRegistry
         ["xx-large"] = 32, ["xxx-large"] = 48,
     };
 
+    /// <summary>The same keywords for the family monospace, whose medium is 13px in Chromium (and Firefox): the sizes
+    /// Chromium 159 computes, measured (tools/reference/chromium/computed-style).</summary>
+    private static readonly Dictionary<string, double> MonospaceSizes = new(StringComparer.Ordinal)
+    {
+        ["xx-small"] = 9, ["x-small"] = 10, ["small"] = 12, ["medium"] = 13, ["large"] = 16, ["x-large"] = 20,
+        ["xx-large"] = 26, ["xxx-large"] = 39,
+    };
+
+    /// <summary>The factor a size that is not absolute is scaled by from the parent's family to the element's
+    /// (monospace's medium is 13px where the others' is 16px); 1 when neither or both are monospace.</summary>
+    private static double FamilyScale(ComputeContext context, FontSizeSource parent) =>
+        parent.Absolute || context.ParentIsMonospace == context.IsMonospace ? 1 : context.IsMonospace ? 13.0 / 16 : 16.0 / 13;
+
+    /// <summary>The font size an element inherits (no declaration, inherit, unset): a keyword's size for the element's
+    /// own family, or the parent's size scaled between families when it is not absolute.</summary>
+    internal static CssValue InheritFontSize(ComputeContext context)
+    {
+        var parent = context.ParentFontSizeSource;
+        context.FontSizeSource = parent;
+        return new CssLength(Length.FromPoints(parent.Keyword is { } keyword
+            ? (context.IsMonospace ? MonospaceSizes : AbsoluteSizes)[keyword] * 0.75
+            : context.ParentFontSize * FamilyScale(context, parent)));
+    }
+
     private static IEnumerable<PropertyDefinition> FontProperties()
     {
         yield return new PropertyDefinition(
@@ -88,16 +112,38 @@ public static partial class PropertyRegistry
     /// larger and smaller multiply and divide the parent's size by 1.2, as Chromium does; em and percentages refer to
     /// the parent's size.
     /// </summary>
-    private static ComputedResult ComputeFontSize(CssValue value, ComputeContext context)
+    /// <remarks>Chromium keeps where a size comes from (<see cref="FontSizeSource"/>): text in the one family monospace
+    /// is 13px where other text is 16px, a keyword is taken from monospace's own table, and a size from em or a
+    /// percentage of a keyword is scaled by 13/16 into monospace and back (measured in Chromium 159,
+    /// tools/reference/chromium/computed-style, case fonts-tables-lists).</remarks>
+    internal static ComputedResult ComputeFontSize(CssValue value, ComputeContext context)
     {
-        var parent = context.ParentFontSize;
-        return value switch
+        var parentSource = context.ParentFontSizeSource;
+        // em, percentages, larger and smaller scale the parent's size, first taken to the element's family.
+        var parent = context.ParentFontSize * FamilyScale(context, parentSource);
+        var relative = new FontSizeSource(null, parentSource.Absolute);
+        switch (value)
         {
-            CssKeyword { Name: "larger" } => new CssLength(Length.FromPoints(parent * 1.2)),
-            CssKeyword { Name: "smaller" } => new CssLength(Length.FromPoints(parent / 1.2)),
-            CssKeyword keyword => new CssLength(Length.FromPoints(AbsoluteSizes[keyword.Name] * 0.75)),
-            _ => context.LengthPercentage(value, forFontSize: true, percentBasis: parent),
-        };
+            case CssKeyword { Name: "larger" }:
+                context.FontSizeSource = relative;
+                return new CssLength(Length.FromPoints(parent * 1.2));
+            case CssKeyword { Name: "smaller" }:
+                context.FontSizeSource = relative;
+                return new CssLength(Length.FromPoints(parent / 1.2));
+            case CssKeyword keyword:
+                context.FontSizeSource = new FontSizeSource(keyword.Name, false);
+                return new CssLength(Length.FromPoints((context.IsMonospace ? MonospaceSizes : AbsoluteSizes)[keyword.Name] * 0.75));
+            case CssDimension { Unit: "em" } em:
+                context.FontSizeSource = relative;
+                return new CssLength(Length.FromPoints(parent * em.Value));
+            case CssPercentage percentage:
+                context.FontSizeSource = relative;
+                return new CssLength(Length.FromPoints(parent * percentage.Value / 100));
+            default:
+                // Lengths, rem, ex, ch and calc() are absolute; em inside calc() is the parent's size as it is.
+                context.FontSizeSource = new FontSizeSource(null, true);
+                return context.LengthPercentage(value, forFontSize: true, percentBasis: context.ParentFontSize);
+        }
     }
 
     /// <summary>font-family (CSS Fonts 4 §2.1): a comma-separated list of family names (a string, or identifiers joined by

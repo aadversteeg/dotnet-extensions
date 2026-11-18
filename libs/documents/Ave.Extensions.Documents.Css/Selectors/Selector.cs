@@ -110,11 +110,8 @@ public enum AttributeCase
     /// case-insensitive, <see cref="IStyleElement.IsCaseInsensitiveAttributeValue"/>).</summary>
     Default,
 
-    /// <summary><c>i</c>: ASCII case-insensitive.</summary>
+    /// <summary><c>i</c>: ASCII case-insensitive. (Selectors 4's <c>s</c> is invalid in Chromium 159, and so here.)</summary>
     Insensitive,
-
-    /// <summary><c>s</c>: case-sensitive.</summary>
-    Sensitive,
 }
 
 /// <summary>A pseudo-class (Selectors 4 §3.5), with its argument for a functional one.</summary>

@@ -59,7 +59,7 @@ public class PropertyRegistryTests
     [InlineData("line-height", "1.25", "Valid")]
     [InlineData("list-style-type", "lower-greek", "Refused")]
     [InlineData("vertical-align", "super", "Refused")]
-    [InlineData("white-space", "pre-line", "Refused")]
+    [InlineData("white-space-collapse", "preserve-breaks", "Refused")]
     [InlineData("break-before", "column", "Refused")]
     [InlineData("orphans", "0", "Invalid")]
     [InlineData("margin-top", "3q", "Valid")]
