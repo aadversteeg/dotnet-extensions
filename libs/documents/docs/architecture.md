@@ -529,6 +529,29 @@ Each is documented next to its code as well.
   cannot move (at the top of a page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`); where a row
   shows nothing over more than a page this needs a page more than Chromium. Reason for that default: an empty strip of
   a row reads as a layout fault in a report, and avoiding it costs nothing where the row can move.
+- **A row that starts its page area, under `EmptyRowParts.Allow`, lets its grid line below pass the page end**, as
+  Chromium prints it (`TablePage.PassesOnlyByItsLineBelow`; `RowEndTests`, cases `a2-row-end*`). A unit that starts its
+  page area (a row that continues from the page before, or the first on the page, with no header row above it), whose
+  cells' content fits and whose line below does not, is placed whole; so is the first row of such a unit, and the page
+  then breaks before the next row (`TableBreaks.InsideUnit`). Without this, 95 of 2,100 small tables were refused under
+  `Allow` that `Avoid` lays out; now none is, and the 95 have Chromium's words on Chromium's pages. The whole line
+  passes the page area, both halves, as in Chromium: 192 to 192.75 pt on a page area that ends at 192 (with a 6 pt line,
+  192 to 198). Only grid lines and cell backgrounds pass, by at most the width of the line below the row; never a glyph
+  or an image. The table's fragment is as tall as the page area; the line is drawn past it, so what follows the table
+  starts on the next page. The limits, against Chromium:
+  (i) Chromium draws the overflowing line again at the top of the next page; when the table ends the document, that is
+  a page that holds only the line (`a2-row-end`: 3 pages in Chromium, 2 in the engine).
+  (ii) Content after the table starts higher than in Chromium, by the width of that line: at the top of the next page
+  in the engine, below the line drawn again in Chromium (a paragraph's baseline at 24.00 pt against 24.75 with a 0.75 pt
+  line, against 30.00 with a 6 pt line; `a2-row-end-after`, `a2-row-end-6pt-after`). The engine reserves no offset
+  without the line: a gap with no line would be a third behaviour.
+  (iii) At the break between the first row and the next, the engine draws half of the line on each page (192 to 192.375
+  and 12 to 12.375), where Chromium draws the whole line on both; content after it is 0.375 pt higher (1.125 pt below
+  the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
+  A cell background ends at the middle of the line below (192.375), where Chromium ends it at the line's outer edge
+  (192.75; `a2-row-end-background`). That is the table model's own rule, not new here; the 0.375 pt between lies under
+  the line, which hides it, as the engine has only solid, opaque lines (no dashed or translucent ones). Limits (i) to
+  (iii) and the background go away when borders are sliced at page breaks, noted for stage 4.
 - **Monolithic content taller than the page area is a policy** (`LayoutProfile.MonolithicOverflow`): refused by
   default, or sliced as Chromium slices it (`Layout/MonolithicSlices.cs`): the same pages, the same image rectangles
   and the content after the last slice in the same place where the piece stands alone on its pages, in a one-column

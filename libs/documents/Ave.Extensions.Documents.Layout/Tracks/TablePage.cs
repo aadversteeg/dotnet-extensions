@@ -202,7 +202,7 @@ internal static class TablePage
 
         return outcome.Value.HasValue
             ? LayoutResult.Place(
-                TableFragments.Build(table, outcome.Value.Value),
+                WithinPageArea(table, TableFragments.Build(table, outcome.Value.Value), space),
                 outcome.Value.Value.Continuation is { } next ? next with { BodyShown = ShowsBody(table, outcome.Value.Value.Content) } : null,
                 outcome.Value.Value.Appeal,
                 outcome.Value.Value.BestBreak)
@@ -348,7 +348,8 @@ internal static class TablePage
                 breakpoints.Add(before);
             }
 
-            if (!Fitting.Fits(segment.Top + segment.Height + InsideBelow(table, unit.LastRow), height))
+            if (!Fitting.Fits(segment.Top + segment.Height + InsideBelow(table, unit.LastRow), height)
+                && !PassesOnlyByItsLineBelow(table, content, segment.Top + segment.Height, unit.LastRow, height))
             {
                 breakpoints.AddRange(TableBreaks.InsideUnit(table, content, segment, height));
                 return TableBreaks.TakeBest(table, breakpoints, height);
@@ -370,6 +371,40 @@ internal static class TablePage
             .FirstOrDefault();
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content) with { BestBreak = best }));
     }
+
+    /// <summary>
+    /// Under <see cref="EmptyRowParts.Allow"/>, as Chromium prints it: a unit that starts its page area (nothing above it on
+    /// the page, not even a header row: a row that continues from the page before, or the first on the page), or the first
+    /// row of such a unit, whose cells' content fits and whose grid line below does not, is placed whole; the line passes
+    /// the page area, by at most its width. Moving the row would gain nothing, and cutting it would put words on other
+    /// pages than Chromium does (cases a2-row-end*). Chromium draws the overflowing line again at the top of the next page;
+    /// the engine does not slice borders (docs/architecture.md, Known limits).
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="content">The page up to the unit.</param>
+    /// <param name="bottom">The bottom of the unit, or of its first row (<see cref="TableBreaks.InsideUnit"/>), with the cells' share of the line below.</param>
+    /// <param name="row">The unit's last row, or its first row.</param>
+    /// <param name="height">The page's available height.</param>
+    /// <returns>True when it is placed whole and its line below passes the page area.</returns>
+    internal static bool PassesOnlyByItsLineBelow(TableGeometry table, Content content, double bottom, int row, double height) =>
+        table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
+        && table.IsAtPageStart
+        && content.Rows.IsEmpty
+        && Fitting.Fits(bottom - LineBelowShare(table, row), height);
+
+    /// <summary>
+    /// The table's fragment as tall as the page area where a unit placed whole lets its line below pass the page end
+    /// (<see cref="PassesOnlyByItsLineBelow"/>): the line and the cells' share of it are drawn past the page area, but the
+    /// table takes no more than the page area in its container, so what follows the table starts on the next page.
+    /// </summary>
+    private static BoxFragment WithinPageArea(TableGeometry table, BoxFragment fragment, ConstraintSpace space) =>
+        table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow && space.IsAtPageStart && !Fitting.Fits(fragment.Size.Height, space.AvailableHeight)
+            ? new BoxFragment(fragment.Box, new Size(fragment.Size.Width, space.AvailableHeight), fragment.Children, fragment.Border, fragment.IsRepeated)
+            : fragment;
+
+    /// <summary>The half of the grid line below a row that lies inside the row's cells.</summary>
+    private static double LineBelowShare(TableGeometry table, int row) =>
+        table.HorizontalWidth(row, Next(table.Grid, row), EdgeContext(table.Grid, row)) / 2;
 
     internal static int? Next(TableGrid grid, int row) => row + 1 < grid.Rows.Length ? row + 1 : null;
 

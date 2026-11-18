@@ -63,15 +63,19 @@ internal static class TableBreaks
         for (var row = segment.FirstRow; row <= segment.LastRow; row++)
         {
             // A break between rows ends the page at the line above `row`: down to its centre (slice) or with the
-            // whole line (clone, InsideBelow of the row above). That always fits here: the loop reaches `row` only when
-            // the row above fitted with that share of the line (the test below, one round earlier).
+            // whole line (clone, InsideBelow of the row above). That fits here: the loop reaches `row` only when the row
+            // above fitted with that share of the line (the test below, one round earlier), or when the row above starts
+            // the page area and only its line below passes it (Allow, see TablePage.PassesOnlyByItsLineBelow).
             var top = segment.RowTop(row);
             if (row > segment.FirstRow)
             {
                 yield return new Breakpoint(BreakKind.BetweenRows, row, BetweenRowsAppeal(table.Grid, segment, row), content, segment);
             }
 
-            if (!Fitting.Fits(top + segment.Heights[row - segment.FirstRow] + InsideBelow(table, row), height) || row == segment.LastRow)
+            var bottom = top + segment.Heights[row - segment.FirstRow];
+            var fits = Fitting.Fits(bottom + InsideBelow(table, row), height)
+                || (row == segment.FirstRow && PassesOnlyByItsLineBelow(table, content, bottom, row, height));
+            if (!fits || row == segment.LastRow)
             {
                 // A break inside the row ends the page inside the row's cells, below the whole line above the row: the
                 // page must reach the bottom of that line, or its lower half would be cut off at the page end. With
