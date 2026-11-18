@@ -46,7 +46,7 @@ public class TextCostTests(ITestOutputHelper output)
 
     private static string Words(int count) => string.Join(" ", Enumerable.Range(0, count).Select(index => "word" + index % 10));
 
-    private static string SoftHyphens(int count) => string.Join("­", Enumerable.Range(0, count).Select(index => (char)('a' + index % 26)));
+    private static string SoftHyphens(int count) => string.Join("\u00AD", Enumerable.Range(0, count).Select(index => (char)('a' + index % 26)));
 
     private static string KernedWords(int count) => string.Join(" ", Enumerable.Repeat("AVAVAV", count));
 
@@ -78,11 +78,15 @@ public class TextCostTests(ITestOutputHelper output)
     [Fact]
     public void Kerned_words_that_join_every_glyph_to_the_one_before_are_broken_in_linear_work()
     {
-        // `para 4000 kind=kernwords h=14000 w=14000 fs=1`: no safe place in the whole paragraph, so each end shaped again
-        // reaches back to the line's start; a line breaks after about 3 000 words.
+        // `para 4000 kind=kernwords h=14000 w=14000 fs=1`: no safe place in the whole paragraph, so an end shaped again
+        // reaches back to the line's start or on to its end. On the review's page (about 3 000 words a line) the work is at
+        // most a few times the text; in lines of about 200 words it grows linearly with the paragraph.
         Break(KernedWords(100), 1, 13976);
-        var small = Break(KernedWords(4000), 1, 13976);
-        var large = Break(KernedWords(8000), 1, 13976);
+        var wide = Break(KernedWords(4000), 1, 13976);
+        output.WriteLine($"kerned words on the review's page: {wide}");
+        wide.Characters.Should().BeLessThanOrEqualTo(2 * 7 * 4000, "each line's text is shaped again at most a few times");
+        var small = Break(KernedWords(4000), 1, 1000);
+        var large = Break(KernedWords(8000), 1, 1000);
         Linearly("kerned words", 4000, small, large);
         small.Characters.Should().BePositive("the lines of the smaller paragraph are shaped again too, so the comparison is not vacuous");
     }
@@ -92,7 +96,7 @@ public class TextCostTests(ITestOutputHelper output)
     {
         // The review's soft-hyphen input in a narrow column (`para n kind=shy w=30`), with letters that kern across the soft
         // hyphens, so that every line end is shaped again: thousands of pieces, one paragraph.
-        var text = string.Join("­", Enumerable.Range(0, 4000).Select(index => index % 2 == 0 ? "A" : "V"));
+        var text = string.Join("\u00AD", Enumerable.Range(0, 4000).Select(index => index % 2 == 0 ? "A" : "V"));
         var font = TestFonts.Regular;
         var glyphs = Shaper.Shape(text, font, 12).Value;
         var budgets = new HashSet<LineShapingBudget>(ReferenceEqualityComparer.Instance);
@@ -130,7 +134,7 @@ public class TextCostTests(ITestOutputHelper output)
     {
         // `Shaper.Shape("a" + n x U+0301)`: every mark attaches to the same base, and each attachment marks the glyphs
         // from the base to the mark unsafe to break.
-        static string Marks(int count) => "a" + string.Concat(Enumerable.Repeat("́", count));
+        static string Marks(int count) => "a" + string.Concat(Enumerable.Repeat("\u0301", count));
         Shape(Marks(100));
         Linearly("marks", 4000, Shape(Marks(4000)), Shape(Marks(8000)));
     }
@@ -140,7 +144,7 @@ public class TextCostTests(ITestOutputHelper output)
     {
         // "a" + n x U+0323 + U+0302: the circumflex composes with the base across all the dots, which makes one cluster of
         // n + 2 characters.
-        static Rune[] Blocked(int count) => [.. ("a" + string.Concat(Enumerable.Repeat("̣", count)) + "̂").EnumerateRunes()];
+        static Rune[] Blocked(int count) => [.. ("a" + string.Concat(Enumerable.Repeat("\u0323", count)) + "\u0302").EnumerateRunes()];
         long Steps(int count)
         {
             var steps = new Normalization.Steps();

@@ -53,13 +53,13 @@ public class LineShapingBudgetTests
         return font.Value;
     }
 
-    /// <summary>A paragraph of <paramref name="runs"/> runs "AV­AV ", 80 pt, in a 180 pt wide page area: each run is
+    /// <summary>A paragraph of <paramref name="runs"/> runs "AV\u00ADAV ", 80 pt, in a 180 pt wide page area: each run is
     /// shaped alone, and each breaks at its soft hyphen, where A and V kern, so both sides of every break are shaped again.</summary>
     private static StyledDocument Paragraph(int runs)
     {
         var style = new TextStyle("Lato", 80.Pt(), FontWeight.Regular, Color.Black);
         var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
-            [.. Enumerable.Range(0, runs).Select(index => (Node)new TextRun(new NodeId(100 + index), "AV­AV ", style, Models.At(index)))], Models.At(0));
+            [.. Enumerable.Range(0, runs).Select(index => (Node)new TextRun(new NodeId(100 + index), "AV\u00ADAV ", style, Models.At(index)))], Models.At(0));
         return new StyledDocument(new DocumentMetadata("Test", null), new PageStyle(200.Pt(), 14000.Pt(), Edges.All(10.Pt())), Models.Flow(0, [paragraph]));
     }
 
@@ -73,9 +73,9 @@ public class LineShapingBudgetTests
         var font = CostlyLato(4000);
         var environment = LayoutEnvironment.Create(new FontSet([font]));
 
-        var run = Shaper.Shape("AV­AV ", font, 80);
+        var run = Shaper.Shape("AV\u00ADAV ", font, 80);
         run.IsSuccess.Should().BeTrue(run.IsFailure ? run.Error.ToString() : "");
-        var piece = Shaper.ShapeLinePiece("AV­", font, 80, showsHyphen: true);
+        var piece = Shaper.ShapeLinePiece("AV\u00AD", font, 80, showsHyphen: true);
         piece.IsSuccess.Should().BeTrue("each piece alone stays under a budget of its own");
 
         var laidOut = Paginator.Paginate(environment, Paragraph(20));

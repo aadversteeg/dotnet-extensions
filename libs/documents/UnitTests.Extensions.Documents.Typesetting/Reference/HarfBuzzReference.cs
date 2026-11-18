@@ -7,7 +7,11 @@ using WebAssembly.Runtime;
 namespace UnitTests.Extensions.Documents.Typesetting.Reference;
 
 /// <summary>One glyph as HarfBuzz shapes it, in font design units (no scale set, so units are font units).</summary>
-public sealed record ReferenceGlyph(int Glyph, int Cluster, int XAdvance, int XOffset, int YOffset);
+public sealed record ReferenceGlyph(int Glyph, int Cluster, int XAdvance, int XOffset, int YOffset)
+{
+    /// <summary>HarfBuzz's <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c> (bit 0 of the glyph info's mask, hb-buffer.h).</summary>
+    public bool UnsafeToBreak { get; init; }
+}
 
 /// <summary>
 /// HarfBuzz 15.0.0 (harfbuzzjs 1.6.4 <c>harfbuzz.wasm</c>) running on the managed WebAssembly runtime of the NuGet
@@ -83,6 +87,9 @@ public sealed class HarfBuzzReference
         }
     }
 
+    /// <summary>HB_GLYPH_FLAG_UNSAFE_TO_BREAK.</summary>
+    private const int UnsafeToBreakFlag = 1;
+
     private readonly System.Threading.Lock _gate = new();
 
     private ImmutableArray<ReferenceGlyph> ShapeAlone(byte[] font, string text, string script, IEnumerable<string> features)
@@ -115,7 +122,10 @@ public sealed class HarfBuzzReference
             Cluster: Int32(infos + index * GlyphRecordLength + 8),
             XAdvance: Int32(positions + index * GlyphRecordLength),
             XOffset: Int32(positions + index * GlyphRecordLength + 8),
-            YOffset: Int32(positions + index * GlyphRecordLength + 12))).ToImmutableArray();
+            YOffset: Int32(positions + index * GlyphRecordLength + 12))
+        {
+            UnsafeToBreak = (Int32(infos + index * GlyphRecordLength + 4) & UnsafeToBreakFlag) != 0,
+        }).ToImmutableArray();
 
         _exports.hb_buffer_destroy(buffer);
         _exports.free(scriptName);

@@ -96,11 +96,12 @@ public static class Shaper
     /// <summary>
     /// Shapes a piece of a run's text as a line shows it (<see cref="GreedyLineBreaker"/>, THE RULE FOR SHAPING AT A
     /// BREAK): the piece alone, and, when <paramref name="showsHyphen"/>, with the soft hyphen it ends with drawn as the
-    /// hyphen that shows where a line breaks there (<see cref="Hyphen"/>), shaped with the letters before it, so a kerning
-    /// pair between the last letter and the hyphen applies as in any other text. That glyph's text stays the soft hyphen
-    /// it stands for. A font without a hyphen leaves the soft hyphen invisible. The work is charged to
-    /// <paramref name="budget"/>, the budget of the paragraph the piece belongs to; once it is spent, the piece is refused
-    /// (<see cref="LineShapingBudget"/>).
+    /// hyphen that shows where a line breaks there (<see cref="Hyphen"/>). The hyphen is shaped ALONE and put after the
+    /// piece, so it is never kerned with the letter before it, as Chromium shapes it (Blink <c>HyphenResult::Shape</c>
+    /// shapes the hyphen string as a text of its own, and <c>LineBreaker::AddHyphen</c> adds its width to the line). That
+    /// glyph's text stays the soft hyphen it stands for. A font without a hyphen leaves the soft hyphen invisible. The work
+    /// is charged to <paramref name="budget"/>, the budget of the paragraph the piece belongs to; once it is spent, the
+    /// piece is refused (<see cref="LineShapingBudget"/>).
     /// </summary>
     /// <param name="text">The piece of text, already white-space collapsed.</param>
     /// <param name="font">The run's font.</param>
@@ -111,14 +112,11 @@ public static class Shaper
     public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, LineShapingBudget budget) =>
         LinePiece(text, font, fontSize, showsHyphen, budget.Shaping);
 
-    private static Result<ValueList<ShapedGlyph>, Error> LinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, ShapingBudget? shared)
-    {
-        var hyphen = showsHyphen && text.EndsWith(SoftHyphen, StringComparison.Ordinal) ? HyphenCharacter(font) : null;
-        var shaped = hyphen is { } character ? text[..^1] + character : text;
-        return Shape(shaped, font, fontSize, shared).OnSuccessMap(glyphs => hyphen is null
-            ? (ValueList<ShapedGlyph>)[.. glyphs]
-            : [.. glyphs.Take(glyphs.Length - 1), glyphs[^1] with { Text = SoftHyphen }]);
-    }
+    private static Result<ValueList<ShapedGlyph>, Error> LinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, ShapingBudget? shared) =>
+        Shape(text, font, fontSize, shared).OnSuccessMap(glyphs =>
+            showsHyphen && glyphs.Length > 0 && glyphs[^1].Text == SoftHyphen && glyphs[^1].BreakHyphen is { } hyphen
+                ? (ValueList<ShapedGlyph>)[.. glyphs.Take(glyphs.Length - 1), hyphen]
+                : [.. glyphs]);
 
     /// <summary>
     /// Splits text into Unicode scalar values, joining surrogate pairs. An unpaired surrogate is not a

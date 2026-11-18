@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -54,12 +55,14 @@ internal static class BreakableSegments
         private readonly int[] _firstStartingAt;
         private readonly double[] _pens;
         private readonly double[] _spacePens;
+        private readonly int[] _spaces;
         private readonly int[] _nextShowing;
         private readonly int[] _previousShowing;
         private readonly bool[] _safe;
         private readonly int[] _nextSafe;
         private readonly int[] _previousSafe;
         private readonly int[] _runOf;
+        private readonly ShapedGlyph?[] _hyphens;
 
         /// <summary>Prepares the lookups: one pass over the glyphs or over the text for each.</summary>
         /// <param name="text">The paragraph's text: the glyphs' texts joined, which is the white-space-collapsed text.</param>
@@ -89,12 +92,13 @@ internal static class BreakableSegments
                 (_firstEndingAfter[offset], _firstStartingAt[offset]) = (ending, starting);
             }
 
-            (_pens, _spacePens) = (new double[count + 1], new double[count + 1]);
+            (_pens, _spacePens, _spaces) = (new double[count + 1], new double[count + 1], new int[count + 1]);
             for (var index = 0; index < count; index++)
             {
                 var glyph = glyphs[index].Glyph;
                 _pens[index + 1] = _pens[index] + glyph.Advance;
                 _spacePens[index + 1] = _spacePens[index] + (glyph.IsSpace ? glyph.Advance : 0);
+                _spaces[index + 1] = _spaces[index] + (glyph.IsSpace ? 1 : 0);
             }
 
             (_nextShowing, _previousShowing) = (new int[count + 1], new int[count + 1]);
@@ -111,16 +115,24 @@ internal static class BreakableSegments
                 _previousShowing[index + 1] = IsBlank(glyphs[index].Glyph) ? _previousShowing[index] : index;
             }
 
-            // A safe place: a run boundary, or the start of a cluster with a glyph the shaper did not mark unsafe to break.
+            // A safe place: a run boundary, or the start of a cluster none of whose glyphs the shaper marked unsafe to break
+            // (HarfBuzz marks every glyph of a cluster alike; a lookup marks the clusters after its first glyph's own).
             var safe = new bool[length + 1];
+            for (var index = 0; index < count;)
+            {
+                var start = glyphs[index].Start;
+                var marked = false;
+                for (; index < count && glyphs[index].Start == start; index++)
+                {
+                    marked |= glyphs[index].Glyph.UnsafeToBreak;
+                }
+
+                safe[start] = !marked;
+            }
+
             foreach (var start in runStarts)
             {
                 safe[start] = true;
-            }
-
-            foreach (var glyph in glyphs)
-            {
-                safe[glyph.Start] |= !glyph.Glyph.UnsafeToBreak;
             }
 
             _safe = safe;
@@ -146,6 +158,12 @@ internal static class BreakableSegments
                 }
 
                 _runOf[offset] = run;
+            }
+
+            _hyphens = new ShapedGlyph?[Math.Max(0, runStarts.Length - 1)];
+            foreach (var glyph in glyphs)
+            {
+                _hyphens[glyph.Run] ??= glyph.Glyph.BreakHyphen;
             }
         }
 
@@ -175,6 +193,9 @@ internal static class BreakableSegments
         /// <summary>The same without the collapsible spaces.</summary>
         public double WidthWithoutSpaces(int from, int to) => Width(from, to) - (_spacePens[to] - _spacePens[from]);
 
+        /// <summary>True when a collapsible space is among the glyphs from <paramref name="from"/> to <paramref name="to"/>.</summary>
+        public bool HasSpace(int from, int to) => _spaces[to] > _spaces[from];
+
         /// <summary>The first glyph at or after <paramref name="index"/> that is not blank (<see cref="IsBlank"/>), or the
         /// glyph count.</summary>
         public int NextShowing(int index) => _nextShowing[index];
@@ -183,7 +204,7 @@ internal static class BreakableSegments
         public int PreviousShowing(int index) => _previousShowing[index];
 
         /// <summary>True when the text may be broken at <paramref name="offset"/> without shaping either side again: a run
-        /// boundary, or the start of a cluster with a glyph the shaper did not mark <see cref="ShapedGlyph.UnsafeToBreak"/>.</summary>
+        /// boundary, or the start of a cluster none of whose glyphs the shaper marked <see cref="ShapedGlyph.UnsafeToBreak"/>.</summary>
         public bool IsSafe(int offset) => _safe[offset];
 
         /// <summary>The first safe place after <paramref name="offset"/> (the text's length when there is none).</summary>
@@ -191,6 +212,10 @@ internal static class BreakableSegments
 
         /// <summary>The last safe place before <paramref name="offset"/> (0 is one).</summary>
         public int PreviousSafe(int offset) => _previousSafe[offset];
+
+        /// <summary>The hyphen a soft hyphen of <paramref name="run"/> shows (shaped alone), or null when the run has no soft
+        /// hyphen of its own (one inside a ligature has none) or its font no hyphen.</summary>
+        public ShapedGlyph? HyphenOf(int run) => _hyphens[run];
 
         /// <summary>The run of the character at <paramref name="offset"/> (at the text's end, the last run).</summary>
         public int RunOf(int offset) => _runOf[offset];
