@@ -424,6 +424,12 @@ other libraries:
 dotnet test extensions.slnx -p:UseNs21=true
 ```
 
+On Windows, on .NET Framework 4.8 against the `netstandard2.0` build of the libraries:
+
+```shell
+dotnet test extensions.slnx -p:UseNet48=true
+```
+
 Delete the `bin` and `obj` folders before you switch between these modes (see the repository README).
 
 `UnitTests.Extensions.FileSystem.AzureFileStorage` needs no Azure account, but 9 of its tests call the Azure SDK
@@ -439,9 +445,9 @@ tests skip themselves. To run them locally, give the account name and key as use
 `integration-tests/IntegrationTests.AzureFileStorage/USER_SECRETS_SETUP.md`). Use a storage account that is only
 for these tests: they empty the file share `integration-tests`.
 
-CI runs them on `main` only, in the three modes below, with the repository secrets `AZURE_STORAGE_ACCOUNT_NAME`
-and `AZURE_STORAGE_ACCOUNT_KEY`. That job fails when a secret is missing or a test is skipped. A pull request does
-not run them and never gets the account key.
+CI runs them on `main` only, in the three .NET 10 modes below, with the repository secrets
+`AZURE_STORAGE_ACCOUNT_NAME` and `AZURE_STORAGE_ACCOUNT_KEY`. That job fails when a secret is missing or a test is
+skipped. A pull request does not run them and never gets the account key.
 
 ### Supported runtimes
 
@@ -455,9 +461,12 @@ projects run on .NET 10, in three modes:
   `netstandard2.0` build of the other libraries. That is the combination an application on .NET Core 3.0 up to
   .NET 9 gets.
 
-CI runs the file-system tests in all three modes, on Linux and Windows. No test runs on a .NET Framework runtime
-or on .NET Core 3.0 up to .NET 9 itself, so this repository makes no promise about a particular version of those
-runtimes.
+On Windows the test projects also run on .NET Framework 4.8, against the `netstandard2.0` build of every library
+(`-p:UseNet48=true`).
+
+CI runs the file-system tests in all three .NET 10 modes, on Linux and Windows, and on .NET Framework 4.8 on
+Windows. No test runs on .NET Core 3.0 up to .NET 9 itself, or on a .NET Framework older than 4.8, so this
+repository makes no promise about a particular version of those runtimes.
 
 ### The netstandard2.0 build
 
@@ -473,6 +482,20 @@ That is why these two packages have a `netstandard2.1` build: .NET Core 3.0 up t
 Framework, load the `netstandard2.0` build.
 
 `Dispose()` writes synchronously on every target, as before. For Azure that is a blocking upload.
+
+### Long paths on .NET Framework
+
+`Ave.Extensions.FileSystem.Local` passes paths to Windows as they are. On .NET (Core) the runtime handles long
+paths itself. On .NET Framework it does not: a file path of 260 characters or more, or a folder path of 248
+characters or more, fails, unless both of these are true:
+
+- Windows long paths are enabled on the machine: the registry value `LongPathsEnabled` is 1 under
+  `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (the group policy "Enable Win32 long paths" sets it);
+- the executable of the application has `longPathAware` set to `true` in its application manifest.
+
+Otherwise the operation returns an error result (in our tests `NotFound.Directory`). A path with the `\\?\` prefix
+is no way around this: it is not a valid canonical path. The test `LFSMC-003` uses such long paths, so on .NET
+Framework it skips itself when Windows long paths are not enabled for the test process.
 
 ### Running Benchmarks
 

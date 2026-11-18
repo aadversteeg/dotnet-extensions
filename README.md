@@ -55,11 +55,24 @@ the test assembly loads is that build. Only `Ave.Extensions.FileSystem.InMemory`
 `Ave.Extensions.FileSystem.AzureFileStorage` have a `netstandard2.1` build, so for the other families this mode
 tests the same as `-p:UseNs20=true`.
 
-Use one switch at a time; together they stop the build with an error. `UnitTests.Extensions.ErrorPaths.AspNetCore`
-and the documents tests are left as they are in both modes, because their libraries have no `netstandard2.0` build. The switches live in
-`Directory.Build.targets`.
+On Windows, to run the tests on .NET Framework 4.8 against the `netstandard2.0` build of the libraries (what an
+application on .NET Framework gets):
 
-Delete the `bin` and `obj` folders before you switch between the three modes (the default and the two switches)
+```shell
+dotnet test dotnet-extensions.slnx -p:UseNet48=true
+```
+
+In that mode the test projects target `net48` instead of `net10.0`. Every test project runs `NS20-001`, and also
+`NET48-001`, which fails unless the tests run on .NET Framework. A few APIs that the test code uses do not exist on
+.NET Framework; `eng/Net48Polyfills.cs` provides them in this mode only. On .NET Framework,
+`Ave.Extensions.FileSystem.Local` cannot use long paths unless Windows allows it; see "Long paths on .NET
+Framework" in the [file-system README](libs/file-system/README.md#long-paths-on-net-framework).
+
+Use one switch at a time; together they stop the build with an error. `UnitTests.Extensions.ErrorPaths.AspNetCore`
+and the documents tests are left as they are in all three modes, because their libraries have no `netstandard2.0`
+build: with `-p:UseNet48=true` they stay on `net10.0`. The switches live in `Directory.Build.targets`.
+
+Delete the `bin` and `obj` folders before you switch between the four modes (the default and the three switches)
 in the same working tree. Two builds of a library can have the same file size and time stamp, and then the build
 does not copy the new one: the test project keeps the library file of the other mode, and `NS20-001` or
 `NS21-001` fails.
@@ -75,9 +88,9 @@ Such a reference compiles fine, but fails at run time where that assembly versio
 on .NET Framework.
 
 `.github/workflows/ci.yml` runs this check and the tests (Linux and Windows; the `net10.0` and the `netstandard2.0`
-build) for every pull request and every push to `main`. When the change affects the file-system family, it also
-runs the file-system tests with `-p:UseNs21=true`. The documents family runs on Linux and Windows against its
-`net10.0` build only; its reference tests need Docker with Linux containers and are skipped where there is none
+build), and on Windows also on .NET Framework 4.8, for every pull request and every push to `main`. When the change
+affects the file-system family, it also runs the file-system tests with `-p:UseNs21=true`. The documents family
+runs on Linux and Windows against its `net10.0` build only; its reference tests need Docker with Linux containers and are skipped where there is none
 (see the documents README).
 
 Nobody pushes to `main` directly: every change is a pull request, and it can be merged when the job `CI result`
