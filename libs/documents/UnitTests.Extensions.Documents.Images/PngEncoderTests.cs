@@ -116,6 +116,12 @@ public class PngEncoderTests
         Convert.ToHexStringLower(SHA256.HashData(file.AsSpan())).Should().Be("39d1221ab6d3a18b127d79c091dd9ca95ca89ca799963afce256e251d1b0540a");
     }
 
+    [Fact]
+    public void Decoding_samples_of_no_image_is_the_caller_s_null_bug()
+    {
+        FluentActions.Invoking(() => ImageDecoder.DecodeSamples(null!)).Should().Throw<ArgumentNullException>();
+    }
+
     [Theory]
     [InlineData(0, 1, 0, "Documents.Image.InvalidPixels")]
     [InlineData(1, -1, 0, "Documents.Image.InvalidPixels")]

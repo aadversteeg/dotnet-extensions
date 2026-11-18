@@ -29,10 +29,17 @@ public static class ImageDecoder
     /// <param name="image">The image.</param>
     /// <returns>The samples (8-bit grey or RGB, plus alpha for a PNG that has it), or a <c>Documents.Image</c> error for
     /// damaged JPEG data or one above <see cref="ImageLimits.MaxPixels"/>.</returns>
-    public static Result<RasterImage, Error> DecodeSamples(ImageData image) => image switch
+    /// <exception cref="ArgumentNullException">The image is null.</exception>
+    public static Result<RasterImage, Error> DecodeSamples(ImageData image)
     {
-        RasterImage raster => Result<RasterImage, Error>.Success(raster),
-        JpegImage jpeg => JpegDecoder.Decode(jpeg),
-        _ => throw new ArgumentException($"Unknown image type {image?.GetType().Name ?? "null"}.", nameof(image)),
-    };
+        ArgumentNullException.ThrowIfNull(image);
+        return image switch
+        {
+            RasterImage raster => Result<RasterImage, Error>.Success(raster),
+            JpegImage jpeg => JpegDecoder.Decode(jpeg),
+
+            // ImageData's constructor is private to this assembly: these two are all there are.
+            _ => throw new InvalidOperationException($"Unknown image type {image.GetType().Name}."),
+        };
+    }
 }

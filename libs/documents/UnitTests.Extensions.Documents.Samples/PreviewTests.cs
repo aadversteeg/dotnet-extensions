@@ -1,4 +1,5 @@
 using Ave.Extensions.Documents;
+using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.Documents.Images;
 using Ave.Extensions.Documents.Render.Raster;
 using Ave.Extensions.Documents.Samples;
@@ -16,6 +17,16 @@ namespace UnitTests.Extensions.Documents.Samples;
 public class PreviewTests
 {
     private static readonly RasterOptions Screen = new(96);
+
+    [Fact]
+    public void A_missing_document_or_font_set_is_the_caller_s_null_bug()
+    {
+        var document = SampleFiles.Documents.First().Document;
+
+        FluentActions.Invoking(() => ((Document)null!).ToPages(TestFonts.SetWithItalic)).Should().Throw<ArgumentNullException>();
+        FluentActions.Invoking(() => document.ToPages(null!)).Should().Throw<ArgumentNullException>();
+        FluentActions.Invoking(() => ((Document)null!).ToPngPages(TestFonts.SetWithItalic, Screen)).Should().Throw<ArgumentNullException>();
+    }
 
     [Theory]
     [InlineData("sample-a-letter", 1)]

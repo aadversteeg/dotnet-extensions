@@ -39,6 +39,10 @@ public static class FontErrorCodes
     /// </summary>
     public static readonly ErrorCode GlyphMissing = _ / "GlyphMissing";
 
+    /// <summary>A glyph id that is not a glyph of the font: at or above its glyph count (<c>TrueTypeFont.Shape</c>).
+    /// Metadata: FontName, Value (the glyph id).</summary>
+    public static readonly ErrorCode GlyphOutOfRange = _ / "GlyphOutOfRange";
+
     /// <summary>No font in the font set matches the family and weight asked for.
     /// Metadata: FontName, Value (the weight), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode NotFound = _ / "NotFound";

@@ -39,6 +39,25 @@ public class GlyphShapeTests
     private static IEnumerable<(double X, double Y, bool On)> PointsOf(GlyphShape shape) =>
         shape.Contours.SelectMany(contour => contour.Points).Select(point => (point.X, point.Y, point.OnCurve));
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(65535)]
+    public void A_glyph_id_the_font_does_not_have_is_an_error_value(int beyond)
+    {
+        var font = TestFonts.Regular;
+        var glyph = font.GlyphCount + beyond;
+        if (glyph > ushort.MaxValue)
+        {
+            glyph = ushort.MaxValue;
+        }
+
+        var error = ErrorOf(font, glyph);
+
+        error.Code.Should().Be(FontErrorCodes.GlyphOutOfRange);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be(glyph.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    }
+
     [Fact]
     public void A_glyph_without_an_outline_has_no_contours()
     {

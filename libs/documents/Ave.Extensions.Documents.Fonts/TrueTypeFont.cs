@@ -118,12 +118,17 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
     /// decode outlines, so a damaged glyph is found here.
     /// </summary>
     /// <param name="glyph">A glyph id of this font.</param>
-    /// <returns>The shape (empty for a glyph without an outline), or a <see cref="FontErrorCodes.Parse"/> error that
-    /// names the font and the glyph.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The glyph id does not belong to this font.</exception>
+    /// <returns>The shape (empty for a glyph without an outline), a <see cref="FontErrorCodes.Parse"/> error that names
+    /// the font and the glyph, or <see cref="FontErrorCodes.GlyphOutOfRange"/> for a glyph id the font does not
+    /// have.</returns>
     public Result<GlyphShape, Error> Shape(GlyphId glyph) =>
-        Tables.GlyphOutlineDecoder.Decode(index => GlyphOutline(new GlyphId((ushort)index)), GlyphCount, CheckedIndex(glyph))
-            .MapError(error => error.With(ErrorMetadataKeys.FontName, Names.PostScriptName));
+        glyph.Value < GlyphCount
+            ? Tables.GlyphOutlineDecoder.Decode(index => GlyphOutline(new GlyphId((ushort)index)), GlyphCount, glyph.Value)
+                .MapError(error => error.With(ErrorMetadataKeys.FontName, Names.PostScriptName))
+            : Result<GlyphShape, Error>.Failure(
+                new Error(FontErrorCodes.GlyphOutOfRange, $"Font '{Names.PostScriptName}' has {GlyphCount} glyphs; there is no glyph {glyph.Value}.")
+                    .With(ErrorMetadataKeys.FontName, Names.PostScriptName)
+                    .With(ErrorMetadataKeys.Value, glyph.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
 
     /// <summary>
     /// The bounding box of a glyph's outline, from its glyph header in 'glyf' (OpenType spec, "glyf — Glyph data":

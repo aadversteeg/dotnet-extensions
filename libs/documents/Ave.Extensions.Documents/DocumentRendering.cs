@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.Documents.Fonts;
@@ -33,8 +34,13 @@ public static class DocumentRendering
     /// <param name="document">The document.</param>
     /// <param name="fonts">The fonts the document may use.</param>
     /// <returns>The pages, or the error with the source location of the call that caused it.</returns>
-    public static Result<PageDocument, Error> ToPages(this Document document, FontSet fonts) =>
-        DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, fonts));
+    /// <exception cref="ArgumentNullException">The document or the font set is null.</exception>
+    public static Result<PageDocument, Error> ToPages(this Document document, FontSet fonts)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(fonts);
+        return DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, fonts));
+    }
 
     /// <summary>
     /// Renders a document to PDF: <see cref="ToPages"/>, then the PDF back-end. Each step returns errors as values; the
