@@ -9,8 +9,9 @@ namespace UnitTests.Extensions.Documents.Samples;
 /// <summary>
 /// Preview images through the composition package: the two-step pipeline (<see cref="DocumentRendering.ToPages"/>, then a
 /// back-end) gives the same output as the one-call entry points, and the samples' pages are pinned as golden PNG files,
-/// byte for byte (update with <c>UPDATE_GOLDEN=1</c> and review the images). The tests run on Linux and Windows, x64
-/// and arm64, so the goldens are also the proof that the pixels and the PNG bytes do not depend on the platform.
+/// compared by their pixels (update with <c>UPDATE_GOLDEN=1</c> and review the images). The tests run on Linux and
+/// Windows, x64 and arm64, so the goldens also show that the pixels do not depend on the platform. The PNG bytes depend
+/// on the runtime's zlib as well; one test pins them (<c>PngEncoderTests</c>).
 /// </summary>
 public class PreviewTests
 {
@@ -21,14 +22,15 @@ public class PreviewTests
     [InlineData("sample-a-letter", 2)]
     [InlineData("timesheet-normal.nl", 1)]
     [InlineData("timesheet-normal.nl", 2)]
-    public void A_sample_page_at_96_dpi_is_its_golden_PNG(string name, int page)
+    public void A_sample_page_at_96_dpi_has_the_pixels_of_its_golden_PNG(string name, int page)
     {
         var document = SampleFiles.Documents.Single(sample => sample.Name == name).Document;
 
-        var png = document.ToPng(TestFonts.SetWithItalic, page, Screen);
+        var images = document.ToImages(TestFonts.SetWithItalic, Screen);
 
-        png.IsSuccess.Should().BeTrue(png.IsFailure ? png.Error.ToString() : string.Empty);
-        Golden.CompareBytes($"{name}.page{page}.96dpi.png", png.Value.AsSpan()).Should().BeNull();
+        images.IsSuccess.Should().BeTrue(images.IsFailure ? images.Error.ToString() : string.Empty);
+        var image = images.Value[page - 1];
+        Golden.ComparePixels($"{name}.page{page}.96dpi.png", image.Width, image.Height, image.Pixels.AsSpan()).Should().BeNull();
     }
 
     [Fact]

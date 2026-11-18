@@ -105,8 +105,11 @@ public class PngEncoderTests
     }
 
     [Fact]
-    public void The_same_pixels_give_the_same_bytes_on_every_platform()
+    public void The_same_pixels_give_the_same_bytes_with_the_runtime_zlib()
     {
+        // The one test that pins PNG bytes: they come from the runtime's zlib, which another .NET release or another zlib
+        // build may change without a pixel changing. Equal on x64 Linux, x64 Windows and arm64 Linux for .NET 10. The
+        // golden images compare pixels (Golden.ComparePixels), so a change of zlib fails only here.
         var file = ImageEncoder.EncodePng(64, 48, Photo(64, 48, opaque: false));
 
         ImageEncoder.EncodePng(64, 48, Photo(64, 48, opaque: false)).Should().Equal(file);

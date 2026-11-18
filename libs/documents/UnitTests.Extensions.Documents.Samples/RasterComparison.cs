@@ -216,15 +216,21 @@ internal static class RasterComparison
         }
     }
 
-    /// <summary>The distance between two RGB(A) images by the metrics.</summary>
-    /// <param name="first">The first image: width, height, channels per pixel (3 or 4) and pixels.</param>
+    /// <summary>The distance between two images of the same size by the metrics; a grey image (1 or 2 channels) counts
+    /// its grey value as red, green and blue.</summary>
+    /// <param name="first">The first image: width, height, channels per pixel (1 to 4) and pixels.</param>
     /// <param name="second">The second image.</param>
     /// <param name="edges">The edge mask of the page (<see cref="EdgeMask"/>).</param>
     /// <returns>The distance.</returns>
+    /// <exception cref="ArgumentException">The images and the mask are not all the same size.</exception>
     public static Distance Compare((int Width, int Height, int Channels, byte[] Pixels) first, (int Width, int Height, int Channels, byte[] Pixels) second, (int Width, int Height, bool[] AtEdge) edges)
     {
-        var width = Math.Min(Math.Min(first.Width, second.Width), edges.Width);
-        var height = Math.Min(Math.Min(first.Height, second.Height), edges.Height);
+        if ((first.Width, first.Height) != (second.Width, second.Height) || (first.Width, first.Height) != (edges.Width, edges.Height))
+        {
+            throw new ArgumentException($"The images are {first.Width} x {first.Height} and {second.Width} x {second.Height} pixels and the edge mask {edges.Width} x {edges.Height}: a comparison needs one size.");
+        }
+
+        var (width, height) = (first.Width, first.Height);
         var largest = 0;
         var squares = 0.0;
         var (over32, over64, over128) = (0, 0, 0);
@@ -235,7 +241,7 @@ internal static class RasterComparison
                 var pixelLargest = 0;
                 for (var channel = 0; channel < 3; channel++)
                 {
-                    var difference = Math.Abs(first.Pixels[(((y * first.Width) + x) * first.Channels) + channel] - second.Pixels[(((y * second.Width) + x) * second.Channels) + channel]);
+                    var difference = Math.Abs(Sample(first, x, y, channel) - Sample(second, x, y, channel));
                     squares += difference * difference;
                     pixelLargest = Math.Max(pixelLargest, difference);
                 }
@@ -252,4 +258,7 @@ internal static class RasterComparison
 
         return new Distance(largest, squares / (3.0 * width * height), over32, over64, over128);
     }
+
+    private static byte Sample((int Width, int Height, int Channels, byte[] Pixels) image, int x, int y, int channel) =>
+        image.Pixels[(((y * image.Width) + x) * image.Channels) + (image.Channels < 3 ? 0 : channel)];
 }
