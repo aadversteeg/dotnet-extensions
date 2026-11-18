@@ -6,7 +6,7 @@ namespace Ave.Extensions.Documents.Graphics;
 /// <summary>
 /// Errors the graphics library reports (<c>Documents.Graphics</c>). Every value a caller passes is checked and a value the
 /// library cannot draw with is answered with one of these, never with an exception; only a null reference is the caller's
-/// bug (<see cref="System.ArgumentNullException"/>), and so is calling <see cref="PathBuilder"/> out of order.
+/// bug (<see cref="System.ArgumentNullException"/>).
 /// </summary>
 public static class GraphicsErrorCodes
 {

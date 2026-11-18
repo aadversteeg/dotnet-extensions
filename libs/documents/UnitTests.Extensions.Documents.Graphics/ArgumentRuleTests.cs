@@ -255,10 +255,14 @@ public class ArgumentRuleTests
     }
 
     [Fact]
-    public void Path_builder_order_rules()
+    public void A_path_cannot_be_built_out_of_order()
     {
-        FluentActions.Invoking(() => new PathBuilder().LineTo(1, 1)).Should().Throw<InvalidOperationException>();
-        FluentActions.Invoking(() => new PathBuilder().Close()).Should().Throw<InvalidOperationException>();
+        // A segment needs a current point (ISO 32000-1 §8.5.2.1). The empty builder offers only MoveTo, so a segment
+        // before it does not compile; the builder it hands back offers every command.
+        typeof(PathBuilder).GetMethods().Where(method => method.DeclaringType == typeof(PathBuilder)).Select(method => method.Name)
+            .Should().BeEquivalentTo(nameof(PathBuilder.MoveTo), nameof(PathBuilder.ToPath));
+        typeof(PathBuilder).GetMethod(nameof(PathBuilder.MoveTo))!.ReturnType.Should().Be<SubpathBuilder>();
+        new PathBuilder().ToPath().Commands.Should().BeEmpty();
 
         // After Close the current point is the subpath's start (ISO 32000-1 §8.5.2.1), so a line may follow: it starts a
         // new subpath there. Two triangles that share the start (0, 0).

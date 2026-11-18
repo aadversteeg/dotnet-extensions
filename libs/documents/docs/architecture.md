@@ -167,8 +167,9 @@ a JPEG's three components are YCbCr unless an Adobe marker says otherwise, as DC
 **Arguments of the graphics library.** One rule for every public member of `Ave.Extensions.Documents.Graphics`
 (`Canvas`, `Path`, `PathBuilder` and the types they take): a value it cannot draw with — not finite, out of range, a size
 that does not fit — is answered with a `Result` error with a `GraphicsErrorCodes` code (`Documents.Graphics.InvalidValue`,
-`Documents.Graphics.TooLarge`), never with an exception; only a null reference (`ArgumentNullException`) and
-`PathBuilder` called out of order (`InvalidOperationException`, a segment before `MoveTo`) are the caller's bugs. Inside
+`Documents.Graphics.TooLarge`), never with an exception; only a null reference (`ArgumentNullException`) is the caller's
+bug. A path cannot be built out of order: `PathBuilder` offers only `MoveTo`, which hands back a `SubpathBuilder` with
+the other commands, so a segment before the first `MoveTo` does not compile. Inside
 the ranges (table below) the work of a fill is bounded by the pixels it can touch, never by the size of the shape: a
 shape is clipped to the box in floating point before any number becomes an integer. `ArgumentRuleTests` in
 `UnitTests.Extensions.Documents.Graphics` holds it to that, hostile values included.

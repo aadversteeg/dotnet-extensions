@@ -29,9 +29,9 @@ namespace Ave.Extensions.Documents.Graphics;
 /// conflation); a shape that must not show the seam is one path.</para>
 /// <para><b>Arguments.</b> One rule for every public member of this library: a value it cannot draw with (not finite, out
 /// of range, a size that does not fit) is answered with a <see cref="Result{T, E}"/> error with a
-/// <see cref="GraphicsErrorCodes"/> code, never with an exception; a null reference throws
-/// <see cref="ArgumentNullException"/>, and <see cref="PathBuilder"/> called out of order throws
-/// <see cref="InvalidOperationException"/>, both bugs of the caller. The ranges: every point of a path, after the
+/// <see cref="GraphicsErrorCodes"/> code, never with an exception; only a null reference throws
+/// <see cref="ArgumentNullException"/>, a bug of the caller (a path cannot be built out of order: see
+/// <see cref="PathBuilder"/>). The ranges: every point of a path, after the
 /// transform, lies within ±<see cref="MaxCoordinate"/> in both directions, so sums and squares of a few coordinates stay
 /// finite in double precision; a clip box of <see cref="Coverage"/> lies within ±<see cref="MaxPixelCoordinate"/>.
 /// Inside these ranges the work of a fill is bounded by the pixels it can touch, never by the size of the shape: a shape

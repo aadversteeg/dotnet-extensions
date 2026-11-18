@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Immutable;
 using Ave.Extensions.Documents.Core;
 
@@ -15,7 +14,7 @@ public sealed record Path
     internal Path(ValueList<PathCommand> commands) => Commands = commands;
 
     /// <summary>The commands in order: no missing command, the first is a <see cref="MoveTo"/> unless the path is empty,
-    /// and every other command follows a current point (the builder makes sure).</summary>
+    /// and every other command follows a current point (the builders' types make sure).</summary>
     public ValueList<PathCommand> Commands { get; }
 
     /// <summary>The path without subpaths.</summary>
@@ -72,25 +71,52 @@ public sealed record ClosePath : PathCommand
     public static ClosePath Instance { get; } = new();
 }
 
-/// <summary>Builds a <see cref="Path"/> one command at a time.</summary>
+/// <summary>
+/// Builds a <see cref="Path"/> one command at a time. A path starts with <see cref="MoveTo"/>, which gives the current
+/// point every other command needs (ISO 32000-1 §8.5.2.1), so this builder offers only that and hands back a
+/// <see cref="SubpathBuilder"/> for the rest: a line or curve before the first <see cref="MoveTo"/> cannot be written,
+/// and no call to either builder can fail.
+/// </summary>
 public sealed class PathBuilder
 {
     private readonly ImmutableArray<PathCommand>.Builder _commands = ImmutableArray.CreateBuilder<PathCommand>();
-    private bool _hasCurrentPoint;
+    private readonly SubpathBuilder _subpath;
 
-    /// <summary>Starts a subpath.</summary>
+    /// <summary>Creates an empty builder.</summary>
+    public PathBuilder() => _subpath = new SubpathBuilder(_commands);
+
+    /// <summary>Starts the first subpath (or another one).</summary>
+    /// <param name="x">The x coordinate.</param>
+    /// <param name="y">The y coordinate.</param>
+    /// <returns>The builder of the same path, now with a current point.</returns>
+    public SubpathBuilder MoveTo(double x, double y) => _subpath.MoveTo(x, y);
+
+    /// <summary>The path built so far, by this builder and the <see cref="SubpathBuilder"/> it handed out.</summary>
+    /// <returns>The path.</returns>
+    public Path ToPath() => new(_commands.ToImmutable());
+}
+
+/// <summary>
+/// Builds a <see cref="Path"/> that has a current point: the one <see cref="PathBuilder.MoveTo"/> handed out, adding to
+/// the same path. Every command is allowed here.
+/// </summary>
+public sealed class SubpathBuilder
+{
+    private readonly ImmutableArray<PathCommand>.Builder _commands;
+
+    internal SubpathBuilder(ImmutableArray<PathCommand>.Builder commands) => _commands = commands;
+
+    /// <summary>Starts a new subpath.</summary>
     /// <param name="x">The x coordinate.</param>
     /// <param name="y">The y coordinate.</param>
     /// <returns>This builder.</returns>
-    public PathBuilder MoveTo(double x, double y) => Add(new MoveTo(x, y), opens: true);
+    public SubpathBuilder MoveTo(double x, double y) => Add(new MoveTo(x, y));
 
     /// <summary>Adds a straight line.</summary>
     /// <param name="x">The end's x coordinate.</param>
     /// <param name="y">The end's y coordinate.</param>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">There is no current point yet: the path does not start with
-    /// MoveTo.</exception>
-    public PathBuilder LineTo(double x, double y) => Add(new LineTo(x, y));
+    public SubpathBuilder LineTo(double x, double y) => Add(new LineTo(x, y));
 
     /// <summary>Adds a quadratic Bézier curve.</summary>
     /// <param name="controlX">The control point's x coordinate.</param>
@@ -98,9 +124,7 @@ public sealed class PathBuilder
     /// <param name="x">The end's x coordinate.</param>
     /// <param name="y">The end's y coordinate.</param>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">There is no current point yet: the path does not start with
-    /// MoveTo.</exception>
-    public PathBuilder QuadraticTo(double controlX, double controlY, double x, double y) => Add(new QuadraticTo(controlX, controlY, x, y));
+    public SubpathBuilder QuadraticTo(double controlX, double controlY, double x, double y) => Add(new QuadraticTo(controlX, controlY, x, y));
 
     /// <summary>Adds a cubic Bézier curve.</summary>
     /// <param name="control1X">The first control point's x coordinate.</param>
@@ -110,30 +134,21 @@ public sealed class PathBuilder
     /// <param name="x">The end's x coordinate.</param>
     /// <param name="y">The end's y coordinate.</param>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">There is no current point yet: the path does not start with
-    /// MoveTo.</exception>
-    public PathBuilder CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) =>
+    public SubpathBuilder CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) =>
         Add(new CubicTo(control1X, control1Y, control2X, control2Y, x, y));
 
     /// <summary>Closes the current subpath; the current point becomes the subpath's start, so a line may follow
     /// (ISO 32000-1 §8.5.2.1, the h operator), and starts a new subpath there.</summary>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">There is no current point yet.</exception>
-    public PathBuilder Close() => Add(ClosePath.Instance);
+    public SubpathBuilder Close() => Add(ClosePath.Instance);
 
     /// <summary>The path built so far.</summary>
     /// <returns>The path.</returns>
     public Path ToPath() => new(_commands.ToImmutable());
 
-    private PathBuilder Add(PathCommand command, bool opens = false)
+    private SubpathBuilder Add(PathCommand command)
     {
-        if (!opens && !_hasCurrentPoint)
-        {
-            throw new InvalidOperationException($"A {command.GetType().Name} needs a current point: start the path with MoveTo.");
-        }
-
         _commands.Add(command);
-        _hasCurrentPoint = true;
         return this;
     }
 }

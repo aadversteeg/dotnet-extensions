@@ -193,15 +193,15 @@ internal static class RasterComparison
                     foreach (var contour in shape.Contours)
                     {
                         var segments = contour.Segments();
-                        builder.MoveTo(segments.Start.X, segments.Start.Y);
+                        var subpath = builder.MoveTo(segments.Start.X, segments.Start.Y);
                         foreach (var segment in segments.Segments)
                         {
                             _ = segment.Control is { } control
-                                ? builder.QuadraticTo(control.X, control.Y, segment.End.X, segment.End.Y)
-                                : builder.LineTo(segment.End.X, segment.End.Y);
+                                ? subpath.QuadraticTo(control.X, control.Y, segment.End.X, segment.End.Y)
+                                : subpath.LineTo(segment.End.X, segment.End.Y);
                         }
 
-                        builder.Close();
+                        subpath.Close();
                     }
 
                     yield return (
