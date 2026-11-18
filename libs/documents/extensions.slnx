@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="Ave.Extensions.Documents/Ave.Extensions.Documents.csproj" />
   <Project Path="Ave.Extensions.Documents.Core/Ave.Extensions.Documents.Core.csproj" />
+  <Project Path="Ave.Extensions.Documents.Css/Ave.Extensions.Documents.Css.csproj" />
   <Project Path="Ave.Extensions.Documents.DocumentModel/Ave.Extensions.Documents.DocumentModel.csproj" />
   <Project Path="Ave.Extensions.Documents.Fluent/Ave.Extensions.Documents.Fluent.csproj" />
   <Project Path="Ave.Extensions.Documents.Fonts/Ave.Extensions.Documents.Fonts.csproj" />
@@ -14,6 +15,7 @@
   <Project Path="Ave.Extensions.Documents.Typesetting/Ave.Extensions.Documents.Typesetting.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Architecture/UnitTests.Extensions.Documents.Architecture.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Core/UnitTests.Extensions.Documents.Core.csproj" />
+  <Project Path="UnitTests.Extensions.Documents.Css/UnitTests.Extensions.Documents.Css.csproj" />
   <Project Path="UnitTests.Extensions.Documents.DocumentModel/UnitTests.Extensions.Documents.DocumentModel.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Fluent/UnitTests.Extensions.Documents.Fluent.csproj" />
   <Project Path="UnitTests.Extensions.Documents.Fonts/UnitTests.Extensions.Documents.Fonts.csproj" />

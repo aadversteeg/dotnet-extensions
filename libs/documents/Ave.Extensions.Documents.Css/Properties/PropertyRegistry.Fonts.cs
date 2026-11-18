@@ -1,0 +1,232 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Css.Syntax;
+using Ave.Extensions.Documents.Css.Values;
+
+namespace Ave.Extensions.Documents.Css.Properties;
+
+/// <summary>Font properties: family, size, weight, style, line height.</summary>
+public static partial class PropertyRegistry
+{
+    /// <summary>The generic font families of CSS Fonts 4 §3.1.1: written without quotes, they are keywords.</summary>
+    private static readonly string[] GenericFamilies =
+    [
+        "serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-serif", "ui-sans-serif", "ui-monospace",
+        "ui-rounded", "math", "emoji", "fangsong", "generic(fangsong)", "generic(kai)", "generic(khmer-mul)", "generic(nastaliq)",
+    ];
+
+    /// <summary>The absolute-size keywords of CSS Fonts 4 §2.5 with their size at medium = 16px, in pixels.</summary>
+    private static readonly Dictionary<string, double> AbsoluteSizes = new(StringComparer.Ordinal)
+    {
+        ["xx-small"] = 9, ["x-small"] = 10, ["small"] = 13, ["medium"] = 16, ["large"] = 18, ["x-large"] = 24,
+        ["xx-large"] = 32, ["xxx-large"] = 48,
+    };
+
+    private static IEnumerable<PropertyDefinition> FontProperties()
+    {
+        yield return new PropertyDefinition(
+            "font-size", inherited: true, new CssLength(Length.FromPoints(InitialFontSizePoints)), "all elements and text",
+            "<absolute-size> | <relative-size> | <length-percentage [0,∞]>", PropertySupport.Supported, "CSS Fonts 4 §2.5",
+            ParseFontSize,
+            ComputeFontSize);
+
+        yield return new PropertyDefinition(
+            "font-family", inherited: true, new CssList([new CssString("Times New Roman")], CommaSeparated: true), "all elements and text",
+            "[ <family-name> | <generic-family> ]#", PropertySupport.Supported, "CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman)",
+            ParseFontFamily,
+            AsSpecified);
+
+        yield return new PropertyDefinition(
+            "font-weight", inherited: true, new CssNumber(400), "all elements and text", "normal | bold | bolder | lighter | <number [1,1000]>",
+            PropertySupport.Supported, "CSS Fonts 4 §2.2",
+            ParseFontWeight,
+            ComputeFontWeight);
+
+        yield return new PropertyDefinition(
+            "font-style", inherited: true, new CssKeyword("normal"), "all elements and text", "normal | italic", PropertySupport.Supported,
+            "CSS Fonts 4 §2.4",
+            reader => reader.Keyword("normal", "italic") is { } keyword && reader.AtEnd
+                ? ParsedValue.Of(new CssKeyword(keyword))
+                : ParseRefusedOblique(reader),
+            AsSpecified);
+
+        yield return new PropertyDefinition(
+            "line-height", inherited: true, new CssKeyword("normal"), "non-replaced inline boxes and SVG text content elements",
+            "normal | <number [0,∞]> | <length-percentage [0,∞]>", PropertySupport.Supported, "CSS Inline 3 §5.1; CSS 2.1 §10.8.1",
+            ParseLineHeight,
+            ComputeLineHeight);
+    }
+
+    private static ParsedValue ParseRefusedOblique(ValueReader reader)
+    {
+        reader.Reset(0);
+        return reader.Keyword("oblique") is not null
+            ? ParsedValue.Refused("font-style: oblique is not supported (no synthesised slant)")
+            : ParsedValue.Invalid("not a value of font-style");
+    }
+
+    /// <summary>font-size: a keyword of CSS Fonts 4 §2.5 or a non-negative length-percentage.</summary>
+    private static ParsedValue ParseFontSize(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword([.. AbsoluteSizes.Keys, "larger", "smaller"]) is { } keyword)
+        {
+            return ParsedValue.Of(new CssKeyword(keyword));
+        }
+
+        if (reader.Count == 1 && reader.Keyword("math") is not null)
+        {
+            return ParsedValue.Refused("font-size: math is not supported");
+        }
+
+        return Whole(reader, reader.Length(percentages: true, nonNegative: true, "font-size"), "font-size");
+    }
+
+    /// <summary>
+    /// The computed font size (CSS Fonts 4 §2.5): an absolute length. Keywords use the table of §2.5 at medium = 16px;
+    /// larger and smaller multiply and divide the parent's size by 1.2, as Chromium does; em and percentages refer to
+    /// the parent's size.
+    /// </summary>
+    private static ComputedResult ComputeFontSize(CssValue value, ComputeContext context)
+    {
+        var parent = context.ParentFontSize;
+        return value switch
+        {
+            CssKeyword { Name: "larger" } => new CssLength(Length.FromPoints(parent * 1.2)),
+            CssKeyword { Name: "smaller" } => new CssLength(Length.FromPoints(parent / 1.2)),
+            CssKeyword keyword => new CssLength(Length.FromPoints(AbsoluteSizes[keyword.Name] * 0.75)),
+            _ => context.LengthPercentage(value, forFontSize: true, percentBasis: parent),
+        };
+    }
+
+    /// <summary>font-family (CSS Fonts 4 §2.1): a comma-separated list of family names (a string, or identifiers joined by
+    /// single spaces) and generic families (keywords). The CSS-wide keywords and "default" cannot be a family name
+    /// written without quotes.</summary>
+    private static ParsedValue ParseFontFamily(ValueReader reader)
+    {
+        var families = new List<CssValue>();
+        var words = new List<string>();
+        void Flush()
+        {
+            if (words.Count == 1 && GenericFamilies.Contains(Ascii.ToLower(words[0])))
+            {
+                families.Add(new CssKeyword(Ascii.ToLower(words[0])));
+            }
+            else if (words.Count > 0)
+            {
+                families.Add(new CssString(string.Join(' ', words)));
+            }
+
+            words.Clear();
+        }
+
+        var expectName = true;
+        while (!reader.AtEnd)
+        {
+            switch (reader.Next())
+            {
+                case CssToken { Kind: CssTokenKind.String } quoted when expectName && words.Count == 0:
+                    families.Add(new CssString(quoted.Text));
+                    expectName = false;
+                    break;
+                case CssToken { Kind: CssTokenKind.Ident } word when expectName:
+                    if (words.Count == 0 && Ascii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default")
+                    {
+                        return ParsedValue.Invalid($"'{word.Text}' cannot be a font family name without quotes");
+                    }
+
+                    words.Add(word.Text);
+                    break;
+                case CssToken { Kind: CssTokenKind.Comma } when words.Count > 0 || !expectName:
+                    Flush();
+                    expectName = true;
+                    break;
+                case FunctionValue function when function.IsNamed("generic"):
+                    return ParsedValue.Refused("generic() font families are not supported");
+                default:
+                    return ParsedValue.Invalid("not a value of font-family");
+            }
+
+            if (!expectName && words.Count > 0)
+            {
+                return ParsedValue.Invalid("not a value of font-family");
+            }
+        }
+
+        if (expectName && words.Count == 0)
+        {
+            return ParsedValue.Invalid("font-family ends with a comma");
+        }
+
+        Flush();
+        return ParsedValue.Of(new CssList([.. families], CommaSeparated: true));
+    }
+
+    /// <summary>font-weight (CSS Fonts 4 §2.2): normal is 400, bold 700, a number from 1 to 1000, or bolder and lighter.</summary>
+    private static ParsedValue ParseFontWeight(ValueReader reader)
+    {
+        if (reader.Count != 1)
+        {
+            return ParsedValue.Invalid("font-weight takes one value");
+        }
+
+        if (reader.Keyword("normal", "bold", "bolder", "lighter") is { } keyword)
+        {
+            return ParsedValue.Of(keyword switch
+            {
+                "normal" => new CssNumber(400),
+                "bold" => new CssNumber(700),
+                _ => new CssKeyword(keyword),
+            });
+        }
+
+        return reader.Number() is { } number && number is >= 1 and <= 1000
+            ? ParsedValue.Of(new CssNumber(number))
+            : ParsedValue.Invalid("font-weight is a number from 1 to 1000");
+    }
+
+    /// <summary>The computed weight: bolder and lighter step from the parent's weight by the table of CSS Fonts 4 §2.2.1.</summary>
+    private static ComputedResult ComputeFontWeight(CssValue value, ComputeContext context)
+    {
+        var parent = context.Inherited(FontWeight) is CssNumber inherited ? inherited.Value : 400;
+        return value switch
+        {
+            CssKeyword { Name: "bolder" } => new CssNumber(parent < 350 ? 400 : parent < 550 ? 700 : parent < 900 ? 900 : parent),
+            CssKeyword { Name: "lighter" } => new CssNumber(parent < 100 ? parent : parent < 550 ? 100 : parent < 750 ? 400 : 700),
+            _ => value,
+        };
+    }
+
+    /// <summary>line-height: normal, a number (kept as a number), or a length-percentage.</summary>
+    private static ParsedValue ParseLineHeight(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword("normal") is not null)
+        {
+            return ParsedValue.Of(new CssKeyword("normal"));
+        }
+
+        if (reader.Count == 1 && reader.Peek is CssToken { Kind: CssTokenKind.Number } number)
+        {
+            reader.Next();
+            return number.Number < 0 ? ParsedValue.Invalid("a negative line-height") : ParsedValue.Of(new CssNumber(number.Number));
+        }
+
+        if (reader.Count == 1 && reader.Peek is FunctionValue function && Calc.IsMathFunction(function)
+            && Calc.Parse(function, out _) is { } node && Calc.TypeOf(node) == CalcType.Number && Calc.Evaluate(node, (_, _) => null, null) is { } result)
+        {
+            reader.Next();
+            return result.Number < 0 ? ParsedValue.Invalid("a negative line-height") : ParsedValue.Of(new CssNumber(result.Number));
+        }
+
+        return Whole(reader, reader.Length(percentages: true, nonNegative: true, "line-height"), "line-height");
+    }
+
+    /// <summary>The computed line height (CSS Inline 3 §5.1): normal and numbers as specified; a length absolute; a
+    /// percentage of the element's font size.</summary>
+    private static ComputedResult ComputeLineHeight(CssValue value, ComputeContext context) => value switch
+    {
+        CssKeyword or CssNumber => value,
+        _ => context.LengthPercentage(value, percentBasis: context.FontSize),
+    };
+}

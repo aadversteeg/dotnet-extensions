@@ -1,0 +1,8221 @@
+{
+ "chromium": "159.0.8154.6",
+ "image": "mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579",
+ "wpt": "93494ff9dfc26c59245941548bb7da799e8baaef",
+ "values": [
+  {
+   "at": "css/selectors/focus-visible-017-2.html:77",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-017.html:35",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-018-2.html:81",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-018.html:40",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-019.html:47",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-020.html:45",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-021.html:48",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-023.html:18",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-024.html:24",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-025.html:25",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-026.html:23",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-001.html:44",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-002.tentative.html:49",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-003.tentative.html:49",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-004.html:47",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-005.html:47",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-006.tentative.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-007.tentative.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-008-b.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-008.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-009.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-010.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-011.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-012.html:48",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-013.html:48",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-014.html:48",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-015.html:48",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-016.tentative.html:52",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-017.tentative.html:52",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-018.html:52",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-019.html:52",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/focus-visible-script-focus-020.html:50",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:11",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-internal-animating-full-screen-transition"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:12",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-internal-fullscreen-document"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:13",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-internal-html-document"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:14",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-internal-media-document"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:15",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-khtml-drag"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:16",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-webkit-animating-full-screen-transition"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:17",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-webkit-full-page-media"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:18",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-webkit-full-screen-ancestor"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:19",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-webkit-full-screen-controls-hidden"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:20",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":-webkit-full-screen-document"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:23",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::-apple-attachment-controls-container"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/invalid-pseudos.html:24",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::-internal-loading-auto-fill-button"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "[att]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    "[att=val]",
+    "[att=\"val\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    "[att~=val]",
+    "[att~=\"val\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    "[att|=val]",
+    "[att|=\"val\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1[title]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    "span[class='example']",
+    "span[class=\"example\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    "a[hreflang=fr]",
+    "a[hreflang=\"fr\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    "a[hreflang|='en']",
+    "a[hreflang|=\"en\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:20",
+   "helper": "test_valid_selector",
+   "args": [
+    "[att^=val]",
+    "[att^=\"val\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    "[att$=val]",
+    "[att$=\"val\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:22",
+   "helper": "test_valid_selector",
+   "args": [
+    "[att*=val]",
+    "[att*=\"val\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:23",
+   "helper": "test_valid_selector",
+   "args": [
+    "object[type^=\"image/\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:24",
+   "helper": "test_valid_selector",
+   "args": [
+    "a[href$=\".html\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:25",
+   "helper": "test_valid_selector",
+   "args": [
+    "p[title*=\"hello\"]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:28",
+   "helper": "test_valid_selector",
+   "args": [
+    "[*|att]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-attribute.html:29",
+   "helper": "test_valid_selector",
+   "args": [
+    "[|att]",
+    "[att]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-child.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "body > p"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-child.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "div ol>li p",
+    "div ol > li p"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo-*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo--*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo---*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo-bar-*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:18",
+   "helper": "test_valid_selector",
+   "args": [
+    "*.foo-*",
+    [
+     "*.foo-*",
+     ".foo-*"
+    ]
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1.foo-*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:22",
+   "helper": "test_valid_selector",
+   "args": [
+    "p.foo-*.bar-*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:25",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo-*:hover"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:26",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(.foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:27",
+   "helper": "test_valid_selector",
+   "args": [
+    ":is(.foo-*)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:28",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo-* .bar"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:34",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo- *"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:39",
+   "helper": "test_invalid_selector",
+   "args": [
+    ".foo*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:42",
+   "helper": "test_invalid_selector",
+   "args": [
+    ".foo-**"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:46",
+   "helper": "test_invalid_selector",
+   "args": [
+    ".-*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class-prefix.tentative.html:49",
+   "helper": "test_invalid_selector",
+   "args": [
+    ".*"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-class.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "*.pastoral",
+    [
+     "*.pastoral",
+     ".pastoral"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-class.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ".pastoral",
+    [
+     "*.pastoral",
+     ".pastoral"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-class.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1.pastoral"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-class.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    "p.pastoral.marine"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-descendant.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1 em"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-descendant.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "div * p"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-descendant.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    "div p *[href]",
+    [
+     "div p *[href]",
+     "div p [href]"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-focus-visible.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-focus-visible.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    "a:focus-visible"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-focus-visible.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ":focus:not(:focus-visible)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(.foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(> .foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(+ .foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(~ .foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(~ .bar > .foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(~ .bar .foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:20",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(.foo-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    ".foo-*:has(.a)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:22",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(.foo-*) .a"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:23",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(> .foo-*) > .a"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:26",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:has(.foo-*))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:27",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(.foo-*, .bar-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:28",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(.foo-*):has(.bar-*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:32",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has(.foo*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-class-prefix.tentative.html:33",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has(.foo-*, .bar*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-disallow-nesting-has-inside-has.html:10",
+   "helper": "test_invalid_selector",
+   "args": [
+    ".a:has(.b:has(.c))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(bar)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted([attr=\"foo\"])"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(*)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(.class)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(#id)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(:not(foo))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(:not(:nth-last-of-type(2)):not([slot=\"foo\"]))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(:first-child)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(:hover)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:18",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(foo):first-child"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:19",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(foo):hover"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:20",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(foo):focus"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(foo):lang(en)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:22",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(foo):dir(ltr)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:23",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(foo) + :has-slotted(bar)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:24",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:has-slotted(foo))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:25",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(div + div)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:26",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted(div:has(> span))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:27",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has-slotted"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:28",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::has-slotted(foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:29",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has-slotted()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:30",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has-slotted(0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has-slotted.tentative.html:31",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has-slotted(div > span)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(a)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(#a)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(.a)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has([a])"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has([a=\"b\"])"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has([a|=\"b\"])"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(:hover)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    "*:has(.a)",
+    [
+     "*:has(.a)",
+     ":has(.a)"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:18",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(.b)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:19",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(> .b)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:20",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(~ .b)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(+ .b)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:22",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(.b) .c"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:23",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a .b:has(.c)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:24",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a .b:has(.c .d)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:25",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a .b:has(.c .d) .e"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:26",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(.b:is(.c .d))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:27",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:is(.b:has(.c) .d)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:28",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:not(:has(.b))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:29",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(:not(.b))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:30",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a:has(.b):has(.c)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:31",
+   "helper": "test_valid_selector",
+   "args": [
+    "*|*:has(*)",
+    ":has(*)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:32",
+   "helper": "test_valid_selector",
+   "args": [
+    ":has(*|*)",
+    ":has(*)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:33",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:34",
+   "helper": "test_invalid_selector",
+   "args": [
+    ".a:has"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:35",
+   "helper": "test_invalid_selector",
+   "args": [
+    ".a:has b"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:37",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:38",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has(123)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-has.html:39",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":has(.a, 123)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    ":heading"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    ":heading(2)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ":heading(99999)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ":heading(0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    ":heading(0, 1, 2)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    ":heading(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    ":heading(-1)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1:heading"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1:heading(1)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:18",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1:heading(2)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:20",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:21",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(1.0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:22",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(1.4)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:23",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(n)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:24",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(odd)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:25",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(even)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:26",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(2n)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:27",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(2n+1)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:28",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(2n+2)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:29",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(-n+3)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:30",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(2n, 3n)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:31",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(2, 3n)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:32",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(2 of .foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:33",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(2n of .foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:34",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(calc(1))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:35",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(max(1, 2))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:36",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(min(1, 2)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-heading.html:37",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":heading(var(--level))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-id.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1#chapter1"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-id.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "#chapter1"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-id.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    "*#z98y",
+    [
+     "*#z98y",
+     "#z98y"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-is-where.html:58",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":is(# C4єанйтж╕/┘ГЁжЮХєа▓┐ЁЭБМєаСеЁЭЖА%=[ямм0)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-is.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    ":is(ul,ol,.list) > [hidden]",
+    ":is(ul, ol, .list) > [hidden]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-is.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ":is(:hover,:focus)",
+    ":is(:hover, :focus)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-is.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    "a:is(:not(:hover))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-is.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    ":is(#a)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-is.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a.b ~ :is(.c.d ~ .e.f)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-is.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a.b ~ .c.d:is(span.e + .f, .g.h > .i.j .k)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "button:not([disabled])"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "*:not(foo)",
+    [
+     "*:not(foo)",
+     ":not(foo)"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:link):not(:visited)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    "*|*:not(*)",
+    ":not(*)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:hover)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(*|*)",
+    ":not(*)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    "foo:not(bar)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:not(foo))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:18",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(.a .b)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:19",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(.a + .b)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:20",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(.a .b ~ c)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(span.a, div.b)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:22",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(.a .b ~ c, .d .e)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:23",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:host)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:24",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:host(.a))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:25",
+   "helper": "test_valid_selector",
+   "args": [
+    ":host(:not(.a))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:26",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not(:host(:not(.a)))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:27",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not([disabled][selected])",
+    ":not([disabled][selected])"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:28",
+   "helper": "test_valid_selector",
+   "args": [
+    ":not([disabled],[selected])",
+    ":not([disabled], [selected])"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:30",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":not()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:31",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":not(:not())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:32",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":not(::before)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:33",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":not(:unknownpseudo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:34",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":not(.a, :unknownpseudo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:35",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":not(:unknownpseudo, .a)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-not.html:36",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":host(:not(.a .b))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(--foo)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(bar)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(--)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(--0)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo bar)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(-foo bar)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):focus"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):hover"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):focus-within"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:18",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo)::before"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:19",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo)::after"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:20",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo)::placeholder"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo)::first-line"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:22",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo)::first-letter"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:23",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo)::file-selector-button"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:24",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):is(:focus)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:25",
+   "helper": "test_valid_selector",
+   "args": [
+    ":lang(en)::part(foo)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:26",
+   "helper": "test_valid_selector",
+   "args": [
+    ":dir(ltr)::part(foo)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:27",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):lang(en)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:28",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):dir(ltr)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:29",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):disabled"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:30",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(foo):checked"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:31",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":part()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:32",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":part(0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:33",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":part('foo')"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:34",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":part([foo])"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:35",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::part(foo) + ::part(bar)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-part.html:43",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::part(foo):has(li)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-sibling.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "math + p"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-sibling.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1.opener + h2"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-sibling.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    "h1 ~ pre"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(bar)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted([attr=\"foo\"])"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(*)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(.class)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(:not(foo))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(:not(:nth-last-of-type(2)):not([slot=\"foo\"]))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(:first-child)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(:hover)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    "::slotted(:has(:first-child:last-child))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:18",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:19",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:20",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:21",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":slotted(foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:22",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(foo):first-child"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:23",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(foo):hover"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:24",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(foo):focus"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:25",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(foo):lang(en)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:26",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(foo):dir(ltr)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-slotted.html:27",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(foo) + ::slotted(bar)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    ":state(--foo)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    ":state(bar)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ":state(--)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    ":state(--0)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    ":host(:state(--foo))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:14",
+   "helper": "test_valid_selector",
+   "args": [
+    "my-input[type=\"foo\"]:state(checked)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    "my-input[type=\"foo\"]:state(--0)::before"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    "my-input[type=\"foo\"]:state(--0)::part(inner)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    "my-input[type=\"foo\"]:state(--0)::part(inner):state(bar)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:20",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(inner):state(bar)::before"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:21",
+   "helper": "test_valid_selector",
+   "args": [
+    "::part(inner):state(bar)::after"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:22",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:23",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state("
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:24",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:25",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state(0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:26",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state(0rem)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:27",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state(url())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:28",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state(foo(1))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:29",
+   "helper": "test_invalid_selector",
+   "args": [
+    ":state(:host)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:30",
+   "helper": "test_invalid_selector",
+   "args": [
+    "my-input::after:state(foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:31",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::part(inner):state(bar)::before:state(foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:32",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::part(inner):state(bar)::after:state(foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:33",
+   "helper": "test_invalid_selector",
+   "args": [
+    "my-input::first-letter:state(foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-state.html:34",
+   "helper": "test_invalid_selector",
+   "args": [
+    "::slotted(foo):state(foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/selectors/parsing/parse-universal.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    "*"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-universal.html:10",
+   "helper": "test_valid_selector",
+   "args": [
+    "div :first-child",
+    [
+     "div *:first-child",
+     "div :first-child"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-universal.html:12",
+   "helper": "test_valid_selector",
+   "args": [
+    "div *:first-child",
+    [
+     "div *:first-child",
+     "div :first-child"
+    ]
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-where.html:9",
+   "helper": "test_valid_selector",
+   "args": [
+    ":where(ul,ol,.list) > [hidden]",
+    ":where(ul, ol, .list) > [hidden]"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-where.html:11",
+   "helper": "test_valid_selector",
+   "args": [
+    ":where(:hover,:focus)",
+    ":where(:hover, :focus)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-where.html:13",
+   "helper": "test_valid_selector",
+   "args": [
+    "a:where(:not(:hover))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-where.html:15",
+   "helper": "test_valid_selector",
+   "args": [
+    ":where(#a)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-where.html:16",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a.b ~ :where(.c.d ~ .e.f)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/selectors/parsing/parse-where.html:17",
+   "helper": "test_valid_selector",
+   "args": [
+    ".a.b ~ .c.d:where(span.e + .f, .g.h > .i.j .k)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-cascade/parsing/all-invalid.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "all",
+    "auto"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-cascade/parsing/all-invalid.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "all",
+    "none"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-cascade/parsing/all-invalid.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "all",
+    "filter"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-cascade/parsing/all-invalid.html:18",
+   "helper": "test_invalid_value",
+   "args": [
+    "all",
+    "unset inherit"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-cascade/parsing/all-invalid.html:19",
+   "helper": "test_invalid_value",
+   "args": [
+    "all",
+    "inherit initial"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-cascade/parsing/all-invalid.html:20",
+   "helper": "test_invalid_value",
+   "args": [
+    "all",
+    "initial unset"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-cascade/parsing/all-invalid.html:21",
+   "helper": "test_invalid_value",
+   "args": [
+    "all",
+    "opacity transform"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-cascade/parsing/all-valid.html:15",
+   "helper": "test_valid_value",
+   "args": [
+    "all",
+    "initial"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-cascade/parsing/all-valid.html:16",
+   "helper": "test_valid_value",
+   "args": [
+    "all",
+    "inherit"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-cascade/parsing/all-valid.html:17",
+   "helper": "test_valid_value",
+   "args": [
+    "all",
+    "unset"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-variables/var-fallback-braces.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "var(--missing, {rgb(1, 2, 3)} rgb(4, 5, 6))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-variables/var-fallback-braces.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "var(--missing, {Arial}, sans-serif)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:11",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:12",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x,)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:13",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x, )"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:19",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x ())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:20",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x () )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:21",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x() )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:22",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x (),)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:23",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var(--x(),)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:28",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var({--x})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:29",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var({--x}, 10px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:30",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "var({--x, --y})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:34",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "var(--x {--y})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:35",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "var({--x} --y)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:36",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "var(--x {--y}, 10px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:40",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "var()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:41",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "var({})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:42",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "var({}, 10px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-variables/var-parsing.html:43",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "var(, 10px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/attr-fallback-braces.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "attr(data-missing type(<color>), {rgb(1, 2, 3)} rgb(4, 5, 6))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/attr-fallback-braces.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "attr(data-missing, {Arial}, sans-serif)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-invalid-parsing.html:8",
+   "helper": "test_invalid_value",
+   "args": [
+    "transform",
+    "rotate(calc((0.25turn error)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-invalid-parsing.html:9",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(7px * up)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-invalid-parsing.html:10",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "round(nearest, 1px, 1px, 1px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-invalid-parsing.html:11",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "round(nearest, 1px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-invalid-parsing.html:12",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc([])"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-invalid-parsing.html:13",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc( [])"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-nesting.html:40",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(20px + calc(80px))",
+    "calc(100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-nesting.html:41",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(calc(100px))",
+    "calc(100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-nesting.html:42",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(calc(2) * calc(50px))",
+    "calc(100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-nesting.html:43",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(calc(150px*2/3))",
+    "calc(100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-nesting.html:44",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(calc(2 * calc(calc(3)) + 4) * 10px)",
+    "calc(100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-nesting.html:45",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(50px + calc(40%))",
+    "calc(40% + 50px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-nesting.html:46",
+   "helper": "test_valid_value",
+   "args": [
+    "border",
+    "calc(calc(10px)) solid pink",
+    "calc(10px) solid pink"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:7",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, -none, 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:8",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, none, 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:9",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, 15 + none, 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:10",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(none + 10, 15, 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:11",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(none / 10, 15, 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:12",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(-none, 15, 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:13",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(-none, -none, -none) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, abs(none), 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, 15, abs(none)) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, abs(none + 15), 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, sign(none), 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:18",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, sign(none + 1), 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:19",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, progress(none, none, none), 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-color-invalid.html:20",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "rgb(clamp(10, progress(none + 1, none + 1, none + 1), 20) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:7",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, -none, 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:8",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, none, 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:9",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, 15 + none, 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:10",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(none + 10, 15, 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:11",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(none / 10, 15, 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:12",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(-none, 15, 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:13",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(-none, -none, -none)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, abs(none), 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, 15, abs(none))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, abs(none + 15), 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, sign(none), 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:18",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, sign(none + 1), 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:19",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, progress(none, none, none), 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/clamp-integer-invalid.html:20",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "clamp(10, progress(none + 1, none + 1, none + 1), 20)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:9",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "inherit(--x)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:10",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(inherit(--x) + 1px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:11",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "inherit(--x,)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:12",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "inherit(--x, )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:13",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "inherit(--x , )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:14",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "inherit(--x, foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "left",
+    "inherit(!!, foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/inherit-function-parsing.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "left",
+    "inherit(, foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:9",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-style",
+    "oblique calc(sign(50%) * 1deg)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:10",
+   "helper": "test_invalid_value",
+   "args": [
+    "background",
+    "linear-gradient(calc(sign(50%) * 1turn), #3f87a6, #ebf8e1, #f69d3c)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:11",
+   "helper": "test_invalid_value",
+   "args": [
+    "background",
+    "conic-gradient(from calc(sign(50%) * 1rad) at 10% 50%, #e66465, #9198e5)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:12",
+   "helper": "test_invalid_value",
+   "args": [
+    "filter",
+    "hue-rotate(calc(sign(50%) * 1deg))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:13",
+   "helper": "test_invalid_value",
+   "args": [
+    "offset-rotate",
+    "calc(sign(50%) * 1deg)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "offset-path",
+    "ray(calc(sign(50%) * 1deg))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "hsl(calc(sign(50%) * 1deg) 82% 43%)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "transform",
+    "rotate(calc(sign(50%) * 1deg))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "animation-duration",
+    "calc(sign(50%) * 1s)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:18",
+   "helper": "test_invalid_value",
+   "args": [
+    "animation-delay",
+    "calc(sign(50%) * 1s)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:19",
+   "helper": "test_invalid_value",
+   "args": [
+    "transition-duration",
+    "calc(sign(50%) * 1s)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/percentage-without-context.html:20",
+   "helper": "test_invalid_value",
+   "args": [
+    "transition-delay",
+    "calc(sign(50%) * 1s)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:9",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:10",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random( )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:11",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(,)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:12",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(1px, )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:13",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(,1px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(1px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(1px,2px,)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(1px,2px,1px,)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(1px,2px,1px foo)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:18",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(foo, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:19",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(\"foo\", 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:20",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(\"--foo\", 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:21",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(element-shared foo, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:22",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(element-shared 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:23",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(1px, 2px, 1px, element-shared)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:24",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(--foo --bar, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:25",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(fixed 0.5 element-shared, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:26",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(fixed 0.5 auto, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:27",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(fixed 0.5 --foo, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:28",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(fixed 0.5px, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:29",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(fixed 0.5%, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:30",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(fixed -1, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:31",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(10deg, 20deg)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:32",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(element-scoped --foo --bar, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:33",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(element-scoped uawidth, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:34",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(foo element-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:35",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(element-scoped 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:36",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped element-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:37",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-scoped --foo ua-width, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:38",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-scoped ua-width-1, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:39",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped property-scoped element-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:40",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(foo property-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:41",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-scoped 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:42",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-scoped property-index-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:43",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped --foo property-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:44",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped ua-width-1, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:45",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(foo property-index-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:46",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-invalid.tentative.html:47",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped property-scoped, 1px, 2px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item()"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item( )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:21",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, !)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:22",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, ;)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:23",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, })"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:24",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, ])"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:27",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:28",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, serif})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:29",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:30",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item({auto, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:33",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif} extra)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-invalid.html:34",
+   "helper": "test_invalid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, extra {Times, serif})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:12",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:13",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(--x, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:14",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(element-scoped, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:15",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(--x element-scoped, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:16",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(element-scoped --x, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:17",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(fixed 0, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:18",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(fixed 0.5, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:19",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(fixed 1, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:20",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:21",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif}, {Arial, sans-serif})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:22",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif}, sans-serif, {monospace})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:23",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, { Times, serif }, { Arial, sans-serif })"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:24",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "random-item(auto, red, green, blue)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:25",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random-item(auto, 1px, 2px, 3px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-serialize.html:26",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random-item(--x, var(--a), var(--b))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:15",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:16",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, serif, sans-serif, monospace)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:17",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto ,serif ,sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:18",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto , serif , sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:21",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, )"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:22",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, serif,)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:23",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, , serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:24",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, ,)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:28",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif}, {Arial, sans-serif})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:29",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif}, sans-serif, {monospace})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:30",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif})"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:31",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, { Times, serif }, { Arial, sans-serif })"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:32",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, {Times, serif}, { Arial, sans-serif })"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:33",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(auto, { monospace })"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:37",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(--x, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:38",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(fixed 0.5, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:39",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:40",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(foo, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:41",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(fixed -0.5, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:42",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(property-scoped, serif, sans-serif)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/random-item-valid.html:43",
+   "helper": "test_valid_value",
+   "args": [
+    "font-family",
+    "random-item(var(--key), serif, sans-serif)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:10",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(0px, 100px)",
+    "random(element-scoped ua-width-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:12",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(fixed 0.5, 0px, 100px)",
+    "calc(50px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:13",
+   "helper": "test_valid_value",
+   "args": [
+    "height",
+    "random(auto, 0px, 100px)",
+    "random(element-scoped ua-height-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:15",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:16",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:17",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:18",
+   "helper": "test_valid_value",
+   "args": [
+    "font-size",
+    "random(property-scoped, 0px, 100px)",
+    "random(ua-font-size, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:20",
+   "helper": "test_valid_value",
+   "args": [
+    "font-size",
+    "random(--foo property-scoped, 0px, 100px)",
+    "random(--foo ua-font-size, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:22",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped, 0px, 100px)",
+    "random(ua-width-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:24",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo property-index-scoped, 0px, 100px)",
+    "random(--foo ua-width-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:26",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped property-scoped, 0px, 100px)",
+    "random(element-scoped ua-width, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:28",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped property-scoped, 0px, 100px)",
+    "random(--foo element-scoped ua-width, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:30",
+   "helper": "test_valid_value",
+   "args": [
+    "height",
+    "random(property-scoped element-scoped, 0px, 100px)",
+    "random(element-scoped ua-height, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:32",
+   "helper": "test_valid_value",
+   "args": [
+    "height",
+    "random(--foo property-scoped element-scoped, 0px, 100px)",
+    "random(--foo element-scoped ua-height, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:34",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped property-index-scoped, 0px, 100px)",
+    "random(element-scoped ua-width-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:36",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped property-index-scoped, 0px, 100px)",
+    "random(--foo element-scoped ua-width-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:38",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped element-scoped , 0px, 100px)",
+    "random(element-scoped ua-width-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:40",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo property-index-scoped element-scoped , 0px, 100px)",
+    "random(--foo element-scoped ua-width-1, 0px, 100px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:43",
+   "helper": "test_valid_value",
+   "args": [
+    "height",
+    "random(0px, 100px, 3px)",
+    "random(element-scoped ua-height-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:44",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(fixed 0.5, 0px, 100px, 3px)",
+    "calc(51px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:45",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(auto, 0px, 100px, 3px)",
+    "random(element-scoped ua-width-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:46",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:47",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:48",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:49",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(property-scoped, 0px, 100px, 3px)",
+    "random(ua-width, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:51",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo property-scoped, 0px, 100px, 3px)",
+    "random(--foo ua-width, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:53",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped, 0px, 100px, 3px)",
+    "random(ua-width-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:55",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo property-index-scoped, 0px, 100px, 3px)",
+    "random(--foo ua-width-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:57",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped property-scoped, 0px, 100px, 3px)",
+    "random(element-scoped ua-width, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:59",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped property-scoped, 0px, 100px, 3px)",
+    "random(--foo element-scoped ua-width, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:61",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(property-scoped element-scoped , 0px, 100px, 3px)",
+    "random(element-scoped ua-width, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:63",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo property-scoped element-scoped , 0px, 100px, 3px)",
+    "random(--foo element-scoped ua-width, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:65",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped property-index-scoped, 0px, 100px, 3px)",
+    "random(element-scoped ua-width-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:67",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped property-index-scoped, 0px, 100px, 3px)",
+    "random(--foo element-scoped ua-width-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:69",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(property-index-scoped element-scoped , 0px, 100px, 3px)",
+    "random(element-scoped ua-width-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:71",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo property-index-scoped element-scoped , 0px, 100px, 3px)",
+    "random(--foo element-scoped ua-width-1, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:73",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--\\{ element-scoped, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:74",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped ua-\\{, 0px, 100px, 3px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:77",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:80",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, 100px, 0px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:83",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, -100px, -10px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:84",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, -100px, -10px, -5px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:87",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, 1em, 200rem)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:90",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(10 * 100px, 200em / 2)",
+    "random(element-scoped ua-width-1, 1000px, 100em)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:91",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo, 10 * 100px, 200em / 2)",
+    "random(--foo, 1000px, 100em)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:92",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(fixed calc(2 / 4), 0%, 100%)",
+    "random(fixed calc(0.5), 0%, 100%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:95",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc(2 * random(--foo, 0px, 100px))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:96",
+   "helper": "test_valid_value",
+   "args": [
+    "math-depth",
+    "add(random(--foo, 0, 3))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:97",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "rgb(random(--foo, 0, 255) random(--foo, 0, 255) random(--foo, 0, 255))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:98",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "rgb(from blue r g random(--foo, b, 150 + b))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:99",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "color-mix(in srgb, rgb(random(--foo, 0, 255) 0 random(--foo, 0, 255)), rgb(0 random(--foo, 0, 255) 0))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:102",
+   "helper": "test_valid_value",
+   "args": [
+    "z-index",
+    "random(--foo, 25, 50)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:103",
+   "helper": "test_valid_value",
+   "args": [
+    "z-index",
+    "random(--foo, 25, 50, 5)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:104",
+   "helper": "test_valid_value",
+   "args": [
+    "scale",
+    "random(--foo, 0.5, 2.5)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:105",
+   "helper": "test_valid_value",
+   "args": [
+    "scale",
+    "random(--foo, 0.5, 2.5, 0.1)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:106",
+   "helper": "test_valid_value",
+   "args": [
+    "rotate",
+    "random(25deg, 1turn)",
+    "random(element-scoped ua-rotate-1, 25deg, 360deg)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:108",
+   "helper": "test_valid_value",
+   "args": [
+    "rotate",
+    "random(--foo, 25deg, 1turn, 5deg)",
+    "random(--foo, 25deg, 360deg, 5deg)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:110",
+   "helper": "test_valid_value",
+   "args": [
+    "transition-delay",
+    "random(25ms, 50s)",
+    "random(element-scoped ua-transition-delay-1, 0.025s, 50s)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:112",
+   "helper": "test_valid_value",
+   "args": [
+    "transition-delay",
+    "random(--foo, 25ms, 50s, 5s)",
+    "random(--foo, 0.025s, 50s, 5s)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:116",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(ua-width, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:117",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo ua-width, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:118",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(ua-width-1, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:119",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo ua-width-1, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:120",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(element-scoped ua-height-1, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:121",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo element-scoped ua-height-1, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:122",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(ua-height-1 element-scoped, 10px, 20%)",
+    "random(element-scoped ua-height-1, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:124",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo ua-height-1 element-scoped, 10px, 20%)",
+    "random(--foo element-scoped ua-height-1, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:126",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(ua-x, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:127",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo ua-x, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:128",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(ua-x element-scoped, 10px, 20%)",
+    "random(element-scoped ua-x, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/random-serialize.tentative.html:130",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "random(--foo ua-x element-scoped, 10px, 20%)",
+    "random(--foo element-scoped ua-x, 10px, 20%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/typed_arithmetic.html:77",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "calc(10% / 20%)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/typed_arithmetic.html:79",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc((1% * 1deg) / 1px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/typed_arithmetic.html:80",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc((1% * 1% * 1%) / 1px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:10",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(auto, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:11",
+   "helper": "test_valid_value",
+   "args": [
+    "min-width",
+    "calc-size(auto, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:12",
+   "helper": "test_valid_value",
+   "args": [
+    "height",
+    "calc-size(auto, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:13",
+   "helper": "test_valid_value",
+   "args": [
+    "min-height",
+    "calc-size(auto, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "max-height",
+    "calc-size(auto, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "max-width",
+    "calc-size(auto, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "height",
+    "calc-size(none, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:18",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(none, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:19",
+   "helper": "test_invalid_value",
+   "args": [
+    "min-height",
+    "calc-size(none, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:20",
+   "helper": "test_invalid_value",
+   "args": [
+    "min-width",
+    "calc-size(none, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:21",
+   "helper": "test_invalid_value",
+   "args": [
+    "max-height",
+    "calc-size(none, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:22",
+   "helper": "test_invalid_value",
+   "args": [
+    "max-width",
+    "calc-size(none, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:24",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:25",
+   "helper": "test_valid_value",
+   "args": [
+    "height",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:26",
+   "helper": "test_valid_value",
+   "args": [
+    "max-width",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:27",
+   "helper": "test_valid_value",
+   "args": [
+    "max-height",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:28",
+   "helper": "test_valid_value",
+   "args": [
+    "min-width",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:29",
+   "helper": "test_valid_value",
+   "args": [
+    "min-height",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:30",
+   "helper": "test_valid_value",
+   "args": [
+    "block-size",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:31",
+   "helper": "test_valid_value",
+   "args": [
+    "inline-size",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:32",
+   "helper": "test_valid_value",
+   "args": [
+    "max-block-size",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:33",
+   "helper": "test_valid_value",
+   "args": [
+    "max-inline-size",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:34",
+   "helper": "test_valid_value",
+   "args": [
+    "min-block-size",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:35",
+   "helper": "test_valid_value",
+   "args": [
+    "min-inline-size",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:37",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(fit-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:38",
+   "helper": "test_valid_value",
+   "args": [
+    "height",
+    "calc-size(min-content, size * 2)",
+    "calc-size(min-content, 2 * size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:39",
+   "helper": "test_valid_value",
+   "args": [
+    "max-width",
+    "calc-size(max-content, size / 2)",
+    "calc-size(max-content, 0.5 * size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:40",
+   "helper": "test_valid_value",
+   "args": [
+    "max-height",
+    "calc-size(fit-content, 30px + size / 2)",
+    "calc-size(fit-content, 30px + (0.5 * size))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:41",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(fit-content, 50% + size / 2)",
+    "calc-size(fit-content, 50% + (0.5 * size))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:43",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(any, 25em)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:44",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(any, 40%)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:45",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(any, 50px + 30%)",
+    "calc-size(any, 30% + 50px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:46",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(any, 30px), size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:47",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(any, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:48",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(any, fit-content)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:49",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(any, max-content)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:50",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(any, min-content)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:51",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(10px, sign(size) * size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:52",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "size"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:53",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "sign(size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:54",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(50px * sign(size))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:55",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(any, calc-size(10px, sign(size) * size))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:56",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(any, calc-size(any, 10px))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:57",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(calc-size(auto, size))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:58",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(50px * sign(calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:59",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(calc-size(auto, size) + calc-size(auto, size))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:60",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(abs(calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:61",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(100px * progress(calc-size(auto, size) from calc-size(auto, 0px) to calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:62",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(100px * progress(calc-size(auto, size) from 0px to 100px))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:63",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(100px * progress(50px from calc-size(auto, 0px) to calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:64",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "min(calc-size(auto, 0px), calc-size(auto, size))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:65",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(min(calc-size(auto, 0px), calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:66",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "max(calc-size(auto, 0px), calc-size(auto, size))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:67",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(max(calc-size(auto, 0px), calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:68",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "clamp(calc-size(auto, 0px), calc-size(auto, 30px), calc-size(auto, size))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:69",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(clamp(calc-size(auto, 0px), calc-size(auto, 30px), calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:70",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(cos(calc-size(auto, 0px)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:71",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(atan2(calc-size(auto, size), calc-size(auto, 50px)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:72",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(sqrt(calc-size(auto, 0px)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:73",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(hypot(calc-size(auto, size * 0.5), calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:74",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(round(calc-size(auto, size * 0.5), calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:75",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(round(calc-size(auto, size * 0.5)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:76",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(mod(calc-size(auto, size * 0.5), calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:77",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc(rem(calc-size(auto, size * 0.5), calc-size(auto, size)))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:79",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(30px, 25em)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:80",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(any, 30px), 25em)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:81",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(2in, 30px), 25em)",
+    "calc-size(calc-size(192px, 30px), 25em)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:82",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(min-content, 30px), 25em)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:83",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(min-content, size), size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:85",
+   "helper": "test_invalid_value",
+   "args": [
+    "height",
+    "calc(12% + calc-size(any, 31%))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:87",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(30px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:88",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(min(30px, 2em))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:89",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(any)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:90",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(any, 30px))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:91",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:92",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(fit-content)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:93",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(fit-content, size * 2))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:94",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(calc-size(30px))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:96",
+   "helper": "test_valid_value",
+   "args": [
+    "flex-basis",
+    "calc-size(any, 50px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:97",
+   "helper": "test_valid_value",
+   "args": [
+    "flex-basis",
+    "calc-size(auto, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:98",
+   "helper": "test_valid_value",
+   "args": [
+    "flex-basis",
+    "calc-size(min-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:99",
+   "helper": "test_valid_value",
+   "args": [
+    "flex-basis",
+    "calc-size(max-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:100",
+   "helper": "test_valid_value",
+   "args": [
+    "flex-basis",
+    "calc-size(fit-content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:101",
+   "helper": "test_valid_value",
+   "args": [
+    "flex-basis",
+    "calc-size(content, size)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:103",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(content, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:104",
+   "helper": "test_invalid_value",
+   "args": [
+    "height",
+    "calc-size(content, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:105",
+   "helper": "test_invalid_value",
+   "args": [
+    "max-width",
+    "calc-size(content, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:106",
+   "helper": "test_invalid_value",
+   "args": [
+    "max-height",
+    "calc-size(content, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:107",
+   "helper": "test_invalid_value",
+   "args": [
+    "min-width",
+    "calc-size(content, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:108",
+   "helper": "test_invalid_value",
+   "args": [
+    "min-height",
+    "calc-size(content, size)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:110",
+   "helper": "test_valid_value",
+   "args": [
+    "width",
+    "calc-size(0px, 0px)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:111",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(0, 0px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:112",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(0px, 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/calc-size-parsing.html:113",
+   "helper": "test_invalid_value",
+   "args": [
+    "width",
+    "calc-size(0, 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/interpolate-size-parsing.html:10",
+   "helper": "test_valid_value",
+   "args": [
+    "interpolate-size",
+    "numeric-only"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/interpolate-size-parsing.html:11",
+   "helper": "test_valid_value",
+   "args": [
+    "interpolate-size",
+    "allow-keywords"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/calc-size/interpolate-size-parsing.html:13",
+   "helper": "test_invalid_value",
+   "args": [
+    "interpolate-size",
+    "auto"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/interpolate-size-parsing.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "interpolate-size",
+    "none"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/calc-size/interpolate-size-parsing.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "interpolate-size",
+    "100%"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:13",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(1px * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:14",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(1px * sibling-index( ))",
+    "calc(1px * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:15",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(1em * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:16",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(1rem * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:17",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(1vh * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:18",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(1ch * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:19",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(1% * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:20",
+   "helper": "test_valid_value",
+   "args": [
+    "left",
+    "calc(5% * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:22",
+   "helper": "test_invalid_value",
+   "args": [
+    "left",
+    "calc(1px * sibling-index(100px))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:23",
+   "helper": "test_invalid_value",
+   "args": [
+    "left",
+    "calc(1px * sibling-index(1))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:24",
+   "helper": "test_invalid_value",
+   "args": [
+    "left",
+    "calc(10 * sibling-index())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:27",
+   "helper": "test_valid_value",
+   "args": [
+    "rotate",
+    "calc(10deg * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:28",
+   "helper": "test_valid_value",
+   "args": [
+    "rotate",
+    "calc(sibling-index() * 2rad * pi)",
+    "calc(360deg * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:29",
+   "helper": "test_valid_value",
+   "args": [
+    "rotate",
+    "calc(1turn * sibling-count())",
+    "calc(360deg * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:30",
+   "helper": "test_valid_value",
+   "args": [
+    "rotate",
+    "calc(sibling-count() * 1rad * pi)",
+    "calc(180deg * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:32",
+   "helper": "test_invalid_value",
+   "args": [
+    "rotate",
+    "calc(1px * sibling-index())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:33",
+   "helper": "test_invalid_value",
+   "args": [
+    "rotate",
+    "calc(1s * sibling-index())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:36",
+   "helper": "test_valid_value",
+   "args": [
+    "z-index",
+    "sibling-index()"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:37",
+   "helper": "test_valid_value",
+   "args": [
+    "z-index",
+    "sibling-count()"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:38",
+   "helper": "test_valid_value",
+   "args": [
+    "z-index",
+    "calc(2 * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:39",
+   "helper": "test_valid_value",
+   "args": [
+    "z-index",
+    "calc(sibling-index())",
+    "sibling-index()"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:40",
+   "helper": "test_valid_value",
+   "args": [
+    "z-index",
+    "calc(sibling-count())",
+    "sibling-count()"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:42",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "sibling-index(100px)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:43",
+   "helper": "test_invalid_value",
+   "args": [
+    "z-index",
+    "sibling-count(1)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:46",
+   "helper": "test_valid_value",
+   "args": [
+    "opacity",
+    "calc(0.1 * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:47",
+   "helper": "test_valid_value",
+   "args": [
+    "opacity",
+    "calc(0.5 * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:48",
+   "helper": "test_valid_value",
+   "args": [
+    "scale",
+    "calc(2 * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:49",
+   "helper": "test_valid_value",
+   "args": [
+    "scale",
+    "calc(0.5 * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:51",
+   "helper": "test_invalid_value",
+   "args": [
+    "opacity",
+    "calc(1ms * sibling-index())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:52",
+   "helper": "test_invalid_value",
+   "args": [
+    "opacity",
+    "calc(1px * sibling-count())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:55",
+   "helper": "test_valid_value",
+   "args": [
+    "animation-duration",
+    "calc(1s * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:56",
+   "helper": "test_valid_value",
+   "args": [
+    "animation-duration",
+    "calc(1s * sibling-count( ))",
+    "calc(1s * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:57",
+   "helper": "test_valid_value",
+   "args": [
+    "animation-duration",
+    "calc(100ms * sibling-count())",
+    "calc(0.1s * sibling-count())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:58",
+   "helper": "test_valid_value",
+   "args": [
+    "animation-duration",
+    "calc(0.5s * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:59",
+   "helper": "test_valid_value",
+   "args": [
+    "animation-duration",
+    "calc(250ms * sibling-index())",
+    "calc(0.25s * sibling-index())"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:61",
+   "helper": "test_invalid_value",
+   "args": [
+    "animation-duration",
+    "calc(1px * sibling-index())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:62",
+   "helper": "test_invalid_value",
+   "args": [
+    "animation-duration",
+    "calc(1deg * sibling-index())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:65",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "color(srgb calc(0.1 * sibling-index()) 0.5 0.5)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:66",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "color(srgb 0 calc(0.1 * sibling-count()) 0.5)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:67",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "color(srgb 0 0 calc(0.1 * sibling-index()))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:68",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "color(srgb 0.5 0.5 0.5 / calc(0.1 * sibling-count()))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:69",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "oklch(calc(0.1 * sibling-index()) 0.2 180)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:70",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "oklch(0.5 calc(0.05 * sibling-count()) 180)"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:71",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "oklch(0.5 0.2 calc(30deg * sibling-index()))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:72",
+   "helper": "test_valid_value",
+   "args": [
+    "color",
+    "oklch(0.5 0.2 180 / calc(0.1 * sibling-index()))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:74",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "color(srgb calc(1px * sibling-index()) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/tree-counting/calc-sibling-function-parsing.html:75",
+   "helper": "test_invalid_value",
+   "args": [
+    "color",
+    "oklch(calc(1px * sibling-index()) 0 0)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:9",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:10",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(,))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:11",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous,))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:12",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(,anonymous))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:13",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous foobar))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:14",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) cross-origin(anonymous))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:15",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) cross-origin(use-credentials))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:16",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(cross-origin(anonymous) \"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\")"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:17",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:19",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:20",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(,))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:21",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\",))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:22",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(,\"sha384-foobar\"))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:23",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\" foobar))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:24",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(sha384-foobar))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:25",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:26",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") integrity(\"sha384-barbaz\"))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:27",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(integrity(\"sha384-foobar\") \"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\")"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:28",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\")"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:30",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy())"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:31",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(,))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:32",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer,))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:33",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(,no-referrer))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:34",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer foobar))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:35",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer same-origin))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:36",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) referrer-policy(no-referrer))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:37",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) referrer-policy(same-origin))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:38",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(referrer-policy(no-referrer) \"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\")"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:39",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer)"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:42",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" crossorigin(anonymous))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:43",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrerpolicy(no-referrer))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:48",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png cross-origin(anonymous))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:49",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-invalid.sub.html:50",
+   "helper": "test_invalid_value",
+   "args": [
+    "background-image",
+    "url(http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png referrer-policy(no-referrer))"
+   ],
+   "chromium": false
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:11",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\")"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:14",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:15",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(use-credentials))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:18",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:19",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"\"))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:22",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:23",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer-when-downgrade))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:24",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(same-origin))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:25",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(origin))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:26",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(strict-origin))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:27",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(origin-when-cross-origin))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:28",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(strict-origin-when-cross-origin))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:29",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(unsafe-url))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:32",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:33",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:34",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:35",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) integrity(\"sha384-foobar\"))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:36",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:37",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:38",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:39",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer) cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:40",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) cross-origin(anonymous) integrity(\"sha384-foobar\"))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-serialize.sub.html:41",
+   "helper": "test_valid_value",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) integrity(\"sha384-foobar\") cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": true
+  }
+ ],
+ "computed": [
+  {
+   "at": "css/css-variables/var-fallback-braces.html:11",
+   "args": [
+    "color",
+    "var(--missing, {rgb(1, 2, 3)})",
+    "rgb(1, 2, 3)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-variables/var-fallback-braces.html:12",
+   "args": [
+    "color",
+    "var(--missing, { rgb(1, 2, 3) })",
+    "rgb(1, 2, 3)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-variables/var-fallback-braces.html:13",
+   "args": [
+    "color",
+    "var(--missing, {rgb(1, 2, 3)} )",
+    "rgb(1, 2, 3)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-variables/var-fallback-braces.html:14",
+   "args": [
+    "font-family",
+    "var(--missing, {Arial, sans-serif})",
+    "Arial, sans-serif"
+   ],
+   "chromium": "\"Times New Roman\""
+  },
+  {
+   "at": "css/css-values/attr-fallback-braces.html:11",
+   "args": [
+    "color",
+    "attr(data-missing type(<color>), {rgb(1, 2, 3)})",
+    "rgb(1, 2, 3)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/attr-fallback-braces.html:12",
+   "args": [
+    "color",
+    "attr(data-missing type(<color>), { rgb(1, 2, 3) })",
+    "rgb(1, 2, 3)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/attr-fallback-braces.html:13",
+   "args": [
+    "color",
+    "attr(data-missing type(<color>), {rgb(1, 2, 3)} )",
+    "rgb(1, 2, 3)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/attr-fallback-braces.html:14",
+   "args": [
+    "font-family",
+    "attr(data-missing, {Arial, sans-serif})",
+    "Arial, sans-serif"
+   ],
+   "chromium": "\"Times New Roman\""
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:19",
+   "args": [
+    "width",
+    "calc(NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:20",
+   "args": [
+    "width",
+    "calc(NaN * 1%)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:24",
+   "args": [
+    "width",
+    "calc(NaN * 1rem)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:25",
+   "args": [
+    "width",
+    "calc(10.135262721212548pc - 199pt / NaN)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:27",
+   "args": [
+    "width",
+    "max(15px, NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:28",
+   "args": [
+    "width",
+    "max(NaN * 1px, 15px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:29",
+   "args": [
+    "width",
+    "max(-15px, NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:30",
+   "args": [
+    "width",
+    "max(NaN * 1px, -15px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:31",
+   "args": [
+    "width",
+    "min(15px, NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:32",
+   "args": [
+    "width",
+    "min(NaN * 1px, 15px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:33",
+   "args": [
+    "width",
+    "min(-15px, NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:34",
+   "args": [
+    "width",
+    "min(NaN * 1px, -15px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:38",
+   "args": [
+    "width",
+    "min(50%, NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:39",
+   "args": [
+    "width",
+    "min(NaN * 1px, 50%)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:40",
+   "args": [
+    "width",
+    "max(50%, NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:41",
+   "args": [
+    "width",
+    "max(NaN * 1px, 50%)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:42",
+   "args": [
+    "width",
+    "clamp(50%, NaN * 1px, 100px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:43",
+   "args": [
+    "width",
+    "clamp(10px, 50%, NaN * 1px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:44",
+   "args": [
+    "width",
+    "clamp(NaN * 1px, 50%, 100px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:45",
+   "args": [
+    "width",
+    "calc(min(50%, NaN * 1px) + 10px)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:47",
+   "args": [
+    "width",
+    "calc(infinity * 1px - infinity * 1%)",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:49",
+   "args": [
+    "width",
+    "calc(min(NaN * 1px, infinity * 1px) + max(infinity * 1px, -infinity * 1px))",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:50",
+   "args": [
+    "width",
+    "calc(infinity * 1px - max(infinity * 1%, 0%))",
+    "0px"
+   ],
+   "chromium": "0px"
+  },
+  {
+   "at": "css/css-values/calc-infinity-nan-computed.html:67",
+   "args": [
+    "animation-duration",
+    "calc(NaN * 1s)",
+    "0s"
+   ],
+   "chromium": "0s"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:8",
+   "args": [
+    "color",
+    "rgb(clamp(10, 20, 30) 0 0)",
+    "rgb(20, 0, 0)"
+   ],
+   "chromium": "rgb(20, 0, 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:9",
+   "args": [
+    "color",
+    "rgb(clamp(none, 30, 33) 0 0)",
+    "rgb(30, 0, 0)"
+   ],
+   "chromium": "rgb(30, 0, 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:10",
+   "args": [
+    "color",
+    "rgb(clamp(none, 33, 30) 0 0)",
+    "rgb(30, 0, 0)"
+   ],
+   "chromium": "rgb(30, 0, 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:11",
+   "args": [
+    "color",
+    "rgb(clamp(30, 33, none) 0 0)",
+    "rgb(33, 0, 0)"
+   ],
+   "chromium": "rgb(33, 0, 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:12",
+   "args": [
+    "color",
+    "rgb(clamp(33, 30, none) 0 0)",
+    "rgb(33, 0, 0)"
+   ],
+   "chromium": "rgb(33, 0, 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:13",
+   "args": [
+    "color",
+    "rgb(clamp(none, 30, none) 0 0)",
+    "rgb(30, 0, 0)"
+   ],
+   "chromium": "rgb(30, 0, 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:16",
+   "args": [
+    "color",
+    "rgb(from red clamp(r, 30, 300) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:17",
+   "args": [
+    "color",
+    "rgb(from red clamp(30, 300, r) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:18",
+   "args": [
+    "color",
+    "rgb(from red clamp(3, r, 300) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:19",
+   "args": [
+    "color",
+    "rgb(from red clamp(3, r, r + 30) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:20",
+   "args": [
+    "color",
+    "rgb(from red clamp(r - 30, r, 300) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:21",
+   "args": [
+    "color",
+    "rgb(from red clamp(3, r, none) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:22",
+   "args": [
+    "color",
+    "rgb(from red clamp(r, 30, none) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:23",
+   "args": [
+    "color",
+    "rgb(from red clamp(none, r, 300) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-color-computed.html:24",
+   "args": [
+    "color",
+    "rgb(from red clamp(none, r, r + 30) g b)",
+    "color(srgb 1 0 0)"
+   ],
+   "chromium": "color(srgb 1 0 0)"
+  },
+  {
+   "at": "css/css-values/clamp-integer-computed.html:8",
+   "args": [
+    "z-index",
+    "clamp(10, 20, 30)",
+    "20"
+   ],
+   "chromium": "20"
+  },
+  {
+   "at": "css/css-values/clamp-integer-computed.html:9",
+   "args": [
+    "z-index",
+    "clamp(none, 30, 33)",
+    "30"
+   ],
+   "chromium": "30"
+  },
+  {
+   "at": "css/css-values/clamp-integer-computed.html:10",
+   "args": [
+    "z-index",
+    "clamp(none, 33, 30)",
+    "30"
+   ],
+   "chromium": "30"
+  },
+  {
+   "at": "css/css-values/clamp-integer-computed.html:11",
+   "args": [
+    "z-index",
+    "clamp(30, 33, none)",
+    "33"
+   ],
+   "chromium": "33"
+  },
+  {
+   "at": "css/css-values/clamp-integer-computed.html:12",
+   "args": [
+    "z-index",
+    "clamp(33, 30, none)",
+    "33"
+   ],
+   "chromium": "33"
+  },
+  {
+   "at": "css/css-values/clamp-integer-computed.html:13",
+   "args": [
+    "z-index",
+    "clamp(none, 30, none)",
+    "30"
+   ],
+   "chromium": "30"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:32",
+   "args": [
+    "color",
+    "random-item(fixed 0, rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    "rgb(1, 0, 0)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:33",
+   "args": [
+    "color",
+    "random-item(fixed 0.5, rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    "rgb(0, 1, 0)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:34",
+   "args": [
+    "color",
+    "random-item(fixed 0.999, rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    "rgb(0, 0, 1)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:35",
+   "args": [
+    "color",
+    "random-item(fixed 1, rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    "rgb(0, 0, 1)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:38",
+   "args": [
+    "color",
+    "random-item(fixed 0, rgb(1, 0, 0))",
+    "rgb(1, 0, 0)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:39",
+   "args": [
+    "color",
+    "random-item(auto, rgb(1, 0, 0))",
+    "rgb(1, 0, 0)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:42",
+   "args": [
+    "color",
+    "random-item(auto, rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    [
+     "rgb(1, 0, 0)",
+     "rgb(0, 1, 0)",
+     "rgb(0, 0, 1)"
+    ]
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:43",
+   "args": [
+    "color",
+    "random-item(--key, rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    [
+     "rgb(1, 0, 0)",
+     "rgb(0, 1, 0)",
+     "rgb(0, 0, 1)"
+    ]
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:44",
+   "args": [
+    "color",
+    "random-item(element-scoped, rgb(1, 0, 0), rgb(0, 1, 0))",
+    [
+     "rgb(1, 0, 0)",
+     "rgb(0, 1, 0)"
+    ]
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:45",
+   "args": [
+    "color",
+    "random-item(--key element-scoped, rgb(1, 0, 0), rgb(0, 1, 0))",
+    [
+     "rgb(1, 0, 0)",
+     "rgb(0, 1, 0)"
+    ]
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:48",
+   "args": [
+    "font-family",
+    "random-item(fixed 0, {Times, serif}, {Arial, sans-serif})",
+    "Times, serif"
+   ],
+   "chromium": "\"Times New Roman\""
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:49",
+   "args": [
+    "font-family",
+    "random-item(fixed 0.999, {Times, serif}, {Arial, sans-serif})",
+    "Arial, sans-serif"
+   ],
+   "chromium": "\"Times New Roman\""
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:50",
+   "args": [
+    "font-family",
+    "random-item(fixed 0, { Times, serif }, { Arial, sans-serif })",
+    "Times, serif"
+   ],
+   "chromium": "\"Times New Roman\""
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:51",
+   "args": [
+    "font-family",
+    "random-item(fixed 0.999, { Times, serif }, { Arial, sans-serif })",
+    "Arial, sans-serif"
+   ],
+   "chromium": "\"Times New Roman\""
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:54",
+   "args": [
+    "color",
+    "random-item(fixed calc(0.5), rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    "rgb(0, 1, 0)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:55",
+   "args": [
+    "color",
+    "random-item(fixed calc(1 / 4), rgb(1, 0, 0), rgb(0, 1, 0), rgb(0, 0, 1))",
+    "rgb(1, 0, 0)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:58",
+   "args": [
+    "color",
+    "random-item(fixed 1, rgb(1, 0, 0))",
+    "rgb(1, 0, 0)"
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:61",
+   "args": [
+    "color",
+    "random-item(element-scoped --key, rgb(1, 0, 0), rgb(0, 1, 0))",
+    [
+     "rgb(1, 0, 0)",
+     "rgb(0, 1, 0)"
+    ]
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/random-item-computed.html:244",
+   "args": [
+    "color",
+    "random-item(--, rgb(1, 0, 0), rgb(0, 1, 0))",
+    [
+     "rgb(1, 0, 0)",
+     "rgb(0, 1, 0)"
+    ]
+   ],
+   "chromium": "rgb(0, 0, 0)"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:21",
+   "args": [
+    "font-feature-settings",
+    "\"swsh\" calc(1em / 1px)",
+    "\"swsh\" 10"
+   ],
+   "chromium": "\"swsh\" 10"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:22",
+   "args": [
+    "font-palette",
+    "ident(\"--test-\" calc(1em / 1px))",
+    "--test-10"
+   ],
+   "chromium": "normal"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:23",
+   "args": [
+    "font-size-adjust",
+    "calc(1em / 1px)",
+    "10"
+   ],
+   "chromium": "10"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:24",
+   "args": [
+    "font-style",
+    "oblique calc(1em / 1px * 1deg)",
+    "oblique 10deg"
+   ],
+   "chromium": "oblique 10deg"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:25",
+   "args": [
+    "font-variant-alternates",
+    "stylistic(ident(\"test-\" calc(1em / 1px)))",
+    "stylistic(test-10)"
+   ],
+   "chromium": "normal"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:26",
+   "args": [
+    "font-variation-settings",
+    "\"xhgt\" calc(1em / 1px)",
+    "\"xhgt\" 10"
+   ],
+   "chromium": "\"xhgt\" 10"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:27",
+   "args": [
+    "font-weight",
+    "calc(1em / 1px)",
+    "10"
+   ],
+   "chromium": "10"
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:28",
+   "args": [
+    "font-width",
+    "calc(1em / 1px * 1%)",
+    "10%"
+   ],
+   "chromium": ""
+  },
+  {
+   "at": "css/css-values/using-font-relative-units-in-font-properties.html:31",
+   "args": [
+    "font-size",
+    "calc(1em / 1)",
+    "10px"
+   ],
+   "chromium": "10px"
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:38",
+   "args": [
+    "100vw",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:39",
+   "args": [
+    "100vi",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:40",
+   "args": [
+    "100vmax",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:41",
+   "args": [
+    "100svw",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:42",
+   "args": [
+    "100svi",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:43",
+   "args": [
+    "100svmax",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:44",
+   "args": [
+    "100lvw",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:45",
+   "args": [
+    "100lvi",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:46",
+   "args": [
+    "100lvmax",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:47",
+   "args": [
+    "100dvw",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:48",
+   "args": [
+    "100dvi",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:49",
+   "args": [
+    "100dvmax",
+    "200px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:51",
+   "args": [
+    "100vh",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:52",
+   "args": [
+    "100vb",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:53",
+   "args": [
+    "100vmin",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:54",
+   "args": [
+    "100svh",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:55",
+   "args": [
+    "100svb",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:56",
+   "args": [
+    "100svmin",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:57",
+   "args": [
+    "100lvh",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:58",
+   "args": [
+    "100lvb",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:59",
+   "args": [
+    "100lvmin",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:60",
+   "args": [
+    "100dvh",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:61",
+   "args": [
+    "100dvb",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:62",
+   "args": [
+    "100dvmin",
+    "100px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:64",
+   "args": [
+    "1dvw",
+    "2px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:65",
+   "args": [
+    "10dvw",
+    "20px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:66",
+   "args": [
+    "1dvh",
+    "1px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:67",
+   "args": [
+    "10dvh",
+    "10px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:69",
+   "args": [
+    "calc(1dvw + 1dvw)",
+    "4px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:70",
+   "args": [
+    "calc(1dvw + 1dvh)",
+    "3px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:71",
+   "args": [
+    "calc(1dvw + 100px)",
+    "102px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:72",
+   "args": [
+    "max(1svw, 1svh)",
+    "2px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:73",
+   "args": [
+    "min(1lvw, 1lvh)",
+    "1px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-compute.html:74",
+   "args": [
+    "calc(1dvw + 10%)",
+    "12px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-extreme-scale.html:33",
+   "args": [
+    "100vw",
+    "640px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-extreme-scale.html:34",
+   "args": [
+    "100vh",
+    "480px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-extreme-scale.html:37",
+   "args": [
+    "calc((1vw - 6.3999px) * 10000000)",
+    "1000px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-extreme-scale.html:38",
+   "args": [
+    "calc((100vh - 479px) * 60000)",
+    "60000px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:41",
+   "args": [
+    "100vw",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:42",
+   "args": [
+    "100vi",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:43",
+   "args": [
+    "100vmax",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:44",
+   "args": [
+    "100svw",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:45",
+   "args": [
+    "100svi",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:46",
+   "args": [
+    "100svmax",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:47",
+   "args": [
+    "100lvw",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:48",
+   "args": [
+    "100lvi",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:49",
+   "args": [
+    "100lvmax",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:50",
+   "args": [
+    "100dvw",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:51",
+   "args": [
+    "100dvi",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:52",
+   "args": [
+    "100dvmax",
+    "185px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:54",
+   "args": [
+    "100vh",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:55",
+   "args": [
+    "100vb",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:56",
+   "args": [
+    "100vmin",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:57",
+   "args": [
+    "100svh",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:58",
+   "args": [
+    "100svb",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:59",
+   "args": [
+    "100svmin",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:60",
+   "args": [
+    "100lvh",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:61",
+   "args": [
+    "100lvb",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:62",
+   "args": [
+    "100lvmin",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:63",
+   "args": [
+    "100dvh",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:64",
+   "args": [
+    "100dvb",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:65",
+   "args": [
+    "100dvmin",
+    "85px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:67",
+   "args": [
+    "1dvw",
+    "1.84375px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:68",
+   "args": [
+    "10dvw",
+    "18.5px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:69",
+   "args": [
+    "1dvh",
+    "0.84375px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:70",
+   "args": [
+    "10dvh",
+    "8.5px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:72",
+   "args": [
+    "calc(1dvw + 1dvw)",
+    "3.6875px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:73",
+   "args": [
+    "calc(1dvw + 1dvh)",
+    "2.6875px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:74",
+   "args": [
+    "calc(1dvw + 100px)",
+    "101.844px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:75",
+   "args": [
+    "max(1svw, 1svh)",
+    "1.84375px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:76",
+   "args": [
+    "min(1lvw, 1lvh)",
+    "0.84375px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/viewport-units-scrollbars-compute.html:77",
+   "args": [
+    "calc(1dvw + 10%)",
+    "10.3438px"
+   ],
+   "chromium": null
+  },
+  {
+   "at": "css/css-values/calc-size/interpolate-size-computed.html:10",
+   "args": [
+    "interpolate-size",
+    "numeric-only"
+   ],
+   "chromium": "numeric-only"
+  },
+  {
+   "at": "css/css-values/calc-size/interpolate-size-computed.html:11",
+   "args": [
+    "interpolate-size",
+    "allow-keywords"
+   ],
+   "chromium": "allow-keywords"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:13",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\")"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\")"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:16",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:17",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(use-credentials))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(use-credentials))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:20",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\"))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:21",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"\"))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"\"))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:24",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:25",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer-when-downgrade))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer-when-downgrade))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:26",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(same-origin))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(same-origin))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:27",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(origin))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(origin))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:28",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(strict-origin))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(strict-origin))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:29",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(origin-when-cross-origin))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(origin-when-cross-origin))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:30",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(strict-origin-when-cross-origin))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(strict-origin-when-cross-origin))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:31",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(unsafe-url))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(unsafe-url))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:34",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\"))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:35",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\"))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\"))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:36",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:37",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) integrity(\"sha384-foobar\"))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:38",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:39",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:40",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:41",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" integrity(\"sha384-foobar\") referrer-policy(no-referrer) cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:42",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) cross-origin(anonymous) integrity(\"sha384-foobar\"))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+  },
+  {
+   "at": "css/css-values/urls/url-request-modifiers-computed.sub.html:43",
+   "args": [
+    "background-image",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" referrer-policy(no-referrer) integrity(\"sha384-foobar\") cross-origin(anonymous))",
+    "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+   ],
+   "chromium": "url(\"http://{{hosts[][]}}:{{ports[http][0]}}/css/support/1x1-green.png\" cross-origin(anonymous) integrity(\"sha384-foobar\") referrer-policy(no-referrer))"
+  }
+ ]
+}

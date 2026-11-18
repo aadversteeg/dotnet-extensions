@@ -6,6 +6,9 @@ and the text it produced the last time.
 
 Nothing here is part of the engine or its build. The tests do not run Chromium; they pin the numbers measured here.
 
+`computed-style/` is the same for the HTML/CSS front-end: Chromium's verdicts on the extracted web-platform-tests CSS
+cases and its computed styles of a corpus of documents (see the README there). It uses this folder's npm packages.
+
 ## Run it
 
 With Docker only (Linux, macOS or Windows; Docker must run Linux containers):

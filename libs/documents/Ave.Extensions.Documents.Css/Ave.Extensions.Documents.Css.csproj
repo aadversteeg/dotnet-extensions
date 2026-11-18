@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net10.0 only: the engine is written for .NET 10 and has no netstandard build (README.md, "Target framework") -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <PackageTags>css;parser;selectors;cascade;document</PackageTags>
+    <Description>CSS in plain managed code: the CSS Syntax 3 tokenizer and parser, Selectors 4, media and supports conditions, the cascade with layers and nesting, values with var() and calc(), and one registry of the supported properties.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ave.Extensions.Documents.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Css" />
+  </ItemGroup>
+
+</Project>

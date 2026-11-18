@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Writes the encoding label table of the HTML parser from the Encoding Standard's encodings.json.
+"""Writes the encoding label table of the HTML and CSS readers from the Encoding Standard's encodings.json.
 
 The Encoding Standard, section 4.2 "Names and labels", publishes the table as JSON at
 https://encoding.spec.whatwg.org/encodings.json. Download it, then run:
 
     python3 -I tools/generate-encoding-labels.py encodings.json \
         Ave.Extensions.Documents.Html.Parsing/Decoding/EncodingLabels.g.cs
+    python3 -I tools/generate-encoding-labels.py encodings.json \
+        Ave.Extensions.Documents.Css/Syntax/EncodingLabels.g.cs Ave.Extensions.Documents.Css.Syntax
 
-The parser needs only to know which encoding a label names, to tell UTF-8 from every other encoding (HTML Standard
-section 13.2.3.2, "prescan a byte stream", and 13.2.6.4.4, "in head" for meta); it decodes nothing but UTF-8 and UTF-16.
+The readers need only to know which encoding a label names, to tell UTF-8 from every other encoding (HTML Standard
+section 13.2.3.2, "prescan a byte stream", and 13.2.6.4.4, "in head" for meta; CSS Syntax 3 section 3.2, "determine the
+fallback encoding"); they decode nothing but UTF-8 and UTF-16. The optional third argument is the namespace (the HTML
+parser's by default); each library keeps its own copy, as neither depends on the other.
 """
 
 import hashlib
@@ -16,7 +20,7 @@ import json
 import sys
 
 
-def main(source: str, target: str) -> None:
+def main(source: str, target: str, namespace: str = 'Ave.Extensions.Documents.Html.Parsing.Decoding') -> None:
     data = open(source, 'rb').read()
     groups = json.loads(data.decode('utf-8'))
     pairs = sorted(
@@ -30,7 +34,7 @@ def main(source: str, target: str) -> None:
         'using System.Collections.Frozen;',
         'using System.Collections.Generic;',
         '',
-        'namespace Ave.Extensions.Documents.Html.Parsing.Decoding;',
+        f'namespace {namespace};',
         '',
         'internal static partial class EncodingLabels',
         '{',
@@ -45,4 +49,4 @@ def main(source: str, target: str) -> None:
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(*sys.argv[1:4])

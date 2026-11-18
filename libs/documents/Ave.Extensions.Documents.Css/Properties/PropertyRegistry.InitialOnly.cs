@@ -1,0 +1,163 @@
+using System.Collections.Generic;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Css.Values;
+
+namespace Ave.Extensions.Documents.Css.Properties;
+
+/// <summary>
+/// Properties the engine implements only at their initial value: what the layout always does (no floats, no
+/// positioning, no transforms, left-to-right horizontal text …). A declaration that sets one to its initial value is
+/// accepted, which keeps style resets and the user-agent style sheet from being refused; any other value is refused.
+/// For a keyword property the other keywords CSS defines are refused and anything else is invalid; for the others,
+/// every other value is refused without checking it is valid CSS (a refusal is never silently different).
+/// </summary>
+public static partial class PropertyRegistry
+{
+    private static IEnumerable<PropertyDefinition> InitialOnlyProperties()
+    {
+        // Positioning and floats (CSS Positioned Layout 3, CSS 2.1 §9.5).
+        yield return InitialKeyword("position", false, "static", ["relative", "absolute", "fixed", "sticky"], false, "all elements except table-column-group and table-column", "CSS Positioned Layout 3 §2.1");
+        foreach (var side in Sides)
+        {
+            yield return InitialKeyword(side, false, "auto", [], true, "positioned elements", "CSS Positioned Layout 3 §3.1");
+        }
+
+        yield return InitialKeyword("z-index", false, "auto", [], true, "positioned elements", "CSS 2.1 §9.9.1");
+        yield return InitialKeyword("float", false, "none", ["left", "right", "inline-start", "inline-end"], false, "all elements", "CSS 2.1 §9.5.1");
+        yield return InitialKeyword("clear", false, "none", ["left", "right", "both", "inline-start", "inline-end"], false, "block-level elements", "CSS 2.1 §9.5.2");
+
+        // Overflow, visibility, effects.
+        string[] overflows = ["hidden", "clip", "scroll", "auto", "overlay"];
+        yield return InitialKeyword("overflow-x", false, "visible", overflows, false, "block containers, flex containers, grid containers", "CSS Overflow 3 §3.1");
+        yield return InitialKeyword("overflow-y", false, "visible", overflows, false, "block containers, flex containers, grid containers", "CSS Overflow 3 §3.1");
+        yield return InitialKeyword("visibility", true, "visible", ["hidden", "collapse"], false, "all elements", "CSS Display 3 §4");
+        yield return InitialNumber("opacity", inherited: false, 1, "all elements", "CSS Color 4 §11.2");
+        yield return InitialKeyword("transform", false, "none", [], true, "transformable elements", "CSS Transforms 1 §5");
+        yield return InitialKeyword("filter", false, "none", [], true, "all elements", "Filter Effects 1 §5");
+        yield return InitialKeyword("backdrop-filter", false, "none", [], true, "all elements", "Filter Effects 2 §3");
+        yield return InitialKeyword("box-shadow", false, "none", [], true, "all elements", "CSS Backgrounds 3 §6.1");
+        yield return InitialKeyword("text-shadow", true, "none", [], true, "text", "CSS Text Decoration 3 §4");
+        yield return InitialKeyword("clip-path", false, "none", [], true, "all elements", "CSS Masking 1 §5.1");
+        yield return InitialKeyword("mix-blend-mode", false, "normal", [], true, "all elements", "Compositing 1 §3.2");
+        yield return InitialKeyword("isolation", false, "auto", ["isolate"], false, "all elements", "Compositing 1 §3.3");
+        foreach (var corner in new[] { "top-left", "top-right", "bottom-right", "bottom-left" })
+        {
+            yield return InitialZero($"border-{corner}-radius", false, "0", "all elements", "CSS Backgrounds 3 §5.1");
+        }
+
+        // Backgrounds other than the colour (the background shorthand resets them).
+        yield return InitialKeyword("background-image", false, "none", [], true, "all elements", "CSS Backgrounds 3 §2.2");
+        yield return InitialKeyword("background-repeat", false, "repeat", ["repeat-x", "repeat-y", "space", "round", "no-repeat"], true, "all elements", "CSS Backgrounds 3 §2.3");
+        yield return InitialKeyword("background-attachment", false, "scroll", ["fixed", "local"], false, "all elements", "CSS Backgrounds 3 §2.4");
+        yield return InitialKeyword("background-origin", false, "padding-box", ["border-box", "content-box"], false, "all elements", "CSS Backgrounds 3 §2.7");
+        yield return InitialKeyword("background-clip", false, "border-box", ["padding-box", "content-box", "text"], false, "all elements", "CSS Backgrounds 3 §2.8");
+        yield return InitialKeyword("background-size", false, "auto", ["cover", "contain"], true, "all elements", "CSS Backgrounds 3 §2.9");
+        yield return InitialPercentPair("background-position-x", "all elements", "CSS Backgrounds 4 §2.6");
+        yield return InitialPercentPair("background-position-y", "all elements", "CSS Backgrounds 4 §2.6");
+
+        // Outline: never drawn (its style is only none), so its width, colour and offset are kept as written.
+        yield return InitialKeyword("outline-style", false, "none", ["auto", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset", "hidden"], false, "all elements", "CSS UI 4 §3.3");
+        yield return new PropertyDefinition(
+            "outline-width", false, new CssLength(Length.FromPoints(2.25)), "all elements", "<line-width> (nothing is drawn: outline-style is only none)",
+            PropertySupport.Supported, "CSS UI 4 §3.2", reader => ParseBorderWidth(reader, "outline-width"), AsSpecified);
+        yield return new PropertyDefinition(
+            "outline-color", false, new CssKeyword("currentcolor"), "all elements", "<color> | auto (nothing is drawn: outline-style is only none)",
+            PropertySupport.Supported, "CSS UI 4 §3.4",
+            reader => reader.Count == 1 && reader.Keyword("auto") is not null ? ParsedValue.Of(new CssKeyword("auto")) : Whole(reader, reader.Color(), "outline-color"),
+            AsSpecified);
+        yield return new PropertyDefinition(
+            "outline-offset", false, Zero, "all elements", "<length> (nothing is drawn: outline-style is only none)", PropertySupport.Supported,
+            "CSS UI 4 §3.5", reader => Whole(reader, reader.Length(percentages: false, nonNegative: false, "outline-offset"), "outline-offset"),
+            (value, context) => context.LengthPercentage(value));
+
+        // Text.
+        yield return InitialZero("text-indent", true, "0", "block containers", "CSS Text 3 §8.1");
+        yield return InitialZero("letter-spacing", true, "normal", "inline boxes and text", "CSS Text 3 §7.2");
+        yield return InitialZero("word-spacing", true, "normal", "text", "CSS Text 3 §7.1");
+        yield return InitialKeyword("text-transform", true, "none", ["capitalize", "uppercase", "lowercase", "full-width", "full-size-kana", "math-auto"], true, "text", "CSS Text 3 §2.1");
+        yield return InitialKeyword("text-overflow", false, "clip", ["ellipsis"], true, "block containers", "CSS Overflow 3 §5.1");
+        yield return InitialKeyword("text-align-last", true, "auto", ["start", "end", "left", "right", "center", "justify", "match-parent"], false, "block containers", "CSS Text 3 §6.2");
+        yield return InitialKeyword("text-justify", true, "auto", ["none", "inter-word", "inter-character", "distribute"], false, "text", "CSS Text 3 §6.4");
+        yield return InitialKeyword("direction", true, "ltr", ["rtl"], false, "all elements", "CSS Writing Modes 4 §2.1");
+        yield return InitialKeyword("unicode-bidi", false, "normal", ["embed", "isolate", "bidi-override", "isolate-override", "plaintext"], false, "all elements", "CSS Writing Modes 4 §2.2");
+        yield return InitialKeyword("writing-mode", true, "horizontal-tb", ["vertical-rl", "vertical-lr", "sideways-rl", "sideways-lr", "lr", "lr-tb", "rl", "rl-tb", "tb", "tb-rl"], false, "all elements except table row groups, rows, column groups, and columns", "CSS Writing Modes 4 §3.1");
+        yield return InitialKeyword("hyphens", true, "manual", ["none", "auto"], false, "text", "CSS Text 3 §5.4");
+        yield return InitialKeyword("overflow-wrap", true, "normal", ["break-word", "anywhere"], false, "text", "CSS Text 3 §5.5");
+        yield return InitialKeyword("word-break", true, "normal", ["break-all", "keep-all", "break-word", "auto-phrase"], false, "text", "CSS Text 3 §5.2");
+        yield return InitialKeyword("line-break", true, "auto", ["loose", "normal", "strict", "anywhere"], false, "text", "CSS Text 3 §5.3");
+        yield return InitialNumber("tab-size", inherited: true, 8, "text", "CSS Text 3 §4.2");
+        yield return InitialKeyword("white-space-collapse", true, "collapse", ["discard", "preserve", "preserve-breaks", "preserve-spaces", "break-spaces"], false, "text", "CSS Text 4 §3.1");
+        yield return InitialKeyword("text-wrap-mode", true, "wrap", ["nowrap"], false, "text", "CSS Text 4 §6.1");
+        yield return InitialKeyword("text-wrap-style", true, "auto", ["balance", "stable", "pretty", "avoid-orphans"], false, "block containers", "CSS Text 4 §6.2");
+        yield return InitialKeyword("text-rendering", true, "auto", ["optimizespeed", "optimizelegibility", "geometricprecision"], false, "text", "SVG 2 §11.9");
+        yield return InitialKeyword("text-decoration-thickness", false, "auto", ["from-font"], true, "all elements", "CSS Text Decoration 4 §2.4");
+        yield return InitialKeyword("quotes", true, "auto", ["none", "match-parent"], true, "all elements", "CSS Generated Content 3 §3");
+        yield return InitialKeyword("content", false, "normal", ["none"], true, "all elements, ::before, ::after, ::marker, page-margin boxes", "CSS Generated Content 3 §1");
+        yield return InitialKeyword("counter-reset", false, "none", [], true, "all elements", "CSS Lists 3 §4.2");
+        yield return InitialKeyword("counter-increment", false, "none", [], true, "all elements", "CSS Lists 3 §4.3");
+        yield return InitialKeyword("counter-set", false, "none", [], true, "all elements", "CSS Lists 3 §4.4");
+
+        // Fonts beyond family, size, weight and style (the font shorthand resets them).
+        yield return InitialKeyword("font-variant-caps", true, "normal", ["small-caps", "all-small-caps", "petite-caps", "all-petite-caps", "unicase", "titling-caps"], false, "all elements and text", "CSS Fonts 4 §6.6");
+        yield return InitialKeyword("font-variant-ligatures", true, "normal", ["none"], true, "all elements and text", "CSS Fonts 4 §6.4");
+        yield return InitialKeyword("font-variant-numeric", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.7");
+        yield return InitialKeyword("font-variant-east-asian", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.10");
+        yield return InitialKeyword("font-variant-position", true, "normal", ["sub", "super"], false, "all elements and text", "CSS Fonts 4 §6.5");
+        yield return InitialKeyword("font-variant-alternates", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.8");
+        yield return InitialKeyword("font-variant-emoji", true, "normal", ["text", "emoji", "unicode"], false, "all elements and text", "CSS Fonts 4 §6.11");
+        yield return InitialKeyword("font-feature-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.1");
+        yield return InitialKeyword("font-variation-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.2");
+        yield return InitialKeyword("font-stretch", true, "normal", ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"], true, "all elements and text", "CSS Fonts 4 §2.3");
+        yield return InitialKeyword("font-size-adjust", true, "none", [], true, "all elements and text", "CSS Fonts 5 §2.1");
+        yield return InitialKeyword("font-kerning", true, "auto", ["normal", "none"], false, "all elements and text", "CSS Fonts 4 §6.3");
+        yield return InitialKeyword("font-optical-sizing", true, "auto", ["none"], false, "all elements and text", "CSS Fonts 4 §2.6");
+        yield return InitialKeyword("font-language-override", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.4");
+        yield return Keywords("font-synthesis-weight", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");
+        yield return Keywords("font-synthesis-style", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");
+        yield return Keywords("font-synthesis-small-caps", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");
+
+        // Sizes and layout features outside the supported set.
+        yield return InitialKeyword("min-height", false, "auto", [], true, "all elements that accept width or height", "CSS Sizing 3 §3.2");
+        yield return InitialKeyword("max-height", false, "none", [], true, "all elements that accept width or height", "CSS Sizing 3 §3.2");
+        yield return InitialKeyword("aspect-ratio", false, "auto", [], true, "all elements except inline boxes and internal ruby or table boxes", "CSS Sizing 4 §2.1");
+        yield return InitialKeyword("object-fit", false, "fill", ["contain", "cover", "none", "scale-down"], false, "replaced elements", "CSS Images 3 §5.5");
+        yield return InitialKeyword("image-rendering", true, "auto", ["smooth", "high-quality", "crisp-edges", "pixelated", "optimizespeed", "optimizequality", "-webkit-optimize-contrast"], false, "all elements", "CSS Images 3 §5.3");
+        yield return InitialKeyword("column-count", false, "auto", [], true, "block containers except table wrapper boxes", "CSS Multi-column 1 §3.2");
+        yield return InitialKeyword("column-width", false, "auto", [], true, "block containers except table wrapper boxes", "CSS Multi-column 1 §3.1");
+        yield return InitialKeyword("column-gap", false, "normal", [], true, "multi-column containers, flex containers, grid containers", "CSS Box Alignment 3 §8.1");
+        yield return InitialKeyword("row-gap", false, "normal", [], true, "multi-column containers, flex containers, grid containers", "CSS Box Alignment 3 §8.1");
+        yield return InitialKeyword("page", false, "auto", [], true, "boxes that create class A break points", "CSS Paged Media 3 §6");
+        yield return Keywords("color-scheme", inherited: true, "normal", ["normal", "light"], ["dark", "only"], "all elements and text", "CSS Color Adjust 1 §2.1");
+        yield return InitialKeyword("content-visibility", false, "visible", ["hidden", "auto"], false, "elements with size containment", "CSS Containment 2 §4");
+        yield return InitialKeyword("contain", false, "none", ["strict", "content", "size", "inline-size", "layout", "style", "paint"], true, "all elements", "CSS Containment 2 §2");
+    }
+
+    /// <summary>A number property the engine implements only at its initial value.</summary>
+    private static PropertyDefinition InitialNumber(string name, bool inherited, double initial, string appliesTo, string specification) =>
+        new(name, inherited, new CssNumber(initial), appliesTo, InvariantNumber.Format(initial), PropertySupport.InitialOnly, specification,
+            reader =>
+            {
+                if (reader.Count == 1 && reader.Peek is Syntax.CssToken { Kind: Syntax.CssTokenKind.Number } number && number.Number == initial)
+                {
+                    reader.Next();
+                    return ParsedValue.Of(new CssNumber(initial));
+                }
+
+                if (reader.Count == 1 && name == "opacity" && reader.Peek is Syntax.CssToken { Kind: Syntax.CssTokenKind.Percentage, Number: 100 })
+                {
+                    reader.Next();
+                    return ParsedValue.Of(new CssNumber(1));
+                }
+
+                return ParsedValue.Refused($"'{name}' is supported only at its initial value, {InvariantNumber.Format(initial)}");
+            },
+            AsSpecified);
+
+    /// <summary>A background position axis the engine implements only at its initial value, 0%.</summary>
+    private static PropertyDefinition InitialPercentPair(string name, string appliesTo, string specification) =>
+        new(name, false, new CssPercentage(0), appliesTo, "0%", PropertySupport.InitialOnly, specification,
+            reader => reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, name) is { Value: CssPercentage { Value: 0 } or CssLength { Points: 0 } }
+                ? ParsedValue.Of(new CssPercentage(0))
+                : ParsedValue.Refused($"'{name}' is supported only at its initial value, 0%"),
+            AsSpecified);
+}
