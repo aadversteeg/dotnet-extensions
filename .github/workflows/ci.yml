@@ -413,7 +413,7 @@ jobs:
     # cancelled, and fails unless every pull request job succeeded or was skipped. The two jobs that run on main
     # only are not part of it.
     name: CI result
-    needs: [changes, test, test-netstandard21, test-documents, checks]
+    needs: [changes, test, test-netstandard21, test-documents, test-documents-arm64, checks]
     if: always()
     runs-on: ubuntu-latest
     steps:
