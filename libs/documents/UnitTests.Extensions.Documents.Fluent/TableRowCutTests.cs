@@ -255,8 +255,8 @@ public class TableRowCutTests
         // Review 36, surviving mutant IM1: with a rule or an image counted wherever it lies, a label that holds only a
         // small nested table with lines (rules) or a small image, all within its first row, made a cut inside the
         // rows below it, and 91 of 120 pages ended with an empty strip. What the label draws lies above those rows.
-        // The table is the one of the twin test below (review 40: with one-line rows the row is never cut any more, so
-        // the question was never asked): the second row's cell starts with a line that shows nothing, so a cut there is
+        // The table is the one of the twin test below (with one-line rows the row is never cut any more, so
+        // the question would not be asked): the second row's cell starts with a line that shows nothing, so a cut there is
         // a real breakpoint, and only what the label draws can make it show something.
         Element Label() => kind == "small table with lines"
             ? Table(Columns(Fill(1)), [TableRow([Cell([Block([]).Padding(2.Pt())])])]).GridLines(2.Pt(), Color.Black)

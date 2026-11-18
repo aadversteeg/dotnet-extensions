@@ -8,11 +8,11 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// Content after a box that does not fit the page with its bottom padding or border (review 40, blocker B1). A layout is
+/// Content after a box that does not fit the page with its bottom padding or border. A layout is
 /// never a success while content is left that no page shows: every case prints all its words, or it is refused with
 /// <c>Documents.Layout.DoesNotFit</c>. Where the box's content fits and its bottom padding or border does not, the box
 /// breaks before them and they start the next page, as Chromium prints it (SlicedBox; the cases of
-/// <see cref="BottomPaddingTests"/>). The cases are the review's (m…: page width × height, margin 12 pt; r…: A4,
+/// <see cref="BottomPaddingTests"/>). The cases (m…: page width × height, margin 12 pt; r…: A4,
 /// margin 12 pt, page area 818 pt), each with the outcome it has.
 /// </summary>
 public class ContentAfterOverflowTests
@@ -96,13 +96,13 @@ public class ContentAfterOverflowTests
     [MemberData(nameof(Cases))]
     public void Content_after_a_box_that_overflows_the_page_is_printed_or_the_document_is_refused(string name, string expected)
     {
-        Outcome(name).Should().Be(expected, $"case {name} of review 40");
+        Outcome(name).Should().Be(expected, $"case {name}");
     }
 
     [Fact]
     public void Two_hundred_paragraphs_after_a_framed_figure_are_all_printed_once()
     {
-        // Review case r10: the figure's bottom padding starts page 3, the 200 paragraphs follow it.
+        // Case r10: the figure's bottom padding starts page 3, the 200 paragraphs follow it.
         var pages = Outcome("r10").Split(" | ");
 
         pages[..2].Should().Equal("intro", string.Empty);

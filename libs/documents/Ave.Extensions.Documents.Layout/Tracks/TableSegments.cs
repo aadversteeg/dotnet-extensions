@@ -53,7 +53,7 @@ internal static class TableSegments
     /// segment's natural height of the cell, <see cref="Segment.Natural"/>): a cell whose natural height fits the slice
     /// ends there and is laid out in the whole slice; any other cell cannot end there and is laid out without the
     /// clearance. So a cut cell is laid out once per cut, never a second time to try the other height: in a cell of a
-    /// cell of a cell … a second layout at every level would double the work at every level (review 40, B3 (d)). Returns
+    /// cell of a cell … a second layout at every level would double the work at every level (TableNestingCostTests). Returns
     /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
     /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
     /// itself; for a cell that keeps its break (its content broke at a breakpoint it chose,

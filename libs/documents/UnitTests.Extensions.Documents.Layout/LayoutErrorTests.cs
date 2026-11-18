@@ -138,8 +138,7 @@ public class LayoutErrorTests
     [Fact]
     public void A_root_whose_top_margin_leaves_no_room_says_so_and_reports_the_room_it_had()
     {
-        // Review 40: the wording "which has no room left for it" and the metadata value of DoesNotFit were asserted
-        // nowhere. A root box with a 90 pt top margin on an 80 pt page area has -10 pt left for its content.
+        // The wording "which has no room left for it" and the metadata value of DoesNotFit. A root box with a 90 pt top margin on an 80 pt page area has -10 pt left for its content.
         var document = Document(Paragraph(1, "x"));
         document = document with { Root = document.Root with { Style = BoxStyle.Initial with { Margin = new Edges(90.Pt(), 0.Pt(), 0.Pt(), 0.Pt()), Padding = Edges.All(1.Pt()) } } };
 

@@ -97,19 +97,20 @@ public class TableSpanCloneTests
     }
 
     [Theory]
-    [InlineData(false, 2.0, false)]
-    [InlineData(true, 2.0, false)]
-    [InlineData(false, 4.0, false)]
-    [InlineData(true, 4.0, false)]
-    [InlineData(false, 2.0, true)]
-    [InlineData(true, 4.0, true)]
-    public void With_clone_every_break_closes_the_table_across_its_full_width_on_both_pages(bool header, double spanLine, bool shortSpan)
+    [InlineData(false, 2.0, false, 0)]
+    [InlineData(true, 2.0, false, 0)]
+    [InlineData(false, 4.0, false, 0)]
+    [InlineData(true, 4.0, false, 0)]
+    [InlineData(false, 2.0, true, 0)]
+    [InlineData(true, 4.0, true, 6)]
+    public void With_clone_every_break_closes_the_table_across_its_full_width_on_both_pages(bool header, double spanLine, bool shortSpan, int movedWhole)
     {
         // Offsets move every break through every position in a unit: before it, inside its first row (the spanning cell
         // crosses the line below that row) and inside its second row. With a short spanning cell (one line, beside four
         // in the first row) the second row's one line has nothing beside it that could be cut, so where it does not fit
         // the page breaks between the unit's rows, across the spanning cell that goes on covering the second row.
         var breaks = 0;
+        var firstPagesWithoutTable = 0;
         for (var offset = 0.0; offset < 60; offset += 0.5)
         {
             var because = $"header {header}, spanning cell's border {spanLine}, short spanning cell {shortSpan}, offset {offset}";
@@ -117,9 +118,17 @@ public class TableSpanCloneTests
             result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
 
             // Where the first row's lines fit below the spacer and only its bottom line does not, the row moves whole, as
-            // Chromium moves it (cases fr-f4-*), and the first page holds the empty spacer only.
+            // Chromium moves it (cases fr-f4-*), and the first page holds the empty spacer only: with the header and the
+            // short spanning cell's 4 pt line at 6 offsets (movedWhole), in the other shapes at none.
             var pages = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).ToList()).ToList();
             pages.Skip(1).Should().AllSatisfy(page => page.Should().ContainSingle(), because + ": every later page holds the table");
+            pages[0].Should().HaveCountLessThanOrEqualTo(1, because);
+            if (pages[0].Count == 0)
+            {
+                firstPagesWithoutTable++;
+                TextLines(result.Value[0].Root.Fragment, new Point(0, 0)).Should().BeEmpty(because + ": the first page holds the empty spacer only");
+            }
+
             var tables = pages.Where(page => page.Count > 0).Select(page => page.Single().Box).ToList();
             for (var page = 0; page < tables.Count; page++)
             {
@@ -151,6 +160,7 @@ public class TableSpanCloneTests
         }
 
         breaks.Should().BeGreaterThan(100, "the sweep crosses many breaks");
+        firstPagesWithoutTable.Should().Be(movedWhole, "the offsets at which the first row's lines fit and its bottom line does not");
     }
 
     /// <summary>

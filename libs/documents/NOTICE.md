@@ -196,14 +196,21 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ```
 
-### Followed from HarfBuzz (normalization), Old MIT
+### Followed from HarfBuzz (normalization and shaping), Old MIT
 
 `Typesetting/Unicode/Normalization.cs` follows HarfBuzz 15.1.0's `src/hb-ot-shape-normalize.cc` ("Copyright © 2011,2012
 Google, Inc. This is part of HarfBuzz, a text shaping library."): which clusters are decomposed, reordered and
 composed before shaping. The flag that marks where a glyph run is not safe to break (`Typesetting/Shaping`,
 `ShapedGlyph.UnsafeToBreak`) follows HarfBuzz's `HB_GLYPH_FLAG_UNSAFE_TO_BREAK` (`src/hb-buffer.h`, `hb-buffer.hh`
-`unsafe_to_break`) and how its pair positioning sets it (`hb-ot-layout-gpos-table`, PairPos). HarfBuzz's licence
-(`COPYING`, the same at 15.0.0 and 15.1.0):
+`unsafe_to_break`) and how its pair positioning sets it (`hb-ot-layout-gpos-table`, PairPos). The shaping code follows
+HarfBuzz in five more places, each cited where it is used: glyph classes made up when the font has none, and mark widths
+zeroed by the glyph classes (`src/hb-ot-shape.cc`, `zero_mark_widths_by_gdef`; `Typesetting/Shaping/GlyphFilter.cs`,
+`GlyphPositioning.cs`); which glyphs a lookup skips and how a ligature keeps the glyphs it skips
+(`src/hb-ot-layout-gsubgpos.hh`, `matcher_t::may_skip`, `ligate_input`; `GlyphFilter.cs`, `GlyphSubstitution.cs`); the
+glyphs HarfBuzz marks hidden (`src/hb-ot-layout.hh`; `GlyphFilter.cs`); the script a layout table falls back to
+(`src/hb-ot-layout.cc`, `hb_ot_layout_table_select_script`; `Fonts/OpenType/LayoutTable.cs`); and the limits on the work
+of shaping (`src/hb-limits.hh`; `Typesetting/Shaping/ShapingBudget.cs`). Own code throughout, nothing copied. HarfBuzz's
+licence (`COPYING`, the same at 15.0.0 and 15.1.0):
 
 ```text
 HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.

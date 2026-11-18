@@ -8,7 +8,7 @@ using static UnitTests.Extensions.Documents.Layout.Models;
 namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
-/// A model built by hand is not trusted (review 40, blocker B2 (c)): <see cref="DocumentLayout.Run(StyledDocument, Ave.Extensions.Documents.Fonts.FontSet)"/>
+/// A model built by hand is not trusted: <see cref="DocumentLayout.Run(StyledDocument, Ave.Extensions.Documents.Fonts.FontSet)"/>
 /// checks it against the value ranges and the nesting limit the code front-end enforces (<see cref="ModelCheck"/>,
 /// <see cref="ModelLimits"/>) and answers with an error, where such values made it throw, overflow the stack or lay out
 /// overlapping lines.
@@ -34,7 +34,7 @@ public class ModelCheckTests
     [InlineData(2, 0)]
     public void Orphans_or_widows_below_one_are_refused(int orphans, int widows)
     {
-        // These made Run throw an IndexOutOfRangeException or "no progress" (review 40, B2 (c)).
+        // These made Run throw an IndexOutOfRangeException or "no progress".
         var error = Refused(WithStyle(BoxStyle.Initial with { Orphans = orphans, Widows = widows }));
 
         error.Code.Should().Be(orphans < 1 ? DocumentErrorCodes.Input.Invalid.Orphans : DocumentErrorCodes.Input.Invalid.Widows);
@@ -146,7 +146,7 @@ public class ModelCheckTests
     [Fact]
     public void A_model_nested_far_deeper_than_the_limit_is_refused_without_running_out_of_stack()
     {
-        // Review 40, bounded F-pre4: 512 levels overflowed a 1 MB stack. Built and checked with loops only.
+        // 512 levels overflowed a 1 MB stack. Built and checked with loops only.
         Box box = Paragraph(1, "x");
         for (var level = 0; level < 100_000; level++)
         {

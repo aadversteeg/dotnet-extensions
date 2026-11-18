@@ -138,7 +138,7 @@ public class ModifierTests
     [Fact]
     public void Orphans_and_widows_set_on_the_document_reach_every_paragraph()
     {
-        // Review 40: .Orphans() and .Widows() did not compile on Document, so getting the pages of 0.1.0-preview.2 back
+        // .Orphans() and .Widows() on Document: getting the pages of 0.1.0-preview.2 back
         // (no orphans or widows rule) needed a Block around everything.
         var document = Document([Paragraph("a"), Block([Paragraph("b")]).Orphans(3)], Page(200.Pt(), 200.Pt()), title: "T", language: "en")
             .FontFamily("Lato").Orphans(1).Widows(1);
@@ -166,7 +166,7 @@ public class ModifierTests
     [InlineData(-1.0)]
     public void An_image_s_text_values_are_checked_as_any_element_s(double lineHeight)
     {
-        // Review 40 (inline sub-review, finding 7): an image took a line height and every other text value unchecked.
+        // An image's line height and every other text value are checked.
         var document = Document([Image(TestImages.Bytes("rgb8.png")).Decorative().LineHeight(lineHeight)], Page(200.Pt(), 200.Pt()), title: "T", language: "en").FontFamily("Lato");
 
         DocumentTranslator.ToModel(document).Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LineHeight);

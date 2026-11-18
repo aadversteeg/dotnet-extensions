@@ -552,7 +552,7 @@ Each is documented next to its code as well.
   box kept together does not hide a better breakpoint before it (in Chromium it does, in one shape: `n0 n1 o0 o1 | p0`
   where the engine prints `n0 | n1 o0 o1 p0`); an empty box past the end of the last page adds no blank page; a paragraph that moved to a new page whole counts only
   its orphans before a break on that page, where Chromium counts its widows there too (it differs only where widows are
-  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`). A table header is repeated on every page whatever its height; Chromium repeats it only
+  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). A table header is repeated on every page whatever its height; Chromium repeats it only
   while the header and its grid line are at most a quarter of the page area high (the fragmentainer block size divided by
   4, the page area rounded up to whole pixels first; a header exactly a quarter high repeats: measured at 150, 180 and
   240 pt, limits 37.5, 45 and 60 pt; it also repeats only when the header group is `break-inside: avoid`, which the
@@ -588,8 +588,8 @@ Each is documented next to its code as well.
   `EmptyRowParts.Allow` the engine cuts as Chromium does, also in one more respect: a row whose cells all end on the
   page, with only the half of the grid line below it past the page end, is not cut but moves to the next page whole
   (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: the one step of 42, one pixel apart with and
-  without a repeated header row, where this decides; under `Avoid` the cells keep their half line on the page and the
-  row is cut before its last block). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
+  without a repeated header row, where this decides; under `Avoid` the row moves whole as well, and keeps its cells'
+  line on the page and is cut only where it cannot move, at the top of a page). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
   their whole-pixel forms `a2-padded-blocks-px`, `a3-mirror-px`, with `FontMetricRounding.WholePixels`; `RowPartTests`,
   Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. Chromium paints grid
   lines at whole pixels, the engine where layout puts them; where lengths are not whole pixels they differ by up to
@@ -648,7 +648,9 @@ Each is documented next to its code as well.
   those scripts can come in another order; after a reorder that then composes, the clusters (which glyph carries which
   characters) differ while glyphs and positions agree; Unicode variation sequences (cmap format 14) are not read, the
   default glyph is drawn; the fallbacks for a missing space and for U+2011 are not made (the text is refused with
-  `GlyphMissing`) (`Typesetting/Unicode/Normalization.cs`). A zero width joiner between a base and a mark: the shaper
+  `GlyphMissing`) (`Typesetting/Unicode/Normalization.cs`). The variation selector and the two fallbacks are pinned
+  against HarfBuzz (`NormalizationReferenceTests`); the enclosing mark, the combining classes, the clusters after a
+  reorder and the variation sequences need a font the family's tests do not have, and are not pinned. A zero width joiner between a base and a mark: the shaper
   skips it and attaches the mark; HarfBuzz applies `mark` with manual joiners and leaves the mark unattached. In the
   PDF text layer a soft hyphen outside a ligature is dropped and one inside a ligature kept; Chromium keeps every soft
   hyphen and adds U+2010 at a shown hyphen. Contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
@@ -747,7 +749,7 @@ Each is documented next to its code as well.
 | layering, no native code, test packages stay out | `UnitTests.Extensions.Documents.Architecture` (compiled assemblies); `tools/verify-samples.ps1` step 2 (publish folder, PE headers) | `dotnet test`; the script |
 | line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Extensions.Documents.Typesetting` |
 | shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
-| line ends | Line ends against Chromium's print: 3,667 paragraphs in Lato 75 pt, four alignments, widths around every change of Chromium's lines (`ChromiumLineEndTests`, data in the Typesetting tests' `Reference/Chromium`): every line break equal, every line extent within 0.06 pt. Each piece shaped again against HarfBuzz for that piece alone, the hyphen alone: 19,350 pieces, 0 differences (`LineReshapingReferenceTests`). The unsafe-to-break flags against HarfBuzz's: 3,004 clusters, 0 differences (`UnsafeToBreakReferenceTests`). | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
+| line ends | Line ends against Chromium's print: 3,667 paragraphs in Lato 75 pt, four alignments, widths around every change of Chromium's lines (`ChromiumLineEndTests`, data in the Typesetting tests' `Reference/Chromium`): every line break equal, every line extent within 0.06 pt. Each piece shaped again against HarfBuzz for that piece alone, the hyphen alone: 19,350 pieces, 0 differences (`LineReshapingReferenceTests`). The unsafe-to-break flags against HarfBuzz's: 3,046 clusters, 0 differences (`UnsafeToBreakReferenceTests`). | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
 | preview images | every sample page against MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF, at 96 and 300 dpi, by the rule in `RasterComparison`; golden PNG files of the samples | `UnitTests.Extensions.Documents.Samples/RasterReferenceTests.cs`, `PreviewTests.cs`; `tools/reference/raster/README.md` |
 | glyph outlines | fontTools 4.57.0 in the reference tools image, every glyph of the test fonts and hand-made composites, point for point and exactly | `UnitTests.Extensions.Documents.Fonts/GlyphShapeReferenceTests.cs` |
 | JPEG decoding | the ITU-T T.83 compliance streams A1, C1, C2, G1, K1 (downloaded when the tests run, SHA-256 checked on every use, trait `Category=Network`: a failed download fails on CI and skips elsewhere): coefficients equal EREF, re-transformed samples equal DREF, exactly; libjpeg-turbo 2.1.5 `djpeg -dct int` on cjpeg-made files, within a stated difference per case | `UnitTests.Extensions.Documents.Images/JpegConformanceTests.cs`, `JpegDecoderReferenceTests.cs` |

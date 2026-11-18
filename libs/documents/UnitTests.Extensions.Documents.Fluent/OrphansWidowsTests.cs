@@ -75,7 +75,7 @@ public class OrphansWidowsTests
         // A cut where the text cell would hold nothing of itself is a last resort, even though the padded block beside it
         // fits; the row moves whole, as Chromium prints it. In c-cell-first-line neither the line nor the 6 pt block
         // fits below the intro; in fr-cell-first-line-block-fits (4 pt higher) the block fits and the line does not, which
-        // is what this test is about (review 40: the first case alone did not show it).
+        // is what this test is about (the first case alone does not show it).
         var table = Table(Columns(Fill(1), Fill(1)), [TableRow([Cell("x"), Cell([Block([]).PaddingTop(3.Pt()).PaddingBottom(3.Pt()).Background(new Color(0x22, 0x44, 0xCC))])])])
             .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
 

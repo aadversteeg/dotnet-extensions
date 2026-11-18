@@ -9,7 +9,7 @@ namespace UnitTests.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// Bounded work on text: line breaking and shaping lines again are linear in the paragraph, putting marks on a base and
-/// normalizing are linear in the cluster. Each input of the review that found the quadratic cases is run at two sizes, the
+/// normalizing are linear in the cluster. Each input that showed the quadratic cases is run at two sizes, the
 /// second twice the first, and its work is COUNTED, not timed: characters handed to the reshaper, operations charged to the
 /// shaping budget, the normalizer's steps, and the bytes allocated on the thread. Linear work at most doubles (with a margin
 /// for the fixed part); a quadratic term quadruples.
@@ -62,7 +62,7 @@ public class TextCostTests(ITestOutputHelper output)
     [Fact]
     public void A_paragraph_of_many_words_on_one_tall_page_is_broken_in_linear_work()
     {
-        // The review's `para 8000 h=14000 w=300 fs=2`: hundreds of lines on one page, each candidate measured.
+        // The input `para 8000 h=14000 w=300 fs=2`: hundreds of lines on one page, each candidate measured.
         Break(Words(500), 2, 276);
         Linearly("words", 4000, Break(Words(4000), 2, 276), Break(Words(8000), 2, 276));
     }
@@ -79,11 +79,11 @@ public class TextCostTests(ITestOutputHelper output)
     public void Kerned_words_that_join_every_glyph_to_the_one_before_are_broken_in_linear_work()
     {
         // `para 4000 kind=kernwords h=14000 w=14000 fs=1`: no safe place in the whole paragraph, so an end shaped again
-        // reaches back to the line's start or on to its end. On the review's page (about 3 000 words a line) the work is at
+        // reaches back to the line's start or on to its end. On the wide page (about 3 000 words a line) the work is at
         // most a few times the text; in lines of about 200 words it grows linearly with the paragraph.
         Break(KernedWords(100), 1, 13976);
         var wide = Break(KernedWords(4000), 1, 13976);
-        output.WriteLine($"kerned words on the review's page: {wide}");
+        output.WriteLine($"kerned words on the wide page: {wide}");
         wide.Characters.Should().BeLessThanOrEqualTo(2 * 7 * 4000, "each line's text is shaped again at most a few times");
         var small = Break(KernedWords(4000), 1, 1000);
         var large = Break(KernedWords(8000), 1, 1000);
@@ -94,7 +94,7 @@ public class TextCostTests(ITestOutputHelper output)
     [Fact]
     public void All_pieces_of_a_paragraph_cut_into_many_lines_share_one_budget_and_stay_under_it()
     {
-        // The review's soft-hyphen input in a narrow column (`para n kind=shy w=30`), with letters that kern across the soft
+        // The soft-hyphen input in a narrow column (`para n kind=shy w=30`), with letters that kern across the soft
         // hyphens, so that every line end is shaped again: thousands of pieces, one paragraph.
         var text = string.Join("\u00AD", Enumerable.Range(0, 4000).Select(index => index % 2 == 0 ? "A" : "V"));
         var font = TestFonts.Regular;

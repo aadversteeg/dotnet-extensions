@@ -8,8 +8,8 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// Where tables break, against Chromium's print (cases <c>fr-f4-*</c> to <c>fr-f9-*</c> of <c>tools/reference/chromium</c>,
-/// the documents of review 40's tables sub-review, findings F4 to F9; M5 items 4 to 8). Page area 276 × 150 pt, Lato
+/// Where tables break, against Chromium's print (cases <c>fr-f4-*</c> to <c>fr-f9-*</c> of <c>tools/reference/chromium</c>).
+/// Page area 276 × 150 pt, Lato
 /// 12 pt on 18 pt lines, 0.75 pt grid lines split at breaks (the line drawing Chromium has), orphans and widows 1 unless a
 /// case says otherwise.
 /// </summary>
@@ -42,7 +42,7 @@ public class TableBreakReferenceTests
     [Fact]
     public void A_row_moves_whole_when_a_cells_lines_fit_and_only_its_share_of_the_grid_line_does_not()
     {
-        // M5 item 4, F4: "a" ends exactly at the page end, the line below it does not fit. Control 2.25 pt higher: cut.
+        // "a" ends exactly at the page end, the line below it does not fit. Control 2.25 pt higher: cut.
         ShouldPrintLikeChromium("fr-f4-one-line-cell-beside-cut-cell", 1, 1,
             Paragraph("i").MarginBottom(113.25.Pt()), Grid(Table([Fill(), Fill()], [TableRow([Cell([Paragraph("a")]), Cell([Lines("b0", "b1", "b2")])])])));
         ShouldPrintLikeChromium("fr-f4-one-line-cell-beside-cut-cell-control", 1, 1,
@@ -87,7 +87,7 @@ public class TableBreakReferenceTests
     [Fact]
     public void Inside_a_row_group_kept_together_and_taller_than_the_page_the_rows_break_between_them()
     {
-        // M5 item 5, F6: the group's keep must break anyway; inside it the break between the rows is the better one, not a
+        // The group's keep must break anyway; inside it the break between the rows is the better one, not a
         // cut inside a kept row nor one against orphans 3.
         ShouldPrintLikeChromium("fr-f6-kept-group-kept-row-fits-a-page", 1, 1,
             Grid(Table([Fill()], [RowGroup([TableRow([Cell([Lines("a0", "a1", "a2", "a3")])]), TableRow([Cell([Lines("b0", "b1", "b2", "b3", "b4")])]).KeepTogether()]).KeepTogether()])),
@@ -103,7 +103,7 @@ public class TableBreakReferenceTests
     [Fact]
     public void A_row_kept_together_keeps_the_rows_its_spanning_cell_reaches_into()
     {
-        // M5 item 6, F8, with its two controls.
+        // A kept row with a spanning cell, with its two controls.
         TableElement Spanned(bool keptRow, bool keptCell)
         {
             var spanning = Cell([Paragraph("s")]).RowSpan(2);
@@ -119,7 +119,7 @@ public class TableBreakReferenceTests
     [Fact]
     public void A_cell_that_spans_rows_fills_the_page_when_the_page_breaks_between_those_rows()
     {
-        // M5 item 7, F7: the spanning cell goes on to the page end, not only to the end of its first row.
+        // The spanning cell goes on to the page end, not only to the end of its first row.
         ShouldPrintLikeChromium("fr-f7-span-cut-at-row-boundary", 1, 1,
             Paragraph("i").MarginBottom(72.Pt()),
             Grid(Table([Fill(), Fill()], [TableRow([Cell([Lines("s0", "s1", "s2", "s3")]).RowSpan(2), Cell([Paragraph("a")])]), TableRow([Cell([Lines("b0", "b1", "b2")])]).KeepTogether()])),
@@ -141,7 +141,7 @@ public class TableBreakReferenceTests
     [Fact]
     public void Where_the_only_break_inside_a_box_or_a_cell_breaks_orphans_the_box_or_the_row_still_breaks_inside()
     {
-        // M5 item 8, F9: the box and the cell keep the break they chose; their parents do not trade it for the break
+        // The box and the cell keep the break they chose; their parents do not trade it for the break
         // before them.
         ShouldPrintLikeChromium("fr-f9-box-orphans3", 3, 1,
             Paragraph("i").MarginBottom(60.Pt()), Block([Lines("a0", "a1", "a2").KeepWithNext(), Lines("q0", "q1", "q2", "q3").KeepTogether()]), Paragraph("z"));
@@ -160,7 +160,6 @@ public class TableBreakReferenceTests
     [Fact]
     public void A_keep_rule_never_reaches_back_into_a_table_or_a_box_that_continues_from_the_page_before()
     {
-        // M5 item 1, F5.
         ShouldPrintLikeChromium("fr-f5-continued-table", 1, 1,
             Paragraph("i").MarginBottom(72.Pt()),
             Grid(Table([Fill()], [.. Enumerable.Range(0, 10).Select(row => (TablePart)TableRow([Cell([Paragraph($"r{row}")])]))])).KeepWithNext(),

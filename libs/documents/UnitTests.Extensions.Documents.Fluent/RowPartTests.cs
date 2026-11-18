@@ -79,7 +79,7 @@ public class RowPartTests
     [Fact]
     public void A_row_whose_rest_would_show_nothing_on_the_next_page_moves_whole()
     {
-        // The mirror of the strip (review 36): each row is a line of text beside two empty blocks with 4 pt padding. The
+        // The mirror of the strip: each row is a line of text beside two empty blocks with 4 pt padding. The
         // page end falls below t1's text but inside its second block: Chromium cuts there, so page 2 starts with an empty
         // 9 pt part of t1. The engine moves t1 to page 2 whole: the default policy, Avoid (see the class).
         TableElement Rows() => Table(Columns(Fill(1), Fill(1)),
@@ -277,7 +277,7 @@ public class RowPartTests
     [InlineData(true)]
     public void Rows_beside_two_padded_empty_blocks_never_leave_a_part_that_shows_nothing_at_a_page_end_or_start(bool clone)
     {
-        // The mirror, swept (review 36 found it in 237 of 2 400 documents): every page end over two rows.
+        // The mirror, swept (it was in 237 of 2 400 random documents): every page end over two rows.
         TableElement Rows()
         {
             var table = Table(Columns(Fill(1), Fill(1)),
@@ -300,7 +300,7 @@ public class RowPartTests
     [InlineData(0.0, 8.0)]
     public void Text_hidden_under_a_thick_line_does_not_count_as_shown_in_the_row_below_it(double first, double second)
     {
-        // Review 36: units of two rows beside a five-word cell that spans them, an 8 pt line under one row of each unit,
+        // Units of two rows beside a five-word cell that spans them, an 8 pt line under one row of each unit,
         // clone; with 5 pt top padding in the spanning cell a page ended with the 8 pt line and the closing line under it,
         // because the cell's text reached 1 pt into the row below, where the thick line covers it. The visible part of a
         // row starts under the line above it, so that row is not cut there: no part of a row that shows nothing, for every

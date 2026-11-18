@@ -6,8 +6,8 @@ using Ave.Extensions.Documents.TestSupport;
 namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
-/// Every measured Chromium case is read by a test (review 40: the <c>words</c>, <c>lines</c> and <c>boxes</c> files and
-/// eleven old <c>print</c> files were read by none). The three read-backs of one print must agree: the words that
+/// Every measured Chromium case is read by a test (the <c>words</c>, <c>lines</c> and <c>boxes</c> files and
+/// eleven old <c>print</c> files were read by none before). The three read-backs of one print must agree: the words that
 /// poppler's <c>pdftotext -bbox</c> finds (<c>words.txt</c>) are the words PyMuPDF finds (<c>print.txt</c>), page by
 /// page (pdftotext writes them as HTML text, so <c>&amp;apos;</c> is an apostrophe); the filled rectangles of <c>rectangles.py</c> (<c>lines.txt</c>) are the rectangles of <c>positions.py</c>; and
 /// every box measured in the page (<c>boxes.txt</c>) has a size, and a cell that holds a word holds a word the print

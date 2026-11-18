@@ -8,8 +8,8 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// Line boxes against Chromium's print (cases <c>fr-empty-span*</c> and <c>fr-lh-*</c> of <c>tools/reference/chromium</c>,
-/// the documents of review 40's line-height sub-review). Lato, margin 12 pt.
+/// Line boxes against Chromium's print (cases <c>fr-empty-span*</c> and <c>fr-lh-*</c> of <c>tools/reference/chromium</c>).
+/// Lato, margin 12 pt.
 /// </summary>
 public class LineBoxReferenceTests
 {
@@ -65,7 +65,7 @@ public class LineBoxReferenceTests
         // The font metrics move the baseline under an explicit line height too. Lato 10 pt at line-height 1.5: Chromium's
         // used height is 19.984375 px (the product floored to 1/64 px), ascent and descent rounded to 13 + 3 px, half-
         // leading floored to 1 px: the baseline 14 px below the line top. The engine's is 15.16 px: 1.16 px (0.87 pt) lower,
-        // the largest difference the review measured. The test allows exactly that, and the pitch is the same in both.
+        // the largest difference measured. The test allows exactly that, and the pitch is the same in both.
         var engine = Print(624, 10, Paragraph([Text("a0"), LineBreak(), Text("a1"), LineBreak(), Text("a2"), LineBreak(), Text("a3")]).LineHeight(1.5), Paragraph("after"));
         var chromium = PrintedPages.Chromium("fr-lh-first-baseline");
 

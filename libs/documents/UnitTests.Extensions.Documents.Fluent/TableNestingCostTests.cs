@@ -7,7 +7,7 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// The work of nested tables that break across a page (review 40, blocker B3 (d)): a paragraph of 12 forced lines on a page
+/// The work of nested tables that break across a page: a paragraph of 12 forced lines on a page
 /// that holds 10, inside <c>t</c> one-cell tables. With repeated grid lines (the default) every level laid its cut cell
 /// out twice, once in the whole slice and once clear of the line at the cut, so the work doubled with every level:
 /// 2^t layout calls, and a document of a few hundred bytes did not finish. A cut cell is now laid out once
@@ -66,7 +66,7 @@ public class TableNestingCostTests
     [InlineData(15, 544)]
     public void Nested_tables_that_break_cost_the_same_with_repeated_grid_lines_as_without(int tables, long calls)
     {
-        // 2 (t + 1)(t + 2): the review's base counted 4,093 calls at 9 tables and 262,141 at 15, with repeated lines. The
+        // 2 (t + 1)(t + 2): the base before this rule counted 4,093 calls at 9 tables and 262,141 at 15, with repeated lines. The
         // count is quadratic in the depth, not exponential: each table measures every table inside it at unlimited height
         // (TableSegments.Measure) and lays a cut cell out once in the cut and once for what is left (CutShows, Rest). A
         // change that makes it worse fails here; one that makes it better (a layout result kept within the page, planned

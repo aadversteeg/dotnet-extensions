@@ -10,7 +10,7 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <summary>
 /// The differences from Chromium that <c>docs/architecture.md</c> lists ("Against Chromium" and the refusals among the
 /// layout limits), each pinned with both results: the engine's pages and Chromium's print of the same document (cases
-/// <c>fr-old-*</c> of <c>tools/reference/chromium</c>; review 40, the differences that <c>main</c> has too). A change to
+/// <c>fr-old-*</c> of <c>tools/reference/chromium</c>, and the newer ones named in each test). A change to
 /// either side fails here, so a fixed difference is a deliberate edit of this file and of the list.
 /// </summary>
 public class ListedDifferenceTests
@@ -170,6 +170,18 @@ public class ListedDifferenceTests
         BothAre(caseName, engine, chromium, Engine(78, orphans, KeepWithNextAcrossPadding(caseName)));
     }
 
+    [Theory]
+    [InlineData("fr-moved-para-widows-4", 4, "i0 i1 | a0 a1 | a2 a3 a4", "i0 i1 | a0 a1 a2 | a3 a4")]
+    [InlineData("fr-moved-para-widows-3-control", 3, "i0 i1 | a0 a1 | a2 a3 a4", "i0 i1 | a0 a1 | a2 a3 a4")]
+    public void A_paragraph_that_moved_to_a_new_page_whole_counts_only_its_orphans_before_a_break_there(string caseName, int widows, string engine, string chromium)
+    {
+        // Page area 54 pt (three lines), orphans 2. One line of a0 … a4 would fit below i0 i1, fewer than its orphans, so
+        // the paragraph moves to page 2 whole and breaks there. The engine counts only its orphans on that page and keeps
+        // two lines so that three follow; Chromium counts its widows there too, and where they are more than the page
+        // holds (4) it breaks where the page is full. With widows 3 both print the same.
+        BothAre(caseName, engine, chromium, Engine(78, 2, Lines("i0", "i1"), Block([Lines("a0", "a1", "a2", "a3", "a4").Widows(widows)])));
+    }
+
     [Fact]
     public void A_header_taller_than_the_page_is_refused()
     {
@@ -252,8 +264,7 @@ public class ListedDifferenceTests
     [Fact]
     public void A_child_s_own_break_inside_avoid_lowers_an_early_break_inside_it()
     {
-        // Review 40, a planted defect without a verdict (the child's own keep ignored for an early break inside it,
-        // FlowLayout) that survived the whole suite: the only better-looking break lies inside the kept paragraph, and its
+        // The child's own keep, applied to an early break inside it (FlowLayout), which no other test holds: the only better-looking break lies inside the kept paragraph, and its
         // keep makes it no better than the natural break before q. Same pages as Chromium.
         var engine = Engine(114, 1, Lines("a0", "a1", "a2", "a3").KeepWithNext().KeepTogether(), Paragraph("h0").KeepWithNext(), Lines("q0", "q1", "q2").KeepTogether());
         engine.Should().Be(Chromium("fr-own-avoid-early-break"));

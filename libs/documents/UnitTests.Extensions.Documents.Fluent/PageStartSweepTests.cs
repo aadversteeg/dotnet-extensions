@@ -17,8 +17,8 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <c>a1-*</c> reference cases. For every document: it is laid out (no refusal: nothing in it is taller than a page),
 /// every word is on some page exactly once, nothing passes the end of the page area, and no part of a table row that
 /// shows nothing is left at a page end or start — except where the row shows nothing over a whole page, which no layout
-/// can avoid. The words a page must show come from the input document, not from a layout (review 40, B1: an oracle made
-/// by the engine missed content the engine lost at every offset). Pieces with bottom padding or a bottom border in block
+/// can avoid. The words a page must show come from the input document, not from a layout (an oracle made
+/// by the engine would miss content the engine lost at every offset). Pieces with bottom padding or a bottom border in block
 /// flow, and a paragraph after every piece, test that nothing after a box that does not fit is lost. The generator is
 /// deterministic, and the numbers of documents and pages are pinned.
 /// </summary>
