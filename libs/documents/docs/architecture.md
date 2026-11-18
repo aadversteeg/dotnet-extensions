@@ -561,7 +561,10 @@ Each is documented next to its code as well.
   in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
   (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
   the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
-  row whole on the next (cases `fr-f4-padding-page-start`, `a2-cells-end-page-top`).
+  row whole on the next (cases `fr-f4-padding-page-start`, `a2-cells-end-page-top`); a row that starts a later page,
+  after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
+  line, where Chromium prints all its lines on that page and lets the padding overflow (cases
+  `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`).
   Under a repeated header row, a cell whose box's bottom or top padding does not fit on a page with the box's content
   takes the engine a page more than Chromium: with the header repeated (a listed rule above), a page holds the header
   and only the top border of the box, where Chromium prints the box's first line (cases `fr-header-pad-box-20`,
@@ -570,6 +573,11 @@ Each is documented next to its code as well.
   only its padding does not (`fr-header-pad-box-72`). Without the header row both print the same pages
   (`fr-header-pad-none-36`). Padding taller than the page area with content after it is refused (the limit above;
   `fr-header-pad-box-50`).
+  A keep-with-next on the last paragraph inside boxes whose bottom padding goes to a page of its own holds across that
+  padding: the engine then breaks the next paragraph against its orphans, widows or keep (`a0 | a1 | j0 | j1 j2 z`),
+  where Chromium breaks before it and the page with the padding holds nothing else (`a0 | a1 | (blank) | j0 j1 j2 | z`).
+  Where the keep-with-next is on the outer box, with `orphans` 1, without the padding or without the keep, both print
+  the same pages (cases `fr-kwn-pad-*`).
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body

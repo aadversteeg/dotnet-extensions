@@ -23,13 +23,16 @@ public class ListedDifferenceTests
     private static TableElement Grid(TableElement table) => table.GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
 
     /// <summary>The engine's pages, separated by <c> | </c>, or <see cref="Refused"/> and the code.</summary>
-    private static string Engine(double height, int orphans, params Element[] body)
+    private static string Engine(double height, int orphans, params Element[] body) => Engine(height, orphans, orphans, body);
+
+    /// <summary>The engine's pages with <c>orphans</c> and <c>widows</c> of their own.</summary>
+    private static string Engine(double height, int orphans, int widows, params Element[] body)
     {
         Element[] withValues = [.. body.Select(element => element switch
         {
-            ParagraphElement paragraph => paragraph.Orphans(orphans).Widows(orphans),
-            BlockElement block => block.Orphans(orphans).Widows(orphans),
-            TableElement table => table.Orphans(orphans).Widows(orphans),
+            ParagraphElement paragraph => paragraph.Orphans(orphans).Widows(widows),
+            BlockElement block => block.Orphans(orphans).Widows(widows),
+            TableElement table => table.Orphans(orphans).Widows(widows),
             _ => element,
         })];
         var result = DocumentTranslator.ToModel(Document([.. withValues], Page(300.Pt(), height.Pt()).Margin(12.Pt()), title: "Title", language: "en").FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt()))
@@ -119,6 +122,54 @@ public class ListedDifferenceTests
         BothAre("fr-header-pad-none-36", "a |  | AFTER", "a |  | AFTER", Engine(60, 1, alone, Paragraph("AFTER")));
     }
 
+    /// <summary>The documents of <see cref="Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own"/>:
+    /// a0 a1 with keep-with-next inside two boxes with bottom padding (15 pt inside, 27 pt outside), then j0 j1 j2 and z.</summary>
+    private static Element[] KeepWithNextAcrossPadding(string caseName)
+    {
+        var j = Lines("j0", "j1", "j2");
+        BlockElement Boxes(ParagraphElement a, bool innerKeeps = false, bool outerKeeps = false)
+        {
+            var inner = Block([a]).PaddingBottom(15.Pt());
+            var outer = Block([innerKeeps ? inner.KeepWithNext() : inner]).PaddingBottom(27.Pt());
+            return outerKeeps ? outer.KeepWithNext() : outer;
+        }
+
+        var lead = Boxes(Lines("a0", "a1").KeepWithNext());
+        var bordered = Block([j.Widows(4)]).BorderTop(0.75.Pt(), Color.Black);
+        return caseName switch
+        {
+            "fr-kwn-pad-then-bordered-box-widows4" => [lead, bordered, Paragraph("z")],
+            "fr-kwn-pad-no-padding-control" => [Paragraph("a0").MarginBottom(9.Pt()).KeepWithNext(), j, Paragraph("z")],
+            "fr-kwn-pad-on-inner-box" => [Boxes(Lines("a0", "a1"), innerKeeps: true), j, Paragraph("z")],
+            "fr-kwn-pad-on-outer-box" => [Boxes(Lines("a0", "a1"), outerKeeps: true), j, Paragraph("z")],
+            "fr-kwn-pad-one-box" => [Block([Lines("a0", "a1", "a2").KeepWithNext()]).PaddingBottom(27.Pt()), j, Paragraph("z")],
+            "fr-kwn-pad-then-kept-para" => [lead, j.KeepTogether(), Paragraph("z")],
+            "fr-kwn-pad-on-outer-box-then-bordered-box" => [Boxes(Lines("a0", "a1"), outerKeeps: true), bordered, Paragraph("z")],
+            "fr-kwn-pad-no-kwn-control" => [Boxes(Lines("a0", "a1")), j, Paragraph("z")],
+            _ => [lead, j, Paragraph("z")],
+        };
+    }
+
+    [Theory]
+    [InlineData("fr-kwn-pad-then-bordered-box-widows4", 2, "a0 | a1 | j0 | j1 j2 z", "a0 | a1 |  | j0 j1 | j2 z")]
+    [InlineData("fr-kwn-pad-then-para", 2, "a0 | a1 | j0 | j1 j2 z", "a0 | a1 |  | j0 j1 j2 | z")]
+    [InlineData("fr-kwn-pad-on-inner-box", 2, "a0 | a1 | j0 | j1 j2 z", "a0 | a1 |  | j0 j1 j2 | z")]
+    [InlineData("fr-kwn-pad-then-kept-para", 1, "a0 | a1 | j0 | j1 j2 z", "a0 | a1 |  | j0 j1 j2 | z")]
+    [InlineData("fr-kwn-pad-no-padding-control", 2, "a0 j0 | j1 j2 z", "a0 j0 | j1 j2 z")]
+    [InlineData("fr-kwn-pad-on-outer-box", 2, "a0 | a1 | j0 | j1 j2 z", "a0 | a1 | j0 | j1 j2 z")]
+    [InlineData("fr-kwn-pad-one-box", 2, "a0 a1 | a2 | j0 j1 j2 | z", "a0 a1 | a2 | j0 j1 j2 | z")]
+    [InlineData("fr-kwn-pad-on-outer-box-then-bordered-box", 2, "a0 | a1 | j0 | j1 j2 z", "a0 | a1 | j0 | j1 j2 z")]
+    [InlineData("fr-kwn-pad-orphans1", 1, "a0 | a1 | j0 | j1 j2 z", "a0 | a1 | j0 | j1 j2 z")]
+    [InlineData("fr-kwn-pad-no-kwn-control", 2, "a0 | a1 |  | j0 j1 j2 | z", "a0 | a1 |  | j0 j1 j2 | z")]
+    public void Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own(string caseName, int orphans, string engine, string chromium)
+    {
+        // Page area 54 pt (three lines). a1 ends page 2 and the 27 pt of the outer box's bottom padding start page 3. The
+        // engine holds the keep-with-next of the paragraph a0 a1 across that padding, so it breaks j against its orphans
+        // (or its widows, or its keep) after j0 on page 3; Chromium breaks before j and page 3 holds only the padding. Where
+        // the keep-with-next is on the outer box, with orphans 1, without padding or without the keep, both print the same.
+        BothAre(caseName, engine, chromium, Engine(78, orphans, KeepWithNextAcrossPadding(caseName)));
+    }
+
     [Fact]
     public void A_header_taller_than_the_page_is_refused()
     {
@@ -133,6 +184,25 @@ public class ListedDifferenceTests
         // Chromium leaves the first page blank, prints the row and lets its padding overflow.
         var table = Grid(Table([Fill()], [TableRow([Cell([Paragraph("w")]).PaddingBottom(140.Pt())])]));
         BothAre("fr-old-row-taller-by-padding", $"{Refused} {LayoutErrorCodes.DoesNotFit}", " | w | z", Engine(174, 1, table, Paragraph("z")));
+    }
+
+    [Theory]
+    [InlineData("fr-row-later-page-padding-overflows", false)]
+    [InlineData("fr-row-later-page-padding-overflows-two-cells", true)]
+    public void A_row_that_starts_a_later_page_and_is_taller_than_it_through_its_padding_is_cut(string caseName, bool twoCells)
+    {
+        // Page 1 is full with "i" and the first row; the second row, seven lines with 12 pt top and bottom padding, is 0.75 pt
+        // taller than the 150 pt page area with its grid lines, and starts page 2. The engine cuts it before w7; Chromium
+        // prints all its lines on page 2 and lets the padding overflow.
+        var padded = Cell([Lines("w1", "w2", "w3", "w4", "w5", "w6", "w7")]).PaddingTop(12.Pt()).PaddingBottom(12.Pt()).PaddingLeft(3.Pt()).PaddingRight(3.Pt());
+        var first = Cell([Lines("a0", "a1", "a2", "a3", "a4", "a5", "a6")]);
+        var table = twoCells
+            ? Grid(Table([Fill(), Fill()], [TableRow([first, Cell("b")]), TableRow([padded, Cell([Lines("v1", "v2", "v3", "v4", "v5", "v6")]).PaddingTop(12.Pt()).PaddingBottom(12.Pt()).PaddingLeft(3.Pt()).PaddingRight(3.Pt())])]))
+            : Grid(Table([Fill()], [TableRow([first]), TableRow([padded])]));
+        var (engine, chromium) = twoCells
+            ? ("i a0 b a1 a2 a3 a4 a5 a6 | w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 | w7 z", "i a0 b a1 a2 a3 a4 a5 a6 | w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7 | z")
+            : ("i a0 a1 a2 a3 a4 a5 a6 | w1 w2 w3 w4 w5 w6 | w7 z", "i a0 a1 a2 a3 a4 a5 a6 | w1 w2 w3 w4 w5 w6 w7 | z");
+        BothAre(caseName, engine, chromium, Engine(174, 3, 1, Paragraph("i"), table, Paragraph("z")));
     }
 
     [Fact]
