@@ -256,7 +256,7 @@ colour 51,102,153 on white meeting at half a pixel give 102,140,178 at the bound
 no such items (`tools/reference/raster/README.md`). An enlarged image shows its sample squares, as the PDF defines it
 (ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. An image
 whose grid reaches farther than 2^40 device pixels from the origin (`Canvas.MaxImageReach`; at 96 dpi about
-7.9 × 10^11 pt) is refused: `Documents.Graphics.InvalidValue` from the canvas, `Documents.Raster.ImageOutOfReach` from
+8.25 × 10^11 pt) is refused: `Documents.Graphics.InvalidValue` from the canvas, `Documents.Raster.ImageOutOfReach` from
 the raster back-end; the PDF back-end writes such an image as the page model says. The bound is the arithmetic of
 placing the image's pixel edges: each is computed from terms as large as the reach, each product and sum rounds by
 2^-53 of its size, so an edge lies at most 6 · 2^-53 · reach from its exact place, within the bound 2^-10.4 pixel (under
