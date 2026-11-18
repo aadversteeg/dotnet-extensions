@@ -55,6 +55,7 @@
     <Project Path="libs/documents/Ave.Extensions.Documents.DocumentModel/Ave.Extensions.Documents.DocumentModel.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Fluent/Ave.Extensions.Documents.Fluent.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Fonts/Ave.Extensions.Documents.Fonts.csproj" />
+    <Project Path="libs/documents/Ave.Extensions.Documents.Html.Parsing/Ave.Extensions.Documents.Html.Parsing.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Images/Ave.Extensions.Documents.Images.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.Layout/Ave.Extensions.Documents.Layout.csproj" />
     <Project Path="libs/documents/Ave.Extensions.Documents.PageModel/Ave.Extensions.Documents.PageModel.csproj" />
@@ -67,6 +68,7 @@
     <Project Path="libs/documents/UnitTests.Extensions.Documents.DocumentModel/UnitTests.Extensions.Documents.DocumentModel.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Fluent/UnitTests.Extensions.Documents.Fluent.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Fonts/UnitTests.Extensions.Documents.Fonts.csproj" />
+    <Project Path="libs/documents/UnitTests.Extensions.Documents.Html.Parsing/UnitTests.Extensions.Documents.Html.Parsing.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Images/UnitTests.Extensions.Documents.Images.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.Layout/UnitTests.Extensions.Documents.Layout.csproj" />
     <Project Path="libs/documents/UnitTests.Extensions.Documents.PageModel/UnitTests.Extensions.Documents.PageModel.csproj" />

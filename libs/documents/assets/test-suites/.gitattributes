@@ -1,0 +1,3 @@
+# Vendored test suites: kept byte for byte as upstream has them (some files hold carriage returns and NULs that
+# are test data), so no line-end conversion in either direction.
+* -text

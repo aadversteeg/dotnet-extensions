@@ -54,6 +54,29 @@ the Unicode License v3 (`assets/unicode/18.0.0/LICENSE.txt`). The table in
 `Ave.Extensions.Documents.Typesetting/Unicode/UnicodePropertyRanges.g.cs` is generated from them. The line breaking
 algorithm is written from UAX #14, revision 57.
 
+## HTML Standard and Encoding Standard data
+
+`Ave.Extensions.Documents.Html.Parsing/Tokenizing/named-character-references.txt` is generated from the HTML Standard's
+table of named character references (§13.5, https://html.spec.whatwg.org/entities.json, SHA-256
+`d741d877ac77c4194c4ad526b5b4a19aef8dfe411ab840a466891cdbb9f362e6`, downloaded 2026-11-18) by
+`tools/generate-html-entities.py`; `Ave.Extensions.Documents.Html.Parsing/Decoding/EncodingLabels.g.cs` is generated from
+the Encoding Standard's table of labels (§4.2, https://encoding.spec.whatwg.org/encodings.json, SHA-256
+`078212b3697f60b81225b6671bd9da2604497abff0aa8e96e4d46605c02ac9e7`) by `tools/generate-encoding-labels.py`. Both
+standards are Copyright © WHATWG (Apple, Google, Mozilla, Microsoft), licensed under the Creative Commons Attribution 4.0
+International License; "to the extent portions of it are incorporated into source code, such portions in the source
+code are licensed under the BSD 3-Clause License instead". The parsing algorithm itself is written from the HTML
+Standard's text (§13.2, read 2026-11-18); no code was copied or ported.
+
+## Test suites
+
+Vendored in `assets/test-suites/` (see the README there), used by the tests only:
+
+- html5lib-tests, tokenizer tests, commit `c5495c539ca8a79c3c5107f5f14010bcff9a35d5`: Copyright (c) 2006-2013 James
+  Graham, Geoffrey Sneddon, and other contributors; MIT licence (`assets/test-suites/html5lib-tests/LICENSE`).
+- web-platform-tests, the tree-construction tests in `html/syntax/parsing/resources/`, commit
+  `93494ff9dfc26c59245941548bb7da799e8baaef`: Copyright © web-platform-tests contributors; 3-Clause BSD License
+  (`assets/test-suites/wpt/LICENSE.md`).
+
 ## Fonts
 
 `assets/fonts/lato/` contains Lato 2.015 Regular, Bold and Italic by Łukasz Dziedzic (tyPoland), licensed under the

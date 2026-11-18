@@ -77,7 +77,7 @@ public class PackageRulesTests
             .Where(name => !ProjectFile(name).Descendants("IsPackable").Any(element => element.Value == "false"));
 
     [Fact]
-    public void The_packed_projects_are_the_eleven_libraries_of_the_layer_list() =>
+    public void The_packed_projects_are_the_libraries_of_the_layer_list() =>
         PackedProjectNames().Should().BeEquivalentTo(AssemblyRulesTests.LibraryNames);
 
     [Theory]

@@ -26,6 +26,7 @@ public class AssemblyRulesTests
         ["Ave.Extensions.Documents.Layout"] = ["Core", "Fonts", "Images", "Typesetting", "DocumentModel", "PageModel"],
         ["Ave.Extensions.Documents.Render.Pdf"] = ["Core", "Fonts", "Images", "Pdf", "PageModel"],
         ["Ave.Extensions.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel"],
+        ["Ave.Extensions.Documents.Html.Parsing"] = ["Core"],
 
         // The composition package: the one place a front-end, the layout and a back-end meet.
         ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Fluent"],

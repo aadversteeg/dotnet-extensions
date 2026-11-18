@@ -22,6 +22,7 @@ Status: preview (milestone M1). The first release from this repository is `0.1.0
 | `Ave.Extensions.Documents.Pdf` | PDF objects and a PDF file writer (ISO 32000-1); knows nothing about layout or fonts. |
 | `Ave.Extensions.Documents.Fonts` | A TrueType reader (with GSUB, GPOS, GDEF, kern) and subsetter. |
 | `Ave.Extensions.Documents.Images` | PNG decoding and JPEG header reading (JPEG is embedded as it is). |
+| `Ave.Extensions.Documents.Html.Parsing` | The HTML Standard's parsing algorithm: an immutable tree with source positions and every parse error as a diagnostic. |
 | `Ave.Extensions.Documents.Core` | Shared vocabulary: lengths, geometry, colour, source locations, roles, metadata, error codes. |
 
 Every package depends only on the packages below it (see [Layers](#layers)). The only packages outside the engine are

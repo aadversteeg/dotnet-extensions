@@ -1,0 +1,281 @@
+using System.Collections.Generic;
+
+namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
+
+/// <summary>
+/// The DOM side of the <c>option</c> and <c>selectedcontent</c> elements that changes the parsed tree (HTML Standard
+/// §4.10.10 "the option HTML element children parsed steps", §4.10.17 "the selectedcontent element"): the content of a
+/// select's selected option is cloned into the select's <c>selectedcontent</c> elements.
+/// </summary>
+/// <remarks>
+/// <para>With no script running and no user, an option's selectedness follows from the attributes alone: the last
+/// option of the list with a <c>selected</c> attribute, otherwise the first option that is not disabled (the
+/// selectedness setting algorithm, §4.10.7, for a select without <c>multiple</c> and with display size 1). Options
+/// finish parsing in tree order, so the parser keeps both per select as they finish, instead of walking the list.</para>
+/// <para>Bounded work: finding an option's select walks its ancestors (at most <see cref="HtmlInputLimits.MaxDepth"/>);
+/// every node and character cloned into a selectedcontent is charged to a budget of
+/// <see cref="CloneWorkPerCharacter"/> per input character, so many selectedcontent elements times many selected options
+/// cannot make the work grow faster than the input. Past the budget the document is refused
+/// (<see cref="HtmlErrorCodes.TooLarge"/>).</para>
+/// </remarks>
+internal sealed partial class TreeBuilder
+{
+    /// <summary>The clone budget: nodes plus characters cloned, per character of input (at least 65 536 in all).</summary>
+    public const int CloneWorkPerCharacter = 4;
+
+    private sealed class SelectState
+    {
+        public MutableElement? LastWithSelected { get; set; }
+
+        public MutableElement? FirstEnabled { get; set; }
+
+        public List<MutableElement> SelectedContents { get; } = [];
+    }
+
+    private readonly Dictionary<MutableElement, SelectState> _selects = new(ReferenceEqualityComparer.Instance);
+    private long? _cloneBudget;
+
+    /// <summary>Whether the clone budget ran out (the parse is refused).</summary>
+    public bool CloneBudgetExceeded { get; private set; }
+
+    /// <summary>The number of input characters, for the clone budget; set by the parser.</summary>
+    public int InputLength { get; init; }
+
+    /// <summary>"Finish parsing the children of an element" (§13.2.4.2): the option's children parsed steps.</summary>
+    private void FinishChildren(MutableElement element)
+    {
+        if (!element.IsHtml("option") || NearestAncestorSelect(element) is not { } select)
+        {
+            return;
+        }
+
+        var state = State(select);
+        if (HasAttribute(element, "selected"))
+        {
+            state.LastWithSelected = element;
+        }
+
+        if (state.FirstEnabled is null && !IsDisabled(element))
+        {
+            state.FirstEnabled = element;
+        }
+
+        if (SelectedOption(select, state) == element)
+        {
+            foreach (var selectedContent in state.SelectedContents)
+            {
+                Fill(selectedContent, element);
+            }
+        }
+    }
+
+    /// <summary>The selectedcontent insertion steps: a selectedcontent that is not disabled belongs to its select and
+    /// takes the content of the select's selected option.</summary>
+    private void ElementInserted(MutableElement element)
+    {
+        if (!element.IsHtml("selectedcontent") || SelectOfSelectedContent(element) is not { } select)
+        {
+            return;
+        }
+
+        var state = State(select);
+        state.SelectedContents.Add(element);
+        Fill(element, SelectedOption(select, state));
+    }
+
+    private SelectState State(MutableElement select)
+    {
+        if (!_selects.TryGetValue(select, out var state))
+        {
+            state = new SelectState();
+            _selects[select] = state;
+        }
+
+        return state;
+    }
+
+    /// <summary>"Get the nearest ancestor select" (§4.10.10).</summary>
+    private static MutableElement? NearestAncestorSelect(MutableElement element)
+    {
+        var optgroups = 0;
+        for (var ancestor = element.Parent as MutableElement; ancestor is not null; ancestor = ancestor.Parent as MutableElement)
+        {
+            if (ancestor.Namespace != ElementNamespace.Html)
+            {
+                continue;
+            }
+
+            switch (ancestor.LocalName)
+            {
+                case "datalist" or "hr" or "option":
+                    return null;
+                case "optgroup" when ++optgroups > 1:
+                    return null;
+                case "select":
+                    return ancestor;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>"Recalculate a selectedcontent element's disabledness" (§4.10.17): its select, or null when it is
+    /// disabled (inside an option or another selectedcontent, or inside two selects) or in no select.</summary>
+    private static MutableElement? SelectOfSelectedContent(MutableElement selectedContent)
+    {
+        MutableElement? select = null;
+        for (var ancestor = selectedContent.Parent as MutableElement; ancestor is not null; ancestor = ancestor.Parent as MutableElement)
+        {
+            if (ancestor.IsHtml("select"))
+            {
+                if (select is not null)
+                {
+                    return null;
+                }
+
+                select = ancestor;
+            }
+            else if (ancestor.IsHtml("option") || ancestor.IsHtml("selectedcontent"))
+            {
+                return null;
+            }
+        }
+
+        return select;
+    }
+
+    /// <summary>The option whose selectedness is true; null for a select with <c>multiple</c> (whose selectedcontent
+    /// elements are not kept up to date, §4.10.17), or whose display size is not 1 while no option has the attribute.</summary>
+    private static MutableElement? SelectedOption(MutableElement select, SelectState state) =>
+        HasAttribute(select, "multiple") ? null : state.LastWithSelected ?? (DisplaySizeIsOne(select) ? state.FirstEnabled : null);
+
+    /// <summary>The display size of a select is 1 unless it has a size attribute that parses as another non-negative
+    /// integer (§4.10.7; the rules for parsing non-negative integers, §2.3.4.2).</summary>
+    private static bool DisplaySizeIsOne(MutableElement select)
+    {
+        var size = Attribute(select, "size");
+        if (size is null)
+        {
+            return true;
+        }
+
+        var start = 0;
+        while (start < size.Length && Ascii.IsWhitespace(size[start]))
+        {
+            start++;
+        }
+
+        if (start < size.Length && size[start] == '+')
+        {
+            start++;
+        }
+
+        var end = start;
+        while (end < size.Length && Ascii.IsDigit(size[end]))
+        {
+            end++;
+        }
+
+        // Not a number: the display size is 1 (no multiple). A number: its value.
+        return end == start || size[start..end].TrimStart('0') == "1";
+    }
+
+    /// <summary>An option is disabled when it has a disabled attribute or is a child of a disabled optgroup (§4.10.10).</summary>
+    private static bool IsDisabled(MutableElement option) =>
+        HasAttribute(option, "disabled") || (option.Parent is MutableElement parent && parent.IsHtml("optgroup") && HasAttribute(parent, "disabled"));
+
+    /// <summary>"Update a selectedcontent": clear it, then "clone an option into a selectedcontent" — deep clones of
+    /// the option's children, without script, SVG script, frame, iframe, embed and object elements.</summary>
+    private void Fill(MutableElement selectedContent, MutableElement? option)
+    {
+        foreach (var child in selectedContent.Children())
+        {
+            child.Remove();
+        }
+
+        for (var child = option?.First; child is not null && !CloneBudgetExceeded; child = child.Next)
+        {
+            if (Clone(child) is { } clone)
+            {
+                selectedContent.Insert(clone, null);
+            }
+        }
+    }
+
+    /// <summary>A deep clone (DOM "clone a node" with subtree), or null for the elements the clone leaves out. Every
+    /// node and character is charged to the clone budget.</summary>
+    private MutableNode? Clone(MutableNode node)
+    {
+        if (!Charge(1 + node switch { MutableText text => text.Data.Length, MutableElement element => element.Attributes.Count, _ => 0 }))
+        {
+            return null;
+        }
+
+        switch (node)
+        {
+            case MutableElement element:
+                if ((element.Namespace == ElementNamespace.Html && element.LocalName is "script" or "frame" or "iframe" or "embed" or "object")
+                    || element.Is(ElementNamespace.Svg, "script"))
+                {
+                    return null;
+                }
+
+                var copy = new MutableElement
+                {
+                    Namespace = element.Namespace,
+                    LocalName = element.LocalName,
+                    Token = element.Token,
+                    Start = element.Start,
+                    Content = element.Content is null ? null : new MutableFragment { Start = element.Content.Start },
+                };
+                copy.Attributes.AddRange(element.Attributes);
+                CloneChildren(element, copy);
+                if (element.Content is not null)
+                {
+                    CloneChildren(element.Content, copy.Content!);
+                }
+
+                return copy;
+            case MutableText original:
+                var textCopy = new MutableText { Start = original.Start };
+                textCopy.Data.Append(original.Data);
+                return textCopy;
+            case MutableComment comment:
+                return new MutableComment { Data = comment.Data, Start = comment.Start };
+            case MutableProcessingInstruction instruction:
+                return new MutableProcessingInstruction { Target = instruction.Target, Data = instruction.Data, Start = instruction.Start };
+            default:
+                return null;
+        }
+    }
+
+    private void CloneChildren(MutableParent source, MutableParent target)
+    {
+        for (var child = source.First; child is not null && !CloneBudgetExceeded; child = child.Next)
+        {
+            if (Clone(child) is { } clone)
+            {
+                target.Insert(clone, null);
+            }
+        }
+    }
+
+    private bool Charge(long work)
+    {
+        _cloneBudget ??= System.Math.Max(65_536L, (long)CloneWorkPerCharacter * InputLength);
+        _cloneBudget -= work;
+        if (_cloneBudget < 0)
+        {
+            CloneBudgetExceeded = true;
+            _stopped = true;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static string? Attribute(MutableElement element, string name) =>
+        element.Attributes.Find(attribute => attribute.Namespace == AttributeNamespace.None && attribute.LocalName == name)?.Value;
+
+    private static bool HasAttribute(MutableElement element, string name) => Attribute(element, name) is not null;
+}
