@@ -19,16 +19,18 @@ public class AssemblyRulesTests
         ["Ave.Extensions.Documents.Core"] = [],
         ["Ave.Extensions.Documents.Fonts"] = ["Core"],
         ["Ave.Extensions.Documents.Images"] = ["Core"],
+        ["Ave.Extensions.Documents.Graphics"] = ["Core"],
         ["Ave.Extensions.Documents.Pdf"] = ["Core"],
         ["Ave.Extensions.Documents.Typesetting"] = ["Core", "Fonts"],
         ["Ave.Extensions.Documents.DocumentModel"] = ["Core", "Images"],
         ["Ave.Extensions.Documents.PageModel"] = ["Core", "Fonts", "Images"],
         ["Ave.Extensions.Documents.Layout"] = ["Core", "Fonts", "Images", "Typesetting", "DocumentModel", "PageModel"],
         ["Ave.Extensions.Documents.Render.Pdf"] = ["Core", "Fonts", "Images", "Pdf", "PageModel"],
+        ["Ave.Extensions.Documents.Render.Raster"] = ["Core", "Fonts", "Images", "Graphics", "PageModel"],
         ["Ave.Extensions.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel"],
 
         // The composition package: the one place a front-end, the layout and a back-end meet.
-        ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Fluent"],
+        ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "Graphics", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Render.Raster", "Fluent"],
     };
 
     /// <summary>The names of the product libraries (the layer list), for the rules on other things than assemblies.</summary>

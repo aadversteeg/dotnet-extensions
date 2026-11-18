@@ -5,6 +5,7 @@ using System.Text;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Fonts.OpenType;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Fonts;
@@ -100,7 +101,7 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
     /// <summary>
     /// The raw outline data of a glyph from 'glyf' (located through 'loca'); empty for glyphs without an
     /// outline, such as the space. Not interpreted: the subsetter copies it as it is
-    /// (<see cref="FontSubsetter"/>), and only a raster back-end would need to decode it.
+    /// (<see cref="FontSubsetter"/>); <see cref="Shape"/> decodes it.
     /// </summary>
     /// <param name="glyph">A glyph id of this font.</param>
     /// <returns>The glyph's bytes in 'glyf'.</returns>
@@ -110,6 +111,24 @@ public sealed class TrueTypeFont : IEquatable<TrueTypeFont>
         var index = CheckedIndex(glyph);
         return _glyphData[_glyphOffsets[index].._glyphOffsets[index + 1]];
     }
+
+    /// <summary>
+    /// The decoded outline of a glyph (<see cref="GlyphShape"/>): its contours in design units, y up, composite glyphs
+    /// resolved, no hinting. Decoded on each call from the bytes of <see cref="GlyphOutline"/>; the parser does not
+    /// decode outlines, so a damaged glyph is found here.
+    /// </summary>
+    /// <param name="glyph">A glyph id of this font.</param>
+    /// <returns>The shape (empty for a glyph without an outline), a <see cref="FontErrorCodes.Parse"/> error that names
+    /// the font and the glyph, or <see cref="FontErrorCodes.GlyphOutOfRange"/> for a glyph id the font does not
+    /// have.</returns>
+    public Result<GlyphShape, Error> Shape(GlyphId glyph) =>
+        glyph.Value < GlyphCount
+            ? Tables.GlyphOutlineDecoder.Decode(index => GlyphOutline(new GlyphId((ushort)index)), GlyphCount, glyph.Value)
+                .MapError(error => error.With(ErrorMetadataKeys.FontName, Names.PostScriptName))
+            : Result<GlyphShape, Error>.Failure(
+                new Error(FontErrorCodes.GlyphOutOfRange, $"Font '{Names.PostScriptName}' has {GlyphCount} glyphs; there is no glyph {glyph.Value}.")
+                    .With(ErrorMetadataKeys.FontName, Names.PostScriptName)
+                    .With(ErrorMetadataKeys.Value, glyph.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)));
 
     /// <summary>
     /// The bounding box of a glyph's outline, from its glyph header in 'glyf' (OpenType spec, "glyf — Glyph data":

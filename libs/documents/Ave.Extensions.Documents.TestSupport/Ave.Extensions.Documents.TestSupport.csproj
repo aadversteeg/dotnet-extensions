@@ -26,11 +26,15 @@
     <!-- The OFL test fonts (Lato, Theano Didot), copied next to every assembly that references this project. -->
     <None Include="$(MSBuildThisFileDirectory)../assets/fonts/lato/*.ttf;$(MSBuildThisFileDirectory)../assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(MSBuildThisFileDirectory)../assets/fonts/theano/*.ttf" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- A subset of Roboto Regular with two characters (Apache License 2.0), made by tools/make-roboto-subset.sh. -->
+    <None Include="$(MSBuildThisFileDirectory)../assets/fonts/roboto/*.ttf" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- The pinned reference tools image (qpdf, poppler, MuPDF, fontTools), built by ReferenceTools from this file. -->
     <None Include="$(MSBuildThisFileDirectory)../tools/reference/tools.Dockerfile" Link="tools/tools.Dockerfile" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The fontTools script the outline decoder is compared with (UnitTests.Extensions.Documents.Fonts). -->
+    <None Include="$(MSBuildThisFileDirectory)../tools/reference/glyph-outlines.py" Link="tools/glyph-outlines.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,5 @@
 # The reference tools that check the engine's output from the outside: qpdf, poppler (pdftotext, pdffonts, pdfimages,
-# pdftoppm), MuPDF (mutool), fontTools, PyMuPDF and Pillow. Every input is pinned, so a check never runs with other
+# pdftoppm), MuPDF (mutool), fontTools, PyMuPDF, Pillow and libjpeg-turbo (cjpeg, djpeg). Every input is pinned, so a check never runs with other
 # tools than the ones its numbers were made with:
 #
 # - the base image by digest (Debian 13 "trixie", slim);
@@ -24,4 +24,5 @@ RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian
       python3-fonttools=4.57.0-1+deb13u1 \
       python3-pymupdf=1.25.4+ds1-3+deb13u1 \
       python3-pil=11.1.0-5+deb13u4 \
+      libjpeg-turbo-progs=1:2.1.5-4 \
  && rm -rf /var/lib/apt/lists/*

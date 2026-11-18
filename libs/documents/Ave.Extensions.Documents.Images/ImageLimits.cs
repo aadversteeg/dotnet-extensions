@@ -8,8 +8,10 @@ namespace Ave.Extensions.Documents.Images;
 /// <remarks>
 /// The limit is 2^26 pixels (64 Mi, for example 8192 × 8192): an A4 page scanned at 600 dpi is 4961 × 7016 = 34.8 Mi
 /// pixels, so every image a document page can show sharply fits. At the limit the decoded RGB samples and the alpha
-/// channel take at most 256 MiB, the inflated scanlines at most 256 MiB plus one byte per row. JPEG files are not
-/// decoded (they are embedded as they are), so the limit does not apply to them.
+/// channel take at most 256 MiB, the inflated scanlines at most 256 MiB plus one byte per row. A JPEG file is read
+/// for its header only when it is embedded in a PDF, so the limit does not apply there; it applies when a JPEG is
+/// decoded to samples (<see cref="ImageDecoder.DecodeSamples"/>, for the raster back-end), where the coefficients take
+/// two bytes per sample of each component, plus the padding of the last blocks.
 /// </remarks>
 public static class ImageLimits
 {

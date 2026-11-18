@@ -23,12 +23,14 @@
     <PackageVersion Include="Ave.Extensions.Documents.Core" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Fonts" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Images" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Graphics" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Pdf" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Typesetting" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.DocumentModel" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.PageModel" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Layout" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Render.Pdf" Version="0.1.0-preview.2" />
+    <PackageVersion Include="Ave.Extensions.Documents.Render.Raster" Version="0.1.0-preview.2" />
     <PackageVersion Include="Ave.Extensions.Documents.Fluent" Version="0.1.0-preview.2" />
   </ItemGroup>
 
