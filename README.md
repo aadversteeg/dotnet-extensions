@@ -90,8 +90,8 @@ on .NET Framework.
 `.github/workflows/ci.yml` runs this check and the tests (Linux and Windows; the `net10.0` and the `netstandard2.0`
 build), and on Windows also on .NET Framework 4.8, for every pull request and every push to `main`. When the change
 affects the file-system family, it also runs the file-system tests with `-p:UseNs21=true`. The documents family
-runs on Linux and Windows against its `net10.0` build only; its reference tests need Docker with Linux containers and are skipped where there is none
-(see the documents README).
+runs on Linux and Windows against its `net10.0` build only; its reference tests need Docker with Linux containers
+and are skipped where there is none (see the documents README).
 
 Nobody pushes to `main` directly: every change is a pull request, and it can be merged when the job `CI result`
 is green. That job fails when any other pull request job failed. The rules are in

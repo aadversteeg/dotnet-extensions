@@ -81,8 +81,8 @@ jobs:
           # both lower families). So a change at the root (build files, eng/, this workflow), in functional or in
           # error-paths builds every family; fluent-contracts, file-system and documents only build themselves.
           # The jobs test and test-net48 get the family solutions except documents, which targets net10.0 only and
-          # runs in the job test-documents; the root solution dotnet-extensions.slnx holds the same projects as all family
-          # solutions together.
+          # runs in the job test-documents; the root solution dotnet-extensions.slnx holds the same projects as all
+          # family solutions together.
           has() { [[ "$CHANGES" == *"\"$1\""* ]]; }
           all=false
           if [ "$EVENT" = workflow_dispatch ] || has root || has functional || has error-paths; then all=true; fi
