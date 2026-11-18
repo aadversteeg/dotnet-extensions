@@ -75,7 +75,7 @@ public class LineShapingBudgetTests
 
         var run = Shaper.Shape("AV\u00ADAV ", font, 80);
         run.IsSuccess.Should().BeTrue(run.IsFailure ? run.Error.ToString() : "");
-        var piece = Shaper.ShapeLinePiece("AV\u00AD", font, 80, showsHyphen: true);
+        var piece = Shaper.Shape("AV\u00AD", font, 80);
         piece.IsSuccess.Should().BeTrue("each piece alone stays under a budget of its own");
 
         var laidOut = Paginator.Paginate(environment, Paragraph(20));

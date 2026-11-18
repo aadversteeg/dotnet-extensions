@@ -80,20 +80,6 @@ public static class Shaper
         });
 
     /// <summary>
-    /// Shapes ONE piece of a run's text as a line shows it, under a budget of its own (<see cref="ShapingBudget"/>, sized
-    /// from the piece). For the pieces of one paragraph that the line breaker shapes again, use
-    /// <see cref="ShapeLinePiece(string, TrueTypeFont, double, bool, LineShapingBudget)"/>, which shares the paragraph's
-    /// budget; otherwise as that overload.
-    /// </summary>
-    /// <param name="text">The piece of text, already white-space collapsed.</param>
-    /// <param name="font">The run's font.</param>
-    /// <param name="fontSize">The run's font size in points.</param>
-    /// <param name="showsHyphen">True when the piece ends with a soft hyphen at which its line breaks.</param>
-    /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
-    public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen) =>
-        LinePiece(text, font, fontSize, showsHyphen, shared: null);
-
-    /// <summary>
     /// Shapes a piece of a run's text as a line shows it (<see cref="GreedyLineBreaker"/>, THE RULE FOR SHAPING AT A
     /// BREAK): the piece alone, and, when <paramref name="showsHyphen"/>, with the soft hyphen it ends with drawn as the
     /// hyphen that shows where a line breaks there (<see cref="Hyphen"/>). The hyphen is shaped ALONE and put after the
@@ -101,7 +87,8 @@ public static class Shaper
     /// shapes the hyphen string as a text of its own, and <c>LineBreaker::AddHyphen</c> adds its width to the line). That
     /// glyph's text stays the soft hyphen it stands for. A font without a hyphen leaves the soft hyphen invisible. The work
     /// is charged to <paramref name="budget"/>, the budget of the paragraph the piece belongs to; once it is spent, the
-    /// piece is refused (<see cref="LineShapingBudget"/>).
+    /// piece is refused (<see cref="LineShapingBudget"/>). Without a budget (null) the piece is shaped under a budget of
+    /// its own, sized from the piece, as <see cref="Shape(string, TrueTypeFont, double)"/> shapes a text.
     /// </summary>
     /// <param name="text">The piece of text, already white-space collapsed.</param>
     /// <param name="font">The run's font.</param>
@@ -110,7 +97,7 @@ public static class Shaper
     /// <param name="budget">The budget of the piece's paragraph, as the line breaker hands it to its <see cref="LineShaper"/>.</param>
     /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
     public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, LineShapingBudget budget) =>
-        LinePiece(text, font, fontSize, showsHyphen, budget.Shaping);
+        LinePiece(text, font, fontSize, showsHyphen, budget?.Shaping);
 
     private static Result<ValueList<ShapedGlyph>, Error> LinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, ShapingBudget? shared) =>
         Shape(text, font, fontSize, shared).OnSuccessMap(glyphs =>
