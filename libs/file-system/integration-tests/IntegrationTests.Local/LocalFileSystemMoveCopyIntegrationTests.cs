@@ -137,9 +137,15 @@ namespace IntegrationTests.FileSystem.Local
         
         #region Deep Directory Hierarchy
         
-        [Fact(DisplayName = "LFSMC-003: Copy deep directory hierarchy preserves structure")]
+        [SkippableFact(DisplayName = "LFSMC-003: Copy deep directory hierarchy preserves structure")]
         public async Task LFSMC003_CopyDeepDirectoryHierarchy()
         {
+            // The deepest files of this hierarchy have paths of more than 260 characters.
+            Skip.If(LongPathsUnavailable(),
+                   "Windows long paths are not enabled for this process (LongPathsEnabled=0 on the machine, or no " +
+                   "longPathAware in the manifest of the test host); .NET Framework does not add the \\\\?\\ prefix " +
+                   "itself, so a path of 260 characters or more fails.");
+
             // Arrange
             var depth = 15; // 15 levels deep
             var filesPerLevel = 3;
@@ -415,9 +421,10 @@ namespace IntegrationTests.FileSystem.Local
             await File.WriteAllTextAsync(sourceFile, "Test content");
             
             var sourceInfo = new System.IO.FileInfo(sourceFile);
-            sourceInfo.Attributes = FileAttributes.ReadOnly | FileAttributes.Hidden;
+            // The times first: .NET Framework opens the file for writing to set them, which a read-only file refuses.
             sourceInfo.CreationTime = new DateTime(2020, 1, 1, 12, 0, 0);
             sourceInfo.LastWriteTime = new DateTime(2021, 6, 15, 14, 30, 0);
+            sourceInfo.Attributes = FileAttributes.ReadOnly | FileAttributes.Hidden;
             
             var destFile = Path.Combine(_testRoot, "attributes-dest.txt");
             var sourcePath = _pathMapper.MapToCanonicalPath(sourceFile).Value;
@@ -691,6 +698,31 @@ namespace IntegrationTests.FileSystem.Local
             return Convert.ToBase64String(hash);
         }
         
+        // True on .NET Framework when Windows does not let this process use paths of 260 characters or more (folders:
+        // 248). That takes LongPathsEnabled=1 on the machine and longPathAware in the manifest of the executable.
+        // .NET (Core) adds the \\?\ prefix itself and needs neither.
+        private static bool LongPathsUnavailable()
+        {
+#if NETFRAMEWORK
+            try
+            {
+                return RtlAreLongPathsEnabled() == 0;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                // Windows before Windows 10 version 1607 has no long path support at all
+                return true;
+            }
+#else
+            return false;
+#endif
+        }
+
+#if NETFRAMEWORK
+        [DllImport("ntdll.dll")]
+        private static extern byte RtlAreLongPathsEnabled();
+#endif
+
         private DriveInfo? GetDifferentVolume()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

@@ -29,16 +29,19 @@
   </ItemGroup>
 
   <!--
-    Test switches: run the net10.0 test projects against the netstandard builds of the libraries.
+    Test switches: run the test projects against the netstandard builds of the libraries.
 
     -p:UseNs20=true: every library is the netstandard2.0 asset.
     -p:UseNs21=true: every library is the netstandard2.1 asset where it has one, otherwise the netstandard2.0
     asset. That is the choice NuGet makes for an application on .NET Core 3.0 up to .NET 9.
-    The two switches cannot be combined.
+    -p:UseNet48=true (Windows only): the test project targets net48 instead of net10.0 (eng/UseNet48.targets) and
+    runs on .NET Framework 4.8. NuGet's nearest-framework rule picks the netstandard2.0 asset of every library and
+    its netstandard2.0 dependencies, so this switch needs no SetTargetFramework and no extra package.
+    The switches cannot be combined.
 
     Applies to UnitTests.*, IntegrationTests.* and PlatformTests.* projects, unless the project sets
     <Ns20AssetUnderTest>false</Ns20AssetUnderTest> because the library it tests has no netstandard2.0 asset.
-    That property covers both switches.
+    That property covers all three switches; such a project stays on net10.0.
 
     Every project reference (direct or transitive) that targets netstandard2.0 gets
     SetTargetFramework=TargetFramework=netstandard2.0; with UseNs21, one that targets netstandard2.1 gets
@@ -47,16 +50,18 @@
     projects. Packages that only the netstandard2.0 asset needs, and that are not part of the net10.0 shared
     framework, are therefore added to the test project here.
 
-    eng/AssetCheck.cs is compiled into the test project. With UseNs20, test NS20-001 fails unless every
-    Ave.Extensions library the test assembly loads is the netstandard2.0 asset. With UseNs21, test NS21-001 fails
-    unless every one is the asset described above; the target frameworks of each referenced project reach that
-    test as AssemblyMetadata attributes of the test assembly, written below.
+    eng/AssetCheck.cs is compiled into the test project. With UseNs20 and UseNet48, test NS20-001 fails unless
+    every Ave.Extensions library the test assembly loads is the netstandard2.0 asset. With UseNs21, test NS21-001
+    fails unless every one is the asset described above; the target frameworks of each referenced project reach
+    that test as AssemblyMetadata attributes of the test assembly, written below. With UseNet48, test NET48-001
+    also fails unless the test host runs on .NET Framework.
   -->
   <PropertyGroup>
     <_AveIsTestProject Condition="$(MSBuildProjectName.StartsWith('UnitTests.')) or $(MSBuildProjectName.StartsWith('IntegrationTests.')) or $(MSBuildProjectName.StartsWith('PlatformTests.'))">true</_AveIsTestProject>
     <_AveTestOnNs20 Condition="'$(UseNs20)' == 'true' and '$(_AveIsTestProject)' == 'true' and '$(Ns20AssetUnderTest)' != 'false'">true</_AveTestOnNs20>
     <_AveTestOnNs21 Condition="'$(UseNs21)' == 'true' and '$(_AveIsTestProject)' == 'true' and '$(Ns20AssetUnderTest)' != 'false'">true</_AveTestOnNs21>
     <DefineConstants Condition="'$(_AveTestOnNs21)' == 'true'">$(DefineConstants);AVE_TEST_ON_NS21</DefineConstants>
+    <_AveTestOnNet48 Condition="'$(UseNet48)' == 'true' and '$(_AveIsTestProject)' == 'true' and '$(Ns20AssetUnderTest)' != 'false'">true</_AveTestOnNet48>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_AveTestOnNs20)' == 'true' or '$(_AveTestOnNs21)' == 'true'">
@@ -65,6 +70,18 @@
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
     <Compile Include="$(MSBuildThisFileDirectory)eng/AssetCheck.cs" Link="AssetCheck.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(_AveTestOnNet48)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)eng/AssetCheck.cs" Link="AssetCheck.cs" />
+    <!-- Stand-ins for the few .NET APIs the test code uses that .NET Framework 4.8 lacks -->
+    <Compile Include="$(MSBuildThisFileDirectory)eng/Net48Polyfills.cs" Link="Net48Polyfills.cs" />
+  </ItemGroup>
+
+  <Target Name="_AveRejectNet48WithNsSwitch"
+          BeforeTargets="_CheckForInvalidConfigurationAndPlatform"
+          Condition="'$(UseNet48)' == 'true' and ('$(UseNs20)' == 'true' or '$(UseNs21)' == 'true')">
+    <Error Text="UseNet48=true cannot be combined with UseNs20 or UseNs21: choose one test mode (see README.md)." />
+  </Target>
 
   <Target Name="_AveRejectBothTestSwitches"
           BeforeTargets="_CheckForInvalidConfigurationAndPlatform"
