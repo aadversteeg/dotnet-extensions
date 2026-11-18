@@ -166,14 +166,31 @@ internal static class TableBreaks
                 : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
         }
 
+        // Under EmptyRowParts.Allow, as Chromium cuts: a row whose cells' content all ends on this page, with only the
+        // half of the line below the row (which each cell's box holds) past the page end, is not cut, and moves to the next
+        // page whole (cases a2-cells-end, a2-cells-end-header, a2-cells-end-text). Under Avoid the cells keep their half
+        // line on the page and break earlier.
+        if (table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow)
+        {
+            var lineBelow = table.HorizontalWidth(row, Next(table.Grid, row), TablePage.EdgeContext(table.Grid, row)) / 2;
+            var withLine = lineBelow > 0
+                ? Cut(table, breakpoint.Content, segment, row, height + lineBelow, inside: true, breakpoint.Appeal)
+                : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
+            if (withLine.IsFailure || (lineBelow > 0 && withLine.Value.HasNoValue))
+            {
+                return withLine;
+            }
+        }
+
         // A break inside the row cuts its cells at the page end. When that cut completes every cell, the row ends on
         // this page after all, and then it needs its share of the line below it, which is what did not fit: so the cut
         // moves up by that share, which leaves the end of the row's content for the next page (still below the line
-        // above the row).
+        // above the row). Not under Allow (above): Chromium does not cut such a row.
         var below = InsideBelow(table, row);
         var raised = height - below;
+        var raises = table.Environment.Profile.EmptyRowParts != EmptyRowParts.Allow;
         return Cut(table, breakpoint.Content, segment, row, height, inside: true, breakpoint.Appeal).OnSuccessBind(atPageEnd =>
-            atPageEnd.HasValue || below <= 0 || !Fitting.Fits(segment.RowTop(row) + LineInside(table, segment, row), raised)
+            atPageEnd.HasValue || !raises || below <= 0 || !Fitting.Fits(segment.RowTop(row) + LineInside(table, segment, row), raised)
                 ? Result<Maybe<Outcome>, Error>.Success(atPageEnd)
                 : Cut(table, breakpoint.Content, segment, row, raised, inside: true, breakpoint.Appeal));
     }

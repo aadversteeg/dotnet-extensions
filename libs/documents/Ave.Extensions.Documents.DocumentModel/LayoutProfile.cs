@@ -89,6 +89,8 @@ public enum EmptyRowParts
     Avoid,
 
     /// <summary>A row is cut wherever its cells can break, also where a part shows nothing, as Chromium prints it
-    /// (<c>tools/reference/chromium</c>, cases <c>a2-padded-blocks</c>, <c>a2-line-breaks</c> and <c>a3-mirror</c>).</summary>
+    /// (<c>tools/reference/chromium</c>, cases <c>a2-padded-blocks</c>, <c>a2-line-breaks</c> and <c>a3-mirror</c>); and a
+    /// row whose cells all end on the page, with only the half of the grid line below it past the page end, is not cut
+    /// but moves to the next page whole, as Chromium does (cases <c>a2-cells-end*</c>).</summary>
     Allow,
 }

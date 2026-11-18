@@ -142,6 +142,57 @@ public class RowPartTests
         RowParts.EmptyStrips(Paginate(document).Value).Should().NotBeEmpty("Chromium's cut leaves a part of a row that shows nothing");
     }
 
+    /// <summary>The a2-cells-end cases: "intro" with a 99 pt bottom margin, then rows of "t" beside a cell of two 8 pt blocks
+    /// (4 pt padding above and below, or a block and an 8 pt line "u"); line height 15 pt, so row t2's cells end 0.05 pt
+    /// above the page end and only the half of the line below the row passes it.</summary>
+    private static Element[] CellsEnd(string caseName)
+    {
+        var text = caseName == "a2-cells-end-text";
+        CellElement Second() => Cell([Block([]).PaddingTop(4.Pt()).PaddingBottom(4.Pt()),
+            text ? Paragraph("u").FontSize(6.Pt()).LineHeight(8.Pt()) : Block([]).PaddingTop(4.Pt()).PaddingBottom(4.Pt())]);
+        TablePart First() => caseName == "a2-cells-end-header" ? HeaderRow([Cell("H"), Cell("h")]) : TableRow([Cell("H"), Cell("h")]);
+        return [Paragraph("intro").MarginBottom(99.Pt()), Table(Columns(Fill(1), Fill(1)),
+                [First(), .. Enumerable.Range(0, 5).Select(i => (TablePart)TableRow([Cell($"t{i}"), Second()]))])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks()];
+    }
+
+    private static PrintedPages PrintedWith(EmptyRowParts parts, Element[] body)
+    {
+        var document = Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato").LineHeight(15.Pt()).EmptyRowParts(parts);
+        var result = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        return result.Value;
+    }
+
+    [Theory]
+    [InlineData("a2-cells-end")]
+    [InlineData("a2-cells-end-header")]
+    [InlineData("a2-cells-end-text")]
+    public void With_empty_row_parts_allowed_a_row_whose_cells_end_on_the_page_but_not_its_line_moves_whole_as_in_Chromium(string caseName)
+    {
+        // Every cell of row t2 ends on page 1; only the half of the grid line below the row, which each cell's box holds,
+        // passes the page end. Chromium does not cut such a row: it moves to page 2 whole, with or without a repeated header
+        // row, and also when the rest would be a line of text. Under Allow the engine does the same.
+        var engine = PrintedWith(EmptyRowParts.Allow, CellsEnd(caseName));
+        var chromium = PrintedPages.Chromium(caseName);
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.Pages[1].Words.Select(word => word.Text).Should().StartWith(caseName == "a2-cells-end-header" ? ["H", "h", "t2"] : ["t2"]);
+    }
+
+    [Fact]
+    public void With_empty_row_parts_avoided_the_cells_keep_their_line_on_the_page_and_the_row_is_cut()
+    {
+        // The default policy keeps each cell's half of the line below on the page: the cell breaks before its last block, so
+        // row t2 is cut, its text on page 1 and the line "u" on page 2, where Chromium moves the row whole (Allow follows
+        // Chromium, above).
+        var engine = PrintedWith(EmptyRowParts.Avoid, CellsEnd("a2-cells-end-text"));
+
+        engine.Pages[0].Words.Select(word => word.Text).Should().Contain("t2");
+        engine.Pages[1].Words.Select(word => word.Text).Should().StartWith(["u"]);
+        PrintedPages.Chromium("a2-cells-end-text").Pages[1].Words.Select(word => word.Text).Should().StartWith(["t2", "u"]);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

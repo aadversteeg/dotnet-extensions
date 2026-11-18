@@ -259,7 +259,11 @@ Each is documented next to its code as well.
 - **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
   cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
   rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
-  `EmptyRowParts.Allow` the engine cuts as Chromium does: the same pages and words, and the grid lines in the same
+  `EmptyRowParts.Allow` the engine cuts as Chromium does, also in one more respect: a row whose cells all end on the
+  page, with only the half of the grid line below it past the page end, is not cut but moves to the next page whole
+  (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: the one step of 42, one pixel apart with and
+  without a repeated header row, where this decides; under `Avoid` the cells keep their half line on the page and the
+  row is cut before its last block). The same pages and words, and the grid lines in the same
   places once Chromium's whole-pixel painting is applied (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror`,
   with Chromium's 14.25 pt line for `normal`; `RowPartTests`, Fluent). With `Avoid`, the code front-end's default, a
   cut where a part shows nothing is a last resort: the row moves to the next page whole, and is cut there only where it
