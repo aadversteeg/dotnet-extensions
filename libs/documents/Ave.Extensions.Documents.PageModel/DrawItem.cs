@@ -19,10 +19,10 @@ namespace Ave.Extensions.Documents.PageModel;
 /// closes the innermost marker still open, which is a start of its own kind (and for a structure end, of its node);
 /// every start ends on the same page. Inside an artifact there is no other artifact and no structure marker: an
 /// artifact is not part of the structure. A clip may open anywhere, also inside an artifact or another clip, up to 27
-/// clips one inside the other (the PDF back-end's limit, from the 28 levels of <c>q</c> a PDF may nest). This is
+/// clips one inside the other (<see cref="PageModelRules.MaxClipDepth"/>, from the 28 levels of <c>q</c> a PDF may nest). This is
 /// how the PDF writer can keep its graphics-state pairs (<c>q</c>/<c>Q</c>, ISO 32000-1 §8.4.2) and its marked-content
 /// pairs (<c>BDC</c>/<c>EMC</c>, §14.6) inside each other. A back-end checks the rule and refuses a page that breaks
-/// it.</para>
+/// it (<see cref="PageModelRules"/>, for every back-end).</para>
 /// </remarks>
 public abstract record DrawItem
 {

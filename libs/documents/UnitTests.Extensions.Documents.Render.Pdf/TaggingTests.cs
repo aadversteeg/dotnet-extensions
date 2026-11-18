@@ -89,7 +89,7 @@ public class TaggingTests
     [InlineData("start without end")]
     [InlineData("structure inside artifact")]
     [InlineData("nested artifact")]
-    public void Markers_that_do_not_nest_are_an_invalid_structure_in_every_profile(string problem)
+    public void Markers_that_do_not_nest_break_the_page_model_contract_in_every_profile(string problem)
     {
         DrawItem[] items = problem switch
         {
@@ -100,7 +100,7 @@ public class TaggingTests
         };
 
         PdfRenderer.Render(Document(Page(items)), Tagged with { Profile = PdfProfile.Plain }).Error.Code
-            .Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
     }
 
     [Fact]

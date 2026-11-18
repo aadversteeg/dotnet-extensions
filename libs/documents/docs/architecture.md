@@ -61,9 +61,10 @@ Document ──DocumentTranslator.ToModel──▶ StyledDocument ──Document
   (node, role, source location, cell span) for content, `ArtifactStart`/`ArtifactEnd` for decoration and page
   furniture, `ClipStart`/`ClipEnd` (a rectangle) around what is drawn clipped. It does not depend on the document
   model, so other back-ends (raster, SVG) and a future PDF reader can share it. One nesting rule for all three kinds
-  of marker, stated once on `DrawItem` and checked where the PDF back-end reads the markers (`Render.Pdf/Tagging/
-  PageEvents.cs`): the markers of a page nest as one sequence of pairs, every end closing the innermost open marker
-  of its own kind; artifacts do not nest and contain no structure markers; a clip may open anywhere. Content outside
+  of marker, stated once on `DrawItem` and checked once for both back-ends with the other page-model rules
+  (`PageModel/PageModelRules.cs`, `MarkerNesting`): the markers of a page nest as one sequence of pairs, every end
+  closing the innermost open marker of its own kind; artifacts do not nest and contain no structure markers; a clip
+  may open anywhere, at most 27 one inside the other. Content outside
   every structure and artifact marker belongs to nothing (a tagged profile refuses it).
 
 All three have a stable text form (`DocumentModelText`, `FragmentText`, `PageModelText`) used by golden tests.
@@ -155,7 +156,7 @@ together, at the author's line where there is one.
 | --- | --- | --- |
 | front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, content that would need more than 100 slices, columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; for the PDF back-end, markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`Render.Pdf/Tagging/PageEvents.cs`, `Documents.Pdf.Write.InvalidStructure`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidStructure`, `InvalidOptions`, `InvalidFileIdentifier` |
+| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
 | raster back-end (`Render.Raster/PageRasterizer.cs`) | the same page-model contract (`PageModel/PageModelRules.cs`); options with a positive finite resolution; a page of at most 2^26 pixels at that resolution; a page number of the document | `Documents.Raster.InvalidPageModel`, `InvalidOptions`, `TooLarge`, `PageNotFound` |
 | profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
@@ -290,7 +291,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | points of one glyph outline, components included | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | component references one glyph outline visits | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | nesting of composite glyphs | 64 levels | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
-| clips open one inside the other on a page | 27 (one `q` each, plus the drawing's own: the 28 levels of ISO 32000-1 Annex C and ISO 19005-3 §6.1.13) | `Render.Pdf/Tagging/PageEvents.cs` | `Documents.Pdf.Write.InvalidStructure` |
+| clips open one inside the other on a page, for both back-ends | 27 (in PDF one `q` each, plus the drawing's own: the 28 levels of ISO 32000-1 Annex C and ISO 19005-3 §6.1.13; the raster back-end takes the same) | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel` |
 | slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`) | 100, one per page | `Layout/MonolithicSlices.cs` | `Documents.Layout.TooManySlices` |
 
 One reader is bounded by a constant rather than by its input: the `cmap` formats 4 and 12 are expanded into one entry

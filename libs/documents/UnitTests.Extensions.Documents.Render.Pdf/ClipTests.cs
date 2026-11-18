@@ -3,7 +3,6 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Pdf;
 using Ave.Extensions.Documents.Render.Pdf;
-using Ave.Extensions.Documents.Render.Pdf.Tagging;
 using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.Documents.Typesetting;
 
@@ -12,7 +11,8 @@ namespace UnitTests.Extensions.Documents.Render.Pdf;
 /// <summary>
 /// The page model's clips (<see cref="ClipStart"/>, <see cref="ClipEnd"/>) in PDF, on hand-made page models: a clip is
 /// <c>q x y w h re W n</c> … <c>Q</c>, opened and closed between marked-content sequences so the two kinds of pair nest,
-/// and THE NESTING RULE FOR MARKERS (<see cref="DrawItem"/>) holds for clips as for structure and artifacts.
+/// and THE NESTING RULE FOR MARKERS (<see cref="DrawItem"/>, checked for every back-end by <see cref="PageModelRules"/>)
+/// holds for clips as for structure and artifacts; the raster back-end's side is in its own tests.
 /// </summary>
 public class ClipTests
 {
@@ -120,7 +120,7 @@ public class ClipTests
     [InlineData("clip ends inside a structure node it is outside of")]
     [InlineData("structure node ends inside a clip it is outside of")]
     [InlineData("clip ends inside an artifact")]
-    public void Clips_that_do_not_nest_with_the_other_markers_are_an_invalid_structure(string problem)
+    public void Clips_that_do_not_nest_with_the_other_markers_break_the_page_model_contract(string problem)
     {
         DrawItem[] items = problem switch
         {
@@ -132,7 +132,7 @@ public class ClipTests
         };
 
         PdfRenderer.Render(Document(items), Tagged with { Profile = PdfProfile.Plain }).Error.Code
-            .Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class ClipTests
     {
         // Each clip is one q, the rectangle inside them one more: 28, the most ISO 19005-3 §6.1.13 and ISO 32000-1 Annex C
         // allow.
-        var pdf = PdfRenderer.Render(Nested(PageEvents.MaxClipDepth), Tagged with { Profile = PdfProfile.PdfA3b });
+        var pdf = PdfRenderer.Render(Nested(PageModelRules.MaxClipDepth), Tagged with { Profile = PdfProfile.PdfA3b });
 
         pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);
         var depth = 0;
@@ -179,11 +179,11 @@ public class ClipTests
     [Theory]
     [InlineData(28)]
     [InlineData(20_000)]
-    public void More_than_27_clips_one_inside_the_other_are_an_invalid_structure_in_every_profile(int depth)
+    public void More_than_27_clips_one_inside_the_other_break_the_page_model_contract_in_every_profile(int depth)
     {
         foreach (var profile in new[] { PdfProfile.Plain, PdfProfile.PdfA3b, PdfProfile.PdfA3a })
         {
-            PdfRenderer.Render(Nested(depth), Tagged with { Profile = profile }).Error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
+            PdfRenderer.Render(Nested(depth), Tagged with { Profile = profile }).Error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
         }
     }
 
@@ -195,7 +195,7 @@ public class ClipTests
         try
         {
             System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, "clips-27.pdf"),
-                [.. PdfRenderer.Render(Nested(PageEvents.MaxClipDepth), Tagged with { Profile = PdfProfile.PdfA3b }).Value]);
+                [.. PdfRenderer.Render(Nested(PageModelRules.MaxClipDepth), Tagged with { Profile = PdfProfile.PdfA3b }).Value]);
 
             var result = VeraPdf.Validate(folder, "3b").Single();
 
