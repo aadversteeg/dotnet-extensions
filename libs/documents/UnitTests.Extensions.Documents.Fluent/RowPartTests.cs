@@ -106,32 +106,39 @@ public class RowPartTests
     };
 
     /// <summary>The top of every horizontal grid line on each page (a filled rectangle one pixel high and wider than
-    /// one), in pixels of 0.75 pt, rounded to whole pixels as Chromium paints them.</summary>
-    private static List<List<long>> HorizontalLines(PrintedPages pages) =>
+    /// one), in points, in page order.</summary>
+    private static List<List<double>> HorizontalLines(PrintedPages pages) =>
         [.. pages.Pages.Select(page => page.Rectangles
             .Where(box => Math.Abs(box.Height - 0.75) < 1e-6 && box.X1 - box.X0 > 0.75 + 1e-6)
-            .Select(box => (long)Math.Round(box.Y0 / 0.75, MidpointRounding.AwayFromZero))
+            .Select(box => box.Y0)
             .Distinct()
             .Order()
             .ToList())];
+
+    /// <summary>A length in points rounded to a whole CSS pixel of 0.75 pt, as Chromium paints a grid line.</summary>
+    private static double WholePixel(double points) => Math.Round(points / 0.75, MidpointRounding.AwayFromZero) * 0.75;
 
     [Theory]
     [MemberData(nameof(ChromiumStrips))]
     public void With_empty_row_parts_allowed_rows_are_cut_where_Chromium_cuts_them(string caseName)
     {
         // EmptyRowParts.Allow, Chromium's policy: the row is cut wherever its cells can break, also where a part shows
-        // nothing. Same pages and words as Chromium, and the grid lines in the same places. Chromium's line of
-        // line-height: normal for Lato 12 pt is 19 px, 14.25 pt (docs/architecture.md, "Against Chromium"), so the
-        // engine's document sets that line height; Chromium paints a grid line at whole pixels, so the engine's lines are
-        // compared rounded to whole pixels.
-        var document = Document([.. StripBody(caseName)], Area, title: "Title", language: "en").FontFamily("Lato").LineHeight(14.25.Pt())
-            .EmptyRowParts(EmptyRowParts.Allow);
+        // nothing. With Chromium's whole-pixel font metrics too (FontMetricRounding.WholePixels: Lato 12 pt makes 19 px
+        // lines, 14.25 pt, where the exact metrics give 14.4 pt), the engine prints the same pages and words as Chromium,
+        // and its grid lines where Chromium's are. What is compared for the lines: the top of every horizontal grid line,
+        // page by page. Chromium paints a grid line at a whole pixel, the engine where layout puts it (the centre of a
+        // 0.75 pt line can fall on a third of a pixel); so the engine's tops rounded to whole pixels must be Chromium's,
+        // and before rounding they may differ by no more than 0.25 pt, the largest difference these cases show (pinned).
+        var document = Document([.. StripBody(caseName)], Area, title: "Title", language: "en").FontFamily("Lato")
+            .EmptyRowParts(EmptyRowParts.Allow).FontMetricRounding(FontMetricRounding.WholePixels);
         var engine = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
         var chromium = PrintedPages.Chromium(caseName);
 
         engine.IsSuccess.Should().BeTrue(engine.IsFailure ? engine.Error.ToString() : string.Empty);
         engine.Value.PageTexts.Should().Equal(chromium.PageTexts);
-        HorizontalLines(engine.Value).Should().BeEquivalentTo(HorizontalLines(chromium), options => options.WithStrictOrdering());
+        var (ours, theirs) = (HorizontalLines(engine.Value), HorizontalLines(chromium));
+        ours.Select(page => page.Select(WholePixel).ToList()).Should().BeEquivalentTo(theirs, options => options.WithStrictOrdering());
+        ours.Zip(theirs).SelectMany(pages => pages.First.Zip(pages.Second, (a, b) => Math.Abs(a - b))).Max().Should().BeLessThanOrEqualTo(0.25 + 1e-9);
         RowParts.EmptyStrips(Paginate(document).Value).Should().NotBeEmpty("Chromium's cut leaves a part of a row that shows nothing");
     }
 

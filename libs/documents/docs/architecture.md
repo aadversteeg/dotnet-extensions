@@ -95,6 +95,7 @@ policies today:
 | Policy | Values (default first) | Where | Rule |
 | --- | --- | --- | --- |
 | monolithic overflow: an image or a line box taller than the page area, at the top of a page | `Refuse` (`Documents.Layout.DoesNotFit`); `Slice` (Chromium: sliced over the pages it needs, each slice clipped, later slices are pagination artifacts) | `Layout/MonolithicSlices.cs`, `ImageLayout.cs`, `InlineLayout.cs`, `PagePainter.cs` | CSS Fragmentation 3 §4.4 ("the UA may also fragment the contents of monolithic elements by slicing the element's graphical representation"); checked against Chromium's print (cases `a4-*`) |
+| font metric rounding: a font's ascent, descent and line gap at its size, for `line-height: normal`, the strut and the baseline's place in a line | `Exact`; `WholePixels` (Chromium: each rounded to a whole CSS pixel, half away from zero, the half-leading above floored to a whole pixel) | `Layout/LineBoxes.cs` (`InlineExtent`, `CssPixels`) | CSS 2.1 §10.8.1 leaves the metrics to the user agent; Chromium `font_metrics.cc`, `simple_font_data.cc`, `line_utils.cc`; checked against Chromium's print (cases `f-*`: every line within 1/64 pixel) |
 | empty row parts: a cut of a table row where one part shows nothing | `Avoid` (such a cut is a last resort: the row moves whole where it can); `Allow` (Chromium: a row is cut wherever its cells can break) | `Tracks/TableBreaks.cs` (`Cut`, `CutShows`) | CSS leaves where a row breaks to the user agent; checked against Chromium's print (cases `a2-*`, `a3-mirror`) |
 
 The whole algorithms and the other rules:
@@ -226,8 +227,15 @@ Each is documented next to its code as well.
   engine keeps the font's exact advances; the reference cases that pin lengths use sizes Chromium keeps exact
   (`tools/reference/chromium/README.md`, "Where Chromium is not exact"). With `line-height: normal` Chromium's line is
   the font's ascent, descent and line gap each rounded to whole pixels (Lato at 12 pt: 19 px, 14.25 pt, where the
-  font's values give 14.4 pt), and it floors the half-leading above a line to a whole pixel; the engine keeps the
-  font's exact values, so a line of `normal` height and a baseline's place in its line differ by less than a pixel.
+  font's values give 14.4 pt), and it floors the half-leading above a line to a whole pixel; with the default
+  `FontMetricRounding.Exact` the engine keeps the font's exact values, so a line of `normal` height and a baseline's
+  place in its line differ by less than a pixel, and with `WholePixels` it rounds as Chromium does (every line of the
+  `f-*` cases within 1/64 pixel). Two things Chromium does that no policy follows: it keeps a line height given as a
+  number or a length in its layout unit of 1/64 pixel (Lato 11 pt × 1.3 = 19.0625 px, not 19.067), and it paints a
+  text baseline at the nearest whole pixel while the line keeps its fractional place; in the measured cases neither
+  moved a line to another page, and the engine's baselines rounded to whole pixels are Chromium's (`f-number`,
+  `f-length`). Chromium also paints grid lines at whole pixels, up to 0.25 pt from where layout puts them
+  (`RowPartTests`).
   For `normal` Chromium also takes a font's OS/2 typographic metrics when the font sets USE_TYPO_METRICS, and the
   'hhea' metrics otherwise; the engine always takes 'hhea' (the same values for Lato, not for Theano Didot). Line
   heights given as lengths, numbers or percentages are exact in both.

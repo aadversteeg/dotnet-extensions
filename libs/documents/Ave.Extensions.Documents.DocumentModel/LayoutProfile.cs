@@ -9,8 +9,8 @@ namespace Ave.Extensions.Documents.DocumentModel;
 /// </summary>
 public sealed record LayoutProfile
 {
-    /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/> and
-    /// <see cref="EmptyRowParts.Avoid"/>.</summary>
+    /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>
+    /// and <see cref="FontMetricRounding.Exact"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -18,6 +18,35 @@ public sealed record LayoutProfile
 
     /// <summary>Whether a table row may be cut where a part of it shows nothing (<see cref="DocumentModel.EmptyRowParts"/>).</summary>
     public EmptyRowParts EmptyRowParts { get; init; } = EmptyRowParts.Avoid;
+
+    /// <summary>Whether a font's ascent, descent and line gap are used as they are or rounded to whole pixels as Chromium
+    /// rounds them (<see cref="DocumentModel.FontMetricRounding"/>).</summary>
+    public FontMetricRounding FontMetricRounding { get; init; } = FontMetricRounding.Exact;
+}
+
+/// <summary>
+/// How layout takes a font's ascent, descent and line gap at a font size, for <c>line-height: normal</c>, the strut and
+/// the baseline's place in a line. A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// </summary>
+public enum FontMetricRounding
+{
+    /// <summary>The font's values scaled to the font size, unrounded, and the leading split in two equal halves (CSS 2.1
+    /// §10.8.1).</summary>
+    Exact,
+
+    /// <summary>
+    /// As Chromium takes them: the ascent, the descent and the line gap of each font at its size each rounded to a whole
+    /// pixel, half away from zero (<c>platform/fonts/font_metrics.cc</c>, <c>FontMetrics::AscentDescentWithHacks</c>:
+    /// "ascent = SkScalarRoundToScalar(-metrics.fAscent); descent = SkScalarRoundToScalar(metrics.fDescent);";
+    /// <c>platform/fonts/simple_font_data.cc</c>: line spacing "lroundf(ascent) + lroundf(descent) + lroundf(line_gap)"),
+    /// so a line of <c>normal</c> height is a whole number of pixels; and the half-leading above the text floored to a whole
+    /// pixel, the rest of the leading below it (<c>core/layout/inline/line_utils.cc</c>, <c>CalculateLeadingSpace</c>: "ascent_leading_spacing{((line_height
+    /// - current_height.LineHeight()) / 2).Floor()}"), for <c>normal</c> and for line heights given as numbers or lengths
+    /// alike. Measured against Chromium's print (<c>tools/reference/chromium</c>, cases <c>f-*</c>). Chromium also keeps a
+    /// line height given as a number or a length in units of 1/64 pixel and paints each baseline at a whole pixel; the
+    /// engine does neither (docs/architecture.md, "Against Chromium").
+    /// </summary>
+    WholePixels,
 }
 
 /// <summary>

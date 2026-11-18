@@ -32,7 +32,7 @@ public static class DocumentModelText
             $"page size={InvariantNumber.Format(document.Page.Width.Points)}x{InvariantNumber.Format(document.Page.Height.Points)}"
                 + $" margin={document.Page.Margins}",
             .. document.Profile is { } profile && profile != LayoutProfile.Default
-                ? new[] { $"profile monolithic-overflow={profile.MonolithicOverflow} empty-row-parts={profile.EmptyRowParts}" }
+                ? new[] { $"profile monolithic-overflow={profile.MonolithicOverflow} empty-row-parts={profile.EmptyRowParts} font-metric-rounding={profile.FontMetricRounding}" }
                 : [],
             .. TemplateLines("page-template", document.Page.Template),
             .. document.Page.FirstPage is { } first ? TemplateLines("first-page-template", first) : [],

@@ -21,25 +21,32 @@ public class LayoutProfileTests
         model.Profile.Should().Be(LayoutProfile.Default);
         model.Profile.MonolithicOverflow.Should().Be(MonolithicOverflow.Refuse);
         model.Profile.EmptyRowParts.Should().Be(EmptyRowParts.Avoid);
+        model.Profile.FontMetricRounding.Should().Be(FontMetricRounding.Exact);
         DocumentModelText.Write(model).Should().NotContain("profile");
     }
 
     [Fact]
     public void The_modifiers_set_the_policies_and_the_text_form_shows_them()
     {
-        var model = DocumentTranslator.ToModel(Doc().MonolithicOverflow(MonolithicOverflow.Slice).EmptyRowParts(EmptyRowParts.Allow)).Value;
+        var model = DocumentTranslator.ToModel(Doc().MonolithicOverflow(MonolithicOverflow.Slice).EmptyRowParts(EmptyRowParts.Allow)
+            .FontMetricRounding(FontMetricRounding.WholePixels)).Value;
 
-        model.Profile.Should().Be(new LayoutProfile { MonolithicOverflow = MonolithicOverflow.Slice, EmptyRowParts = EmptyRowParts.Allow });
-        DocumentModelText.Write(model).Split('\n')[2].Should().Be("profile monolithic-overflow=Slice empty-row-parts=Allow");
+        model.Profile.Should().Be(new LayoutProfile
+        {
+            MonolithicOverflow = MonolithicOverflow.Slice,
+            EmptyRowParts = EmptyRowParts.Allow,
+            FontMetricRounding = FontMetricRounding.WholePixels,
+        });
+        DocumentModelText.Write(model).Split('\n')[2].Should().Be("profile monolithic-overflow=Slice empty-row-parts=Allow font-metric-rounding=WholePixels");
     }
 
     [Fact]
     public void A_profile_that_is_missing_or_names_no_policy_value_is_refused_with_every_problem()
     {
         var missing = DocumentTranslator.ToModel(Doc() with { Profile = null! });
-        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { MonolithicOverflow = (MonolithicOverflow)7, EmptyRowParts = (EmptyRowParts)9 } });
+        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { MonolithicOverflow = (MonolithicOverflow)7, EmptyRowParts = (EmptyRowParts)9, FontMetricRounding = (FontMetricRounding)5 } });
 
         missing.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
-        undefined.Error.Parts().Select(error => error.Code).Should().Equal(DocumentErrorCodes.Input.Invalid.LayoutProfile, DocumentErrorCodes.Input.Invalid.LayoutProfile);
+        undefined.Error.Parts().Select(error => error.Code).Should().Equal(Enumerable.Repeat(DocumentErrorCodes.Input.Invalid.LayoutProfile, 3));
     }
 }

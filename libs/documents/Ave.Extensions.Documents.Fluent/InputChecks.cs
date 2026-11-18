@@ -108,6 +108,12 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The empty row parts policy must be Avoid or Allow.",
                 ((int)profile.EmptyRowParts).ToString(System.Globalization.CultureInfo.InvariantCulture), "empty-row-parts", source);
         }
+
+        if (!Enum.IsDefined(profile.FontMetricRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font metric rounding policy must be Exact or WholePixels.",
+                ((int)profile.FontMetricRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-metric-rounding", source);
+        }
     }
 
     /// <summary>Heading levels are 1–6, as PDF structure types H1–H6 (ISO 32000-1 §14.8.4.3.2).</summary>
