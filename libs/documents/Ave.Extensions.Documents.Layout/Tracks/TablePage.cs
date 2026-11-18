@@ -86,8 +86,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// header out or draws it over the piece, which the engine does not copy (docs/architecture.md). The first row's cells
 /// then start the page through the line above them (<see cref="TableSegments.Slice"/>), so the piece starts where a
 /// whole cell's content starts. Whether the piece is taller than the page area is found by laying the page out without
-/// the header in that way: only if it is sliced even then. A piece taller than the room below the header but not than
-/// the page area goes on without the header, as any body content does.</para>
+/// the header in that way: only if it is sliced even then. A piece not sliced yet that is taller than the room below the
+/// header but not than the page area goes on without the header, as any body content does; the last slice of a sliced
+/// piece stays below the header however tall it is.</para>
 /// </remarks>
 internal static class TablePage
 {
@@ -161,8 +162,9 @@ internal static class TablePage
         // A later page that cannot hold the header and some body content that shows goes on without the header (see
         // remarks): under the header the body has no room, or only a last-resort cut. Content taller than the page area,
         // which would be sliced anyway, is sliced below the header instead, after a page with only the header (see
-        // remarks).
-        if (!isFirst && hasHeader && outcome.IsSuccess && OnlyLastResort(outcome.Value))
+        // remarks). A page that goes on with the next slice of such content keeps the header even when its cut is a last
+        // resort: the later slices of a line draw nothing (its glyphs lie in one slice), so no part of the row shows.
+        if (!isFirst && hasHeader && outcome.IsSuccess && OnlyLastResort(outcome.Value) && !ContinuesSlice(outcome.Value))
         {
             // Taller than the page area: laid out on the page without the header, with the first row's cells starting the
             // page (through the line above them), it would still be sliced.
@@ -215,13 +217,17 @@ internal static class TablePage
         content.Cells.Any(cell => table.Grid.Cells[cell.Cell].Row >= table.Grid.HeaderRowCount && DrawnContent.DrawsOutsideSlices(cell.Fragment));
 
     /// <summary>Whether an outcome starts slicing content taller than the page area: some cell holds a first slice.</summary>
-    private static bool StartsSlice(Outcome outcome) => outcome.Content.Cells.Any(cell => HoldsFirstSlice(cell.Fragment));
+    private static bool StartsSlice(Outcome outcome) => outcome.Content.Cells.Any(cell => HoldsSlice(cell.Fragment, continuation: false));
 
-    private static bool HoldsFirstSlice(Fragment fragment) => fragment switch
+    /// <summary>Whether an outcome goes on slicing content taller than the page area: some cell holds a later slice.</summary>
+    private static bool ContinuesSlice(Maybe<Outcome> outcome) =>
+        outcome.HasValue && outcome.Value.Content.Cells.Any(cell => HoldsSlice(cell.Fragment, continuation: true));
+
+    private static bool HoldsSlice(Fragment fragment, bool continuation) => fragment switch
     {
-        SliceFragment slice => !slice.IsContinuation,
-        BoxFragment box => box.Children.Any(child => HoldsFirstSlice(child.Fragment)),
-        LineFragment line => line.Children.Any(child => HoldsFirstSlice(child.Fragment)),
+        SliceFragment slice => slice.IsContinuation == continuation,
+        BoxFragment box => box.Children.Any(child => HoldsSlice(child.Fragment, continuation)),
+        LineFragment line => line.Children.Any(child => HoldsSlice(child.Fragment, continuation)),
         _ => false,
     };
 

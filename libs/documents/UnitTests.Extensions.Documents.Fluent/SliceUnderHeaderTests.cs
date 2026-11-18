@@ -131,6 +131,57 @@ public class SliceUnderHeaderTests
             .Should().AllBeEquivalentTo(caseName == "a4-header-row-image-row");
     }
 
+    /// <summary>A table with a one-line repeated header (15 pt) and one cell holding <paramref name="piece"/>, then
+    /// "after", on a page area of 144 pt: 129 pt of room below the header.</summary>
+    private static Document UnderOneLineHeader(Element piece, EmptyRowParts parts) =>
+        Document(
+            [Elements.Table(Columns(Fill(1)), [HeaderRow([Cell("H")]), Row(piece)]), Paragraph("after")],
+            Page(300.Pt(), 204.Pt()).Margins(new Edges(12.Pt(), 12.Pt(), 48.Pt(), 12.Pt())), title: "Title", language: "en")
+            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(MonolithicOverflow.Slice).EmptyRowParts(parts);
+
+    private static Element Piece(string kind, double height) =>
+        kind == "line" ? Paragraph("W").FontSize(12.Pt()).LineHeight(height.Pt()) : TallImage(height);
+
+    [Theory]
+    [InlineData("line", EmptyRowParts.Avoid)]
+    [InlineData("line", EmptyRowParts.Allow)]
+    [InlineData("image", EmptyRowParts.Avoid)]
+    [InlineData("image", EmptyRowParts.Allow)]
+    public void Under_a_repeated_header_row_a_last_slice_taller_than_the_room_below_the_header_still_lies_below_the_header(string kind, EmptyRowParts parts)
+    {
+        // 388 pt in slices of 129 pt (the room below the header) leaves 130 pt for the last one: more than the room below
+        // the header, less than the page area. That slice too lies below the header, so the piece takes four slices, each
+        // at 27 pt under "H"; a last slice of 1 pt follows on the page with "after". A line's later slices draw no ink
+        // (its glyph sits in the middle of the line box), so under EmptyRowParts.Avoid the cut between them is a last
+        // resort; the header stays above them all the same.
+        var document = Run(UnderOneLineHeader(Piece(kind, 388), parts));
+        var engine = PrintedPages.Engine(document);
+        var clips = document.Pages.Select((page, index) => (Page: index + 1, Clips: page.Items.OfType<ClipStart>().Select(clip => clip.Area).ToList()))
+            .Where(page => page.Clips.Count > 0).ToList();
+
+        clips.Select(page => page.Clips.Count).Should().AllBeEquivalentTo(1);
+        clips.Sum(page => page.Clips[0].Size.Height).Should().BeApproximately(388, 1e-9);
+        clips.Select(page => page.Clips[0].Size.Height).Should().Equal(129, 129, 129, 1);
+        clips.Select(page => page.Clips[0].Origin.Y).Should().AllBeEquivalentTo(27.0);
+        clips.Select(page => engine.Pages[page.Page - 1].Words.Select(word => word.Text)).Should().AllSatisfy(words => words.Should().Contain("H"));
+        engine.Pages[^1].Words.Select(word => word.Text).Should().Contain("after");
+    }
+
+    [Fact]
+    public void Under_a_repeated_header_row_the_slice_limit_is_met_alike_under_both_values_of_EmptyRowParts()
+    {
+        // A 12,901 pt line in slices of 129 pt needs 101 slices: one more than MonolithicSlices.MaxSlices, whatever the
+        // value of EmptyRowParts, since every slice lies below the header under both.
+        foreach (var parts in new[] { EmptyRowParts.Avoid, EmptyRowParts.Allow })
+        {
+            var result = DocumentTranslator.ToModel(UnderOneLineHeader(Piece("line", 12901), parts))
+                .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic));
+
+            result.IsFailure.Should().BeTrue(parts.ToString());
+            result.Error.Code.Should().Be(LayoutErrorCodes.TooManySlices, parts.ToString());
+        }
+    }
+
     [Theory]
     [InlineData("a4-header-two-image-rows")]
     [InlineData("a4-header-image-360-image")]
