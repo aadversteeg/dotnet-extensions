@@ -36,6 +36,8 @@
     <!-- The reference shaper: HarfBuzz as WebAssembly on a managed WebAssembly runtime. Test-only. -->
     <PackageReference Include="WebAssembly" />
     <None Include="Reference/harfbuzz.wasm" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Chromium's print of the line-end cases (Reference/Chromium/README.md), read by ChromiumLineEndTests -->
+    <None Include="Reference/Chromium/*.html;Reference/Chromium/*.print.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

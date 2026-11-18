@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -29,9 +30,10 @@ internal static class GlyphPositioning
             return null;
         }
 
+        var clusters = new Clusters(glyphs);
         foreach (var lookup in all)
         {
-            if (ApplyLookup(glyphs, lookup, filter, budget, bases) is not { } next)
+            if (ApplyLookup(glyphs, lookup, filter, budget, bases, clusters) is not { } next)
             {
                 return null;
             }
@@ -68,6 +70,7 @@ internal static class GlyphPositioning
     public static ImmutableArray<GlyphItem>? ApplyLegacyKerning(ImmutableArray<GlyphItem> buffer, LegacyKerning kerning, ShapingBudget budget)
     {
         var glyphs = buffer.ToArray();
+        var flags = new Clusters(buffer).Flags();
         for (var index = 0; index < glyphs.Length; index++)
         {
             if (!budget.Spend(1))
@@ -82,9 +85,9 @@ internal static class GlyphPositioning
 
             var adjustment = kerning.Adjustment(glyphs[index].Glyph, glyphs[next].Glyph);
             glyphs[index] = glyphs[index] with { XAdvance = glyphs[index].XAdvance + adjustment };
-            if (adjustment != 0)
+            if (adjustment != 0 && !flags.UnsafeToBreak(glyphs, index, next, budget))
             {
-                UnsafeToBreak(glyphs, index, next);
+                return null;
             }
         }
 
@@ -123,7 +126,7 @@ internal static class GlyphPositioning
     /// <summary>One lookup over the whole buffer (lookups with a mark filtering set are skipped, as in GSUB); null once
     /// the budget is used up. Each position costs an operation, each subtable tried there another, and each glyph a
     /// search steps over another.</summary>
-    private static ImmutableArray<GlyphItem>? ApplyLookup(ImmutableArray<GlyphItem> buffer, Lookup lookup, GlyphFilter filter, ShapingBudget budget, int[] bases)
+    private static ImmutableArray<GlyphItem>? ApplyLookup(ImmutableArray<GlyphItem> buffer, Lookup lookup, GlyphFilter filter, ShapingBudget budget, int[] bases, Clusters clusters)
     {
         if (lookup.Flags.UsesMarkFilteringSet)
         {
@@ -131,6 +134,7 @@ internal static class GlyphPositioning
         }
 
         var glyphs = buffer.ToArray();
+        var flags = clusters.Flags();
         var index = 0;
         while (index < glyphs.Length)
         {
@@ -139,7 +143,7 @@ internal static class GlyphPositioning
                 return null;
             }
 
-            var next = filter.SkipsInPositioning(lookup.Flags, glyphs[index]) ? null : FirstApplying(glyphs, index, lookup, filter, budget, bases);
+            var next = filter.SkipsInPositioning(lookup.Flags, glyphs[index]) ? null : FirstApplying(glyphs, index, lookup, filter, budget, bases, flags);
             index = next ?? index + 1;
         }
 
@@ -149,7 +153,7 @@ internal static class GlyphPositioning
     /// <summary>Where to continue after the first subtable of the lookup that applies at <paramref name="index"/>, or
     /// null when none does. Each subtable tried costs one operation, the lookup of its coverage, whether it covers the
     /// glyph or not: a lookup of many subtables pays for each of them.</summary>
-    private static int? FirstApplying(GlyphItem[] glyphs, int index, Lookup lookup, GlyphFilter filter, ShapingBudget budget, int[] bases)
+    private static int? FirstApplying(GlyphItem[] glyphs, int index, Lookup lookup, GlyphFilter filter, ShapingBudget budget, int[] bases, Clusters.Flagging flags)
     {
         foreach (var subtable in lookup.Subtables)
         {
@@ -158,7 +162,7 @@ internal static class GlyphPositioning
                 return null;
             }
 
-            if (Position(glyphs, index, subtable, lookup.Flags, filter, budget, bases) is { } next)
+            if (Position(glyphs, index, subtable, lookup.Flags, filter, budget, bases, flags) is { } next)
             {
                 return next;
             }
@@ -169,14 +173,15 @@ internal static class GlyphPositioning
 
     /// <summary>Tries one subtable at <paramref name="index"/>, changing <paramref name="glyphs"/>; returns where
     /// to continue, or null when the subtable does not apply there.</summary>
-    private static int? Position(GlyphItem[] glyphs, int index, LookupSubtable subtable, LookupFlags flags, GlyphFilter filter, ShapingBudget budget, int[] bases) =>
+    private static int? Position(
+        GlyphItem[] glyphs, int index, LookupSubtable subtable, LookupFlags flags, GlyphFilter filter, ShapingBudget budget, int[] bases, Clusters.Flagging unsafeFlags) =>
         subtable switch
         {
             PairAdjustmentByGlyph pairs => AdjustPair(glyphs, index, flags, filter, pairs.SecondHasValues,
-                (first, second) => pairs.Find(first.Glyph, second.Glyph), budget),
+                (first, second) => pairs.Find(first.Glyph, second.Glyph), budget, unsafeFlags),
             PairAdjustmentByClass classes => AdjustPair(glyphs, index, flags, filter, classes.SecondHasValues,
-                (first, second) => ClassPair(classes, first, second), budget),
-            MarkToBase marks => Attach(glyphs, index, marks, bases),
+                (first, second) => ClassPair(classes, first, second), budget, unsafeFlags),
+            MarkToBase marks => Attach(glyphs, index, marks, bases, budget, unsafeFlags),
 
             // Every other type or format: not implemented in this version; skipped (documented on the Shaper).
             _ => null,
@@ -186,9 +191,13 @@ internal static class GlyphPositioning
     /// Type 2, pair adjustment. The second glyph of the pair is the next glyph the lookup does not skip. The first
     /// value record adjusts the first glyph, the second the second one. "If valueFormat2 is set to 0, then the second
     /// glyph of the pair is the “next” glyph for which a lookup should be performed."; otherwise the next pair starts after it.
+    /// The pair is unsafe to break only when it moved something: a record of zeros (a class pair that kerns nothing, which
+    /// class kerning has for most pairs) changes no glyph, as in HarfBuzz, which marks the pair only when a value it
+    /// applied is not zero (hb-ot-layout-gpos-table PairPos: <c>if (applied_first || applied_second) buffer-&gt;unsafe_to_break (...)</c>).
     /// </summary>
     private static int? AdjustPair(
-        GlyphItem[] glyphs, int index, LookupFlags flags, GlyphFilter filter, bool secondHasValues, System.Func<GlyphItem, GlyphItem, PairValues?> find, ShapingBudget budget)
+        GlyphItem[] glyphs, int index, LookupFlags flags, GlyphFilter filter, bool secondHasValues, System.Func<GlyphItem, GlyphItem, PairValues?> find, ShapingBudget budget,
+        Clusters.Flagging unsafeFlags)
     {
         if (NextIndex(glyphs, index, item => filter.SkipsInPositioning(flags, item), budget) is not { } second || find(glyphs[index], glyphs[second]) is not { } values)
         {
@@ -197,7 +206,11 @@ internal static class GlyphPositioning
 
         glyphs[index] = Adjusted(glyphs[index], values.First);
         glyphs[second] = Adjusted(glyphs[second], values.Second);
-        UnsafeToBreak(glyphs, index, second);
+        if ((values.First != default || values.Second != default) && !unsafeFlags.UnsafeToBreak(glyphs, index, second, budget))
+        {
+            return null;
+        }
+
         return secondHasValues ? second + 1 : second;
     }
 
@@ -229,7 +242,7 @@ internal static class GlyphPositioning
     /// advances are final. The base is looked up in <paramref name="bases"/> (see <see cref="Bases"/>), in one step that
     /// the subtable's own operation pays for (<see cref="FirstApplying"/>).
     /// </summary>
-    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, int[] bases)
+    private static int? Attach(GlyphItem[] glyphs, int index, MarkToBase table, int[] bases, ShapingBudget budget, Clusters.Flagging unsafeFlags)
     {
         if (table.MarkOf(glyphs[index].Glyph) is not { } mark)
         {
@@ -243,22 +256,75 @@ internal static class GlyphPositioning
         }
 
         glyphs[index] = glyphs[index] with { Attachment = new MarkAttachment(baseIndex, baseAnchor.X - mark.Anchor.X, baseAnchor.Y - mark.Anchor.Y) };
-        UnsafeToBreak(glyphs, baseIndex, index);
-        return index + 1;
+        return unsafeFlags.UnsafeToBreak(glyphs, baseIndex, index, budget) ? index + 1 : null;
     }
 
-    /// <summary>
-    /// Marks the glyphs after <paramref name="first"/> up to <paramref name="last"/> as unsafe to break before: a lookup
-    /// joined the two (a pair, a mark on its base), so a break between them changes how both sides are shaped. HarfBuzz
-    /// does the same for every lookup that matches more than one glyph (<c>unsafe_to_break</c> in hb-buffer.hh; the flag's
-    /// meaning: "if input text is broken at the beginning of the cluster this glyph is part of, then both sides need to be
-    /// re-shaped", hb-buffer.h, <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>).
-    /// </summary>
-    private static void UnsafeToBreak(GlyphItem[] glyphs, int first, int last)
+    /// <summary>The clusters of a buffer, for marking glyphs unsafe to break: a cluster is a glyph with text and the glyphs
+    /// after it that have none (the later glyphs of a substitution, the glyphs a ligature skipped). Positioning changes no
+    /// glyph's text, so they are found once, in one pass, for all lookups.</summary>
+    private sealed class Clusters
     {
-        for (var index = first + 1; index <= last; index++)
+        // _next[i]: the first glyph after i's cluster.
+        private readonly int[] _next;
+
+        public Clusters(ImmutableArray<GlyphItem> glyphs)
         {
-            glyphs[index] = glyphs[index] with { UnsafeToBreak = true };
+            _next = new int[glyphs.Length];
+            var next = glyphs.Length;
+            for (var index = glyphs.Length - 1; index >= 0; index--)
+            {
+                _next[index] = next;
+                if (glyphs[index].Text.Length > 0)
+                {
+                    next = index;
+                }
+            }
+        }
+
+        /// <summary>The marking of one walk over the buffer (one lookup).</summary>
+        public Flagging Flags() => new(_next);
+
+        /// <summary>
+        /// Marks glyphs unsafe to break within one walk over the buffer. A lookup that joined <c>first</c> to
+        /// <c>last</c> (a pair, a mark on its base) makes a break before any cluster after <c>first</c>'s, up to
+        /// <c>last</c>, change how both sides are shaped: those glyphs are marked; the glyphs of <c>first</c>'s own
+        /// cluster are not, as a break inside it is not a break between the two. This is HarfBuzz's
+        /// <c>unsafe_to_break (start, end)</c> (hb-buffer.hh), which marks every glyph of the range whose cluster is not the
+        /// range's first; the flag's meaning: "if input text is broken at the beginning of the cluster this glyph is part
+        /// of, then both sides need to be re-shaped" (hb-buffer.h, <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>).
+        /// A walk joins ranges whose first glyph never moves back (the pairs and the marks' bases come in text order), so
+        /// the glyphs up to the last one marked are not looked at again: a run of n marks on one base costs n steps, not n
+        /// squared. Each glyph marked is an operation of the budget.
+        /// </summary>
+        public sealed class Flagging(int[] next)
+        {
+            private int _markedTo = -1;
+
+            /// <summary>Marks the range; false when the budget is used up.</summary>
+            public bool UnsafeToBreak(GlyphItem[] glyphs, int first, int last, ShapingBudget budget)
+            {
+                var from = Math.Max(next[first], _markedTo + 1);
+                if (from > last)
+                {
+                    return true;
+                }
+
+                if (!budget.Spend(last - from + 1))
+                {
+                    return false;
+                }
+
+                for (var index = from; index <= last; index++)
+                {
+                    if (!glyphs[index].UnsafeToBreak)
+                    {
+                        glyphs[index] = glyphs[index] with { UnsafeToBreak = true };
+                    }
+                }
+
+                _markedTo = last;
+                return true;
+            }
         }
     }
 
