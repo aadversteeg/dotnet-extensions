@@ -9,9 +9,10 @@ namespace Ave.Extensions.Documents.Pdf;
 /// (RFC 1951), from the .NET base library.
 /// </summary>
 /// <remarks>
-/// The compressed bytes are the same for the same input on the same .NET runtime, which is what the determinism
-/// test checks. A different runtime version may compress differently (the runtime's zlib can change); if output
-/// must be byte-identical ACROSS runtime versions, a managed deflate encoder replaces this one function.
+/// The compressed bytes are the same for the same input on repeated runs, which is what the determinism tests check.
+/// Another runtime version or zlib build can compress the same input to other bytes (docs/architecture.md,
+/// "Determinism", has the evidence); if output must be byte-identical across them, a managed deflate encoder replaces
+/// this one function.
 /// </remarks>
 public static class Flate
 {

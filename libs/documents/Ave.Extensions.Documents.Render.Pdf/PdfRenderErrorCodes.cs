@@ -17,7 +17,7 @@ public static class PdfRenderErrorCodes
         public static readonly ErrorCode _ = PdfErrorCodes.Write._;
 
         /// <summary>A page model that breaks the back-end's contract, whoever produced it (the list is on
-        /// <c>PageModelRules</c>). Metadata: Value, and SourceFile, SourceLine where the page model has a location.</summary>
+        /// <c>PageModelRules</c> in Ave.Extensions.Documents.PageModel). Metadata: Value, and SourceFile, SourceLine where the page model has a location.</summary>
         public static readonly ErrorCode InvalidPageModel = _ / "InvalidPageModel";
 
         /// <summary>A font whose licence bits (OpenType OS/2 fsType) forbid embedding. Metadata: FontName.</summary>

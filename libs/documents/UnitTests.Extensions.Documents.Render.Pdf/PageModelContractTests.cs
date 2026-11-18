@@ -493,4 +493,22 @@ public class PageModelContractTests
         Refused(document, With(PdfProfile.PdfUa1)).Code.Should().Be(PdfRenderErrorCodes.Conformance.PdfUa1.TableHeadWithoutBody);
         PdfRenderer.Render(document, With(PdfProfile.PdfA3a)).IsSuccess.Should().BeTrue("the rule is PDF/UA's");
     }
+
+    [Fact]
+    public void The_page_model_s_number_range_is_the_PDF_writer_s()
+    {
+        PageModelRules.MaxNumber.Should().Be(PdfSerializer.MaxReal);
+    }
+
+    [Fact]
+    public void A_number_beyond_the_range_of_a_PDF_real_is_a_breach_of_the_contract()
+    {
+        // Before the shared range rule the writer refused it later, as Documents.Pdf.Write.InvalidNumber.
+        var page = new Page(new Size(100, 100), [new FillRectangle(new Rect(new Point(10, 10), new Size(10, 1.5e308)), Color.Black)]);
+
+        var result = PdfRenderer.Render(new PageDocument(new DocumentMetadata("t", null), [page]), With(PdfProfile.Plain));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+    }
 }

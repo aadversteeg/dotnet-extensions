@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Suppress XML documentation warnings for test projects -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- The engine targets net10.0 only: -p:UseNs20=true and -p:UseNs21=true do not apply here -->
+    <Ns20AssetUnderTest>false</Ns20AssetUnderTest>
+    <!-- Output must not depend on the machine's culture (numbers in PDF and in the text serialisations) -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="FluentAssertions" />
+    <Using Include="System" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Linq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ave.Extensions.Documents.Graphics\Ave.Extensions.Documents.Graphics.csproj" />
+  </ItemGroup>
+
+</Project>

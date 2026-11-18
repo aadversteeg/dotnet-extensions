@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net10.0 only: the engine is written for .NET 10 and has no netstandard build (README.md, "Target framework") -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <PackageTags>graphics;rasterizer;anti-aliasing;png;document</PackageTags>
+    <Description>2D graphics in plain managed code for the Ave.Extensions.Documents engine: paths, affine transforms, filling with exact-area anti-aliasing, an 8-bit RGBA pixel buffer with source-over compositing, and image drawing with an exact box filter. Deterministic: the same input gives the same pixels on every platform.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ave.Extensions.Documents.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Graphics" />
+  </ItemGroup>
+
+</Project>

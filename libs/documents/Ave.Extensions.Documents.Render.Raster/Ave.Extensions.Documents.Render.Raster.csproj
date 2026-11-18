@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net10.0 only: the engine is written for .NET 10 and has no netstandard build (README.md, "Target framework") -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <PackageTags>raster;png;preview;document;rendering</PackageTags>
+    <Description>The raster back-end of the Ave.Extensions.Documents engine: draws a page of the page model as pixels (glyph outlines filled with exact-area anti-aliasing, rectangles, images), for previews and visual checks. Pure managed code, deterministic.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ave.Extensions.Documents.Core" />
+    <PackageReference Include="Ave.Extensions.Documents.Fonts" />
+    <PackageReference Include="Ave.Extensions.Documents.Images" />
+    <PackageReference Include="Ave.Extensions.Documents.Graphics" />
+    <PackageReference Include="Ave.Extensions.Documents.PageModel" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Render.Raster" />
+  </ItemGroup>
+
+</Project>
