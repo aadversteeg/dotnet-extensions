@@ -70,6 +70,11 @@ governed by a BSD-style license that can be found in the LICENSE file":
 - `third_party/blink/renderer/core/layout/fragmentation_utils.cc` (Copyright 2017 The Chromium Authors):
   `FinishFragmentation`, bottom padding and borders that do not fit below a box's content (`Layout/SlicedBox.cs`), and
   `MovePastBreakpoint`, no breakpoint inside a box that continues from the page before (`Layout/FlowLayout.cs`);
+- `third_party/blink/renderer/platform/fonts/font_metrics.cc` (`FontMetrics::AscentDescentWithHacks`) and
+  `simple_font_data.cc` (the line spacing): a font's ascent, descent and line gap each rounded to a whole pixel; and
+  `third_party/blink/renderer/core/layout/inline/line_utils.cc` (`CalculateLeadingSpace`): the half-leading above the
+  text floored to a whole pixel (`DocumentModel/LayoutProfile.cs`, `FontMetricRounding.WholePixels`;
+  `Layout/LineBoxes.cs`, `InlineExtent`);
 - the layout contract (a pure function of a box, a constraint space and a break token) is Blink LayoutNG's;
 - where a line ends and how wide it is (`Typesetting/LineBreaking/GreedyLineBreaker.cs`, `Layout/InlineLayout.cs`
   `LineEndAtSpace`), as measured in Chromium's print and cited from `third_party/blink/renderer/core/layout/inline/`
