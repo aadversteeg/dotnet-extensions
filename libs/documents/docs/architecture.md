@@ -174,11 +174,10 @@ shape is clipped to the box in floating point before any number becomes an integ
 `UnitTests.Extensions.Documents.Graphics` holds it to that, hostile values included.
 
 **Determinism.** The pixel path uses only correctly rounded double arithmetic and square roots, in a fixed order, and
-no platform maths function, so the pixels do not depend on the platform. The PNG bytes also depend on the runtime's
-zlib, whose output can differ with another .NET release or another zlib build (a Linux distribution may build .NET
-against its system zlib); so the golden tests compare decoded pixels, and one test pins the bytes of one PNG to show when
-the compression changes. Checked on x64 Linux, x64 Windows and arm64 Linux for .NET 10 (the documents legs of CI, arm64
-on `ubuntu-24.04-arm`).
+no platform maths function, so the pixels do not depend on the platform; checked on x64 Linux, x64 Windows and arm64
+Linux for .NET 10 (the documents legs of CI, arm64 on `ubuntu-24.04-arm`). The PNG bytes depend on the runtime's
+deflate as well (see Determinism below), so the golden tests compare decoded pixels and one test pins the bytes of one
+PNG.
 
 **Where correctness is shown.** By analytic tests: the Graphics tests prove coverage, compositing and the image rule
 against exact areas (any scale, offset and affine map), and the page-level tests
@@ -194,8 +193,10 @@ viewer than the viewers are from each other; for the pixels over 32 and 64 steps
 catches gross errors, not small ones. Measured by the review of 2026-11-18 with planted errors, it did not see text 1 %
 larger, curves drawn as coarse polygons, every rectangle one pixel to the right, an image snapped to whole pixels, or an
 image's transparency ignored; at 96 dpi body text has no pixel away from edges, so the strictest metric does not see
-text at all, which is why pages are also compared at 300 dpi. The engine is closest to MuPDF; poppler draws
-glyph edges heavier and snaps thin rectangles to whole pixels. The viewers check images only for decoding and colour, on
+text at all, which is why every sample page is also compared at 300 dpi. At 300 dpi the rule holds on 22 of 23 pages;
+the exception is page 1 of timesheet-edge.nl, where 12,753 pixels differ by more than 128 steps from poppler against
+12,569 between the viewers, while the same page has 552 such pixels against MuPDF. The engine is closest to MuPDF;
+poppler draws glyph edges heavier and snaps thin rectangles to whole pixels. The viewers check images only for decoding and colour, on
 images at 1:1 on the pixel grid against MuPDF (poppler resamples every image drawn below 4×, also at 1:1).
 
 **Known limits.** No hinting: small text is lighter than in a viewer that hints (PDFium). Two items that meet at a
@@ -268,11 +269,20 @@ content).
 
 ## Determinism
 
-Same input, same bytes: dates and file identifier are inputs (the identifier defaults to a hash of the content), no
-clock, no machine state, dictionaries keep insertion order, object numbers come from `ObjectPlan`. Flate
-compression (PDF streams, PNG files) comes from the .NET runtime's zlib-ng; its output was checked equal on Linux x64
-(runtime 10.0.12) and Windows x64 (10.0.15) at all three compression levels (2026-11-18); arm64 by CI. Tests:
-`Same_input_gives_byte_identical_output…`, `A_tagged_file_is_deterministic`, `Two_runs_give_byte_identical_PDFs…`.
+Same input, same output: dates and file identifier are inputs (the identifier defaults to a hash of the content), no
+clock, no machine state, dictionaries keep insertion order, object numbers come from `ObjectPlan`, and the raster's
+pixel path uses only correctly rounded arithmetic in a fixed order. Tests: repeated runs give byte-identical PDFs
+(`Same_input_gives_byte_identical_output…`, `A_tagged_file_is_deterministic`, `Two_runs_give_byte_identical_PDFs…`),
+and the pixels of a Graphics scene and of the samples' golden images are pinned.
+
+Compressed bytes are the exception. PDF streams (FlateDecode) and PNG files are compressed by the .NET runtime's
+deflate (`ZLibStream` at `CompressionLevel.Optimal`; zlib-ng in .NET 10). Microsoft's documentation of `DeflateStream`
+says the compressed bytes "can vary between .NET releases, platforms, and underlying compression engines", and a Linux
+distribution may build .NET against its system zlib. What is shown: the bytes of one pinned PNG (`PngEncoderTests`) are
+equal on x64 Linux, x64 Windows and arm64 Linux in CI for .NET 10; a manual check found Flate output equal on Linux x64
+(runtime 10.0.12) and Windows x64 (10.0.15) at all three compression levels (2026-11-18). So: the same pixels on the platforms checked; the PDF content does not depend on the machine by
+construction (no clock, no machine state), but no test compares it across platforms; and with another runtime or
+another zlib build the same content can come out as other compressed bytes.
 
 ## Known limits (all stages)
 

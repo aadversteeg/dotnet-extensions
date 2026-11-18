@@ -121,10 +121,9 @@ if (pages.IsSuccess)
 ```
 
 `ToImages` gives the pixels instead (8-bit RGBA, sRGB). The output is deterministic: the same pages and options give
-the same pixels, checked on x64 Linux, x64 Windows and arm64 Linux for .NET 10. The PNG bytes were the same there too,
-but they come from the runtime's zlib, whose output can differ with another .NET release or zlib build; the pixels do
-not depend on it. As a sanity check, the pages are compared with MuPDF and poppler renders of the engine's own PDF
-(`tools/reference/raster/README.md`).
+the same pixels, checked on x64 Linux, x64 Windows and arm64 Linux for .NET 10. The PNG bytes are compressed by the
+runtime's deflate, like PDF streams; see *Deterministic output* below. As a sanity check, the pages are compared with
+MuPDF and poppler renders of the engine's own PDF (`tools/reference/raster/README.md`).
 
 ## What it does
 
@@ -140,7 +139,10 @@ not depend on it. As a sanity check, the pages are compared with MuPDF and poppl
   forbids: tagged PDF from the page model's structure markers, XMP metadata, an sRGB output intent, embedded files
   with their relationship (as a Factur-X invoice carries its XML).
 - **Preview images:** any page as PNG or pixels, at any resolution, in pure managed code.
-- **Deterministic output:** the same document, fonts and creation date give the same bytes on every machine.
+- **Deterministic output:** the same document, fonts and creation date give the same bytes on every run, and the same
+  raster pixels on x64 Linux, x64 Windows and arm64 Linux (tested). Compressed streams (PDF and PNG) come from the .NET
+  runtime's deflate, so another runtime version or zlib build can give other bytes for the same content
+  (`docs/architecture.md`, Determinism, says what is tested).
 
 ## How the claims are checked
 
