@@ -1,16 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Ave.Extensions.Documents.Graphics;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Render.Raster;
 
-namespace Ave.Extensions.Documents.TestSupport;
+namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// How the raster back-end's pages are compared with the renders of reference PDF viewers (MuPDF, poppler) of the
 /// engine's own PDF of the same page model: the metrics of the distance between two images, and the rule that decides.
-/// One place for all of them, like <see cref="ChromiumLayout"/> for layout numbers.
+/// One place for all of them, like <c>ChromiumLayout</c> for layout numbers. Only the sample tests use it today; a second
+/// user (the HTML front-end's visual checks) moves it to Ave.Extensions.Documents.TestSupport.
 /// </summary>
 /// <remarks>
 /// <para><b>The metrics</b>, over the pixels both images have, on the red, green and blue channels (all renders are
@@ -42,7 +40,7 @@ namespace Ave.Extensions.Documents.TestSupport;
 /// (<see cref="EdgeMask"/> with <c>imagesAsEdges</c>). Images that lie exactly on the pixel grid (1:1, whole-number
 /// enlargements and reductions) are compared inside as well, where fitting changes nothing.</para>
 /// </remarks>
-public static class RasterComparison
+internal static class RasterComparison
 {
     /// <summary>The distance between two images by the metrics.</summary>
     /// <param name="LargestAwayFromEdges">The largest channel difference away from edges.</param>

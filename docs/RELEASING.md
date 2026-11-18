@@ -43,8 +43,9 @@ release mode the tests run against the published minimum versions. Some test pro
 `UnitTests.Extensions.FileSystem` uses `Ave.Extensions.FileSystem.InMemory`, and both helpers depend on the
 package under test. In release mode the helper would bring the published version of the package under test next to
 the one being built (error CS1704). These projects set `<TestInHeadMode>true</TestInHeadMode>`, and a release runs
-them in head mode. In the documents family the same holds for `UnitTests.Extensions.Documents.Fonts` and
-`.PageModel` (their test helper `Ave.Extensions.Documents.TestSupport` depends on Fonts and PageModel),
+them in head mode. In the documents family the same holds for `UnitTests.Extensions.Documents.Fonts`, `.Images`,
+`.PageModel` and `.Render.Raster` (their test helper `Ave.Extensions.Documents.TestSupport` depends on Fonts, Images
+and PageModel),
 `UnitTests.Extensions.Documents.Fluent` (it renders through `Ave.Extensions.Documents`, which depends on Fluent) and
 `UnitTests.Extensions.Documents.Architecture` (the family's rules, checked on the head build of every library
 together).
@@ -178,6 +179,31 @@ For example, step 1:
 git tag documents-core/0.1.0-preview.2
 git push origin documents-core/0.1.0-preview.2
 ```
+
+## The documents raster back-end (milestone M2, stage 2)
+
+Stage 2 adds two packages and changes four:
+
+| Tag name | Package | What changed |
+|---|---|---|
+| `documents-graphics` | `Ave.Extensions.Documents.Graphics` | new |
+| `documents-render-raster` | `Ave.Extensions.Documents.Render.Raster` | new |
+| `documents-fonts` | `Ave.Extensions.Documents.Fonts` | glyph outlines (`TrueTypeFont.Shape`) |
+| `documents-images` | `Ave.Extensions.Documents.Images` | PNG encoder, JPEG decoder |
+| `documents-page-model` | `Ave.Extensions.Documents.PageModel` | the page-model contract (`PageModelRules`), moved here from Render.Pdf |
+| `documents-render-pdf` | `Ave.Extensions.Documents.Render.Pdf` | uses `PageModelRules` from PageModel |
+| `documents` | `Ave.Extensions.Documents` | `ToPages`, `ToPng`, `ToPngPages`, `ToImages` |
+
+The new code of each upper package needs the new version of the lower ones, so this is a change across packages
+(see above): release a step, raise the minimums the next step needs in `Directory.Packages.props` once the step is
+on nuget.org, then release the next step. The two new packages are in `Directory.Packages.props` with a placeholder
+minimum (`0.1.0-preview.2`, a version they never had); set it to their first version when they are released.
+
+1. `documents-fonts`, `documents-images`, `documents-graphics`;
+2. `documents-page-model` (its tests run in head mode);
+3. `documents-render-pdf` (needs the new PageModel), `documents-render-raster` (needs the new Fonts, Images, PageModel
+   and Graphics);
+4. `documents`.
 
 ## One-time setup
 

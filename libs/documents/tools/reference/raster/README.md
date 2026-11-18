@@ -5,7 +5,7 @@ The raster back-end (`Ave.Extensions.Documents.Render.Raster`) draws a page of t
 unhinted) render the engine's own PDF of the same page model at the same resolution, in the reference tools image
 (`tools/reference/tools.Dockerfile`). PDFium is not a reference: it hints TrueType glyphs and has no switch to stop it.
 The test is `UnitTests.Extensions.Documents.Samples/RasterReferenceTests.cs`; the metrics, the edge rule and the rule are
-stated once in `Ave.Extensions.Documents.TestSupport/RasterComparison.cs`.
+stated once in `UnitTests.Extensions.Documents.Samples/RasterComparison.cs`.
 
 ## How to run
 
