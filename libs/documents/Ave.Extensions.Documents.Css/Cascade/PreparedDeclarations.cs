@@ -133,7 +133,7 @@ internal static class DeclarationPreparer
         if (declaration.Value.Any(value => value is CssToken token && token.IsDelim('!')))
         {
             // A top-level '!' other than !important is not a <declaration-value> (CSS Syntax 3 §8.2): no property's
-            // grammar takes it, a custom property's included, so Chromium drops the declaration (review 39 F8).
+            // grammar takes it, a custom property's included, so Chromium drops the declaration.
             diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A '!' that is not !important makes the declaration of '{declaration.Name}' invalid; it is dropped (CSS Syntax 3 §8.2).", prepared));
             return;
         }
@@ -246,7 +246,7 @@ internal static class DeclarationPreparer
 
         // Chromium keeps its -internal- keywords for its own style sheet: an author's text-align: -internal-center is
         // dropped. Where a property takes a name (font-family, counter names, list-style-type, page), Chromium 159 reads
-        // -internal-… as an ordinary name (measured, review 39), so that is left to the property's grammar.
+        // -internal-… as an ordinary name (measured), so that is left to the property's grammar.
         if (origin != CascadeOrigin.UserAgent && name == "text-align" && ContainsInternalKeyword(declaration.Value))
         {
             diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; the declaration of '{declaration.Name}' is dropped.", prepared));

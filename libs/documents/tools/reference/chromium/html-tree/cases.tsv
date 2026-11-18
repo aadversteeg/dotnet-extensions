@@ -1,4 +1,4 @@
-# Own cases of the parser against Chromium 159, beyond the vendored suite (review 39 HD-1 .. HD-12): one per line,
+# Own cases of the parser against Chromium 159, beyond the vendored suite (HD-1 .. HD-12): one per line,
 # id <tab> fragment context (empty for a document) <tab> input, with \uXXXX for a character and \\ for a backslash.
 # measure.mjs writes Chromium's tree of each to out/cases.json. Ids starting with "limit-" are listed limits: the
 # parser keeps the standard there (docs/architecture.md, known limits), and the test pins that it still differs.

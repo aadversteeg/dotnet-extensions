@@ -6,9 +6,10 @@ qpdf, poppler, MuPDF, HarfBuzz, Chromium) run only in its tests and scripts. It 
 archivable, tagged and accessible files, as business documents such as invoices and timesheets need.
 
 Status: preview. Milestone M1, the code front-end to PDF, is released as `0.1.0-preview.2`. Milestone M2, the HTML
-front-end, is in progress: its first part, HTML and CSS to the computed style of every element, is in the packages
-`Html.Parsing`, `Css` and `Html`, which are not released yet and do not lay out or print anything. The packages target
-`net10.0` only.
+front-end, is in progress and not released yet. Its stage 2, the raster back-end for preview images, is in the
+packages `Graphics` and `Render.Raster`. Its stage 3, HTML and CSS to the computed style of every element, is in the
+packages `Html.Parsing`, `Css` and `Html`, which do not lay out or print anything yet. The packages target `net10.0`
+only.
 
 ## Packages
 
@@ -130,9 +131,9 @@ the same pixels, checked on x64 Linux, x64 Windows and arm64 Linux for .NET 10. 
 runtime's deflate, like PDF streams; see *Deterministic output* below. As a sanity check, the pages are compared with
 MuPDF and poppler renders of the engine's own PDF (`tools/reference/raster/README.md`).
 
-## HTML and CSS to computed style (M2, first part)
+## HTML and CSS to computed style (M2, stage 3)
 
-The HTML front-end reads a document as Chromium 159 prints it and refuses what it cannot follow. Its first part
+The HTML front-end reads a document as Chromium 159 prints it and refuses what it cannot follow. Stage 3
 parses the HTML (the HTML Standard's algorithm), reads the style sheets (CSS Syntax 3, Selectors 4, Cascade 5) and
 gives every element its computed style, with every parse error, refusal and ignored declaration as a diagnostic that
 carries the file, line and column. Layout of the result comes in a later stage.
@@ -183,7 +184,7 @@ styled tree and the diagnostics of a file.
 | The files are well-formed and readable by other tools | qpdf `--check`, poppler's `pdftotext` and `pdffonts`, every embedded font opened with fontTools, renderings by poppler and MuPDF, attachments extracted by qpdf and compared byte for byte (`tools/verify-samples.ps1`, reference tests). |
 | Preview images are drawn right | Whole pages are checked pixel by pixel against the exact areas their geometry gives: glyphs (overlapping contours, offsets, size), an image in a box of another shape, a rule thinner than a pixel (`PageGeometryTests`); the Graphics tests prove coverage, compositing and the image rule the same way. As a sanity check, every sample page is compared with MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF at 96 and 300 dpi: for the largest difference away from edges, the mean squared error and the pixels over 128 steps the engine is no farther from either viewer than the viewers are from each other, and for the pixels over 32 and 64 steps no farther from the nearer viewer (`RasterReferenceTests`, `tools/reference/raster/README.md`); it catches gross errors, not small ones. The samples' pages are pinned as golden images, which catch change, not error. |
 | Glyph outlines and JPEG decoding are right | Every glyph of the test fonts decodes to the points fontTools 4.57.0 reads, exactly (`GlyphShapeReferenceTests`); the ITU-T T.83 compliance streams decode to the reference coefficients, exactly (`JpegConformanceTests`). |
-| The HTML parser follows the HTML Standard | The html5lib tokenizer tests and the tree-construction tests of web-platform-tests, every case of every file, counts asserted (`TokenizerSuiteTests`, `TreeConstructionSuiteTests`); where Chromium 159 builds another tree, its tree is measured and the parser follows it or a listed limit says why not (`tools/reference/chromium/html-tree`). |
+| The HTML parser follows the HTML Standard | The html5lib tokenizer tests (7,046 runs; the 4 of `xmlViolation.test` are left out by that file's own rule) and the tree-construction tests of web-platform-tests (1,959 of 1,973; the 14 that need scripting are left out, as the parser runs with scripting off), counts asserted (`TokenizerSuiteTests`, `TreeConstructionSuiteTests`); where Chromium 159 builds another tree, its tree is measured and the parser follows it or a listed limit says why not (`tools/reference/chromium/html-tree`). |
 | CSS is read as Chromium 159 reads it | The css-parsing-tests suite and the CSS cases of web-platform-tests, each answer counted as equal, refused or different, with different pinned at 0 or a named skip (`CssParsingSuiteTests`, `ColorSuiteTests`, `WptCssSuiteTests`, `WptComputedValueTests`); the computed style of every element and property against Chromium's (`ChromiumCorpusTests`, cases in `tools/reference/chromium/computed-style`). |
 | No native code | `UnitTests.Extensions.Documents.Architecture` reads every compiled library: no P/Invoke, no module references, IL only, no unsafe code; the samples' publish folder holds IL-only assemblies only. |
 

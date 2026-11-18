@@ -194,7 +194,7 @@ public static class MediaQueries
 
         // Chromium 159 compares the inclusive forms (min-, max-, =, <=, >=) with a tolerance of 1/64 px, its layout
         // unit, and the strict ones (<, >) exactly: (max-width: 793.99px) holds at 794px, (width < 793.99px) does not
-        // (measured, review 39 F22).
+        // (measured).
         if (test.Lower is { } lower && Points(lower.Length, context) is var low && (lower.Inclusive ? actual < low - Tolerance : actual <= low))
         {
             return Kleene.False;

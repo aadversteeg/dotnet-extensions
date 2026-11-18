@@ -13,7 +13,7 @@ namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
 internal static class ElementTables
 {
     /// <summary>The HTML elements in the special category (§13.2.4.2), as Chromium 159 has them: without search, which
-    /// the standard lists and Chromium does not (review 39 HD-4, measured: a list item or formatting element stays open
+    /// the standard lists and Chromium does not (HD-4, measured: a list item or formatting element stays open
     /// through it).</summary>
     private static readonly FrozenSet<string> SpecialHtml = FrozenSet.Create(StringComparer.Ordinal,
         "address", "applet", "area", "article", "aside", "base", "basefont", "bgsound", "blockquote", "body", "br",

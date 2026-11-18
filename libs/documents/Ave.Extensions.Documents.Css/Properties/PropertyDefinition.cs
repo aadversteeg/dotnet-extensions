@@ -143,11 +143,11 @@ internal readonly record struct ParsedValue(CssValue? Value, string? Problem, bo
     public static ParsedValue Of(CssValue value) => new(value, null, false);
 
     /// <summary>Invalid CSS: Chromium drops the declaration too, so it is dropped with a warning and the cascade goes
-    /// on (CSS Syntax 3 §5.4.4, ruling D-b in docs/architecture.md).</summary>
+    /// on (CSS Syntax 3 §5.4.4, the refusal policy in docs/architecture.md).</summary>
     public static ParsedValue Invalid(string problem) => new(null, problem, false);
 
     /// <summary>CSS the engine cannot follow: valid, or not readable by the engine's grammar. Refused when it would
-    /// win, as the profile says (ruling D-b in docs/architecture.md), never dropped silently.</summary>
+    /// win, as the profile says (the refusal policy in docs/architecture.md), never dropped silently.</summary>
     public static ParsedValue Refused(string problem) => new(null, problem, true);
 
     /// <summary>Whether there is a value.</summary>

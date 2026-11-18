@@ -44,7 +44,7 @@ internal static class ComputedText
     public static string Pixels(double pixels) => Number(pixels) + "px";
 
     /// <summary>A number with at most six significant digits, as Chromium writes them: C's %g, so in exponent form when
-    /// the exponent is below -4 or at least 6 (1.23457e+06, 1e-07; review 39 N2).</summary>
+    /// the exponent is below -4 or at least 6 (1.23457e+06, 1e-07).</summary>
     public static string Number(double value)
     {
         if (value == 0)

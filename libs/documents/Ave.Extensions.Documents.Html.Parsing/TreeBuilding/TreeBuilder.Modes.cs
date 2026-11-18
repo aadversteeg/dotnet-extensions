@@ -471,7 +471,7 @@ internal sealed partial class TreeBuilder
 
         ReconstructFormatting();
         InsertCharacter(t.Char, t.Source);
-        // Chromium 159 does not count U+FFFD as a character that makes a frameset not ok (review 39 HD-3, measured).
+        // Chromium 159 does not count U+FFFD as a character that makes a frameset not ok (HD-3, measured).
         if (!t.IsWhitespace && t.Char != 0xFFFD)
         {
             _framesetOk = false;

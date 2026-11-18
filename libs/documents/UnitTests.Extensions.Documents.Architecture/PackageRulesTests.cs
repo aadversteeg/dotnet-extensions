@@ -95,7 +95,7 @@ public class PackageRulesTests
     /// <summary>
     /// The layer rule for what a package will depend on, not only for the compiled references: the compiler drops a
     /// reference no type of which is used, so a forbidden project or package reference would pass the assembly rule and
-    /// still become a dependency of the package (review 39 A-1).
+    /// still become a dependency of the package.
     /// </summary>
     [Theory]
     [MemberData(nameof(AssemblyRulesTests.Libraries), MemberType = typeof(AssemblyRulesTests))]

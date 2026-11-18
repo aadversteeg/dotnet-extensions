@@ -38,7 +38,7 @@ public static partial class PropertyRegistry
             longhands[i].Index = i;
         }
 
-        // Read-only views: a cast cannot change the registry for the whole process (review 39 R-4).
+        // Read-only views: a cast cannot change the registry for the whole process.
         Longhands = longhands.AsReadOnly();
         ByName = longhands.ToFrozenDictionary(property => property.Name, StringComparer.Ordinal);
         Shorthands = Array.AsReadOnly([.. ShorthandProperties()]);

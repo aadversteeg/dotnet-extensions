@@ -229,7 +229,7 @@ public static partial class PropertyRegistry
     }
 
     /// <summary>outline-offset snapped as Chromium 159 snaps it: above 0 and below 1px is 1px, anything else is floored
-    /// to whole pixels (1.5px is 1px, 0.4px is 1px, -0.5px is -1px; measured, review 39 F14).</summary>
+    /// to whole pixels (1.5px is 1px, 0.4px is 1px, -0.5px is -1px; measured).</summary>
     private static ComputedResult SnappedOffset(CssValue value, ComputeContext context)
     {
         var computed = context.LengthPercentage(value);

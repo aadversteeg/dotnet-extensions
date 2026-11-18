@@ -8,8 +8,8 @@ using static UnitTests.Extensions.Documents.Html.Styling;
 namespace UnitTests.Extensions.Documents.Html;
 
 /// <summary>
-/// The style sheets of review 39 that crashed the process or ran for minutes (B1–B6, M1, CR-2, CR-15, CR-16), through
-/// the whole front-end, at the review's size and larger. Each must finish well inside the generous bound, and on a
+/// Style sheets that crashed the process or ran for minutes, through the whole front-end, at the size they were
+/// first found at and larger. Each must finish well inside the generous bound, and on a
 /// thread with a 256 KB stack where recursion was the problem.
 /// </summary>
 public class CssBoundedWorkTests
@@ -146,7 +146,7 @@ public class CssBoundedWorkTests
         css.Append($"width:var(--l{levels})}}");
         var styled = StyledOnSmallStack(Doc(css.ToString(), "<p id=last>x"));
 
-        // Chromium 159: auto (the declaration is invalid at computed-value time; measured, review 39 CR-15).
+        // Chromium 159: auto (the declaration is invalid at computed-value time; measured).
         Last(styled, "width").Should().Be("auto");
     }
 
@@ -163,7 +163,7 @@ public class CssBoundedWorkTests
     [Fact]
     public void Many_classes_against_many_class_rules_cost_their_sum()
     {
-        // The review's input had 100 000 of each (36 s before the fix); 150 000 is about 4 s now.
+        // The input as first found had 100 000 of each (36 s before the fix); 150 000 is about 4 s now.
         var rules = string.Concat(Enumerable.Range(0, 150_000).Select(i => $".c{i}{{margin-top:1px}}"));
         var styled = StyledOnSmallStack(Doc(rules, $"<p id=last class='{string.Join(' ', Enumerable.Range(0, 150_000).Select(i => "c" + i))}'>"));
 

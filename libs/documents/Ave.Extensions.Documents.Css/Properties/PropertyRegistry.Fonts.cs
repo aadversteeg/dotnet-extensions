@@ -124,7 +124,7 @@ public static partial class PropertyRegistry
             return size;
         }
 
-        // Chromium 159's font-size bounds (measured, review 39 F9 and F13): it computes at most 10 000px, and raises a
+        // Chromium 159's font-size bounds (measured): it computes at most 10 000px, and raises a
         // size made from a relative value (em, %, larger, smaller of a size that was never absolute) above 0 and below
         // 6px, its minimum logical font size, to 6px, while children inherit the size before the change. The engine
         // keeps neither rule's second size, so it refuses both cases instead.
@@ -319,7 +319,7 @@ public static partial class PropertyRegistry
     /// percentage of the element's font size.</summary>
     /// <remarks>Chromium 159 keeps a calc() that mixes a length and a percentage in its layout unit, 1/64 px, rounded
     /// down: calc(1px + 10%) at 16px is 2.59375px, not 2.6px; a percentage or a length alone is kept as it is
-    /// (measured, review 39).</remarks>
+    /// (measured).</remarks>
     private static ComputedResult ComputeLineHeight(CssValue value, ComputeContext context)
     {
         if (value is CssKeyword or CssNumber)

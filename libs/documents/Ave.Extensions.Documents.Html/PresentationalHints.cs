@@ -19,7 +19,7 @@ namespace Ave.Extensions.Documents.Html;
 /// </summary>
 /// <remarks>An attribute never speaks CSS: a hint is a value the code makes (a length, a colour, a keyword), or, where
 /// Chromium 159 reads the attribute as one CSS value (<c>face</c>, an <c>align</c> that is not one of its keywords),
-/// the attribute's text parsed as that one property's value and nothing else (review 39 M15).</remarks>
+/// the attribute's text parsed as that one property's value and nothing else.</remarks>
 internal static class PresentationalHints
 {
     private static readonly string[] RowGroups = ["thead", "tbody", "tfoot"];
@@ -125,8 +125,8 @@ internal static class PresentationalHints
 
         // §15.3.8: the align of table parts and div aligns the text, and the block children ("align descendants"),
         // which is what Chromium's -webkit- values do. Chromium 159 compares the keywords ASCII case-insensitively
-        // without trimming and reads any other value as text-align (" center" is center, "end" is end; measured,
-        // review 39 F5).
+        // without trimming and reads any other value as text-align (" center" is center, "end" is end;
+        // measured).
         void BlockAlign()
         {
             switch (Attr("align") is { } align ? InfraAscii.ToLower(align) : null)
@@ -178,7 +178,7 @@ internal static class PresentationalHints
                 Color("text", "color");
                 RefuseIfPresent("background", "sets a background image");
                 // §15.3.2: each pair of margins, from the last of its two attributes in the tag that holds a non-negative
-                // integer (Chromium 159 maps them in attribute order, so the later one wins; measured, review 39).
+                // integer (Chromium 159 maps them in attribute order, so the later one wins; measured).
                 foreach (var attribute in html.Attributes)
                 {
                     if (attribute.Namespace == AttributeNamespace.None && AttributeValues.NonNegativeInteger(attribute.Value) is { } margin)
@@ -195,7 +195,7 @@ internal static class PresentationalHints
                 }
 
                 break;
-            // Chromium 159 colours a elements only with the body's link attribute, not area (measured, review 39).
+            // Chromium 159 colours a elements only with the body's link attribute, not area (measured).
             case "a" when element.IsLink && body?.Attribute("link") is { } link && AttributeValues.LegacyColor(link) is { } linkColor:
                 hints.Add(("color", AttributeValues.Css(linkColor)));
                 break;
@@ -215,7 +215,7 @@ internal static class PresentationalHints
                     if (width != 0)
                     {
                         // Chromium: solid when the table has a bordercolor that is not empty, else outset (§15.3.8 says
-                        // outset; an empty bordercolor is outset, measured, review 39).
+                        // outset; an empty bordercolor is outset, measured).
                         hints.Add(("border-style", Attr("bordercolor") is { Length: > 0 } ? "solid" : "outset"));
                     }
                 }
@@ -277,7 +277,7 @@ internal static class PresentationalHints
                 BlockAlign();
                 break;
             case "h1" or "h2" or "h3" or "h4" or "h5" or "h6":
-                // Chromium 159: middle is center, any other value is read as text-align (measured, review 39).
+                // Chromium 159: middle is center, any other value is read as text-align (measured).
                 if (Attr("align") is { } textAlign && InfraAscii.ToLower(textAlign) == "middle")
                 {
                     hints.Add(("text-align", "center"));
@@ -306,7 +306,7 @@ internal static class PresentationalHints
                 Dimension("vspace", "margin-top", ignoringZero: false);
                 Dimension("vspace", "margin-bottom", ignoringZero: false);
                 // Chromium 159: any border attribute makes the border solid, a width that is not a non-negative
-                // integer is 0 (border="x" and border alone, measured, review 39).
+                // integer is 0 (border="x" and border alone, measured).
                 if (Attr("border") is { } imageBorder)
                 {
                     var imageBorderWidth = AttributeValues.NonNegativeInteger(imageBorder) ?? 0;
@@ -483,7 +483,7 @@ internal static class PresentationalHints
         }
 
         // Chromium 159: a cellpadding that is not empty is the integer it starts with, at least 0, and 0 when it has
-        // none (-1 and abc are 0, 10% is 10; measured, review 39).
+        // none (-1 and abc are 0, 10% is 10; measured).
         if (table.Element.Attribute("cellpadding") is { Length: > 0 } cellpadding)
         {
             var pixels = Math.Max(0, AttributeValues.Integer(cellpadding) ?? 0);
@@ -524,7 +524,7 @@ internal static class PresentationalHints
                 break;
         }
 
-        // A color attribute makes the border solid also when it is no colour (color="", measured, review 39).
+        // A color attribute makes the border solid also when it is no colour (color="", measured).
         if (hr.Attribute("color") is { } value)
         {
             hints.Add(("border-style", "solid"));
@@ -542,7 +542,7 @@ internal static class PresentationalHints
         }
 
         // Chromium 159 reads size as the integer it starts with, 0 when it has none (abc and the empty value remove the
-        // bottom border, 5abc is 5; measured, review 39 F5).
+        // bottom border, 5abc is 5; measured).
         if (hr.Attribute("size") is { } size)
         {
             var pixels = AttributeValues.Integer(size) ?? 0;

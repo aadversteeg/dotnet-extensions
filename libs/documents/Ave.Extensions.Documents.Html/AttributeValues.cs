@@ -66,7 +66,7 @@ internal static class AttributeValues
 
     /// <summary>"Rules for parsing dimension values" (§2.3.4.4): digits with an optional fraction, then a percentage
     /// sign or not; null for an error. A relative dimension (digits then <c>*</c>, as in <c>width="3*"</c>) is no value
-    /// either: Chromium 159 gives it no hint (measured on td and img, review 39 F5).</summary>
+    /// either: Chromium 159 gives it no hint (measured on td and img).</summary>
     public static HtmlDimension? Dimension(string input)
     {
         var position = SkipWhitespace(input, 0);

@@ -66,7 +66,7 @@ public class HtmlStyleResolverTests
         p.Value("margin-top").Should().Be("3px");
         p.Value("margin-left").Should().Be("4px");
         asked.Should().BeEquivalentTo(["https://example.org/css/site.css", "https://example.org/css/parts/colours.css", "https://example.org/other.css"]).And.OnlyHaveUniqueItems();
-        // The two sheets that do not apply say why (review 39 F19), as class Ignored.
+        // The two sheets that do not apply say why, as class Ignored.
         styled.Diagnostics.Select(error => error.Message).Should().Equal(
             "The style sheet of this link element does not apply: it is an alternate style sheet.",
             "The style sheet of this link element does not apply: its media 'screen' do not match.");
@@ -119,7 +119,7 @@ public class HtmlStyleResolverTests
     {
         var styled = Styled(Doctype + "\n" + markup, Warn);
 
-        // Review 39 M16: the place of the character in the attribute value, through character references and line feeds.
+        // The place of the character in the attribute value, through character references and line feeds.
         var diagnostic = styled.Diagnostics.First(error => error.Code != HtmlStyleErrorCodes.Ignored.StyleSheet);
         ((int)diagnostic.Metadata![ErrorMetadataKeys.SourceLine]!, (int)diagnostic.Metadata![ErrorMetadataKeys.SourceColumn]!).Should().Be((line, column));
     }
@@ -127,7 +127,7 @@ public class HtmlStyleResolverTests
     [Fact]
     public void Diagnostics_of_a_style_element_with_several_texts_point_into_each_text()
     {
-        // Review 39 CR-10: the text after a child element of an svg style element keeps its own place.
+        // The text after a child element of an svg style element keeps its own place.
         var styled = Styled(Doctype + "\n<p id=t>x</p><svg><style>p{}<g/>\n#t{bogus:1}</style></svg>", Warn);
 
         var diagnostic = styled.Diagnostics.Single(error => error.Message.Contains("bogus", StringComparison.Ordinal));

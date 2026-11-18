@@ -137,7 +137,7 @@ internal sealed partial class TreeBuilder
 
         ResetInsertionMode();
         // §13.4 step 13: the form element pointer is the nearest form at or above the context element; the context has
-        // no ancestors here, so it is the context itself when that is a form (review 39 HD-8).
+        // no ancestors here, so it is the context itself when that is a form (HD-8).
         if (_context.IsHtml("form"))
         {
             _form = _context;
@@ -249,7 +249,7 @@ internal sealed partial class TreeBuilder
         {
             // Chromium 159 drops a U+0000 of the data state before the HTML content rules see it (the tokenizer has
             // reported it), so it never counts as text: a NUL before the doctype keeps the doctype and the document's
-            // mode (review 39 HD-1, measured). Every mode of the standard that is not before or after the body ignores it
+            // mode (HD-1, measured). Every mode of the standard that is not before or after the body ignores it
             // anyway; the others would take it as text. Other states make U+FFFD of it, and foreign content keeps its rule.
             if (t.Kind == TokenKind.Characters && t.Char == 0)
             {
@@ -462,7 +462,7 @@ internal sealed partial class TreeBuilder
 
     /// <summary>"Push onto the list of active formatting elements", with the Noah's Ark clause. Chromium 159 leaves an
     /// element with an <c>is</c> attribute (a customized built-in element) off the list, so it is never reconstructed
-    /// nor found by the adoption agency algorithm (review 39 HD-5, measured).</summary>
+    /// nor found by the adoption agency algorithm (HD-5, measured).</summary>
     private void PushFormatting(MutableElement element)
     {
         if (element.Token.HasAttribute("is"))
@@ -522,7 +522,7 @@ internal sealed partial class TreeBuilder
         }
 
         // A reopened element is placed where the token that reopened it is (HtmlNode: "the position of the token that
-        // made the parser insert it"), not at the tag it repeats (review 39 HR-P1).
+        // made the parser insert it"), not at the tag it repeats.
         for (; index < _formatting.Count; index++)
         {
             var entry = _formatting[index]!;

@@ -76,7 +76,7 @@ public static partial class PropertyRegistry
             reader => reader.Count == 1 && reader.Keyword("normal") is not null
                 ? ParsedValue.Of(Zero)
                 : reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "word-spacing") is { Value: CssLength { Points: 0 } or CssPercentage { Value: 0 } } zero
-                    // Chromium 159 keeps 0% as 0% (measured, review 39); 0 and 0px are 0px.
+                    // Chromium 159 keeps 0% as 0% (measured); 0 and 0px are 0px.
                     ? ParsedValue.Of(zero.Value is CssPercentage ? new CssPercentage(0) : Zero)
                     : ParsedValue.Refused("'word-spacing' is supported only at its initial value, normal"),
             AsSpecified);
@@ -170,7 +170,7 @@ public static partial class PropertyRegistry
     /// <summary>A background position axis the engine implements only at its initial value, 0%.</summary>
     private static PropertyDefinition InitialPercentPair(string name, string appliesTo, string specification) =>
         new(name, false, new CssPercentage(0), appliesTo, "0%", PropertySupport.InitialOnly, specification,
-            // A zero length is the same position, and Chromium 159 keeps it as written: 0px, not 0% (measured, review 39).
+            // A zero length is the same position, and Chromium 159 keeps it as written: 0px, not 0% (measured).
             reader => reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, name) is { Value: (CssPercentage { Value: 0 } or CssLength { Points: 0 }) and var zero }
                 ? ParsedValue.Of(zero)
                 : ParsedValue.Refused($"'{name}' is supported only at its initial value, 0%"),

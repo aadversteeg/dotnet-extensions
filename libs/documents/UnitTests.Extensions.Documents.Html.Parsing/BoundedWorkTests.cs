@@ -8,8 +8,8 @@ using Ave.Extensions.Functional;
 namespace UnitTests.Extensions.Documents.Html.Parsing;
 
 /// <summary>
-/// The inputs of review 39 that made the parser's work grow faster than its input (B7–B12, M2, M3), at the size the
-/// review used and at the size limit (2^24 characters). Before the fix each took from seconds to hours; the bound
+/// Inputs that made the parser's work grow faster than its input, at the size they were first found at and at the
+/// size limit (2^24 characters). Before the fix each took from seconds to hours; the bound
 /// asserted here is generous (it guards against the quadratic and worse, not against a slow machine).
 /// </summary>
 public class BoundedWorkTests

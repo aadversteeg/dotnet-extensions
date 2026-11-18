@@ -17,10 +17,10 @@ namespace UnitTests.Extensions.Documents.Html;
 /// Chromium 159 computes for them (measured into tools/reference/chromium/computed-style/measured/wpt-css-verdicts.json):
 /// the test file's markup is parsed and styled, with the specified value in #target's style attribute, as the WPT
 /// helper sets it. Each case has one of three outcomes: equal; refused, when the engine refuses the declaration at
-/// #target's style attribute (outside v0, or input it cannot read: review 39 ruling D-b), never counted as equal; or
-/// different, which fails. Skipped by stated rule, and counted: a call of a function the test file defines itself
-/// under the helper's name (the viewport-units files: their markup has no #target, review 39 SU-4); a property outside
-/// the registry. The number of each is pinned.
+/// #target's style attribute (outside v0, or input it cannot read: the refusal policy in docs/architecture.md), never
+/// counted as equal; or different, which fails. Skipped by stated rule, and counted: a call of a function the test
+/// file defines itself under the helper's name (the viewport-units files: their markup has no #target); a property
+/// outside the registry. The number of each is pinned.
 /// </summary>
 public class WptComputedValueTests(ITestOutputHelper output)
 {

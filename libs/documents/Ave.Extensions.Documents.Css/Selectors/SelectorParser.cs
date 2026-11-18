@@ -24,7 +24,7 @@ public sealed record SelectorParseResult(SelectorList? List, string? Error, Text
     public bool TooDeep { get; init; }
 
     /// <summary>Whether a forgiving list (<c>:is()</c>, <c>:where()</c>) dropped an item or was empty: valid in a style
-    /// rule, but not a selector <c>@supports selector()</c> holds for in Chromium 159 (measured, review 39 F20).</summary>
+    /// rule, but not a selector <c>@supports selector()</c> holds for in Chromium 159 (measured).</summary>
     public bool Forgave { get; init; }
 }
 
@@ -697,7 +697,7 @@ internal static class SelectorParser
     /// <summary>Whether the selector lists inside a compound's pseudo-classes hold compound selectors only, and no
     /// :has(): Chromium's rule for the arguments of :host(), :host-context() and ::slotted(). The forgiving lists of
     /// :is() and :where() drop a complex selector instead (Chromium 159 keeps the rule with
-    /// <c>:host(:is(div .foo))</c>, measured, review 39 SU-5); :not() is not forgiving.</summary>
+    /// <c>:host(:is(div .foo))</c>, measured); :not() is not forgiving.</summary>
     private static bool OnlyCompounds(CompoundSelector compound) =>
         compound.Selectors.All(simple => simple switch
         {

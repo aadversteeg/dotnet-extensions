@@ -28,11 +28,11 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
     /// <summary>Per case: the values measured, the values equal, the values refused, and the refusals of the default
     /// mode (0 when the case is accepted). Why a case is refused in the default mode: cascade has a media query with
     /// orientation (a feature outside v0) and a var() that puts 4px into color (Chromium makes it invalid at
-    /// computed-value time, the engine cannot tell that from a value beyond the profile: ruling D-b), and a cycle of var()
-    /// references (Chromium does not make every member of a cycle invalid); fonts-tables-lists
-    /// has break-after: always and selectors has [type=CHECKME s], both of which Chromium 159 drops and the engine
-    /// refuses (D-b); elements has every element outside v0, one refusal each. The values are equal in all of them, as
-    /// the warnings-only resolution shows. hints-gaps and ua-extra (from review 39's suite sub-review) hold elements and
+    /// computed-value time, the engine cannot tell that from a value beyond the profile: the refusal policy in
+    /// docs/architecture.md), and a cycle of var() references (Chromium does not make every member of a cycle
+    /// invalid); fonts-tables-lists has break-after: always and selectors has [type=CHECKME s], both of which
+    /// Chromium 159 drops and the engine refuses; elements has every element outside v0, one refusal each. The values
+    /// are equal in all of them, as the warnings-only resolution shows. hints-gaps and ua-extra hold elements and
     /// attributes outside v0 among the ones they test, refused one by one.</summary>
     private static readonly Dictionary<string, (int Values, int Equal, int Refused, int Refusals)> Pinned = new()
     {

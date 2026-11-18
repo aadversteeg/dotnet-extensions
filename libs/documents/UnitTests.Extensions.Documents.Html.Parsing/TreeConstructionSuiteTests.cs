@@ -14,7 +14,7 @@ namespace UnitTests.Extensions.Documents.Html.Parsing;
 /// lists are html5lib's own and are not compared. One rule skips tests: those marked <c>#script-on</c> need the
 /// scripting flag on; this parser has it off.
 /// </summary>
-/// <remarks>The reference is Chromium 159, also against the suite (review 39, ruling D-d): where Chromium's tree differs
+/// <remarks>The reference is Chromium 159, also against the suite: where Chromium's tree differs
 /// from the suite's (measured into <c>tools/reference/chromium/html-tree/measured</c>), the parser must build
 /// Chromium's tree, except in the listed limits below, where it builds the suite's (the standard's). Each case is one of
 /// three outcomes, and their numbers are pinned.</remarks>
@@ -25,7 +25,7 @@ public class TreeConstructionSuiteTests(ITestOutputHelper output)
     public static TheoryData<string> Files => [.. FileNames()];
 
     /// <summary>The cases where Chromium's innerHTML differs from the standard and the parser keeps the standard: fragment
-    /// parsing (<c>HtmlParser.ParseFragment</c>, which the style front-end does not use; review 39 HD-8). A NUL in a
+    /// parsing (<c>HtmlParser.ParseFragment</c>, which the style front-end does not use; HD-8). A NUL in a
     /// textarea or title fragment, which Chromium drops and the standard makes U+FFFD; a form start tag in a template
     /// fragment, and the end of a form in one; an input in a select fragment, which customizable select keeps.</summary>
     private static readonly HashSet<string> StandardWhereChromiumDiffers =

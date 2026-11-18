@@ -105,8 +105,8 @@ internal static class SupportsConditions
                 return declaration(test.Declaration);
             case SupportsSelector { Selector: var selector }:
                 // selector() takes one complex selector: a list is false. One the engine reads, with no item forgiven
-                // and nothing it does not support, holds; for the rest Chromium 159 may answer either way (measured,
-                // review 39 F20: :is(p, :bogus) is false), so the engine cannot tell.
+                // and nothing it does not support, holds; for the rest Chromium 159 may answer either way (measured:
+                // :is(p, :bogus) is false), so the engine cannot tell.
                 if (selector.List is { Selectors.Count: > 1 })
                 {
                     return false;

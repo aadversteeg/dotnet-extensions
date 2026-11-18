@@ -22,8 +22,9 @@ namespace UnitTests.Extensions.Documents.Css;
 /// tests.
 /// <para>Each case has one of three outcomes. Equal: Chromium takes it and the engine does, or Chromium drops it and
 /// the engine drops it with a warning. Refused: the engine refuses it, whatever Chromium says (valid CSS outside the
-/// profile, or input the engine cannot read, review 39 ruling D-b); never counted as agreeing. Different: the engine
-/// takes what Chromium drops or drops what Chromium takes; it fails. The number of each is pinned.</para>
+/// profile, or input the engine cannot read: the refusal policy in docs/architecture.md); never counted as agreeing.
+/// Different: the engine takes what Chromium drops or drops what Chromium takes; it fails. The number of each is
+/// pinned.</para>
 /// </summary>
 public class WptCssSuiteTests(ITestOutputHelper output)
 {

@@ -10,7 +10,7 @@ namespace Ave.Extensions.Documents.Css.Properties;
 /// The properties ignored by rule: they concern interaction, animation, scrolling or the screen, and have no effect on
 /// a static paged document, so a declaration of one is dropped with a diagnostic of class
 /// <see cref="DiagnosticClass.Ignored"/> rather than refused. Each was checked against Chromium 159's print rendering
-/// (review 39 M10: the page rendered for print with and without the declaration, measured): the values that change it
+/// (the page rendered for print with and without the declaration, measured): the values that change it
 /// are refused instead (a named animation, zoom other than 1, a resize handle, a scrollbar gutter, will-change that
 /// makes a layer).
 /// </summary>

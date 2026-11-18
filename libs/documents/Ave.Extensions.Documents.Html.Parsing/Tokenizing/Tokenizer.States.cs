@@ -197,7 +197,7 @@ internal sealed partial class Tokenizer
                 }
                 else if (c == 0)
                 {
-                    // Chromium 159 keeps a U+0000 right after '<' as U+FFFD text (review 39 HD-2, measured), where the
+                    // Chromium 159 keeps a U+0000 right after '<' as U+FFFD text (HD-2, measured), where the
                     // standard reconsumes it in the data state, which drops it.
                     Error("invalid-first-character-of-tag-name");
                     EmitCharacter('<', _markupStart);
@@ -1465,7 +1465,7 @@ internal sealed partial class Tokenizer
                 break;
             case 0:
                 // Chromium 159 reads a U+0000 of a CDATA section as U+FFFD, also where an HTML integration point would
-                // drop a U+0000 (review 39 HD-1, measured on plain-text-unsafe.dat:397); the standard passes it on.
+                // drop a U+0000 (HD-1, measured on plain-text-unsafe.dat:397); the standard passes it on.
                 EmitCharacter(0xFFFD, _currentStart);
                 break;
             default:
@@ -1595,7 +1595,7 @@ internal sealed partial class Tokenizer
                 EmitEndOfFile();
                 break;
             case 0:
-                // As in the other data-holding states; Chromium 159 makes it U+FFFD too (review 39 HD-9, measured).
+                // As in the other data-holding states; Chromium 159 makes it U+FFFD too (HD-9, measured).
                 Error("unexpected-null-character");
                 _data.Append('\uFFFD');
                 break;
