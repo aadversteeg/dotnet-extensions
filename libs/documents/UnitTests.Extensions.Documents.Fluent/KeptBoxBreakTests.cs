@@ -28,6 +28,10 @@ public class KeptBoxBreakTests
     private static TableElement Rows(params string[] rows) =>
         Table([Fill()], [.. rows.Select(row => (TablePart)TableRow([Cell([Paragraph(row)])]))]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
 
+    private static TableRowElement Row(string text) => TableRow([Cell([Paragraph(text)])]);
+
+    private static TableElement Groups(params TablePart[] parts) => Table([Fill()], [.. parts]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+
     /// <summary>The engine's pages of the body on a page of the given height, 18 pt lines, with the document's orphans
     /// and widows (<c>body { orphans; widows }</c> in the case).</summary>
     private static string Engine(double height, int orphansAndWidows, params Element[] body)
@@ -64,6 +68,9 @@ public class KeptBoxBreakTests
             "kb-n11-kept-table-in-padded-box" => (1, [After(63), Block([Rows("r0", "r1").KeepTogether()]).Padding(9.Pt())]),
             "kb-n12-kept-box-orphans2-default" => (2, [After(63), Block([a]).Padding(9.Pt()).KeepTogether()]),
             "kb-v8-padded-box-kept-para" => (1, [After(63), Block([a.KeepTogether()]).Padding(9.Pt()).Border(0.75.Pt(), Color.Black)]),
+            "kb-t1-kept-row-group-in-padded-box" => (1, [After(63), Block([Groups(RowGroup([Row("r0"), Row("r1"), Row("r2")]).KeepTogether())]).Padding(9.Pt())]),
+            "kb-t2-kept-row-group-after-a-row" => (1, [After(63), Block([Groups(RowGroup([Row("r0")]), RowGroup([Row("r1"), Row("r2")]).KeepTogether())]).Padding(9.Pt())]),
+            "kb-t3-row-group-not-kept-control" => (1, [After(63), Block([Groups(RowGroup([Row("r0"), Row("r1"), Row("r2")]))]).Padding(9.Pt())]),
             _ => (1, [After(63), Block([Rows("r0", "r1", "r2").KeepTogether()]).Padding(9.Pt()).Border(0.75.Pt(), Color.Black)]),
         };
     }
@@ -84,6 +91,9 @@ public class KeptBoxBreakTests
     [InlineData("kb-n12-kept-box-orphans2-default")]
     [InlineData("kb-v8-padded-box-kept-para")]
     [InlineData("kb-v9-padded-box-kept-table-row")]
+    [InlineData("kb-t1-kept-row-group-in-padded-box")]
+    [InlineData("kb-t2-kept-row-group-after-a-row")]
+    [InlineData("kb-t3-row-group-not-kept-control")]
     public void Kept_content_whose_box_s_bottom_inset_does_not_fit_moves_whole_where_a_better_break_lies_before_it(string caseName)
     {
         // The box's content fits on page 1 and its bottom padding or border does not. Kept together (the box, its paragraph,

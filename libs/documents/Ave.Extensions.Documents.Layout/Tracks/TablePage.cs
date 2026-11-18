@@ -374,7 +374,7 @@ internal static class TablePage
             .Where(breakpoint => breakpoint.Kind == TableBreaks.BreakKind.BeforeUnit)
             .OrderByDescending(breakpoint => breakpoint.Overall)
             .ThenByDescending(breakpoint => breakpoint.Row)
-            .Select(breakpoint => new TracksEarlyBreak(breakpoint.Row, breakpoint.Overall))
+            .Select(breakpoint => new TracksEarlyBreak(breakpoint.Row, breakpoint.Overall) { InKeptGroup = breakpoint.InKeptGroup })
             .FirstOrDefault();
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content) with { BestBreak = best }));
     }

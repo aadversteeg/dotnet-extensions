@@ -839,6 +839,18 @@ public class MeasuredReferenceFilesTests
         ["kb-s9-a-orphans-no-kept-box.lines.txt"] = 0,
         ["kb-s9-a-orphans-no-kept-box.print.txt"] = 29,
         ["kb-s9-a-orphans-no-kept-box.words.txt"] = 26,
+        ["kb-t1-kept-row-group-in-padded-box.boxes.txt"] = 3,
+        ["kb-t1-kept-row-group-in-padded-box.lines.txt"] = 10,
+        ["kb-t1-kept-row-group-in-padded-box.print.txt"] = 17,
+        ["kb-t1-kept-row-group-in-padded-box.words.txt"] = 5,
+        ["kb-t2-kept-row-group-after-a-row.boxes.txt"] = 3,
+        ["kb-t2-kept-row-group-after-a-row.lines.txt"] = 11,
+        ["kb-t2-kept-row-group-after-a-row.print.txt"] = 18,
+        ["kb-t2-kept-row-group-after-a-row.words.txt"] = 5,
+        ["kb-t3-row-group-not-kept-control.boxes.txt"] = 3,
+        ["kb-t3-row-group-not-kept-control.lines.txt"] = 11,
+        ["kb-t3-row-group-not-kept-control.print.txt"] = 18,
+        ["kb-t3-row-group-not-kept-control.words.txt"] = 5,
         ["kb-v8-padded-box-kept-para.boxes.txt"] = 1,
         ["kb-v8-padded-box-kept-para.lines.txt"] = 0,
         ["kb-v8-padded-box-kept-para.print.txt"] = 7,
@@ -883,7 +895,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(214);
+        cases.Should().HaveCount(217);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Order(StringComparer.Ordinal), "four files per case and the versions");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

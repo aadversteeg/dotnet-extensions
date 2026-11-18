@@ -53,7 +53,9 @@ internal static class BreakAvoidance
     /// <c>break-inside: avoid</c> is not part of a box's own appeal but applied by the box around it each time it looks
     /// (<c>CalculateBreakAppealInside</c>, <c>fragmentation_utils.cc</c>; <c>PropagateBreakInfo</c>,
     /// <c>box_fragment_builder.cc</c>), so it does. The parent then lowers the result by the box's own
-    /// <c>break-inside</c> (<see cref="Inside"/>) and compares it with its own breakpoints as it compares any break.
+    /// <c>break-inside</c> (<see cref="Inside"/>) and compares it with its own breakpoints as it compares any break. A
+    /// chain that ends between two rows of a table's row group kept together is lowered by that group's keep as well
+    /// (<see cref="TracksEarlyBreak.InKeptGroup"/>; case <c>kb-t1-kept-row-group-in-padded-box</c>).
     /// </summary>
     /// <param name="box">The box that kept the break.</param>
     /// <param name="early">The early break it laid itself out again to, relative to its own content.</param>
@@ -69,7 +71,7 @@ internal static class BreakAvoidance
             (current, at) = (child, inner);
         }
 
-        return appeal;
+        return at is TracksEarlyBreak { InKeptGroup: true } ? Worst(BreakAppeal.ViolatesAvoid, appeal) : appeal;
     }
 
     private static bool AvoidsBefore(Box box) =>

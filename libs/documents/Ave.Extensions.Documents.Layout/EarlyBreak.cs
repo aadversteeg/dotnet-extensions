@@ -64,4 +64,10 @@ public sealed record TracksEarlyBreak : EarlyBreak
 
     /// <summary>The body row that starts the next page.</summary>
     public int Row { get; }
+
+    /// <summary>True when the break lies inside a row group kept together (<c>break-inside: avoid</c>): between two rows of
+    /// the group, not before its first row. A break the table lays itself out again to is then lowered by that keep
+    /// (<see cref="BreakAvoidance.Kept"/>), as the table applies the group's <c>break-inside</c> from outside, each time
+    /// it looks (Chromium <c>CalculateBreakAppealInside</c>, <c>fragmentation_utils.cc</c>).</summary>
+    internal bool InKeptGroup { get; init; }
 }
