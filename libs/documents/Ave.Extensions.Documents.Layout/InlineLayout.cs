@@ -24,8 +24,7 @@ public static class InlineLayout
     /// count, from <see cref="LayoutEnvironment.Page"/>) → collapse white space (CSS Text 3 §4.1.1) → resolve each run's
     /// font and shape it → break into lines (greedy, at UAX #14 opportunities) → stack line boxes from the line the
     /// token names until the next one does not fit. A page break may fall between any two lines (class B
-    /// breakpoints, CSS Fragmentation 3 §4.1). <c>orphans</c>/<c>widows</c> (CSS initial value 2) are not applied
-    /// yet, so a page may hold a single line of a paragraph.
+    /// breakpoints, CSS Fragmentation 3 §4.1), under <c>orphans</c> and <c>widows</c> (<see cref="BreakWhereFull"/>).
     /// The lines are recomputed on every call rather than carried in the token: the token stays a plain number,
     /// and the result depends only on the arguments. LIMIT: a paragraph that contains a page counter AND breaks
     /// across pages is broken into lines again on the next page with that page's number, so if the number's width
@@ -38,16 +37,34 @@ public static class InlineLayout
     /// <returns>The fragment and continuation, NoRoom, or an error (missing font or glyph, with the run's location).</returns>
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming)
     {
-        var firstLine = incoming switch
+        var start = incoming switch
         {
-            null => 0,
-            InlineBreakToken token => token.LineIndex,
+            null => new InlineBreakToken(0),
+            InlineBreakToken token => token,
             _ => throw new ArgumentException($"Inline received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
         };
 
-        return ShapeRuns(environment, box).OnSuccessBind(runs =>
-            SlicedBox.Layout(box, space, incoming, (width, height) => StackLines(runs, box.Style.TextAlign, firstLine, width, height)));
+        // A first line taller than the page area that starts the page is sliced when the profile says so (MonolithicSlices).
+        var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
+        return ShapeRuns(environment, box).OnSuccessBind(runs => StrutOf(environment, box).OnSuccessBind(strut =>
+            SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
+                StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, width, height, breakAt switch
+                {
+                    null => null,
+                    InlineEarlyBreak line => line,
+                    _ => throw new ArgumentException($"Inline received a {breakAt.GetType().Name} it did not report.", nameof(space)),
+                }))));
     }
+
+    /// <summary>The paragraph's strut (CSS 2.1 §10.8.1), with its font resolved like a run's; null when the model gives
+    /// the paragraph no text properties (<see cref="BoxStyle.Text"/>). A missing font is the error a run would get, at the
+    /// paragraph's source.</summary>
+    private static Result<LineBoxes.Strut?, Error> StrutOf(LayoutEnvironment environment, Box box) =>
+        box.Style.Text is not { } text
+            ? Result<LineBoxes.Strut?, Error>.Success(null)
+            : environment.Fonts.Find(text.FontFamily, text.FontWeight, text.FontStyle)
+                .OnSuccessMap(font => (LineBoxes.Strut?)new LineBoxes.Strut(font, text))
+                .MapError(error => error.WithSource(box.Source));
 
     /// <summary>
     /// The intrinsic widths of a paragraph (CSS Sizing 3 §5.1): the min-content inline size, which for text is the
@@ -59,12 +76,20 @@ public static class InlineLayout
     /// <param name="box">A box whose children are all inline runs.</param>
     /// <returns>The widths, or a font error.</returns>
     public static Result<IntrinsicWidths, Error> Measure(LayoutEnvironment environment, Box box) =>
-        ShapeRuns(environment, box).OnSuccessMap(runs =>
+        ShapeRuns(environment, box).OnSuccessBind(runs =>
         {
-            ValueList<ValueList<ShapedGlyph>> glyphs = [.. runs.Select(run => run.Glyphs)];
-            double Widest(double width) => GreedyLineBreaker.BreakLines(glyphs, width).Select(line => line.Width).DefaultIfEmpty(0).Max();
-            return new IntrinsicWidths(Widest(0), Widest(double.PositiveInfinity)).Plus(SlicedBox.HorizontalInsets(box.Style));
+            Result<double, Error> Widest(double width) =>
+                BreakLines(runs, width).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
+            return Widest(0).OnSuccessBind(least => Widest(double.PositiveInfinity).OnSuccessMap(most =>
+                new IntrinsicWidths(least, most).Plus(SlicedBox.HorizontalInsets(box.Style))));
         });
+
+    /// <summary>The paragraph's lines at a width, each shaped as the line it is: where a line ends or starts at a place
+    /// that is not safe to break, its end is shaped again with the run's font (<see cref="GreedyLineBreaker"/>, THE RULE
+    /// FOR SHAPING AT A BREAK). A shaping error names the run.</summary>
+    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.ShapedRun> runs, double width) =>
+        GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], width, (run, text, showsHyphen) =>
+            Shaper.ShapeLinePiece(text, runs[run].Font, runs[run].Run.Style.FontSize.Points, showsHyphen).MapError(error => error.WithSource(runs[run].Run.Source)));
 
     /// <summary>
     /// True when the box's text makes at least one line box: some text is left after white-space collapsing.
@@ -108,28 +133,141 @@ public static class InlineLayout
         _ => throw new InvalidOperationException($"Unknown inline run {run.GetType().Name}; checked before."),
     };
 
-    /// <summary>Breaks the paragraph into lines for the content width and stacks them from
-    /// <paramref name="firstLine"/> until the next one does not fit. None when not even that first line fits.</summary>
+    /// <summary>Breaks the paragraph into lines for the content width and stacks them from the line
+    /// <paramref name="start"/> names until the next one does not fit, or up to the early break when one is given. None
+    /// when not even that first line fits — unless it starts the page and <paramref name="slices"/> is set, or earlier
+    /// pages showed slices of it: then this page shows its next slice (<see cref="MonolithicSlices"/>), and the lines
+    /// after the last slice follow below it. The breakpoints are the places between two lines (class B, CSS Fragmentation
+    /// 3 §4.1), with <c>orphans</c> and <c>widows</c>: where the next line does not fit, <see cref="BreakWhereFull"/>
+    /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
+    /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.ShapedRun> runs, TextAlign align, int firstLine, double contentWidth, double contentHeight)
+        IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
-        var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], contentWidth);
+        var broken = BreakLines(runs, contentWidth);
+        if (broken.IsFailure)
+        {
+            return Result<Maybe<SlicedBox.Content>, Error>.Failure(broken.Error);
+        }
+
+        var lines = broken.Value;
+        var style = box.Style;
+        var firstLine = start.LineIndex;
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)
         {
-            var line = LineBoxes.Build(lines[index], runs, contentWidth, align, isLastLine: index == lines.Count - 1);
+            if (breakAt is { } target && target.LineIndex == index)
+            {
+                return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index), target.Appeal);
+            }
+
+            var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, rounding);
+            var shown = index == firstLine ? start.Shown : 0;
+            if (shown > 0 || (placed.Count == 0 && slices && !Fitting.Fits(line.Size.Height, contentHeight)))
+            {
+                var sliceCount = index == firstLine ? start.Slices : 0;
+                var next = MonolithicSlices.Next(box, line, shown, sliceCount, contentHeight);
+                if (next.IsFailure || next.Value.HasNoValue)
+                {
+                    return next.IsFailure ? Result<Maybe<SlicedBox.Content>, Error>.Failure(next.Error) : SlicedBox.NothingFits;
+                }
+
+                var (slice, shownAfter) = next.Value.Value;
+                placed.Add(new PlacedFragment(new Point(0, bottom), slice));
+                bottom += slice.Size.Height;
+                if (shownAfter is { } after)
+                {
+                    return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index) { Shown = after, Slices = sliceCount + 1 });
+                }
+
+                continue;
+            }
+
             if (!Fitting.Fits(bottom + line.Size.Height, contentHeight))
             {
-                return placed.Count == 0
-                    ? SlicedBox.NothingFits
-                    : SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index));
+                if (placed.Count == 0)
+                {
+                    return SlicedBox.NothingFits;
+                }
+
+                var (before, appeal) = BreakWhereFull(style, firstLine, index, lines.Count);
+                var kept = placed.Take(before - firstLine).ToImmutableArray();
+                var height = kept.Length == 0 ? 0 : kept[^1].Offset.Y + kept[^1].Fragment.Size.Height;
+                return SlicedBox.Placed([.. kept], height, new InlineBreakToken(before), appeal);
             }
 
             placed.Add(new PlacedFragment(new Point(0, bottom), line));
             bottom += line.Size.Height;
         }
 
-        return SlicedBox.Placed(placed.ToImmutable(), bottom, null);
+        // The best breakpoint of the complete fragment, reported for a parent that may have to break here instead (a
+        // break before the fragment's first line is no breakpoint of the fragment).
+        return SlicedBox.Placed(placed.ToImmutable(), bottom, null, bestBreak: BestBreakInside(style, firstLine, lines.Count));
+    }
+
+    /// <summary>
+    /// THE RULE FOR ORPHANS AND WIDOWS where the page is full (CSS Fragmentation 3 §3.3; §4.4 rule 3: "Breaking at a
+    /// class B break point is allowed only if the number of line boxes between the break and the start of the enclosing
+    /// block box is the value of orphans or more, and the number of line boxes between the break and the end of the box
+    /// is the value of widows or more"), as Chromium applies it (<c>third_party/blink/renderer/core/layout/
+    /// block_layout_algorithm.cc</c>, read for its rule, which the reference prints): the line <paramref name="full"/> no
+    /// longer fits, and this fragment holds the lines from <paramref name="firstLine"/> up to it.
+    /// <list type="bullet">
+    /// <item>Fewer lines than <c>orphans</c> on the page — on a page that continues the paragraph, fewer than both values
+    /// ask for, since its lines follow a break as well ("what was seen as trailing widows in the previous fragment is
+    /// essentially orphans for us now") — break there, as a violation: a better break before the paragraph moves it to
+    /// the next page whole.</item>
+    /// <item>Enough lines follow (<c>widows</c>): break there, a perfect break.</item>
+    /// <item>Too few follow: move lines to the next page so that <c>widows</c> follow, but keep at least <c>orphans</c>
+    /// on the page — orphans win where the paragraph is too short for both, which is how Chromium breaks a three-line
+    /// paragraph with the initial values (case <c>c-few-lines</c>: two lines stay, one moves) — a perfect break.</item>
+    /// </list>
+    /// </summary>
+    /// <param name="style">The paragraph's style.</param>
+    /// <param name="firstLine">The first line on this page.</param>
+    /// <param name="full">The first line that does not fit.</param>
+    /// <param name="lineCount">The paragraph's lines.</param>
+    /// <returns>The line the page breaks before, and the appeal of that break.</returns>
+    internal static (int Before, BreakAppeal Appeal) BreakWhereFull(BoxStyle style, int firstLine, int full, int lineCount)
+    {
+        var needed = firstLine == 0 ? style.Orphans : Math.Max(style.Orphans, style.Widows);
+        if (full - firstLine < needed)
+        {
+            return (full, BreakAppeal.ViolatesOrphansWidows);
+        }
+
+        if (lineCount - full >= style.Widows)
+        {
+            return (full, BreakAppeal.Perfect);
+        }
+
+        var lines = lineCount - firstLine;
+        return (firstLine + Math.Max(lines - style.Widows, Math.Min(lines, style.Orphans)), BreakAppeal.Perfect);
+    }
+
+    /// <summary>
+    /// The best breakpoint inside a complete fragment, for a parent that may have to break there instead (Chromium's
+    /// <c>UpdateEarlyBreakBetweenLines</c>, same file): the latest break that leaves <c>widows</c> lines after it and keeps
+    /// <c>orphans</c> before it, a perfect break; where the fragment has too few lines for both, the break before its
+    /// last line, a violation of orphans and widows. None for a fragment of one line: a break before its first line is
+    /// no breakpoint of the fragment.
+    /// </summary>
+    /// <param name="style">The paragraph's style.</param>
+    /// <param name="firstLine">The first line on this page.</param>
+    /// <param name="lineCount">The paragraph's lines.</param>
+    /// <returns>The early break, or null.</returns>
+    internal static InlineEarlyBreak? BestBreakInside(BoxStyle style, int firstLine, int lineCount)
+    {
+        var lines = lineCount - firstLine;
+        if (lines < 2)
+        {
+            return null;
+        }
+
+        var before = Math.Max(lines - style.Widows, Math.Min(lines - 1, style.Orphans));
+        return before < style.Orphans || lines - before < style.Widows
+            ? new InlineEarlyBreak(lineCount - 1, BreakAppeal.ViolatesOrphansWidows)
+            : new InlineEarlyBreak(firstLine + before, BreakAppeal.Perfect);
     }
 }

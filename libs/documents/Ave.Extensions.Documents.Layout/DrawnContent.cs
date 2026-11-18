@@ -27,7 +27,21 @@ internal static class DrawnContent
         LineFragment line => ChildrenDrawBelow(line.Children, y),
         TextFragment text => text.Glyphs.Any(IsVisible) && AreaBelow(0, text.Size.Height, y),
         ImageFragment or RuleFragment => AreaBelow(0, fragment.Size.Height, y),
+        // A slice draws its content clipped to its own height (counted as the content's areas are: a line by its box).
+        SliceFragment slice => AreaBelow(0, slice.Size.Height, y) && DrawsBelow(slice.Content.Fragment, y - slice.Content.Offset.Y),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
+    };
+
+    /// <summary>True when <paramref name="fragment"/> draws something that is not part of a slice of content taller than
+    /// the page (<see cref="SliceFragment"/>): a page that only goes on slicing an earlier piece shows nothing else.</summary>
+    /// <param name="fragment">The fragment, as placed on its page.</param>
+    /// <returns>Whether it draws anything outside its slices.</returns>
+    public static bool DrawsOutsideSlices(Fragment fragment) => fragment switch
+    {
+        SliceFragment => false,
+        BoxFragment box => DecorationBelow(box, double.NegativeInfinity) || box.Children.Any(child => DrawsOutsideSlices(child.Fragment)),
+        LineFragment line => line.Children.Any(child => DrawsOutsideSlices(child.Fragment)),
+        _ => DrawsBelow(fragment, double.NegativeInfinity),
     };
 
     /// <summary>True when the children of a box or line draw something below <paramref name="y"/>.</summary>

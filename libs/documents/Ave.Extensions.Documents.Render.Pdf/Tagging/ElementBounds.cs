@@ -26,6 +26,7 @@ internal static class ElementBounds
     /// Visible content is everything drawn between the element's markers on the page, including layout artifacts such
     /// as a table's grid lines, cell backgrounds and the element's own background and border (the painter draws those
     /// inside the element's markers): they are not the element's logical content, but they are what a reader sees of it.
+    /// Only what lies inside the clips around it counts (<see cref="ContentRun.Clips"/>).
     /// </summary>
     /// <param name="tree">The structure tree built from the pages' events.</param>
     /// <param name="events">The events of every page.</param>
@@ -54,7 +55,7 @@ internal static class ElementBounds
                     case StructureClosed:
                         open.Pop();
                         break;
-                    case ContentRun run when InkOf(run.Items) is { } extent:
+                    case ContentRun run when Clipped(InkOf(run.Items), run.Clips) is { } extent:
                         foreach (var element in open.Where(boxed.Contains))
                         {
                             if (!ink.TryGetValue(element, out var seen))
@@ -81,6 +82,11 @@ internal static class ElementBounds
                 ? found.Extent.InUserSpace(pages[found.Page].Size.Height)
                 : (UserSpaceBox?)null)];
     }
+
+    /// <summary>The part of an extent inside every clip (<see cref="ContentRun.Clips"/>): what a reader sees of it;
+    /// null when nothing of it is left.</summary>
+    private static Extent? Clipped(Extent? ink, ImmutableArray<Rect> clips) =>
+        clips.Aggregate(ink, (left, clip) => left?.Intersect(Extent.Of(clip)));
 
     /// <summary>The extent of the ink of some items, or null when they put none on the page.</summary>
     private static Extent? InkOf(IEnumerable<DrawItem> items) => Union(items.Select(InkOf));
@@ -131,6 +137,11 @@ internal static class ElementBounds
             System.Math.Min(Top, other.Top),
             System.Math.Max(Right, other.Right),
             System.Math.Max(Bottom, other.Bottom));
+
+        /// <summary>The part of this rectangle inside another one, or null when they do not overlap.</summary>
+        public Extent? Intersect(Extent other) =>
+            new Extent(System.Math.Max(Left, other.Left), System.Math.Max(Top, other.Top), System.Math.Min(Right, other.Right), System.Math.Min(Bottom, other.Bottom))
+                is var part && part.Left < part.Right && part.Top < part.Bottom ? part : null;
 
         /// <summary>The same rectangle in default user space, where y grows upwards from the page's bottom edge.</summary>
         public UserSpaceBox InUserSpace(double pageHeight) => new(Left, pageHeight - Bottom, Right, pageHeight - Top);

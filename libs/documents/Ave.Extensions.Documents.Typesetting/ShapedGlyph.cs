@@ -33,4 +33,16 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// <summary>For a soft hyphen: the visible hyphen that replaces it when a line breaks after it (UAX #14 §5.4;
     /// CSS Text 3 §5.3, <c>hyphens: manual</c>); null for every other glyph, and for a soft hyphen in a font without a hyphen.</summary>
     public ShapedGlyph? BreakHyphen { get; init; }
+
+    /// <summary>
+    /// True when text broken at the start of this glyph's cluster would be shaped differently on either side: a lookup
+    /// joined this glyph to one before it (a kerning pair, a mark on its base). HarfBuzz's flag of the same meaning:
+    /// "if input text is broken at the beginning of the cluster this glyph is part of, then both sides need to be
+    /// re-shaped, as the result might be different. On the flip side, it means that when this flag is not present, then
+    /// it is safe to break the glyph-run at the beginning of this cluster" (hb-buffer.h,
+    /// <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>). A break inside a cluster (a ligature that skipped a soft hyphen) is unsafe
+    /// as well, as no glyph starts there. The line breaker uses it to shape only the ends of a line again
+    /// (<see cref="GreedyLineBreaker"/>).
+    /// </summary>
+    public bool UnsafeToBreak { get; init; }
 }

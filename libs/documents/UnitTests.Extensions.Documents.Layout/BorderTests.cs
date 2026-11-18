@@ -28,7 +28,7 @@ public class BorderTests
 
         var box = Child(Paginate(Paragraph(1, "One", style)).Single(), 0);
 
-        box.Size.Height.Should().Be(2 + 3 + LineHeight + 3 + 2);
+        box.Size.Height.Should().Be(2 + 3 + LineBoxHeight + 3 + 2);
         box.Children[0].Offset.Should().Be(new Point(5, 5), "the content starts inside border and padding");
         box.Border.Should().Be(style.Border, "an unbroken box paints all four sides");
     }
@@ -47,7 +47,7 @@ public class BorderTests
 
         fills.Select(fill => fill.Color).Should().Equal(Color.White, Red, Color.Black);
         fills[1].Area.Should().Be(new Rect(new Point(10, 10), new Size(180, 1)));
-        fills[2].Area.Should().Be(new Rect(new Point(10, 10 + 1 + LineHeight), new Size(180, 3)));
+        fills[2].Area.Should().Be(new Rect(new Point(10, 10 + 1 + LineBoxHeight), new Size(180, 3)));
     }
 
     [Fact]
@@ -108,8 +108,8 @@ public class BorderTests
         var page = Paginate(Paragraph(1, "Above", margins), band, Paragraph(3, "Below", margins)).Single();
 
         var root = (BoxFragment)page.Root.Fragment;
-        root.Children[1].Offset.Y.Should().Be(10 + LineHeight + 10, "a margin gap above the band");
+        root.Children[1].Offset.Y.Should().Be(10 + LineBoxHeight + 10, "a margin gap above the band");
         root.Children[1].Fragment.Size.Height.Should().Be(3, "the band is as tall as its border");
-        root.Children[2].Offset.Y.Should().Be(10 + LineHeight + 10 + 3 + 10, "and one below it: the margins did not collapse through");
+        root.Children[2].Offset.Y.Should().Be(10 + LineBoxHeight + 10 + 3 + 10, "and one below it: the margins did not collapse through");
     }
 }

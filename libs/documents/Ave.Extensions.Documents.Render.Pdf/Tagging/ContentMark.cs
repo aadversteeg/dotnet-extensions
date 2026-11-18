@@ -58,7 +58,7 @@ internal sealed record ArtifactContent(ArtifactKind Kind) : ContentMark
         ArtifactKind.Layout => PdfDictionary.Of(("Type", new PdfName("Layout"))),
         ArtifactKind.PageHeader => PdfDictionary.Of(("Type", new PdfName("Pagination")), ("Subtype", new PdfName("Header"))),
         ArtifactKind.PageFooter => PdfDictionary.Of(("Type", new PdfName("Pagination")), ("Subtype", new PdfName("Footer"))),
-        ArtifactKind.Repeated => PdfDictionary.Of(("Type", new PdfName("Pagination"))),
+        ArtifactKind.Repeated or ArtifactKind.SliceContinuation => PdfDictionary.Of(("Type", new PdfName("Pagination"))),
         _ => throw new System.InvalidOperationException($"Unknown artifact kind {Kind}."),
     });
 }

@@ -10,11 +10,16 @@ public static class LayoutErrorCodes
     public static readonly ErrorCode _ = DocumentErrorCodes._ / "Layout";
 
     /// <summary>Content that does not fit where it is and cannot be broken, with nothing before it on the page that
-    /// could move to a later page: on an empty page, or — LIMIT (NF-1, docs/architecture.md, Known limits) — after only
-    /// leading space (margins, empty boxes) at the document start or after a forced page break; also header or footer
-    /// content that does not fit in its area. Metadata: Node, Value (the room it had, in points), SourceFile,
-    /// SourceLine.</summary>
+    /// could move to a later page: content that starts the page (nothing above it, not even a margin), or the document's
+    /// root below its own top margin; also header or footer content that does not fit in its area. Metadata: Node, Value
+    /// (the room it had, in points), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode DoesNotFit = _ / "DoesNotFit";
+
+    /// <summary>Monolithic content (an image, a line box) taller than the page area that the document's profile slices
+    /// (<c>MonolithicOverflow.Slice</c>) and that would need more than 100 slices, one per page: a piece of content
+    /// shows on at most 100 pages, so the number of pages stays bounded by the size of the input. Metadata: Node, Value
+    /// (the content's height and the height shown in 100 slices, in points), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode TooManySlices = _ / "TooManySlices";
 
     /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.
     /// Metadata: Node, Value, SourceFile, SourceLine.</summary>

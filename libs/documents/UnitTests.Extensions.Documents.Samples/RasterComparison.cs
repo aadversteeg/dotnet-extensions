@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Graphics;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Render.Raster;
@@ -257,6 +258,123 @@ internal static class RasterComparison
         }
 
         return new Distance(largest, squares / (3.0 * width * height), over32, over64, over128);
+    }
+
+    /// <summary>
+    /// The interiors of the page's images: each image's rectangle intersected with the clips open around it (the part
+    /// of the image that is drawn), grown by one pixel. Outside the clips the page is still compared, so a painter that
+    /// ignores a clip shows there.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <param name="resolution">Pixels per inch.</param>
+    /// <returns>Width × height flags, row by row: true inside a drawn image.</returns>
+    public static bool[] ImageInteriors(Page page, double resolution)
+    {
+        var (longWidth, longHeight) = PageRasterizer.PixelSize(page.Size, resolution);
+        var (width, height) = ((int)longWidth, (int)longHeight);
+        var scale = resolution / 72;
+        var inside = new bool[width * height];
+        var clip = new PixelBox(0, 0, width, height);
+        var outer = new Stack<PixelBox>();
+        foreach (var item in page.Items)
+        {
+            switch (item)
+            {
+                case ClipStart start:
+                    outer.Push(clip);
+                    clip = clip.Intersect(Pixels(start.Area, scale));
+                    break;
+                case ClipEnd:
+                    clip = outer.Pop();
+                    break;
+                case DrawImage image:
+                    var drawn = Pixels(image.Area, scale).Intersect(clip);
+                    if (drawn.IsEmpty)
+                    {
+                        break;
+                    }
+
+                    for (var y = Math.Max(0, (int)Math.Floor(drawn.Top) - 1); y < Math.Min(height, (int)Math.Ceiling(drawn.Bottom) + 1); y++)
+                    {
+                        for (var x = Math.Max(0, (int)Math.Floor(drawn.Left) - 1); x < Math.Min(width, (int)Math.Ceiling(drawn.Right) + 1); x++)
+                        {
+                            inside[(y * width) + x] = true;
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        return inside;
+    }
+
+    /// <summary>A rectangle of the page in pixels, edges in order.</summary>
+    private static PixelBox Pixels(Rect area, double scale) => new(
+        Math.Min(area.Origin.X, area.Origin.X + area.Size.Width) * scale, Math.Min(area.Origin.Y, area.Origin.Y + area.Size.Height) * scale,
+        Math.Max(area.Origin.X, area.Origin.X + area.Size.Width) * scale, Math.Max(area.Origin.Y, area.Origin.Y + area.Size.Height) * scale);
+
+    /// <summary>
+    /// The page with every text baseline moved to the pixel row a viewer draws it on (<paramref name="row"/>, from the
+    /// baseline in pixels): MuPDF rounds a glyph's baseline to the nearest whole pixel, poppler floors it (measured,
+    /// tools/reference/raster/README.md). A test-side transformation of the page model, to show that this is all that
+    /// separates the engine's text from the viewer's.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <param name="resolution">Pixels per inch.</param>
+    /// <param name="row">The viewer's rule.</param>
+    /// <returns>The page with moved glyph runs.</returns>
+    public static Page BaselinesOnPixelRows(Page page, double resolution, Func<double, double> row)
+    {
+        var scale = resolution / 72;
+        return page with
+        {
+            Items = [.. page.Items.Select(item => item is GlyphRun run
+                ? run with { Origin = new Point(run.Origin.X, row(run.Origin.Y * scale) / scale) }
+                : item)],
+        };
+    }
+
+    /// <summary>MuPDF's row for a baseline: the nearest whole pixel, a half going down the page.</summary>
+    public static double MupdfRow(double baseline) => Math.Floor(baseline + 0.5);
+
+    /// <summary>Poppler's row for a baseline: the whole pixel above it (floored).</summary>
+    public static double PopplerRow(double baseline) => Math.Floor(baseline);
+
+    /// <summary>The distance as the comparison above computes it, with the pixels <paramref name="leftOut"/> marks left out of
+    /// the mean squared error and the counts over 32, 64 and 128 (the away-from-edges metric is the same).</summary>
+    public static Distance Compare((int Width, int Height, int Channels, byte[] Pixels) first, (int Width, int Height, int Channels, byte[] Pixels) second, (int Width, int Height, bool[] AtEdge) edges, bool[] leftOut)
+    {
+        var whole = Compare(first, second, edges);
+        var (width, height) = (first.Width, first.Height);
+        var squares = 0.0;
+        var counted = 0;
+        var (over32, over64, over128) = (0, 0, 0);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                if (leftOut[(y * width) + x])
+                {
+                    continue;
+                }
+
+                counted++;
+                var pixelLargest = 0;
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    var difference = Math.Abs(Sample(first, x, y, channel) - Sample(second, x, y, channel));
+                    squares += difference * difference;
+                    pixelLargest = Math.Max(pixelLargest, difference);
+                }
+
+                over32 += pixelLargest > 32 ? 1 : 0;
+                over64 += pixelLargest > 64 ? 1 : 0;
+                over128 += pixelLargest > 128 ? 1 : 0;
+            }
+        }
+
+        return new Distance(whole.LargestAwayFromEdges, counted == 0 ? 0 : squares / (3.0 * counted), over32, over64, over128);
     }
 
     private static byte Sample((int Width, int Height, int Channels, byte[] Pixels) image, int x, int y, int channel) =>

@@ -39,7 +39,9 @@ namespace Ave.Extensions.Documents.Typesetting;
 /// reordering or joining, and is a documented limit for the complex scripts (Arabic, Indic, …), which are not
 /// supported.</para>
 /// <para>Each script run of the text is shaped on its own (UAX #24 Script property; characters of the Common and
-/// Inherited scripts belong to the run around them), because a font's lookups are chosen per script.</para>
+/// Inherited scripts belong to the run around them), because a font's lookups are chosen per script. Each is first
+/// normalized for the font (<see cref="Normalization"/>): canonically equivalent text gives the same glyphs where the font
+/// allows it.</para>
 /// </remarks>
 public static class Shaper
 {
@@ -61,9 +63,37 @@ public static class Shaper
     /// for text that is not valid UTF-16.</returns>
     public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, double fontSize) =>
         Characters(text).OnSuccessBind(characters =>
-            characters.Select((character, index) => (character, index))
-                .TraverseAll(item => InitialGlyph(item.character, item.index, font))
-                .OnSuccessBind(glyphs => ShapeScriptRuns(characters, [.. glyphs], font, fontSize)));
+        {
+            // Each piece is normalized for the font before its characters become glyphs (Unicode.Normalization), as
+            // HarfBuzz normalizes the text of each shaping call.
+            var pieces = ScriptRuns(characters).SelectMany(run => SplitAfterLineBreaks(characters, run)).ToImmutableArray();
+            return pieces
+                .TraverseAll(piece => Normalization.ForFont([.. characters.Skip(piece.Start).Take(piece.Length)], codePoint => font.GlyphFor(new Rune(codePoint)).HasValue)
+                    .TraverseAll(normalized => InitialGlyph(normalized.Character, normalized.Text, font))
+                    .OnSuccessMap(glyphs => (piece.Tag, Glyphs: glyphs.ToImmutableArray())))
+                .OnSuccessBind(shaped => ShapePieces([.. shaped], font, fontSize));
+        });
+
+    /// <summary>
+    /// Shapes a piece of a run's text as a line shows it (<see cref="GreedyLineBreaker"/>, THE RULE FOR SHAPING AT A
+    /// BREAK): the piece alone, and, when <paramref name="showsHyphen"/>, with the soft hyphen it ends with drawn as the
+    /// hyphen that shows where a line breaks there (<see cref="Hyphen"/>), shaped with the letters before it, so a kerning
+    /// pair between the last letter and the hyphen applies as in any other text. That glyph's text stays the soft hyphen
+    /// it stands for. A font without a hyphen leaves the soft hyphen invisible.
+    /// </summary>
+    /// <param name="text">The piece of text, already white-space collapsed.</param>
+    /// <param name="font">The run's font.</param>
+    /// <param name="fontSize">The run's font size in points.</param>
+    /// <param name="showsHyphen">True when the piece ends with a soft hyphen at which its line breaks.</param>
+    /// <returns>The glyphs, or an error as from <see cref="Shape"/>.</returns>
+    public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen)
+    {
+        var hyphen = showsHyphen && text.EndsWith(SoftHyphen, StringComparison.Ordinal) ? HyphenCharacter(font) : null;
+        var shaped = hyphen is { } character ? text[..^1] + character : text;
+        return Shape(shaped, font, fontSize).OnSuccessMap(glyphs => hyphen is null
+            ? (ValueList<ShapedGlyph>)[.. glyphs]
+            : [.. glyphs.Take(glyphs.Length - 1), glyphs[^1] with { Text = SoftHyphen }]);
+    }
 
     /// <summary>
     /// Splits text into Unicode scalar values, joining surrogate pairs. An unpaired surrogate is not a
@@ -97,7 +127,7 @@ public static class Shaper
     /// mandatory line break (UAX #14 classes BK, CR, LF and NL, such as the line separator U+2028 that
     /// <c>LineBreak()</c> writes): it ends a line and draws nothing.
     /// </summary>
-    private static Result<GlyphItem, Error> InitialGlyph(Rune character, int index, TrueTypeFont font)
+    private static Result<GlyphItem, Error> InitialGlyph(Rune character, string text, TrueTypeFont font)
     {
         var filter = new GlyphFilter(font.Layout.Definitions);
         var properties = UnicodeProperties.Of(character.Value);
@@ -105,25 +135,22 @@ public static class Shaper
         var isLineBreak = IsMandatoryBreak(character);
         if ((traits & CharacterTraits.DefaultIgnorable) != 0 || isLineBreak)
         {
-            return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), character.ToString(), GlyphClass.Base) { IsDefaultIgnorable = true, IsLineBreak = isLineBreak });
+            return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), text, GlyphClass.Base) { IsDefaultIgnorable = true, IsLineBreak = isLineBreak });
         }
 
         var isNonspacingMark = (traits & CharacterTraits.NonspacingMark) != 0;
         return font.RequireGlyph(character)
-            .OnSuccessMap(glyph => new GlyphItem(glyph, character.ToString(), filter.ClassOf(glyph, isNonspacingMark)));
+            .OnSuccessMap(glyph => new GlyphItem(glyph, text, filter.ClassOf(glyph, isNonspacingMark)));
     }
 
     /// <summary>Shapes each piece of the text (a script run, cut after every forced line break) on its own, under ONE
     /// budget for the whole text (<see cref="ShapingBudget"/>), so the pieces share its limits. Once a limit is reached
     /// the later pieces stop at their first step, and the text gets the one error of that limit.</summary>
-    private static Result<ImmutableArray<ShapedGlyph>, Error> ShapeScriptRuns(ImmutableArray<Rune> characters, ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, double fontSize)
+    private static Result<ImmutableArray<ShapedGlyph>, Error> ShapePieces(ImmutableArray<(string Tag, ImmutableArray<GlyphItem> Glyphs)> shaping, TrueTypeFont font, double fontSize)
     {
         var hyphen = Hyphen(font, fontSize);
-        var budget = new ShapingBudget(glyphs.Length);
-        var pieces = ScriptRuns(characters)
-            .SelectMany(run => SplitAfterLineBreaks(characters, run))
-            .Select(run => ShapeRun([.. glyphs.Skip(run.Start).Take(run.Length)], run.Tag, font, budget))
-            .ToList();
+        var budget = new ShapingBudget(shaping.Sum(piece => piece.Glyphs.Length));
+        var pieces = shaping.Select(piece => ShapeRun(piece.Glyphs, piece.Tag, font, budget)).ToList();
         return budget.Exceeded is { } limit
             ? Result<ImmutableArray<ShapedGlyph>, Error>.Failure(LimitReached(font, budget, limit))
             : Result<ImmutableArray<ShapedGlyph>, Error>.Success([.. pieces.SelectMany(piece => piece!.Value).Select(glyph => new ShapedGlyph(
@@ -136,6 +163,7 @@ public static class Shaper
                     IsInvisible = glyph.IsDefaultIgnorable,
                     IsLineBreak = glyph.IsLineBreak,
                     BreakHyphen = glyph.Text == SoftHyphen ? hyphen : null,
+                    UnsafeToBreak = glyph.UnsafeToBreak,
                 })]);
     }
 
@@ -154,11 +182,14 @@ public static class Shaper
     /// character" (ISO 32000-1 §14.8.2.2.3, Hyphenation).
     /// </summary>
     private static ShapedGlyph? Hyphen(TrueTypeFont font, double fontSize) =>
-        new[] { 0x2010, 0x002D }
-            .Select(codePoint => font.GlyphFor(new Rune(codePoint)))
-            .Where(glyph => glyph.HasValue)
-            .Select(glyph => new ShapedGlyph(glyph.Value, font.Metrics.ToPoints(font.AdvanceWidth(glyph.Value), fontSize), SoftHyphen))
-            .FirstOrDefault();
+        HyphenCharacter(font) is { } character && font.GlyphFor(new Rune(character[0])) is { HasValue: true } glyph
+            ? new ShapedGlyph(glyph.Value, font.Metrics.ToPoints(font.AdvanceWidth(glyph.Value), fontSize), SoftHyphen)
+            : null;
+
+    /// <summary>The character whose glyph shows a hyphen at a soft hyphen (<see cref="Hyphen"/>): U+2010 HYPHEN when the
+    /// font has it, otherwise U+002D HYPHEN-MINUS; null when it has neither.</summary>
+    private static string? HyphenCharacter(TrueTypeFont font) =>
+        new[] { 0x2010, 0x002D }.Where(codePoint => font.GlyphFor(new Rune(codePoint)).HasValue).Select(char.ConvertFromUtf32).FirstOrDefault();
 
     /// <summary>
     /// The shaping steps for one script run, all in font design units: GSUB lookups; the 'hmtx' advance of every

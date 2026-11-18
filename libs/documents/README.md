@@ -104,8 +104,8 @@ its standard forbids, with a code that says why: an image without alternative te
 
 Read next: `docs/code-front-end.md` (every element and modifier), `docs/pdf-profiles-and-accessibility.md` (the
 profiles, what each refuses, and the checks a person must still make for PDF/UA), `docs/architecture.md` (how it
-works, for a reviewer). The samples in `samples/Ave.Extensions.Documents.Samples` are a letter, a long text and a
-timesheet with tables over several pages, in Dutch and English.
+works, for a reviewer). The samples in `samples/Ave.Extensions.Documents.Samples` are a letter, a long text, content
+taller than a page sliced over pages, and a timesheet with tables over several pages, in Dutch and English.
 
 ## Preview images
 
@@ -163,6 +163,10 @@ styled tree and the diagnostics of a file.
   break between lines or are kept together, grid lines in the collapsing border model; also a row of blocks side by
   side.
 - **Images:** PNG and JPEG.
+- **Layout policies:** where layout has a choice the document's profile decides: an image or a line taller than the
+  page is refused (the default) or sliced over pages as a browser prints it; a table row is cut only where both parts
+  show something (the default) or wherever its cells can break, as a browser does (`docs/code-front-end.md`, "Layout
+  policies").
 - **PDF:** PDF/A-3b, PDF/A-3a and PDF/UA-1 as profiles that add what each standard requires and refuse what it
   forbids: tagged PDF from the page model's structure markers, XMP metadata, an sRGB output intent, embedded files
   with their relationship (as a Factur-X invoice carries its XML).
@@ -298,7 +302,8 @@ dotnet run --project samples/Ave.Extensions.Documents.Samples -- out/samples
 `pwsh -NoProfile -File tools/test.ps1` does the same build and test at low priority (nice 10 on Linux and macOS),
 with `-Project` and `-Filter` for one project or a subset.
 
-The samples app writes `sample-a-letter.pdf` (two pages), `sample-b-long.pdf` (five pages) and the timesheet for three
+The samples app writes `sample-a-letter.pdf` (two pages), `sample-b-long.pdf` (five pages), `sample-c-sliced.pdf`
+(an image and a line taller than a small page, sliced over pages, and an image sliced in a table under its repeated header row) and the timesheet for three
 synthetic data sets in Dutch and English (`timesheet-{normal,long,edge}.{nl,en}.pdf`), all as PDF/A-3a + PDF/UA-1,
 each with `.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its intermediate models.
 The timesheets embed `timesheet.xml`, also written next to them as `.attachment.timesheet.xml`.
@@ -342,10 +347,9 @@ justification, TrueType subsetting, deterministic output. Table layout is checke
 container with font hinting off, within the layout units Chromium snaps
 (`UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs`, `tools/reference/chromium/README.md`).
 
-Known limits, each documented next to the code: negative margins (reported as unsupported), orphans/widows, the
-line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
-border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content, interlaced
-and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and other OpenType
+Known limits, each documented next to the code: negative margins (reported as unsupported), `vertical-align: baseline` in cells, column gaps and column styles, the separated
+border model, diagonal border joins, keep rules that would move a break to a cut inside a row of an earlier table, interlaced
+and 16-bit PNG, CMYK and arithmetic-coded JPEG, contextual and other OpenType
 lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts; in preview images: no hinting (small text is lighter than in viewers that hint), two rectangles that meet
 inside a pixel let some of the page show through (a quarter at half a pixel, as in MuPDF), and an enlarged image shows
 its sample squares, as the PDF defines it, where some viewers smooth it. At most font sizes Chromium's text is narrower

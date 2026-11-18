@@ -149,6 +149,88 @@ to smooth. What the numbers show:
 | rgba8.png at 2 | 96 | 1 | 81 | 33.62 | 11 / 1 / 0 | 105 | 626.18 | 32 / 29 / 10 | 24 | 586.41 | 25 / 25 / 10 |
 | rgba8.png at 3 | 96 | 1 | 2 | 0.54 | 0 / 0 / 0 | 81 | 578.55 | 54 / 44 / 16 | 81 | 581.07 | 54 / 44 / 16 |
 
+## The sliced sample (2026-11-18)
+
+`sample-c-sliced` (eight pages of 300 × 204 pt: a logo and a 200 pt line sliced over pages, then a logo sliced in a table
+under its repeated header row; every slice clipped) joins the comparison. It is the only sample whose pages hold little
+but an image or a few lines of text. On the timesheet pages the viewers' distance to each other is large, because
+poppler snaps thin rectangles and draws heavier edges, and that distance is the allowance. A page with little but an
+image or a few text lines has no such allowance, so two differences that are present in every sample become visible:
+image interiors and baselines on whole pixels (below). Nine rows break the rule; each is a named exception in
+`RasterReferenceTests` (`NamedExceptions`): its raw numbers are pinned, and with its named causes removed the rule
+holds. A row that broke the rule with its causes removed would be an unknown difference; there is none.
+
+| Sample | dpi | Page | E–M away | E–M MSE | E–M over 32 / 64 / 128 | E–P away | E–P MSE | E–P over 32 / 64 / 128 | M–P away | M–P MSE | M–P over 32 / 64 / 128 |
+| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- |
+| sample-c-sliced | 96 | 1 | 0 | 75.24 | 1896 / 832 / 0 | 0 | 369.51 | 3375 / 1955 / 863 | 0 | 489.75 | 3269 / 2164 / 1148 |
+| sample-c-sliced (named exception) | 96 | 2 | 0 | 39.60 | 835 / 669 / 270 | 0 | 76.09 | 1218 / 957 / 564 | 0 | 18.11 | 628 / 371 / 83 |
+| sample-c-sliced (named exception) | 96 | 3 | 0 | 79.33 | 1504 / 666 / 427 | 0 | 232.70 | 2323 / 1604 / 873 | 0 | 241.29 | 1895 / 1181 / 588 |
+| sample-c-sliced | 96 | 4 | 0 | 0.59 | 0 / 0 / 0 | 0 | 3.90 | 71 / 0 / 0 | 0 | 5.13 | 30 / 0 / 0 |
+| sample-c-sliced (named exception) | 96 | 5 | 0 | 83.40 | 1170 / 721 / 25 | 0 | 93.84 | 1517 / 750 / 28 | 0 | 26.25 | 856 / 140 / 0 |
+| sample-c-sliced (named exception) | 96 | 6 | 0 | 9.25 | 121 / 81 / 4 | 0 | 45.33 | 862 / 813 / 4 | 0 | 42.72 | 757 / 736 / 0 |
+| sample-c-sliced (named exception) | 96 | 7 | 0 | 26.82 | 993 / 484 / 37 | 0 | 70.31 | 1769 / 1512 / 150 | 0 | 48.91 | 1358 / 979 / 3 |
+| sample-c-sliced (named exception) | 96 | 8 | 0 | 21.53 | 572 / 211 / 4 | 0 | 55.59 | 1349 / 945 / 4 | 0 | 47.58 | 1212 / 742 / 0 |
+| sample-c-sliced | 300 | 1 | 0 | 54.32 | 10040 / 4135 / 343 | 0 | 137.46 | 13386 / 8627 / 2947 | 0 | 164.53 | 11511 / 8614 / 3931 |
+| sample-c-sliced | 300 | 2 | 0 | 5.84 | 2867 / 1490 / 93 | 0 | 29.62 | 5978 / 3377 / 882 | 0 | 35.86 | 6293 / 3817 / 1741 |
+| sample-c-sliced | 300 | 3 | 0 | 12.70 | 4014 / 2082 / 6 | 0 | 153.93 | 10426 / 8071 / 3845 | 0 | 183.82 | 9737 / 7651 / 4766 |
+| sample-c-sliced | 300 | 4 | 0 | 0.18 | 0 / 0 / 0 | 255 | 22.28 | 3403 / 490 / 237 | 255 | 22.96 | 3366 / 487 / 237 |
+| sample-c-sliced | 300 | 5 | 0 | 17.57 | 4660 / 1170 / 4 | 0 | 65.65 | 7085 / 3936 / 1376 | 0 | 75.57 | 6224 / 4437 / 1750 |
+| sample-c-sliced (named exception) | 300 | 6 | 1 | 2.53 | 424 / 232 / 0 | 0 | 11.04 | 1758 / 418 / 163 | 1 | 10.77 | 1728 / 355 / 160 |
+| sample-c-sliced (named exception) | 300 | 7 | 1 | 12.42 | 3672 / 1637 / 885 | 0 | 21.79 | 6101 / 2611 / 849 | 1 | 21.97 | 6735 / 2250 / 757 |
+| sample-c-sliced (named exception) | 300 | 8 | 1 | 6.83 | 1973 / 623 / 147 | 0 | 22.27 | 2886 / 1996 / 511 | 1 | 18.63 | 2572 / 827 / 356 |
+
+The named exceptions with their causes removed (same columns; the mean squared error and the counts leave the image
+interiors out where that cause is named, for all three pairs):
+
+| dpi | Page | Causes removed | E–M away | E–M MSE | E–M over 32 / 64 / 128 | E–P away | E–P MSE | E–P over 32 / 64 / 128 | M–P away | M–P MSE | M–P over 32 / 64 / 128 |
+| ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- |
+| 96 | 2 | image interior | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 |
+| 96 | 3 | image interior and baseline | 0 | 7.57 | 149 / 0 / 0 | 0 | 17.73 | 464 / 2 / 0 | 0 | 333.93 | 1763 / 1111 / 535 |
+| 96 | 5 | baseline | 0 | 4.35 | 106 / 0 / 0 | 0 | 15.82 | 588 / 18 / 0 | 0 | 26.25 | 856 / 140 / 0 |
+| 96 | 6 | baseline | 0 | 0.62 | 0 / 0 / 0 | 0 | 36.89 | 758 / 740 / 0 | 0 | 42.72 | 757 / 736 / 0 |
+| 96 | 7 | image interior and baseline | 0 | 0.55 | 0 / 0 / 0 | 0 | 23.15 | 220 / 202 / 0 | 0 | 26.46 | 219 / 198 / 0 |
+| 96 | 8 | baseline | 0 | 6.69 | 316 / 48 / 0 | 0 | 41.06 | 1144 / 787 / 0 | 0 | 47.58 | 1212 / 742 / 0 |
+| 300 | 6 | baseline | 1 | 0.62 | 145 / 0 / 0 | 0 | 9.37 | 1651 / 311 / 144 | 1 | 10.77 | 1728 / 355 / 160 |
+| 300 | 7 | image interior and baseline | 1 | 1.47 | 145 / 0 / 0 | 0 | 17.91 | 811 / 312 / 144 | 1 | 21.24 | 1572 / 357 / 160 |
+| 300 | 8 | image interior and baseline | 1 | 1.47 | 353 / 18 / 0 | 0 | 17.42 | 1411 / 726 / 334 | 1 | 19.38 | 1590 / 826 / 356 |
+
+Page 2 at 96 dpi is the logo alone: with its interior left out nothing of the page is compared, and the rule holds
+trivially; page 3 at 96 dpi holds with either cause removed alone, and both are on the page. With the painter planted
+to ignore the clip, the comparison fails after the causes are removed: page 2 at 96 dpi (engine to each viewer, mean
+squared error 3758.03 against 0.00, 4246 pixels over 128 against 0: the image drawn outside its clip) and page 7 at
+300 dpi (2084.62 against 21.24), and pages 2 to 5 at 300 dpi under the plain rule.
+
+### Cause: image interiors
+
+The engine draws an image as exact sample squares (ISO 32000-1 §8.9.5.3); the viewers fit it to whole pixels and
+smooth it. Removed by leaving out of the mean squared error and the counts over 32, 64 and 128 the part of every image
+that is drawn: its rectangle intersected with the clips open around it, grown by one pixel
+(`RasterComparison.ImageInteriors`). Outside the clips the page is still compared, so a painter that ignores a clip
+shows there.
+
+### Cause: baselines on whole pixels
+
+Both viewers draw a glyph's baseline on a whole pixel row, the engine where the page model puts it. Measured on the
+engine's own PDF of lines of Lato 11 pt ("Hxgb") whose baselines lie at 0.1, 0.3, 0.476, 0.5, 0.6, 0.8 and 0.95 of a
+pixel, by the shift of each line's ink centre from the engine's, at 96 and 300 dpi:
+
+| Fraction | MuPDF 96 | poppler 96 | MuPDF 300 | poppler 300 |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.1 | −0.107 | −0.110 | −0.104 | −0.111 |
+| 0.3 | −0.312 | −0.315 | −0.307 | −0.314 |
+| 0.476 | −0.492 | −0.494 | −0.481 | −0.488 |
+| 0.5 | +0.485 | −0.518 | +0.494 | −0.512 |
+| 0.6 | +0.386 | −0.617 | +0.396 | −0.611 |
+| 0.8 | +0.191 | −0.812 | +0.197 | −0.810 |
+| 0.95 | +0.045 | −0.958 | +0.048 | −0.959 |
+
+So MuPDF draws the baseline on the nearest whole pixel row (a half goes down the page) and poppler on the row above it
+(it floors), at both resolutions. In the sliced sample, page 5's line has its baseline at 110.476 px at 96 dpi; both
+viewers draw it at 110 (ink centre row 105.33 in both, 105.82 in the engine, with equal ink). Removed by drawing the
+engine's page again from a page model in which every glyph run's baseline is on the viewer's row
+(`RasterComparison.BaselinesOnPixelRows`, `MupdfRow`, `PopplerRow`), a transformation of the test, not an option of the
+engine. The difference is there on every sample (`docs/architecture.md`, "Different from the viewers").
+
 ## Measured: rectangles that meet inside a pixel (2026-11-18)
 
 Two rectangles drawn one after the other that meet at a boundary inside a pixel, on white. The boundary pixel, at the

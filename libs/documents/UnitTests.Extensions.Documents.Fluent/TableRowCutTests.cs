@@ -264,17 +264,25 @@ public class TableRowCutTests
     public void The_bottom_border_of_a_box_counts_as_drawn_at_the_bottom_of_the_box()
     {
         // Review 36, surviving mutant BB1: a label that holds only an empty block with 28 pt top padding and a 2 pt
-        // bottom border; the border lies in the label's second row (its first row is one 14 pt line high). Where the
-        // text of that row does not fit but the border does, the row is cut and the border ends the page. Measured at
-        // the box's top instead, the border would lie in the first row and the row would never be cut there.
+        // bottom border; the border lies in the label's second row (its first row is one 14 pt line high). Beside it, the
+        // second row's cell starts with a line that shows nothing (a zero width space) and goes on with text. Where that
+        // first line and the border fit but the text does not, the row is cut and the border is all the page shows of it.
+        // Measured at the box's top instead, the border would lie in the first row and the row would never be cut there.
+        var table = Table(
+            Columns(40.Pt(), Fill(1)),
+            [.. Enumerable.Range(0, 18).Select(i => (TablePart)(i % 3 == 0
+                ? TableRow([Cell([Block([]).PaddingTop(28.Pt()).BorderBottom(2.Pt(), Color.Black)]).RowSpan(3), Cell($"r{i:00}").FontSize(14.Pt())])
+                : i % 3 == 1
+                    ? TableRow([Cell([Paragraph("\u200B"), Paragraph($"r{i:00}")]).FontSize(14.Pt())])
+                    : TableRow([Cell($"r{i:00}").FontSize(14.Pt())])))]);
+        string[] words = [.. Enumerable.Range(0, 18).Select(i => $"r{i:00}")];
         var textless = 0;
         for (var offset = 0.0; offset < 60; offset += 0.5)
         {
-            var (table, words) = LabelHolding(() => Block([]).PaddingTop(28.Pt()).BorderBottom(2.Pt(), Color.Black));
             textless += TextlessCuts(NoEmptyStrip(table, words, offset, $"offset {offset}"));
         }
 
-        textless.Should().BePositive("a row is cut where only the bottom border of the label's block is placed");
+        textless.Should().BePositive("a row is cut where only the bottom border of the label's block shows");
     }
 
     [Fact]

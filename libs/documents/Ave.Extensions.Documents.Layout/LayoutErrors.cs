@@ -14,11 +14,9 @@ internal static class LayoutErrors
     private static string Describe(Box box) => $"The {box.Role} made at {box.Source}";
 
     /// <summary>
-    /// A box of which not even the first piece fits, where nothing before it on the page can move to a later page
-    /// (<see cref="ConstraintSpace.IsAtPageStart"/>). The message says what does not fit and how much room it had. It
-    /// does not claim the box would not fit on an empty page: LIMIT (NF-1, docs/architecture.md, Known limits) — after
-    /// only leading space (its own top margin, or empty boxes with margins) at the document start or after a forced page
-    /// break the box counts as at the start of the page too, and it might fit on the next one.
+    /// A box of which not even the first piece fits, where nothing before it on the page can move to a later page: it
+    /// starts the page (<see cref="ConstraintSpace.IsAtPageStart"/>), or it is the root below its own top margin. The
+    /// message says what does not fit and how much room it had.
     /// </summary>
     /// <param name="box">The box.</param>
     /// <param name="available">The height it had, from the top of its border box (zero or less: none).</param>
@@ -40,6 +38,20 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Node, content.Id.ToString())
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(height))
             .WithSource(content.Source);
+
+    /// <summary>Content taller than the page area that would need more than <see cref="MonolithicSlices.MaxSlices"/>
+    /// slices.</summary>
+    /// <param name="box">The box the content belongs to.</param>
+    /// <param name="height">The content's height.</param>
+    /// <param name="shown">The height the slices so far showed.</param>
+    public static Error TooManySlices(Box box, double height, double shown) =>
+        new Error(
+                LayoutErrorCodes.TooManySlices,
+                $"{Describe(box)} is {InvariantNumber.Format(height)}pt tall and would need more than {MonolithicSlices.MaxSlices} slices, one per page; "
+                + $"{MonolithicSlices.MaxSlices} slices showed {InvariantNumber.Format(shown)}pt of it.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, $"{InvariantNumber.Format(height)}>{InvariantNumber.Format(shown)}")
+            .WithSource(box.Source);
 
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";

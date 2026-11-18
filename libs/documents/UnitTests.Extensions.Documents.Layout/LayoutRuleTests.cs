@@ -47,8 +47,8 @@ public class LayoutRuleTests
     public void A_glyph_raised_by_shaping_is_drawn_above_the_baseline_on_the_page()
     {
         // The shaper's offset is in font convention (y up); the page model's y grows downwards, so a raised mark gets
-        // a negative y.
-        var text = "A" + char.ConvertFromUtf32(0x0301);
+        // a negative y. Q has no precomposed form with the acute, so normalization leaves base and mark apart.
+        var text = "Q" + char.ConvertFromUtf32(0x0301);
         var shaped = Shaper.Shape(text, TestFonts.Regular, 10).Value;
         shaped[1].YOffset.Should().BeGreaterThan(0, "Lato raises the acute over a capital");
 

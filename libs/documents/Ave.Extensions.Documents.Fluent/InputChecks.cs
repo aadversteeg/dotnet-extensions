@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -68,6 +69,50 @@ internal static class InputChecks
         if (format.FontWeight is { } weight && !weight.IsValid)
         {
             yield return Problem(DocumentErrorCodes.Input.Invalid.FontWeight, "The font weight must be 1–1000.", weight.ToString(), "font-weight", source);
+        }
+
+        if (format.LineHeight is { IsValid: false } lineHeight)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LineHeight, $"The line height must not be negative, and at most {InputLimits.MaxLength} (as a length, a number or a percentage of 100).", lineHeight.Describe(), "line-height", source);
+        }
+
+        // CSS Fragmentation 3 §3.3: "Only positive integers are allowed as values of orphans and widows."
+        if (format.Orphans is int orphans and < 1)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.Orphans, "Orphans must be at least 1 line.", orphans.ToString(System.Globalization.CultureInfo.InvariantCulture), "orphans", source);
+        }
+
+        if (format.Widows is int widows and < 1)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", widows.ToString(System.Globalization.CultureInfo.InvariantCulture), "widows", source);
+        }
+    }
+
+    /// <summary>A document has a layout profile, and each of its policies is a value of its enum.</summary>
+    public static IEnumerable<Error> Profile(DocumentModel.LayoutProfile? profile, SourceLocation source)
+    {
+        if (profile is null)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The document has no layout profile.", "null", "profile", source);
+            yield break;
+        }
+
+        if (!Enum.IsDefined(profile.MonolithicOverflow))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The monolithic overflow policy must be Refuse or Slice.",
+                ((int)profile.MonolithicOverflow).ToString(System.Globalization.CultureInfo.InvariantCulture), "monolithic-overflow", source);
+        }
+
+        if (!Enum.IsDefined(profile.EmptyRowParts))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The empty row parts policy must be Avoid or Allow.",
+                ((int)profile.EmptyRowParts).ToString(System.Globalization.CultureInfo.InvariantCulture), "empty-row-parts", source);
+        }
+
+        if (!Enum.IsDefined(profile.FontMetricRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font metric rounding policy must be Exact or WholePixels.",
+                ((int)profile.FontMetricRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-metric-rounding", source);
         }
     }
 

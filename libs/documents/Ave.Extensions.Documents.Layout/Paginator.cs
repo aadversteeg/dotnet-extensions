@@ -41,6 +41,9 @@ public static class Paginator
     /// <see cref="LayOutPages"/>). Without this check pagination could loop forever.</exception>
     public static Result<ValueList<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document)
     {
+        // The document's policies are the ones its front-end chose; every algorithm reads them from the environment. A
+        // model without a profile gets the default one.
+        var withProfile = environment with { Profile = document.Profile ?? LayoutProfile.Default };
         var page = document.Page;
         if (!(page.AreaWidth.Points > 0 && page.AreaHeight.Points > 0))
         {
@@ -52,14 +55,14 @@ public static class Paginator
         // Without a page count shown anywhere, no pass can change what an earlier one laid out: one pass is final.
         if (!PageCountReferences(document).Any())
         {
-            return LayOutPages(environment, document, pageCount: 1);
+            return LayOutPages(withProfile, document, pageCount: 1);
         }
 
         var counts = ImmutableArray.CreateBuilder<int>();
         var assumedCount = 1;
         for (var pass = 1; pass <= MaxPasses; pass++)
         {
-            var pages = LayOutPages(environment, document, assumedCount);
+            var pages = LayOutPages(withProfile, document, assumedCount);
             if (pages.IsFailure || pages.Value.Count == assumedCount)
             {
                 return pages;
@@ -124,9 +127,10 @@ public static class Paginator
 
             // The root establishes the block formatting context, so its margins never collapse with its
             // children's (CSS 2.1 §8.3.1). Its top margin belongs to its first fragment only (slice, CSS
-            // Fragmentation 3 §5.4); on later pages the root continues at the top of the body area.
+            // Fragmentation 3 §5.4); on later pages the root continues at the top of the body area. Below its top margin
+            // the root does not start the page, so content that does not fit there moves on (ConstraintSpace).
             var top = token is null ? document.Root.Style.Margin.Top.Points : 0;
-            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: true, token, isPageRoot: true);
+            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: !(top > 0), token, isPageRoot: true);
             if (outcome.IsFailure)
             {
                 return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);
@@ -134,6 +138,13 @@ public static class Paginator
 
             if (outcome.Value.HasNoValue)
             {
+                // Only the root's own top margin can leave no room for its top border and padding: the root cannot move
+                // to another page.
+                if (top > 0)
+                {
+                    return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.DoesNotFit(document.Root, bodyHeight - top));
+                }
+
                 throw new InvalidOperationException("A layout algorithm returned NoRoom at the start of a page; it must place content or fail.");
             }
 

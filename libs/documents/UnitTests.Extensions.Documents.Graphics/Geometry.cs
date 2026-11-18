@@ -18,6 +18,22 @@ internal static class Geometry
         return Math.Abs(SignedArea(points));
     }
 
+    /// <summary>The area of a simple polygon inside the box from (left, top) to (right, bottom); 0 for an empty box.</summary>
+    public static double AreaInBox(IReadOnlyList<(double X, double Y)> polygon, double left, double top, double right, double bottom)
+    {
+        if (!(right > left && bottom > top))
+        {
+            return 0;
+        }
+
+        var points = polygon.ToList();
+        points = ClipHalfPlane(points, p => p.X - left, (a, b) => Lerp(a, b, (left - a.X) / (b.X - a.X)));
+        points = ClipHalfPlane(points, p => right - p.X, (a, b) => Lerp(a, b, (right - a.X) / (b.X - a.X)));
+        points = ClipHalfPlane(points, p => p.Y - top, (a, b) => Lerp(a, b, (top - a.Y) / (b.Y - a.Y)));
+        points = ClipHalfPlane(points, p => bottom - p.Y, (a, b) => Lerp(a, b, (bottom - a.Y) / (b.Y - a.Y)));
+        return Math.Abs(SignedArea(points));
+    }
+
     /// <summary>The shoelace formula: positive for a polygon that turns clockwise in y-down coordinates.</summary>
     public static double SignedArea(IReadOnlyList<(double X, double Y)> polygon)
     {

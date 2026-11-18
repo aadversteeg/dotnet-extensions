@@ -23,7 +23,7 @@ public class TableSpanCloneTests
     /// side), beside a one-line cell in each row (2 pt borders); optionally a header row repeated on every page; after an
     /// empty block that moves the table <paramref name="offset"/> down.
     /// </summary>
-    private static StyledDocument Document(double offset, double pageHeight, bool header, double spanLine, double? spanTop = null, double? spanBottom = null, bool shortSpan = false, int units = 12, double rowPadding = 0)
+    private static StyledDocument Document(double offset, double pageHeight, bool header, double spanLine, double? spanTop = null, double? spanBottom = null, bool shortSpan = false, int units = 12, double rowPadding = 0, bool twoLineSecondRows = false)
     {
         var t = new TableModels();
         var thin = TableModels.ReferenceCell with { Border = Border.All(new BorderSide(2.Pt(), Color.Black)) };
@@ -43,7 +43,7 @@ public class TableSpanCloneTests
                 ? t.Row(Cell(thick, $"s{unit:00}x"), Cell(thin, $"a{unit:00}w", $"a{unit:00}x", $"a{unit:00}y", $"a{unit:00}z"))
                 : t.Row(Cell(thick, $"s{unit:00}x", $"s{unit:00}y", $"s{unit:00}z"),
                     Cell(thin with { Padding = thin.Padding with { Bottom = (thin.Padding.Bottom.Points + rowPadding).Pt() } }, $"a{unit:00}")),
-            t.Row(Cell(thin, $"b{unit:00}")),
+            twoLineSecondRows ? t.Row(Cell(thin, $"b{unit:00}", $"b{unit:00}y")) : t.Row(Cell(thin, $"b{unit:00}")),
         }).ToArray();
         var columns = (ValueList<TrackSize>)[new TrackSize.Fixed(80.Pt()), new TrackSize.Fill(1)];
         var table = header
@@ -279,7 +279,9 @@ public class TableSpanCloneTests
         // the neighbouring unit's spanning cell, or nothing at the table's edge — there the cell's own edge border alone.
         // Checked at every REAL cut of a spanning cell (its words on both pages) over start offsets that move every
         // break through every place in a unit. (Review 35: at offset 0 alone the only such breaks were empty strips,
-        // which the row-cut rule no longer makes.)
+        // which the row-cut rule no longer makes.) The second row of every unit has two lines, so a cut inside it
+        // breaks between them: a cut where a cell has no line on the page at all is only a last resort, which the
+        // break between the rows wins over (as Chromium joins its cells' break appeals into the row's).
         static IEnumerable<string> Words(Fragment fragment) => fragment switch
         {
             BoxFragment box => box.Children.SelectMany(child => Words(child.Fragment)),
@@ -300,7 +302,7 @@ public class TableSpanCloneTests
         for (var offset = 0.0; offset < 60; offset += 0.5)
         {
             var because = $"spanning cell's top {top}, bottom {bottom}, offset {offset}";
-            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(offset, 120, header: false, spanLine: 4, spanTop: top, spanBottom: bottom));
+            var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Document(offset, 120, header: false, spanLine: 4, spanTop: top, spanBottom: bottom, twoLineSecondRows: true));
             result.IsSuccess.Should().BeTrue(result.IsFailure ? because + ": " + result.Error : string.Empty);
             var tables = result.Value.Select(page => Boxes(page.Root.Fragment, new Point(0, 0), SemanticRole.Table).Single().Box).ToList();
             for (var page = 0; page + 1 < tables.Count; page++)

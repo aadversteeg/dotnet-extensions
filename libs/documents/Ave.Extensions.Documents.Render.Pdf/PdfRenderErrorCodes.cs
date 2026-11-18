@@ -27,9 +27,9 @@ public static class PdfRenderErrorCodes
         /// Metadata: Value.</summary>
         public static readonly ErrorCode InvalidOptions = _ / "InvalidOptions";
 
-        /// <summary>Structure markers in the page model that do not nest: an end without its start, a start
-        /// without its end on the same page, or a node that appears under two different parents. Metadata: Node,
-        /// Value (the page number).</summary>
+        /// <summary>Structure the tagged PDF cannot be built from: a node that appears under two different parents, or a
+        /// role without a structure type. (Markers that do not nest break the page-model contract, <c>InvalidPageModel</c>.)
+        /// Metadata: Node, Value (the page number).</summary>
         public static readonly ErrorCode InvalidStructure = _ / "InvalidStructure";
     }
 

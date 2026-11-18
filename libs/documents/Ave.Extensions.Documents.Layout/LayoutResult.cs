@@ -16,7 +16,14 @@ public abstract record LayoutResult
     /// <param name="Continuation">Where to resume on the next page, or null when the box is complete.</param>
     /// <param name="Appeal">How good the break is that ends this fragment (<see cref="BreakAppeal.Perfect"/> when the
     /// box is complete). A parent compares it with its own earlier breakpoints and may prefer one of those.</param>
-    public sealed record Placed(BoxFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect) : LayoutResult;
+    public sealed record Placed(BoxFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect) : LayoutResult
+    {
+        /// <summary>For a complete fragment, the best breakpoint inside it (by appeal, then the latest), or null when it
+        /// has none: where a parent may ask the box to break instead, by laying it out once more with this early break
+        /// (<see cref="ConstraintSpace.BreakAt"/>). Null for a fragment that breaks: the box has already chosen the best
+        /// of its own breakpoints there.</summary>
+        public EarlyBreak? BestBreak { get; init; }
+    }
 
     /// <summary>Nothing of the box fits in the space left on this page; the parent moves it to the next page.</summary>
     public sealed record NoRoom : LayoutResult
@@ -29,18 +36,17 @@ public abstract record LayoutResult
     /// <param name="fragment">The box's fragment on this page.</param>
     /// <param name="continuation">Where to resume on the next page, or null when the box is complete.</param>
     /// <param name="appeal">How good the break is that ends the fragment.</param>
+    /// <param name="bestBreak">For a complete fragment, the best breakpoint inside it (<see cref="Placed.BestBreak"/>).</param>
     /// <returns>A successful <see cref="Placed"/> result.</returns>
-    public static Result<LayoutResult, Error> Place(BoxFragment fragment, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect) =>
-        Result<LayoutResult, Error>.Success(new Placed(fragment, continuation, appeal));
+    public static Result<LayoutResult, Error> Place(BoxFragment fragment, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect, EarlyBreak? bestBreak = null) =>
+        Result<LayoutResult, Error>.Success(new Placed(fragment, continuation, appeal) { BestBreak = continuation is null ? bestBreak : null });
 
     /// <summary>
     /// The rule every algorithm applies when not even the first piece of a box fits. At the start of a page
-    /// the box will not fit on any later page either, because all pages have the same size: that is
-    /// <see cref="LayoutErrorCodes.DoesNotFit"/>, with the box's source location and the room it had. Anywhere else it
-    /// is <see cref="NoRoom"/>, and the box moves to the next page. LIMIT (NF-1, docs/architecture.md, Known limits): a
-    /// box after only leading space (its own top margin, or empty boxes with margins), at the document start or after a
-    /// forced page break, counts as at the start of the page as well, so it is refused although it might fit on the next
-    /// page, where that space would be gone.
+    /// (<see cref="ConstraintSpace.IsAtPageStart"/>: nothing at all above the box on the page) the box will not fit on
+    /// any later page either, because all pages have the same size: that is <see cref="LayoutErrorCodes.DoesNotFit"/>,
+    /// with the box's source location and the room it had. Anywhere else it is <see cref="NoRoom"/>, and the box moves to
+    /// the next page, where the margins above it are truncated at the break (CSS Fragmentation 3 §5.2).
     /// </summary>
     /// <param name="box">The box that does not fit.</param>
     /// <param name="space">The space it was given.</param>

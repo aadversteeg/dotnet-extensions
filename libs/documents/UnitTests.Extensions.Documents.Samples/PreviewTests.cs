@@ -33,6 +33,14 @@ public class PreviewTests
     [InlineData("sample-a-letter", 2)]
     [InlineData("timesheet-normal.nl", 1)]
     [InlineData("timesheet-normal.nl", 2)]
+    [InlineData("sample-c-sliced", 1)]
+    [InlineData("sample-c-sliced", 2)]
+    [InlineData("sample-c-sliced", 3)]
+    [InlineData("sample-c-sliced", 4)]
+    [InlineData("sample-c-sliced", 5)]
+    [InlineData("sample-c-sliced", 6)]
+    [InlineData("sample-c-sliced", 7)]
+    [InlineData("sample-c-sliced", 8)]
     public void A_sample_page_at_96_dpi_has_the_pixels_of_its_golden_PNG(string name, int page)
     {
         var document = SampleFiles.Documents.Single(sample => sample.Name == name).Document;

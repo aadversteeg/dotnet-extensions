@@ -51,6 +51,44 @@ public sealed class RasterReferenceTests
     private static readonly (string Name, double Resolution, int Page, int EngineToPoppler, int Viewers) KnownException =
         ("timesheet-edge.nl", 300, 1, 12_753, 12_569);
 
+    /// <summary>What separates the engine's page from a viewer's, removed one at a time for a named exception.</summary>
+    [Flags]
+    internal enum Cause
+    {
+        /// <summary>None.</summary>
+        None = 0,
+
+        /// <summary>Image interiors: the engine draws an image as exact sample squares, the viewers fit it to whole pixels
+        /// and smooth it. Removed by leaving the drawn part of every image, grown by one pixel, out of the mean squared
+        /// error and the counts (<see cref="RasterComparison.ImageInteriors"/>).</summary>
+        ImageInterior = 1,
+
+        /// <summary>Text baselines: the viewers draw a glyph's baseline on a whole pixel row (MuPDF the nearest, poppler the
+        /// one above), the engine where the page model puts it. Removed by drawing the engine's page again with every
+        /// baseline on the viewer's row (<see cref="RasterComparison.BaselinesOnPixelRows"/>).</summary>
+        BaselineOnWholePixel = 2,
+    }
+
+    /// <summary>
+    /// The rows of the sliced sample where the rule does not hold, measured on 2026-11-18 (tools/reference/raster/README.md,
+    /// "The sliced sample"): each with its raw distances (engine–MuPDF, engine–poppler, MuPDF–poppler), pinned so a change is
+    /// seen, and the causes that, removed, make the rule hold. These pages hold little but an image or a few lines of text,
+    /// so the viewers' distance to each other, the allowance, is small, and two differences present on every sample show:
+    /// image interiors and baselines on whole pixels (<see cref="Cause"/>).
+    /// </summary>
+    private static readonly (string Name, double Resolution, int Page, string Raw, Cause Causes)[] NamedExceptions =
+    [
+        ("sample-c-sliced", 96, 2, "0 | 39.60 | 835 / 669 / 270 | 0 | 76.09 | 1218 / 957 / 564 | 0 | 18.11 | 628 / 371 / 83", Cause.ImageInterior),
+        ("sample-c-sliced", 96, 3, "0 | 79.33 | 1504 / 666 / 427 | 0 | 232.70 | 2323 / 1604 / 873 | 0 | 241.29 | 1895 / 1181 / 588", Cause.ImageInterior | Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 96, 5, "0 | 83.40 | 1170 / 721 / 25 | 0 | 93.84 | 1517 / 750 / 28 | 0 | 26.25 | 856 / 140 / 0", Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 96, 6, "0 | 9.25 | 121 / 81 / 4 | 0 | 45.33 | 862 / 813 / 4 | 0 | 42.72 | 757 / 736 / 0", Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 96, 7, "0 | 26.82 | 993 / 484 / 37 | 0 | 70.31 | 1769 / 1512 / 150 | 0 | 48.91 | 1358 / 979 / 3", Cause.ImageInterior | Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 96, 8, "0 | 21.53 | 572 / 211 / 4 | 0 | 55.59 | 1349 / 945 / 4 | 0 | 47.58 | 1212 / 742 / 0", Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 300, 6, "1 | 2.53 | 424 / 232 / 0 | 0 | 11.04 | 1758 / 418 / 163 | 1 | 10.77 | 1728 / 355 / 160", Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 300, 7, "1 | 12.42 | 3672 / 1637 / 885 | 0 | 21.79 | 6101 / 2611 / 849 | 1 | 21.97 | 6735 / 2250 / 757", Cause.ImageInterior | Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 300, 8, "1 | 6.83 | 1973 / 623 / 147 | 0 | 22.27 | 2886 / 1996 / 511 | 1 | 18.63 | 2572 / 827 / 356", Cause.ImageInterior | Cause.BaselineOnWholePixel),
+    ];
+
     [DockerTheory]
     [MemberData(nameof(Samples))]
     public void Every_sample_page_is_as_close_to_each_viewer_as_the_rule_asks(string name, double resolution)
@@ -156,6 +194,27 @@ public sealed class RasterReferenceTests
                 }
 
                 table.AppendLine(CultureInfo.InvariantCulture, $"| {name} | {dpi} | {index + 1} | {toMupdf} | {toPoppler} | {between} |");
+                if (Environment.GetEnvironmentVariable("RASTER_REFERENCE_DIAGNOSE") is { Length: > 0 } diagnose)
+                {
+                    foreach (var cause in new[] { Cause.None, Cause.ImageInterior, Cause.BaselineOnWholePixel, Cause.ImageInterior | Cause.BaselineOnWholePixel })
+                    {
+                        var (m, p, b) = Adjusted(pages.Pages[index], resolution, cause, mupdf[index], poppler[index], edges);
+                        File.AppendAllText(diagnose, FormattableString.Invariant($"| {name} | {dpi} | {index + 1} | {cause} | {m} | {p} | {b} | {string.Join("; ", RasterComparison.Breaches(m, p, b))} |\n"));
+                    }
+                }
+
+                var named = NamedExceptions.Where(exception => (exception.Name, exception.Resolution, exception.Page) == (name, resolution, index + 1)).ToList();
+                if (named.Count == 1)
+                {
+                    // The row as measured, then the rule with its named causes removed.
+                    $"{toMupdf} | {toPoppler} | {between}".Should().Be(named[0].Raw, $"{name} page {index + 1} at {dpi} dpi is a named exception with these numbers");
+                    var (m, p, b) = Adjusted(pages.Pages[index], resolution, named[0].Causes, mupdf[index], poppler[index], edges);
+                    table.AppendLine(CultureInfo.InvariantCulture, $"| {name} | {dpi} | {index + 1} ({named[0].Causes} removed) | {m} | {p} | {b} |");
+                    breaches.AddRange(RasterComparison.Breaches(m, p, b).Select(breach => $"page {index + 1} with {named[0].Causes} removed: {breach}"));
+                    Write(name, dpi, index, engine[index], mupdf[index], poppler[index]);
+                    continue;
+                }
+
                 breaches.AddRange(RasterComparison.Breaches(toMupdf, judged, between).Select(breach => $"page {index + 1}: {breach}"));
                 Write(name, dpi, index, engine[index], mupdf[index], poppler[index]);
             }
@@ -171,6 +230,26 @@ public sealed class RasterReferenceTests
         {
             Directory.Delete(folder, recursive: true);
         }
+    }
+
+    /// <summary>The three distances of a page with the named causes removed (<see cref="Cause"/>): the engine's page drawn
+    /// again with its baselines on each viewer's rows, and the image interiors left out of all three comparisons.</summary>
+    private static (RasterComparison.Distance ToMupdf, RasterComparison.Distance ToPoppler, RasterComparison.Distance Between) Adjusted(
+        Page page, double resolution, Cause causes,
+        (int Width, int Height, int Channels, byte[] Pixels) mupdf, (int Width, int Height, int Channels, byte[] Pixels) poppler, (int Width, int Height, bool[] AtEdge) edges)
+    {
+        (int, int, int, byte[]) Engine(Func<double, double> row)
+        {
+            var drawn = causes.HasFlag(Cause.BaselineOnWholePixel) ? RasterComparison.BaselinesOnPixelRows(page, resolution, row) : page;
+            var image = PageRasterizer.Render(drawn, new RasterOptions(resolution)).Value;
+            return (image.Width, image.Height, 4, image.Pixels.ToArray());
+        }
+
+        var leftOut = causes.HasFlag(Cause.ImageInterior) ? RasterComparison.ImageInteriors(page, resolution) : new bool[edges.Width * edges.Height];
+        return (
+            RasterComparison.Compare(Engine(RasterComparison.MupdfRow), mupdf, edges, leftOut),
+            RasterComparison.Compare(Engine(RasterComparison.PopplerRow), poppler, edges, leftOut),
+            RasterComparison.Compare(mupdf, poppler, edges, leftOut));
     }
 
     /// <summary>The PNG files a renderer wrote, in page order (poppler pads page numbers with zeros).</summary>

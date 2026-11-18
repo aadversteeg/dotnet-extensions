@@ -12,7 +12,8 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// </summary>
 public class PageAndTableRuleTests
 {
-    private static readonly BoxStyle Narrow = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()) };
+    // One word per line; orphans and widows 1, so where a page breaks depends only on the rules these tests are about.
+    private static readonly BoxStyle Narrow = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()), Orphans = 1, Widows = 1 };
 
     private static ValueList<PageFragment> Paginate(StyledDocument document)
     {
@@ -183,10 +184,14 @@ public class PageAndTableRuleTests
     /// background draws nothing and never makes that cut (probe run 35, SP-1; Fluent <c>TableRowCutTests</c>).
     /// </summary>
     [Fact]
-    public void A_cell_holding_only_a_padded_coloured_block_places_it_where_the_text_beside_it_does_not_fit()
+    public void A_row_whose_cell_has_no_line_on_the_page_yet_moves_whole_although_a_coloured_block_beside_it_fits()
     {
+        // A cell holding only a padded coloured block (6 pt) beside a cell "x" (12 pt). Where the block fits on the page
+        // but the line does not, cutting the row would break the text cell before its first line, a last resort; the
+        // break before the row is perfect, so the row moves to the next page whole. Chromium prints the same
+        // (tools/reference/chromium, case c-cell-first-line). (Milestone 1 cut the row there and placed the block alone.)
         var blue = new Color(0x20, 0x40, 0xC0);
-        var split = 0;
+        var moved = 0;
         for (var offset = 120.0; offset < 150; offset += 0.5)
         {
             var t = new TableModels();
@@ -201,14 +206,11 @@ public class PageAndTableRuleTests
             result.IsSuccess.Should().BeTrue($"offset {offset}: " + (result.IsFailure ? result.Error.ToString() : string.Empty));
             var pages = result.Value;
 
-            var first = Boxes(pages[0], box => box.Id == block.Id).ToList();
             var text = Lines(pages[0].Root.Fragment, new Point(0, 0)).Any(line => TextOf(line.Line) == "x");
-            if (first.Count == 1 && first[0].Box.Size.Height > 0 && !text)
-            {
-                split++;
-            }
+            Boxes(pages[0], box => box.Id == block.Id).Where(found => found.Box.Size.Height > 0).Should().HaveCount(text ? 1 : 0, $"offset {offset}: the block is on page 1 only with the text beside it");
+            moved += text ? 0 : 1;
         }
 
-        split.Should().BePositive("where the text line does not fit yet, the coloured block is still placed on the page");
+        moved.Should().BePositive("where the text line does not fit, the row moves to page 2 whole");
     }
 }
