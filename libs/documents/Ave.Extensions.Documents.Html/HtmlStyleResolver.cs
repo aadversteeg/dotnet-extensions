@@ -415,7 +415,7 @@ public static class HtmlStyleResolver
         {
             var html = element.Element;
             void Refuse(string attribute, string why) =>
-                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute {attribute}=\"{html.Attribute(attribute)}\" on {html.LocalName} {why}, which is not supported.")
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute {attribute}=\"{InputQuote.Of(html.Attribute(attribute)!)}\" on {html.LocalName} {why}, which is not supported.")
                     .With(ErrorMetadataKeys.Value, attribute)
                     .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == attribute).Position));
 
@@ -481,7 +481,7 @@ public static class HtmlStyleResolver
                 return;
             }
 
-            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{source}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
+            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{InputQuote.Of(source ?? string.Empty)}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
                 .With(ErrorMetadataKeys.Value, "alt")
                 .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == "alt").Position));
         }
@@ -708,7 +708,7 @@ public static class HtmlStyleResolver
                     {
                         // A browser checks the hash and blocks a sheet that does not match (Chromium 159 blocks a sheet
                         // whose integrity does not match, measured); the engine does not check it.
-                        Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute integrity=\"{integrity.Value}\" on link asks for a check of the style sheet's hash, which is not supported.")
+                        Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute integrity=\"{InputQuote.Of(integrity.Value)}\" on link asks for a check of the style sheet's hash, which is not supported.")
                             .With(ErrorMetadataKeys.Value, "integrity")
                             .WithSource(_sourceName, integrity.Position));
                     }
@@ -810,8 +810,8 @@ public static class HtmlStyleResolver
             else
             {
                 var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given" : "was not found by the resource resolver";
-                Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{url}' {why}.")
-                    .With(ErrorMetadataKeys.Value, absolute ?? url)
+                Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{InputQuote.Of(url)}' {why}.")
+                    .With(ErrorMetadataKeys.Value, InputQuote.Of(absolute ?? url))
                     .WithSource(referrer, position));
             }
 

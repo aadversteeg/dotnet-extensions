@@ -73,6 +73,39 @@ public class DiagnosticTextTests
         error.Message.Should().Contain("<html dir=\"rtl\">").And.Contain("direction: rtl");
     }
 
+    /// <summary>The characters a diagnostic carries: its message and the text of its metadata.</summary>
+    private static long Characters(Error error) =>
+        error.Message.Length + (error.Metadata?.Values.Sum(value => (long)(value.ToString()?.Length ?? 0)) ?? 0);
+
+    [Fact]
+    public void A_long_value_on_an_element_the_parser_opens_again_is_quoted_shortened_once_per_copy()
+    {
+        // The parser opens b again in each of the 1 000 paragraphs and shares the attribute value between the copies:
+        // 1 001 refusals of autofocus. Quoting the 50 000 characters whole made 50 314 261 characters of diagnostics.
+        var diagnostics = Diagnostics("<!DOCTYPE html><p><b autofocus=\"" + new string('A', 50_000) + "\">x" + Repeat("<p>x", 1_000));
+
+        diagnostics.Count(error => error.Message.Contains("autofocus", StringComparison.Ordinal)).Should().Be(1_001);
+        diagnostics.Should().OnlyContain(error => Characters(error) <= 400);
+        diagnostics.Sum(Characters).Should().BeLessThan(1_000_000);
+        diagnostics.First(error => error.Message.Contains("autofocus", StringComparison.Ordinal)).Message
+            .Should().Contain("autofocus=\"" + new string('A', 100) + "…\"");
+    }
+
+    [Theory]
+    // The source of an image that is not there, the integrity of a linked sheet, a style sheet that is not found, a
+    // declaration that is not valid in this profile, applied to every element it matches.
+    [InlineData("<p><img alt=x width=10 src=\"VALUE\">")]
+    [InlineData("<link rel=stylesheet href=s.css integrity=\"VALUE\"><p>x")]
+    [InlineData("<link rel=stylesheet href=\"VALUE\"><p>x")]
+    [InlineData("<style>p { width: 1px VALUE }</style><p>x<p>x<p>x")]
+    public void A_diagnostic_quotes_at_most_100_characters_of_a_value(string body)
+    {
+        var diagnostics = Diagnostics("<!DOCTYPE html><title>t</title>" + body.Replace("VALUE", new string('a', 50_000), StringComparison.Ordinal));
+
+        diagnostics.Should().NotBeEmpty();
+        diagnostics.Should().OnlyContain(error => Characters(error) <= 400);
+    }
+
     [Fact]
     public void A_shorthand_the_engine_refuses_is_named_as_written()
     {

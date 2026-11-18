@@ -75,7 +75,7 @@ internal static class PresentationalHints
         void Refuse(string attribute, string why)
         {
             var at = element.Attributes.Find(attribute)!;
-            refused.Add(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute {attribute}=\"{at.Value}\" on {html.LocalName} {why}, which is not supported.")
+            refused.Add(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute {attribute}=\"{InputQuote.Of(at.Value)}\" on {html.LocalName} {why}, which is not supported.")
                 .With(ErrorMetadataKeys.Value, attribute)
                 .WithSource(sourceName, at.Position));
         }

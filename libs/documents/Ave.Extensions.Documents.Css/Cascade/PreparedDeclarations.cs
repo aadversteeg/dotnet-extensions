@@ -298,14 +298,14 @@ internal static class DeclarationPreparer
     /// <param name="problem">What the grammar found, or null.</param>
     /// <returns>The message, without the consequence.</returns>
     public static string NotReadable(PreparedDeclaration declaration, string? problem) =>
-        $"'{declaration.Source.Name}: {CssSerializer.Serialize(Trim(declaration.Source.Value))}' is not valid or not supported in this profile"
+        $"'{declaration.Source.Name}: {CssSerializer.Shortened(Trim(declaration.Source.Value))}' is not valid or not supported in this profile"
         + (problem is null ? string.Empty : $" ({problem})");
 
     /// <summary>A diagnostic about a declaration: at its place, with its property and value.</summary>
     public static Error Diagnostic(ErrorCode code, string message, PreparedDeclaration declaration) =>
         CssDiagnostics.At(code, message, declaration.SourceName, declaration.Source.Position)
             .With(ErrorMetadataKeys.Property, declaration.Name)
-            .With(ErrorMetadataKeys.Value, CssSerializer.Serialize(Trim(declaration.Source.Value)));
+            .With(ErrorMetadataKeys.Value, CssSerializer.Shortened(Trim(declaration.Source.Value)));
 
     /// <summary>The CSS-wide keyword the whole value is, or null (CSS Cascade 5 §7.3; white space around it does not
     /// count).</summary>

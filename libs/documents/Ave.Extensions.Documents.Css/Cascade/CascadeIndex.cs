@@ -361,14 +361,14 @@ public sealed class CascadeIndex
 
             if (imports is null)
             {
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{import.Url}' is skipped: the caller follows no imports.", context.Sheet.SourceName, import.Position)
+                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{CssSerializer.Shortened(import.Url)}' is skipped: the caller follows no imports.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, import.Url));
                 return null;
             }
 
             if (!Budget.TakeStyleSheet())
             {
-                Failure ??= CssDiagnostics.At(CssErrorCodes.TooLarge, $"The document takes in more than {Budget.MaxStyleSheets} style sheets, its own and imported ones together; '{import.Url}' is one too many.", context.Sheet.SourceName, import.Position)
+                Failure ??= CssDiagnostics.At(CssErrorCodes.TooLarge, $"The document takes in more than {Budget.MaxStyleSheets} style sheets, its own and imported ones together; '{CssSerializer.Shortened(import.Url)}' is one too many.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, Budget.MaxStyleSheets);
                 return null;
             }
@@ -380,7 +380,7 @@ public sealed class CascadeIndex
 
             if (!_importing.Add(sheet))
             {
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{import.Url}' is skipped: the sheet imports itself.", context.Sheet.SourceName, import.Position)
+                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{CssSerializer.Shortened(import.Url)}' is skipped: the sheet imports itself.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, import.Url));
                 return null;
             }
