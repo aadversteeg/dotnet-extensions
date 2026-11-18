@@ -73,6 +73,36 @@ else
 Every step returns `Result<T, Error>`; an error carries a path code such as `Documents.Input.Invalid.FontSize`
 or `Documents.Font.GlyphMissing` and the source file and line of the element.
 
+## Pages, PDF and preview images
+
+`ToPdf` is two steps in one: `ToPages` translates the document and lays it out into pages (the page model), and the PDF
+back-end writes the pages. A caller that wants a preview and the PDF takes the two steps itself, so the document is laid
+out once:
+
+```csharp
+using Ave.Extensions.Documents.Render.Raster;   // RasterOptions
+
+var pages = invoice.ToPages(fonts);
+if (pages.IsSuccess)
+{
+    var pdf = pages.Value.ToPdf(options);                                     // the same bytes as invoice.ToPdf(fonts, options)
+    var preview = pages.Value.ToPng(1, new RasterOptions(96));                // page 1 as a PNG file
+    var all = pages.Value.ToPngPages(new RasterOptions(150) { Background = null });   // every page, transparent paper
+    var pixels = pages.Value.ToImages(new RasterOptions(72));                 // every page as 8-bit RGBA pixels
+}
+```
+
+| Call | On a document | On its pages | Gives |
+| --- | --- | --- | --- |
+| `ToPages` | `document.ToPages(fonts)` | — | the pages (`PageDocument`) |
+| `ToPdf` | `document.ToPdf(fonts, options)` | `pages.ToPdf(options)` | the PDF file |
+| `ToPng` | `document.ToPng(fonts, pageNumber, options)` | `pages.ToPng(pageNumber, options)` | one page as a PNG file; pages count from 1 |
+| `ToPngPages` | `document.ToPngPages(fonts, options)` | `pages.ToPngPages(options)` | every page as a PNG file |
+| `ToImages` | `document.ToImages(fonts, options)` | `pages.ToImages(options)` | every page as pixels (`RgbaImage`) |
+
+`RasterOptions(Resolution)` gives the pixels per inch (96 by default) and `Background` the paper colour (white by
+default, `null` for transparent). A page number the document does not have is `Documents.Raster.PageNotFound`.
+
 ## Elements
 
 | Function | Makes |

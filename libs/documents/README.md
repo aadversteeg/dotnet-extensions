@@ -12,16 +12,18 @@ Status: preview (milestone M1). The first release from this repository is `0.1.0
 
 | Package | What it is |
 | --- | --- |
-| `Ave.Extensions.Documents` | The whole engine in one call: `document.ToPdf(fonts, options)`. Applications reference this one. |
+| `Ave.Extensions.Documents` | The whole engine in one call: `document.ToPdf(fonts, options)`, or preview images with `ToPng`. Applications reference this one. |
 | `Ave.Extensions.Documents.Fluent` | The code front-end: a document as an immutable value, built from plain function calls. |
 | `Ave.Extensions.Documents.DocumentModel` | The engine-neutral document model: a styled box tree with CSS semantics. |
 | `Ave.Extensions.Documents.Layout` | Layout: block flow, inline text, tables, images, pagination with page templates, painting. |
 | `Ave.Extensions.Documents.PageModel` | The page model: per page a display list of glyph runs, shapes, images and structure markers. |
 | `Ave.Extensions.Documents.Render.Pdf` | The PDF back-end: embedded subset fonts, searchable text, tagging, XMP, the conformance profiles. |
+| `Ave.Extensions.Documents.Render.Raster` | The raster back-end: a page as pixels, for previews and visual checks. |
+| `Ave.Extensions.Documents.Graphics` | 2D graphics: paths, exact-area anti-aliased filling, an RGBA canvas, image drawing. |
 | `Ave.Extensions.Documents.Typesetting` | Text: white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping, justification. |
 | `Ave.Extensions.Documents.Pdf` | PDF objects and a PDF file writer (ISO 32000-1); knows nothing about layout or fonts. |
-| `Ave.Extensions.Documents.Fonts` | A TrueType reader (with GSUB, GPOS, GDEF, kern) and subsetter. |
-| `Ave.Extensions.Documents.Images` | PNG decoding and JPEG header reading (JPEG is embedded as it is). |
+| `Ave.Extensions.Documents.Fonts` | A TrueType reader (with GSUB, GPOS, GDEF, kern, glyph outlines) and subsetter. |
+| `Ave.Extensions.Documents.Images` | PNG decoding and encoding; JPEG header reading (a PDF embeds JPEG as it is) and decoding. |
 | `Ave.Extensions.Documents.Core` | Shared vocabulary: lengths, geometry, colour, source locations, roles, metadata, error codes. |
 
 Every package depends only on the packages below it (see [Layers](#layers)). The only packages outside the engine are
@@ -99,6 +101,28 @@ profiles, what each refuses, and the checks a person must still make for PDF/UA)
 works, for a reviewer). The samples in `samples/Ave.Extensions.Documents.Samples` are a letter, a long text and a
 timesheet with tables over several pages, in Dutch and English.
 
+## Preview images
+
+The raster back-end draws the same pages the PDF has, as pixels: glyphs as their outlines at their exact positions,
+rectangles and images, every edge anti-aliased by the exact share of the pixel it covers. Lay the document out once
+and give the pages to both back-ends (with `invoice`, `fonts` and `options` from the example above):
+
+```csharp
+using Ave.Extensions.Documents.Render.Raster;   // RasterOptions
+
+var pages = fonts.OnSuccessBind(set => invoice.ToPages(set));         // translate and lay out, once
+if (pages.IsSuccess)
+{
+    var pdf = pages.Value.ToPdf(options);                             // the PDF
+    var preview = pages.Value.ToPng(1, new RasterOptions(96));        // page 1 as a PNG file, 96 pixels per inch
+    var thumbnails = pages.Value.ToPngPages(new RasterOptions(48));   // every page
+}
+```
+
+`ToImages` gives the pixels instead (8-bit RGBA, sRGB). The output is deterministic: the same pages and options give
+the same pixels and the same PNG bytes on every platform (checked on x64 Linux and Windows; arm64 by CI). The pages
+are compared with MuPDF and poppler renders of the engine's own PDF (`tools/reference/raster/README.md`).
+
 ## What it does
 
 - **Text:** Unicode line breaking (UAX #14, Unicode 18.0.0), OpenType shaping (GSUB, GPOS, GDEF, legacy kern) for
@@ -112,6 +136,7 @@ timesheet with tables over several pages, in Dutch and English.
 - **PDF:** PDF/A-3b, PDF/A-3a and PDF/UA-1 as profiles that add what each standard requires and refuse what it
   forbids: tagged PDF from the page model's structure markers, XMP metadata, an sRGB output intent, embedded files
   with their relationship (as a Factur-X invoice carries its XML).
+- **Preview images:** any page as PNG or pixels, at any resolution, in pure managed code.
 - **Deterministic output:** the same document, fonts and creation date give the same bytes on every machine.
 
 ## How the claims are checked
@@ -124,6 +149,8 @@ timesheet with tables over several pages, in Dutch and English.
 | Shaping matches HarfBuzz | HarfBuzz 15.0.0, run as WebAssembly inside the tests: 44 lines in three fonts, 2,602 glyphs, all identical (`HarfBuzzCorpusTests`); the known differences are Unicode composition only. |
 | Table layout matches a browser | Column widths, page breaks, repeated headers and split rows are compared with numbers measured in Chromium 159 (`ChromiumReferenceTests`, `TableBreakLineTests`; cases and measurements in `tools/reference/chromium`). |
 | The files are well-formed and readable by other tools | qpdf `--check`, poppler's `pdftotext` and `pdffonts`, every embedded font opened with fontTools, renderings by poppler and MuPDF, attachments extracted by qpdf and compared byte for byte (`tools/verify-samples.ps1`, reference tests). |
+| Preview images match PDF viewers | Every sample page drawn by the engine is compared with MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF at 96 and 300 dpi: by every metric the engine is no farther from either viewer than the viewers are from each other (`RasterReferenceTests`, `tools/reference/raster/README.md`); the samples' pages are also pinned as golden PNG files. |
+| Glyph outlines and JPEG decoding are right | Every glyph of the test fonts decodes to the points fontTools 4.57.0 reads, exactly (`GlyphShapeReferenceTests`); the ITU-T T.83 compliance streams decode to the reference coefficients, exactly (`JpegConformanceTests`). |
 | No native code | `UnitTests.Extensions.Documents.Architecture` reads every compiled library: no P/Invoke, no module references, IL only, no unsafe code; the samples' publish folder holds IL-only assemblies only. |
 
 What a PDF/UA document needs beyond these checks (reading order, meaningful alternative texts) is for a person to
@@ -135,7 +162,7 @@ Each layer is its own package and depends only on the layers below it. The depen
 assemblies by `UnitTests.Extensions.Documents.Architecture`.
 
 ```
- Ave.Extensions.Documents                composition: ToPdf runs front-end, layout and PDF back-end in a row
+ Ave.Extensions.Documents                composition: ToPages runs front-end and layout; ToPdf, ToPng draw the pages
         │
         ▼
  Ave.Extensions.Documents.Fluent         code front-end: a document as an immutable value built from function calls
@@ -159,12 +186,17 @@ assemblies by `UnitTests.Extensions.Documents.Architecture`.
         ▼
  PDF bytes
 
+ Ave.Extensions.Documents.Render.Raster  page model → pixels (beside Render.Pdf): glyph outlines, rectangles, images
+                                         ← uses Graphics
+
  Ave.Extensions.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping,
                                          justification
  Ave.Extensions.Documents.Pdf            PDF objects, content operators, file writer, XMP writer, sRGB ICC profile,
                                          PdfProfile (knows nothing about layout)
- Ave.Extensions.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
- Ave.Extensions.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and JPEG header reader
+ Ave.Extensions.Documents.Graphics       paths, affine transforms, exact-area anti-aliased filling, RGBA canvas, images
+ Ave.Extensions.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern, glyph outlines) and subsetter
+ Ave.Extensions.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and encoder; JPEG header reader and
+                                         decoder (baseline and progressive)
  Ave.Extensions.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, metadata,
                                          attachments, error codes
 ```
@@ -249,7 +281,9 @@ Known limits, each documented next to the code: negative margins (reported as un
 line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
 border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content, interlaced
 and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and other OpenType
-lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts. At most font sizes Chromium's text is narrower
+lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts; in preview images: no hinting (small text is lighter than in viewers that hint), two rectangles that meet
+inside a pixel let a little of the page show through (as in MuPDF), and an enlarged image shows sharp pixels where
+viewers may smooth it. At most font sizes Chromium's text is narrower
 than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small
 sizes; none at 9, 10.5 and 12 pt), so a line that fits in Chromium by less than that share of its text width can
 break one word earlier in the engine, which keeps the font's exact advances (`tools/reference/chromium/README.md`,

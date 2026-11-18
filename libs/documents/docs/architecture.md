@@ -6,7 +6,7 @@ family folder (`libs/documents`).
 
 ## What it is
 
-A document engine in pure managed .NET 10: a document written in C# goes in, a PDF comes out. No native library,
+A document engine in pure managed .NET 10: a document written in C# goes in, a PDF (or preview images) comes out. No native library,
 no P/Invoke, no external program at run time; reference tools (veraPDF, qpdf, poppler, MuPDF, HarfBuzz, Chromium)
 are used only by tests and scripts. Everything that can fail returns `Result<T, Error>` (Ave.Extensions.Functional /
 Ave.Extensions.ErrorPaths) with a path-shaped error code and the author's source file and line; exceptions mean a
@@ -20,9 +20,10 @@ test-only package in a product assembly".
 
 | Project | Role |
 | --- | --- |
-| `Ave.Extensions.Documents` | composition: `ToPdf` joins the front-end, layout and the PDF back-end; the one package an application needs |
+| `Ave.Extensions.Documents` | composition: `ToPages` joins the front-end and the layout, `ToPdf` and `ToPng`/`ToPngPages`/`ToImages` add a back-end; the one package an application needs |
 | `Ave.Extensions.Documents.Fluent` | code front-end: a document as an immutable value; translates it to the document model (cascade + validation); knows nothing about layout or PDF |
 | `Ave.Extensions.Documents.Render.Pdf` | page model → PDF: fonts, images, content streams, and the conformance profiles (tagging, XMP, output intent, attachments, refusals) |
+| `Ave.Extensions.Documents.Render.Raster` | page model → pixels: glyph outlines, rectangles and images drawn with Graphics (beside Render.Pdf, not above it) |
 | `Ave.Extensions.Documents.Layout` | layout algorithms, pagination driver, painter (fragments → page model) |
 | `Ave.Extensions.Documents.PageModel` | page model: per page a display list plus structure and artifact markers |
 | `Ave.Extensions.Documents.DocumentModel` | document model: a styled box tree with computed values |
@@ -40,6 +41,7 @@ DocumentModel), and a second front-end (markup) sits next to the first one inste
 ```
 Document ──DocumentTranslator.ToModel──▶ StyledDocument ──DocumentLayout.Run──▶ PageDocument ──PdfRenderer.Render──▶ bytes
  (front-end value)                       (document model)   (Paginator + PagePainter)  (page model)
+                                                                                        └──PageRasterizer.Render──▶ pixels
 ```
 
 ## The two models (and the fragment tree between them)
@@ -107,6 +109,7 @@ the three places to open, with that front-end as their first user.
 | output intent colour profile | `Pdf/SrgbIccProfile.cs` | ICC.1:2001-04; IEC 61966-2-1 |
 | attachments | `Render.Pdf/AttachmentEmbedding.cs`, catalog in `PdfRenderer.cs` | ISO 32000-1 §7.11; ISO 19005-3 §6.8 |
 | object numbering | `Render.Pdf/ObjectPlan.cs` | fixed in advance, so output is deterministic |
+| page model → pixels (glyph placement, image mapping, clip box) | `Render.Raster/PagePainter.cs`, `PageRasterizer.cs` | ISO 32000-1 §8.9.4 (image space), OpenType "glyf" (non-zero fill) |
 | curve flattening (error bound 1/64 pixel) | `Graphics/Flattening.cs` | interpolation error h²/8·max\|B″\| |
 | clipping to a box | `Graphics/Clipping.cs` | Sutherland–Hodgman (winding kept inside the box) |
 | exact-area coverage, fill rules | `Graphics/AreaRasterizer.cs` | signed-area accumulation; ISO 32000-1 §8.5.3.3 |
@@ -125,6 +128,7 @@ together, at the author's line where there is one.
 | front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
 | back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
+| raster back-end (`Render.Raster/PageRasterizer.cs`) | the same page-model contract (`PageModel/PageModelRules.cs`); options with a positive finite resolution; a page of at most 2^26 pixels at that resolution; a page number of the document | `Documents.Raster.InvalidPageModel`, `InvalidOptions`, `TooLarge`, `PageNotFound` |
 | profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
 The slot-filling rule of a table (which slot each cell takes, and when a span runs past its group or overlaps
@@ -135,6 +139,45 @@ Some rules are checked twice, on purpose, by calling the same rule: the front-en
 and the back-end refuses them as well, because it accepts page models that did not come from the front-end. These are
 the span rule, unique and non-blank attachment names (a duplicate would silently drop a file from the embedded-files
 name tree), and the language form (for the tagged profiles).
+
+## The raster back-end
+
+`PageRasterizer` draws a page of the page model as 8-bit RGBA pixels (sRGB values, alpha not premultiplied) at a
+resolution: page coordinates times resolution / 72, pixel (i, j) covering the square from (i, j) to (i + 1, j + 1).
+It checks the page model by the same contract as the PDF back-end, then `PagePainter` walks the display list in
+painting order; markers draw nothing.
+
+| Layer | Its part |
+| --- | --- |
+| Fonts | `TrueTypeFont.Shape`: a glyph's contours from 'glyf', composites resolved, no hinting, quadratic curves |
+| Images | `ImageDecoder.DecodeSamples`: PNG samples, or a JPEG decoded (baseline and progressive); `ImageEncoder.EncodePng` |
+| Graphics | flattening (1/64 pixel), clipping to a box, exact-area coverage, source-over compositing, the exact box filter for images |
+| Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, images mapped onto their rectangle as PDF maps an image's unit square |
+| composition | `ToPng`, `ToPngPages`, `ToImages` on a document or on its pages (`ToPages`) |
+
+Choices, each stated at its code: coverage is exact for straight edges, curves are within 1/64 pixel; colours are
+blended on the encoded 8-bit values, as PDFium, MuPDF and poppler blend them — blending in linear light would be more
+correct in theory and visibly different from every PDF viewer, so it is not done; an image is a grid of uniformly
+coloured squares (PDF's `/Interpolate false`), each device pixel showing the mean of the image over the part it covers;
+a JPEG's three components are YCbCr unless an Adobe marker says otherwise, as DCTDecode reads them.
+
+**Determinism.** The pixel path uses only correctly rounded double arithmetic and square roots, in a fixed order, and
+no platform maths function; the PNG compression is the runtime's zlib-ng. The golden PNG files of the samples, the
+pinned pixels of a Graphics scene and the pinned bytes of a PNG are verified on x64 Linux and Windows; arm64 by CI
+(the documents leg on `ubuntu-24.04-arm`).
+
+**Compared with viewers.** `tools/reference/raster/README.md`: every sample page against MuPDF and poppler renders of
+the engine's PDF, by the rule in `UnitTests.Extensions.Documents.Samples/RasterComparison.cs` (no farther from either
+viewer than the viewers are from each other; for pixels over 32 and 64, no farther from the nearer one). The engine is
+closest to MuPDF; poppler draws glyph edges heavier and snaps thin rectangles to whole pixels.
+
+**Known limits.** No hinting: small text is lighter than in a viewer that hints (PDFium). Two items that meet at a
+boundary inside a pixel each paint their exact coverage, so a little of what is beneath shows through (a quarter at
+half a pixel) — MuPDF does the same, poppler snaps rectangle edges to whole pixels instead; the samples have no such
+items. Both viewers fit an image to whole pixels and smooth some enlargements; the engine maps the image exactly and
+shows its pixels as sharp squares. JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
+PDF embeds them. Encoding a PNG costs more than drawing the page (about 50 ms at 96 dpi, 500 ms at 300 dpi for an A4
+page); speed is stage 5's work.
 
 ## Bounded work: the one rule every reader of input follows
 
@@ -193,7 +236,7 @@ content).
 Same input, same bytes: dates and file identifier are inputs (the identifier defaults to a hash of the content), no
 clock, no machine state, dictionaries keep insertion order, object numbers come from `ObjectPlan`. Flate
 compression (PDF streams, PNG files) comes from the .NET runtime's zlib-ng; its output was checked equal on Linux x64
-(runtime 10.0.12) and Windows x64 (10.0.15) at all three compression levels (2026-11-18), not on arm64. Tests:
+(runtime 10.0.12) and Windows x64 (10.0.15) at all three compression levels (2026-11-18); arm64 by CI. Tests:
 `Same_input_gives_byte_identical_output…`, `A_tagged_file_is_deterministic`, `Two_runs_give_byte_identical_PDFs…`.
 
 ## Known limits (all stages)
@@ -261,6 +304,8 @@ Each is documented next to its code as well.
   JOINER and the zero-width space, take no space and need no glyph. A character the font has no glyph for is the
   error `GlyphMissing`; there is no fallback font and no substitute character: U+2011 NON-BREAKING HYPHEN, which Lato
   lacks, is refused where HarfBuzz would draw the ordinary hyphen.
+- **Preview images:** see "The raster back-end" above (no hinting, seams between items that meet inside a pixel,
+  images not fitted to pixels).
 - **Fonts and images:** TrueType outlines only (no CFF); fonts are always explicit input; interlaced and 16-bit PNG,
   CMYK and arithmetic-coded JPEG are refused as unsupported. An image may have at most 2^26 pixels (about 67
   million, `Images/ImageLimits.cs`; `Documents.Image.TooLarge`), so a small file cannot claim a huge decoded size.
@@ -330,6 +375,7 @@ Each is documented next to its code as well.
 | layering, no native code, test packages stay out | `UnitTests.Extensions.Documents.Architecture` (compiled assemblies); `tools/verify-samples.ps1` step 2 (publish folder, PE headers) | `dotnet test`; the script |
 | line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Extensions.Documents.Typesetting` |
 | shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
+| preview images | every sample page against MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF, at 96 and 300 dpi, by the rule in `RasterComparison`; golden PNG files of the samples | `UnitTests.Extensions.Documents.Samples/RasterReferenceTests.cs`, `PreviewTests.cs`; `tools/reference/raster/README.md` |
 | glyph outlines | fontTools 4.57.0 in the reference tools image, every glyph of the test fonts and hand-made composites, point for point and exactly | `UnitTests.Extensions.Documents.Fonts/GlyphShapeReferenceTests.cs` |
 | JPEG decoding | the ITU-T T.83 compliance streams A1, C1, C2, G1, K1 (downloaded on first use, SHA-256 pinned): coefficients equal EREF, re-transformed samples equal DREF, exactly; libjpeg-turbo 2.1.5 `djpeg -dct int` on cjpeg-made files, within a stated difference per case | `UnitTests.Extensions.Documents.Images/JpegConformanceTests.cs`, `JpegDecoderReferenceTests.cs` |
 | PNG encoding | the engine's decoder and Pillow read every pixel back; bytes pinned | `UnitTests.Extensions.Documents.Images/PngEncoderTests.cs` |
