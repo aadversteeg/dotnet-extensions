@@ -20,16 +20,18 @@ namespace Ave.Extensions.Documents.PageModel;
 public static class PageModelRules
 {
     /// <summary>
-    /// Checks the page model and reports every breach together (<c>Documents.Pdf.Write.InvalidPageModel</c>):
+    /// Checks the page model and reports every breach together, under the code the back-end passes
+    /// (<c>Documents.Pdf.Write.InvalidPageModel</c>, <c>Documents.Raster.InvalidPageModel</c>):
     /// <list type="bullet">
-    /// <item>metadata and at least one page: a PDF without a page has nothing to show and is not useful to write; every
-    /// page of positive, finite width and height;</item>
+    /// <item>metadata and at least one page: a document without a page has nothing to show; every
+    /// page of positive width and height;</item>
+    /// <item>every number is a number PDF can hold: finite and within ±<see cref="MaxNumber"/> (page sizes, font sizes,
+    /// positions and sizes of glyph runs, glyphs, filled rectangles and images);</item>
     /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
     /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
-    /// the one before it, as the later glyphs of a one-to-many substitution do); every font size is a positive finite
+    /// the one before it, as the later glyphs of a one-to-many substitution do); every font size is a positive
     /// number;</item>
-    /// <item>every position and size of a glyph run, a filled rectangle and an image is a finite number;</item>
     /// <item>every artifact kind and attachment relationship is a value of its enum;</item>
     /// <item>a table cell spans at least one column and one row, and no more than the table model allows
     /// (<see cref="TableSlots.MaxColumnSpan"/>, <see cref="TableSlots.MaxRowSpan"/>), so no grid is ever sized by one
@@ -116,12 +118,20 @@ public static class PageModelRules
     /// requires 3 units.</summary>
     public const double MinPageSide = 0.0001;
 
+    /// <summary>
+    /// The largest magnitude of a number of the page model: 3.403 × 10^38, the range of a real number in PDF (ISO 32000-1
+    /// Annex C, Table C.1, "real: ±3.403 × 10^38"; veraPDF rule 6.1.13-2 enforces it for PDF/A). The same value as the
+    /// PDF writer's limit, so a page model one back-end accepts never holds a number the other cannot write; inside it the
+    /// raster back-end computes in double precision without overflow.
+    /// </summary>
+    public const double MaxNumber = 3.403e38;
+
     /// <summary>A page is a rectangle of finite width and height, each at least <see cref="MinPageSide"/> (in PDF its
     /// /MediaBox, ISO 32000-1 §14.11.2). A page of no area shows nothing.</summary>
     private static IEnumerable<Error> SizeProblems(Page page, int number, ErrorCode code) =>
-        page.Size is { Width: >= MinPageSide and < double.PositiveInfinity, Height: >= MinPageSide and < double.PositiveInfinity }
+        page.Size is { Width: >= MinPageSide and <= MaxNumber, Height: >= MinPageSide and <= MaxNumber }
             ? []
-            : [Invalid(code, $"Page {number} is {Number(page.Size.Width)} x {Number(page.Size.Height)}; a page has a finite width and height of at least {Number(MinPageSide)}.", $"{Number(page.Size.Width)}x{Number(page.Size.Height)}")];
+            : [Invalid(code, $"Page {number} is {Number(page.Size.Width)} x {Number(page.Size.Height)}; a page has a width and height of {Number(MinPageSide)} to {Number(MaxNumber)}.", $"{Number(page.Size.Width)}x{Number(page.Size.Height)}")];
 
     private static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
 
@@ -132,7 +142,7 @@ public static class PageModelRules
     {
         null => Invalid(code, $"Item {index + 1} of page {number} is missing.", Number(number)),
         GlyphRun { Font: null } => Invalid(code, $"A glyph run on page {number} has no font.", Number(number)),
-        GlyphRun run when !(double.IsFinite(run.FontSize) && run.FontSize > 0) =>
+        GlyphRun run when !(run.FontSize is > 0 and <= MaxNumber) =>
             Invalid(code, $"A glyph run on page {number} has the font size {run.FontSize}; it must be a positive number.", run.FontSize.ToString(CultureInfo.InvariantCulture)),
         GlyphRun run when run.Glyphs.Any(glyph => glyph is null) => Invalid(code, $"A glyph run on page {number} has a missing glyph.", Number(number)),
         GlyphRun run when run.Glyphs.FirstOrDefault(glyph => glyph.Glyph.Value >= run.Font.GlyphCount) is { } glyph =>
@@ -143,18 +153,21 @@ public static class PageModelRules
         StructureStart { Role: null } start => Invalid(code, $"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
         StructureStart start when !TableSlots.IsValidSpan(start.Span) =>
             Invalid(code, $"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
-        GlyphRun run when !IsFinite(run.Origin) || run.Glyphs.Any(glyph => !double.IsFinite(glyph.X) || !double.IsFinite(glyph.Y)) =>
-            Invalid(code, $"A glyph run on page {number} has a position that is not a finite number.", $"{run.Origin}"),
-        FillRectangle fill when !IsFinite(fill.Area) => Invalid(code, $"A filled rectangle on page {number} has a position or size that is not a finite number.", $"{fill.Area}"),
-        DrawImage image when !IsFinite(image.Area) => Invalid(code, $"An image on page {number} has a position or size that is not a finite number.", $"{image.Area}"),
+        GlyphRun run when !InRange(run.Origin) || run.Glyphs.Any(glyph => !InRange(glyph.X) || !InRange(glyph.Y)) =>
+            Invalid(code, $"A glyph run on page {number} has a position that is not a number within ±{Number(MaxNumber)}.", $"{run.Origin}"),
+        FillRectangle fill when !InRange(fill.Area) => Invalid(code, $"A filled rectangle on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{fill.Area}"),
+        DrawImage image when !InRange(image.Area) => Invalid(code, $"An image on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{image.Area}"),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
             Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
         _ => null,
     };
 
-    private static bool IsFinite(Point point) => double.IsFinite(point.X) && double.IsFinite(point.Y);
+    /// <summary>Finite and within ±<see cref="MaxNumber"/> (NaN fails both comparisons).</summary>
+    private static bool InRange(double value) => value is >= -MaxNumber and <= MaxNumber;
 
-    private static bool IsFinite(Rect area) => IsFinite(area.Origin) && double.IsFinite(area.Size.Width) && double.IsFinite(area.Size.Height);
+    private static bool InRange(Point point) => InRange(point.X) && InRange(point.Y);
+
+    private static bool InRange(Rect area) => InRange(area.Origin) && InRange(area.Size.Width) && InRange(area.Size.Height);
 
     /// <summary>A node is the same node on every page: the structure tree has one element for it, with one type.</summary>
     private static IEnumerable<Error> RoleProblems(Page page, int number, Dictionary<NodeId, SemanticRole> roles, ErrorCode code)

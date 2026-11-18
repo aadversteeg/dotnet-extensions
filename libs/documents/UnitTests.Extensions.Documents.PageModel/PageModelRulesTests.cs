@@ -40,7 +40,35 @@ public class PageModelRulesTests
 
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be(Code, "the breach is reported under the caller's code");
-        result.Error.Message.Should().Contain("not a finite number");
+        result.Error.Message.Should().Contain("not a number within");
+    }
+
+    [Theory]
+    [InlineData(PageModelRules.MaxNumber, true)]
+    [InlineData(-PageModelRules.MaxNumber, true)]
+    [InlineData(3.4031e38, false)]
+    [InlineData(-1.5e308, false)]
+    [InlineData(double.MaxValue, false)]
+    public void Every_number_is_within_the_range_of_a_PDF_real(double value, bool allowed)
+    {
+        // ISO 32000-1 Annex C, Table C.1: a real is within ±3.403 × 10^38.
+        var image = TestImages.Load("rgb8.png");
+        var pages = new[]
+        {
+            PageWith(Run(new Point(value, 10))),
+            PageWith(Run(new Point(10, 10), x: value)),
+            PageWith(Run(new Point(10, 10), y: value)),
+            PageWith(new GlyphRun(TestFonts.Regular, Math.Abs(value), Color.Black, new Point(1, 1), [])),
+            PageWith(new FillRectangle(new Rect(new Point(value, 0), new Size(1, 1)), Color.Black)),
+            PageWith(new FillRectangle(new Rect(new Point(0, 0), new Size(1, value)), Color.Black)),
+            PageWith(new DrawImage(new Rect(new Point(0, value), new Size(1, 1)), image)),
+            new Page(new Size(Math.Abs(value), 100), []),
+        };
+
+        foreach (var page in pages)
+        {
+            PageModelRules.Check(page, Code).IsSuccess.Should().Be(allowed, $"{value} in {page.Items.FirstOrDefault()?.GetType().Name ?? "the page size"}");
+        }
     }
 
     [Fact]

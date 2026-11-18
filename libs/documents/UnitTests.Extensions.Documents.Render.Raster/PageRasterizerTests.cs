@@ -46,8 +46,8 @@ public class PageRasterizerTests
 
     [Theory]
     [InlineData(10_000, 10_000, 300)]
-    [InlineData(1e300, 10, 96)]
-    [InlineData(10, 1e300, 96)]
+    [InlineData(3.4e38, 10, 96)]
+    [InlineData(10, 3.4e38, 96)]
     public void A_page_with_more_pixels_than_a_canvas_holds_is_refused(double width, double height, double resolution)
     {
         var result = PageRasterizer.Render(PageOf(width, height), new RasterOptions(resolution));
@@ -83,6 +83,81 @@ public class PageRasterizerTests
         // One node with two roles on two pages: a breach of the document, so page 1 is refused too.
         var broken = new PageDocument(Metadata, [PageOf(2, 2, start, new StructureEnd(new NodeId(1))), PageOf(2, 2, start with { Role = SemanticRole.Heading(1) }, new StructureEnd(new NodeId(1)))]);
         PageRasterizer.Render(broken, 1, new RasterOptions(72)).Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel);
+    }
+
+    [Fact]
+    public void Numbers_beyond_what_PDF_can_hold_are_refused_by_the_contract_not_thrown()
+    {
+        // Review 38, B2: these threw ArgumentException from the canvas. They are beyond ±3.403e38 (ISO 32000-1 Annex C).
+        var font = TestFonts.Regular;
+        var glyph = new PositionedGlyph(font.GlyphFor(new Rune('A')).Value, 1e308, "A");
+        foreach (var item in new DrawItem[]
+        {
+            new FillRectangle(new Rect(new Point(10, 10), new Size(10, 1.5e308)), Color.Black),
+            new FillRectangle(new Rect(new Point(10, 1e308), new Size(10, 1e308)), Color.Black),
+            new GlyphRun(font, 10, Color.Black, new Point(1e308, 10), [glyph]),
+        })
+        {
+            var result = PageRasterizer.Render(PageOf(100, 100, item), new RasterOptions(96));
+
+            result.IsFailure.Should().BeTrue();
+            result.Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel);
+        }
+    }
+
+    [Fact]
+    public void Numbers_at_the_limit_are_drawn_without_an_error()
+    {
+        const double limit = PageModelRules.MaxNumber;
+        var font = TestFonts.Regular;
+        var glyph = new PositionedGlyph(font.GlyphFor(new Rune('W')).Value, limit, "W", -limit);
+        var items = new DrawItem[]
+        {
+            new FillRectangle(new Rect(new Point(-limit, -limit), new Size(limit, limit)), Color.Black),
+            new FillRectangle(new Rect(new Point(limit, limit), new Size(limit, limit)), Color.Black),
+            new GlyphRun(font, limit, Color.Black, new Point(10, 10), [new PositionedGlyph(font.GlyphFor(new Rune('W')).Value, 0, "W")]),
+            new GlyphRun(font, 10, Color.Black, new Point(limit, limit), [glyph]),
+            new DrawImage(new Rect(new Point(-limit, 5), new Size(limit, limit)), TestImages.Load("rgb8.png")),
+        };
+
+        foreach (var item in items)
+        {
+            var result = PageRasterizer.Render(PageOf(100, 100, item), new RasterOptions(300));
+
+            result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        }
+
+        // The first rectangle ends at (0, 0): nothing of the page; a page-filling one fills all of it.
+        Draw(PageOf(100, 100, items[0])).Pixels.Should().OnlyContain(value => value == 255);
+        Draw(PageOf(100, 100, new FillRectangle(new Rect(new Point(-limit / 2, -limit / 2), new Size(limit, limit)), Color.Black))).Pixels
+            .Where((_, index) => index % 4 == 0).Should().OnlyContain(value => value == 0);
+    }
+
+    [Fact]
+    public void A_rectangle_of_10_to_the_30_points_costs_what_a_page_sized_one_costs()
+    {
+        // The work of a fill is bounded by the canvas, not by the shape: medians of several runs at 150 dpi.
+        var huge = PageOf(595, 842, new FillRectangle(new Rect(new Point(-1e30, -1e30), new Size(2e30, 2e30)), Color.Black));
+        var page = PageOf(595, 842, new FillRectangle(new Rect(new Point(0, 0), new Size(600, 850)), Color.Black));
+
+        double Median(Page subject)
+        {
+            var times = new List<double>();
+            for (var run = 0; run < 7; run++)
+            {
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                PageRasterizer.Render(subject, new RasterOptions(150)).IsSuccess.Should().BeTrue();
+                times.Add(watch.Elapsed.TotalMilliseconds);
+            }
+
+            times.Sort();
+            return times[3];
+        }
+
+        var pageTime = Median(page);
+        var hugeTime = Median(huge);
+        hugeTime.Should().BeLessThan((pageTime * 2) + 20, $"huge {hugeTime:F1} ms, page {pageTime:F1} ms");
+        PageRasterizer.Render(huge, new RasterOptions(150)).Value.Pixels.Should().Equal(PageRasterizer.Render(page, new RasterOptions(150)).Value.Pixels);
     }
 
     [Theory]
