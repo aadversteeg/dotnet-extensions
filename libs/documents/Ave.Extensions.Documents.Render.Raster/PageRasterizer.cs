@@ -25,8 +25,9 @@ public static class PageRasterizer
     /// <param name="page">The page.</param>
     /// <param name="options">The resolution and background.</param>
     /// <returns>The pixels (8-bit RGBA, sRGB, alpha not premultiplied), or an error: the page model's contract
-    /// (<c>Documents.Raster.InvalidPageModel</c>), the options (<c>InvalidOptions</c>), the size (<c>TooLarge</c>), or a
-    /// glyph outline or an image that cannot be decoded (<c>Documents.Font.Parse.*</c>, <c>Documents.Image.*</c>).</returns>
+    /// (<c>Documents.Raster.InvalidPageModel</c>), the options (<c>InvalidOptions</c>), the size (<c>TooLarge</c>), an image
+    /// too far from the page's origin to be drawn exactly (<c>ImageOutOfReach</c>), or a glyph outline or an image that
+    /// cannot be decoded (<c>Documents.Font.Parse.*</c>, <c>Documents.Image.*</c>).</returns>
     public static Result<RgbaImage, Error> Render(Page page, RasterOptions options) =>
         Checked(options, code => PageModelRules.Check(page, code))
             .OnSuccessBind(checkedPage => Draw(checkedPage, options, new PagePainter.Images()));

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Graphics;
 
 namespace UnitTests.Extensions.Documents.Graphics;
@@ -132,6 +133,110 @@ public class ImageResamplingTests
         var transform = new Affine(cos, sin, -sin, cos, 9.3, 8.6);
 
         ShouldFollowTheRule(image, transform, 19, 18);
+    }
+
+    [Theory]
+    [InlineData(1e3)]
+    [InlineData(1e9)]
+    [InlineData(1e11)]
+    public void A_rotated_image_enlarged_up_to_the_reach_shows_the_colour_of_the_pixel_it_is_centred_on(double factor)
+    {
+        // Rotated by the angle with cosine 0.8 and enlarged so far that the canvas lies inside sample (1, 1), whose centre
+        // is placed on the canvas's centre: every pixel shows that sample. The preimage of a device pixel is then a
+        // parallelogram 1/factor wide at about 1.5 in image space; it must keep its area. The grid reaches about
+        // 5.3 × factor pixels from the origin, so 10^11 is the largest power of ten within Canvas.MaxImageReach.
+        var image = Pattern(4, 3, 9, transparent: false);
+        var rotate = new Affine(0.8 * factor, 0.6 * factor, -0.6 * factor, 0.8 * factor, 0, 0);
+        var transform = rotate.Then(Affine.Translate(50 - rotate.MapX(1.5, 1.5), 50 - rotate.MapY(1.5, 1.5)));
+        var canvas = Canvas.Create(100, 100, null).Value;
+
+        canvas.DrawImage(image, transform).IsSuccess.Should().BeTrue();
+
+        var sample = image.Pixels.Skip(((1 * 4) + 1) * 4).Take(4).ToArray();
+        canvas.ToImage().Pixels.Chunk(4).Should().OnlyContain(pixel => pixel.SequenceEqual(sample), $"factor {factor}");
+    }
+
+    [Theory]
+    [InlineData(1L << 20)]
+    [InlineData(1L << 30)]
+    [InlineData(1L << 36)]
+    public void A_sheared_image_enlarged_up_to_the_reach_splits_the_pixels_at_its_grid_lines_by_their_exact_areas(long factor)
+    {
+        // The grid reaches 9 × factor pixels down (|f| + |d|·4 + |b|·4 = 3m + 4m + 2m): 2^36 is the largest power of two
+        // within Canvas.MaxImageReach (2^40); 2^37 is refused (next test).
+        // The map (x, y) -> (m·x - m/4·y + e, m/2·x + m·y + f), with the image's grid point (2, 2) placed exactly on the
+        // device point (50, 50) (all numbers are exact in binary). Around it the four samples (1, 1), (2, 1), (1, 2),
+        // (2, 2) meet along the two grid lines through it, which run along (1, 1/2) and (-1/4, 1): each device pixel shows
+        // the four colours weighted by the exact area each covers in it.
+        var m = (double)factor;
+        var image = Pattern(4, 4, 11, transparent: false);
+        var transform = new Affine(m, m / 2, -m / 4, m, 50 - (1.5 * m), 50 - (3 * m));
+        transform.MapX(2, 2).Should().Be(50);
+        transform.MapY(2, 2).Should().Be(50);
+        var canvas = Canvas.Create(100, 100, null).Value;
+
+        canvas.DrawImage(image, transform).IsSuccess.Should().BeTrue();
+
+        (double X, double Y) u = (400, 200), v = (-100, 400);
+        var quadrants = new (int Column, int Row, (double X, double Y)[] Cone)[]
+        {
+            (2, 2, [(50, 50), (50 + u.X, 50 + u.Y), (50 + u.X + v.X, 50 + u.Y + v.Y), (50 + v.X, 50 + v.Y)]),
+            (1, 2, [(50, 50), (50 + v.X, 50 + v.Y), (50 - u.X + v.X, 50 - u.Y + v.Y), (50 - u.X, 50 - u.Y)]),
+            (1, 1, [(50, 50), (50 - u.X, 50 - u.Y), (50 - u.X - v.X, 50 - u.Y - v.Y), (50 - v.X, 50 - v.Y)]),
+            (2, 1, [(50, 50), (50 - v.X, 50 - v.Y), (50 + u.X - v.X, 50 + u.Y - v.Y), (50 + u.X, 50 + u.Y)]),
+        };
+        var drawn = canvas.ToImage().Pixels;
+        for (var y = 0; y < 100; y++)
+        {
+            for (var x = 0; x < 100; x++)
+            {
+                for (var channel = 0; channel < 3; channel++)
+                {
+                    var expected = quadrants.Sum(q => Geometry.AreaInPixel(q.Cone, x, y) * image.Pixels[(((q.Row * 4) + q.Column) * 4) + channel]);
+                    Math.Abs(drawn[(((y * 100) + x) * 4) + channel] - expected).Should().BeLessThanOrEqualTo(1, $"factor 2^{Math.Log2(m)}, pixel ({x}, {y}), channel {channel}");
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(1L << 37, 0)]
+    [InlineData(0, 1e12)]
+    public void An_image_whose_grid_reaches_beyond_the_limit_is_refused(long shearFactor, double rotatedFactor)
+    {
+        // The two drawings above, one step past the limit: a wrong picture is never drawn without an error.
+        var canvas = Canvas.Create(100, 100, Color.White).Value;
+        var image = Pattern(4, 4, 11, transparent: false);
+        Affine transform;
+        if (shearFactor != 0)
+        {
+            var m = (double)shearFactor;
+            transform = new Affine(m, m / 2, -m / 4, m, 50 - (1.5 * m), 50 - (3 * m));
+        }
+        else
+        {
+            var rotate = new Affine(0.8 * rotatedFactor, 0.6 * rotatedFactor, -0.6 * rotatedFactor, 0.8 * rotatedFactor, 0, 0);
+            transform = rotate.Then(Affine.Translate(50 - rotate.MapX(1.5, 1.5), 50 - rotate.MapY(1.5, 1.5)));
+        }
+
+        var result = canvas.DrawImage(image, transform);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(GraphicsErrorCodes.InvalidValue);
+        result.Error.Message.Should().Contain("MaxImageReach");
+        canvas.ToImage().Pixels.Should().OnlyContain(value => value == 255, "a refused draw paints nothing");
+    }
+
+    [Theory]
+    [InlineData(1099511627775, true)]
+    [InlineData(1099511627776, false)]
+    public void The_reach_limit_holds_to_the_pixel(double offset, bool drawn)
+    {
+        // A 1 x 1 image at x = offset reaches offset + 1 pixels: 2^40 exactly is drawn (it lies off the canvas, so
+        // nothing shows), one more is refused.
+        var canvas = Canvas.Create(4, 4, Color.White).Value;
+
+        canvas.DrawImage(Pattern(1, 1, 1, transparent: false), Affine.Translate(offset, 0)).IsSuccess.Should().Be(drawn);
     }
 
     [Fact]

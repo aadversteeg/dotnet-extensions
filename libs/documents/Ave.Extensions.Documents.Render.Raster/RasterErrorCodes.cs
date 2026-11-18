@@ -27,4 +27,10 @@ public static class RasterErrorCodes
     /// <summary>A page that would have more pixels at the resolution asked for than the back-end draws (2^26, the
     /// limit of a canvas). Metadata: Value (width x height in pixels).</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
+
+    /// <summary>An image whose rectangle reaches so far from the page's origin, at the resolution asked for, that its
+    /// pixel edges cannot be placed within a fraction of a pixel (beyond <c>Canvas.MaxImageReach</c>, 2^40 pixels; about
+    /// 7.9 × 10^11 pt at 96 dpi). The page model allows it and the PDF back-end writes it; the raster back-end refuses
+    /// it rather than draw it wrong. Metadata: Value (the reach in pixels).</summary>
+    public static readonly ErrorCode ImageOutOfReach = _ / "ImageOutOfReach";
 }

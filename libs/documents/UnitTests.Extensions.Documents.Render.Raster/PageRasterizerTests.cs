@@ -118,7 +118,6 @@ public class PageRasterizerTests
             new FillRectangle(new Rect(new Point(limit, limit), new Size(limit, limit)), Color.Black),
             new GlyphRun(font, limit, Color.Black, new Point(10, 10), [new PositionedGlyph(font.GlyphFor(new Rune('W')).Value, 0, "W")]),
             new GlyphRun(font, 10, Color.Black, new Point(limit, limit), [glyph]),
-            new DrawImage(new Rect(new Point(-limit, 5), new Size(limit, limit)), TestImages.Load("rgb8.png")),
         };
 
         foreach (var item in items)
@@ -127,6 +126,10 @@ public class PageRasterizerTests
 
             result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         }
+
+        // An image of the same extent is refused by the raster back-end's own reach (Canvas.MaxImageReach), not drawn wrong.
+        var image = new DrawImage(new Rect(new Point(-limit, 5), new Size(limit, limit)), TestImages.Load("rgb8.png"));
+        PageRasterizer.Render(PageOf(100, 100, image), new RasterOptions(300)).Error.Code.Should().Be(RasterErrorCodes.ImageOutOfReach);
 
         // The first rectangle ends at (0, 0): nothing of the page; a page-filling one fills all of it.
         Draw(PageOf(100, 100, items[0])).Pixels.Should().OnlyContain(value => value == 255);
@@ -162,20 +165,15 @@ public class PageRasterizerTests
     }
 
     [Theory]
-    [InlineData(1e12)]
-    [InlineData(1e13)]
-    [InlineData(1e14)]
-    [InlineData(1e15)]
-    [InlineData(1e16)]
-    [InlineData(1e17)]
-    [InlineData(1e18)]
-    [InlineData(1e30)]
-    [InlineData(PageModelRules.MaxNumber / 2)]
-    public void An_image_around_the_page_shows_the_same_picture_however_far_its_edges_lie(double half)
+    [InlineData(1e9)]
+    [InlineData(1e11)]
+    [InlineData(3.6e11)]
+    public void An_image_around_the_page_shows_the_same_picture_however_far_its_edges_lie_within_the_reach(double half)
     {
         // The image's rectangle runs from -h to h both ways, so the page shows the middle of the image: for every h the
         // same picture, here the colour of pixel (30, 21) of a 61 x 43 image over the whole page. Each pixel's preimage is
-        // a tiny part of one image pixel, far (h) from the image's origin; it must keep its area.
+        // a tiny part of one image pixel, far (h) from the image's origin; it must keep its area. At 72 dpi the image's
+        // grid reaches 3h pixels from the origin: 3.6 × 10^11 is just within Canvas.MaxImageReach (2^40).
         var jpeg = TestImages.Load("jpeg-rgb.jpg");
         var near = Draw(PageOf(100, 100, new DrawImage(new Rect(new Point(-1e6, -1e6), new Size(2e6, 2e6)), jpeg)));
 
@@ -188,17 +186,14 @@ public class PageRasterizerTests
     }
 
     [Theory]
-    [InlineData(1e12)]
-    [InlineData(1e14)]
-    [InlineData(1e15)]
-    [InlineData(1e16)]
-    [InlineData(1e17)]
-    [InlineData(1e18)]
+    [InlineData(1e9)]
+    [InlineData(1e11)]
+    [InlineData(5.4e11)]
     public void An_image_that_reaches_the_page_from_far_away_is_drawn_up_to_its_own_edge(double distance)
     {
-        // Origin -h, width h + 50: the image's last column covers the left half of the page. The right edge is the page
-        // model's own number, -h + (h + 50): 50 up to 10^16, 48 at 10^17 (h + 50 rounds to h + 48), 0 from 10^18 (it
-        // rounds to h). Left of the edge the picture of a near image, right of it the white page.
+        // Origin -h, width h + 50: the image's last column covers the left half of the page, up to its right edge, the
+        // page model's own number -h + (h + 50) = 50. Left of the edge the picture of a near image, right of it the white
+        // page. The grid reaches 2h + 50 pixels at 72 dpi: 5.4 × 10^11 is just within Canvas.MaxImageReach.
         var jpeg = TestImages.Load("jpeg-rgb.jpg");
         var near = Draw(PageOf(100, 100, new DrawImage(new Rect(new Point(-1e6, 0), new Size(1e6 + 50, 100)), jpeg)));
         var edge = -distance + (distance + 50);
@@ -210,6 +205,25 @@ public class PageRasterizerTests
             var x = index / 4 % 100;
             far.Pixels[index].Should().Be(x < edge ? near.Pixels[index] : (byte)255, $"h = {distance}, pixel ({x}, {index / 400}), edge {edge}");
         }
+    }
+
+    [Theory]
+    [InlineData(-3.7e11, 6 * 3.7e11, 72)]
+    [InlineData(-1e17, 2e17, 72)]
+    [InlineData(-PageModelRules.MaxNumber / 2, PageModelRules.MaxNumber, 72)]
+    [InlineData(-5.6e11, 5.6e11 + 50, 72)]
+    [InlineData(-1e11, 2e11, 300)]
+    public void An_image_whose_grid_reaches_beyond_the_limit_at_the_resolution_is_refused(double origin, double size, double resolution)
+    {
+        // Beyond Canvas.MaxImageReach (2^40 pixels) the edges of the image's pixels cannot be placed within a fraction of
+        // a pixel in double precision; the page is refused, not drawn wrong. The same image at 72 dpi and at 300 dpi
+        // reaches 4.2 times farther at the higher resolution (the last row: 3 × 10^11 pixels at 72 dpi is drawn).
+        var jpeg = TestImages.Load("jpeg-rgb.jpg");
+
+        var result = PageRasterizer.Render(PageOf(100, 100, new DrawImage(new Rect(new Point(origin, origin), new Size(size, size)), jpeg)), new RasterOptions(resolution));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(RasterErrorCodes.ImageOutOfReach);
     }
 
     [Theory]

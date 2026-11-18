@@ -51,6 +51,23 @@ public sealed class Canvas
     /// pixels: 2^30, so every pixel index fits a 32-bit integer.</summary>
     public const double MaxPixelCoordinate = 1 << 30;
 
+    /// <summary>
+    /// The farthest the grid of a drawn image may reach from the device origin along x or along y, in pixels: 2^40
+    /// (about 1.1 × 10^12). Measured as |e| + |a|·width + |c|·height (and |f| + |b|·width + |d|·height), the largest sum
+    /// of the terms from which a position of the image's grid is computed.
+    /// </summary>
+    /// <remarks>
+    /// Where the edges of the image's pixels fall is computed in double precision from those terms, and each product and
+    /// sum rounds by at most 2^-53 of its size; with the rounding of a caller who built the transform from a rectangle
+    /// (a scale and an offset, two roundings more), an edge lies at most 6 · 2^-53 · reach from its exact place, which
+    /// within this limit is 2^-10.4 pixel: under a fifth of an 8-bit step where the colours on either side differ the
+    /// most. The same limit keeps the preimage of a device pixel at least 2^-40 image pixels wide, where the rounding of
+    /// its corners (2^-52 of the image coordinates) is at most 2^-12 of its size. Beyond it the error grows with the
+    /// reach (measured: a pixel edge 0.08 pixel off at a reach of 4.9 × 10^15, 5.3 pixels at 4.9 × 10^17), so an image
+    /// reaching farther is refused, not drawn wrong.
+    /// </remarks>
+    public const double MaxImageReach = 1L << 40;
+
     private readonly byte[] _pixels;
     private readonly AreaRasterizer _rasterizer = new();
     private readonly AreaRasterizer _sampler = new();
@@ -145,13 +162,12 @@ public sealed class Canvas
     /// painted is the mean alpha over the whole preimage, so a device pixel half outside the image gets half its alpha,
     /// and the image's edges are anti-aliased like a filled path. For any magnification this shows the image's pixels as
     /// sharp squares; for any reduction each image pixel counts by the area it covers.</para>
-    /// <para><b>Far from the image's origin.</b> An image drawn without rotation or shear keeps this rule at any distance
-    /// in range: its preimage is a rectangle, and each axis is computed on its own, relative to the image's grid line
-    /// nearest to the pixel. Its edges lie where the transform maps its corners, which carries the rounding
-    /// of the numbers there, as every position does (at 10^17 one step is 16). A rotated or sheared image maps each
-    /// pixel's corners back to the image; there a preimage near the rounding of the image coordinates (about the image's
-    /// size × 2^-52 image pixels) loses its area: measured on a 61 × 43 image, right when enlarged 10^12 times, up to 3
-    /// steps off at 10^13, up to 129 at 10^15.</para>
+    /// <para><b>How far.</b> An image whose grid reaches farther from the device origin than <see cref="MaxImageReach"/>
+    /// is refused with <c>Documents.Graphics.InvalidValue</c>: beyond it the rounding of the positions of its pixel edges
+    /// is no longer below the 8-bit rounding of the result (the limit's remarks give the arithmetic). Within it the rule
+    /// above holds for any transform. An image drawn without rotation or shear is sampled per axis, relative to the
+    /// image's grid line nearest to the pixel; a rotated or sheared one by mapping the pixel's corners back to the
+    /// image.</para>
     /// </remarks>
     /// <param name="image">The image.</param>
     /// <param name="imageToDevice">From image space to device pixels.</param>
@@ -170,6 +186,17 @@ public sealed class Canvas
         if (!imageToDevice.IsFinite)
         {
             return Invalid<Unit>("The image's transform is not finite.", imageToDevice.ToString(), "transform");
+        }
+
+        var reachX = Math.Abs(imageToDevice.E) + (Math.Abs(imageToDevice.A) * image.Width) + (Math.Abs(imageToDevice.C) * image.Height);
+        var reachY = Math.Abs(imageToDevice.F) + (Math.Abs(imageToDevice.B) * image.Width) + (Math.Abs(imageToDevice.D) * image.Height);
+        if (!(reachX <= MaxImageReach && reachY <= MaxImageReach))
+        {
+            var reach = double.Max(reachX, reachY).ToString(CultureInfo.InvariantCulture);
+            return Invalid<Unit>(
+                $"The image's grid reaches {reach} pixels from the origin; an image is drawn exactly only within {MaxImageReach.ToString(CultureInfo.InvariantCulture)} pixels (Canvas.MaxImageReach).",
+                reach,
+                "transform");
         }
 
         if (imageToDevice.Inverse() is not { } toImage || box.Value.IsEmpty)
@@ -349,8 +376,8 @@ public sealed class Canvas
     /// computed on its own axis.
     /// </summary>
     /// <remarks>
-    /// Exact at any distance from the image's origin. Along an axis, the box's two ends are taken relative to the image's
-    /// grid line nearest to the box, mapped forward to the device as the image's own edges are; a box that lies between
+    /// Exact within <see cref="MaxImageReach"/>, far from the image's origin too. Along an axis, the box's two ends are
+    /// taken relative to the image's grid line nearest to the box, mapped forward to the device as the image's own edges are; a box that lies between
     /// two grid lines gets its whole length in that pixel, computed from the box's own width, not as a difference of two
     /// positions. So an image enlarged so much that the page shows a small part of one of its pixels keeps every box's
     /// area, where mapping the corners back to the image one by one would round them all to the same point.

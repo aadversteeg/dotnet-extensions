@@ -206,12 +206,16 @@ colour 51,102,153 on white meeting at half a pixel give 102,140,178 at the bound
 95,135,175; poppler moves rectangle edges to whole pixels instead (51,102,153, but the boundary moves); the samples have
 no such items (`tools/reference/raster/README.md`). An enlarged image shows its sample squares, as the PDF defines it
 (ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. An image
-of the page model (never rotated) is drawn by that rule at any distance in the number range: a test draws one whose
-edges lie at ±1.7 × 10^38 pt and gets the same page as when they lie at ±10^6 pt; its edges lie where its numbers put
-them, with their rounding (at 10^17 pt one step is 16 pt). `Canvas.DrawImage` with a rotation or shear, which no page
-model asks for, loses the area of device pixels when the image is enlarged very far (the rounding of the image
-coordinates; a 61 × 43 image: right at 10^12 times, up to 3 steps off at 10^13, up to 129 at 10^15; `Graphics/Canvas.cs`).
-JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
+whose grid reaches farther than 2^40 device pixels from the origin (`Canvas.MaxImageReach`; at 96 dpi about
+7.9 × 10^11 pt) is refused: `Documents.Graphics.InvalidValue` from the canvas, `Documents.Raster.ImageOutOfReach` from
+the raster back-end; the PDF back-end writes such an image as the page model says. The bound is the arithmetic of
+placing the image's pixel edges: each is computed from terms as large as the reach, each product and sum rounds by
+2^-53 of its size, so an edge lies at most 6 · 2^-53 · reach from its exact place, within the bound 2^-10.4 pixel (under
+a fifth of an 8-bit step at full contrast); the same bound keeps the rounding of a pixel's preimage below 2^-12 of its
+size. Measured beyond it, with numbers that are not round: an edge 0.08 pixel off at a reach of 4.9 × 10^15 pixels,
+0.67 at 4.9 × 10^16, 5.3 at 4.9 × 10^17; a rotated 61 × 43 image enlarged 10^13 times (reach 8.6 × 10^14) up to 3 steps
+off. Within it the tests draw images enlarged so far that a page shows a small part of one pixel, rotated, sheared or
+not, and get the exact areas (`Graphics/Canvas.cs`, `ImageResamplingTests`, `PageRasterizerTests`). JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
 PDF embeds them. Encoding a PNG costs more than drawing the page (about 50 ms at 96 dpi, 500 ms at 300 dpi for an A4
 page); speed is stage 5's work. Memory and time not yet bounded beyond the limits below: `ToPngPages` draws and keeps
 every page before it returns (about 35 MB per A4 page at 300 dpi); a damaged JPEG can cost the decoder hundreds of MB and

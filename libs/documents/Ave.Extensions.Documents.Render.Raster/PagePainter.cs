@@ -7,6 +7,7 @@ using Ave.Extensions.Documents.Graphics;
 using Ave.Extensions.Documents.Images;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 using Path = Ave.Extensions.Documents.Graphics.Path;
 
@@ -156,7 +157,10 @@ internal static class PagePainter
                 area.Size.Height / pixels.Height * scale,
                 area.Origin.X * scale,
                 area.Origin.Y * scale);
-            return canvas.DrawImage(pixels, placement, clip);
+            // The only value the canvas can refuse here is the reach: every number is within the page model's range.
+            return canvas.DrawImage(pixels, placement, clip).MapError(error =>
+                new Error(RasterErrorCodes.ImageOutOfReach, $"An image on the page cannot be drawn exactly at this resolution: {error.Message}")
+                    .With(ErrorMetadataKeys.Value, error.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.Value, out var reach) ? reach : string.Empty));
         });
 
     /// <summary>Grey or RGB samples and an optional alpha channel as RGBA pixels.</summary>
