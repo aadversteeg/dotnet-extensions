@@ -1,11 +1,11 @@
 using System.IO;
 using System.Text.Json;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Css;
 using Ave.Extensions.Documents.Css.Cascade;
 using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Selectors;
 using Ave.Extensions.Documents.Css.Syntax;
-using Ave.Extensions.ErrorPaths;
 using Xunit.Abstractions;
 
 namespace UnitTests.Extensions.Documents.Css;
@@ -64,7 +64,7 @@ public class WptCssSuiteTests(ITestOutputHelper output)
             return Verdict.Invalid;
         }
 
-        var diagnostics = new List<Error>();
+        var diagnostics = new DiagnosticCollector();
         var order = 0;
         var declaration = new Declaration(name, values, false, TextPosition.Start) { OriginalText = name.StartsWith("--", StringComparison.Ordinal) ? value : null };
         var block = DeclarationPreparer.Prepare([declaration], "wpt", CascadeOrigin.Author, ref order, diagnostics);

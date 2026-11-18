@@ -2,15 +2,25 @@ using System;
 using System.Collections.Generic;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Syntax;
+using Ave.Extensions.Documents.Css.Values;
 
 namespace Ave.Extensions.Documents.Css.Cascade;
 
 /// <summary>
 /// <c>var()</c> (CSS Variables 1 §3): <c>var( &lt;custom-property-name&gt; , &lt;declaration-value&gt;? )</c>, replaced by
 /// the custom property's computed value, or by the fallback when the property has the guaranteed-invalid value. The
-/// fallback is substituted too. Bounded: the result has at most <see cref="CssInputLimits.MaxSubstitutionValues"/>
-/// component values.
+/// fallback is substituted too.
 /// </summary>
+/// <remarks>
+/// Bounded, and without recursion over the value: the component-value tree is walked with an explicit stack. The
+/// result is measured as Chromium 159 measures it, by the length of its text: the source text of the literal parts plus
+/// the text of the substituted values. Chromium writes an empty comment where two tokens would run together, which
+/// this count leaves out, so the count is a lower bound and, with up to four characters on each side of every
+/// substitution, an upper bound. Within <see cref="CssInputLimits.MaxSubstitutionLength"/> by the upper bound the
+/// value is used; past it by the lower bound it is invalid at computed-value time, as in Chromium; in between the
+/// answer depends on comments the engine does not write, and the value is refused
+/// (<see cref="Outcome.Uncertain"/>). Substitution stops as soon as the lower bound passes the limit.
+/// </remarks>
 internal static class VarSubstitution
 {
     /// <summary>The outcome of one substitution.</summary>
@@ -22,8 +32,11 @@ internal static class VarSubstitution
         /// <summary>A var() named a property with no value and had no fallback: invalid at computed-value time.</summary>
         Invalid,
 
-        /// <summary>Past the limit.</summary>
-        TooLarge,
+        /// <summary>Longer than Chromium's limit: invalid at computed-value time, as in Chromium.</summary>
+        TooLong,
+
+        /// <summary>So close to Chromium's limit that whether Chromium keeps it depends on comments it writes: refused.</summary>
+        Uncertain,
     }
 
     /// <summary>Whether every var() in the values has the grammar of §3 (else the declaration is invalid when parsed,
@@ -55,21 +68,36 @@ internal static class VarSubstitution
     /// <param name="values">The values.</param>
     /// <param name="lookup">A custom property's computed value by name, or null for the guaranteed-invalid value.</param>
     /// <param name="result">The values after substitution.</param>
+    /// <param name="length">The length of the result's text (the lower bound).</param>
     /// <returns>Whether it worked.</returns>
-    public static Outcome Substitute(IReadOnlyList<ComponentValue> values, Func<string, ValueList<ComponentValue>?> lookup, out ValueList<ComponentValue> result)
+    public static Outcome Substitute(IReadOnlyList<ComponentValue> values, Func<string, CssTokens?> lookup, out ValueList<ComponentValue> result, out long length)
     {
-        var budget = CssInputLimits.MaxSubstitutionValues;
-        var output = new List<ComponentValue>();
-        var outcome = Into(values, lookup, output, ref budget);
-        result = outcome == Outcome.Done ? [.. output] : [];
-        return outcome;
-    }
-
-    private static Outcome Into(IReadOnlyList<ComponentValue> values, Func<string, ValueList<ComponentValue>?> lookup, List<ComponentValue> output, ref int budget)
-    {
-        foreach (var value in values)
+        var root = new List<ComponentValue>();
+        var stack = new Stack<Frame>();
+        stack.Push(new Frame(values, root, null, null));
+        long lower = 0;
+        long substitutions = 0;
+        result = [];
+        length = 0;
+        while (stack.Count > 0)
         {
-            Outcome outcome;
+            var frame = stack.Peek();
+            if (frame.Index >= frame.Source.Count)
+            {
+                stack.Pop();
+                if (frame.Owner is FunctionValue function)
+                {
+                    frame.Into!.Add(function with { Values = [.. frame.Output] });
+                }
+                else if (frame.Owner is SimpleBlock block)
+                {
+                    frame.Into!.Add(block with { Values = [.. frame.Output] });
+                }
+
+                continue;
+            }
+
+            var value = frame.Source[frame.Index++];
             switch (value)
             {
                 case FunctionValue function when function.IsNamed("var"):
@@ -80,14 +108,10 @@ internal static class VarSubstitution
 
                     if (lookup(arguments.Name) is { } substituted)
                     {
-                        budget -= substituted.Count;
-                        if (budget < 0)
-                        {
-                            return Outcome.TooLarge;
-                        }
-
-                        output.AddRange(substituted);
-                        continue;
+                        lower += substituted.Text.Length;
+                        substitutions++;
+                        frame.Output.AddRange(substituted.Tokens);
+                        break;
                     }
 
                     if (arguments.Fallback is not { } fallback)
@@ -95,39 +119,87 @@ internal static class VarSubstitution
                         return Outcome.Invalid;
                     }
 
-                    outcome = Into(DeclarationPreparer.Trim(fallback), lookup, output, ref budget);
+                    // The fallback's values go into the same output, in the place of the var().
+                    stack.Push(new Frame(DeclarationPreparer.Trim(fallback), frame.Output, null, null));
                     break;
                 case FunctionValue function:
-                    var inside = new List<ComponentValue>();
-                    outcome = Into(function.Values, lookup, inside, ref budget);
-                    output.Add(function with { Values = [.. inside] });
-                    budget--;
+                    lower += function.Name.Length + 2;
+                    stack.Push(new Frame(function.Values, [], function, frame.Output));
                     break;
                 case SimpleBlock block:
-                    var contents = new List<ComponentValue>();
-                    outcome = Into(block.Values, lookup, contents, ref budget);
-                    output.Add(block with { Values = [.. contents] });
-                    budget--;
+                    lower += 2;
+                    stack.Push(new Frame(block.Values, [], block, frame.Output));
                     break;
                 default:
-                    output.Add(value);
-                    budget--;
-                    outcome = Outcome.Done;
+                    lower += Math.Max(1, value.SourceEnd - value.SourceStart);
+                    frame.Output.Add(value);
                     break;
             }
 
-            if (outcome != Outcome.Done)
+            if (lower > CssInputLimits.MaxSubstitutionLength)
             {
-                return outcome;
-            }
-
-            if (budget < 0)
-            {
-                return Outcome.TooLarge;
+                length = lower;
+                return Outcome.TooLong;
             }
         }
 
+        length = lower;
+        if (lower + (8 * substitutions) > CssInputLimits.MaxSubstitutionLength)
+        {
+            return Outcome.Uncertain;
+        }
+
+        result = [.. root];
         return Outcome.Done;
+    }
+
+    /// <summary>The names every var() in the values refers to, fallbacks included (the edges of the dependency graph of
+    /// CSS Variables 1 §2.3), without recursion.</summary>
+    public static List<string> References(IReadOnlyList<ComponentValue> values)
+    {
+        var names = new List<string>();
+        var stack = new Stack<IReadOnlyList<ComponentValue>>();
+        stack.Push(values);
+        while (stack.Count > 0)
+        {
+            foreach (var value in stack.Pop())
+            {
+                switch (value)
+                {
+                    case FunctionValue function when function.IsNamed("var") && Arguments(function) is { } arguments:
+                        names.Add(arguments.Name);
+                        if (arguments.Fallback is { } fallback)
+                        {
+                            stack.Push(fallback);
+                        }
+
+                        break;
+                    case FunctionValue function:
+                        stack.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        stack.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return names;
+    }
+
+    /// <summary>One list being substituted: its source values, where it is, its output, and for a function or block
+    /// the value to rebuild and the list it goes into.</summary>
+    private sealed class Frame(IReadOnlyList<ComponentValue> source, List<ComponentValue> output, ComponentValue? owner, List<ComponentValue>? into)
+    {
+        public IReadOnlyList<ComponentValue> Source { get; } = source;
+
+        public int Index { get; set; }
+
+        public List<ComponentValue> Output { get; } = output;
+
+        public ComponentValue? Owner { get; } = owner;
+
+        public List<ComponentValue>? Into { get; } = into;
     }
 
     /// <summary>The arguments of var(): the name, and the fallback after the first comma (null when there is no comma;

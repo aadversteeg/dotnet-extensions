@@ -162,16 +162,27 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | nesting of arrays and dictionaries in one PDF object | 64 levels | `Pdf/PdfSerializer.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | nesting of arrays and structures in one XMP property | 64 levels | `Pdf/Xmp/XmpPacket.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
-| an HTML document | 2^24 UTF-16 code units; nesting 512 elements; template and selectedcontent clones 4 per character | `Html.Parsing/HtmlInputLimits.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails) |
-| a style sheet | 2^24 UTF-16 code units; nesting of blocks and functions 256 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (a refusal; the sheet is empty) |
-| imported style sheets of one cascade | 1 024 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
-| one var() substitution | 65 536 component values | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` (the property is unset) |
+| an HTML document | 2^24 UTF-16 code units (bytes are checked against the same number); nesting 512 elements, the depth at which Chromium stops nesting; selectedcontent clones 4 nodes and characters per input character; 10 000 diagnostics kept | `Html.Parsing/HtmlInputLimits.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic; the style resolution refuses) |
+| a style sheet | 2^24 UTF-16 code units; nesting of blocks, functions and rules 64 (the readers recurse once per level: 252 nested `@media` overflowed a 256 KB thread at the old limit of 256, 64 fit with room) | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (a refusal; the sheet is empty) |
+| nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels: the only recursion of selector matching and specificity, kept well inside the stack of a 256 KB thread | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the rule is refused) |
+| selector matching of one cascade | 2^28 tested facts and simple selectors, a few seconds of work, far above what real documents need; 2^22 facts remembered (a bound on the memory) | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
+| imported style sheets of one cascade | 1 024, counted over every import followed | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
+| one var() substitution | 2 097 152 characters of text, Chromium 159's limit (measured) | `Css/CssInputLimits.cs` | past it: invalid at computed-value time, as in Chromium (`Documents.Css.Invalid.ComputedValue`); where the engine's measure cannot tell (within 8 characters per substitution of the limit): `Documents.Css.TooLarge` |
+| all var() substitutions of one cascade | 2^26 characters | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
+| diagnostics of one style sheet, one cascade, one resolution | 10 000 kept | `Css/CssInputLimits.cs`, `Html.Parsing/HtmlInputLimits.cs` | `Documents.TooManyDiagnostics` (a refusal) |
 
-Selector matching is bounded by the input: a complex selector's steps are matched once per element (remembered for
-the call), the arguments of `:is()`, `:where()` and `:not()` once per element and `:nth-child(of S)` once per parent
-for the whole cascade (`Css/Selectors/SelectorMatcher.cs`), so the `:is()` chains that nesting desugars into do not
-multiply. An element is matched only against the rules bucketed under its ID, its classes, its type, and the rules
-that name none of these (`Css/Cascade/CascadeIndex.cs`).
+Selector matching is linear in the selector's steps times the elements (`Css/Selectors/SelectorMatcher.cs`): per step
+and element it computes whether the steps up to it match, whether some ancestor's or earlier sibling's does, each
+once per cascade, with an explicit stack; a subject reached through `+` or `~` must have as many earlier siblings,
+which rejects long sibling chains at once. A nested rule refers to its parent's selector list instead of copying it,
+so selectors and specificity do not grow with the nesting. Class, ID and attribute-word tests use sets built once per
+element. An element is matched only against the rules bucketed under its ID, its classes, its type, and the rules
+that name none of these (`Css/Cascade/CascadeIndex.cs`); the rest of the matching work counts against the limit
+above. Custom properties are resolved in dependency order by an iterative walk, so a chain of any length costs its
+length; every substitution is measured as Chromium measures it and stops at its limit; results are shared by the
+elements that inherit the same custom properties. No reader recurses on the input deeper than the nesting limits
+above, and each of them runs on a 256 KB stack at the deepest allowed input (`CssBoundedWorkTests`,
+`BoundedWorkTests`).
 
 One reader is bounded by a constant rather than by its input: the `cmap` formats 4 and 12 are expanded into one entry
 per mapped code point, so a few groups of 12 bytes can fill all 1 114 112 code points of Unicode (tens of MiB). The

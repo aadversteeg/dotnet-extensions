@@ -38,7 +38,7 @@ public static class CssParser
     /// <returns>The style sheet and the diagnostics.</returns>
     public static CssResult<StyleSheet> ParseStyleSheet(string text, CssSourceOptions options)
     {
-        var diagnostics = new List<Error>();
+        var diagnostics = new DiagnosticCollector();
         if (text.Length > CssInputLimits.MaxCharacters)
         {
             return TooLarge(options);
@@ -48,11 +48,11 @@ public static class CssParser
         var (rules, tooDeepAt) = SyntaxParser.ParseStyleSheet(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
-            return new CssResult<StyleSheet>(new StyleSheet([], options.SourceName), [.. diagnostics, TooDeep(source, deep, options)]);
+            return new CssResult<StyleSheet>(new StyleSheet([], options.SourceName), [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
         }
 
         var built = new RuleBuilder(options.SourceName, diagnostics).StyleSheet(rules);
-        return new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), [.. diagnostics]);
+        return new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), diagnostics.ToValueList());
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public static class CssParser
     /// <returns>The declarations and the diagnostics.</returns>
     public static CssResult<ValueList<Declaration>> ParseDeclarations(string text, CssSourceOptions options)
     {
-        var diagnostics = new List<Error>();
+        var diagnostics = new DiagnosticCollector();
         if (text.Length > CssInputLimits.MaxCharacters)
         {
             return new CssResult<ValueList<Declaration>>([], TooLarge(options).Diagnostics);
@@ -101,7 +101,7 @@ public static class CssParser
         var (items, tooDeepAt) = SyntaxParser.ParseDeclarationList(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
-            return new CssResult<ValueList<Declaration>>([], [.. diagnostics, TooDeep(source, deep, options)]);
+            return new CssResult<ValueList<Declaration>>([], [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
         }
 
         var declarations = new List<Declaration>();
@@ -117,7 +117,7 @@ public static class CssParser
             }
         }
 
-        return new CssResult<ValueList<Declaration>>([.. declarations], [.. diagnostics]);
+        return new CssResult<ValueList<Declaration>>([.. declarations], diagnostics.ToValueList());
     }
 
     /// <summary>"Parse a media query list" (Media Queries 4 §3) from text: a media attribute of HTML, for one.</summary>
@@ -126,7 +126,7 @@ public static class CssParser
     /// <returns>The list and the diagnostics.</returns>
     public static CssResult<MediaQueryList> ParseMediaQueryList(string text, CssSourceOptions options)
     {
-        var diagnostics = new List<Error>();
+        var diagnostics = new DiagnosticCollector();
         if (text.Length > CssInputLimits.MaxCharacters)
         {
             return new CssResult<MediaQueryList>(MediaQueryList.All, TooLarge(options).Diagnostics);
@@ -136,14 +136,14 @@ public static class CssParser
         var (values, tooDeepAt) = SyntaxParser.ParseComponentValues(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
-            return new CssResult<MediaQueryList>(MediaQueryList.All, [.. diagnostics, TooDeep(source, deep, options)]);
+            return new CssResult<MediaQueryList>(MediaQueryList.All, [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
         }
 
         var list = MediaQueries.Parse(values, options.SourceName, diagnostics);
-        return new CssResult<MediaQueryList>(list, [.. diagnostics]);
+        return new CssResult<MediaQueryList>(list, diagnostics.ToValueList());
     }
 
-    private static Action<string, int> Syntax(CssSource source, CssSourceOptions options, List<Error> diagnostics) =>
+    private static Action<string, int> Syntax(CssSource source, CssSourceOptions options, DiagnosticCollector diagnostics) =>
         (message, index) => diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Parse.Syntax, message, options.SourceName, source.PositionOf(index))
             .With(ErrorMetadataKeys.Value, message));
 

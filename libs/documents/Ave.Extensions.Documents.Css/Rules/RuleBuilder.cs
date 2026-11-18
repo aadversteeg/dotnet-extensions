@@ -17,7 +17,7 @@ namespace Ave.Extensions.Documents.Css.Rules;
 /// style rules, nested rules relative (CSS Nesting 1 §2). Everything dropped is reported: as invalid (CSS drops it, a
 /// browser does the same), ignored, or unsupported.
 /// </summary>
-internal sealed class RuleBuilder(string sourceName, List<Error> diagnostics)
+internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnostics)
 {
     /// <summary>At-rules CSS defines that the engine does not implement: refused.</summary>
     internal static readonly FrozenSet<string> UnsupportedAtRules = FrozenSet.Create(
@@ -102,7 +102,15 @@ internal sealed class RuleBuilder(string sourceName, List<Error> diagnostics)
         var parsed = SelectorParser.Parse(rule.Prelude, relative: nested, rule.Position);
         if (parsed.List is not { } selectors)
         {
-            Report(CssErrorCodes.Invalid.Selector, $"The selector is invalid ({parsed.Error}); the rule is dropped (Selectors 4 §3.9).", parsed.ErrorPosition);
+            if (parsed.TooDeep)
+            {
+                Report(CssErrorCodes.TooDeep, $"The selector nests selector lists deeper than {CssInputLimits.MaxSelectorNesting}; the rule is not read.", parsed.ErrorPosition);
+            }
+            else
+            {
+                Report(CssErrorCodes.Invalid.Selector, $"The selector is invalid ({parsed.Error}); the rule is dropped (Selectors 4 §3.9).", parsed.ErrorPosition);
+            }
+
             return null;
         }
 

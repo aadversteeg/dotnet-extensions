@@ -27,6 +27,8 @@ internal sealed class StyleElement : IStyleElement
         "vlink");
 
     private readonly ValueList<string> _classes;
+    private HashSet<string>? _classSet;
+    private Dictionary<(string Name, bool IgnoreCase), HashSet<string>>? _words;
 
     private StyleElement(HtmlElement element, StyleElement? parent, bool quirks)
     {
@@ -62,15 +64,25 @@ internal sealed class StyleElement : IStyleElement
     /// <inheritdoc/>
     public bool HasClass(string name)
     {
-        foreach (var item in _classes)
+        // A set built once per element: an element with many classes against many class selectors costs their sum.
+        _classSet ??= IsQuirksMode
+            ? [.. _classes.Select(Ascii.ToLower)]
+            : [.. _classes];
+        return _classSet.Contains(IsQuirksMode ? Ascii.ToLower(name) : name);
+    }
+
+    /// <inheritdoc/>
+    public bool AttributeHasWord(string localName, string word, bool ignoreCase)
+    {
+        _words ??= [];
+        if (!_words.TryGetValue((localName, ignoreCase), out var words))
         {
-            if (IsQuirksMode ? Ascii.EqualsIgnoreCase(item, name) : item == name)
-            {
-                return true;
-            }
+            var value = Element.Attribute(localName) ?? string.Empty;
+            words = [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(item => ignoreCase ? Ascii.ToLower(item) : item)];
+            _words[(localName, ignoreCase)] = words;
         }
 
-        return false;
+        return words.Contains(ignoreCase ? Ascii.ToLower(word) : word);
     }
 
     /// <inheritdoc/>

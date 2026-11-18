@@ -606,7 +606,7 @@ internal sealed partial class TreeBuilder
                 {
                     Error("unexpected-start-tag", t);
                     AdoptionAgency(t);
-                    _formatting.Remove(existing);
+                    RemoveFormatting(existing);
                     RemoveFromStack(existing);
                 }
 
@@ -837,9 +837,9 @@ internal sealed partial class TreeBuilder
     {
         foreach (var attribute in token.Attributes)
         {
-            if (!element.Attributes.Exists(existing => existing.Namespace == AttributeNamespace.None && existing.LocalName == attribute.Name))
+            if (element.Attribute(attribute.Name) is null)
             {
-                element.Attributes.Add(new HtmlAttribute(AttributeNamespace.None, null, attribute.Name, attribute.Value, Position(attribute.Start)));
+                element.AddAttribute(new HtmlAttribute(AttributeNamespace.None, null, attribute.Name, attribute.Value, Position(attribute.Start)));
             }
         }
     }
@@ -1110,7 +1110,7 @@ internal sealed partial class TreeBuilder
     private void AdoptionAgency(Input t)
     {
         var subject = t.Name!;
-        if (CurrentNode is { } current && current.IsHtml(subject) && !_formatting.Contains(current))
+        if (CurrentNode is { } current && current.IsHtml(subject) && !current.InFormatting)
         {
             Pop();
             return;
@@ -1128,7 +1128,7 @@ internal sealed partial class TreeBuilder
             if (!formattingElement.OnStack)
             {
                 Error("misnested-end-tag", t);
-                _formatting.Remove(formattingElement);
+                RemoveFormatting(formattingElement);
                 return;
             }
 
@@ -1160,12 +1160,12 @@ internal sealed partial class TreeBuilder
                 {
                 }
 
-                _formatting.Remove(formattingElement);
+                RemoveFormatting(formattingElement);
                 return;
             }
 
             var commonAncestor = _stack[formattingIndex - 1];
-            var bookmark = _formatting.IndexOf(formattingElement);
+            var bookmark = FormattingIndexOf(formattingElement);
             var node = furthestBlock;
             MutableNode lastNode = furthestBlock;
             var nodeIndex = _stack.IndexOf(node);
@@ -1178,10 +1178,10 @@ internal sealed partial class TreeBuilder
                     break;
                 }
 
-                var inList = _formatting.IndexOf(node);
+                var inList = FormattingIndexOf(node);
                 if (inner > 3 && inList >= 0)
                 {
-                    _formatting.RemoveAt(inList);
+                    RemoveFormattingAt(inList);
                     if (inList < bookmark)
                     {
                         bookmark--;
@@ -1197,7 +1197,7 @@ internal sealed partial class TreeBuilder
                 }
 
                 var replacement = CreateElement(node.Token, ElementNamespace.Html);
-                _formatting[inList] = replacement;
+                SetFormatting(inList, replacement);
                 _stack[nodeIndex] = replacement;
                 replacement.OnStack = true;
                 node.OnStack = false;
@@ -1213,6 +1213,11 @@ internal sealed partial class TreeBuilder
             }
 
             var (target, before) = AppropriatePlace(commonAncestor);
+            if (Refresh(target) && before?.Parent != target)
+            {
+                before = null;
+            }
+
             target.Insert(lastNode, before);
 
             var newElement = CreateElement(formattingElement.Token, ElementNamespace.Html);
@@ -1223,9 +1228,9 @@ internal sealed partial class TreeBuilder
 
             furthestBlock.Insert(newElement, null);
 
-            var oldIndex = _formatting.IndexOf(formattingElement);
-            _formatting.Insert(bookmark, newElement);
-            _formatting.RemoveAt(oldIndex < bookmark ? oldIndex : oldIndex + 1);
+            var oldIndex = FormattingIndexOf(formattingElement);
+            InsertFormatting(bookmark, newElement);
+            RemoveFormattingAt(oldIndex < bookmark ? oldIndex : oldIndex + 1);
 
             RemoveFromStack(formattingElement);
             _stack.Insert(_stack.IndexOf(furthestBlock) + 1, newElement);

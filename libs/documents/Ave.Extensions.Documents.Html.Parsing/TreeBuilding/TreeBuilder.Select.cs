@@ -30,7 +30,17 @@ internal sealed partial class TreeBuilder
         public MutableElement? FirstEnabled { get; set; }
 
         public List<MutableElement> SelectedContents { get; } = [];
+
+        /// <summary>Counts the times an option became the selected one; a selectedcontent filled at an older count is
+        /// stale.</summary>
+        public int Version { get; set; }
+
+        /// <summary>The option that became the selected one last.</summary>
+        public MutableElement? Selected { get; set; }
     }
+
+    /// <summary>The select of each selectedcontent, and the count at which it was filled last.</summary>
+    private readonly Dictionary<MutableElement, (SelectState State, int Version)> _contents = new(ReferenceEqualityComparer.Instance);
 
     private readonly Dictionary<MutableElement, SelectState> _selects = new(ReferenceEqualityComparer.Instance);
     private long? _cloneBudget;
@@ -41,9 +51,19 @@ internal sealed partial class TreeBuilder
     /// <summary>The number of input characters, for the clone budget; set by the parser.</summary>
     public int InputLength { get; init; }
 
-    /// <summary>"Finish parsing the children of an element" (§13.2.4.2): the option's children parsed steps.</summary>
+    /// <summary>"Finish parsing the children of an element" (§13.2.4.2): the option's children parsed steps. The
+    /// standard fills every selectedcontent each time an option becomes the selected one. With no script nothing can see
+    /// a selectedcontent between two such times, so the parser only counts them and fills a selectedcontent when it is
+    /// stale and something is inserted into it, when its select finishes, or at the end of the input: the tree is the
+    /// same, and n selectedcontent elements with n selected options cost n fills, not n².</summary>
     private void FinishChildren(MutableElement element)
     {
+        if (element.IsHtml("select") && _selects.TryGetValue(element, out var finished))
+        {
+            Flush(finished);
+            return;
+        }
+
         if (!element.IsHtml("option") || NearestAncestorSelect(element) is not { } select)
         {
             return;
@@ -62,10 +82,42 @@ internal sealed partial class TreeBuilder
 
         if (SelectedOption(select, state) == element)
         {
-            foreach (var selectedContent in state.SelectedContents)
-            {
-                Fill(selectedContent, element);
-            }
+            state.Version++;
+            state.Selected = element;
+        }
+    }
+
+    /// <summary>Fills a selectedcontent again when an option became the selected one since it was filled.</summary>
+    /// <param name="parent">A node something is about to be inserted into.</param>
+    /// <returns>Whether it was filled (its old children are gone).</returns>
+    private bool Refresh(MutableParent parent)
+    {
+        if (parent is not MutableElement element || !_contents.TryGetValue(element, out var entry) || entry.Version == entry.State.Version)
+        {
+            return false;
+        }
+
+        _contents[element] = (entry.State, entry.State.Version);
+        Fill(element, entry.State.Selected);
+        return true;
+    }
+
+    /// <summary>Fills the stale selectedcontent elements of a select.</summary>
+    private void Flush(SelectState state)
+    {
+        foreach (var selectedContent in state.SelectedContents)
+        {
+            Refresh(selectedContent);
+        }
+    }
+
+    /// <summary>"The end" (§13.2.7): the selects that never finished (left open, or taken off the stack by the adoption
+    /// agency) are filled too.</summary>
+    private void FlushSelects()
+    {
+        foreach (var state in _selects.Values)
+        {
+            Flush(state);
         }
     }
 
@@ -80,6 +132,7 @@ internal sealed partial class TreeBuilder
 
         var state = State(select);
         state.SelectedContents.Add(element);
+        _contents[element] = (state, state.Version);
         Fill(element, SelectedOption(select, state));
     }
 
@@ -193,18 +246,48 @@ internal sealed partial class TreeBuilder
             child.Remove();
         }
 
-        for (var child = option?.First; child is not null && !CloneBudgetExceeded; child = child.Next)
+        if (option is not null)
         {
-            if (Clone(child) is { } clone)
+            CloneChildren(option, selectedContent);
+        }
+    }
+
+    /// <summary>Deep clones of a parent's children (DOM "clone a node" with subtree), appended to a target, with an
+    /// explicit stack so the depth of the option's content cannot overflow the thread's stack. Every node and
+    /// character is charged to the clone budget.</summary>
+    private void CloneChildren(MutableParent source, MutableParent target)
+    {
+        var pending = new Stack<(MutableNode? Next, MutableParent Target)>();
+        pending.Push((source.First, target));
+        while (pending.Count > 0 && !CloneBudgetExceeded)
+        {
+            var (next, into) = pending.Pop();
+            if (next is null)
             {
-                selectedContent.Insert(clone, null);
+                continue;
+            }
+
+            pending.Push((next.Next, into));
+            if (CloneOne(next) is not { } clone)
+            {
+                continue;
+            }
+
+            into.Insert(clone, null);
+            if (next is MutableElement element && clone is MutableElement copy)
+            {
+                if (element.Content is not null)
+                {
+                    pending.Push((element.Content.First, copy.Content!));
+                }
+
+                pending.Push((element.First, copy));
             }
         }
     }
 
-    /// <summary>A deep clone (DOM "clone a node" with subtree), or null for the elements the clone leaves out. Every
-    /// node and character is charged to the clone budget.</summary>
-    private MutableNode? Clone(MutableNode node)
+    /// <summary>A shallow clone, or null for the elements the clone leaves out (and when the budget runs out).</summary>
+    private MutableNode? CloneOne(MutableNode node)
     {
         if (!Charge(1 + node switch { MutableText text => text.Data.Length, MutableElement element => element.Attributes.Count, _ => 0 }))
         {
@@ -228,11 +311,9 @@ internal sealed partial class TreeBuilder
                     Start = element.Start,
                     Content = element.Content is null ? null : new MutableFragment { Start = element.Content.Start },
                 };
-                copy.Attributes.AddRange(element.Attributes);
-                CloneChildren(element, copy);
-                if (element.Content is not null)
+                foreach (var attribute in element.Attributes)
                 {
-                    CloneChildren(element.Content, copy.Content!);
+                    copy.AddAttribute(attribute);
                 }
 
                 return copy;
@@ -246,17 +327,6 @@ internal sealed partial class TreeBuilder
                 return new MutableProcessingInstruction { Target = instruction.Target, Data = instruction.Data, Start = instruction.Start };
             default:
                 return null;
-        }
-    }
-
-    private void CloneChildren(MutableParent source, MutableParent target)
-    {
-        for (var child = source.First; child is not null && !CloneBudgetExceeded; child = child.Next)
-        {
-            if (Clone(child) is { } clone)
-            {
-                target.Insert(clone, null);
-            }
         }
     }
 
@@ -274,8 +344,7 @@ internal sealed partial class TreeBuilder
         return true;
     }
 
-    private static string? Attribute(MutableElement element, string name) =>
-        element.Attributes.Find(attribute => attribute.Namespace == AttributeNamespace.None && attribute.LocalName == name)?.Value;
+    private static string? Attribute(MutableElement element, string name) => element.Attribute(name);
 
     private static bool HasAttribute(MutableElement element, string name) => Attribute(element, name) is not null;
 }

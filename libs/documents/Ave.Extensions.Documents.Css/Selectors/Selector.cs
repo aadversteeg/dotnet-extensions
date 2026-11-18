@@ -141,6 +141,24 @@ public sealed record PseudoElementSelector(string Name, ValueList<ComponentValue
 /// root element in a style sheet.</summary>
 public sealed record NestingSelector : SimpleSelector;
 
+/// <summary>
+/// The nesting selector <c>&amp;</c> of a nested rule after the cascade has read it (CSS Nesting 1 §3): a reference to
+/// the parent rule's selector list, which it matches as <c>:is()</c> does, with the specificity of the parent's most
+/// specific selector. The parent list is shared, not copied: a rule nested n levels deep holds n references, so the
+/// size of the selectors does not grow with the nesting (<c>&amp;&amp;</c> on every level would double it each time).
+/// </summary>
+/// <param name="Parent">The parent rule's selector list, with its own parent references.</param>
+/// <param name="Specificity">The specificity of its most specific selector, computed once.</param>
+/// <param name="Depth">How deeply selectors nest through it (<see cref="CssInputLimits.MaxSelectorNesting"/>).</param>
+public sealed record ParentSelector(SelectorList Parent, Specificity Specificity, int Depth) : SimpleSelector
+{
+    /// <inheritdoc/>
+    public bool Equals(ParentSelector? other) => ReferenceEquals(this, other);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
+}
+
 /// <summary>An An+B value (CSS Syntax 3 §6): the indexes A×n+B for n ≥ 0 that are positive.</summary>
 /// <param name="A">The step.</param>
 /// <param name="B">The offset.</param>

@@ -29,6 +29,23 @@ public class ProfileDocumentTests
         File.ReadAllText(path).Should().Be(generated, "the code changed: run this test with DOCUMENTS_UPDATE_PROFILE=1 and commit the document");
     }
 
+    /// <summary>The generated document and the other committed text the tests compare byte for byte have LF line ends
+    /// in every checkout (.gitattributes); without the rule a Windows checkout has CRLF and the comparison fails.</summary>
+    [Fact]
+    public void Committed_text_the_tests_compare_byte_for_byte_has_the_same_bytes_on_every_platform()
+    {
+        var root = Path.GetFullPath(Path.Combine(Styling.Reference(), "..", "..", "..", "..", "..", ".."));
+        var attributes = File.ReadAllLines(Path.Combine(root, ".gitattributes")).Select(line => line.Trim()).ToList();
+
+        attributes.Should().Contain([
+            "libs/documents/docs/html-css-profile.md text eol=lf",
+            "libs/documents/tools/reference/chromium/computed-style/** text eol=lf",
+            "libs/documents/Ave.Extensions.Documents.Html/UserAgent/*.css text eol=lf",
+            "libs/documents/Ave.Extensions.Documents.Html.Parsing/Tokenizing/*.txt text eol=lf",
+        ]);
+        File.ReadAllText(Path.Combine(root, "libs", "documents", "docs", "html-css-profile.md")).Should().NotContain("\r");
+    }
+
     private static string Generate()
     {
         var text = new StringBuilder();

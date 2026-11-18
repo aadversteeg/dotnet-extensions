@@ -58,7 +58,7 @@ public class CssParserTests
         result.Value.Rules.Should().BeEmpty();
         var error = result.Diagnostics.Should().ContainSingle(item => item.Code == CssErrorCodes.TooDeep).Subject;
         CssDiagnostics.ClassOf(error.Code).Should().Be(DiagnosticClass.Refusal);
-        error.Metadata![ErrorMetadataKeys.SourceColumn].Should().Be(11 + CssInputLimits.MaxDepth, "the { is the first level, so the 256th ( is past the limit");
+        error.Metadata![ErrorMetadataKeys.SourceColumn].Should().Be(11 + CssInputLimits.MaxDepth, "the { is the first level, so the last ( is past the limit");
     }
 
     [Fact]

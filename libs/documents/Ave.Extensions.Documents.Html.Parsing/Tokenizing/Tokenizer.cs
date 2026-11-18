@@ -308,14 +308,10 @@ internal sealed partial class Tokenizer
     private void LeaveAttributeName()
     {
         _finishedAttributeName = _attributeName.ToString();
-        foreach (var attribute in _tag!.Attributes)
+        if (_tag!.HasAttribute(_finishedAttributeName))
         {
-            if (attribute.Name == _finishedAttributeName)
-            {
-                Error("duplicate-attribute");
-                _attributeDropped = true;
-                return;
-            }
+            Error("duplicate-attribute");
+            _attributeDropped = true;
         }
     }
 
@@ -323,7 +319,7 @@ internal sealed partial class Tokenizer
     {
         if (_attributeOpen && !_attributeDropped)
         {
-            _tag!.Attributes.Add(new TokenAttribute { Name = _finishedAttributeName, Value = _attributeValue.ToString(), Start = _attributeStart });
+            _tag!.AddAttribute(new TokenAttribute { Name = _finishedAttributeName, Value = _attributeValue.ToString(), Start = _attributeStart });
         }
 
         _attributeOpen = false;

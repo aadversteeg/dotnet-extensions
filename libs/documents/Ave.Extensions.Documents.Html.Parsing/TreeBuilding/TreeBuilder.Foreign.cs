@@ -145,6 +145,8 @@ internal sealed partial class TreeBuilder
                 attribute.Name = "definitionURL";
             }
         }
+
+        token.AttributesRenamed();
     }
 
     /// <summary>"Adjust SVG attributes" (§13.2.6.1): the table of camel-case attribute names.</summary>
@@ -157,5 +159,7 @@ internal sealed partial class TreeBuilder
                 attribute.Name = adjusted;
             }
         }
+
+        token.AttributesRenamed();
     }
 }

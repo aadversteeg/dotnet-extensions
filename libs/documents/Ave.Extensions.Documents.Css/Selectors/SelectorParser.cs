@@ -17,7 +17,12 @@ public sealed record SelectorFinding(SelectorSupport Support, string Name, TextP
 /// <param name="Error">Why it is invalid, or null.</param>
 /// <param name="ErrorPosition">Where it is invalid.</param>
 /// <param name="Findings">The never-matching and unsupported constructs in a valid list.</param>
-public sealed record SelectorParseResult(SelectorList? List, string? Error, TextPosition ErrorPosition, ValueList<SelectorFinding> Findings);
+public sealed record SelectorParseResult(SelectorList? List, string? Error, TextPosition ErrorPosition, ValueList<SelectorFinding> Findings)
+{
+    /// <summary>Whether the selector was not read because it nests deeper than
+    /// <see cref="CssInputLimits.MaxSelectorNesting"/> (a limit of the engine, not invalid CSS).</summary>
+    public bool TooDeep { get; init; }
+}
 
 /// <summary>
 /// The selector parser (Selectors 4 §16): the whole grammar, so that a valid selector the engine does not support is
@@ -39,7 +44,7 @@ public static class SelectorParser
         var context = new Context();
         var list = ParseList(values, relative, forgiving: false, allowPseudoElements: true, context, start);
         return list is null
-            ? new SelectorParseResult(null, context.Error, context.ErrorPosition, [])
+            ? new SelectorParseResult(null, context.Error, context.ErrorPosition, []) { TooDeep = context.TooDeep }
             : new SelectorParseResult(list, null, start, [.. context.Findings]);
     }
 
@@ -55,6 +60,15 @@ public static class SelectorParser
         /// <summary>Whether the selector being read is inside the argument of :has(), where another :has() is invalid
         /// (Selectors 4 §4.5).</summary>
         public bool InHas { get; set; }
+
+        /// <summary>How many selector lists the one being read is nested in.</summary>
+        public int Depth { get; set; }
+
+        /// <summary>Whether a list nested deeper than the limit was met.</summary>
+        public bool TooDeep { get; set; }
+
+        /// <summary>A context for one item of a forgiving list or one compound argument: same nesting, own error.</summary>
+        public Context Child() => new() { InHas = InHas, Depth = Depth };
 
         /// <summary>Records why the selector is invalid (the first reason wins) and returns null, so a step can
         /// <c>return context.Fail&lt;T&gt;(…)</c>.</summary>
@@ -73,6 +87,20 @@ public static class SelectorParser
 
     private static SelectorList? ParseList(IReadOnlyList<ComponentValue> values, bool relative, bool forgiving, bool allowPseudoElements, Context context, TextPosition start)
     {
+        if (context.Depth > CssInputLimits.MaxSelectorNesting)
+        {
+            context.TooDeep = true;
+            return context.Fail<SelectorList>($"selectors nested deeper than {CssInputLimits.MaxSelectorNesting}", start);
+        }
+
+        context.Depth++;
+        var list = ParseListAt(values, relative, forgiving, allowPseudoElements, context, start);
+        context.Depth--;
+        return list;
+    }
+
+    private static SelectorList? ParseListAt(IReadOnlyList<ComponentValue> values, bool relative, bool forgiving, bool allowPseudoElements, Context context, TextPosition start)
+    {
         var selectors = new List<ComplexSelector>();
         foreach (var part in SplitOnCommas(values))
         {
@@ -88,11 +116,17 @@ public static class SelectorParser
             }
 
             // <forgiving-selector-list>: an item that does not parse is dropped, the others stay (§16.1).
-            var own = new Context { InHas = context.InHas };
+            var own = context.Child();
             if (ParseComplex(part, relative, allowPseudoElements, own, start) is { } kept)
             {
                 selectors.Add(kept);
                 context.Findings.AddRange(own.Findings);
+            }
+            else if (own.TooDeep)
+            {
+                // Too deep is the engine's limit, not invalid CSS: the item is not quietly forgiven.
+                context.TooDeep = true;
+                return context.Fail<SelectorList>(own.Error!, own.ErrorPosition);
             }
         }
 
@@ -606,8 +640,10 @@ public static class SelectorParser
     /// ::slotted()), or null.</summary>
     private static CompoundSelector? Compound(ValueList<ComponentValue> values, Context context, TextPosition position)
     {
-        var own = new Context { InHas = context.InHas };
-        return ParseList(values, relative: false, forgiving: false, allowPseudoElements: false, own, position) is { Selectors: [{ Steps: [var only] }] }
+        var own = context.Child();
+        var list = ParseList(values, relative: false, forgiving: false, allowPseudoElements: false, own, position);
+        context.TooDeep |= own.TooDeep;
+        return list is { Selectors: [{ Steps: [var only] }] }
                && only.Combinator is null && OnlyCompounds(only.Compound)
             ? only.Compound
             : null;

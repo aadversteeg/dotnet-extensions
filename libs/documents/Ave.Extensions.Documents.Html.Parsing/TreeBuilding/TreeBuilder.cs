@@ -141,6 +141,8 @@ internal sealed partial class TreeBuilder
             {
                 Pop();
             }
+
+            FlushSelects();
         }
     }
 
@@ -331,6 +333,70 @@ internal sealed partial class TreeBuilder
 
     private void InsertMarker() => _formatting.Add(null);
 
+    // The list is changed through these, so each element knows whether it is on the list (MutableElement.InFormatting)
+    // and a membership test is constant work, however many markers the list holds (markers can stay on it for ever,
+    // as the standard says). The elements looked up by position are after the last marker, searched from the end.
+
+    private void AddFormatting(MutableElement element)
+    {
+        element.InFormatting = true;
+        _formatting.Add(element);
+    }
+
+    private void RemoveFormattingAt(int index)
+    {
+        if (_formatting[index] is { } entry)
+        {
+            entry.InFormatting = false;
+        }
+
+        _formatting.RemoveAt(index);
+    }
+
+    private void SetFormatting(int index, MutableElement element)
+    {
+        if (_formatting[index] is { } old)
+        {
+            old.InFormatting = false;
+        }
+
+        element.InFormatting = true;
+        _formatting[index] = element;
+    }
+
+    private void InsertFormatting(int index, MutableElement element)
+    {
+        element.InFormatting = true;
+        _formatting.Insert(index, element);
+    }
+
+    /// <summary>The index of an element on the list, searched from the end; -1 when it is not on it.</summary>
+    private int FormattingIndexOf(MutableElement element)
+    {
+        if (!element.InFormatting)
+        {
+            return -1;
+        }
+
+        for (var i = _formatting.Count - 1; i >= 0; i--)
+        {
+            if (_formatting[i] == element)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void RemoveFormatting(MutableElement element)
+    {
+        if (FormattingIndexOf(element) is var index and >= 0)
+        {
+            RemoveFormattingAt(index);
+        }
+    }
+
     /// <summary>"Push onto the list of active formatting elements", with the Noah's Ark clause.</summary>
     private void PushFormatting(MutableElement element)
     {
@@ -347,10 +413,10 @@ internal sealed partial class TreeBuilder
 
         if (same >= 3)
         {
-            _formatting.RemoveAt(earliest);
+            RemoveFormattingAt(earliest);
         }
 
-        _formatting.Add(element);
+        AddFormatting(element);
     }
 
     private static bool SameAttributes(Token left, Token right)
@@ -388,7 +454,7 @@ internal sealed partial class TreeBuilder
         for (; index < _formatting.Count; index++)
         {
             var entry = _formatting[index]!;
-            _formatting[index] = InsertHtmlElement(entry.Token);
+            SetFormatting(index, InsertHtmlElement(entry.Token));
         }
     }
 
@@ -397,7 +463,7 @@ internal sealed partial class TreeBuilder
         while (_formatting.Count > 0)
         {
             var entry = _formatting[^1];
-            _formatting.RemoveAt(_formatting.Count - 1);
+            RemoveFormattingAt(_formatting.Count - 1);
             if (entry is null)
             {
                 return;
@@ -467,7 +533,7 @@ internal sealed partial class TreeBuilder
         };
         foreach (var attribute in token.Attributes)
         {
-            element.Attributes.Add(ForeignAttribute(attribute, ns));
+            element.AddAttribute(ForeignAttribute(attribute, ns));
         }
 
         if (ns != ElementNamespace.Html)
@@ -520,6 +586,11 @@ internal sealed partial class TreeBuilder
             return;
         }
 
+        if (Refresh(parent) && before?.Parent != parent)
+        {
+            before = null;
+        }
+
         parent.Insert(element, before);
         ElementInserted(element);
     }
@@ -549,6 +620,11 @@ internal sealed partial class TreeBuilder
             return;
         }
 
+        if (Refresh(parent) && before?.Parent != parent)
+        {
+            before = null;
+        }
+
         var previous = before is null ? parent.Last : before.Previous;
         if (previous is not MutableText text)
         {
@@ -570,6 +646,11 @@ internal sealed partial class TreeBuilder
     private void InsertComment(Token token, MutableParent? parent = null)
     {
         var (target, before) = parent is null ? AppropriatePlace() : (parent, null);
+        if (Refresh(target) && before?.Parent != target)
+        {
+            before = null;
+        }
+
         target.Insert(new MutableComment { Data = token.Data, Start = token.Start }, before);
     }
 
@@ -577,6 +658,11 @@ internal sealed partial class TreeBuilder
     private void InsertProcessingInstruction(Token token, MutableParent? parent = null)
     {
         var (target, before) = parent is null ? AppropriatePlace() : (parent, null);
+        if (Refresh(target) && before?.Parent != target)
+        {
+            before = null;
+        }
+
         target.Insert(new MutableProcessingInstruction { Target = token.Name!, Data = token.Data, Start = token.Start }, before);
     }
 

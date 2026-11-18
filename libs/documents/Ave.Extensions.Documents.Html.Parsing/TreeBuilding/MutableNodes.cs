@@ -150,8 +150,60 @@ internal sealed class MutableElement : MutableParent
     /// <summary>Its local name.</summary>
     public required string LocalName { get; init; }
 
-    /// <summary>Its attributes, in order.</summary>
-    public List<HtmlAttribute> Attributes { get; } = [];
+    private readonly List<HtmlAttribute> _attributes = [];
+    private Dictionary<string, int>? _index;
+
+    /// <summary>Its attributes, in order. Add with <see cref="AddAttribute"/>.</summary>
+    public IReadOnlyList<HtmlAttribute> Attributes => _attributes;
+
+    /// <summary>Adds an attribute.</summary>
+    /// <param name="attribute">The attribute.</param>
+    public void AddAttribute(HtmlAttribute attribute)
+    {
+        _attributes.Add(attribute);
+        if (attribute.Namespace == AttributeNamespace.None)
+        {
+            _index?.TryAdd(attribute.LocalName, _attributes.Count - 1);
+        }
+    }
+
+    /// <summary>The value of the attribute in no namespace with this local name, or null. Constant work once there are
+    /// more than eight attributes (they are then indexed by name), so a lookup per later token stays linear.</summary>
+    /// <param name="localName">The name.</param>
+    /// <returns>The value, or null.</returns>
+    public string? Attribute(string localName)
+    {
+        if (_attributes.Count > 8)
+        {
+            if (_index is null)
+            {
+                _index = new Dictionary<string, int>(_attributes.Count, System.StringComparer.Ordinal);
+                for (var i = 0; i < _attributes.Count; i++)
+                {
+                    if (_attributes[i].Namespace == AttributeNamespace.None)
+                    {
+                        _index.TryAdd(_attributes[i].LocalName, i);
+                    }
+                }
+            }
+
+            return _index.TryGetValue(localName, out var at) ? _attributes[at].Value : null;
+        }
+
+        foreach (var attribute in _attributes)
+        {
+            if (attribute.Namespace == AttributeNamespace.None && attribute.LocalName == localName)
+            {
+                return attribute.Value;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Whether it is on the list of active formatting elements now (kept by the list, so the check is constant
+    /// work however many markers the list holds).</summary>
+    public bool InFormatting { get; set; }
 
     /// <summary>The token it was created for (to create more elements for the same token, §13.2.4.3).</summary>
     public required Token Token { get; init; }

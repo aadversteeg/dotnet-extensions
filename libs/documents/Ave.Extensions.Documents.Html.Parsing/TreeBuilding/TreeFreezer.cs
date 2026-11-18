@@ -21,51 +21,95 @@ internal sealed class TreeFreezer
     public MutableElement? TooDeepAt { get; private set; }
 
     /// <summary>Freezes a document.</summary>
-    public HtmlDocument Document(MutableDocument document) => new(document.Mode, Children(document, 0));
+    public HtmlDocument Document(MutableDocument document) => new(document.Mode, Freeze(document, 0));
 
     /// <summary>Freezes a fragment.</summary>
-    public HtmlDocumentFragment Fragment(MutableFragment fragment, int depth = 0) =>
-        new(Children(fragment, depth), _position(fragment.Start));
+    public HtmlDocumentFragment Fragment(MutableFragment fragment) => new(Freeze(fragment, 0), _position(fragment.Start));
 
-    private ValueList<HtmlNode> Children(MutableParent parent, int depth)
+    /// <summary>One parent being frozen: its children so far, and the next child to freeze. An element passes twice:
+    /// its children, then (for a template) its contents.</summary>
+    private sealed class Frame(MutableParent parent, int depth)
     {
-        var children = new List<HtmlNode>();
-        for (var child = parent.First; child is not null && TooDeepAt is null; child = child.Next)
-        {
-            children.Add(Node(child, depth + 1));
-        }
+        public MutableParent Parent { get; } = parent;
 
-        return [.. children];
+        public int Depth { get; } = depth;
+
+        public MutableNode? Next { get; set; } = parent.First;
+
+        public List<HtmlNode> Children { get; } = [];
+
+        public ValueList<HtmlNode>? ElementChildren { get; set; }
+
+        public bool InContent { get; set; }
     }
 
-    private HtmlNode Node(MutableNode node, int depth)
+    /// <summary>The children of a parent, frozen with an explicit stack (no recursion: the depth a hand-built or
+    /// adoption-agency tree reaches cannot overflow the thread's stack).</summary>
+    private ValueList<HtmlNode> Freeze(MutableParent root, int depth)
     {
-        switch (node)
+        var stack = new Stack<Frame>();
+        stack.Push(new Frame(root, depth));
+        ValueList<HtmlNode> finished = [];
+        while (stack.Count > 0)
         {
-            case MutableElement element:
-                if (depth > HtmlInputLimits.MaxDepth)
+            var frame = stack.Peek();
+            if (frame.Next is { } child && TooDeepAt is null)
+            {
+                frame.Next = child.Next;
+                if (child is MutableElement element)
                 {
-                    TooDeepAt ??= element;
-                    return new HtmlElement(element.Namespace, element.LocalName, [], [], null, _position(element.Start));
+                    if (frame.Depth + 1 > HtmlInputLimits.MaxDepth)
+                    {
+                        TooDeepAt ??= element;
+                        frame.Children.Add(new HtmlElement(element.Namespace, element.LocalName, [], [], null, _position(element.Start)));
+                        continue;
+                    }
+
+                    stack.Push(new Frame(element, frame.Depth + 1));
+                    continue;
                 }
 
-                return new HtmlElement(
-                    element.Namespace,
-                    element.LocalName,
-                    [.. element.Attributes],
-                    Children(element, depth),
-                    element.Content is null ? null : Fragment(element.Content, depth),
-                    _position(element.Start));
-            case MutableText text:
-                return new HtmlText(text.Data.ToString(), _position(text.Start));
-            case MutableComment comment:
-                return new HtmlComment(comment.Data, _position(comment.Start));
-            case MutableProcessingInstruction instruction:
-                return new HtmlProcessingInstruction(instruction.Target, instruction.Data, _position(instruction.Start));
-            case MutableDocumentType doctype:
-                return new HtmlDocumentType(doctype.Name, doctype.PublicId, doctype.SystemId, _position(doctype.Start));
-            default:
-                throw new InvalidOperationException($"A {node.GetType().Name} cannot be a child.");
+                frame.Children.Add(Leaf(child));
+                continue;
+            }
+
+            // The frame's children are done.
+            if (frame.Parent is MutableElement { Content: { } content } template && !frame.InContent && TooDeepAt is null)
+            {
+                // A template: its contents next, at the template's depth (§4.12.3), then the template itself.
+                frame.ElementChildren = [.. frame.Children];
+                frame.Children.Clear();
+                frame.InContent = true;
+                frame.Next = content.First;
+                continue;
+            }
+
+            stack.Pop();
+            ValueList<HtmlNode> children = [.. frame.Children];
+            if (stack.Count == 0)
+            {
+                finished = children;
+                break;
+            }
+
+            var owner = (MutableElement)frame.Parent;
+            var frozen = frame.InContent
+                ? new HtmlElement(owner.Namespace, owner.LocalName, [.. owner.Attributes], frame.ElementChildren!.Value,
+                    new HtmlDocumentFragment(children, _position(owner.Content!.Start)), _position(owner.Start))
+                : new HtmlElement(owner.Namespace, owner.LocalName, [.. owner.Attributes], children,
+                    owner.Content is null ? null : new HtmlDocumentFragment([], _position(owner.Content.Start)), _position(owner.Start));
+            stack.Peek().Children.Add(frozen);
         }
+
+        return finished;
     }
+
+    private HtmlNode Leaf(MutableNode node) => node switch
+    {
+        MutableText text => new HtmlText(text.Data.ToString(), _position(text.Start)),
+        MutableComment comment => new HtmlComment(comment.Data, _position(comment.Start)),
+        MutableProcessingInstruction instruction => new HtmlProcessingInstruction(instruction.Target, instruction.Data, _position(instruction.Start)),
+        MutableDocumentType doctype => new HtmlDocumentType(doctype.Name, doctype.PublicId, doctype.SystemId, _position(doctype.Start)),
+        _ => throw new InvalidOperationException($"A {node.GetType().Name} cannot be a child."),
+    };
 }

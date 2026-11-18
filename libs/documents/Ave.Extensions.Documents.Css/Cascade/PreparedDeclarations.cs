@@ -70,7 +70,7 @@ internal static class DeclarationPreparer
     /// supports: not supported here, so refused.</summary>
     private static readonly string[] UnsupportedSubstitutions = ["env", "attr", "if"];
 
-    public static PreparedBlock Prepare(IEnumerable<Declaration> declarations, string sourceName, CascadeOrigin origin, ref int order, List<Error> diagnostics)
+    public static PreparedBlock Prepare(IEnumerable<Declaration> declarations, string sourceName, CascadeOrigin origin, ref int order, DiagnosticCollector diagnostics)
     {
         var entries = new List<Entry>();
         var whenApplied = new List<Error>();
@@ -82,7 +82,7 @@ internal static class DeclarationPreparer
         return entries.Count == 0 && whenApplied.Count == 0 ? PreparedBlock.Empty : new PreparedBlock([.. entries], [.. whenApplied]);
     }
 
-    private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Error> whenApplied, List<Error> diagnostics)
+    private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Error> whenApplied, DiagnosticCollector diagnostics)
     {
         var name = declaration.IsCustomProperty ? declaration.Name : Ascii.ToLower(declaration.Name);
         var prepared = new PreparedDeclaration(declaration, sourceName, name, declaration.Important && origin != CascadeOrigin.PresentationalHint, order);

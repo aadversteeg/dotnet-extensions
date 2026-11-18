@@ -17,7 +17,11 @@ public readonly record struct Specificity(int Ids, int Classes, int Types) : ICo
 
     /// <summary>The sum of two specificities.</summary>
     public static Specificity operator +(Specificity left, Specificity right) =>
-        new(left.Ids + right.Ids, left.Classes + right.Classes, left.Types + right.Types);
+        new(Saturated(left.Ids + (long)right.Ids), Saturated(left.Classes + (long)right.Classes), Saturated(left.Types + (long)right.Types));
+
+    /// <summary>A sum that stops at the largest int instead of wrapping (a parent reference repeated on every level of
+    /// nesting doubles the count per level).</summary>
+    private static int Saturated(long value) => (int)Math.Min(value, int.MaxValue);
 
     /// <summary>Whether one specificity is less than another.</summary>
     public static bool operator <(Specificity left, Specificity right) => left.CompareTo(right) < 0;
@@ -57,8 +61,9 @@ public readonly record struct Specificity(int Ids, int Classes, int Types) : ICo
         PseudoClassSelector { Name: "is" or "not" or "has", Selectors: { } list } => Max(list),
         PseudoClassSelector { Name: "nth-child" or "nth-last-child", Selectors: { } of } => new Specificity(0, 1, 0) + Max(of),
         PseudoClassSelector => new(0, 1, 0),
-        // The nesting selector is replaced by :is(parent) before anything uses specificity; at the top level it is
-        // :scope, a pseudo-class.
+        // & in a nested rule: the parent's most specific selector, computed once when the parent was read.
+        ParentSelector parent => parent.Specificity,
+        // At the top level & is :scope, a pseudo-class.
         NestingSelector => new(0, 1, 0),
         _ => Zero,
     };

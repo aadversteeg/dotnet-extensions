@@ -32,6 +32,15 @@ public interface IStyleElement
     /// to find the rules worth matching.</summary>
     Ave.Extensions.Documents.Core.ValueList<string> Classes { get; }
 
+    /// <summary>Whether the value of the attribute in no namespace with this local name has this word among its
+    /// white-space-separated words (Selectors 4 §6.1, <c>[att~=val]</c>). The words are split once per element and
+    /// attribute, so a selector tested against many elements does not split every value again.</summary>
+    /// <param name="localName">The attribute's local name.</param>
+    /// <param name="word">The word (no white space in it).</param>
+    /// <param name="ignoreCase">Whether to compare ASCII case-insensitively.</param>
+    /// <returns>Whether it is there.</returns>
+    bool AttributeHasWord(string localName, string word, bool ignoreCase);
+
     /// <summary>The value of the attribute in no namespace with this local name, or null. The caller lowercases the
     /// name for an HTML element.</summary>
     /// <param name="localName">The attribute's local name.</param>

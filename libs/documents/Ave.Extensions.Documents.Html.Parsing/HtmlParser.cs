@@ -27,7 +27,7 @@ public static class HtmlParser
         options ??= HtmlParseOptions.Default;
         return text.Length > HtmlInputLimits.MaxCharacters
             ? TooLarge(options)
-            : ParseText(SourceText.Of(text), options, [], checkMeta: false);
+            : ParseText(SourceText.Of(text), options, new Diagnostics(), checkMeta: false);
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public static class HtmlParser
             return EncodingError(options, found.Label, source.PositionOf(index.Count > 0 ? index[0] : 0));
         }
 
-        var replaced = new List<Diagnostic>();
+        var replaced = new Diagnostics();
         foreach (var index in SourceText.NormalisedIndices(decoded.Text, decoded.Replacements))
         {
             replaced.Add(new Diagnostic("invalid-byte-sequence", index, null));
@@ -79,7 +79,7 @@ public static class HtmlParser
         }
 
         var source = SourceText.Of(text);
-        var diagnostics = new List<Diagnostic>();
+        var diagnostics = new Diagnostics();
         var tokenizer = new Tokenizer(source, (name, index) => diagnostics.Add(new Diagnostic(name, index, null)));
         var builder = new TreeBuilder(tokenizer, (name, index, detail) => diagnostics.Add(new Diagnostic(name, index, detail)))
         {
@@ -102,7 +102,28 @@ public static class HtmlParser
     /// <summary>A parse error as tokenizer and tree construction report it.</summary>
     private sealed record Diagnostic(string Name, int Index, string? Detail);
 
-    private static Result<HtmlParseResult, Error> ParseText(SourceText source, HtmlParseOptions options, List<Diagnostic> diagnostics, bool checkMeta)
+    /// <summary>The diagnostics of one parse, at most <see cref="HtmlInputLimits.MaxDiagnostics"/>; the others are
+    /// counted only.</summary>
+    private sealed class Diagnostics
+    {
+        public List<Diagnostic> Kept { get; } = [];
+
+        public int Suppressed { get; private set; }
+
+        public void Add(Diagnostic diagnostic)
+        {
+            if (Kept.Count < HtmlInputLimits.MaxDiagnostics)
+            {
+                Kept.Add(diagnostic);
+            }
+            else
+            {
+                Suppressed++;
+            }
+        }
+    }
+
+    private static Result<HtmlParseResult, Error> ParseText(SourceText source, HtmlParseOptions options, Diagnostics diagnostics, bool checkMeta)
     {
         var tokenizer = new Tokenizer(source, (name, index) => diagnostics.Add(new Diagnostic(name, index, null)));
         Error? encoding = null;
@@ -151,10 +172,10 @@ public static class HtmlParser
             : null;
     }
 
-    private static ValueList<Error> Errors(List<Diagnostic> diagnostics, HtmlParseOptions options, SourceText source)
+    private static ValueList<Error> Errors(Diagnostics diagnostics, HtmlParseOptions options, SourceText source)
     {
-        var errors = new List<Error>(diagnostics.Count);
-        foreach (var diagnostic in diagnostics)
+        var errors = new List<Error>(diagnostics.Kept.Count + 1);
+        foreach (var diagnostic in diagnostics.Kept)
         {
             var message = diagnostic.Detail is null
                 ? $"HTML parse error '{diagnostic.Name}'."
@@ -162,6 +183,13 @@ public static class HtmlParser
             errors.Add(new Error(HtmlErrorCodes.Parse.Syntax, message)
                 .With(ErrorMetadataKeys.Value, diagnostic.Name)
                 .WithSource(options.SourceName, source.PositionOf(diagnostic.Index)));
+        }
+
+        if (diagnostics.Suppressed > 0)
+        {
+            errors.Add(new Error(DocumentErrorCodes.TooManyDiagnostics, $"{diagnostics.Suppressed} more parse errors are left out: the parser keeps {HtmlInputLimits.MaxDiagnostics}.")
+                .With(ErrorMetadataKeys.Value, diagnostics.Suppressed)
+                .With(ErrorMetadataKeys.SourceFile, options.SourceName));
         }
 
         return [.. errors];

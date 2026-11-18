@@ -127,10 +127,12 @@ public static class CssErrorCodes
         public static readonly ErrorCode ColorFunction = _ / "ColorFunction";
     }
 
-    /// <summary>A style sheet longer than <see cref="CssInputLimits.MaxCharacters"/>, more imported style sheets than
-    /// <see cref="CssInputLimits.MaxImportedSheets"/>, or a <c>var()</c> substitution longer than
-    /// <see cref="CssInputLimits.MaxSubstitutionValues"/>. A refusal: a browser would have read it. Metadata: Value (the
-    /// limit), SourceFile.</summary>
+    /// <summary>Input past one of the work limits of <see cref="CssInputLimits"/>: a style sheet longer than
+    /// <see cref="CssInputLimits.MaxCharacters"/>, more imported style sheets than
+    /// <see cref="CssInputLimits.MaxImportedSheets"/>, more selector matching than
+    /// <see cref="CssInputLimits.MaxMatchingWork"/>, more substitution than
+    /// <see cref="CssInputLimits.MaxSubstitutionWork"/>, or a substitution too close to Chromium's limit to tell. A
+    /// refusal: a browser would have read it. Metadata: Value (the limit), SourceFile.</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
 
     /// <summary>Blocks, functions or nested rules deeper than <see cref="CssInputLimits.MaxDepth"/>. A refusal, as

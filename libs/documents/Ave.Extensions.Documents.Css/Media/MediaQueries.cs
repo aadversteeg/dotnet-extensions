@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
-using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Css.Media;
 
@@ -36,7 +35,7 @@ public static class MediaQueries
     /// <param name="diagnostics">Receives the diagnostics: a query that became <c>not all</c>, a feature that is not
     /// supported.</param>
     /// <returns>The list.</returns>
-    public static MediaQueryList Parse(IReadOnlyList<ComponentValue> values, string sourceName, List<Error> diagnostics)
+    internal static MediaQueryList Parse(IReadOnlyList<ComponentValue> values, string sourceName, DiagnosticCollector diagnostics)
     {
         var queries = new List<MediaQuery>();
         var parts = new List<List<ComponentValue>> { new() };
@@ -206,7 +205,7 @@ public static class MediaQueries
 
     /// <summary>A recursive-descent parser over one query's tokens, white space removed (no rule of the grammar depends
     /// on it, except that '&lt;=' and '&gt;=' have no space inside, which the parser checks by position).</summary>
-    private sealed class Parser(List<ComponentValue> tokens, string sourceName, List<Error> diagnostics)
+    private sealed class Parser(List<ComponentValue> tokens, string sourceName, DiagnosticCollector diagnostics)
     {
         private int _index;
 

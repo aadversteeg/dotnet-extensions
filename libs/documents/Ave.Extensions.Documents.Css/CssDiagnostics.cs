@@ -28,7 +28,8 @@ public static class CssDiagnostics
     /// <returns>Its class.</returns>
     public static DiagnosticClass ClassOf(ErrorCode code)
     {
-        if (InBranch(code, CssErrorCodes.Unsupported._) || code == CssErrorCodes.TooLarge || code == CssErrorCodes.TooDeep)
+        if (InBranch(code, CssErrorCodes.Unsupported._) || code == CssErrorCodes.TooLarge || code == CssErrorCodes.TooDeep
+            || code == DocumentErrorCodes.TooManyDiagnostics)
         {
             return DiagnosticClass.Refusal;
         }

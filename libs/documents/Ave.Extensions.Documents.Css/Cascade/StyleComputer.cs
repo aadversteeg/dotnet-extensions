@@ -34,19 +34,26 @@ public sealed record ElementDeclarations(ValueList<Declaration> StyleAttribute, 
 /// <para>What the engine refuses is reported when it would apply: a refused declaration that wins (it is then
 /// skipped, so the next declaration in the cascade is used, as by a browser that does not know the value), a rule
 /// with an unsupported or ignored property that matches an element.</para>
-/// <para>Bounded work: each element is matched against the rules of its buckets
-/// (<see cref="CascadeIndex"/>), and every value substitution has its limit
-/// (<see cref="CssInputLimits.MaxSubstitutionValues"/>).</para>
+/// <para>Bounded work: each element is matched against the rules of its buckets (<see cref="CascadeIndex"/>) by a
+/// matcher with a work limit (<see cref="SelectorMatcher"/>); custom properties are resolved in dependency order without
+/// recursion; every substitution stops at <see cref="CssInputLimits.MaxSubstitutionLength"/> and all of them together
+/// at <see cref="CssInputLimits.MaxSubstitutionWork"/>.</para>
 /// </remarks>
 public sealed class StyleComputer
 {
     private readonly CascadeIndex _index;
     private readonly ValueContext _values;
     private readonly SelectorMatcher _matcher = new();
-    private readonly List<Error> _diagnostics = [];
+    private readonly DiagnosticCollector _diagnostics = new();
     private readonly HashSet<object> _reported = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<(PreparedDeclaration, ErrorCode)> _reportedAt = [];
     private readonly Dictionary<IStyleElement, ComputedStyle> _styles = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<(PreparedDeclaration Declaration, object Custom), (VarSubstitution.Outcome Outcome, ValueList<ComponentValue> Values)> _substituted =
+        new(new SubstitutionComparer());
+
+    private long _substitutionWork;
+    private bool _substitutionWorkReported;
+    private bool _matchingReported;
     private double _rootFontSize = PropertyRegistry.InitialFontSizePoints;
     private int _order;
 
@@ -60,7 +67,7 @@ public sealed class StyleComputer
     }
 
     /// <summary>The diagnostics so far, in the order they were found.</summary>
-    public ValueList<Error> Diagnostics => [.. _diagnostics];
+    public ValueList<Error> Diagnostics => _diagnostics.ToValueList();
 
     /// <summary>The order the longhands are computed in: the font first, as <c>em</c>, <c>ex</c> and <c>ch</c> need it
     /// (CSS Values 4 §6.1.1); then the registry order (where a border's style comes before its width).</summary>
@@ -161,6 +168,13 @@ public sealed class StyleComputer
         {
             if (!_matcher.Matches(rule.Selector, element))
             {
+                if (_matcher.Exhausted && !_matchingReported)
+                {
+                    _matchingReported = true;
+                    _diagnostics.Add(new Error(CssErrorCodes.TooLarge, $"Matching the selectors against the elements needs more than {CssInputLimits.MaxMatchingWork} steps; the styles are incomplete.")
+                        .With(ErrorMetadataKeys.Value, CssInputLimits.MaxMatchingWork));
+                }
+
                 continue;
             }
 
@@ -270,14 +284,21 @@ public sealed class StyleComputer
 
     // ---- custom properties (CSS Variables 1 §2, §3) ----
 
-    /// <summary>The computed custom properties: inherited from the parent, overridden by the element's own, with
-    /// var() substituted in dependency order; the properties of a cycle (§2.3) and those whose substitution fails
-    /// have the guaranteed-invalid value (they are absent).</summary>
-    private Dictionary<string, CssTokens> CustomProperties(Dictionary<string, List<Candidate>> declared, ComputedStyle? parent)
+    /// <summary>The computed custom properties: inherited from the parent, overridden by the element's own, with var()
+    /// substituted in dependency order (CSS Variables 1 §2.3). The order and the cycles come from an iterative
+    /// strongly-connected-components walk (Tarjan) over the references of the element's declared values, so a chain of
+    /// any length costs its length and no stack; the members of a cycle, and the values whose substitution fails, have
+    /// the guaranteed-invalid value (they are absent). An element that declares none shares its parent's table, so the
+    /// substitutions of its declarations can be remembered (<see cref="_substituted"/>).</summary>
+    private IReadOnlyDictionary<string, CssTokens> CustomProperties(Dictionary<string, List<Candidate>> declared, ComputedStyle? parent)
     {
-        var result = parent is null
-            ? new Dictionary<string, CssTokens>(StringComparer.Ordinal)
-            : new Dictionary<string, CssTokens>(parent.CustomProperties, StringComparer.Ordinal);
+        IReadOnlyDictionary<string, CssTokens> inherited = parent?.CustomProperties ?? NoCustomProperties;
+        if (declared.Count == 0)
+        {
+            return inherited;
+        }
+
+        var result = new Dictionary<string, CssTokens>(inherited, StringComparer.Ordinal);
         var pending = new Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)>(StringComparer.Ordinal);
         foreach (var (name, candidates) in declared)
         {
@@ -296,80 +317,169 @@ public sealed class StyleComputer
                     break;
                 case CustomEntry value:
                     pending[name] = (value, winner.Value.Entry.Declaration);
+                    result.Remove(name);
                     break;
             }
         }
 
-        var state = new Dictionary<string, int>(StringComparer.Ordinal);
-        var stack = new List<string>();
-        var cyclic = new HashSet<string>(StringComparer.Ordinal);
-
-        ValueList<ComponentValue>? Lookup(string name)
+        foreach (var component in ResolutionOrder(pending))
         {
-            if (pending.ContainsKey(name))
+            if (component.Cyclic)
             {
-                switch (state.GetValueOrDefault(name))
+                foreach (var name in component.Names)
                 {
-                    case 0:
-                        Resolve(name);
-                        break;
-                    case 1:
-                        for (var i = stack.IndexOf(name); i < stack.Count; i++)
-                        {
-                            cyclic.Add(stack[i]);
-                        }
-
-                        return null;
+                    Report(pending[name].Declaration, CssErrorCodes.Invalid.ComputedValue, $"The custom property '{name}' refers to itself through var(); it has no value.");
                 }
+
+                continue;
             }
 
-            return result.TryGetValue(name, out var value) ? value.Tokens : null;
-        }
-
-        void Resolve(string name)
-        {
-            state[name] = 1;
-            stack.Add(name);
-            var (value, declaration) = pending[name];
-            var outcome = VarSubstitution.Substitute(value.Values, Lookup, out var substituted);
-            stack.RemoveAt(stack.Count - 1);
-            state[name] = 2;
-            if (cyclic.Contains(name))
+            var name0 = component.Names[0];
+            var (entry, declaration) = pending[name0];
+            var outcome = Substitute(entry.Values, result, declaration, out var substituted);
+            if (outcome == VarSubstitution.Outcome.Done)
             {
-                result.Remove(name);
-                Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"The custom property '{name}' refers to itself through var(); it has no value.");
-            }
-            else if (outcome == VarSubstitution.Outcome.Done)
-            {
-                result[name] = new CssTokens(substituted, CssSerializer.Serialize(substituted));
+                result[name0] = new CssTokens(substituted, CssSerializer.Serialize(substituted));
             }
             else
             {
-                result.Remove(name);
                 Failed(declaration, outcome);
-            }
-        }
-
-        foreach (var name in pending.Keys)
-        {
-            if (state.GetValueOrDefault(name) == 0)
-            {
-                Resolve(name);
             }
         }
 
         return result;
     }
 
+    private static readonly IReadOnlyDictionary<string, CssTokens> NoCustomProperties = new Dictionary<string, CssTokens>(StringComparer.Ordinal);
+
+    /// <summary>A strongly connected component of the dependency graph: one property, or the properties of a cycle.</summary>
+    private sealed record Component(List<string> Names, bool Cyclic);
+
+    /// <summary>The pending custom properties in an order where every property comes after those it refers to (Tarjan's
+    /// algorithm with an explicit stack: it emits the components dependencies first), with the cycles marked.</summary>
+    private static List<Component> ResolutionOrder(Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending)
+    {
+        var edges = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        foreach (var (name, (value, _)) in pending)
+        {
+            edges[name] = [.. VarSubstitution.References(value.Values).Where(pending.ContainsKey)];
+        }
+
+        var order = new List<Component>();
+        var index = new Dictionary<string, int>(StringComparer.Ordinal);
+        var low = new Dictionary<string, int>(StringComparer.Ordinal);
+        var onStack = new HashSet<string>(StringComparer.Ordinal);
+        var path = new Stack<string>();
+        var work = new Stack<(string Name, int Edge)>();
+        var next = 0;
+        foreach (var start in pending.Keys)
+        {
+            if (index.ContainsKey(start))
+            {
+                continue;
+            }
+
+            work.Push((start, 0));
+            while (work.Count > 0)
+            {
+                var (name, edge) = work.Pop();
+                if (edge == 0)
+                {
+                    index[name] = low[name] = next++;
+                    path.Push(name);
+                    onStack.Add(name);
+                }
+
+                var targets = edges[name];
+                if (edge < targets.Count)
+                {
+                    work.Push((name, edge + 1));
+                    var target = targets[edge];
+                    if (!index.ContainsKey(target))
+                    {
+                        work.Push((target, 0));
+                    }
+                    else if (onStack.Contains(target))
+                    {
+                        low[name] = Math.Min(low[name], index[target]);
+                    }
+
+                    continue;
+                }
+
+                // All edges done: hand the low link to the caller, and emit a component at its root.
+                if (work.Count > 0 && work.Peek() is var (caller, _) && edges[caller].Contains(name))
+                {
+                    low[caller] = Math.Min(low[caller], low[name]);
+                }
+
+                if (low[name] == index[name])
+                {
+                    var names = new List<string>();
+                    string member;
+                    do
+                    {
+                        member = path.Pop();
+                        onStack.Remove(member);
+                        names.Add(member);
+                    }
+                    while (member != name);
+
+                    order.Add(new Component(names, names.Count > 1 || targets.Contains(name)));
+                }
+            }
+        }
+
+        return order;
+    }
+
+    /// <summary>A substitution, remembered per declaration and custom-property table (one table is shared by all
+    /// elements that declare no custom property of their own), and charged to the cascade's substitution work.</summary>
+    private VarSubstitution.Outcome Substitute(IReadOnlyList<ComponentValue> values, IReadOnlyDictionary<string, CssTokens> custom, PreparedDeclaration declaration, out ValueList<ComponentValue> result)
+    {
+        var key = (declaration, (object)custom);
+        if (_substituted.TryGetValue(key, out var known))
+        {
+            result = known.Values;
+            return known.Outcome;
+        }
+
+        if (_substitutionWork > CssInputLimits.MaxSubstitutionWork)
+        {
+            result = [];
+            return VarSubstitution.Outcome.Uncertain;
+        }
+
+        var outcome = VarSubstitution.Substitute(values, name => custom.TryGetValue(name, out var value) ? value : null, out result, out var length);
+        _substitutionWork += length;
+        if (_substitutionWork > CssInputLimits.MaxSubstitutionWork && !_substitutionWorkReported)
+        {
+            _substitutionWorkReported = true;
+            _diagnostics.Add(new Error(CssErrorCodes.TooLarge, $"The var() substitutions of the document make more than {CssInputLimits.MaxSubstitutionWork} characters of text together; the rest are not made.")
+                .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSubstitutionWork));
+        }
+
+        if (_substituted.Count < CssInputLimits.MaxMatchingMemo)
+        {
+            _substituted[key] = (outcome, result);
+        }
+
+        return outcome;
+    }
+
     private void Failed(PreparedDeclaration declaration, VarSubstitution.Outcome outcome)
     {
-        if (outcome == VarSubstitution.Outcome.TooLarge)
+        switch (outcome)
         {
-            Report(declaration, CssErrorCodes.TooLarge, $"The var() substitution in '{declaration.Name}' is longer than {CssInputLimits.MaxSubstitutionValues} values; the property is unset.");
-        }
-        else
-        {
-            Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"A var() in '{declaration.Name}' names a custom property with no value and has no fallback; the property is unset (CSS Variables 1 §3.1).");
+            case VarSubstitution.Outcome.TooLong:
+                Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"The var() substitution in '{declaration.Name}' is longer than {CssInputLimits.MaxSubstitutionLength} characters, Chromium's limit; the property is unset, as in Chromium (CSS Variables 1 §3.1).");
+                break;
+            case VarSubstitution.Outcome.Uncertain:
+                Report(declaration, CssErrorCodes.TooLarge, $"The var() substitution in '{declaration.Name}' is within a few characters of {CssInputLimits.MaxSubstitutionLength}, Chromium's limit, or past the document's substitution work; whether Chromium keeps it cannot be told, so it is refused.");
+                break;
+            default:
+                Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"A var() in '{declaration.Name}' names a custom property with no value and has no fallback; the property is unset (CSS Variables 1 §3.1).");
+                break;
         }
     }
 
@@ -377,7 +487,7 @@ public sealed class StyleComputer
 
     /// <summary>A longhand's computed value: the winner's value computed, the CSS-wide keywords applied, or the
     /// inherited or initial value when nothing is declared.</summary>
-    private CssValue Value(PropertyDefinition property, List<Candidate>? candidates, ComputeContext context, Dictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
+    private CssValue Value(PropertyDefinition property, List<Candidate>? candidates, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
     {
         CssValue Unset() => property == PropertyRegistry.FontSize
             ? PropertyRegistry.InheritFontSize(context)
@@ -420,9 +530,9 @@ public sealed class StyleComputer
 
     /// <summary>A pending value after var() substitution: parsed as the longhand, or as its shorthand (once per
     /// declaration and element); invalid at computed-value time when it does not parse (CSS Variables 1 §3.1).</summary>
-    private CssValue? Substituted(PropertyDefinition property, PendingEntry pending, PreparedDeclaration declaration, ComputeContext context, Dictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
+    private CssValue? Substituted(PropertyDefinition property, PendingEntry pending, PreparedDeclaration declaration, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
     {
-        var outcome = VarSubstitution.Substitute(declaration.Source.Value, name => custom.TryGetValue(name, out var value) ? value.Tokens : null, out var values);
+        var outcome = Substitute(declaration.Source.Value, custom, declaration, out var values);
         if (outcome != VarSubstitution.Outcome.Done)
         {
             Failed(declaration, outcome);
@@ -494,5 +604,15 @@ public sealed class StyleComputer
         {
             _diagnostics.Add(DeclarationPreparer.Diagnostic(code, message, declaration));
         }
+    }
+
+    /// <summary>Compares substitution keys by the identity of the declaration and the table.</summary>
+    private sealed class SubstitutionComparer : IEqualityComparer<(PreparedDeclaration Declaration, object Custom)>
+    {
+        public bool Equals((PreparedDeclaration Declaration, object Custom) x, (PreparedDeclaration Declaration, object Custom) y) =>
+            ReferenceEquals(x.Declaration, y.Declaration) && ReferenceEquals(x.Custom, y.Custom);
+
+        public int GetHashCode((PreparedDeclaration Declaration, object Custom) obj) =>
+            HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Declaration), System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Custom));
     }
 }

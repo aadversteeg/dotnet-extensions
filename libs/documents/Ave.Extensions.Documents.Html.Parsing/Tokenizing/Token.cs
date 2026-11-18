@@ -44,8 +44,17 @@ internal sealed class Token
     /// <summary>For tags and DOCTYPE: the name (null for a DOCTYPE without one). For a processing instruction: its target.</summary>
     public string? Name { get; set; }
 
-    /// <summary>For tags: the attributes, duplicates removed.</summary>
+    /// <summary>For tags: the attributes, duplicates removed. Add with <see cref="AddAttribute"/>, so the index by name
+    /// stays right.</summary>
     public List<TokenAttribute> Attributes { get; } = [];
+
+    /// <summary>The attributes by name, once there are more than <see cref="IndexFrom"/>: a lookup is then constant work,
+    /// so a tag with n attributes costs n, not n² (the duplicate check of the tokenizer, the "Noah's Ark" comparison, the
+    /// attribute tests of tree construction).</summary>
+    private Dictionary<string, int>? _index;
+
+    /// <summary>The number of attributes from which they are indexed by name.</summary>
+    private const int IndexFrom = 8;
 
     /// <summary>For tags: the self-closing flag.</summary>
     public bool SelfClosing { get; set; }
@@ -81,6 +90,11 @@ internal sealed class Token
     /// <returns>The value, or null.</returns>
     public string? Attribute(string name)
     {
+        if (Attributes.Count > IndexFrom)
+        {
+            return Index().TryGetValue(name, out var at) ? Attributes[at].Value : null;
+        }
+
         foreach (var attribute in Attributes)
         {
             if (attribute.Name == name)
@@ -90,6 +104,37 @@ internal sealed class Token
         }
 
         return null;
+    }
+
+    /// <summary>Whether the token has an attribute with this name.</summary>
+    /// <param name="name">The attribute name.</param>
+    /// <returns>Whether it has one.</returns>
+    public bool HasAttribute(string name) => Attribute(name) is not null;
+
+    /// <summary>Adds an attribute (the tokenizer has checked it is not a duplicate).</summary>
+    /// <param name="attribute">The attribute.</param>
+    public void AddAttribute(TokenAttribute attribute)
+    {
+        Attributes.Add(attribute);
+        _index?.TryAdd(attribute.Name, Attributes.Count - 1);
+    }
+
+    /// <summary>Forgets the index after attribute names were changed in place (the SVG and MathML adjustments of
+    /// foreign content, §13.2.6.1).</summary>
+    public void AttributesRenamed() => _index = null;
+
+    private Dictionary<string, int> Index()
+    {
+        if (_index is null)
+        {
+            _index = new Dictionary<string, int>(Attributes.Count, System.StringComparer.Ordinal);
+            for (var i = 0; i < Attributes.Count; i++)
+            {
+                _index.TryAdd(Attributes[i].Name, i);
+            }
+        }
+
+        return _index;
     }
 }
 

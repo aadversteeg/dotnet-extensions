@@ -4,3 +4,10 @@
 
 # Shell scripts keep LF in every checkout: bash reads a CR as part of the command.
 *.sh text eol=lf
+
+# Text that tests compare byte for byte, embed as resources or measure against a browser: the same bytes (LF) in every
+# checkout, so a Windows checkout does not turn a generated document or a measured file into a different one.
+libs/documents/docs/html-css-profile.md text eol=lf
+libs/documents/tools/reference/chromium/computed-style/** text eol=lf
+libs/documents/Ave.Extensions.Documents.Html/UserAgent/*.css text eol=lf
+libs/documents/Ave.Extensions.Documents.Html.Parsing/Tokenizing/*.txt text eol=lf

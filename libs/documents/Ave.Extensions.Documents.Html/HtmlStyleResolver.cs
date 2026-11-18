@@ -54,6 +54,7 @@ public static class HtmlStyleResolver
     private sealed class Run(HtmlParseResult parsed, HtmlStyleOptions options)
     {
         private readonly List<Error> _diagnostics = [.. parsed.Diagnostics];
+        private int _suppressed;
         private readonly Dictionary<StyleSheet, string?> _baseOf = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, StyleSheet?> _fetched = new(StringComparer.Ordinal);
         private readonly string _sourceName = parsed.SourceName;
@@ -65,7 +66,7 @@ public static class HtmlStyleResolver
             var document = parsed.Document;
             if (document.Mode == DocumentMode.Quirks)
             {
-                _diagnostics.Add(new Error(HtmlStyleErrorCodes.Unsupported.QuirksMode, "The document is in quirks mode (no doctype, or a legacy one); add <!DOCTYPE html>. Quirks-mode rendering is not supported.")
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.QuirksMode, "The document is in quirks mode (no doctype, or a legacy one); add <!DOCTYPE html>. Quirks-mode rendering is not supported.")
                     .With(ErrorMetadataKeys.SourceFile, _sourceName));
             }
 
@@ -77,14 +78,44 @@ public static class HtmlStyleResolver
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
             sheets.AddRange(AuthorSheets(elements).Select(sheet => new CascadeSheet(sheet, CascadeOrigin.Author)));
             var index = CascadeIndex.Build(sheets, options.Media, Import);
-            _diagnostics.AddRange(index.Diagnostics);
+            Keep(index.Diagnostics);
 
             var computer = new StyleComputer(index.Value, options.Values);
             var language = DefaultLanguage(elements);
             var root = Style(tree, computer, language);
-            _diagnostics.AddRange(computer.Diagnostics);
-            return new StyledHtmlDocument(document, root, index.Value.FontFaces, index.Value.PageRules, [.. _diagnostics], _sourceName);
+            Keep(computer.Diagnostics);
+            return new StyledHtmlDocument(document, root, index.Value.FontFaces, index.Value.PageRules, Capped(_diagnostics), _sourceName);
         }
+
+        /// <summary>Keeps a diagnostic, at most <see cref="HtmlInputLimits.MaxDiagnostics"/> in all (the parts are capped
+        /// each, their sum is capped here); the rest are counted.</summary>
+        private void Keep(Error error)
+        {
+            if (_diagnostics.Count < HtmlInputLimits.MaxDiagnostics)
+            {
+                _diagnostics.Add(error);
+            }
+            else
+            {
+                _suppressed++;
+            }
+        }
+
+        private void Keep(IEnumerable<Error> errors)
+        {
+            foreach (var error in errors)
+            {
+                Keep(error);
+            }
+        }
+
+        /// <summary>The diagnostics kept, with one <see cref="DocumentErrorCodes.TooManyDiagnostics"/> for the rest.</summary>
+        private ValueList<Error> Capped(List<Error> diagnostics) =>
+            _suppressed == 0
+                ? [.. diagnostics]
+                : [.. diagnostics, new Error(DocumentErrorCodes.TooManyDiagnostics, $"{_suppressed} more diagnostics are left out: {HtmlInputLimits.MaxDiagnostics} are kept.")
+                    .With(ErrorMetadataKeys.Value, _suppressed)
+                    .With(ErrorMetadataKeys.SourceFile, _sourceName)];
 
         private static IEnumerable<StyleElement> Descendants(StyleElement root)
         {
@@ -113,7 +144,7 @@ public static class HtmlStyleResolver
             hidden |= style["display"] is Css.Values.CssKeyword { Name: "none" };
             if (!hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName))
             {
-                _diagnostics.Add(new Error(HtmlStyleErrorCodes.Unsupported.Element, $"The form control {html.LocalName} is not supported.")
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element, $"The form control {html.LocalName} is not supported.")
                     .With(ErrorMetadataKeys.Value, html.LocalName)
                     .WithSource(_sourceName, html.Position));
             }
@@ -146,12 +177,12 @@ public static class HtmlStyleResolver
                 && element.Element.Namespace is ElementNamespace.Html or ElementNamespace.Svg)
             {
                 var declarations = CssParser.ParseDeclarations(style.Value, new CssSourceOptions(_sourceName) { Origin = style.Position });
-                _diagnostics.AddRange(declarations.Diagnostics);
+                Keep(declarations.Diagnostics);
                 inline = declarations.Value;
             }
 
             var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
-            _diagnostics.AddRange(refused);
+            Keep(refused);
             return inline.IsEmpty && hints.IsEmpty ? ElementDeclarations.None : new ElementDeclarations(inline, hints, _sourceName);
         }
 
@@ -274,7 +305,7 @@ public static class HtmlStyleResolver
                     }
 
                     var sheet = CssParser.ParseStyleSheet(text.ToString(), new CssSourceOptions(_sourceName) { Origin = origin });
-                    _diagnostics.AddRange(sheet.Diagnostics);
+                    Keep(sheet.Diagnostics);
                     _baseOf[sheet.Value] = _documentBase;
                     sheets.Add(sheet.Value);
                 }
@@ -296,7 +327,7 @@ public static class HtmlStyleResolver
         {
             var attribute = element.Attributes.First(item => item.LocalName == "media");
             var list = CssParser.ParseMediaQueryList(media, new CssSourceOptions(_sourceName) { Origin = attribute.Position });
-            _diagnostics.AddRange(list.Diagnostics);
+            Keep(list.Diagnostics);
             return MediaQueries.Matches(list.Value, options.Media);
         }
 
@@ -320,14 +351,14 @@ public static class HtmlStyleResolver
             if (absolute is not null && options.Resources?.Invoke(absolute) is { } resource)
             {
                 var read = CssParser.ParseStyleSheet(resource.Bytes, new CssSourceOptions(absolute) { ProtocolEncoding = resource.Charset, EnvironmentEncoding = "utf-8" });
-                _diagnostics.AddRange(read.Diagnostics);
+                Keep(read.Diagnostics);
                 sheet = read.Value;
                 _baseOf[sheet] = absolute;
             }
             else
             {
                 var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given" : "was not found by the resource resolver";
-                _diagnostics.Add(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{url}' {why}.")
+                Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{url}' {why}.")
                     .With(ErrorMetadataKeys.Value, absolute ?? url)
                     .WithSource(referrer, position));
             }

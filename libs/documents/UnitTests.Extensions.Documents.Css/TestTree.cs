@@ -45,6 +45,10 @@ public sealed class TestElement : IStyleElement
 
     public bool HasClass(string name) => Classes.Contains(name);
 
+    public bool AttributeHasWord(string localName, string word, bool ignoreCase) =>
+        GetAttribute(localName) is { } value && value.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Any(item => ignoreCase ? string.Equals(item, word, StringComparison.OrdinalIgnoreCase) : item == word);
+
     public string? GetAttribute(string localName) => _attributes.TryGetValue(localName, out var value) ? value : null;
 
     public bool IsCaseInsensitiveAttributeValue(string localName) => localName is "type" or "lang" or "dir";

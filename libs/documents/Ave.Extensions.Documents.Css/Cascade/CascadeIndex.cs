@@ -7,7 +7,6 @@ using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Rules;
 using Ave.Extensions.Documents.Css.Selectors;
 using Ave.Extensions.Documents.Css.Syntax;
-using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Css.Cascade;
 
@@ -87,7 +86,7 @@ public sealed class CascadeIndex
             root.AssignRanks();
         }
 
-        return new CssResult<CascadeIndex>(new CascadeIndex(builder), [.. builder.Diagnostics]);
+        return new CssResult<CascadeIndex>(new CascadeIndex(builder), builder.Diagnostics.ToValueList());
     }
 
     /// <summary>The rules worth matching against an element: those whose rightmost compound names its ID, one of its
@@ -147,7 +146,7 @@ public sealed class CascadeIndex
 
         public Dictionary<CascadeOrigin, LayerNode> Roots { get; } = [];
 
-        public List<Error> Diagnostics { get; } = [];
+        public DiagnosticCollector Diagnostics { get; } = new();
 
         public void Sheet(CascadeSheet sheet)
         {
@@ -210,6 +209,14 @@ public sealed class CascadeIndex
         private void Style(StyleRule rule, Context context)
         {
             var selectors = context.Parent is { } parent ? Nesting.Desugar(rule.Selectors, parent) : rule.Selectors;
+            if (Nesting.Depth(selectors) > CssInputLimits.MaxSelectorNesting)
+            {
+                // Nested rules and the pseudo-class arguments in them together: the depth selector matching recurses to.
+                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.TooDeep, $"Style rules and selector lists are nested deeper than {CssInputLimits.MaxSelectorNesting}; the rule and the rules in it are not used.", context.Sheet.SourceName, rule.Position)
+                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSelectorNesting));
+                return;
+            }
+
             Add(selectors, rule.Declarations, context);
             if (!rule.ChildRules.IsEmpty)
             {

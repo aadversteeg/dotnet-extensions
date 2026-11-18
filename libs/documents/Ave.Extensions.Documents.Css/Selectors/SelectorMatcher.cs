@@ -1,26 +1,48 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Ave.Extensions.Documents.Css.Selectors;
 
 /// <summary>
-/// Matches selectors against elements (Selectors 4 §17.3): a complex selector right to left, compound by compound. A
-/// construct that never matches in a static document, or that is not supported, matches nothing (so <c>:not(:hover)</c>
-/// matches every element, as in a browser where nothing is hovered).
+/// Matches selectors against elements (Selectors 4 §17.3). A construct that never matches in a static document, or that
+/// is not supported, matches nothing (so <c>:not(:hover)</c> matches every element, as in a browser where nothing is
+/// hovered).
 /// </summary>
 /// <remarks>
-/// Bounded work: the descendant and subsequent-sibling combinators try every ancestor or earlier sibling, and the
-/// result for each (step, element) pair is remembered for the call, so matching one complex selector costs at most its
-/// steps times the elements it can reach. The <c>of S</c> counts of <c>:nth-child()</c> are computed once per parent
-/// and selector, and the argument of <c>:is()</c>, <c>:where()</c> and <c>:not()</c> once per element, for the life of
-/// the matcher (one cascade).
+/// <para>Bounded work, and no recursion over the input's length. For a complex selector of steps 0..k three facts are
+/// computed per step j and element x: M(j, x), "steps 0..j match with x as the subject of step j"; A(j, x) = M(j, x) or
+/// A(j, parent of x), some ancestor-or-self matches; S(j, x) = M(j, x) or S(j, previous sibling of x). Then M(j, x) is
+/// compound j on x and, by the combinator in front of step j: child M(j-1, parent), descendant A(j-1, parent), next
+/// sibling M(j-1, previous), subsequent sibling S(j-1, previous). The facts are evaluated with an explicit stack and
+/// remembered for the life of the matcher (one cascade), so every (fact, step, element) is computed once: matching is
+/// linear in the selector's steps times the elements, also for <c>x ~ p ~ p</c> and long <c>p + p + … + p</c>
+/// chains.</para>
+/// <para>Recursion is left only where selectors nest (the argument of :is(), :where(), :not(), :nth-child(of S), and
+/// the parent rule of a nested rule): its depth is at most <see cref="CssInputLimits.MaxSelectorNesting"/>, checked
+/// where the selector is read.</para>
+/// <para>Every fact and every simple selector tested is charged to a work limit
+/// (<see cref="CssInputLimits.MaxMatchingWork"/>); past it <see cref="Exhausted"/> is set, everything matches nothing,
+/// and the cascade refuses the document. The facts remembered are capped at
+/// <see cref="CssInputLimits.MaxMatchingMemo"/>; past that they are computed again, inside the work limit.</para>
 /// </remarks>
 public sealed class SelectorMatcher
 {
     private readonly Dictionary<(IStyleElement Parent, PseudoClassSelector Pseudo), Dictionary<IStyleElement, (int Index, int Count)>> _nthOf =
-        new(new ParentPseudoComparer());
+        new(new IdentityComparer<IStyleElement, PseudoClassSelector>());
 
-    private readonly Dictionary<(IStyleElement Element, PseudoClassSelector Pseudo), bool> _arguments = new(new ParentPseudoComparer());
+    private readonly Dictionary<(IStyleElement Element, object Argument), bool> _arguments = new(new IdentityComparer<IStyleElement, object>());
+
+    private readonly Dictionary<(ComplexSelector Selector, int Fact, IStyleElement Element), bool> _facts = new(new FactComparer());
+
+    private readonly Stack<Goal> _goals = new();
+
+    private readonly Dictionary<ComplexSelector, int[]> _siblingsNeeded = new(ReferenceEqualityComparer.Instance);
+
+    private long _work;
+
+    /// <summary>Whether the work limit was reached: matching stopped, and the result of the cascade is incomplete.</summary>
+    public bool Exhausted { get; private set; }
 
     /// <summary>Whether a selector list matches an element (one of its selectors does).</summary>
     public bool Matches(SelectorList list, IStyleElement element)
@@ -38,66 +60,156 @@ public sealed class SelectorMatcher
 
     /// <summary>Whether a complex selector matches an element.</summary>
     public bool Matches(ComplexSelector selector, IStyleElement element) =>
-        MatchesFrom(selector, selector.Steps.Count - 1, element, new Dictionary<(int, IStyleElement), bool>(new StepComparer()));
+        Evaluate(selector, Kind.Match, selector.Steps.Count - 1, element);
 
-    /// <summary>Whether steps 0..<paramref name="step"/> match with <paramref name="element"/> as the subject of
-    /// <paramref name="step"/>.</summary>
-    private bool MatchesFrom(ComplexSelector selector, int step, IStyleElement element, Dictionary<(int, IStyleElement), bool> memo)
+    private enum Kind
     {
-        if (memo.TryGetValue((step, element), out var known))
+        Match,
+        Ancestor,
+        Sibling,
+    }
+
+    /// <summary>One fact to compute, and how far its computation is.</summary>
+    private struct Goal(Kind kind, int step, IStyleElement element)
+    {
+        public Kind Kind = kind;
+        public int Step = step;
+        public IStyleElement Element = element;
+        public int Phase;
+    }
+
+    private bool Charge(long work)
+    {
+        _work += work;
+        if (_work > CssInputLimits.MaxMatchingWork)
         {
-            return known;
+            Exhausted = true;
         }
 
-        var result = MatchesCompound(selector.Steps[step].Compound, element) && MatchesLeft(selector, step, element, memo);
-        memo[(step, element)] = result;
+        return !Exhausted;
+    }
+
+    /// <summary>Computes one fact with the explicit stack; the facts it needs are pushed above it and their result is
+    /// handed back in <c>result</c>.</summary>
+    private bool Evaluate(ComplexSelector selector, Kind kind, int step, IStyleElement element)
+    {
+        var bottom = _goals.Count;
+        _goals.Push(new Goal(kind, step, element));
+        var result = false;
+        while (_goals.Count > bottom)
+        {
+            var goal = _goals.Pop();
+            var key = (selector, (goal.Step * 3) + (int)goal.Kind, goal.Element);
+            if (goal.Phase == 0 && _facts.TryGetValue(key, out var known))
+            {
+                result = known;
+                continue;
+            }
+
+            if (goal.Phase == 0 && !Charge(1))
+            {
+                result = false;
+                continue;
+            }
+
+            bool? done = null;
+            switch (goal.Kind)
+            {
+                case Kind.Match when goal.Phase == 0:
+                    if (goal.Element.Index - 1 < SiblingsNeeded(selector)[goal.Step]
+                        || !MatchesCompound(selector.Steps[goal.Step].Compound, goal.Element))
+                    {
+                        done = false;
+                        break;
+                    }
+
+                    if (goal.Step == 0)
+                    {
+                        // A relative selector's leading combinator relates it to the nesting parent, which the cascade
+                        // made an explicit step in front; what is left is satisfied here.
+                        done = true;
+                        break;
+                    }
+
+                    var (needed, other) = selector.Steps[goal.Step].Combinator switch
+                    {
+                        Combinator.Child => (Kind.Match, goal.Element.Parent),
+                        Combinator.NextSibling => (Kind.Match, goal.Element.PreviousSibling),
+                        Combinator.SubsequentSibling => (Kind.Sibling, goal.Element.PreviousSibling),
+                        _ => (Kind.Ancestor, goal.Element.Parent),
+                    };
+                    if (other is null)
+                    {
+                        done = false;
+                        break;
+                    }
+
+                    goal.Phase = 1;
+                    _goals.Push(goal);
+                    _goals.Push(new Goal(needed, goal.Step - 1, other));
+                    continue;
+                case Kind.Match:
+                    done = result;
+                    break;
+                case Kind.Ancestor or Kind.Sibling when goal.Phase == 0:
+                    goal.Phase = 1;
+                    _goals.Push(goal);
+                    _goals.Push(new Goal(Kind.Match, goal.Step, goal.Element));
+                    continue;
+                case Kind.Ancestor or Kind.Sibling when goal.Phase == 1:
+                    var next = goal.Kind == Kind.Ancestor ? goal.Element.Parent : goal.Element.PreviousSibling;
+                    if (result || next is null)
+                    {
+                        done = result;
+                        break;
+                    }
+
+                    goal.Phase = 2;
+                    _goals.Push(goal);
+                    _goals.Push(new Goal(goal.Kind, goal.Step, next));
+                    continue;
+                default:
+                    done = result;
+                    break;
+            }
+
+            result = done!.Value && !Exhausted;
+
+            // Only the facts other facts need are kept: the fact a caller asks for is asked once per (selector,
+            // element), so keeping it would cost memory and nothing else.
+            if (_goals.Count > bottom && _facts.Count < CssInputLimits.MaxMatchingMemo)
+            {
+                _facts[key] = result;
+            }
+        }
+
         return result;
     }
 
-    private bool MatchesLeft(ComplexSelector selector, int step, IStyleElement element, Dictionary<(int, IStyleElement), bool> memo)
+    /// <summary>For each step, the earlier siblings its subject must have: one per + or ~ between it and the nearest
+    /// child or descendant combinator to its left. A subject with fewer fails at once, which keeps long chains of
+    /// sibling combinators (<c>p + p + … + p</c>) linear.</summary>
+    private int[] SiblingsNeeded(ComplexSelector selector)
     {
-        var combinator = selector.Steps[step].Combinator;
-        if (step == 0)
+        if (!_siblingsNeeded.TryGetValue(selector, out var needed))
         {
-            // A relative selector's leading combinator relates it to the nesting parent, which desugaring made explicit;
-            // what is left is satisfied here.
-            return true;
+            needed = new int[selector.Steps.Count];
+            for (var step = 1; step < needed.Length; step++)
+            {
+                needed[step] = selector.Steps[step].Combinator is Combinator.NextSibling or Combinator.SubsequentSibling ? needed[step - 1] + 1 : 0;
+            }
+
+            _siblingsNeeded[selector] = needed;
         }
 
-        switch (combinator)
-        {
-            case Combinator.Child:
-                return element.Parent is { } parent && MatchesFrom(selector, step - 1, parent, memo);
-            case Combinator.NextSibling:
-                return element.PreviousSibling is { } previous && MatchesFrom(selector, step - 1, previous, memo);
-            case Combinator.SubsequentSibling:
-                for (var sibling = element.PreviousSibling; sibling is not null; sibling = sibling.PreviousSibling)
-                {
-                    if (MatchesFrom(selector, step - 1, sibling, memo))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            default:
-                for (var ancestor = element.Parent; ancestor is not null; ancestor = ancestor.Parent)
-                {
-                    if (MatchesFrom(selector, step - 1, ancestor, memo))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-        }
+        return needed;
     }
 
     private bool MatchesCompound(CompoundSelector compound, IStyleElement element)
     {
         foreach (var simple in compound.Selectors)
         {
-            if (!MatchesSimple(simple, element))
+            if (!Charge(1) || !MatchesSimple(simple, element))
             {
                 return false;
             }
@@ -113,6 +225,8 @@ public sealed class SelectorMatcher
         ClassSelector name => element.HasClass(name.Name),
         AttributeSelector attribute => MatchesAttribute(attribute, element),
         PseudoClassSelector pseudo => MatchesPseudoClass(pseudo, element),
+        // & in a nested rule: the parent rule's selector list (CSS Nesting 1 §3), remembered per element.
+        ParentSelector parent => MatchesList(parent, parent.Parent, element),
         // At the top level, & is :scope: in a style sheet, the root element (CSS Nesting 1 §3; Selectors 4 §13.6).
         NestingSelector => element.IsRoot,
         _ => false,
@@ -136,7 +250,7 @@ public sealed class SelectorMatcher
     }
 
     /// <summary>Selectors 4 §6.1–§6.3.</summary>
-    private static bool MatchesAttribute(AttributeSelector selector, IStyleElement element)
+    private bool MatchesAttribute(AttributeSelector selector, IStyleElement element)
     {
         var name = element.IsHtml ? Ascii.ToLower(selector.LocalName) : selector.LocalName;
         if (element.GetAttribute(name) is not { } value)
@@ -165,11 +279,12 @@ public sealed class SelectorMatcher
         return selector.Operator switch
         {
             AttributeOperator.Equals => string.Equals(value, wanted, comparison),
-            AttributeOperator.Includes => wanted.Length > 0 && !ContainsWhitespace(wanted) && Words(value).Contains(wanted),
+            // The words of the value are split once per element and attribute (IStyleElement.AttributeHasWord).
+            AttributeOperator.Includes => wanted.Length > 0 && !ContainsWhitespace(wanted) && element.AttributeHasWord(name, wanted, ignoreCase),
             AttributeOperator.DashMatch => string.Equals(value, wanted, comparison) || value.StartsWith(wanted + "-", comparison),
             AttributeOperator.Prefix => wanted.Length > 0 && value.StartsWith(wanted, comparison),
             AttributeOperator.Suffix => wanted.Length > 0 && value.EndsWith(wanted, comparison),
-            AttributeOperator.Substring => wanted.Length > 0 && value.Contains(wanted, comparison),
+            AttributeOperator.Substring => wanted.Length > 0 && Charge(value.Length / 64) && value.Contains(wanted, comparison),
             _ => false,
         };
     }
@@ -178,7 +293,6 @@ public sealed class SelectorMatcher
 
     private static bool ContainsWhitespace(string text) => text.IndexOfAny(Whitespace) >= 0;
 
-    private static string[] Words(string value) => value.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries);
 
     private bool MatchesPseudoClass(PseudoClassSelector pseudo, IStyleElement element)
     {
@@ -211,12 +325,20 @@ public sealed class SelectorMatcher
     /// <summary>Whether the selector list argument of :is(), :where() or :not() matches; remembered per element for the
     /// life of the matcher, so the :is() chains that nesting desugars into (CSS Nesting 1 §3) cost one match per level
     /// and element rather than one per path.</summary>
-    private bool MatchesArgument(PseudoClassSelector pseudo, IStyleElement element)
+    private bool MatchesArgument(PseudoClassSelector pseudo, IStyleElement element) => Matches(pseudo.Selectors!, element);
+
+    /// <summary>Whether a parent rule's selector list matches, remembered per (parent reference, element) for the life
+    /// of the matcher: every rule nested in it asks again, so nested rules cost one match per level and element. (An
+    /// :is() argument needs no such memo: the fact of the step it is in is remembered when another step needs it.)</summary>
+    private bool MatchesList(object owner, SelectorList list, IStyleElement element)
     {
-        if (!_arguments.TryGetValue((element, pseudo), out var result))
+        if (!_arguments.TryGetValue((element, owner), out var result))
         {
-            result = Matches(pseudo.Selectors!, element);
-            _arguments[(element, pseudo)] = result;
+            result = Matches(list, element);
+            if (_arguments.Count < CssInputLimits.MaxMatchingMemo)
+            {
+                _arguments[(element, owner)] = result;
+            }
         }
 
         return result;
@@ -280,24 +402,25 @@ public sealed class SelectorMatcher
         return indexes[element];
     }
 
-    /// <summary>Compares (step, element) keys by the element's identity.</summary>
-    private sealed class StepComparer : IEqualityComparer<(int Step, IStyleElement Element)>
+    /// <summary>Compares pairs by the identity of both parts.</summary>
+    private sealed class IdentityComparer<TFirst, TSecond> : IEqualityComparer<(TFirst First, TSecond Second)>
+        where TFirst : class
+        where TSecond : class
     {
-        public bool Equals((int Step, IStyleElement Element) x, (int Step, IStyleElement Element) y) =>
-            x.Step == y.Step && ReferenceEquals(x.Element, y.Element);
+        public bool Equals((TFirst First, TSecond Second) x, (TFirst First, TSecond Second) y) =>
+            ReferenceEquals(x.First, y.First) && ReferenceEquals(x.Second, y.Second);
 
-        public int GetHashCode((int Step, IStyleElement Element) obj) =>
-            HashCode.Combine(obj.Step, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Element));
+        public int GetHashCode((TFirst First, TSecond Second) obj) =>
+            HashCode.Combine(RuntimeHelpers.GetHashCode(obj.First), RuntimeHelpers.GetHashCode(obj.Second));
     }
 
-    /// <summary>Compares (parent, pseudo-class) keys by identity: two equal pseudo-classes in different places are
-    /// counted separately, which is the same result.</summary>
-    private sealed class ParentPseudoComparer : IEqualityComparer<(IStyleElement Parent, PseudoClassSelector Pseudo)>
+    /// <summary>Compares fact keys by the identity of the selector and the element.</summary>
+    private sealed class FactComparer : IEqualityComparer<(ComplexSelector Selector, int Fact, IStyleElement Element)>
     {
-        public bool Equals((IStyleElement Parent, PseudoClassSelector Pseudo) x, (IStyleElement Parent, PseudoClassSelector Pseudo) y) =>
-            ReferenceEquals(x.Parent, y.Parent) && ReferenceEquals(x.Pseudo, y.Pseudo);
+        public bool Equals((ComplexSelector Selector, int Fact, IStyleElement Element) x, (ComplexSelector Selector, int Fact, IStyleElement Element) y) =>
+            x.Fact == y.Fact && ReferenceEquals(x.Selector, y.Selector) && ReferenceEquals(x.Element, y.Element);
 
-        public int GetHashCode((IStyleElement Parent, PseudoClassSelector Pseudo) obj) =>
-            HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Parent), System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Pseudo));
+        public int GetHashCode((ComplexSelector Selector, int Fact, IStyleElement Element) obj) =>
+            HashCode.Combine(RuntimeHelpers.GetHashCode(obj.Selector), obj.Fact, RuntimeHelpers.GetHashCode(obj.Element));
     }
 }
