@@ -529,7 +529,12 @@ namespace UnitTests.Extensions.FileSystem.InMemory
             var result = await _fileSystem.OpenWriteAsync(path.ToCanonicalPath());
             result.IsSuccess.Should().BeTrue();
 
+#if NETFRAMEWORK
+            // Stream has no DisposeAsync on .NET Framework
+            using (var stream = result.Value)
+#else
             await using (var stream = result.Value)
+#endif
             {
                 var bytes = Encoding.UTF8.GetBytes(content);
                 await stream.WriteAsync(bytes, 0, bytes.Length);
