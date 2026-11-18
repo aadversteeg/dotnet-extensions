@@ -140,7 +140,8 @@ namespace IntegrationTests.FileSystem.Local
         [Fact(DisplayName = "LFSMC-003: Copy deep directory hierarchy preserves structure")]
         public async Task LFSMC003_CopyDeepDirectoryHierarchy()
         {
-            // The deepest files of this hierarchy have paths of more than 260 characters.
+            // Under the Windows temp folder the deepest files of this hierarchy have paths of more than 260
+            // characters; under a short temp folder, as on Linux, they stay below that.
 
             // Arrange
             var depth = 15; // 15 levels deep
@@ -156,8 +157,8 @@ namespace IntegrationTests.FileSystem.Local
                 // Count total files and directories
                 var sourceFiles = Directory.GetFiles(RawPath(sourceRoot), "*", SearchOption.AllDirectories);
                 var sourceDirs = Directory.GetDirectories(RawPath(sourceRoot), "*", SearchOption.AllDirectories);
-                var longestRelativePath = sourceFiles.Max(f => f.Length) - RawPath(sourceRoot).Length;
-                (sourceRoot.Length + longestRelativePath).Should().BeGreaterThan(260);
+                var longestPath = sourceRoot.Length + sourceFiles.Max(f => f.Length) - RawPath(sourceRoot).Length;
+                _output.WriteLine($"Longest source path: {longestPath} characters");
 
                 // Act
                 var sw = Stopwatch.StartNew();

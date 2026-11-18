@@ -192,8 +192,7 @@ jobs:
           exit $status
 
       - name: List the skipped tests
-        # Shows on the run page which tests skipped themselves on this runner, for example LFSMC-003 when Windows
-        # long paths are not enabled.
+        # Shows on the run page which tests skipped themselves on this runner.
         if: always()
         run: |
           skipped=$(cat "$RUNNER_TEMP"/test-results/*.trx 2>/dev/null \
