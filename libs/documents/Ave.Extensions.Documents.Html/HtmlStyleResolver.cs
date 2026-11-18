@@ -35,7 +35,9 @@ public static class HtmlStyleResolver
     /// <summary>Resolves the styles of a document.</summary>
     /// <param name="parsed">The document, as the HTML parser gave it.</param>
     /// <param name="options">The media, values, resources, base URL and policy.</param>
-    /// <returns>The styled document; or, under <see cref="UnsupportedPolicy.Refuse"/>, the refusals.</returns>
+    /// <returns>The styled document; or, under <see cref="UnsupportedPolicy.Refuse"/>, the refusals; or, under either
+    /// policy, the first limit of the readers that was reached (<c>TooLarge</c>, <c>TooDeep</c>): resolution stops
+    /// there and returns no partly styled document.</returns>
     public static Result<StyledHtmlDocument, Error> Resolve(HtmlParseResult parsed, HtmlStyleOptions options)
     {
         // The parser always makes the html element; a document made in code may have none, and nothing to style.
@@ -46,7 +48,11 @@ public static class HtmlStyleResolver
         }
 
         var run = new Run(parsed, options);
-        var styled = run.Resolve();
+        if (run.Resolve() is not { } styled)
+        {
+            return Result<StyledHtmlDocument, Error>.Failure(run.Limit!.Value);
+        }
+
         var refusals = styled.Diagnostics.Where(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal).ToList();
         return options.Unsupported == UnsupportedPolicy.Refuse && refusals.Count > 0
             ? Result<StyledHtmlDocument, Error>.Failure(refusals.Count == 1 ? refusals[0] : Errors.Aggregate(refusals))
@@ -95,9 +101,12 @@ public static class HtmlStyleResolver
         private string? _documentBase;
         private HtmlElement? _body;
 
+        /// <summary>The first limit reached: resolution stops at it.</summary>
+        public Error? Limit { get; private set; }
+
         /// <summary>Collects the style sheets in tree order, builds the cascade index and computes every element's
         /// style, parents first.</summary>
-        public StyledHtmlDocument Resolve()
+        public StyledHtmlDocument? Resolve()
         {
             var document = parsed.Document;
             if (document.Mode == DocumentMode.Quirks)
@@ -113,14 +122,26 @@ public static class HtmlStyleResolver
 
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
             sheets.AddRange(AuthorSheets(elements).Select(sheet => new CascadeSheet(sheet, CascadeOrigin.Author)));
-            var index = CascadeIndex.Build(sheets, options.Media, Import);
-            Keep(index.Diagnostics);
+            if (Limit is not null)
+            {
+                return null;
+            }
 
-            var computer = new StyleComputer(index.Value, options.Values);
+            if (ReadOrNull(CascadeIndex.Build(sheets, options.Media, Import)) is not { } index)
+            {
+                return null;
+            }
+
+            var computer = new StyleComputer(index, options.Values);
             var language = DefaultLanguage(elements);
-            var root = Style(tree, computer, language);
+            if (Style(tree, computer, language) is not { } root)
+            {
+                Keep(computer.Diagnostics.Where((_, i) => !_renamed.Contains(i)));
+                return null;
+            }
+
             Keep(computer.Diagnostics.Where((_, i) => !_renamed.Contains(i)));
-            return new StyledHtmlDocument(document, root, index.Value.FontFaces, index.Value.PageRules, Capped(_diagnostics), _sourceName);
+            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) : null;
         }
 
         /// <summary>Keeps a diagnostic, at most <see cref="HtmlInputLimits.MaxDiagnostics"/> in all (the parts are capped
@@ -145,8 +166,9 @@ public static class HtmlStyleResolver
             }
         }
 
-        /// <summary>What the CSS reader read, its diagnostics kept; or, when it failed (past its limits, an encoding
-        /// not decoded), the error kept, a refusal, and <paramref name="none"/> in its place.</summary>
+        /// <summary>What the CSS reader read, its diagnostics kept; or, when it failed, <paramref name="none"/> in its
+        /// place and the error kept: an encoding it does not decode is a refusal (its branch is Unsupported), any other
+        /// failure is a limit (TooLarge, TooDeep), where resolution stops (<see cref="Limit"/>).</summary>
         private T Read<T>(Result<CssResult<T>, Error> result, T none) =>
             result.Match(
                 read =>
@@ -157,6 +179,11 @@ public static class HtmlStyleResolver
                 error =>
                 {
                     Keep(error);
+                    if (!error.Code.IsChildOf(CssErrorCodes.Unsupported._))
+                    {
+                        Limit ??= error;
+                    }
+
                     return none;
                 });
 
@@ -192,10 +219,15 @@ public static class HtmlStyleResolver
         /// <summary>Styles an element and its subtree, parents first (the computer needs the parent's style). Without
         /// recursion: the elements being styled are kept on a stack of their own, so the depth of the document costs no
         /// thread stack.</summary>
-        private StyledElement Style(StyleElement root, StyleComputer computer, string? rootLanguage)
+        private StyledElement? Style(StyleElement root, StyleComputer computer, string? rootLanguage)
         {
             var open = new Stack<Open>();
-            open.Push(Begin(root, computer, rootLanguage, hidden: false));
+            if (Begin(root, computer, rootLanguage, hidden: false) is not { } top)
+            {
+                return null;
+            }
+
+            open.Push(top);
             while (true)
             {
                 var current = open.Peek();
@@ -205,7 +237,12 @@ public static class HtmlStyleResolver
                     switch (html.Children[current.NextChild++])
                     {
                         case HtmlElement:
-                            open.Push(Begin(current.Element.Children[current.NextElement++], computer, current.Language, current.Hidden));
+                            if (Begin(current.Element.Children[current.NextElement++], computer, current.Language, current.Hidden) is not { } child)
+                            {
+                                return null;
+                            }
+
+                            open.Push(child);
                             break;
                         case HtmlText text:
                             current.Children.Add(new StyledText(text, current.Style));
@@ -226,17 +263,31 @@ public static class HtmlStyleResolver
             }
         }
 
-        /// <summary>Computes an element's style, refuses it where it is outside v0, and opens it for its children.</summary>
-        private Open Begin(StyleElement element, StyleComputer computer, string? inheritedLanguage, bool hidden)
+        /// <summary>Computes an element's style, refuses it where it is outside v0, and opens it for its children; null
+        /// at a limit (kept in <see cref="Limit"/>).</summary>
+        private Open? Begin(StyleElement element, StyleComputer computer, string? inheritedLanguage, bool hidden)
         {
             var html = element.Element;
             var own = OwnDeclarations(element);
             var mark = computer.DiagnosticCount;
-            var style = computer.Compute(element, own);
+            var computed = computer.Compute(element, own);
+            if (computed.IsFailure || Limit is not null)
+            {
+                if (computed.IsFailure)
+                {
+                    // The computer fails only at a limit of the cascade.
+                    Keep(computed.Error);
+                    Limit ??= computed.Error;
+                }
+
+                return null;
+            }
+
+            var style = computed.Value;
             hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
-            var refused = RefuseElement(html, hidden);
+            var refused = RefuseElement(element, hidden);
             NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
-            return new Open(element, style, Language(html) ?? inheritedLanguage, hidden);
+            return new Open(element, style, Language(element) ?? inheritedLanguage, hidden);
         }
 
         /// <summary>An element whose children are being styled: its style, language, whether it is hidden, the styled
@@ -263,8 +314,9 @@ public static class HtmlStyleResolver
         /// <summary>Refuses an element outside v0 at its start tag: a form control that would be drawn, an element of
         /// <see cref="OutsideProfile"/>, an svg or math element (their own matching and style rules), a script a
         /// browser would run, an event handler attribute. True when the element itself is refused.</summary>
-        private bool RefuseElement(HtmlElement html, bool hidden)
+        private bool RefuseElement(StyleElement element, bool hidden)
         {
+            var html = element.Element;
             void Refuse(ErrorCode code, string message, string value) =>
                 Keep(new Error(code, message).With(ErrorMetadataKeys.Value, value).WithSource(_sourceName, html.Position));
 
@@ -289,15 +341,19 @@ public static class HtmlStyleResolver
                     break;
             }
 
-            foreach (var attribute in html.Attributes)
+            var handlers = html.Namespace == ElementNamespace.Html ? element.Attributes.EventHandlers : [];
+            if (_diagnostics.Count >= HtmlInputLimits.MaxDiagnostics)
             {
-                if (html.Namespace == ElementNamespace.Html && attribute.Namespace == AttributeNamespace.None
-                    && attribute.LocalName.Length > 2 && attribute.LocalName.StartsWith("on", StringComparison.Ordinal))
-                {
-                    Keep(new Error(HtmlStyleErrorCodes.Unsupported.Script, $"The event handler attribute {attribute.LocalName} is not run: the engine runs no scripts, and a browser would run this one.")
-                        .With(ErrorMetadataKeys.Value, attribute.LocalName)
-                        .WithSource(_sourceName, attribute.Position));
-                }
+                // Past the cap only the number counts: an element made again for a token with many handlers costs one step.
+                _suppressed += handlers.Count;
+                return refused;
+            }
+
+            foreach (var attribute in handlers)
+            {
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Script, $"The event handler attribute {attribute.LocalName} is not run: the engine runs no scripts, and a browser would run this one.")
+                    .With(ErrorMetadataKeys.Value, attribute.LocalName)
+                    .WithSource(_sourceName, attribute.Position));
             }
 
             return refused;
@@ -346,10 +402,21 @@ public static class HtmlStyleResolver
         private ElementDeclarations OwnDeclarations(StyleElement element)
         {
             ValueList<Declaration> inline = [];
-            if (element.Element.Attributes.FirstOrDefault(attribute => attribute.Namespace == AttributeNamespace.None && attribute.LocalName == "style") is { } style
-                && element.Element.Namespace is ElementNamespace.Html or ElementNamespace.Svg)
+            if (element.Attributes.Find("style") is { } style && element.Element.Namespace is ElementNamespace.Html or ElementNamespace.Svg)
             {
-                inline = Read(CssParser.ParseDeclarations(style.Value, new CssSourceOptions(_sourceName) { Origin = style.PositionOf(0), Positions = style.PositionOf }), []);
+                // Read once when elements the parser made again for one token share it (kept only then).
+                if (element.Attributes.StyleDeclarations is { } shared)
+                {
+                    inline = shared;
+                }
+                else
+                {
+                    inline = Read(CssParser.ParseDeclarations(style.Value, new CssSourceOptions(_sourceName) { Origin = style.PositionOf(0), Positions = style.PositionOf }), []);
+                    if (element.Attributes.Uses > 1)
+                    {
+                        element.Attributes.StyleDeclarations = inline;
+                    }
+                }
             }
 
             var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
@@ -366,18 +433,8 @@ public static class HtmlStyleResolver
 
         /// <summary>The language an element's own attributes give: xml:lang (in the XML namespace) wins over lang (in no
         /// namespace, HTML elements only); null when it has neither.</summary>
-        private static string? Language(HtmlElement element)
-        {
-            foreach (var attribute in element.Attributes)
-            {
-                if (attribute is { Namespace: AttributeNamespace.Xml, LocalName: "lang" })
-                {
-                    return attribute.Value;
-                }
-            }
-
-            return element.Namespace == ElementNamespace.Html ? element.Attribute("lang") : null;
-        }
+        private static string? Language(StyleElement element) =>
+            element.Attributes.XmlLang ?? (element.Element.Namespace == ElementNamespace.Html ? element.GetAttribute("lang") : null);
 
         /// <summary>The pragma-set default language (§4.2.5.3): the first meta http-equiv=content-language with a
         /// content, its text up to the first comma, trimmed; null when there is none.</summary>
@@ -443,6 +500,11 @@ public static class HtmlStyleResolver
             string? preferredTitle = null;
             foreach (var element in elements.Select(item => item.Element))
             {
+                if (Limit is not null)
+                {
+                    break;
+                }
+
                 if (element.IsHtml("meta") && element.Attribute("http-equiv") is { } equiv && InfraAscii.EqualsIgnoreCase(equiv, "default-style")
                     && element.Attribute("content") is { Length: > 0 } preferred)
                 {

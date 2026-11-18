@@ -7,6 +7,8 @@ using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Rules;
 using Ave.Extensions.Documents.Css.Selectors;
 using Ave.Extensions.Documents.Css.Syntax;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Css.Cascade;
 
@@ -48,6 +50,7 @@ public sealed class CascadeIndex
         _byType = builder.ByType;
         _universal = builder.Universal;
         AllRules = builder.All;
+        Budget = builder.Budget;
         FontFaces = [.. builder.FontFaces];
         PageRules = [.. builder.Pages];
         Media = builder.MediaContext;
@@ -62,6 +65,10 @@ public sealed class CascadeIndex
     /// <summary>The media the conditions were evaluated for.</summary>
     public MediaContext Media { get; }
 
+    /// <summary>The limits of the document's cascade and what is spent of them: the index's, and then the computer's that
+    /// styles the document with it.</summary>
+    internal CascadeBudget Budget { get; }
+
     /// <summary>Every style rule of every origin, in order of appearance: the candidates in quirks mode, where the
     /// buckets by ID and class do not hold (HTML Standard §4.16.2).</summary>
     internal List<IndexedRule> AllRules { get; }
@@ -74,13 +81,28 @@ public sealed class CascadeIndex
     /// <param name="imports">Loads the sheets <c>@import</c> names; null when the caller follows no imports (each import
     /// is then reported and skipped).</param>
     /// <returns>The index, with the diagnostics of building it: invalid declarations and conditions, refused or skipped
-    /// imports. Unsupported and ignored properties are reported when they apply, by <see cref="StyleComputer"/>.</returns>
-    public static CssResult<CascadeIndex> Build(IEnumerable<CascadeSheet> sheets, MediaContext media, StyleSheetLoader? imports)
+    /// imports. Unsupported and ignored properties are reported when they apply, by <see cref="StyleComputer"/>. Past a
+    /// limit (more style sheets than <see cref="CssInputLimits.MaxStyleSheets"/>, more entries than
+    /// <see cref="CssInputLimits.MaxCascadeEntries"/>, selectors nested deeper than
+    /// <see cref="CssInputLimits.MaxSelectorNesting"/>) building stops, and the result is the limit's error.</returns>
+    public static Result<CssResult<CascadeIndex>, Error> Build(IEnumerable<CascadeSheet> sheets, MediaContext media, StyleSheetLoader? imports)
     {
-        var builder = new Builder(media, imports);
+        var budget = CascadeBudget.ForNextIndex ?? new CascadeBudget();
+        CascadeBudget.ForNextIndex = null;
+        var builder = new Builder(media, imports, budget);
         foreach (var sheet in sheets)
         {
+            if (builder.Failure is not null)
+            {
+                break;
+            }
+
             builder.Sheet(sheet);
+        }
+
+        if (builder.Failure is { } failure)
+        {
+            return Result<CssResult<CascadeIndex>, Error>.Failure(failure);
         }
 
         foreach (var root in builder.Roots.Values)
@@ -88,7 +110,7 @@ public sealed class CascadeIndex
             root.AssignRanks();
         }
 
-        return new CssResult<CascadeIndex>(new CascadeIndex(builder), builder.Diagnostics.ToValueList());
+        return Result<CssResult<CascadeIndex>, Error>.Success(new CssResult<CascadeIndex>(new CascadeIndex(builder), builder.Diagnostics.ToValueList()));
     }
 
     /// <summary>The rules worth matching against an element: those whose rightmost compound names its ID, one of its
@@ -124,11 +146,16 @@ public sealed class CascadeIndex
     }
 
     /// <summary>Flattens rules into the index (one cascade's worth of mutable state).</summary>
-    private sealed class Builder(MediaContext media, StyleSheetLoader? imports)
+    private sealed class Builder(MediaContext media, StyleSheetLoader? imports, CascadeBudget budget)
     {
         private readonly HashSet<StyleSheet> _importing = new(ReferenceEqualityComparer.Instance);
-        private int _imported;
         private int _order;
+
+        /// <summary>The cascade's limits.</summary>
+        public CascadeBudget Budget { get; } = budget;
+
+        /// <summary>The limit's error once a limit is reached: building stops.</summary>
+        public Error? Failure { get; private set; }
 
         /// <summary>The media <c>@media</c>, <c>@import</c> conditions and <c>media</c> attributes are evaluated
         /// for.</summary>
@@ -168,6 +195,14 @@ public sealed class CascadeIndex
         /// far.</summary>
         public void Sheet(CascadeSheet sheet)
         {
+            if (!Budget.TakeStyleSheet())
+            {
+                Failure ??= new Error(CssErrorCodes.TooLarge, $"The document takes in more than {Budget.MaxStyleSheets} style sheets, its own and imported ones together.")
+                    .With(ErrorMetadataKeys.Value, Budget.MaxStyleSheets)
+                    .With(ErrorMetadataKeys.SourceFile, sheet.Sheet.SourceName);
+                return;
+            }
+
             if (!Roots.TryGetValue(sheet.Origin, out var root))
             {
                 root = LayerNode.Root();
@@ -184,12 +219,12 @@ public sealed class CascadeIndex
 
         /// <summary>Flattens a list of rules, with the blocks of conditional and layer rules, nested style rules and
         /// imported sheets, in order of appearance. Without recursion: a chain of imports is as deep as
-        /// <see cref="CssInputLimits.MaxImportedSheets"/>, so the lists being walked are kept on a stack of their own.</summary>
+        /// <see cref="CssInputLimits.MaxStyleSheets"/>, so the lists being walked are kept on a stack of their own.</summary>
         private void Rules(IEnumerable<CssRule> rules, Context context)
         {
             var lists = new Stack<(IEnumerator<CssRule> Rules, Context Context, StyleSheet? Imported)>();
             lists.Push((Walk(rules), context, null));
-            while (lists.Count > 0)
+            while (lists.Count > 0 && Failure is null)
             {
                 var (list, current, imported) = lists.Peek();
                 if (!list.MoveNext())
@@ -252,8 +287,8 @@ public sealed class CascadeIndex
             if (Nesting.Depth(selectors) > CssInputLimits.MaxSelectorNesting)
             {
                 // Nested rules and the pseudo-class arguments in them together: the depth selector matching recurses to.
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.TooDeep, $"Style rules and selector lists are nested deeper than {CssInputLimits.MaxSelectorNesting}; the rule and the rules in it are not used.", context.Sheet.SourceName, rule.Position)
-                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSelectorNesting));
+                Failure ??= CssDiagnostics.At(CssErrorCodes.TooDeep, $"Style rules and selector lists are nested deeper than {CssInputLimits.MaxSelectorNesting}.", context.Sheet.SourceName, rule.Position)
+                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSelectorNesting);
                 return null;
             }
 
@@ -266,6 +301,13 @@ public sealed class CascadeIndex
             var block = DeclarationPreparer.Prepare(declarations, context.Sheet.SourceName, context.Origin, ref _order, Diagnostics);
             if (block.Entries.IsEmpty && block.WhenApplied.IsEmpty)
             {
+                return;
+            }
+
+            if (!Budget.AddEntries(block.Entries.Count + selectors.Selectors.Count))
+            {
+                Failure ??= CssDiagnostics.At(CssErrorCodes.TooLarge, $"The style sheets make more than {Budget.MaxEntries} selectors and declarations for the cascade (each sheet counted every time it is taken in).", context.Sheet.SourceName, selectors.Selectors[0].Position)
+                    .With(ErrorMetadataKeys.Value, Budget.MaxEntries);
                 return;
             }
 
@@ -324,10 +366,10 @@ public sealed class CascadeIndex
                 return null;
             }
 
-            if (++_imported > CssInputLimits.MaxImportedSheets)
+            if (!Budget.TakeStyleSheet())
             {
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.TooLarge, $"More than {CssInputLimits.MaxImportedSheets} style sheets are imported; '{import.Url}' is not.", context.Sheet.SourceName, import.Position)
-                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxImportedSheets));
+                Failure ??= CssDiagnostics.At(CssErrorCodes.TooLarge, $"The document takes in more than {Budget.MaxStyleSheets} style sheets, its own and imported ones together; '{import.Url}' is one too many.", context.Sheet.SourceName, import.Position)
+                    .With(ErrorMetadataKeys.Value, Budget.MaxStyleSheets);
                 return null;
             }
 

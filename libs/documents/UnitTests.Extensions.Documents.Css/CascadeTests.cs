@@ -344,7 +344,7 @@ public class CascadeTests
     {
         // Review 39 API-4: the child silently inherited nothing.
         var root = Doc(E("p", A("id", "x")));
-        var computer = new StyleComputer(CascadeIndex.Build([new CascadeSheet(Sheet("p { color: red }"), CascadeOrigin.Author)], MediaContext.PrintA4, null).Value, ValueContext.A4);
+        var computer = new StyleComputer(CascadeIndex.Build([new CascadeSheet(Sheet("p { color: red }"), CascadeOrigin.Author)], MediaContext.PrintA4, null).Value.Value, ValueContext.A4);
 
         FluentActions.Invoking(() => computer.Compute(root["x"])).Should().Throw<InvalidOperationException>();
     }

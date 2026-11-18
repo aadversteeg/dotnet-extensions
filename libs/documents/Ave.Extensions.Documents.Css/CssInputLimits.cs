@@ -18,10 +18,17 @@ public static class CssInputLimits
     /// (<see cref="CssErrorCodes.TooDeep"/>), at the first block past the limit.</summary>
     public const int MaxDepth = 64;
 
-    /// <summary>The most style sheets one cascade imports with <c>@import</c>, counted over every import it follows: 1024.
-    /// The same sheet imported twice counts twice, so a chain of sheets that each import the next one twice cannot grow
-    /// the rule list exponentially. Imports past the limit are refused (<see cref="CssErrorCodes.TooLarge"/>).</summary>
-    public const int MaxImportedSheets = 1024;
+    /// <summary>The most style sheets one cascade takes in: 1024, the document's own (style elements, linked sheets, the
+    /// user-agent sheet) and those they import together. A sheet taken in twice counts twice, so a chain of sheets that
+    /// each import the next one twice cannot grow the rule list exponentially. Past it the cascade stops and the document
+    /// is refused (<see cref="CssErrorCodes.TooLarge"/>).</summary>
+    public const int MaxStyleSheets = 1024;
+
+    /// <summary>The most entries one cascade's index holds: 2^21 (2 097 152). An entry is one complex selector of a style
+    /// rule or one declaration the cascade keeps for a property, counted every time a sheet is taken in, so a sheet
+    /// linked or imported many times costs its size each time. Past it the cascade stops and the document is refused
+    /// (<see cref="CssErrorCodes.TooLarge"/>).</summary>
+    public const int MaxCascadeEntries = 1 << 21;
 
     /// <summary>The longest value one <c>var()</c> substitution makes, in characters of its text: 2 MiB (2 097 152),
     /// Chromium 159's own limit, measured (a value of 2 097 151 characters is kept, one of 3 342 335 is dropped). Past
@@ -40,17 +47,19 @@ public static class CssInputLimits
     /// 256 KB stack with room (tested). A deeper selector refuses the rule (<see cref="CssErrorCodes.TooDeep"/>).</summary>
     public const int MaxSelectorNesting = 32;
 
-    /// <summary>The most matching and collecting one cascade does: 2^26 units (one unit is one simple selector tested,
-    /// one fact remembered, one matched rule or declaration collected). Measured on the development machine (Release):
-    /// 1 000 rules that match every one of 10 000 elements reach it after about 3 s, while 1 000 such rules against
-    /// 5 000 elements (1.7 s) and 100 000 class rules against one element with 100 000 classes (1.9 s) stay inside it.
-    /// A style sheet and document that need more (many rules that no index can narrow, times many elements) refuse the
-    /// document (<see cref="CssErrorCodes.TooLarge"/>) instead of running for minutes.</summary>
-    public const long MaxMatchingWork = 1L << 26;
+    /// <summary>The most work one cascade does: 2^26 units. A unit is one simple selector tested, one matching fact
+    /// computed, one sibling counted for <c>:nth-child(of S)</c>, 64 characters a name or value test compares, one rule
+    /// or declaration collected, one comparison of sorting the candidates (n log2 n per property), one candidate the
+    /// cascade looks at for a winner, and one var() reference or custom property the dependency walk visits. Each unit is
+    /// bounded work, so the cascade's time is bounded by this number. A selector whose cost has no linear bound (a chain
+    /// of next-sibling combinators over different compounds costs its steps times the elements) is charged what it costs.
+    /// Past it the cascade stops and the document is refused (<see cref="CssErrorCodes.TooLarge"/>).</summary>
+    public const long MaxCascadeWork = 1L << 26;
 
-    /// <summary>The most matching facts one cascade remembers: 2^22, a bound on the memory of matching. Past it facts
-    /// are computed again when needed, inside <see cref="MaxMatchingWork"/>.</summary>
-    public const int MaxMatchingMemo = 1 << 22;
+    /// <summary>The most entries one cascade remembers to avoid doing work twice: 2^22 (matching facts, the matches of a
+    /// parent rule's selectors, the sibling tables of <c>:nth-child(of S)</c>, var() substitutions and custom-property
+    /// tables). Past it results are computed again when needed, inside <see cref="MaxCascadeWork"/>.</summary>
+    public const int MaxCascadeMemo = 1 << 22;
 
     /// <summary>The largest computed length the engine keeps, in px (and the largest percentage): 2^24. Chromium 159
     /// clamps computed lengths to its layout unit's range, about ±3.36e7 px (measured: <c>width: 99999999999px</c>

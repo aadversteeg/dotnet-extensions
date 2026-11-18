@@ -67,11 +67,11 @@ internal static class PresentationalHints
             return ([], refused);
         }
 
-        string? Attr(string name) => html.Attribute(name);
+        string? Attr(string name) => element.GetAttribute(name);
 
         void Refuse(string attribute, string why)
         {
-            var at = html.Attributes.First(item => item.Namespace == AttributeNamespace.None && item.LocalName == attribute);
+            var at = element.Attributes.Find(attribute)!;
             refused.Add(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute {attribute}=\"{at.Value}\" on {html.LocalName} {why}, which is not supported.")
                 .With(ErrorMetadataKeys.Value, attribute)
                 .WithSource(sourceName, at.Position));

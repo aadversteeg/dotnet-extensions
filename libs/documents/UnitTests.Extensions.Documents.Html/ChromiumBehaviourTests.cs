@@ -160,13 +160,14 @@ public class ChromiumBehaviourTests
     }
 
     [Fact]
-    public void A_media_attribute_past_the_limit_never_applies()
+    public void A_media_attribute_past_the_limit_ends_the_resolution()
     {
         // Review 39 CR-14: it applied with warnings only.
         var media = new string('(', 300) + "print" + new string(')', 300);
-        var styled = Styled(Doctype + $"<style media=\"{media}\">#t{{margin-bottom:4px}}</style><p id=t>x", MeasuredPage);
+        // Past the limit resolution stops and fails, in warn mode too (no partly styled document).
+        var result = Resolve(Doctype + $"<style media=\"{media}\">#t{{margin-bottom:4px}}</style><p id=t>x", MeasuredPage);
 
-        styled.ById("t").Value("margin-bottom").Should().Be("16px");
-        Refusals(styled).Should().Contain(error => error.Code == CssErrorCodes.TooDeep);
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(CssErrorCodes.TooDeep);
     }
 }

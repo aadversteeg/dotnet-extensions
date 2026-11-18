@@ -27,12 +27,40 @@ public class CssBoundedWorkTests
     private static StyledHtmlDocument StyledOnSmallStack(string html)
     {
         StyledHtmlDocument? styled = null;
+        Exception? thrown = null;
         var watch = Stopwatch.StartNew();
-        var thread = new Thread(() => styled = Styled(html), 256 * 1024);
+        var thread = new Thread(
+            () =>
+            {
+                try
+                {
+                    styled = Styled(html);
+                }
+                catch (Exception exception)
+                {
+                    thrown = exception;
+                }
+            },
+            256 * 1024);
+        thread.Start();
+        thread.Join();
+        thrown.Should().BeNull();
+        watch.Elapsed.Should().BeLessThan(Generous);
+        return styled!;
+    }
+
+    /// <summary>The limit a document reaches, in warn mode, on a thread with a 256 KB stack: resolution stops there and
+    /// fails with it, whatever the policy.</summary>
+    private static Ave.Extensions.ErrorPaths.Error LimitOnSmallStack(string html)
+    {
+        Ave.Extensions.Functional.Result<StyledHtmlDocument, Ave.Extensions.ErrorPaths.Error>? result = null;
+        var watch = Stopwatch.StartNew();
+        var thread = new Thread(() => result = Resolve(html, Warn), 256 * 1024);
         thread.Start();
         thread.Join();
         watch.Elapsed.Should().BeLessThan(Generous);
-        return styled!;
+        result!.Value.IsFailure.Should().BeTrue();
+        return result.Value.Error;
     }
 
     private static string Last(StyledHtmlDocument styled, string property) => styled.ById("last").Value(property);
@@ -101,7 +129,7 @@ public class CssBoundedWorkTests
         var pre = Repeat(":is(", 200) + "&" + Repeat(")", 200);
         var html = Doc("p{" + Repeat(pre + "{", 30) + "color:red" + Repeat("}", 30) + "}", "<p id=last>x");
 
-        StyledOnSmallStack(html).Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.TooDeep);
+        LimitOnSmallStack(html).Code.Should().Be(CssErrorCodes.TooDeep);
     }
 
     [Theory]
@@ -152,19 +180,12 @@ public class CssBoundedWorkTests
     }
 
     [Fact]
-    public void Many_rules_with_is_against_more_elements_end_at_the_work_limit_in_a_refusal()
+    public void Many_rules_with_is_against_more_elements_end_at_the_work_limit_in_a_failure()
     {
-        // The review's input (CR-16): 1 000 rules against 20 000 elements took 45 s; past the stated limit it is refused.
+        // 1 000 rules against 20 000 elements took 45 s before the work limit; past it resolution stops, in warn mode too.
         var html = Doc(Repeat("p:is(.x,.y,.z){color:red}", 1_000), Repeat("<p class=x>", 20_000) + "<p id=last>");
-        StyledHtmlDocument? styled = null;
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        var thread = new Thread(() => styled = Styled(html, Warn), 256 * 1024);
-        thread.Start();
-        thread.Join();
 
-        watch.Elapsed.Should().BeLessThan(Generous);
-        styled!.Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.TooLarge);
-        HtmlStyleDiagnostics.ClassOf(CssErrorCodes.TooLarge).Should().Be(DiagnosticClass.Refusal);
+        LimitOnSmallStack(html).Code.Should().Be(CssErrorCodes.TooLarge);
     }
 
     [Fact]
@@ -172,13 +193,8 @@ public class CssBoundedWorkTests
     {
         // 252 nested @media overflowed a 256 KB stack at the old limit of 256 (the process died); past 64 it is refused.
         var css = Repeat("@media print{", 252) + "#last{padding-top:4px}" + Repeat("}", 252);
-        StyledHtmlDocument? styled = null;
-        var thread = new Thread(() => styled = Styled(Doc(css, "<p id=last>x"), Warn), 256 * 1024);
-        thread.Start();
-        thread.Join();
 
-        styled!.Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.TooDeep);
-        Last(styled, "padding-top").Should().Be("0px");
+        LimitOnSmallStack(Doc(css, "<p id=last>x")).Code.Should().Be(CssErrorCodes.TooDeep);
     }
 
     [Fact]

@@ -77,7 +77,9 @@ public class DeepInputTests
 
         var result = OnSmallStack(html);
 
-        result.Match(styled => styled.Diagnostics, error => [error]).Should().Contain(error => error.Code == CssErrorCodes.TooLarge);
+        // Past the work limit resolution stops: the limit is the result, in warn mode too.
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(CssErrorCodes.TooLarge);
     }
 
     [Theory]
@@ -94,17 +96,17 @@ public class DeepInputTests
         }
 
         css.Append($"width:calc(var(--p{links}))}}");
-        var styled = StyledOnSmallStack(Doc(css.ToString(), "<p id=last>x"), Warn);
+        var result = OnSmallStack(Doc(css.ToString(), "<p id=last>x"), Warn);
 
-        Last(styled, "width").Should().Be(width);
         if (width == "auto")
         {
-            styled.Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.TooDeep);
-            Refused(Doc(css.ToString(), "<p id=last>x")).Code.Should().Be(CssErrorCodes.TooDeep);
+            // A limit: resolution stops, in warn mode too.
+            result.Error.Code.Should().Be(CssErrorCodes.TooDeep);
         }
         else
         {
-            styled.Diagnostics.Should().NotContain(error => error.Code == CssErrorCodes.TooDeep);
+            Last(result.Value, "width").Should().Be(width);
+            result.Value.Diagnostics.Should().NotContain(error => error.Code == CssErrorCodes.TooDeep);
         }
     }
 
@@ -120,31 +122,37 @@ public class DeepInputTests
         }
 
         css.Append("width:calc(var(--p200))}");
-        var styled = StyledOnSmallStack(Doc(css.ToString(), "<p id=last>x"), Warn);
-
-        Last(styled, "width").Should().Be("auto");
-        styled.Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.TooDeep);
+        OnSmallStack(Doc(css.ToString(), "<p id=last>x"), Warn).Error.Code.Should().Be(CssErrorCodes.TooDeep);
     }
 
-    [Fact]
-    public void The_longest_allowed_chain_of_imports_is_followed_on_a_256_KB_stack()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void The_longest_allowed_chain_of_imports_is_followed_on_a_256_KB_stack_and_one_more_is_refused(int beyond)
     {
-        const int Chain = CssInputLimits.MaxImportedSheets;
+        // The user-agent sheet and the style element count too.
+        var chain = CssInputLimits.MaxStyleSheets - 2 + beyond;
         HtmlResource? Sheet(string url)
         {
             var i = int.Parse(url[(url.LastIndexOf('/') + 2)..^4], System.Globalization.CultureInfo.InvariantCulture);
-            var next = i + 1 < Chain ? $"@import 's{i + 1}.css';" : string.Empty;
+            var next = i + 1 < chain ? $"@import 's{i + 1}.css';" : string.Empty;
             return new HtmlResource(Encoding.UTF8.GetBytes(next + $"#last{{margin-top:{i}px}}"));
         }
 
         var options = Warn with { Resources = Sheet, BaseUrl = "https://example.org/" };
-        var styled = StyledOnSmallStack(Doc("@import 's0.css';#last{color:red}", "<p id=last>x"), options);
+        var result = OnSmallStack(Doc("@import 's0.css';#last{color:red}", "<p id=last>x"), options);
 
+        if (beyond > 0)
+        {
+            result.Error.Code.Should().Be(CssErrorCodes.TooLarge);
+            return;
+        }
+
+        var styled = result.Value;
         Last(styled, "color").Should().Be("rgb(255, 0, 0)");
         // Each sheet's import comes before its own rule, so the deepest sheet's rule comes first in the order of
         // appearance and the first sheet's last: margin-top is the first link's.
         Last(styled, "margin-top").Should().Be("0px");
-        styled.Diagnostics.Should().NotContain(error => error.Code == CssErrorCodes.TooLarge);
     }
 
     [Fact]

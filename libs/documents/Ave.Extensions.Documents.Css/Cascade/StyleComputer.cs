@@ -1,6 +1,7 @@
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using Ave.Extensions.Functional;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Properties;
@@ -41,15 +42,18 @@ public sealed record ElementDeclarations(ValueList<Declaration> StyleAttribute, 
 /// skipped, so the next declaration in the cascade is used, as by a browser that does not know the value), a rule
 /// with an unsupported or ignored property that matches an element.</para>
 /// <para>Bounded work: each element is matched against the rules of its buckets (<see cref="CascadeIndex"/>) by a
-/// matcher with a work limit (<see cref="SelectorMatcher"/>); custom properties are resolved in dependency order without
-/// recursion; every substitution stops at <see cref="CssInputLimits.MaxSubstitutionLength"/> and all of them together
-/// at <see cref="CssInputLimits.MaxSubstitutionWork"/>.</para>
+/// matcher, and the matching, collecting, sorting, cascading and the dependency walk of custom properties are charged
+/// to one work limit (<see cref="CssInputLimits.MaxCascadeWork"/>); custom properties are resolved in dependency order
+/// without recursion; every substitution stops at <see cref="CssInputLimits.MaxSubstitutionLength"/> and all of them
+/// together at <see cref="CssInputLimits.MaxSubstitutionWork"/>. A limit that is reached ends the cascade: that
+/// <see cref="Compute"/> and every later one return the limit's error, never a partly computed style.</para>
 /// </remarks>
 public sealed class StyleComputer
 {
     private readonly CascadeIndex _index;
     private readonly ValueContext _values;
-    private readonly SelectorMatcher _matcher = new();
+    private readonly CascadeBudget _budget;
+    private readonly SelectorMatcher _matcher;
     private readonly DiagnosticCollector _diagnostics = new();
     private readonly HashSet<object> _reported = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<(PreparedDeclaration, ErrorCode)> _reportedAt = [];
@@ -64,9 +68,14 @@ public sealed class StyleComputer
     private readonly Dictionary<(PreparedDeclaration Declaration, object Custom), (VarSubstitution.Outcome Outcome, ValueList<ComponentValue> Values)> _substituted =
         new(new SubstitutionComparer());
 
-    private long _substitutionWork;
-    private bool _substitutionWorkReported;
-    private bool _matchingReported;
+    private readonly Dictionary<(object Parent, PreparedDeclaration?[] Winners), ImmutableDictionary<string, CssTokens>> _customTables = new(new CustomTableComparer());
+
+    private readonly Dictionary<CustomEntry, List<string>> _references = new(ReferenceEqualityComparer.Instance);
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Declaration[], PreparedBlock> _ownBlocks = new();
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Declaration[], PreparedBlock> _hintBlocks = new();
+
+    /// <summary>The limit's error once a limit is reached; from then on every computation returns it.</summary>
+    private Error? _failure;
     private double _rootFontSize = PropertyRegistry.InitialFontSizePoints;
     private int _order;
 
@@ -77,6 +86,8 @@ public sealed class StyleComputer
     {
         _index = index;
         _values = values;
+        _budget = index.Budget;
+        _matcher = new SelectorMatcher(_budget);
     }
 
     /// <summary>The diagnostics so far, in the order they were found.</summary>
@@ -100,28 +111,52 @@ public sealed class StyleComputer
             && property != PropertyRegistry.FontStyle && property != PropertyRegistry.FontSize),
     ];
 
-    /// <summary>The computed style of an element.</summary>
+    /// <summary>The computed style of an element; or, once a limit of the cascade is reached
+    /// (<see cref="CssInputLimits.MaxCascadeWork"/>, <see cref="CssInputLimits.MaxSubstitutionWork"/>, the depth of a
+    /// substituted value), the limit's error, for this element and every later one: the cascade stops there.</summary>
     /// <param name="element">The element; its parent's style must have been computed by this computer first (the root
     /// has none): elements are computed in tree order. A child whose parent was not computed is a programming error,
-    /// <see cref="InvalidOperationException"/>, not a style without inheritance (review 39 API-4).</param>
+    /// <see cref="InvalidOperationException"/>, not a style without inheritance.</param>
     /// <param name="own">Its style attribute and presentational hints.</param>
-    /// <returns>Its computed style.</returns>
-    public ComputedStyle Compute(IStyleElement element, ElementDeclarations? own = null)
+    /// <returns>Its computed style, or the limit's error.</returns>
+    public Result<ComputedStyle, Error> Compute(IStyleElement element, ElementDeclarations? own = null)
     {
         _element = element;
         ComputedStyle? parent = null;
-        if (element.Parent is { } parentElement && !_styles.TryGetValue(parentElement, out parent))
+        if (element.Parent is { } parentElement && !_styles.TryGetValue(parentElement, out parent) && _failure is null)
         {
             throw new InvalidOperationException("The parent's style has not been computed: compute the elements in tree order, parents first.");
         }
 
+        if (_failure is not null)
+        {
+            return Result<ComputedStyle, Error>.Failure(_failure.Value);
+        }
+
         var candidates = Collect(element, own ?? ElementDeclarations.None);
         var context = new ComputeContext(parent, _rootFontSize, _values, element.IsRoot);
-        var custom = CustomProperties(candidates.Custom, parent);
+        var custom = _failure is null ? CustomProperties(candidates.Custom, parent) : ImmutableDictionary<string, CssTokens>.Empty;
         var shorthands = new Dictionary<PreparedDeclaration, ShorthandParse>();
         foreach (var property in ComputeOrder)
         {
-            context.Set(property, Value(property, candidates.Longhands[property.Index], context, custom, shorthands));
+            if (_failure is not null)
+            {
+                break;
+            }
+
+            var all = property.Name is "direction" or "unicode-bidi" ? null : candidates.All;
+            context.Set(property, Value(property, candidates.Longhands[property.Index], all, context, custom, shorthands));
+        }
+
+        if (_failure is null && _budget.Exhausted)
+        {
+            Fail(new Error(CssErrorCodes.TooLarge, $"Styling the elements needs more than {_budget.MaxWork} steps of selector matching and cascading.")
+                .With(ErrorMetadataKeys.Value, _budget.MaxWork));
+        }
+
+        if (_failure is not null)
+        {
+            return Result<ComputedStyle, Error>.Failure(_failure.Value);
         }
 
         Adjust(context, own?.ResetsLegacyAlignment == true);
@@ -133,8 +168,11 @@ public sealed class StyleComputer
         }
 
         _styles[element] = style;
-        return style;
+        return Result<ComputedStyle, Error>.Success(style);
     }
+
+    /// <summary>Ends the cascade at a limit: the error is kept, and every computation from now on returns it.</summary>
+    private void Fail(Error error) => _failure ??= error;
 
     // ---- collecting (§6.1) ----
 
@@ -180,12 +218,20 @@ public sealed class StyleComputer
         /// <summary>The candidates for each custom property, by its name as written.</summary>
         public Dictionary<string, List<Candidate>> Custom { get; } = new(StringComparer.Ordinal);
 
+        /// <summary>The candidates of <c>all</c> (CSS Cascade 5 §3.2): one per declaration, not one per longhand; the
+        /// cascade takes them with each longhand's own.</summary>
+        public List<Candidate>? All { get; private set; }
+
         /// <summary>Adds a declared value to the list of the property it sets.</summary>
         public void Add(Candidate candidate)
         {
             if (candidate.Entry.Longhand is { } longhand)
             {
                 (Longhands[longhand.Index] ??= []).Add(candidate);
+            }
+            else if (candidate.Entry.Custom is null)
+            {
+                (All ??= []).Add(candidate);
             }
             else if (!Custom.TryGetValue(candidate.Entry.Custom!, out var list))
             {
@@ -206,20 +252,18 @@ public sealed class StyleComputer
         var candidates = new Candidates();
         foreach (var rule in _index.Candidates(element))
         {
+            if (_matcher.Exhausted)
+            {
+                return candidates;
+            }
+
             if (!_matcher.Matches(rule.Selector, element))
             {
-                if (_matcher.Exhausted && !_matchingReported)
-                {
-                    _matchingReported = true;
-                    _diagnostics.Add(new Error(CssErrorCodes.TooLarge, $"Matching the selectors against the elements needs more than {CssInputLimits.MaxMatchingWork} steps; the styles are incomplete.")
-                        .With(ErrorMetadataKeys.Value, CssInputLimits.MaxMatchingWork));
-                }
-
                 continue;
             }
 
             // Collecting is work too: elements times the rules that match them, so it counts against the same limit.
-            _matcher.Spend(1 + rule.Block.Entries.Count);
+            _budget.Charge(1 + rule.Block.Entries.Count);
             Applied(rule.Block);
             foreach (var entry in rule.Block.Entries)
             {
@@ -234,17 +278,41 @@ public sealed class StyleComputer
 
         AddOwn(own.PresentationalHints, own.SourceName, CascadeOrigin.PresentationalHint, candidates);
         AddOwn(own.StyleAttribute, own.SourceName, CascadeOrigin.Author, candidates);
-        foreach (var list in candidates.Longhands)
-        {
-            list?.Sort((left, right) => right.Priority.CompareTo(left.Priority));
-        }
-
-        foreach (var list in candidates.Custom.Values)
-        {
-            list.Sort((left, right) => right.Priority.CompareTo(left.Priority));
-        }
-
         return candidates;
+    }
+
+    /// <summary>Sorts a property's candidates by the cascade order, highest first (§6.1), charged n log2 n.</summary>
+    private void Sort(List<Candidate>? list)
+    {
+        if (list is not { Count: > 1 })
+        {
+            return;
+        }
+
+        _budget.Charge(list.Count * (long)Math.Ceiling(Math.Log2(list.Count)));
+        list.Sort((left, right) => right.Priority.CompareTo(left.Priority));
+    }
+
+    /// <summary>The candidate highest in the cascade order (§6.1), found by one look at each (charged one per
+    /// candidate); null for none.</summary>
+    private Candidate? Highest(List<Candidate>? list)
+    {
+        if (list is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        _budget.Charge(list.Count);
+        var best = list[0];
+        for (var i = 1; i < list.Count; i++)
+        {
+            if (list[i].Priority.CompareTo(best.Priority) > 0)
+            {
+                best = list[i];
+            }
+        }
+
+        return best;
     }
 
     private void AddOwn(ValueList<Declaration> declarations, string sourceName, CascadeOrigin origin, Candidates candidates)
@@ -254,7 +322,17 @@ public sealed class StyleComputer
             return;
         }
 
-        var block = DeclarationPreparer.Prepare(declarations, sourceName, origin, ref _order, _diagnostics);
+        // Prepared once per list: elements the parser makes again for one token share their style attribute's list.
+        // (A weak table: a list no element shares any more does not keep its prepared block alive.)
+        var key = System.Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray(declarations.Items)!;
+        var blocks = origin == CascadeOrigin.Author ? _ownBlocks : _hintBlocks;
+        if (!blocks.TryGetValue(key, out var block))
+        {
+            block = DeclarationPreparer.Prepare(declarations, sourceName, origin, ref _order, _diagnostics);
+            _budget.Charge(declarations.Count);
+            blocks.AddOrUpdate(key, block);
+        }
+
         Applied(block);
         var attached = origin == CascadeOrigin.Author ? 1 : 0;
         foreach (var entry in block.Entries)
@@ -280,18 +358,51 @@ public sealed class StyleComputer
 
     /// <summary>The winning candidate (CSS Cascade 5 §6.1), or null when none is left: refused values are reported and
     /// skipped; <c>revert</c> skips the rest of its origin (presentational hints count as author), <c>revert-layer</c> the
-    /// rest of its layer (§7.3).</summary>
-    private Candidate? Winner(List<Candidate>? candidates)
+    /// rest of its layer (§7.3). The candidates of <c>all</c> are taken in the cascade order together with the
+    /// property's own. Each candidate looked at costs one unit, and whether it is rolled back is one look-up, so
+    /// k <c>revert-layer</c> in k layers cost k, not k².</summary>
+    private Candidate? Winner(List<Candidate>? candidates, List<Candidate>? all = null)
     {
-        if (candidates is null)
+        if (candidates is null && all is null)
         {
             return null;
         }
 
-        var skips = new List<Func<Candidate, bool>>();
-        foreach (var candidate in candidates)
+        // Most often the highest candidate wins: one look at each finds it. Only when it is refused or rolls back does
+        // the cascade sort the candidates and walk them in order.
+        var (ownHighest, sharedHighest) = (Highest(candidates), Highest(all));
+        var highest = sharedHighest is null || (ownHighest is { } o && o.Priority.CompareTo(sharedHighest.Value.Priority) >= 0) ? ownHighest : sharedHighest;
+        if (highest is { Entry.Value: not (RefusedEntry or WideKeywordEntry { Keyword: "revert" or "revert-layer" }) } winner)
         {
-            if (skips.Any(skip => skip(candidate)))
+            return winner;
+        }
+
+        Sort(candidates);
+        Sort(all);
+
+        var reverted = 0;
+        HashSet<(CascadeOrigin Origin, bool Important, object Layer)>? layers = null;
+        int own = 0, shared = 0;
+        while (true)
+        {
+            Candidate candidate;
+            var hasOwn = candidates is not null && own < candidates.Count;
+            var hasShared = all is not null && shared < all.Count;
+            if (!hasOwn && !hasShared)
+            {
+                return null;
+            }
+
+            // Both lists are sorted highest first; the higher of their heads is next (the property's own on a tie, which
+            // cannot happen: two declarations never share their order).
+            candidate = hasOwn && (!hasShared || candidates![own].Priority.CompareTo(all![shared].Priority) >= 0) ? candidates![own++] : all![shared++];
+            if (!_budget.Charge(1))
+            {
+                return null;
+            }
+
+            if ((reverted & (1 << RevertGroup(candidate.Origin))) != 0
+                || (layers is not null && layers.Contains((candidate.Origin, candidate.Entry.Declaration.Important, candidate.Layer))))
             {
                 continue;
             }
@@ -309,19 +420,15 @@ public sealed class StyleComputer
                     Report(candidate.Entry.Declaration, refused.Code, $"{refused.Problem}; the declaration is skipped.");
                     continue;
                 case WideKeywordEntry { Keyword: "revert" }:
-                    var group = RevertGroup(candidate.Origin);
-                    skips.Add(other => RevertGroup(other.Origin) == group);
+                    reverted |= 1 << RevertGroup(candidate.Origin);
                     continue;
                 case WideKeywordEntry { Keyword: "revert-layer" }:
-                    var (origin, important, layer) = (candidate.Origin, candidate.Entry.Declaration.Important, candidate.Layer);
-                    skips.Add(other => other.Origin == origin && other.Entry.Declaration.Important == important && ReferenceEquals(other.Layer, layer));
+                    (layers ??= new(new LayerKeyComparer())).Add((candidate.Origin, candidate.Entry.Declaration.Important, candidate.Layer));
                     continue;
                 default:
                     return candidate;
             }
         }
-
-        return null;
     }
 
     /// <summary>The origin <c>revert</c> rolls back (CSS Cascade 5 §7.3): user agent, user, or author with the
@@ -339,22 +446,42 @@ public sealed class StyleComputer
     /// substituted in dependency order (CSS Variables 1 §2.3). The order and the cycles come from an iterative
     /// strongly-connected-components walk (Tarjan) over the references of the element's declared values, so a chain of
     /// any length costs its length and no stack; the members of a cycle, and the values whose substitution fails, have
-    /// the guaranteed-invalid value (they are absent). An element that declares none shares its parent's table, so the
-    /// substitutions of its declarations can be remembered (<see cref="_substituted"/>).</summary>
-    private IReadOnlyDictionary<string, CssTokens> CustomProperties(Dictionary<string, List<Candidate>> declared, ComputedStyle? parent)
+    /// the guaranteed-invalid value (they are absent). The tables are immutable maps that share their structure: an
+    /// element that declares none shares its parent's table, one that declares a few costs those few, and elements with
+    /// the same parent table and the same winning declarations share one table, so the substitutions of their
+    /// declarations can be remembered (<see cref="_substituted"/>).</summary>
+    private ImmutableDictionary<string, CssTokens> CustomProperties(Dictionary<string, List<Candidate>> declared, ComputedStyle? parent)
     {
-        IReadOnlyDictionary<string, CssTokens> inherited = parent?.CustomProperties ?? NoCustomProperties;
+        var inherited = parent?.CustomProperties as ImmutableDictionary<string, CssTokens> ?? NoCustomProperties;
         if (declared.Count == 0)
         {
             return inherited;
         }
 
-        var result = new Dictionary<string, CssTokens>(inherited, StringComparer.Ordinal);
-        var pending = new Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)>(StringComparer.Ordinal);
+        var names = new List<string>(declared.Count);
+        var winners = new PreparedDeclaration?[declared.Count];
+        var entries = new EntryValue?[declared.Count];
         foreach (var (name, candidates) in declared)
         {
             var winner = Winner(candidates);
-            switch (winner?.Entry.Value)
+            winners[names.Count] = winner?.Entry.Declaration;
+            entries[names.Count] = winner?.Entry.Value;
+            names.Add(name);
+        }
+
+        _budget.Charge(declared.Count);
+        var key = ((object)inherited, winners);
+        if (_customTables.TryGetValue(key, out var shared))
+        {
+            return shared;
+        }
+
+        var result = inherited.ToBuilder();
+        var pending = new Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)>(StringComparer.Ordinal);
+        for (var i = 0; i < names.Count; i++)
+        {
+            var name = names[i];
+            switch (entries[i])
             {
                 case null:
                 case WideKeywordEntry { Keyword: "inherit" or "unset" }:
@@ -364,10 +491,14 @@ public sealed class StyleComputer
                     result.Remove(name);
                     break;
                 case CustomEntry { HasVar: false } value:
-                    result[name] = new CssTokens(value.Values, value.Text);
+                    if (!inherited.TryGetValue(name, out var same) || same.Text != value.Text)
+                    {
+                        result[name] = new CssTokens(value.Values, value.Text);
+                    }
+
                     break;
                 case CustomEntry value:
-                    pending[name] = (value, winner.Value.Entry.Declaration);
+                    pending[name] = (value, winners[i]!);
                     result.Remove(name);
                     break;
             }
@@ -375,6 +506,11 @@ public sealed class StyleComputer
 
         foreach (var component in ResolutionOrder(pending))
         {
+            if (_failure is not null)
+            {
+                return NoCustomProperties;
+            }
+
             if (component.Cyclic)
             {
                 foreach (var name in component.Names)
@@ -398,23 +534,53 @@ public sealed class StyleComputer
             }
         }
 
-        // Frozen: a computed style's custom properties cannot change, also through a cast (review 39 R-4).
-        return result.ToFrozenDictionary(StringComparer.Ordinal);
+        // Immutable: a computed style's custom properties cannot change, also through a cast.
+        var table = result.ToImmutable();
+        if (_budget.Remember(1))
+        {
+            _customTables[key] = table;
+        }
+
+        return table;
     }
 
-    private static readonly IReadOnlyDictionary<string, CssTokens> NoCustomProperties = FrozenDictionary<string, CssTokens>.Empty;
+    private static readonly ImmutableDictionary<string, CssTokens> NoCustomProperties = ImmutableDictionary.Create<string, CssTokens>(StringComparer.Ordinal);
 
     /// <summary>A strongly connected component of the dependency graph: one property, or the properties of a cycle.</summary>
     private sealed record Component(List<string> Names, bool Cyclic);
 
     /// <summary>The pending custom properties in an order where every property comes after those it refers to (Tarjan's
-    /// algorithm with an explicit stack: it emits the components dependencies first), with the cycles marked.</summary>
-    private static List<Component> ResolutionOrder(Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending)
+    /// algorithm with an explicit stack: it emits the components dependencies first), with the cycles marked. Each
+    /// property's references are a set, so a value that names n properties costs n, and every reference and step is
+    /// charged to the work limit.</summary>
+    private List<Component> ResolutionOrder(Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending)
     {
-        var edges = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var edges = new Dictionary<string, (List<string> List, HashSet<string> Set)>(StringComparer.Ordinal);
         foreach (var (name, (value, _)) in pending)
         {
-            edges[name] = [.. VarSubstitution.References(value.Values).Where(pending.ContainsKey)];
+            // The names a declared value refers to are found once per declaration (a walk of the whole value), not once
+            // per element.
+            if (!_references.TryGetValue(value, out var references))
+            {
+                references = VarSubstitution.References(value.Values);
+                if (_budget.Remember(1))
+                {
+                    _references[value] = references;
+                }
+            }
+
+            _budget.Charge(1 + references.Count);
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            var list = new List<string>();
+            foreach (var reference in references)
+            {
+                if (pending.ContainsKey(reference) && set.Add(reference))
+                {
+                    list.Add(reference);
+                }
+            }
+
+            edges[name] = (list, set);
         }
 
         var order = new List<Component>();
@@ -434,6 +600,11 @@ public sealed class StyleComputer
             work.Push((start, 0));
             while (work.Count > 0)
             {
+                if (!_budget.Charge(1))
+                {
+                    return order;
+                }
+
                 var (name, edge) = work.Pop();
                 if (edge == 0)
                 {
@@ -442,7 +613,7 @@ public sealed class StyleComputer
                     onStack.Add(name);
                 }
 
-                var targets = edges[name];
+                var targets = edges[name].List;
                 if (edge < targets.Count)
                 {
                     work.Push((name, edge + 1));
@@ -460,7 +631,7 @@ public sealed class StyleComputer
                 }
 
                 // All edges done: hand the low link to the caller, and emit a component at its root.
-                if (work.Count > 0 && work.Peek() is var (caller, _) && edges[caller].Contains(name))
+                if (work.Count > 0 && work.Peek() is var (caller, _) && edges[caller].Set.Contains(name))
                 {
                     low[caller] = Math.Min(low[caller], low[name]);
                 }
@@ -477,7 +648,7 @@ public sealed class StyleComputer
                     }
                     while (member != name);
 
-                    order.Add(new Component(names, names.Count > 1 || targets.Contains(name)));
+                    order.Add(new Component(names, names.Count > 1 || edges[name].Set.Contains(name)));
                 }
             }
         }
@@ -485,8 +656,9 @@ public sealed class StyleComputer
         return order;
     }
 
-    /// <summary>A substitution, remembered per declaration and custom-property table (one table is shared by all
-    /// elements that declare no custom property of their own), and charged to the cascade's substitution work.</summary>
+    /// <summary>A substitution, remembered per declaration and custom-property table (tables are shared, see
+    /// <see cref="CustomProperties"/>), and charged to the cascade's substitution work; past that limit the cascade
+    /// stops.</summary>
     private VarSubstitution.Outcome Substitute(IReadOnlyList<ComponentValue> values, IReadOnlyDictionary<string, CssTokens> custom, PreparedDeclaration declaration, out ValueList<ComponentValue> result)
     {
         var key = (declaration, (object)custom);
@@ -496,22 +668,16 @@ public sealed class StyleComputer
             return known.Outcome;
         }
 
-        if (_substitutionWork > CssInputLimits.MaxSubstitutionWork)
+        var outcome = VarSubstitution.Substitute(values, name => custom.TryGetValue(name, out var value) ? value : null, out result, out var length);
+        if (!_budget.Substitute(length))
         {
+            Fail(new Error(CssErrorCodes.TooLarge, $"The var() substitutions of the document make more than {_budget.MaxSubstitution} characters of text together.")
+                .With(ErrorMetadataKeys.Value, _budget.MaxSubstitution));
             result = [];
             return VarSubstitution.Outcome.Uncertain;
         }
 
-        var outcome = VarSubstitution.Substitute(values, name => custom.TryGetValue(name, out var value) ? value : null, out result, out var length);
-        _substitutionWork += length;
-        if (_substitutionWork > CssInputLimits.MaxSubstitutionWork && !_substitutionWorkReported)
-        {
-            _substitutionWorkReported = true;
-            _diagnostics.Add(new Error(CssErrorCodes.TooLarge, $"The var() substitutions of the document make more than {CssInputLimits.MaxSubstitutionWork} characters of text together; the rest are not made.")
-                .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSubstitutionWork));
-        }
-
-        if (_substituted.Count < CssInputLimits.MaxMatchingMemo)
+        if (_budget.Remember(1))
         {
             _substituted[key] = (outcome, result);
         }
@@ -527,10 +693,13 @@ public sealed class StyleComputer
                 Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"The var() substitution in '{declaration.Name}' is longer than {CssInputLimits.MaxSubstitutionLength} characters, Chromium's limit; the property is unset, as in Chromium (CSS Variables 1 §3.1).");
                 break;
             case VarSubstitution.Outcome.TooDeep:
-                Report(declaration, CssErrorCodes.TooDeep, $"The var() substitution in '{declaration.Name}' nests blocks and functions deeper than {CssInputLimits.MaxDepth}; it is refused.");
+                Fail(DeclarationPreparer.Diagnostic(CssErrorCodes.TooDeep, $"The var() substitution in '{declaration.Name}' nests blocks and functions deeper than {CssInputLimits.MaxDepth}.", declaration)
+                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxDepth));
+                break;
+            case VarSubstitution.Outcome.Uncertain when _failure is not null:
                 break;
             case VarSubstitution.Outcome.Uncertain:
-                Report(declaration, CssErrorCodes.TooLarge, $"The var() substitution in '{declaration.Name}' is within a few characters of {CssInputLimits.MaxSubstitutionLength}, Chromium's limit, or past the document's substitution work; whether Chromium keeps it cannot be told, so it is refused.");
+                Report(declaration, CssErrorCodes.Unsupported.Value, $"The var() substitution in '{declaration.Name}' is within a few characters of {CssInputLimits.MaxSubstitutionLength}, Chromium's limit; whether Chromium keeps it cannot be told, so it is refused.");
                 break;
             default:
                 Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"A var() in '{declaration.Name}' names a custom property with no value and has no fallback; the property is unset (CSS Variables 1 §3.1).");
@@ -542,13 +711,13 @@ public sealed class StyleComputer
 
     /// <summary>A longhand's computed value: the winner's value computed, the CSS-wide keywords applied, or the
     /// inherited or initial value when nothing is declared.</summary>
-    private CssValue Value(PropertyDefinition property, List<Candidate>? candidates, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
+    private CssValue Value(PropertyDefinition property, List<Candidate>? candidates, List<Candidate>? all, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
     {
         CssValue Unset() => property == PropertyRegistry.FontSize
             ? PropertyRegistry.InheritFontSize(context)
             : property.Inherited ? context.Inherited(property) : InitialOf(property, context);
         _declaredBy[property.Index] = null;
-        if (Winner(candidates) is not { } winner)
+        if (Winner(candidates, all) is not { } winner)
         {
             return Unset();
         }
@@ -732,5 +901,53 @@ public sealed class StyleComputer
         /// <inheritdoc />
         public int GetHashCode((PreparedDeclaration Declaration, object Custom) obj) =>
             HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Declaration), System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Custom));
+    }
+
+    /// <summary>Compares the rolled-back layers of revert-layer: origin, importance and the layer's identity.</summary>
+    private sealed class LayerKeyComparer : IEqualityComparer<(CascadeOrigin Origin, bool Important, object Layer)>
+    {
+        /// <inheritdoc />
+        public bool Equals((CascadeOrigin Origin, bool Important, object Layer) x, (CascadeOrigin Origin, bool Important, object Layer) y) =>
+            x.Origin == y.Origin && x.Important == y.Important && ReferenceEquals(x.Layer, y.Layer);
+
+        /// <inheritdoc />
+        public int GetHashCode((CascadeOrigin Origin, bool Important, object Layer) obj) =>
+            HashCode.Combine(obj.Origin, obj.Important, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Layer));
+    }
+
+    /// <summary>Compares custom-table keys: the parent's table and each winning declaration by identity.</summary>
+    private sealed class CustomTableComparer : IEqualityComparer<(object Parent, PreparedDeclaration?[] Winners)>
+    {
+        /// <inheritdoc />
+        public bool Equals((object Parent, PreparedDeclaration?[] Winners) x, (object Parent, PreparedDeclaration?[] Winners) y)
+        {
+            if (!ReferenceEquals(x.Parent, y.Parent) || x.Winners.Length != y.Winners.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < x.Winners.Length; i++)
+            {
+                if (!ReferenceEquals(x.Winners[i], y.Winners[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public int GetHashCode((object Parent, PreparedDeclaration?[] Winners) obj)
+        {
+            var hash = new HashCode();
+            hash.Add(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Parent));
+            foreach (var winner in obj.Winners)
+            {
+                hash.Add(winner is null ? 0 : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(winner));
+            }
+
+            return hash.ToHashCode();
+        }
     }
 }

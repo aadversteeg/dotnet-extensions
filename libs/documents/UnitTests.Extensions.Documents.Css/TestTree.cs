@@ -120,13 +120,29 @@ public static class TestTree
         var parsed = CssParser.ParseStyleSheet(author, new CssSourceOptions("author.css")).Value;
         diagnostics.AddRange(parsed.Diagnostics);
         sheets.Add(new CascadeSheet(parsed.Value, CascadeOrigin.Author));
-        var index = CascadeIndex.Build(sheets, media ?? MediaContext.PrintA4, imports);
+        var styles = new Dictionary<TestElement, ComputedStyle>();
+        var built = CascadeIndex.Build(sheets, media ?? MediaContext.PrintA4, imports);
+        if (built.IsFailure)
+        {
+            // A limit: the index is not made, and the error is the result.
+            diagnostics.Add(built.Error);
+            return new Computed(styles, diagnostics);
+        }
+
+        var index = built.Value;
         diagnostics.AddRange(index.Diagnostics);
         var computer = new StyleComputer(index.Value, values ?? ValueContext.A4);
-        var styles = new Dictionary<TestElement, ComputedStyle>();
         foreach (var element in root.TreeOrder())
         {
-            styles[element] = computer.Compute(element, own?.Invoke(element));
+            var computed = computer.Compute(element, own?.Invoke(element));
+            if (computed.IsFailure)
+            {
+                diagnostics.AddRange(computer.Diagnostics);
+                diagnostics.Add(computed.Error);
+                return new Computed(styles, diagnostics);
+            }
+
+            styles[element] = computed.Value;
         }
 
         diagnostics.AddRange(computer.Diagnostics);

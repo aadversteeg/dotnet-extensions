@@ -134,7 +134,7 @@ internal static class VarSubstitution
                     }
 
                     // The fallback's values go into the same output, in the place of the var().
-                    stack.Push(new Frame(DeclarationPreparer.Trim(fallback), frame.Output, null, null, frame.Depth));
+                    stack.Push(new Frame(Trimmed(fallback), frame.Output, null, null, frame.Depth));
                     break;
                 case FunctionValue function:
                     lower += function.Name.Length + 2;
@@ -256,8 +256,9 @@ internal static class VarSubstitution
     }
 
     /// <summary>The arguments of var(): the name, and the fallback after the first comma (null when there is no comma;
-    /// it may be empty).</summary>
-    private static (string Name, List<ComponentValue>? Fallback)? Arguments(FunctionValue function)
+    /// it may be empty). The fallback is a view of the function's values, not a copy: a fallback that is not used costs
+    /// nothing however long it is.</summary>
+    private static (string Name, IReadOnlyList<ComponentValue>? Fallback)? Arguments(FunctionValue function)
     {
         var index = 0;
         var values = function.Values;
@@ -287,12 +288,47 @@ internal static class VarSubstitution
             return null;
         }
 
-        var fallback = new List<ComponentValue>();
-        for (index++; index < values.Count; index++)
+        return (name.Text, new Slice(values, index + 1, values.Count));
+    }
+
+    /// <summary>A view without the white space at its start and end.</summary>
+    private static IReadOnlyList<ComponentValue> Trimmed(IReadOnlyList<ComponentValue> values)
+    {
+        var (list, start, end) = values is Slice slice ? (slice.Values, slice.Start, slice.End) : (values, 0, values.Count);
+        while (start < end && list[start] is CssToken { Kind: CssTokenKind.Whitespace })
         {
-            fallback.Add(values[index]);
+            start++;
         }
 
-        return (name.Text, fallback);
+        while (end > start && list[end - 1] is CssToken { Kind: CssTokenKind.Whitespace })
+        {
+            end--;
+        }
+
+        return new Slice(list, start, end);
+    }
+
+    /// <summary>A part of a list of values, without a copy.</summary>
+    private sealed class Slice(IReadOnlyList<ComponentValue> values, int start, int end) : IReadOnlyList<ComponentValue>
+    {
+        public IReadOnlyList<ComponentValue> Values { get; } = values;
+
+        public int Start { get; } = start;
+
+        public int End { get; } = end;
+
+        public int Count => End - Start;
+
+        public ComponentValue this[int index] => Values[Start + index];
+
+        public IEnumerator<ComponentValue> GetEnumerator()
+        {
+            for (var i = Start; i < End; i++)
+            {
+                yield return Values[i];
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

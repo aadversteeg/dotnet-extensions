@@ -138,15 +138,16 @@ public static class CssErrorCodes
         public static readonly ErrorCode ColorFunction = _ / "ColorFunction";
     }
 
-    /// <summary>Input past one of the work limits of <see cref="CssInputLimits"/>: a style sheet longer than
-    /// <see cref="CssInputLimits.MaxCharacters"/>, more imported style sheets than
-    /// <see cref="CssInputLimits.MaxImportedSheets"/>, more selector matching than
-    /// <see cref="CssInputLimits.MaxMatchingWork"/>, more substitution than
-    /// <see cref="CssInputLimits.MaxSubstitutionWork"/>, or a substitution too close to Chromium's limit to tell. A
-    /// refusal: a browser would have read it. Metadata: Value (the limit), SourceFile.</summary>
+    /// <summary>Input past one of the limits of <see cref="CssInputLimits"/>: a style sheet longer than
+    /// <see cref="CssInputLimits.MaxCharacters"/>, more style sheets than <see cref="CssInputLimits.MaxStyleSheets"/>,
+    /// more index entries than <see cref="CssInputLimits.MaxCascadeEntries"/>, more cascade work than
+    /// <see cref="CssInputLimits.MaxCascadeWork"/>, more substitution than <see cref="CssInputLimits.MaxSubstitutionWork"/>,
+    /// or a substitution too close to Chromium's limit to tell. The reader stops there: the result is this error, in
+    /// every mode. Metadata: Value (the limit), SourceFile.</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
 
-    /// <summary>Blocks, functions or nested rules deeper than <see cref="CssInputLimits.MaxDepth"/>. A refusal, as
-    /// <see cref="TooLarge"/>. Metadata: Value (the limit), SourceFile, SourceLine, SourceColumn.</summary>
+    /// <summary>Blocks, functions or nested rules deeper than <see cref="CssInputLimits.MaxDepth"/> (also a value nested
+    /// that deep by var() substitution), or selectors nested deeper than <see cref="CssInputLimits.MaxSelectorNesting"/>.
+    /// The reader stops there, as for <see cref="TooLarge"/>. Metadata: Value (the limit), SourceFile, SourceLine, SourceColumn.</summary>
     public static readonly ErrorCode TooDeep = _ / "TooDeep";
 }

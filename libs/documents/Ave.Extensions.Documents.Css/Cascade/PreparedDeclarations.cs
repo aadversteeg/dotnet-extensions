@@ -45,7 +45,7 @@ internal sealed record RefusedEntry(ErrorCode Code, string Problem) : EntryValue
 /// <summary>A custom property's value (CSS Variables 1 §2): component values with their text.</summary>
 internal sealed record CustomEntry(ValueList<ComponentValue> Values, string Text, bool HasVar) : EntryValue;
 
-/// <summary>One property set by one declaration: a longhand, or a custom property by name.</summary>
+/// <summary>One property set by one declaration: a longhand, a custom property by name, or (neither) <c>all</c>.</summary>
 internal readonly record struct Entry(PropertyDefinition? Longhand, string? Custom, EntryValue Value, PreparedDeclaration Declaration);
 
 /// <summary>A rule's declarations, prepared once: the entries, and the diagnostics reported once when the rule first
@@ -89,7 +89,40 @@ internal static class DeclarationPreparer
             Prepare(declaration, sourceName, origin, order++, entries, whenApplied, diagnostics);
         }
 
-        return entries.Count == 0 && whenApplied.Count == 0 ? PreparedBlock.Empty : new PreparedBlock([.. entries], [.. whenApplied]);
+        return entries.Count == 0 && whenApplied.Count == 0 ? PreparedBlock.Empty : new PreparedBlock(Unshadowed(entries), [.. whenApplied]);
+    }
+
+    /// <summary>The entries of one block that can win: of the entries for one property (or for <c>all</c>) with one
+    /// importance, the last that is not refused and the refused ones after it. The earlier ones lose to it in every
+    /// cascade (same origin, layer, specificity and element, later order), so a block that repeats a declaration costs
+    /// one entry, not one per repetition. (A refused entry is skipped when it would win, so the one before it stays.)</summary>
+    private static ValueList<Entry> Unshadowed(List<Entry> entries)
+    {
+        if (entries.Count < 2)
+        {
+            return [.. entries];
+        }
+
+        var settled = new HashSet<(int Longhand, string? Custom, bool Important)>();
+        var kept = new List<Entry>(entries.Count);
+        for (var i = entries.Count - 1; i >= 0; i--)
+        {
+            var entry = entries[i];
+            var key = (entry.Longhand?.Index ?? -1, entry.Custom, entry.Declaration.Important);
+            if (settled.Contains(key))
+            {
+                continue;
+            }
+
+            kept.Add(entry);
+            if (entry.Value is not RefusedEntry)
+            {
+                settled.Add(key);
+            }
+        }
+
+        kept.Reverse();
+        return [.. kept];
     }
 
     private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Error> whenApplied, DiagnosticCollector diagnostics)
@@ -144,11 +177,19 @@ internal static class DeclarationPreparer
         IReadOnlyList<PropertyDefinition> targets = longhand is not null
             ? [longhand]
             : isAll
-                ? [.. PropertyRegistry.Longhands.Where(property => property.Name is not ("direction" or "unicode-bidi"))]
+                ? []
                 : [.. shorthand!.Longhands.Select(longhandName => PropertyRegistry.Find(longhandName)!)];
 
         void AddAll(EntryValue value)
         {
+            if (isAll)
+            {
+                // One entry for every longhand but direction and unicode-bidi (CSS Cascade 5 §3.2): the cascade takes it
+                // with each longhand's own candidates, so a declaration of all costs one entry, not one per longhand.
+                entries.Add(new Entry(null, null, value, prepared));
+                return;
+            }
+
             foreach (var target in targets)
             {
                 entries.Add(new Entry(target, null, value, prepared));
