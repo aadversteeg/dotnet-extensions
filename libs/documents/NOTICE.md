@@ -64,12 +64,17 @@ governed by a BSD-style license that can be found in the LICENSE file":
 
 - `third_party/blink/renderer/core/layout/block_layout_algorithm.cc` (Copyright 2016 The Chromium Authors): where a
   paragraph breaks under orphans and widows, and its best early break (`Layout/InlineLayout.cs`, `BreakWhereFull`,
-  `BestBreakInside`); a box that asks its parent for its early break (`Layout/LayoutResult.cs`, `KeepsItsBreak`);
+  `BestBreakInside`); a box that lays itself out again to its early break and records that break as perfect
+  (`Layout/LayoutResult.cs`, `KeepsItsBreak`, `KeptAppeal`; `Layout/BreakAvoidance.cs`, `Kept`);
 - `third_party/blink/renderer/core/layout/early_break.h` (Copyright 2019 The Chromium Authors) and `break_appeal.h`:
   early breaks and the order of break appeals (`Layout/EarlyBreak.cs`, `Layout/BreakAppeal.cs`, `Layout/FlowLayout.cs`);
 - `third_party/blink/renderer/core/layout/fragmentation_utils.cc` (Copyright 2017 The Chromium Authors):
   `FinishFragmentation`, bottom padding and borders that do not fit below a box's content (`Layout/SlicedBox.cs`), and
-  `MovePastBreakpoint`, no breakpoint inside a box that continues from the page before (`Layout/FlowLayout.cs`);
+  `MovePastBreakpoint`, no breakpoint inside a box that continues from the page before, and the comparison of a break
+  inside a child with the breakpoints before it (`Layout/FlowLayout.cs`); `CalculateBreakAppealInside`, a child's
+  `break-inside: avoid` applied by its parent (`Layout/BreakAvoidance.cs`, `Kept`);
+- `third_party/blink/renderer/core/layout/box_fragment_builder.cc` (`PropagateBreakInfo`): the `break-inside: avoid` of a
+  box between a break and the box that compares it (`Layout/BreakAvoidance.cs`, `Kept`);
 - `third_party/blink/renderer/platform/fonts/font_metrics.cc` (`FontMetrics::AscentDescentWithHacks`) and
   `simple_font_data.cc` (the line spacing): a font's ascent, descent and line gap each rounded to a whole pixel; and
   `third_party/blink/renderer/core/layout/inline/line_utils.cc` (`CalculateLeadingSpace`): the half-leading above the
