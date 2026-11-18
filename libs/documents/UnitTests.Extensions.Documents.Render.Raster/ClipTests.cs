@@ -49,14 +49,14 @@ public class ClipTests
         return result.Value;
     }
 
-    /// <summary>Every pixel shows the exact area of the box in it, within one step.</summary>
-    private static void ShouldShowExactly(RgbaImage image, Box box)
+    /// <summary>Every pixel shows the exact area of the boxes in it (boxes that do not overlap), within one step.</summary>
+    private static void ShouldShowExactly(RgbaImage image, params Box[] boxes)
     {
         for (var y = 0; y < image.Height; y++)
         {
             for (var x = 0; x < image.Width; x++)
             {
-                var area = box.AreaIn(x, y);
+                var area = boxes.Sum(box => box.AreaIn(x, y));
                 Math.Abs(image.Pixels[((y * image.Width) + x) * 4] - (255 - (255 * area))).Should().BeLessThanOrEqualTo(1, $"pixel ({x}, {y}) covers {area:F4}");
             }
         }
@@ -118,6 +118,37 @@ public class ClipTests
         var image = Drawn(20, 16, 120, new ClipStart(EdgeInsidePixels), new ClipStart(inner), new FillRectangle(rule, Color.Black), ClipEnd.Instance, ClipEnd.Instance);
 
         ShouldShowExactly(image, Pixels(rule, scale).Intersect(Pixels(EdgeInsidePixels, scale)).Intersect(Pixels(inner, scale)));
+    }
+
+    [Fact]
+    public void After_an_inner_clip_ends_the_outer_clip_holds_again()
+    {
+        // The rule comes after the inner clip's end and before the outer one's: it is cut by the outer clip, not drawn
+        // whole and not cut by the inner one.
+        const double scale = 120.0 / 72;
+        var inner = new Rect(new Point(1.35, 7.9), new Size(10.2, 7.15));
+        var rule = new Rect(new Point(0.5, 0.5), new Size(19, 15));
+        var image = Drawn(20, 16, 120, new ClipStart(EdgeInsidePixels), new ClipStart(inner), ClipEnd.Instance, new FillRectangle(rule, Color.Black), ClipEnd.Instance);
+
+        ShouldShowExactly(image, Pixels(rule, scale).Intersect(Pixels(EdgeInsidePixels, scale)));
+    }
+
+    [Fact]
+    public void Every_glyph_of_a_run_is_clipped_not_only_the_first()
+    {
+        // Two 'I's of the Roboto subset (one rectangle each, design units 183 to 376 of 2048 across) 6 pt apart: the clip's
+        // right edge at 10.6 pt leaves the first whole and cuts the second across, inside a pixel.
+        const double scale = 120.0 / 72;
+        var font = TestFonts.RobotoSubset;
+        var (size, originX, originY) = (20.0, 2.0, 14.6);
+        var em = size / 2048;
+        Box Glyph(double x) => new((originX + x + (183 * em)) * scale, (originY - (1456 * em)) * scale, (originX + x + (376 * em)) * scale, originY * scale);
+        var clip = new Rect(new Point(0, 0), new Size(10.6, 16));
+        var i = font.GlyphFor(new Rune('I')).Value;
+        var run = new GlyphRun(font, size, Color.Black, new Point(originX, originY), [new PositionedGlyph(i, 0, "I"), new PositionedGlyph(i, 6, "I")]);
+        var image = Drawn(20, 16, 120, new ClipStart(clip), run, ClipEnd.Instance);
+
+        ShouldShowExactly(image, Glyph(0).Intersect(Pixels(clip, scale)), Glyph(6).Intersect(Pixels(clip, scale)));
     }
 
     [Fact]
