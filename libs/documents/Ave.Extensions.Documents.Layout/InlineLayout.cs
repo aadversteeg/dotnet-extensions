@@ -86,8 +86,8 @@ public static class InlineLayout
     /// that is not safe to break, its end is shaped again with the run's font (<see cref="GreedyLineBreaker"/>, THE RULE
     /// FOR SHAPING AT A BREAK). A shaping error names the run.</summary>
     private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.ShapedRun> runs, double width) =>
-        GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], width, (run, text, showsHyphen) =>
-            Shaper.ShapeLinePiece(text, runs[run].Font, runs[run].Run.Style.FontSize.Points, showsHyphen).MapError(error => error.WithSource(runs[run].Run.Source)));
+        GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], width, (run, text, showsHyphen, budget) =>
+            Shaper.ShapeLinePiece(text, runs[run].Font, runs[run].Run.Style.FontSize.Points, showsHyphen, budget).MapError(error => error.WithSource(runs[run].Run.Source)));
 
     /// <summary>
     /// True when the box's text makes at least one line box: some text is left after white-space collapsing.

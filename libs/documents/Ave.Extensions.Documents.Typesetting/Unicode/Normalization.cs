@@ -27,18 +27,20 @@ namespace Ave.Extensions.Documents.Typesetting.Unicode;
 /// decomposition is taken when the font has the second part and either has the first or can decompose it in turn;
 /// otherwise the character stays.</item>
 /// <item>Reorder: within a run of characters whose combining class is not 0, by combining class, keeping the order of
-/// equal ones (UAX #15 §3.3, the canonical ordering algorithm); a run longer than <see cref="MaxReorderedMarks"/> is left
-/// as it is, as HarfBuzz leaves it.</item>
+/// equal ones (the Canonical Ordering Algorithm, the Unicode Standard §3.11.5, D108 and D109); a run longer than
+/// <see cref="MaxReorderedMarks"/> is left as it is, as HarfBuzz leaves it.</item>
 /// <item>Recompose: a mark is combined with the last starter before it when nothing between them blocks it (the character
 /// just before it has a lower combining class, or is the starter), the pair has a canonical composition that is not
-/// excluded (UAX #15, Full_Composition_Exclusion), and the font has a glyph for the result. A character that is not a mark
+/// excluded (Full_Composition_Exclusion; the Canonical Composition Algorithm, the Unicode Standard §3.11.6, D114 to D117),
+/// and the font has a glyph for the result. A character that is not a mark
 /// is never combined with the starter before it.</item>
 /// </list>
 /// Rounds 2 and 3 run only when the piece holds a mark (HarfBuzz 15's "all simple" shortcut, which the reference build
 /// shares). Clusters follow HarfBuzz too: the parts of a decomposition keep their character's cluster; a run of marks that
 /// is reordered, and a composition with the characters between its parts, become one cluster. Each output character's text
 /// is its cluster's characters in the source, the later characters of a cluster have none, so the texts joined are the
-/// source text. Not done, as in this engine's shaper generally: enclosing marks (general category Me) count as no marks
+/// source text. BOUNDED WORK: every round looks at each character a fixed number of times, so a cluster of n marks costs
+/// work in proportion to n (<see cref="Steps"/> counts it). Not done, as in this engine's shaper generally: enclosing marks (general category Me) count as no marks
 /// here; the space and U+2011 fallbacks of HarfBuzz's normalizer (a missing space or non-breaking hyphen drawn with
 /// another glyph) are not made.
 /// </remarks>
@@ -82,11 +84,25 @@ internal static partial class Normalization
     /// <summary>The combining class of a code point (0 for a starter).</summary>
     public static int ClassOf(int codePoint) => Tables.Classes.GetValueOrDefault(codePoint);
 
+    /// <summary>The work of normalizing: one step for each character a round looks at.</summary>
+    public sealed class Steps
+    {
+        /// <summary>The steps so far.</summary>
+        public long Count { get; private set; }
+
+        /// <summary>Counts one step.</summary>
+        public void Step() => Count++;
+    }
+
     /// <summary>Normalizes one shaping piece for a font (see the remarks).</summary>
     /// <param name="characters">The piece's characters.</param>
     /// <param name="hasGlyph">Whether the font has a glyph for a code point ('cmap').</param>
     /// <returns>The characters to shape, each with its text.</returns>
-    public static ImmutableArray<Normalized> ForFont(IReadOnlyList<Rune> characters, Func<int, bool> hasGlyph)
+    public static ImmutableArray<Normalized> ForFont(IReadOnlyList<Rune> characters, Func<int, bool> hasGlyph) =>
+        ForFont(characters, hasGlyph, new Steps());
+
+    /// <summary>As <see cref="ForFont(IReadOnlyList{Rune}, Func{int, bool})"/>, counting the work in <paramref name="steps"/>.</summary>
+    public static ImmutableArray<Normalized> ForFont(IReadOnlyList<Rune> characters, Func<int, bool> hasGlyph, Steps steps)
     {
         // Each item: the code point and its cluster, an index into the source characters.
         var items = new List<(int CodePoint, int Cluster)>(characters.Count);
@@ -94,8 +110,10 @@ internal static partial class Normalization
         {
             var codePoint = characters[index].Value;
             var clusterEnd = index + 1;
+            steps.Step();
             while (clusterEnd < characters.Count && IsMark(characters[clusterEnd].Value))
             {
+                steps.Step();
                 clusterEnd++;
             }
 
@@ -118,11 +136,11 @@ internal static partial class Normalization
 
         if (characters.Any(character => IsMark(character.Value)))
         {
-            Reorder(items);
-            Recompose(items, hasGlyph);
+            Reorder(items, steps);
+            Recompose(items, hasGlyph, steps);
         }
 
-        return Texts(items, characters);
+        return Texts(items, characters, steps);
     }
 
     /// <summary>A mark for the normalizer: general category Mn or Mc (HarfBuzz's <c>HB_UNICODE_GENERAL_CATEGORY_IS_MARK</c>
@@ -203,12 +221,14 @@ internal static partial class Normalization
     }
 
     /// <summary>The canonical ordering: each run of characters with a non-zero combining class sorted by it, stably; a run
-    /// whose order changes becomes one cluster.</summary>
-    private static void Reorder(List<(int CodePoint, int Cluster)> items)
+    /// whose order changes becomes one cluster. A run longer than <see cref="MaxReorderedMarks"/> is passed over without
+    /// being sorted, so the sort works on at most that many characters.</summary>
+    private static void Reorder(List<(int CodePoint, int Cluster)> items, Steps steps)
     {
         var start = 0;
         while (start < items.Count)
         {
+            steps.Step();
             if (ClassOf(items[start].CodePoint) == 0)
             {
                 start++;
@@ -218,12 +238,19 @@ internal static partial class Normalization
             var end = start;
             while (end < items.Count && ClassOf(items[end].CodePoint) != 0)
             {
+                steps.Step();
                 end++;
+            }
+
+            if (end - start > MaxReorderedMarks)
+            {
+                start = end;
+                continue;
             }
 
             var run = items.GetRange(start, end - start);
             var sorted = run.OrderBy(item => ClassOf(item.CodePoint)).ToList();
-            if (run.Count <= MaxReorderedMarks && !sorted.SequenceEqual(run))
+            if (!sorted.SequenceEqual(run))
             {
                 var cluster = run.Min(item => item.Cluster);
                 for (var index = 0; index < sorted.Count; index++)
@@ -238,13 +265,18 @@ internal static partial class Normalization
 
     /// <summary>The recomposition round (see the remarks); a composition and what lies between its parts become one
     /// cluster.</summary>
-    private static void Recompose(List<(int CodePoint, int Cluster)> items, Func<int, bool> hasGlyph)
+    private static void Recompose(List<(int CodePoint, int Cluster)> items, Func<int, bool> hasGlyph, Steps steps)
     {
         // The first character is the first starter, whatever its class, as in HarfBuzz.
         var output = new List<(int CodePoint, int Cluster)>(items.Count);
         var starter = 0;
+
+        // Each composition joins the characters after the starter into its cluster. A starter composes only a few times:
+        // each composition makes a character whose full canonical decomposition is one character longer, and those are
+        // short; so this is a fixed number of passes over the characters after it.
         foreach (var item in items)
         {
+            steps.Step();
             if (output.Count > 0 && IsMark(item.CodePoint)
                 && (starter == output.Count - 1 || ClassOf(output[^1].CodePoint) < ClassOf(item.CodePoint))
                 && Compose(output[starter].CodePoint, item.CodePoint) is { } composed && hasGlyph(composed))
@@ -253,6 +285,7 @@ internal static partial class Normalization
                 output[starter] = (composed, cluster);
                 for (var index = starter + 1; index < output.Count; index++)
                 {
+                    steps.Step();
                     output[index] = (output[index].CodePoint, cluster);
                 }
 
@@ -271,25 +304,45 @@ internal static partial class Normalization
     }
 
     /// <summary>Each item's text from the clusters, which never decrease: the first item of a cluster shows the source
-    /// characters from its cluster up to the next cluster, the others none.</summary>
-    private static ImmutableArray<Normalized> Texts(List<(int CodePoint, int Cluster)> items, IReadOnlyList<Rune> characters)
+    /// characters from its cluster up to the next cluster, the others none. The next cluster of each item is found in one
+    /// pass from the end, so a long cluster is walked once, not once per item.</summary>
+    private static ImmutableArray<Normalized> Texts(List<(int CodePoint, int Cluster)> items, IReadOnlyList<Rune> characters, Steps steps)
     {
+        // nextCluster[i]: the cluster of the first item after i whose cluster differs, or the end of the text.
+        var nextCluster = new int[items.Count];
+        var following = characters.Count;
+        for (var index = items.Count - 1; index >= 0; index--)
+        {
+            steps.Step();
+            nextCluster[index] = following;
+            if (index > 0 && items[index - 1].Cluster != items[index].Cluster)
+            {
+                following = items[index].Cluster;
+            }
+        }
+
         var result = ImmutableArray.CreateBuilder<Normalized>(items.Count);
         for (var index = 0; index < items.Count; index++)
         {
+            steps.Step();
             var cluster = items[index].Cluster;
-            var next = index + 1;
-            while (next < items.Count && items[next].Cluster == cluster)
-            {
-                next++;
-            }
-
-            var end = next < items.Count ? items[next].Cluster : characters.Count;
             var sharesCluster = index > 0 && items[index - 1].Cluster == cluster;
-            var text = sharesCluster ? string.Empty : string.Concat(Enumerable.Range(cluster, end - cluster).Select(position => characters[position].ToString()));
+            var text = sharesCluster ? string.Empty : Source(characters, cluster, nextCluster[index], steps);
             result.Add(new Normalized(new Rune(items[index].CodePoint), text));
         }
 
         return result.MoveToImmutable();
+    }
+
+    private static string Source(IReadOnlyList<Rune> characters, int from, int to, Steps steps)
+    {
+        var text = new StringBuilder();
+        for (var position = from; position < to; position++)
+        {
+            steps.Step();
+            text.Append(characters[position].ToString());
+        }
+
+        return text.ToString();
     }
 }

@@ -47,8 +47,8 @@ public class LineReshapingReferenceTests(ITestOutputHelper output)
         }
 
         results.SelectMany(result => result.Differences).Should().BeEmpty();
-        results.Sum(result => result.Lines).Should().Be(14_297, "every paragraph was broken at every width of the sweep");
-        results.Sum(result => result.ShapedAgain).Should().Be(8_669, "the sweep breaks inside ligatures, at kerning pairs and at shown hyphens");
+        results.Sum(result => result.Lines).Should().Be(14_364, "every paragraph was broken at every width of the sweep");
+        results.Sum(result => result.ShapedAgain).Should().Be(8_637, "the sweep breaks inside ligatures, at kerning pairs and at shown hyphens");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class LineReshapingReferenceTests(ITestOutputHelper output)
         var differences = new List<string>();
         for (var width = size; width <= whole + 37; width += 37)
         {
-            var broken = GreedyLineBreaker.BreakLines([[.. glyphs]], width, (_, text, showsHyphen) => Shaper.ShapeLinePiece(text, font, size, showsHyphen));
+            var broken = GreedyLineBreaker.BreakLines([[.. glyphs]], width, (_, text, showsHyphen, budget) => Shaper.ShapeLinePiece(text, font, size, showsHyphen, budget));
             broken.IsSuccess.Should().BeTrue(broken.IsFailure ? broken.Error.ToString() : string.Empty);
             foreach (var line in broken.Value)
             {

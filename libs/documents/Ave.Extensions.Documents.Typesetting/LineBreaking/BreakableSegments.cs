@@ -10,6 +10,11 @@ namespace Ave.Extensions.Documents.Typesetting.LineBreaking;
 /// opportunities: the "items" any line breaker chooses from. The greedy breaker (<see cref="GreedyLineBreaker"/>) uses
 /// them today; an optimal one (Knuth–Plass) can use the same items later.
 /// </summary>
+/// <remarks>
+/// Everything is found in passes over the text and the glyphs that each look at every item once, so preparing a
+/// paragraph costs work in proportion to its length; the lookups the breaker makes afterwards (<see cref="Paragraph"/>)
+/// take one step each.
+/// </remarks>
 internal static class BreakableSegments
 {
     /// <summary>A glyph with the index of the run it came from.</summary>
@@ -42,16 +47,153 @@ internal static class BreakableSegments
     /// is not a collapsible space, or a part of a cluster.</param>
     public sealed record Segment(int Start, int End, bool EndsWithMandatoryBreak, bool IsBlank, bool HasGlyphsBesideSpaces);
 
-    /// <summary>A paragraph prepared for line breaking.</summary>
-    /// <param name="Text">The paragraph's text: the glyphs' texts joined, which is the white-space-collapsed text.</param>
-    /// <param name="Glyphs">Every glyph, in order, with its place.</param>
-    /// <param name="RunStarts">The offset of every run's first character, and the text's length at the end.</param>
-    /// <param name="Segments">The segments, in order; empty for an empty paragraph.</param>
-    public sealed record Paragraph(string Text, ImmutableArray<Placed> Glyphs, ImmutableArray<int> RunStarts, ImmutableArray<Segment> Segments)
+    /// <summary>A paragraph prepared for line breaking, with the lookups the breaker needs, each answered in one step.</summary>
+    public sealed class Paragraph
     {
-        /// <summary>True when <paramref name="offset"/> starts or ends a run: a place where shaping already stops, so
-        /// always safe to break.</summary>
-        public bool IsRunBoundary(int offset) => RunStarts.Contains(offset);
+        private readonly int[] _firstEndingAfter;
+        private readonly int[] _firstStartingAt;
+        private readonly double[] _pens;
+        private readonly double[] _spacePens;
+        private readonly int[] _nextShowing;
+        private readonly int[] _previousShowing;
+        private readonly bool[] _safe;
+        private readonly int[] _nextSafe;
+        private readonly int[] _previousSafe;
+        private readonly int[] _runOf;
+
+        /// <summary>Prepares the lookups: one pass over the glyphs or over the text for each.</summary>
+        /// <param name="text">The paragraph's text: the glyphs' texts joined, which is the white-space-collapsed text.</param>
+        /// <param name="glyphs">Every glyph, in order, with its place.</param>
+        /// <param name="runStarts">The offset of every run's first character, and the text's length at the end.</param>
+        /// <param name="segments">The segments, in order; empty for an empty paragraph.</param>
+        public Paragraph(string text, ImmutableArray<Placed> glyphs, ImmutableArray<int> runStarts, ImmutableArray<Segment> segments)
+        {
+            (Text, Glyphs, RunStarts, Segments) = (text, glyphs, runStarts, segments);
+            var length = text.Length;
+            var count = glyphs.Length;
+            (_firstEndingAfter, _firstStartingAt) = (new int[length + 1], new int[length + 1]);
+            var (ending, starting) = (0, 0);
+            for (var offset = 0; offset <= length; offset++)
+            {
+                // Starts and ends never decrease along the glyphs, so one pointer each walks them once.
+                while (ending < count && glyphs[ending].End <= offset)
+                {
+                    ending++;
+                }
+
+                while (starting < count && glyphs[starting].Start < offset)
+                {
+                    starting++;
+                }
+
+                (_firstEndingAfter[offset], _firstStartingAt[offset]) = (ending, starting);
+            }
+
+            (_pens, _spacePens) = (new double[count + 1], new double[count + 1]);
+            for (var index = 0; index < count; index++)
+            {
+                var glyph = glyphs[index].Glyph;
+                _pens[index + 1] = _pens[index] + glyph.Advance;
+                _spacePens[index + 1] = _spacePens[index] + (glyph.IsSpace ? glyph.Advance : 0);
+            }
+
+            (_nextShowing, _previousShowing) = (new int[count + 1], new int[count + 1]);
+            _nextShowing[count] = count;
+            for (var index = count - 1; index >= 0; index--)
+            {
+                _nextShowing[index] = IsBlank(glyphs[index].Glyph) ? _nextShowing[index + 1] : index;
+            }
+
+            // _previousShowing[i]: the last glyph before i that is not blank, -1 for none.
+            _previousShowing[0] = -1;
+            for (var index = 0; index < count; index++)
+            {
+                _previousShowing[index + 1] = IsBlank(glyphs[index].Glyph) ? _previousShowing[index] : index;
+            }
+
+            // A safe place: a run boundary, or the start of a cluster with a glyph the shaper did not mark unsafe to break.
+            var safe = new bool[length + 1];
+            foreach (var start in runStarts)
+            {
+                safe[start] = true;
+            }
+
+            foreach (var glyph in glyphs)
+            {
+                safe[glyph.Start] |= !glyph.Glyph.UnsafeToBreak;
+            }
+
+            _safe = safe;
+            (_nextSafe, _previousSafe) = (new int[length + 1], new int[length + 1]);
+            _nextSafe[length] = length;
+            for (var offset = length - 1; offset >= 0; offset--)
+            {
+                _nextSafe[offset] = safe[offset + 1] ? offset + 1 : _nextSafe[offset + 1];
+            }
+
+            for (var offset = 1; offset <= length; offset++)
+            {
+                _previousSafe[offset] = safe[offset - 1] ? offset - 1 : _previousSafe[offset - 1];
+            }
+
+            _runOf = new int[length + 1];
+            var run = 0;
+            for (var offset = 0; offset <= length; offset++)
+            {
+                while (run + 2 < runStarts.Length && runStarts[run + 1] <= offset)
+                {
+                    run++;
+                }
+
+                _runOf[offset] = run;
+            }
+        }
+
+        /// <summary>The paragraph's text: the glyphs' texts joined, which is the white-space-collapsed text.</summary>
+        public string Text { get; }
+
+        /// <summary>Every glyph, in order, with its place.</summary>
+        public ImmutableArray<Placed> Glyphs { get; }
+
+        /// <summary>The offset of every run's first character, and the text's length at the end.</summary>
+        public ImmutableArray<int> RunStarts { get; }
+
+        /// <summary>The segments, in order; empty for an empty paragraph.</summary>
+        public ImmutableArray<Segment> Segments { get; }
+
+        /// <summary>The first glyph whose cluster ends after <paramref name="offset"/>: the first glyph of a line that
+        /// starts there, also when the line starts inside a cluster.</summary>
+        public int FirstEndingAfter(int offset) => _firstEndingAfter[offset];
+
+        /// <summary>The first glyph whose cluster starts at or after <paramref name="offset"/>: the end, exclusive, of the
+        /// glyphs of a line that ends there.</summary>
+        public int FirstStartingAt(int offset) => _firstStartingAt[offset];
+
+        /// <summary>The sum of the advances of the glyphs from <paramref name="from"/> to <paramref name="to"/>, exclusive.</summary>
+        public double Width(int from, int to) => _pens[to] - _pens[from];
+
+        /// <summary>The same without the collapsible spaces.</summary>
+        public double WidthWithoutSpaces(int from, int to) => Width(from, to) - (_spacePens[to] - _spacePens[from]);
+
+        /// <summary>The first glyph at or after <paramref name="index"/> that is not blank (<see cref="IsBlank"/>), or the
+        /// glyph count.</summary>
+        public int NextShowing(int index) => _nextShowing[index];
+
+        /// <summary>The last glyph before <paramref name="index"/> that is not blank, or -1.</summary>
+        public int PreviousShowing(int index) => _previousShowing[index];
+
+        /// <summary>True when the text may be broken at <paramref name="offset"/> without shaping either side again: a run
+        /// boundary, or the start of a cluster with a glyph the shaper did not mark <see cref="ShapedGlyph.UnsafeToBreak"/>.</summary>
+        public bool IsSafe(int offset) => _safe[offset];
+
+        /// <summary>The first safe place after <paramref name="offset"/> (the text's length when there is none).</summary>
+        public int NextSafe(int offset) => _nextSafe[offset];
+
+        /// <summary>The last safe place before <paramref name="offset"/> (0 is one).</summary>
+        public int PreviousSafe(int offset) => _previousSafe[offset];
+
+        /// <summary>The run of the character at <paramref name="offset"/> (at the text's end, the last run).</summary>
+        public int RunOf(int offset) => _runOf[offset];
     }
 
     /// <summary>
@@ -97,15 +239,21 @@ internal static class BreakableSegments
         runStarts.Add(offset);
         var placed = glyphs.ToImmutable();
         var text = string.Concat(placed.Select(glyph => glyph.Glyph.Text));
-        var clusterStarts = placed.Select(glyph => glyph.Start).ToHashSet();
+        var clusterStarts = new bool[text.Length + 1];
+        foreach (var glyph in placed)
+        {
+            clusterStarts[glyph.Start] = true;
+        }
+
         var segments = ImmutableArray.CreateBuilder<Segment>();
         var start = 0;
+        var cursor = 0;
         foreach (var opportunity in UnicodeLineBreaking.Find(text))
         {
-            var usable = opportunity.Offset < text.Length && (clusterStarts.Contains(opportunity.Offset) || canShapeAgain);
+            var usable = opportunity.Offset < text.Length && (clusterStarts[opportunity.Offset] || canShapeAgain);
             if (opportunity.Offset > start && usable)
             {
-                segments.Add(SegmentOf(placed, start, opportunity.Offset, opportunity.IsMandatory));
+                segments.Add(SegmentOf(placed, ref cursor, start, opportunity.Offset, opportunity.IsMandatory));
                 start = opportunity.Offset;
             }
         }
@@ -113,21 +261,31 @@ internal static class BreakableSegments
         // The end of the text is always an opportunity (UAX #14 LB3); a mandatory break there ends nothing.
         if (start < text.Length)
         {
-            segments.Add(SegmentOf(placed, start, text.Length, false));
+            segments.Add(SegmentOf(placed, ref cursor, start, text.Length, false));
         }
 
         return new Paragraph(text, placed, runStarts.ToImmutable(), segments.ToImmutable());
     }
 
-    private static Segment SegmentOf(ImmutableArray<Placed> glyphs, int start, int end, bool mandatory)
+    /// <summary>The segment from <paramref name="start"/> to <paramref name="end"/>. The segments come in order, so
+    /// <paramref name="cursor"/> — the first glyph whose cluster starts at or after the segment's start — only moves
+    /// forward, and every glyph is looked at once over all segments.</summary>
+    private static Segment SegmentOf(ImmutableArray<Placed> glyphs, ref int cursor, int start, int end, bool mandatory)
     {
-        var inside = glyphs.Where(glyph => glyph.Start >= start && glyph.Start < end).ToList();
-        var startsInsideCluster = glyphs.Any(glyph => glyph.Start < start && glyph.End > start);
-        return new Segment(
-            start,
-            end,
-            mandatory,
-            IsBlank: !startsInsideCluster && inside.All(glyph => IsBlank(glyph.Glyph)),
-            HasGlyphsBesideSpaces: startsInsideCluster || inside.Any(glyph => !glyph.Glyph.IsSpace));
+        while (cursor < glyphs.Length && glyphs[cursor].Start < start)
+        {
+            cursor++;
+        }
+
+        // A cluster that starts before the segment and reaches into it: the glyph before the cursor.
+        var startsInsideCluster = cursor > 0 && glyphs[cursor - 1].End > start;
+        var (allBlank, beside) = (true, false);
+        for (var index = cursor; index < glyphs.Length && glyphs[index].Start < end; index++)
+        {
+            allBlank &= IsBlank(glyphs[index].Glyph);
+            beside |= !glyphs[index].Glyph.IsSpace;
+        }
+
+        return new Segment(start, end, mandatory, IsBlank: !startsInsideCluster && allBlank, HasGlyphsBesideSpaces: startsInsideCluster || beside);
     }
 }
