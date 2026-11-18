@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fonts, tables, lists and fragmentation</title>
+<style>
+  .k-xxs { font-size: xx-small } .k-xs { font-size: x-small } .k-s { font-size: small } .k-m { font-size: medium }
+  .k-l { font-size: large } .k-xl { font-size: x-large } .k-xxl { font-size: xx-large } .k-xxxl { font-size: xxx-large }
+  .k-larger { font-size: larger } .k-smaller { font-size: smaller } .f-em { font-size: 1.5em } .f-percent { font-size: 80% }
+  .f-px { font-size: 13.5px } .f-rem { font-size: 2rem } .f-calc { font-size: calc(1em + 2px) } .f-pt { font-size: 11pt }
+  .mono { font-family: monospace } .mono-list { font-family: monospace, serif } .serif { font-family: serif }
+  .ff { font-family: "Helvetica Neue", Arial, sans-serif } .ff-words { font-family: Times New Roman, serif }
+  .ff-generic { font-family: cursive, fantasy, system-ui, ui-monospace, math, emoji, fangsong }
+  .fw-normal { font-weight: normal } .fw-bold { font-weight: bold } .fw-bolder { font-weight: bolder } .fw-lighter { font-weight: lighter }
+  .fw-100 { font-weight: 100 } .fw-550 { font-weight: 550 } .fw-900 { font-weight: 900 }
+  .fs-italic { font-style: italic } .fs-normal { font-style: normal }
+  .lh-normal { line-height: normal } .lh-px { line-height: 20px } .lh-percent { line-height: 150% } .lh-em { line-height: 1.2em }
+  .font-short { font: italic bold 12px/30px Georgia, serif } .font-short2 { font: 1.25em sans-serif } .font-short3 { font: 700 small/1.5 monospace }
+  table.t1 { border-collapse: collapse; border-spacing: 5px; table-layout: fixed; caption-side: top; empty-cells: show }
+  table.t2 { border-spacing: 3px 7px } table.t3 { border-collapse: separate; border-spacing: 0 }
+  .l-types li:nth-child(1) { list-style-type: disc } .l-types li:nth-child(2) { list-style-type: circle }
+  .l-types li:nth-child(3) { list-style-type: square } .l-types li:nth-child(4) { list-style-type: decimal }
+  .l-types li:nth-child(5) { list-style-type: decimal-leading-zero } .l-types li:nth-child(6) { list-style-type: lower-roman }
+  .l-types li:nth-child(7) { list-style-type: upper-roman } .l-types li:nth-child(8) { list-style-type: lower-alpha }
+  .l-types li:nth-child(9) { list-style-type: upper-alpha } .l-types li:nth-child(10) { list-style-type: lower-latin }
+  .l-types li:nth-child(11) { list-style-type: upper-latin } .l-types li:nth-child(12) { list-style-type: none }
+  .l-short { list-style: square outside none } .l-none { list-style: none }
+  .br-before { break-before: page } .br-after { break-after: avoid } .br-avoid-page { break-before: avoid-page }
+  .br-inside { break-inside: avoid } .br-inside-page { break-inside: avoid-page } .br-always { break-after: always }
+  .pb-before { page-break-before: always } .pb-after { page-break-after: avoid } .pb-inside { page-break-inside: avoid }
+  .ow { orphans: 3; widows: 4 } .bdb { box-decoration-break: clone }
+</style>
+</head>
+<body>
+<div id="keywords"><p class="k-xxs">a</p><p class="k-xs">a</p><p class="k-s">a</p><p class="k-m">a</p><p class="k-l">a</p>
+  <p class="k-xl">a</p><p class="k-xxl">a</p><p class="k-xxxl">a</p><p class="k-larger">a</p><p class="k-smaller">a</p></div>
+<div id="relative" class="k-l"><p class="f-em">a <span class="f-percent">b <code>c</code></span></p><p class="f-px">a <code>b</code></p>
+  <p class="f-rem">a</p><p class="f-calc">a <code>b</code></p><p class="f-pt">a</p></div>
+<div id="monospace">
+  <code>a <span class="serif">b</span></code> <span class="mono">c</span> <span class="mono-list">d</span>
+  <div class="k-l"><code>large</code> <pre>pre</pre></div><div class="f-em"><code>em</code><span class="k-larger"><code>larger</code></span></div>
+  <div class="f-px"><code>px</code></div><code class="f-em">code em</code><code class="k-s">code small</code><code class="f-percent">code %</code>
+  <div class="mono"><span class="serif">back to serif</span><span class="f-em serif">em serif</span></div>
+</div>
+<div id="families"><p class="ff">a</p><p class="ff-words">a</p><p class="ff-generic">a</p></div>
+<div id="weights" class="fw-bold"><span class="fw-normal">a</span><span class="fw-bolder">a</span><span class="fw-lighter">a</span>
+  <span class="fw-100"><b>a</b></span><span class="fw-550"><b>a</b><span class="fw-lighter">a</span></span><span class="fw-900"><b>a</b></span></div>
+<div id="styles"><span class="fs-italic"><span class="fs-normal">a</span></span></div>
+<div id="line-heights"><p class="lh-normal">a</p><p class="lh-px">a</p><p class="lh-percent">a</p><p class="lh-em">a</p></div>
+<div id="font-shorthand"><p class="font-short">a</p><p class="font-short2">a</p><p class="font-short3">a</p></div>
+<table class="t1"><caption>c</caption><tr><td>a</td></tr></table>
+<table class="t2"><tr><td>a</td></tr></table>
+<table class="t3"><tr><td>a</td></tr></table>
+<ul class="l-types"><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li><li>10</li><li>11</li><li>12</li></ul>
+<ul class="l-short"><li>a</li></ul><ol class="l-none"><li>a</li></ol>
+<div id="breaks"><div class="br-before">a</div><div class="br-after">a</div><div class="br-avoid-page">a</div>
+  <div class="br-inside">a</div><div class="br-inside-page">a</div><div class="br-always">a</div>
+  <div class="pb-before">a</div><div class="pb-after">a</div><div class="pb-inside">a</div>
+  <p class="ow">a</p><span class="bdb">a</span></div>
+</body>
+</html>

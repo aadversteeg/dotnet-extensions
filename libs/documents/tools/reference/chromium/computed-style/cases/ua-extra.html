@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Elements the user-agent sheet has rules for that ua-bare does not contain</title>
+</head>
+<body>
+<center>center <p>p in center</p></center>
+<p><cite>cite</cite> <dfn>dfn</dfn> <var>var</var> <kbd>kbd</kbd> <samp>samp</samp> <tt>tt</tt> <big>big</big> <small>small</small> <mark>mark</mark> <ins>ins</ins> <u>u</u> <nobr>nobr <wbr>wbr</nobr> <bdi>bdi</bdi> <output>output</output> <q>q</q> <abbr>abbr</abbr> <time>time</time> <data>data</data> <label>label</label></p>
+<dl><dt>dt</dt><dd>dd<dl><dt>nested dt</dt><dd>nested dd</dd></dl></dd></dl>
+<menu><li>menu li<menu><li>nested menu li<ul><li>third</li></ul></li></menu></li></menu>
+<dir><li>dir li</li></dir>
+<ol><li>ol li<ul><li>ul in ol<ol><li>ol in ul in ol</li></ol></li></ul></li></ol>
+<listing>listing</listing>
+<xmp>xmp</xmp>
+<form>form <legend>legend outside fieldset</legend></form>
+<div hidden>hidden div</div>
+<div hidden="until-found">hidden until found</div>
+<div dir="ltr">dir ltr</div>
+<div dir="auto">dir auto</div>
+<table><tr hidden><td>hidden row cell</td></tr><tr><td>cell</td><th>th in body row</th></tr></table>
+<table><thead hidden><tr><th>h</th></tr></thead><tbody><tr><td>cell</td></tr></tbody></table>
+<h1>h1 <small>small in h1</small> <code>code in h1</code></h1>
+<section><section><h1>h1 in two sections</h1></section></section>
+<article><h1>h1 in article</h1><aside><nav><h1>h1 nested three</h1></nav></aside></article>
+<pre>pre <code>code in pre</code> <b>b in pre</b></pre>
+<blockquote><p>p in blockquote</p><blockquote>nested blockquote</blockquote></blockquote>
+<p><b><b>b in b</b></b> <strong><em>em in strong</em></strong> <small><small>small small</small></small> <big><big>big big</big></big></p>
+<a href="#x"><b>bold link</b><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x"></a>
+<address>address <em>em in address</em></address>
+<figure><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x"><figcaption>caption</figcaption></figure>
+<noscript>noscript</noscript>
+<template><p>in template</p></template>
+<map><area href="#y" alt="area"></map>
+</body>
+</html>

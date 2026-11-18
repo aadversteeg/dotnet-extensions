@@ -11,7 +11,7 @@ released on its own.
 | `libs/error-paths` | `Ave.Extensions.ErrorPaths`, `.Functional`, `.Serialization`, `.FluentAssertions`, `.AspNetCore` | [README](libs/error-paths/README.md) |
 | `libs/fluent-contracts` | `Ave.Extensions.FluentContracts`, `.ForTesting`, `.ForValidation` | [README](libs/fluent-contracts/README.md) |
 | `libs/file-system` | `Ave.Extensions.FileSystem.Abstractions`, `Ave.Extensions.FileSystem`, `.Local`, `.InMemory`, `.AzureFileStorage`, `.MimeDetective` | [README](libs/file-system/README.md) |
-| `libs/documents` | `Ave.Extensions.Documents` and `.Core`, `.Fonts`, `.Images`, `.Pdf`, `.Typesetting`, `.DocumentModel`, `.PageModel`, `.Layout`, `.Render.Pdf`, `.Render.Raster`, `.Graphics`, `.Fluent`: a document engine that writes PDF/A and PDF/UA, and preview images | [README](libs/documents/README.md) |
+| `libs/documents` | `Ave.Extensions.Documents` and `.Core`, `.Fonts`, `.Images`, `.Pdf`, `.Typesetting`, `.DocumentModel`, `.PageModel`, `.Layout`, `.Render.Pdf`, `.Render.Raster`, `.Graphics`, `.Fluent`, and the HTML front-end in progress, `.Html.Parsing`, `.Css`, `.Html`: a document engine that writes PDF/A and PDF/UA, and preview images | [README](libs/documents/README.md) |
 
 The libraries target `netstandard2.0` and `net10.0`, with these differences: `Ave.Extensions.FileSystem.InMemory` and
 `Ave.Extensions.FileSystem.AzureFileStorage` also target `netstandard2.1` (see the file-system README), and

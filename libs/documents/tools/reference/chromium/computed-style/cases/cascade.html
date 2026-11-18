@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cascade order, layers, nesting, variables, inheritance</title>
+<style>
+  @layer base, theme;
+  @layer theme { .layered { color: blue; margin-top: 1px !important } }
+  @layer base { #layered { color: red; margin-top: 2px !important } }
+  @layer { .layered { padding-top: 3px } }
+  @layer base.inner { .layered { padding-left: 4px } }
+  @layer base { .layered { padding-left: 5px } }
+  .layered { margin-left: 6px }
+  @layer a { #revert-layer { color: green } }
+  @layer b { #revert-layer { color: red; color: revert-layer } }
+  #revert { color: revert; margin-top: revert }
+  p { color: rgb(1, 2, 3) }
+  #order { color: red } #order { color: rgb(0, 100, 0) }
+  #important { color: green !important } #important { color: red }
+  .spec#spec { color: green } #spec { color: red } .spec { color: red }
+  #inline-important { color: green !important }
+  .card {
+    color: rgb(10, 10, 10);
+    .title { font-weight: bold }
+    & > .body { margin-top: 7px }
+    &.wide { width: 300px }
+    @media print { & .title { margin-left: 8px } }
+    padding-top: 9px;
+  }
+  :root { --main: rgb(200, 0, 0); --gap: 4px; --a: var(--b); --b: var(--a); --nested: var(--gap) var(--gap) }
+  #vars { color: var(--main); margin-top: var(--gap); margin-bottom: var(--missing, 11px); padding-top: var(--a, 12px); margin: var(--gap) 0 0 0 }
+  #vars-iacvt { color: blue; color: var(--gap); margin-left: 1px; margin-left: var(--missing) }
+  #vars-local { --gap: 13px; margin-top: var(--gap) }
+  #vars-local span { margin-top: var(--gap) }
+  #inherit-parent { color: rgb(9, 9, 9); margin-top: 14px; font-weight: 300; font-size: 18px; line-height: 1.25 }
+  #inherit { margin-top: inherit; color: initial } #unset { color: unset; margin-top: unset } #initial { font-weight: initial; font-size: initial }
+  #all { all: initial } #all-unset { all: unset }
+  .calc { width: calc(100px - 2 * 10px); height: calc(10em / 4); margin-top: calc(1rem + 1px); margin-left: calc(50% / 2) }
+  .calc-nested { width: calc(min(100px, 5em) + max(1px, 2px)); padding-top: clamp(2px, 1em, 10px) }
+  @media print { #media { color: green } }
+  @media screen { #media { color: red } }
+  @media (min-width: 500px) { #media { margin-top: 15px } }
+  @media (max-width: 500px) { #media { margin-top: 16px } }
+  @media not print { #media { margin-left: 17px } }
+  @media print and (orientation: portrait), (width >= 100px) { #media { margin-right: 18px } }
+  @supports (display: table-cell) { #supports { color: green } }
+  @supports not (display: table-cell) { #supports { color: red } }
+  @supports (colour: red) or (margin-top: 1px) { #supports { margin-top: 19px } }
+  @supports selector(:is(a)) { #supports { margin-left: 20px } }
+</style>
+<style media="print">#media-attr { margin-top: 21px }</style>
+<style media="screen">#media-attr { margin-top: 99px }</style>
+</head>
+<body>
+<p id="layered" class="layered">layered</p>
+<p id="revert-layer">revert-layer</p>
+<p id="revert">revert</p>
+<p id="order">order</p>
+<p id="important">important</p>
+<p id="spec" class="spec">specificity</p>
+<p id="inline" style="color: rgb(0, 0, 200)">inline</p>
+<p id="inline-important" style="color: red !important">inline important</p>
+<p id="inline-wins" style="color: rgb(0, 0, 100) !important">inline important wins</p>
+<div class="card wide"><div class="title">title</div><div class="body">body <span class="title">nested title</span></div></div>
+<p id="vars">vars</p><p id="vars-iacvt">iacvt</p><div id="vars-local">local <span>span</span></div>
+<div id="inherit-parent"><p id="inherit">inherit</p><p id="unset">unset</p><p id="initial">initial</p><p id="all">all</p><p id="all-unset">all unset</p><span>text</span></div>
+<div class="calc">calc</div><div class="calc-nested">nested calc</div>
+<p id="media">media</p><p id="media-attr">media attribute</p>
+<p id="supports">supports</p>
+</body>
+</html>

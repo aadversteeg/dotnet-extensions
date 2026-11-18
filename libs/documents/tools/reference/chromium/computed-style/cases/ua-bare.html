@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Every v0 element, no author style</title>
+<link rel="stylesheet" href="missing.css" media="not all">
+<style></style>
+</head>
+<body>
+<header>header</header>
+<nav>nav</nav>
+<main>
+<article>
+<section><h1>h1 in section</h1></section>
+<h1>h1</h1><h2>h2</h2><h3>h3</h3><h4>h4</h4><h5>h5</h5><h6>h6</h6>
+<p>p <span>span</span> <strong>strong</strong> <b>b</b> <em>em</em> <i>i</i> <code>code</code> <a href="#x">a</a> <a>a without href</a><br>after br</p>
+<blockquote>blockquote</blockquote>
+<pre>pre</pre>
+<hr>
+<div>div</div>
+<address>address</address>
+</article>
+<aside>aside</aside>
+<ul><li>ul li<ul><li>nested<ul><li>third</li></ul></li></ul></li></ul>
+<ol><li>ol li<ol><li>nested</li></ol></li></ol>
+<table>
+<caption>caption</caption>
+<colgroup><col><col></colgroup>
+<thead><tr><th>th</th><th>th</th></tr></thead>
+<tbody><tr><td>td</td><td>td</td></tr></tbody>
+<tfoot><tr><td>td</td><td>td</td></tr></tfoot>
+</table>
+<img src="missing.png" alt="img">
+<hgroup><h2>hgroup h2</h2><p>hgroup p</p></hgroup>
+<figure><figcaption>figcaption</figcaption></figure>
+<search>search</search>
+</main>
+<footer>footer</footer>
+</body>
+</html>

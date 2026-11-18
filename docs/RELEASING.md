@@ -240,6 +240,45 @@ release-mode tests of Core, DocumentModel, Graphics, Layout, Pdf and Typesetting
 `Ave.Extensions.Documents.TestSupport` uses only API that is already on nuget.org, so the packages this stage does not
 change can still be released in between.
 
+## The HTML and CSS front-end of the documents family (M2)
+
+Milestone M2 adds three packages to the documents family:
+
+| Tag name | Package | Needs |
+|---|---|---|
+| `documents-html-parsing` | `Ave.Extensions.Documents.Html.Parsing` | Core |
+| `documents-css` | `Ave.Extensions.Documents.Css` | Core |
+| `documents-html` | `Ave.Extensions.Documents.Html` | Core, Html.Parsing, Css |
+
+They need a Core that has `TextPosition`, which M2 adds: `documents-core/0.1.0-preview.2` on nuget.org does not have
+it. So their first release is one wave of three steps:
+
+1. a new release of `documents-core`;
+2. once it is on nuget.org, a pull request that raises the minimum version of `Ave.Extensions.Documents.Core` in
+   `Directory.Packages.props` to it, then `documents-html-parsing` and `documents-css` (in any order);
+3. `documents-html`.
+
+The minimum is not raised before the new Core is on nuget.org: release mode would then restore a Core that does not
+exist. Until the wave is done, the CI job "Release mode (main only)" is red for the three new packages on `main`: in
+release mode they restore Core `0.1.0-preview.2` from nuget.org and do not compile.
+
+## Both parts of M2 in one release wave
+
+The two sections above each give the order for their own packages. When both are released in one wave, this order
+is true for both (the packages of one step can go in any order):
+
+1. `documents-core`;
+2. once it is on nuget.org, a pull request that raises the minimum version of `Ave.Extensions.Documents.Core` in
+   `Directory.Packages.props` to it, then `documents-fonts`, `documents-images`, `documents-graphics`,
+   `documents-html-parsing` and `documents-css`;
+3. `documents-page-model` (its tests run in head mode), `documents-html`;
+4. `documents-render-pdf` (needs the new PageModel), `documents-render-raster` (needs the new Fonts, Images, PageModel
+   and Graphics);
+5. `documents`.
+
+Between the steps, raise the minimums the next step needs in `Directory.Packages.props` once the step is on
+nuget.org, as both sections say.
+
 ## One-time setup
 
 ### GitHub environment `nuget`

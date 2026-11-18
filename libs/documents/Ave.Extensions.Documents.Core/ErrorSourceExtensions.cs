@@ -22,4 +22,21 @@ public static class ErrorSourceExtensions
         error.Code == ErrorCodes.Aggregate
             ? Errors.Aggregate([.. error.Parts().Select(part => part.WithSource(location))])
             : error.With(ErrorMetadataKeys.SourceFile, location.File).With(ErrorMetadataKeys.SourceLine, location.Line);
+
+    /// <summary>
+    /// Adds a place in a text a front-end read (an HTML document, a style sheet) to an error's metadata: the text's
+    /// name, the line and the column. For combined errors the place is added to every part, as
+    /// <see cref="WithSource(Error, SourceLocation)"/> does.
+    /// </summary>
+    /// <param name="error">The error.</param>
+    /// <param name="sourceName">The name of the text, as its reader was given it (a file name or a URL).</param>
+    /// <param name="position">The line and column in that text.</param>
+    /// <returns>The error with <see cref="ErrorMetadataKeys.SourceFile"/>, <see cref="ErrorMetadataKeys.SourceLine"/>
+    /// and <see cref="ErrorMetadataKeys.SourceColumn"/> set.</returns>
+    public static Error WithSource(this Error error, string sourceName, TextPosition position) =>
+        error.Code == ErrorCodes.Aggregate
+            ? Errors.Aggregate([.. error.Parts().Select(part => part.WithSource(sourceName, position))])
+            : error.With(ErrorMetadataKeys.SourceFile, sourceName)
+                .With(ErrorMetadataKeys.SourceLine, position.Line)
+                .With(ErrorMetadataKeys.SourceColumn, position.Column);
 }

@@ -21,6 +21,12 @@ public static class DocumentErrorCodes
     /// <summary>The root of every engine error: <c>Documents</c>.</summary>
     public static readonly ErrorCode _ = new("Documents");
 
+    /// <summary>The last diagnostic of a reader (a parser, a style resolution) that found more than its limit of
+    /// diagnostics: the rest are counted, not kept, since each costs memory and a hostile text can make one per
+    /// character. A refusal for the front-ends that classify diagnostics. Metadata: Value (the number left out),
+    /// SourceFile.</summary>
+    public static readonly ErrorCode TooManyDiagnostics = _ / "TooManyDiagnostics";
+
     /// <summary>Errors in the input a front-end received from its caller.</summary>
     public static class Input
     {

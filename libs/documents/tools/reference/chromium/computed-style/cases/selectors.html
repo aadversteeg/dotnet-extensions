@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Every selector form of the v0 set</title>
+<style>
+  /* Each rule sets margin-top to the rule's number of px on what it matches. */
+  p { margin-top: 1px }
+  * { padding-top: 1px }
+  *|em { padding-bottom: 2px }
+  #id1 { margin-top: 2px }
+  .c1 { margin-left: 3px }
+  .c1.c2 { margin-right: 4px }
+  [title] { margin-bottom: 5px }
+  [title="Exact"] { padding-left: 6px }
+  [title="exact" i] { padding-right: 7px }
+  [lang|=en] { border-top: 1px solid }
+  [class~=word] { border-right: 2px solid }
+  [data-x^=pre] { border-bottom: 3px solid }
+  [data-x$=fix] { border-left: 4px solid }
+  [data-x*=mid] { text-align: right }
+  [type=CHECKME] { font-weight: 900 }
+  [type=CHECKME s] { font-style: italic }
+  div > span { color: red }
+  div span { background-color: yellow }
+  h2 + p { color: green }
+  h2 ~ p { background-color: silver }
+  li:first-child { color: blue }
+  li:last-child { color: purple }
+  li:only-child { color: orange }
+  li:nth-child(2n+1) { padding-left: 11px }
+  li:nth-child(even) { padding-right: 12px }
+  li:nth-last-child(2) { margin-left: 13px }
+  li:nth-child(2 of .pick) { margin-right: 14px }
+  li:nth-of-type(3) { font-weight: bold }
+  li:nth-last-of-type(1) { font-style: italic }
+  li:first-of-type { text-decoration: underline }
+  li:last-of-type { white-space: pre }
+  span:only-of-type { vertical-align: top }
+  :root { background-color: ivory }
+  section:empty { height: 7px }
+  p:not(.c1) { margin-bottom: 15px }
+  p:not(.c1, #id1) { padding-bottom: 16px }
+  :is(h3, h4) { color: maroon }
+  :where(h3) { color: lime }
+  :is(.never, h4) span { color: navy }
+  a:link { color: fuchsia }
+  a:any-link { margin-left: 17px }
+  a:hover { color: red }
+  a:not(:hover) { margin-right: 18px }
+  .outer .middle .inner { width: 19px }
+  .outer > .middle > .inner { height: 20px }
+  ol li:nth-child(3n) { line-height: 3 }
+  table tr:nth-child(odd) td { background-color: #eee }
+  :nth-child(1 of h5, h6) { color: teal }
+</style>
+</head>
+<body>
+<p id="id1" class="c1 c2" title="Exact">id class title</p>
+<p class="c1 word" title="EXACT" lang="en-GB" data-x="prefix-middle-suffix">attributes</p>
+<p lang="en">en</p><p lang="english">english</p>
+<div id="i1" type="checkme">type</div><div id="i2" type="CHECKME">TYPE</div>
+<div><span id="s1">child span</span><em><span id="s2">grandchild span</span></em></div>
+<h2>h2</h2><p id="next">next</p><p id="later">later</p>
+<ul><li>1</li><li class="pick">2</li><li>3</li><li class="pick">4</li><li class="pick">5</li></ul>
+<ul><li>only</li></ul>
+<ol><li>a</li><li>b</li><li>c</li><li>d</li><li>e</li><li>f</li></ol>
+<section></section><section> </section><section><!-- comment --></section>
+<h3>h3</h3><h4>h4 <span>span in h4</span></h4>
+<a id="link" href="#x">link</a> <a id="nolink">no link</a>
+<div class="outer"><div class="middle"><div class="inner">inner</div></div><div><div class="middle"><span class="inner">not a child chain</span></div></div></div>
+<table><tr><td>1</td></tr><tr><td>2</td></tr><tr><td>3</td></tr></table>
+<div><h5>h5</h5><h6>h6</h6></div><div><h6>first h6</h6></div>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Every supported value of the property registry</title>
+<style>
+  html { font-size: 20px; }
+  .d-block { display: block } .d-inline { display: inline } .d-list { display: list-item } .d-none { display: none }
+  .d-table { display: table } .d-row-group { display: table-row-group } .d-header { display: table-header-group }
+  .d-footer { display: table-footer-group } .d-row { display: table-row } .d-cell { display: table-cell }
+  .d-col-group { display: table-column-group } .d-col { display: table-column } .d-caption { display: table-caption }
+  .m-units { margin-top: 10px; margin-right: 6pt; margin-bottom: 1pc; margin-left: 1in }
+  .m-metric { margin-top: 1cm; margin-right: 5mm; margin-bottom: 8Q; margin-left: 0 }
+  .m-relative { margin-top: 1.5em; margin-right: 2rem; margin-bottom: 10%; margin-left: auto }
+  .m-math { margin-top: calc(2 * 3px + 1em); margin-right: min(10px, 2em); margin-bottom: max(1rem, 5px); margin-left: clamp(1px, 2em, 3px) }
+  .m-shorthand { margin: 1px 2px 3px 4px } .m-two { margin: 5px 7px } .m-three { margin: 1px auto 3px }
+  .m-logical { margin-block: 2px 4px; margin-inline: 6px 8px }
+  .m-logical-longhands { margin-block-start: 1px; margin-block-end: 2px; margin-inline-start: 3px; margin-inline-end: 4px }
+  .p-all { padding: 1px 2% 3em 4rem } .p-logical { padding-block: 5px; padding-inline: 6px 7px }
+  .p-longhands { padding-top: 0.5px; padding-right: 1.25pt; padding-bottom: calc(1em - 2px); padding-left: 0 }
+  .b-solid { border: 2px solid red } .b-inset { border: 3px inset blue } .b-outset { border: thick outset green }
+  .b-hidden { border: 4px hidden red } .b-none { border: 5px none red } .b-thin { border: thin solid }
+  .b-medium { border: medium solid } .b-fraction { border: 0.5px solid; border-left-width: 2.7px; border-right-width: 1.5pt }
+  .b-sides { border-top: 1px solid red; border-right: 2px solid green; border-bottom: 3px solid blue; border-left: 4px solid black }
+  .b-longhands { border-style: solid; border-width: 1px 2px 3px 4px; border-color: red green blue black }
+  .b-current { color: rgb(10, 20, 30); border: 1px solid currentcolor }
+  .bg-named { background-color: rebeccapurple } .bg-hex3 { background-color: #abc } .bg-hex4 { background-color: #abcd }
+  .bg-hex6 { background-color: #123456 } .bg-hex8 { background-color: #12345678 } .bg-rgb { background-color: rgb(1 2 3) }
+  .bg-rgba { background-color: rgba(10, 20, 30, 0.5) } .bg-hsl { background-color: hsl(120 50% 50%) }
+  .bg-hsla { background-color: hsla(240, 100%, 50%, 0.25) } .bg-transparent { background-color: transparent }
+  .bg-current { color: teal; background-color: currentcolor } .bg-shorthand { background: lime }
+  .bg-system { background-color: Canvas; color: CanvasText }
+  .s-width { width: 100px; min-width: 50px; max-width: 200px; height: 30px } .s-percent { width: 50%; height: 25% }
+  .s-auto { width: auto; min-width: auto; max-width: none; height: auto } .s-border-box { box-sizing: border-box }
+  .s-em { width: 10em; height: calc(2em + 3px) }
+  .c-named { color: navy } .c-inherit { color: inherit } .c-hex { color: #f00 }
+  .t-start { text-align: start } .t-end { text-align: end } .t-left { text-align: left } .t-right { text-align: right }
+  .t-center { text-align: center } .t-justify { text-align: justify } .t-match { text-align: match-parent }
+  .t-webkit-center { text-align: -webkit-center } .t-webkit-left { text-align: -webkit-left } .t-webkit-right { text-align: -webkit-right }
+  .v-top { vertical-align: top } .v-middle { vertical-align: middle } .v-bottom { vertical-align: bottom } .v-baseline { vertical-align: baseline }
+  .w-normal { white-space: normal } .w-pre { white-space: pre } .w-nowrap { white-space: nowrap } .w-pre-wrap { white-space: pre-wrap }
+  .w-longhands { white-space-collapse: preserve; text-wrap-mode: nowrap } .w-text-wrap { text-wrap: nowrap }
+  .td-underline { text-decoration: underline } .td-line { text-decoration-line: underline; text-decoration-color: red; text-decoration-style: solid }
+  .td-none { text-decoration: none } .td-shorthand { text-decoration: underline solid blue }
+  .pca { print-color-adjust: exact }
+  .ub { unicode-bidi: isolate } .ub-normal { unicode-bidi: normal }
+  .o-hidden { overflow: hidden } .o-clip { overflow-x: clip; overflow-y: hidden } .o-visible { overflow: visible }
+  .ol-width { outline-width: thin; outline-color: red; outline-offset: 2px } .ol-medium { outline: medium none }
+</style>
+</head>
+<body>
+<div id="display">
+  <div class="d-block">block</div><span class="d-inline">inline</span><div class="d-list">list-item</div>
+  <div class="d-none">none</div>
+  <div class="d-table"><div class="d-caption">caption</div><div class="d-col-group"><div class="d-col"></div></div>
+    <div class="d-header"><div class="d-row"><div class="d-cell">cell</div></div></div>
+    <div class="d-row-group"><div class="d-row"><div class="d-cell">cell</div></div></div>
+    <div class="d-footer"><div class="d-row"><div class="d-cell">cell</div></div></div></div>
+</div>
+<div id="margins">
+  <div class="m-units">units</div><div class="m-metric">metric</div><div class="m-relative">relative</div>
+  <div class="m-math">math</div><div class="m-shorthand">shorthand</div><div class="m-two">two</div>
+  <div class="m-three">three</div><div class="m-logical">logical</div><div class="m-logical-longhands">longhands</div>
+</div>
+<div id="paddings"><div class="p-all">all</div><div class="p-logical">logical</div><div class="p-longhands">longhands</div></div>
+<div id="borders">
+  <div class="b-solid">solid</div><div class="b-inset">inset</div><div class="b-outset">outset</div>
+  <div class="b-hidden">hidden</div><div class="b-none">none</div><div class="b-thin">thin</div>
+  <div class="b-medium">medium</div><div class="b-fraction">fraction</div><div class="b-sides">sides</div>
+  <div class="b-longhands">longhands</div><div class="b-current">current</div>
+</div>
+<div id="backgrounds">
+  <div class="bg-named">a</div><div class="bg-hex3">a</div><div class="bg-hex4">a</div><div class="bg-hex6">a</div>
+  <div class="bg-hex8">a</div><div class="bg-rgb">a</div><div class="bg-rgba">a</div><div class="bg-hsl">a</div>
+  <div class="bg-hsla">a</div><div class="bg-transparent">a</div><div class="bg-current">a</div>
+  <div class="bg-shorthand">a</div><div class="bg-system">a</div>
+</div>
+<div id="sizes"><div class="s-width">a</div><div class="s-percent">a</div><div class="s-auto">a</div>
+  <div class="s-border-box">a</div><div class="s-em">a</div></div>
+<div id="colors" class="c-named"><span class="c-inherit">a</span><span class="c-hex">a</span></div>
+<div id="aligns" class="t-center">
+  <p class="t-start">a</p><p class="t-end">a</p><p class="t-left">a</p><p class="t-right">a</p><p class="t-center">a</p>
+  <p class="t-justify">a</p><p class="t-match">a</p><p class="t-webkit-center">a</p><p class="t-webkit-left">a</p>
+  <p class="t-webkit-right">a</p><div class="t-right"><p class="t-match">match right</p></div>
+</div>
+<table id="valigns"><tr><td class="v-top">a</td><td class="v-middle">a</td><td class="v-bottom">a</td><td class="v-baseline">a</td></tr></table>
+<div id="spaces"><p class="w-normal">a</p><p class="w-pre">a</p><p class="w-nowrap">a</p><p class="w-pre-wrap">a</p>
+  <p class="w-longhands">a</p><p class="w-text-wrap">a</p></div>
+<div id="decorations"><span class="td-underline">a</span><span class="td-line">a</span><span class="td-none">a</span>
+  <span class="td-shorthand">a</span></div>
+<div id="misc"><div class="pca">a</div><div class="ub">a</div><span class="ub-normal">a</span><div class="o-hidden">a</div>
+  <div class="o-clip">a</div><div class="o-visible">a</div><div class="ol-width">a</div><div class="ol-medium">a</div></div>
+</body>
+</html>

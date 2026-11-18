@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net10.0 only: the engine is written for .NET 10 and has no netstandard build (README.md, "Target framework") -->
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <PackageTags>html;css;cascade;document</PackageTags>
+    <Description>The HTML front-end of the Ave.Extensions.Documents engine, first part: an HTML document and its style sheets to a tree of elements with the computed value of every supported property, with the user-agent style sheet of the HTML Standard and its presentational hints, and every problem with its line and column.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ave.Extensions.Documents.Core" />
+    <PackageReference Include="Ave.Extensions.Documents.Html.Parsing" />
+    <PackageReference Include="Ave.Extensions.Documents.Css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- HTML Standard §15: the user-agent style sheet, read by the engine's own CSS reader -->
+    <EmbeddedResource Include="UserAgent/html.css" LogicalName="Ave.Extensions.Documents.Html.html.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Html" />
+  </ItemGroup>
+
+</Project>
