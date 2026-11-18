@@ -70,6 +70,11 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.FontWeight, "The font weight must be 1–1000.", weight.ToString(), "font-weight", source);
         }
 
+        if (format.LineHeight is { IsValid: false } lineHeight)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LineHeight, $"The line height must not be negative, and at most {InputLimits.MaxLength} (as a length, a number or a percentage of 100).", lineHeight.Describe(), "line-height", source);
+        }
+
         // CSS Fragmentation 3 §3.3: "Only positive integers are allowed as values of orphans and widows."
         if (format.Orphans is int orphans and < 1)
         {

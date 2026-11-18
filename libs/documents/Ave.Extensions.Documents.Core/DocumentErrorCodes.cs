@@ -46,6 +46,10 @@ public static class DocumentErrorCodes
             /// <summary>No font family set, or an empty one.</summary>
             public static readonly ErrorCode FontFamily = _ / "FontFamily";
 
+            /// <summary>A <c>line-height</c> that is negative ("Negative values are illegal", CSS 2.1 §10.8.1), not a finite
+            /// number, or larger than the front-end allows. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode LineHeight = _ / "LineHeight";
+
             /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
             /// positive integers are allowed"). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Orphans = _ / "Orphans";

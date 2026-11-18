@@ -43,13 +43,17 @@ public static class DocumentTranslator
             .Concat(format.FontFamily is null ? [InputChecks.MissingFontFamily(document.Source)] : [])
             .ToImmutableArray();
 
+        var rootFontSize = format.FontSize ?? UserAgentStyles.InitialFontSize;
         var inherited = new Inherited(
             new TextStyle(
                 format.FontFamily ?? string.Empty,
-                format.FontSize ?? UserAgentStyles.InitialFontSize,
+                rootFontSize,
                 format.FontWeight ?? FontWeight.Regular,
                 format.Color ?? Color.Black,
-                format.FontStyle ?? FontStyle.Normal),
+                format.FontStyle ?? FontStyle.Normal)
+            {
+                LineHeight = format.LineHeight?.Computed(rootFontSize) ?? LineHeight.Normal.Instance,
+            },
             format.TextAlign ?? TextAlign.Left,
             format.Orphans ?? BoxStyle.Initial.Orphans,
             format.Widows ?? BoxStyle.Initial.Widows);
@@ -76,17 +80,25 @@ public static class DocumentTranslator
     /// <param name="Widows">The <c>widows</c> value (initial 2).</param>
     internal sealed record Inherited(TextStyle Text, TextAlign Align, int Orphans, int Widows)
     {
-        /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value.</summary>
-        public Inherited With(TextFormat format) => new(
-            new TextStyle(
-                format.FontFamily ?? Text.FontFamily,
-                format.FontSize ?? Text.FontSize,
-                format.FontWeight ?? Text.FontWeight,
-                format.Color ?? Text.Color,
-                format.FontStyle ?? Text.FontStyle),
-            format.TextAlign ?? Align,
-            format.Orphans ?? Orphans,
-            format.Widows ?? Widows);
+        /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value. A line
+        /// height the element specifies is computed with its own font size (CSS 2.1 §10.8.1).</summary>
+        public Inherited With(TextFormat format)
+        {
+            var fontSize = format.FontSize ?? Text.FontSize;
+            return new(
+                new TextStyle(
+                    format.FontFamily ?? Text.FontFamily,
+                    fontSize,
+                    format.FontWeight ?? Text.FontWeight,
+                    format.Color ?? Text.Color,
+                    format.FontStyle ?? Text.FontStyle)
+                {
+                    LineHeight = format.LineHeight?.Computed(fontSize) ?? Text.LineHeight,
+                },
+                format.TextAlign ?? Align,
+                format.Orphans ?? Orphans,
+                format.Widows ?? Widows);
+        }
     }
 
     /// <summary>
@@ -214,8 +226,9 @@ public static class DocumentTranslator
         var runs = paragraph.Spans
             .Select((span, index) => Run(span, new NodeId(id.Value + 1 + index), IsLineBreaks(span) ? own.Text : own.With(Cascade.Text(span.Format, span.Style)).Text))
             .ToImmutableArray();
+        // The paragraph's own font and line height make the strut of its lines (CSS 2.1 §10.8.1).
         return Result<Node, Error>.Success(new Box(
-            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own), runs, paragraph.Source));
+            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, runs, paragraph.Source));
     }
 
     /// <summary>A span whose text is one or more forced line breaks: the line separator U+2028 that LineBreak() writes,

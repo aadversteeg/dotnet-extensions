@@ -38,6 +38,15 @@ public sealed record BoxStyle
     /// front-end computes it for every box. Used by inline layout.</summary>
     public TextAlign TextAlign { get; init; }
 
+    /// <summary>
+    /// The box's own computed font and line height, for a box with lines (a paragraph): every line box starts "with a
+    /// zero-width inline box with the element's font and line height properties. We call that imaginary box a 'strut'"
+    /// (CSS 2.1 §10.8.1), so no line is lower than the box's own line height, whatever its runs are. Null when the
+    /// producer of the model gives none (a box without lines; a model built by hand in a test): then the lines have no
+    /// strut. The code front-end sets it on every paragraph.
+    /// </summary>
+    public TextStyle? Text { get; init; }
+
     /// <summary>The fewest lines of the box's paragraph a page may hold before a break inside it (CSS Fragmentation 3
     /// §3.3, <c>orphans</c>: "the minimum number of line boxes in a block container that must be left in a fragment
     /// before a fragmentation break"); initial value 2, an inherited property, so the front-end computes it for every

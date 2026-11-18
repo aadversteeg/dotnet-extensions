@@ -31,8 +31,8 @@ public class PaginationTests
         pages[0].Root.Offset.Should().Be(new Point(10, 10), "the page area starts inside the page margins");
         var children = Root(pages[0]).Children;
         children[0].Offset.Should().Be(new Point(5, 2), "left and top margin");
-        children[0].Fragment.Size.Should().Be(new Size(175, LineHeight), "the width is the page area minus the left margin");
-        children[1].Offset.Should().Be(new Point(0, 2 + LineHeight + 3), "one collapsed margin, max(3, 0), below the first block");
+        children[0].Fragment.Size.Should().Be(new Size(175, LineBoxHeight), "the width is the page area minus the left margin");
+        children[1].Offset.Should().Be(new Point(0, 2 + LineBoxHeight + 3), "one collapsed margin, max(3, 0), below the first block");
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class PaginationTests
         var pages = Paginate(Document(Paragraph(1, "One", BoxStyle.Initial with { Padding = new Edges(4.Pt(), 0.Pt(), 6.Pt(), 8.Pt()) })));
 
         var paragraph = (BoxFragment)Root(pages[0]).Children[0].Fragment;
-        paragraph.Size.Height.Should().Be(4 + LineHeight + 6);
+        paragraph.Size.Height.Should().Be(4 + LineBoxHeight + 6);
         paragraph.Children[0].Offset.Should().Be(new Point(8, 4));
     }
 
@@ -108,7 +108,7 @@ public class PaginationTests
         var pages = Paginate(Document(Paragraph(1, "One", style)));
 
         pages.Should().HaveCount(1);
-        Root(pages[0]).Children[0].Fragment.Size.Height.Should().Be(LineHeight + 75);
+        Root(pages[0]).Children[0].Fragment.Size.Height.Should().Be(LineBoxHeight + 75);
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public class PaginationTests
         var page = DocumentLayout.Run(model, TestFonts.Set).Value.Pages.Single();
 
         var fill = page.Items.OfType<global::Ave.Extensions.Documents.PageModel.FillRectangle>().Single();
-        fill.Area.Should().Be(new Rect(new Point(10, 10), new Size(180, LineHeight)));
+        fill.Area.Should().Be(new Rect(new Point(10, 10), new Size(180, LineBoxHeight)));
         var run = page.Items.OfType<global::Ave.Extensions.Documents.PageModel.GlyphRun>().Single();
         run.Origin.X.Should().Be(10);
         run.Origin.Y.Should().BeApproximately(10 + Ascent, 1e-9);

@@ -18,6 +18,8 @@ namespace Ave.Extensions.Documents.Fluent;
 /// Set only on elements with a box and on styles, as <paramref name="TextAlign"/>.</param>
 /// <param name="Widows">The fewest lines of a paragraph after a page break inside it (CSS <c>widows</c>, inherited).
 /// Set only on elements with a box and on styles.</param>
+/// <param name="LineHeight">The line height (CSS <c>line-height</c>, inherited): on a paragraph also the height of its
+/// strut, the least height of its lines.</param>
 public sealed record TextFormat(
     string? FontFamily = null,
     Length? FontSize = null,
@@ -26,7 +28,8 @@ public sealed record TextFormat(
     TextAlign? TextAlign = null,
     FontStyle? FontStyle = null,
     int? Orphans = null,
-    int? Widows = null)
+    int? Widows = null,
+    LineHeightValue? LineHeight = null)
 {
     /// <summary>No formatting: everything inherits.</summary>
     public static TextFormat Inherit { get; } = new();

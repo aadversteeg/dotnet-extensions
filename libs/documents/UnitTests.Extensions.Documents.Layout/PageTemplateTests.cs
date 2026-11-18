@@ -129,7 +129,7 @@ public class PageTemplateTests
 
         pages.Should().HaveCount(12);
         pages.Select(page => TextOf(page.Footer!.Fragment)).Should().AllBe("of 12", "lines are joined with a space here");
-        pages.Select(page => page.Footer!.Fragment.Size.Height).Should().AllBeEquivalentTo(2 * LineHeight, "\"of 12\" wraps to two lines");
+        pages.Select(page => page.Footer!.Fragment.Size.Height).Should().AllBeEquivalentTo(2 * LineBoxHeight, "\"of 12\" wraps to two lines");
     }
 
     [Fact]

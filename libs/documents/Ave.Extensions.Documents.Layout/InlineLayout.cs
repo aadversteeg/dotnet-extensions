@@ -44,15 +44,25 @@ public static class InlineLayout
             _ => throw new ArgumentException($"Inline received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
         };
 
-        return ShapeRuns(environment, box).OnSuccessBind(runs =>
+        return ShapeRuns(environment, box).OnSuccessBind(runs => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, new InlineBreakToken(firstLine), (width, height, breakAt) =>
-                StackLines(runs, box.Style, firstLine, width, height, breakAt switch
+                StackLines(runs, strut, box.Style, firstLine, width, height, breakAt switch
                 {
                     null => null,
                     InlineEarlyBreak line => line,
                     _ => throw new ArgumentException($"Inline received a {breakAt.GetType().Name} it did not report.", nameof(space)),
-                })));
+                }))));
     }
+
+    /// <summary>The paragraph's strut (CSS 2.1 §10.8.1), with its font resolved like a run's; null when the model gives
+    /// the paragraph no text properties (<see cref="BoxStyle.Text"/>). A missing font is the error a run would get, at the
+    /// paragraph's source.</summary>
+    private static Result<LineBoxes.Strut?, Error> StrutOf(LayoutEnvironment environment, Box box) =>
+        box.Style.Text is not { } text
+            ? Result<LineBoxes.Strut?, Error>.Success(null)
+            : environment.Fonts.Find(text.FontFamily, text.FontWeight, text.FontStyle)
+                .OnSuccessMap(font => (LineBoxes.Strut?)new LineBoxes.Strut(font, text))
+                .MapError(error => error.WithSource(box.Source));
 
     /// <summary>
     /// The intrinsic widths of a paragraph (CSS Sizing 3 §5.1): the min-content inline size, which for text is the
@@ -120,7 +130,7 @@ public static class InlineLayout
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.ShapedRun> runs, BoxStyle style, int firstLine, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, BoxStyle style, int firstLine, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], contentWidth);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
@@ -132,7 +142,7 @@ public static class InlineLayout
                 return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index), target.Appeal);
             }
 
-            var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1);
+            var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut);
             if (!Fitting.Fits(bottom + line.Size.Height, contentHeight))
             {
                 if (placed.Count == 0)

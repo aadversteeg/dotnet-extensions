@@ -87,6 +87,7 @@ public static class DocumentModelText
             style.TextAlign != initial.TextAlign ? $"text-align={style.TextAlign.ToString().ToLowerInvariant()}" : null,
             style.Orphans != initial.Orphans ? $"orphans={style.Orphans}" : null,
             style.Widows != initial.Widows ? $"widows={style.Widows}" : null,
+            style.Text is { } strut ? $"strut=({StyleText(strut)})" : null,
             style.VerticalAlign != initial.VerticalAlign ? $"vertical-align={style.VerticalAlign.ToString().ToLowerInvariant()}" : null,
             style.Columns.Count > 0 ? $"columns={string.Join(",", style.Columns)}" : null,
             style.Span != initial.Span ? $"span={style.Span}" : null,
@@ -96,7 +97,8 @@ public static class DocumentModelText
     }
 
     private static string StyleText(TextStyle style) =>
-        $"{style.FontFamily} {style.FontSize} w{style.FontWeight}{(style.FontStyle == FontStyle.Italic ? " italic" : string.Empty)} {style.Color}";
+        $"{style.FontFamily} {style.FontSize} w{style.FontWeight}{(style.FontStyle == FontStyle.Italic ? " italic" : string.Empty)} {style.Color}"
+        + (style.LineHeight is LineHeight.Normal ? string.Empty : $" line-height={style.LineHeight}");
 
     private static string CounterName(PageCounter counter) => counter == PageCounter.PageNumber ? "page" : "pages";
 

@@ -11,7 +11,7 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// </summary>
 internal static class Models
 {
-    public const double LineHeight = 12;
+    public const double LineBoxHeight = 12;
     public const double Ascent = 9.87;
 
     public static TextStyle Text(double size = 10) => new("Lato", size.Pt(), FontWeight.Regular, Color.Black);

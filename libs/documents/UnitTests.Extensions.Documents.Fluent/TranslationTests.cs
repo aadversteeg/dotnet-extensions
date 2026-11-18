@@ -101,7 +101,14 @@ public class TranslationTests
         var box = (Box)Translate(Document(
             [Paragraph("x").MarginBottom(3.Pt()).Padding(2.Pt()).Background(Color.White)]).FontFamily("Lato")).Root.Children[0];
 
-        box.Style.Should().Be(BoxStyle.Initial with { Margin = Edges.OnlyBottom(3.Pt()), Padding = Edges.All(2.Pt()), Background = Color.White });
+        // A paragraph's box also carries its own text properties, the strut of its lines (CSS 2.1 §10.8.1).
+        box.Style.Should().Be(BoxStyle.Initial with
+        {
+            Margin = Edges.OnlyBottom(3.Pt()),
+            Padding = Edges.All(2.Pt()),
+            Background = Color.White,
+            Text = new TextStyle("Lato", UserAgentStyles.InitialFontSize, FontWeight.Regular, Color.Black),
+        });
     }
 
     [Fact]

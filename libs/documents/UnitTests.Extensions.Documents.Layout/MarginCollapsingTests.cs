@@ -29,7 +29,7 @@ public class MarginCollapsingTests
     {
         var page = Paginate(Document(Paragraph(1, "One", Margins(0, 10)), Paragraph(2, "Two", Margins(6, 0))))[0];
 
-        RootChildren(page)[1].Offset.Y.Should().Be(LineHeight + 10, "max(10, 6) = 10");
+        RootChildren(page)[1].Offset.Y.Should().Be(LineBoxHeight + 10, "max(10, 6) = 10");
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public class MarginCollapsingTests
             Flow(2, [Paragraph(3, "Two", Margins(12, 0))], Margins(5, 0))))[0];
 
         var parent = RootChildren(page)[1];
-        parent.Offset.Y.Should().Be(LineHeight + 12, "the parent's border box moves down by max(5, 12)");
+        parent.Offset.Y.Should().Be(LineBoxHeight + 12, "the parent's border box moves down by max(5, 12)");
         ((BoxFragment)parent.Fragment).Children[0].Offset.Y.Should().Be(0, "the child's margin collapsed out of the parent");
     }
 
@@ -51,7 +51,7 @@ public class MarginCollapsingTests
             Paragraph(1, "One"),
             Flow(2, [Flow(3, [Paragraph(4, "Two", Margins(4, 0))], Margins(9, 0))], Margins(2, 0))))[0];
 
-        RootChildren(page)[1].Offset.Y.Should().Be(LineHeight + 9, "max(2, 9, 4)");
+        RootChildren(page)[1].Offset.Y.Should().Be(LineBoxHeight + 9, "max(2, 9, 4)");
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class MarginCollapsingTests
         var page = Paginate(Document(Paragraph(1, "One"), Flow(2, [Paragraph(3, "Two", Margins(12, 0))], parentStyle)))[0];
 
         var parent = RootChildren(page)[1];
-        parent.Offset.Y.Should().Be(LineHeight + 5);
+        parent.Offset.Y.Should().Be(LineBoxHeight + 5);
         ((BoxFragment)parent.Fragment).Children[0].Offset.Y.Should().Be(1 + 12, "padding, then the child's own margin");
     }
 
@@ -72,8 +72,8 @@ public class MarginCollapsingTests
             Flow(1, [Paragraph(2, "One", Margins(0, 9))], Margins(0, 4)),
             Paragraph(3, "Two")))[0];
 
-        RootChildren(page)[0].Fragment.Size.Height.Should().Be(LineHeight, "the child's bottom margin is not inside the parent");
-        RootChildren(page)[1].Offset.Y.Should().Be(LineHeight + 9, "max(4, 9) below the parent");
+        RootChildren(page)[0].Fragment.Size.Height.Should().Be(LineBoxHeight, "the child's bottom margin is not inside the parent");
+        RootChildren(page)[1].Offset.Y.Should().Be(LineBoxHeight + 9, "max(4, 9) below the parent");
     }
 
     [Fact]
@@ -82,8 +82,8 @@ public class MarginCollapsingTests
         var parentStyle = Margins(0, 4) with { Padding = new Edges(0.Pt(), 0.Pt(), 2.Pt(), 0.Pt()) };
         var page = Paginate(Document(Flow(1, [Paragraph(2, "One", Margins(0, 9))], parentStyle), Paragraph(3, "Two")))[0];
 
-        RootChildren(page)[0].Fragment.Size.Height.Should().Be(LineHeight + 9 + 2);
-        RootChildren(page)[1].Offset.Y.Should().Be(LineHeight + 9 + 2 + 4);
+        RootChildren(page)[0].Fragment.Size.Height.Should().Be(LineBoxHeight + 9 + 2);
+        RootChildren(page)[1].Offset.Y.Should().Be(LineBoxHeight + 9 + 2 + 4);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class MarginCollapsingTests
             Paragraph(3, "Two", Margins(7, 0))))[0];
 
         RootChildren(page)[1].Fragment.Size.Height.Should().Be(0, "a paragraph of only spaces makes no line box");
-        RootChildren(page)[2].Offset.Y.Should().Be(LineHeight + 20, "max(5, 20, 3, 7)");
+        RootChildren(page)[2].Offset.Y.Should().Be(LineBoxHeight + 20, "max(5, 20, 3, 7)");
     }
 
     [Fact]
