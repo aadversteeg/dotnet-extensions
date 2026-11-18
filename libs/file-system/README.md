@@ -449,6 +449,9 @@ CI runs them on `main` only, in the three .NET 10 modes below, with the reposito
 `AZURE_STORAGE_ACCOUNT_NAME` and `AZURE_STORAGE_ACCOUNT_KEY`. That job fails when a secret is missing or a test is
 skipped. A pull request does not run them and never gets the account key.
 
+A release of `Ave.Extensions.FileSystem.AzureFileStorage` runs them too, on the release-mode build and in the file
+share `integration-tests-release` (see `docs/RELEASING.md`).
+
 ### Supported runtimes
 
 The packages target `netstandard2.0` and `net10.0`. `Ave.Extensions.FileSystem.InMemory` and
@@ -485,17 +488,25 @@ Framework, load the `netstandard2.0` build.
 
 ### Long paths on .NET Framework
 
-`Ave.Extensions.FileSystem.Local` passes paths to Windows as they are. On .NET (Core) the runtime handles long
-paths itself. On .NET Framework it does not: a file path of 260 characters or more, or a folder path of 248
-characters or more, fails, unless both of these are true:
+On .NET (Core) the runtime handles long paths itself. .NET Framework passes a path to Windows as it is, so there a
+file path of 260 characters or more, or a folder path of 248 characters or more, fails unless Windows long paths
+are enabled on the machine (`LongPathsEnabled`) and in the manifest of the application.
 
-- Windows long paths are enabled on the machine: the registry value `LongPathsEnabled` is 1 under
-  `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (the group policy "Enable Win32 long paths" sets it);
-- the executable of the application has `longPathAware` set to `true` in its application manifest.
+`Ave.Extensions.FileSystem.Local` makes long paths work on .NET Framework without that machine setting. There it
+passes every local path to Windows as a full path with the `\\?\` prefix, which has no such limit. Paths that come
+back from Windows lose the prefix again: the paths, entries, events and error messages you get from the library are
+the same as without it. On .NET (Core), and on Linux and macOS, the library does not use the prefix.
 
-Otherwise the operation returns an error result (in our tests `NotFound.Directory`). A path with the `\\?\` prefix
-is no way around this: it is not a valid canonical path. The test `LFSMC-003` uses such long paths, so on .NET
-Framework it skips itself when Windows long paths are not enabled for the test process.
+Limits on .NET Framework:
+
+- An application in legacy path mode does not accept the prefix. That is an application that targets a .NET
+  Framework version below 4.6.2, or sets `Switch.System.IO.UseLegacyPathHandling` to `true`. The library detects
+  this once per process; there it passes paths as before, and long paths fail as before.
+- Network paths (`\\server\share`) get no prefix, so long network paths fail as before.
+- `FileSystemWatcher` does not accept the prefix. A monitoring session therefore needs a watched folder path of
+  less than 248 characters. Changes below it arrive with their long paths, and the hidden and system filters work
+  for them.
+- The stream from `OpenReadAsync`, `OpenWriteAsync` or `OpenAsync` is a `FileStream`; its `Name` has the prefix.
 
 ### Running Benchmarks
 

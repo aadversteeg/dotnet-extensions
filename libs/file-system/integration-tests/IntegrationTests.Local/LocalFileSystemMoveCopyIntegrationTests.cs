@@ -137,56 +137,64 @@ namespace IntegrationTests.FileSystem.Local
         
         #region Deep Directory Hierarchy
         
-        [SkippableFact(DisplayName = "LFSMC-003: Copy deep directory hierarchy preserves structure")]
+        [Fact(DisplayName = "LFSMC-003: Copy deep directory hierarchy preserves structure")]
         public async Task LFSMC003_CopyDeepDirectoryHierarchy()
         {
-            // The deepest files of this hierarchy have paths of more than 260 characters.
-            Skip.If(LongPathsUnavailable(),
-                   "Windows long paths are not enabled for this process (LongPathsEnabled=0 on the machine, or no " +
-                   "longPathAware in the manifest of the test host); .NET Framework does not add the \\\\?\\ prefix " +
-                   "itself, so a path of 260 characters or more fails.");
+            // Under the Windows temp folder the deepest files of this hierarchy have paths of more than 260
+            // characters; under a short temp folder, as on Linux, they stay below that.
 
             // Arrange
             var depth = 15; // 15 levels deep
             var filesPerLevel = 3;
             var sourceRoot = await CreateDeepHierarchyAsync("deep-source", depth, filesPerLevel);
             var destRoot = Path.Combine(_testRoot, "deep-dest");
-            
+
             var sourcePath = _pathMapper.MapToCanonicalPath(sourceRoot).Value;
             var destPath = _pathMapper.MapToCanonicalPath(destRoot).Value;
-            
-            // Count total files and directories
-            var sourceFiles = Directory.GetFiles(sourceRoot, "*", SearchOption.AllDirectories);
-            var sourceDirs = Directory.GetDirectories(sourceRoot, "*", SearchOption.AllDirectories);
-            
-            // Act
-            var sw = Stopwatch.StartNew();
-            var result = await _fileSystem.CopyDirectoryAsync(sourcePath, destPath);
-            sw.Stop();
-            
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-            
-            var destFiles = Directory.GetFiles(destRoot, "*", SearchOption.AllDirectories);
-            var destDirs = Directory.GetDirectories(destRoot, "*", SearchOption.AllDirectories);
-            
-            destFiles.Length.Should().Be(sourceFiles.Length);
-            destDirs.Length.Should().Be(sourceDirs.Length);
-            
-            _output.WriteLine($"Copied {sourceFiles.Length} files in {sourceDirs.Length} directories");
-            _output.WriteLine($"Time taken: {sw.ElapsedMilliseconds}ms");
-            
-            // Verify some file contents
-            foreach (var sourceFile in sourceFiles.Take(10))
+
+            try
             {
-                var relativePath = Path.GetRelativePath(sourceRoot, sourceFile);
-                var destFile = Path.Combine(destRoot, relativePath);
-                
-                File.Exists(destFile).Should().BeTrue($"file {relativePath} should exist");
-                
-                var sourceContent = await File.ReadAllTextAsync(sourceFile);
-                var destContent = await File.ReadAllTextAsync(destFile);
-                destContent.Should().Be(sourceContent);
+                // Count total files and directories
+                var sourceFiles = Directory.GetFiles(RawPath(sourceRoot), "*", SearchOption.AllDirectories);
+                var sourceDirs = Directory.GetDirectories(RawPath(sourceRoot), "*", SearchOption.AllDirectories);
+                var longestPath = sourceRoot.Length + sourceFiles.Max(f => f.Length) - RawPath(sourceRoot).Length;
+                _output.WriteLine($"Longest source path: {longestPath} characters");
+
+                // Act
+                var sw = Stopwatch.StartNew();
+                var result = await _fileSystem.CopyDirectoryAsync(sourcePath, destPath);
+                sw.Stop();
+
+                // Assert
+                result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.Message : null);
+
+                var destFiles = Directory.GetFiles(RawPath(destRoot), "*", SearchOption.AllDirectories);
+                var destDirs = Directory.GetDirectories(RawPath(destRoot), "*", SearchOption.AllDirectories);
+
+                destFiles.Length.Should().Be(sourceFiles.Length);
+                destDirs.Length.Should().Be(sourceDirs.Length);
+
+                _output.WriteLine($"Copied {sourceFiles.Length} files in {sourceDirs.Length} directories");
+                _output.WriteLine($"Time taken: {sw.ElapsedMilliseconds}ms");
+
+                // Verify some file contents, the deepest included
+                foreach (var sourceFile in sourceFiles.Take(5).Concat(sourceFiles.OrderByDescending(f => f.Length).Take(5)))
+                {
+                    var relativePath = sourceFile.Substring(RawPath(sourceRoot).Length + 1);
+                    var destFile = Path.Combine(RawPath(destRoot), relativePath);
+
+                    File.Exists(destFile).Should().BeTrue($"file {relativePath} should exist");
+
+                    var sourceContent = await File.ReadAllTextAsync(sourceFile);
+                    var destContent = await File.ReadAllTextAsync(destFile);
+                    destContent.Should().Be(sourceContent);
+                }
+            }
+            finally
+            {
+                // The paths are too long for a plain recursive delete on .NET Framework; the library deletes them.
+                await _fileSystem.DeleteDirectoryAsync(sourcePath, recursive: true);
+                await _fileSystem.DeleteDirectoryAsync(destPath, recursive: true);
             }
         }
         
@@ -665,24 +673,24 @@ namespace IntegrationTests.FileSystem.Local
             for (int level = 0; level < depth; level++)
             {
                 currentPath = Path.Combine(currentPath, $"level-{level:D3}");
-                Directory.CreateDirectory(currentPath);
-                
+                Directory.CreateDirectory(RawPath(currentPath));
+
                 // Create files at this level
                 for (int file = 0; file < filesPerLevel; file++)
                 {
                     var fileName = $"file-L{level:D3}-F{file:D3}.txt";
                     var filePath = Path.Combine(currentPath, fileName);
                     var content = $"Level {level}, File {file}\nPath: {filePath}\n" + new string('x', 100);
-                    await File.WriteAllTextAsync(filePath, content);
+                    await File.WriteAllTextAsync(RawPath(filePath), content);
                 }
-                
+
                 // Create sibling directory
                 if (level < depth - 1)
                 {
                     var siblingDir = Path.Combine(Path.GetDirectoryName(currentPath)!, $"sibling-{level:D3}");
-                    Directory.CreateDirectory(siblingDir);
+                    Directory.CreateDirectory(RawPath(siblingDir));
                     await File.WriteAllTextAsync(
-                        Path.Combine(siblingDir, $"sibling-{level:D3}.txt"), 
+                        RawPath(Path.Combine(siblingDir, $"sibling-{level:D3}.txt")),
                         $"Sibling at level {level}");
                 }
             }
@@ -698,30 +706,16 @@ namespace IntegrationTests.FileSystem.Local
             return Convert.ToBase64String(hash);
         }
         
-        // True on .NET Framework when Windows does not let this process use paths of 260 characters or more (folders:
-        // 248). That takes LongPathsEnabled=1 on the machine and longPathAware in the manifest of the executable.
-        // .NET (Core) adds the \\?\ prefix itself and needs neither.
-        private static bool LongPathsUnavailable()
+        // The raw System.IO calls of the tests themselves do not go through the library: on .NET Framework a path of
+        // 260 characters or more (folders: 248) needs the \\?\ prefix there too. .NET adds it itself.
+        private static string RawPath(string path)
         {
 #if NETFRAMEWORK
-            try
-            {
-                return RtlAreLongPathsEnabled() == 0;
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // Windows before Windows 10 version 1607 has no long path support at all
-                return true;
-            }
+            return @"\\?\" + path;
 #else
-            return false;
+            return path;
 #endif
         }
-
-#if NETFRAMEWORK
-        [DllImport("ntdll.dll")]
-        private static extern byte RtlAreLongPathsEnabled();
-#endif
 
         private DriveInfo? GetDifferentVolume()
         {
@@ -744,6 +738,12 @@ namespace IntegrationTests.FileSystem.Local
             {
                 if (Directory.Exists(_testRoot))
                 {
+                    // Clear readonly attributes to allow deletion (LFSMC-008)
+                    foreach (var file in Directory.GetFiles(_testRoot, "*", SearchOption.AllDirectories))
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                    }
+
                     // Handle Windows file locking
                     int retries = 3;
                     while (retries > 0)
