@@ -123,7 +123,7 @@ internal static class RasterComparison
                 continue;
             }
 
-            var mask = Canvas.Coverage(path, transform, FillRule.NonZero, box);
+            var mask = Canvas.Coverage(path, transform, FillRule.NonZero, box).Value;
             for (var y = mask.Top; y < mask.Top + mask.Height; y++)
             {
                 for (var x = mask.Left; x < mask.Left + mask.Width; x++)

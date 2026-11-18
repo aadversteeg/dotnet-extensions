@@ -61,7 +61,7 @@ public class ImageResamplingTests
 
     private static void ShouldFollowTheRule(RgbaImage image, Affine transform, int width, int height)
     {
-        var canvas = new Canvas(width, height, null);
+        var canvas = Canvas.Create(width, height, null).Value;
         canvas.DrawImage(image, transform);
         var drawn = canvas.ToImage();
 

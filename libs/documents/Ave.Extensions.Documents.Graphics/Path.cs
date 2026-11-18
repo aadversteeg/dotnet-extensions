@@ -7,11 +7,17 @@ namespace Ave.Extensions.Documents.Graphics;
 /// <summary>
 /// A path: subpaths of straight lines and quadratic and cubic Bézier curves, as in PDF (ISO 32000-1 §8.5.2). Each
 /// subpath starts with <see cref="MoveTo"/>; filling closes every subpath that is still open (§8.5.3.1: "any open subpaths
-/// are implicitly closed before being filled"). Build one with <see cref="PathBuilder"/>.
+/// are implicitly closed before being filled"). Build one with <see cref="PathBuilder"/> (or <see cref="Rectangle"/>), so a
+/// path is always well formed.
 /// </summary>
-/// <param name="Commands">The commands in order; the first is a <see cref="MoveTo"/> unless the path is empty.</param>
-public sealed record Path(ValueList<PathCommand> Commands)
+public sealed record Path
 {
+    internal Path(ValueList<PathCommand> commands) => Commands = commands;
+
+    /// <summary>The commands in order: no missing command, the first is a <see cref="MoveTo"/> unless the path is empty,
+    /// and every other command follows a current point (the builder makes sure).</summary>
+    public ValueList<PathCommand> Commands { get; }
+
     /// <summary>The path without subpaths.</summary>
     public static Path Empty { get; } = new(ValueList<PathCommand>.Empty);
 
@@ -70,7 +76,7 @@ public sealed record ClosePath : PathCommand
 public sealed class PathBuilder
 {
     private readonly ImmutableArray<PathCommand>.Builder _commands = ImmutableArray.CreateBuilder<PathCommand>();
-    private bool _open;
+    private bool _hasCurrentPoint;
 
     /// <summary>Starts a subpath.</summary>
     /// <param name="x">The x coordinate.</param>
@@ -82,7 +88,8 @@ public sealed class PathBuilder
     /// <param name="x">The end's x coordinate.</param>
     /// <param name="y">The end's y coordinate.</param>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">No subpath is open.</exception>
+    /// <exception cref="InvalidOperationException">There is no current point yet: the path does not start with
+    /// MoveTo.</exception>
     public PathBuilder LineTo(double x, double y) => Add(new LineTo(x, y));
 
     /// <summary>Adds a quadratic Bézier curve.</summary>
@@ -91,7 +98,8 @@ public sealed class PathBuilder
     /// <param name="x">The end's x coordinate.</param>
     /// <param name="y">The end's y coordinate.</param>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">No subpath is open.</exception>
+    /// <exception cref="InvalidOperationException">There is no current point yet: the path does not start with
+    /// MoveTo.</exception>
     public PathBuilder QuadraticTo(double controlX, double controlY, double x, double y) => Add(new QuadraticTo(controlX, controlY, x, y));
 
     /// <summary>Adds a cubic Bézier curve.</summary>
@@ -102,19 +110,16 @@ public sealed class PathBuilder
     /// <param name="x">The end's x coordinate.</param>
     /// <param name="y">The end's y coordinate.</param>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">No subpath is open.</exception>
+    /// <exception cref="InvalidOperationException">There is no current point yet: the path does not start with
+    /// MoveTo.</exception>
     public PathBuilder CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) =>
         Add(new CubicTo(control1X, control1Y, control2X, control2Y, x, y));
 
-    /// <summary>Closes the current subpath.</summary>
+    /// <summary>Closes the current subpath; the current point becomes the subpath's start, so a line may follow
+    /// (ISO 32000-1 §8.5.2.1, the h operator), and starts a new subpath there.</summary>
     /// <returns>This builder.</returns>
-    /// <exception cref="InvalidOperationException">No subpath is open.</exception>
-    public PathBuilder Close()
-    {
-        Add(ClosePath.Instance);
-        _open = false;
-        return this;
-    }
+    /// <exception cref="InvalidOperationException">There is no current point yet.</exception>
+    public PathBuilder Close() => Add(ClosePath.Instance);
 
     /// <summary>The path built so far.</summary>
     /// <returns>The path.</returns>
@@ -122,13 +127,13 @@ public sealed class PathBuilder
 
     private PathBuilder Add(PathCommand command, bool opens = false)
     {
-        if (!opens && !_open)
+        if (!opens && !_hasCurrentPoint)
         {
-            throw new InvalidOperationException($"A {command.GetType().Name} needs a current point: start the subpath with MoveTo.");
+            throw new InvalidOperationException($"A {command.GetType().Name} needs a current point: start the path with MoveTo.");
         }
 
         _commands.Add(command);
-        _open = true;
+        _hasCurrentPoint = true;
         return this;
     }
 }

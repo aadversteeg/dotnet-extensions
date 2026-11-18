@@ -39,12 +39,34 @@ internal static class Clipping
     }
 
     /// <summary>
+    /// Clips one polygon to the box using two buffers the caller keeps, so clipping allocates nothing; the result is one of
+    /// the two buffers (fewer than three points: nothing is left).
+    /// </summary>
+    /// <param name="polygon">A closed polygon; not changed.</param>
+    /// <param name="box">The box.</param>
+    /// <param name="first">A buffer.</param>
+    /// <param name="second">Another buffer.</param>
+    /// <returns>The clipped polygon, in one of the buffers.</returns>
+    public static List<Vertex> ToBox(List<Vertex> polygon, PixelBox box, List<Vertex> first, List<Vertex> second)
+    {
+        Side(polygon, box.Left, vertical: true, keepGreater: true, first);
+        Side(first, box.Right, vertical: true, keepGreater: false, second);
+        Side(second, box.Top, vertical: false, keepGreater: true, first);
+        Side(first, box.Bottom, vertical: false, keepGreater: false, second);
+        return second;
+    }
+
+    /// <summary>
     /// Clips against one side: the line x = <paramref name="edge"/> (vertical) or y = <paramref name="edge"/>, keeping the
     /// points with a greater or with a smaller coordinate. A point on the line is inside.
     /// </summary>
-    private static List<Vertex> Side(List<Vertex> polygon, double edge, bool vertical, bool keepGreater)
+    private static List<Vertex> Side(List<Vertex> polygon, double edge, bool vertical, bool keepGreater) =>
+        Side(polygon, edge, vertical, keepGreater, new List<Vertex>(polygon.Count + 4));
+
+    /// <summary>The same, writing into <paramref name="result"/> (cleared first).</summary>
+    private static List<Vertex> Side(List<Vertex> polygon, double edge, bool vertical, bool keepGreater, List<Vertex> result)
     {
-        var result = new List<Vertex>(polygon.Count + 4);
+        result.Clear();
         if (polygon.Count == 0)
         {
             return result;

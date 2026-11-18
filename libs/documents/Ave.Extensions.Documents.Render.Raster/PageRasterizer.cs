@@ -28,23 +28,23 @@ public static class PageRasterizer
     /// (<c>Documents.Raster.InvalidPageModel</c>), the options (<c>InvalidOptions</c>), the size (<c>TooLarge</c>), or a
     /// glyph outline or an image that cannot be decoded (<c>Documents.Font.Parse.*</c>, <c>Documents.Image.*</c>).</returns>
     public static Result<RgbaImage, Error> Render(Page page, RasterOptions options) =>
-        CheckOptions(options)
-            .OnSuccessBind(_ => PageModelRules.Check(page, RasterErrorCodes.InvalidPageModel))
-            .OnSuccessBind(checkedPage => Draw(checkedPage, options));
+        Checked(options, code => PageModelRules.Check(page, code))
+            .OnSuccessBind(checkedPage => Draw(checkedPage, options, new PagePainter.Images()));
 
-    /// <summary>Draws every page of a document, after checking the whole document by the contract.</summary>
+    /// <summary>Draws every page of a document, after checking the whole document by the contract. Each distinct image is
+    /// decoded once for all pages.</summary>
     /// <param name="document">The page document.</param>
     /// <param name="options">The resolution and background.</param>
     /// <returns>One image per page, in order, or the first error (see <see cref="Render(Page, RasterOptions)"/>).</returns>
     public static Result<ImmutableArray<RgbaImage>, Error> Render(PageDocument document, RasterOptions options) =>
-        CheckOptions(options)
-            .OnSuccessBind(_ => PageModelRules.Check(document, RasterErrorCodes.InvalidPageModel))
+        Checked(options, code => PageModelRules.Check(document, code))
             .OnSuccessBind(checkedDocument =>
             {
                 var images = ImmutableArray.CreateBuilder<RgbaImage>(checkedDocument.Pages.Count);
+                var decoded = new PagePainter.Images();
                 foreach (var page in checkedDocument.Pages)
                 {
-                    var drawn = Draw(page, options);
+                    var drawn = Draw(page, options, decoded);
                     if (drawn.IsFailure)
                     {
                         return Result<ImmutableArray<RgbaImage>, Error>.Failure(drawn.Error);
@@ -66,10 +66,9 @@ public static class PageRasterizer
     /// <returns>The page's pixels, <c>Documents.Raster.PageNotFound</c> for a number outside 1 to the page count, or an
     /// error of <see cref="Render(Page, RasterOptions)"/>.</returns>
     public static Result<RgbaImage, Error> Render(PageDocument document, int pageNumber, RasterOptions options) =>
-        CheckOptions(options)
-            .OnSuccessBind(_ => PageModelRules.Check(document, RasterErrorCodes.InvalidPageModel))
+        Checked(options, code => PageModelRules.Check(document, code))
             .OnSuccessBind(checkedDocument => pageNumber >= 1 && pageNumber <= checkedDocument.Pages.Count
-                ? Draw(checkedDocument.Pages[pageNumber - 1], options)
+                ? Draw(checkedDocument.Pages[pageNumber - 1], options, new PagePainter.Images())
                 : Result<RgbaImage, Error>.Failure(
                     new Error(RasterErrorCodes.PageNotFound, $"The document has {checkedDocument.Pages.Count} pages; there is no page {pageNumber}.")
                         .With(ErrorMetadataKeys.Value, pageNumber.ToString(CultureInfo.InvariantCulture))));
@@ -82,6 +81,11 @@ public static class PageRasterizer
     public static (long Width, long Height) PixelSize(Size page, double resolution) =>
         ((long)Math.Ceiling(page.Width * resolution / 72), (long)Math.Ceiling(page.Height * resolution / 72));
 
+    /// <summary>The one check every entry point makes: the options, then the page model's contract (by the shared
+    /// <see cref="PageModelRules"/>, reported under <c>Documents.Raster.InvalidPageModel</c>).</summary>
+    private static Result<T, Error> Checked<T>(RasterOptions? options, Func<ErrorCode, Result<T, Error>> contract) =>
+        CheckOptions(options).OnSuccessBind(_ => contract(RasterErrorCodes.InvalidPageModel));
+
     private static Result<RasterOptions, Error> CheckOptions(RasterOptions? options) =>
         options is { Resolution: > 0 and < double.PositiveInfinity }
             ? Result<RasterOptions, Error>.Success(options)
@@ -89,7 +93,7 @@ public static class PageRasterizer
                 new Error(RasterErrorCodes.InvalidOptions, $"The resolution must be a positive finite number of pixels per inch; it is {options?.Resolution.ToString(CultureInfo.InvariantCulture) ?? "missing"}.")
                     .With(ErrorMetadataKeys.Value, options?.Resolution.ToString(CultureInfo.InvariantCulture) ?? "null"));
 
-    private static Result<RgbaImage, Error> Draw(Page page, RasterOptions options)
+    private static Result<RgbaImage, Error> Draw(Page page, RasterOptions options, PagePainter.Images images)
     {
         var (width, height) = PixelSize(page.Size, options.Resolution);
         // Each side is checked on its own first, so the product cannot overflow (a side converts to at most long.MaxValue).
@@ -100,7 +104,7 @@ public static class PageRasterizer
                     .With(ErrorMetadataKeys.Value, $"{width}x{height}"));
         }
 
-        var canvas = new Canvas((int)width, (int)height, options.Background);
-        return PagePainter.Paint(page, canvas, options.Resolution / 72).OnSuccessMap(_ => canvas.ToImage());
+        return Canvas.Create((int)width, (int)height, options.Background)
+            .OnSuccessBind(canvas => PagePainter.Paint(page, canvas, options.Resolution / 72, images).OnSuccessMap(_ => canvas.ToImage()));
     }
 }

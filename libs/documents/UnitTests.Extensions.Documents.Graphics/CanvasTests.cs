@@ -37,14 +37,14 @@ public class CanvasTests
     [Fact]
     public void The_background_fills_the_canvas_or_leaves_it_transparent()
     {
-        Pixel(new Canvas(3, 2, new Color(10, 20, 30)).ToImage(), 2, 1).Should().Be(((byte)10, (byte)20, (byte)30, (byte)255));
-        Pixel(new Canvas(3, 2, null).ToImage(), 2, 1).Should().Be(((byte)0, (byte)0, (byte)0, (byte)0));
+        Pixel(Canvas.Create(3, 2, new Color(10, 20, 30)).Value.ToImage(), 2, 1).Should().Be(((byte)10, (byte)20, (byte)30, (byte)255));
+        Pixel(Canvas.Create(3, 2, null).Value.ToImage(), 2, 1).Should().Be(((byte)0, (byte)0, (byte)0, (byte)0));
     }
 
     [Fact]
     public void A_partly_covered_pixel_mixes_the_encoded_values_by_coverage()
     {
-        var canvas = new Canvas(4, 1, Color.White);
+        var canvas = Canvas.Create(4, 1, Color.White).Value;
 
         // Pixel 0 fully covered, pixel 1 by a quarter, pixel 2 by three quarters, pixel 3 not at all.
         canvas.Fill(Path.Rectangle(0, 0, 1, 1), Affine.Identity, FillRule.NonZero, new Color(0, 100, 200));
@@ -63,7 +63,7 @@ public class CanvasTests
     [Fact]
     public void On_a_transparent_canvas_the_alpha_is_the_coverage_and_the_colour_stays_whole()
     {
-        var canvas = new Canvas(2, 1, null);
+        var canvas = Canvas.Create(2, 1, null).Value;
 
         canvas.Fill(Path.Rectangle(0, 0, 0.5, 1), Affine.Identity, FillRule.NonZero, new Color(200, 100, 50));
         canvas.Fill(Path.Rectangle(0, 0, 0.5, 1), Affine.Identity, FillRule.NonZero, new Color(0, 0, 250));
@@ -83,7 +83,7 @@ public class CanvasTests
     public void An_image_drawn_one_to_one_on_the_grid_keeps_its_pixels()
     {
         var source = Image(3, 2, (x, y) => ((byte)(x * 80), (byte)(y * 90), 7, 255));
-        var canvas = new Canvas(5, 4, Color.White);
+        var canvas = Canvas.Create(5, 4, Color.White).Value;
 
         canvas.DrawImage(source, Affine.Translate(1, 2));
         var image = canvas.ToImage();
@@ -105,14 +105,14 @@ public class CanvasTests
     {
         var source = Image(2, 2, (x, y) => (x == y ? ((byte)0, (byte)0, (byte)0, (byte)255) : ((byte)255, (byte)255, (byte)255, (byte)255)));
 
-        var large = new Canvas(6, 6, Color.White);
+        var large = Canvas.Create(6, 6, Color.White).Value;
         large.DrawImage(source, Affine.Scale(3, 3));
         var enlarged = large.ToImage();
         Pixel(enlarged, 2, 2).R.Should().Be(0);
         Pixel(enlarged, 3, 2).R.Should().Be(255);
         Pixel(enlarged, 3, 3).R.Should().Be(0);
 
-        var small = new Canvas(1, 1, Color.White);
+        var small = Canvas.Create(1, 1, Color.White).Value;
         small.DrawImage(source, Affine.Scale(0.5, 0.5));
         Pixel(small.ToImage(), 0, 0).R.Should().Be(128, "two black and two white pixels average to 127.5");
     }
@@ -121,7 +121,7 @@ public class CanvasTests
     public void An_image_half_a_pixel_off_the_grid_blends_neighbours_and_anti_aliases_its_edges()
     {
         var source = Image(2, 1, (x, _) => (x == 0 ? ((byte)0, (byte)0, (byte)0, (byte)255) : ((byte)200, (byte)200, (byte)200, (byte)255)));
-        var canvas = new Canvas(4, 1, null);
+        var canvas = Canvas.Create(4, 1, null).Value;
 
         canvas.DrawImage(source, Affine.Translate(0.5, 0));
         var image = canvas.ToImage();
@@ -136,8 +136,8 @@ public class CanvasTests
     public void A_quarter_turn_and_a_mirror_move_the_pixels_exactly()
     {
         var source = Image(3, 2, (x, y) => ((byte)((10 * x) + y), 0, 0, 255));
-        var turned = new Canvas(2, 3, null);
-        var mirrored = new Canvas(3, 2, null);
+        var turned = Canvas.Create(2, 3, null).Value;
+        var mirrored = Canvas.Create(3, 2, null).Value;
 
         // (x, y) → (2 − y, x): image row 0 becomes the right column.
         turned.DrawImage(source, new Affine(0, 1, -1, 0, 2, 0));
@@ -157,7 +157,7 @@ public class CanvasTests
     public void Transparent_image_pixels_add_no_colour()
     {
         var source = Image(2, 1, (x, _) => (x == 0 ? ((byte)255, (byte)0, (byte)0, (byte)0) : ((byte)0, (byte)0, (byte)255, (byte)255)));
-        var canvas = new Canvas(1, 1, Color.White);
+        var canvas = Canvas.Create(1, 1, Color.White).Value;
 
         canvas.DrawImage(source, Affine.Scale(0.5, 1));
 
@@ -168,7 +168,7 @@ public class CanvasTests
     [Fact]
     public void An_image_flattened_to_a_line_draws_nothing()
     {
-        var canvas = new Canvas(2, 2, Color.White);
+        var canvas = Canvas.Create(2, 2, Color.White).Value;
 
         canvas.DrawImage(Image(1, 1, (_, _) => (0, 0, 0, 255)), new Affine(1, 1, 1, 1, 0, 0));
 
@@ -178,7 +178,7 @@ public class CanvasTests
     [Fact]
     public void A_clip_box_limits_both_fills_and_images()
     {
-        var canvas = new Canvas(4, 1, Color.White);
+        var canvas = Canvas.Create(4, 1, Color.White).Value;
         var clip = new PixelBox(1, 0, 2.5, 1);
 
         canvas.Fill(Path.Rectangle(0, 0, 4, 1), Affine.Identity, FillRule.NonZero, Color.Black, clip);
@@ -186,21 +186,9 @@ public class CanvasTests
 
         image.Pixels.Where((_, index) => index % 4 == 0).Should().Equal(255, 0, 127, 255);
 
-        var drawn = new Canvas(4, 1, Color.White);
+        var drawn = Canvas.Create(4, 1, Color.White).Value;
         drawn.DrawImage(Image(4, 1, (_, _) => (0, 0, 0, 255)), Affine.Identity, clip);
         drawn.ToImage().Pixels.Should().Equal(image.Pixels);
-    }
-
-    [Fact]
-    public void Invalid_input_is_a_bug_of_the_caller_and_throws()
-    {
-        var canvas = new Canvas(2, 2, null);
-
-        canvas.Invoking(c => c.Fill(Path.Rectangle(0, 0, double.NaN, 1), Affine.Identity, FillRule.NonZero, Color.Black)).Should().Throw<ArgumentException>();
-        canvas.Invoking(c => c.Fill(Path.Rectangle(0, 0, 1, 1), Affine.Scale(double.PositiveInfinity, 1), FillRule.NonZero, Color.Black)).Should().Throw<ArgumentException>();
-        canvas.Invoking(c => c.Fill(Path.Rectangle(0, 0, 1, 1), Affine.Identity, FillRule.NonZero, Color.Black, new PixelBox(2, 0, 1, 1))).Should().Throw<ArgumentException>();
-        FluentActions.Invoking(() => new Canvas(1 << 14, (1 << 12) + 1, null)).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => new PathBuilder().LineTo(1, 1)).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -208,7 +196,7 @@ public class CanvasTests
     {
         // Curves, a rotation, both fill rules, a clip, a transparent background and an image: the SHA-256 of the
         // pixels is pinned, and the tests run on Linux and Windows. A change here means the pixels changed.
-        var canvas = new Canvas(97, 61, null);
+        var canvas = Canvas.Create(97, 61, null).Value;
         var star = new PathBuilder().MoveTo(48, 3).LineTo(60, 55).LineTo(10, 22).LineTo(88, 22).LineTo(36, 55).Close().ToPath();
         var blob = new PathBuilder().MoveTo(5, 30).CubicTo(5, -10, 90, 70, 92, 30).QuadraticTo(50, 70, 5, 30).Close().ToPath();
         canvas.Fill(blob, Affine.Identity, FillRule.NonZero, new Color(30, 144, 255));
@@ -221,7 +209,7 @@ public class CanvasTests
     [Fact]
     public void Painting_order_decides_and_later_items_cover_earlier_ones()
     {
-        var canvas = new Canvas(1, 1, Color.White);
+        var canvas = Canvas.Create(1, 1, Color.White).Value;
 
         canvas.Fill(Path.Rectangle(0, 0, 1, 1), Affine.Identity, FillRule.NonZero, Color.Black);
         canvas.Fill(Path.Rectangle(0, 0, 1, 1), Affine.Identity, FillRule.NonZero, new Color(1, 2, 3));

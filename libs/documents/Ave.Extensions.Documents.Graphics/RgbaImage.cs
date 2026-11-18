@@ -1,5 +1,7 @@
-using System;
 using System.Collections.Immutable;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Graphics;
 
@@ -10,24 +12,26 @@ namespace Ave.Extensions.Documents.Graphics;
 /// </summary>
 public sealed class RgbaImage
 {
-    /// <summary>Wraps pixels.</summary>
-    /// <param name="width">The width in pixels, at least 1.</param>
-    /// <param name="height">The height in pixels, at least 1.</param>
-    /// <param name="pixels">width × height × 4 bytes.</param>
-    /// <exception cref="ArgumentException">The size is not positive or does not match the pixels.</exception>
-    public RgbaImage(int width, int height, ImmutableArray<byte> pixels)
+    internal RgbaImage(int width, int height, ImmutableArray<byte> pixels)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
-        if (pixels.IsDefault || pixels.Length != (long)width * height * 4)
-        {
-            throw new ArgumentException($"A {width} x {height} image has {(long)width * height * 4} bytes of pixels.", nameof(pixels));
-        }
-
         Width = width;
         Height = height;
         Pixels = pixels;
     }
+
+    /// <summary>Wraps pixels.</summary>
+    /// <param name="width">The width in pixels, at least 1.</param>
+    /// <param name="height">The height in pixels, at least 1.</param>
+    /// <param name="pixels">width × height × 4 bytes.</param>
+    /// <returns>The image, or <c>Documents.Graphics.InvalidValue</c> when the size is not positive or does not match the
+    /// pixels.</returns>
+    public static Result<RgbaImage, Error> Create(int width, int height, ImmutableArray<byte> pixels) =>
+        width >= 1 && height >= 1 && !pixels.IsDefault && pixels.Length == (long)width * height * 4
+            ? Result<RgbaImage, Error>.Success(new RgbaImage(width, height, pixels))
+            : Result<RgbaImage, Error>.Failure(
+                new Error(GraphicsErrorCodes.InvalidValue, $"A {width} x {height} image is at least 1 x 1 and has {(long)width * height * 4} bytes of pixels, not {(pixels.IsDefault ? 0 : pixels.Length)}.")
+                    .With(ErrorMetadataKeys.Value, $"{width}x{height}")
+                    .With(ErrorMetadataKeys.Property, "pixels"));
 
     /// <summary>The width in pixels.</summary>
     public int Width { get; }

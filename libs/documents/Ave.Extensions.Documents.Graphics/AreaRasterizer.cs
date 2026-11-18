@@ -83,17 +83,28 @@ internal sealed class AreaRasterizer
             return;
         }
 
+        // The reported columns are exactly the cells the polygons' extent touches, ⌊min x⌋ to ⌈max x⌉ − 1 (at least one).
+        // A piece adds to its own cell and to the next, and a vertical edge on ⌈max x⌉ itself adds to the cell there: two
+        // cells more are kept for those differences, and they are never reported.
         var firstColumn = (int)Math.Floor(minX);
-        var width = (int)Math.Ceiling(maxX) - firstColumn + 1;
+        var width = int.Max(1, (int)Math.Ceiling(maxX) - firstColumn);
         var firstRow = (int)Math.Floor(minY);
         var lastRow = (int)Math.Ceiling(maxY);
-        if (_cells.Length < width + 1)
+        if (_cells.Length < width + 2)
         {
-            _cells = new double[width + 1];
-            _coverage = new double[width + 1];
+            _cells = new double[width + 2];
+            _coverage = new double[width + 2];
         }
 
-        _edges.Sort((left, right) => left.Y0.CompareTo(right.Y0));
+        // A total order of its own (not the sort's), so the sums along a row are added in the same order everywhere.
+        _edges.Sort(static (left, right) =>
+        {
+            var order = left.Y0.CompareTo(right.Y0);
+            order = order != 0 ? order : left.X0.CompareTo(right.X0);
+            order = order != 0 ? order : left.Y1.CompareTo(right.Y1);
+            order = order != 0 ? order : left.X1.CompareTo(right.X1);
+            return order != 0 ? order : left.Direction.CompareTo(right.Direction);
+        });
         _active.Clear();
         var next = 0;
         for (var y = firstRow; y < lastRow; y++)
@@ -104,7 +115,7 @@ internal sealed class AreaRasterizer
             }
 
             _active.RemoveAll(edge => edge.Y1 <= y);
-            Array.Clear(_cells, 0, width + 1);
+            Array.Clear(_cells, 0, width + 2);
             foreach (var edge in _active)
             {
                 AddPiece(edge, y, firstColumn);

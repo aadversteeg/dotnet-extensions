@@ -16,6 +16,9 @@ public class CoverageTests
 
     private static readonly PixelBox Area = new(0, 0, 64, 64);
 
+    /// <summary>The coverage mask; the arguments are always in range here.</summary>
+    private static CoverageMask Cover(Path path, Affine transform, FillRule rule, PixelBox clip) => Canvas.Coverage(path, transform, rule, clip).Value;
+
     private static Path Polygon(IReadOnlyList<(double X, double Y)> points)
     {
         var builder = new PathBuilder().MoveTo(points[0].X, points[0].Y);
@@ -48,7 +51,7 @@ public class CoverageTests
     [InlineData(5.75, 40.0625, 50.5, 13.3)]
     public void An_axis_aligned_rectangle_covers_each_pixel_by_its_overlap(double x, double y, double width, double height)
     {
-        var mask = Canvas.Coverage(Path.Rectangle(x, y, width, height), Affine.Identity, FillRule.NonZero, Area);
+        var mask = Cover(Path.Rectangle(x, y, width, height), Affine.Identity, FillRule.NonZero, Area);
 
         ShouldMatchExactAreas([(x, y), (x + width, y), (x + width, y + height), (x, y + height)], mask);
     }
@@ -64,7 +67,7 @@ public class CoverageTests
             var width = random.NextDouble() * 20;
             var height = random.NextDouble() * 20;
 
-            var mask = Canvas.Coverage(Path.Rectangle(x, y, width, height), Affine.Identity, FillRule.NonZero, Area);
+            var mask = Cover(Path.Rectangle(x, y, width, height), Affine.Identity, FillRule.NonZero, Area);
 
             ShouldMatchExactAreas([(x, y), (x + width, y), (x + width, y + height), (x, y + height)], mask);
             Sum(mask).Should().BeApproximately(width * height, mask.Values.Count(value => value is > 0 and < 255) * 0.5 / 255 + 1e-9);
@@ -79,7 +82,7 @@ public class CoverageTests
         {
             var points = attempt % 2 == 0 ? RotatedRectangle(random) : Triangle(random);
 
-            var mask = Canvas.Coverage(Polygon(points), Affine.Identity, FillRule.NonZero, Area);
+            var mask = Cover(Polygon(points), Affine.Identity, FillRule.NonZero, Area);
 
             ShouldMatchExactAreas(points, mask);
             Sum(mask).Should().BeApproximately(Math.Abs(Geometry.SignedArea(points)), mask.Values.Count(value => value is > 0 and < 255) * 0.5 / 255 + 1e-9);
@@ -92,7 +95,7 @@ public class CoverageTests
         // A 2 × 1 rectangle at the origin, scaled by 3.5 and 2, rotated by a quarter turn and moved: the rectangle
         // (10, 20)–(17, 23) with the corners the transform gives.
         var transform = Affine.Scale(3.5, 2).Then(new Affine(0, 1, -1, 0, 0, 0)).Then(Affine.Translate(30.25, 5.5));
-        var mask = Canvas.Coverage(Path.Rectangle(0, 0, 2, 1), transform, FillRule.NonZero, Area);
+        var mask = Cover(Path.Rectangle(0, 0, 2, 1), transform, FillRule.NonZero, Area);
 
         ShouldMatchExactAreas([(30.25, 5.5), (30.25, 12.5), (28.25, 12.5), (28.25, 5.5)], mask);
     }
@@ -120,7 +123,7 @@ public class CoverageTests
             builder.CubicTo(p1.Item1, p1.Item2, p2.Item1, p2.Item2, p3.Item1, p3.Item2);
         }
 
-        var mask = Canvas.Coverage(builder.Close().ToPath(), Affine.Identity, FillRule.NonZero, Area);
+        var mask = Cover(builder.Close().ToPath(), Affine.Identity, FillRule.NonZero, Area);
 
         var edgePixels = mask.Values.Count(value => value is > 0 and < 255);
         var bound = (2 * Math.PI * r * (1.0 / 64)) + (edgePixels * 0.5 / 255);
@@ -136,8 +139,8 @@ public class CoverageTests
             .MoveTo(20, 20).LineTo(40, 20).LineTo(40, 40).LineTo(20, 40).Close()
             .ToPath();
 
-        var nonZero = Canvas.Coverage(path, Affine.Identity, FillRule.NonZero, Area);
-        var evenOdd = Canvas.Coverage(path, Affine.Identity, FillRule.EvenOdd, Area);
+        var nonZero = Cover(path, Affine.Identity, FillRule.NonZero, Area);
+        var evenOdd = Cover(path, Affine.Identity, FillRule.EvenOdd, Area);
 
         nonZero.At(25, 25).Should().Be(255);
         evenOdd.At(25, 25).Should().Be(0);
@@ -175,7 +178,7 @@ public class CoverageTests
 
         foreach (var rule in new[] { FillRule.NonZero, FillRule.EvenOdd })
         {
-            var mask = Canvas.Coverage(path, Affine.Identity, rule, Area);
+            var mask = Cover(path, Affine.Identity, rule, Area);
 
             mask.At(25, 25).Should().Be(0);
             mask.At(20, 25).Should().Be(128, "half of the pixel is in the hole: 127.5 rounds up");
@@ -194,9 +197,9 @@ public class CoverageTests
             .MoveTo(10, 10).LineTo(20, 10).LineTo(20, 20).LineTo(10, 20).Close()
             .ToPath();
 
-        Canvas.Coverage(twice, Affine.Identity, FillRule.EvenOdd, Area).At(15, 15).Should().Be(0);
-        Canvas.Coverage(twice, Affine.Identity, FillRule.NonZero, Area).At(15, 15).Should().Be(255);
-        Canvas.Coverage(thrice, Affine.Identity, FillRule.EvenOdd, Area).At(15, 15).Should().Be(255);
+        Cover(twice, Affine.Identity, FillRule.EvenOdd, Area).At(15, 15).Should().Be(0);
+        Cover(twice, Affine.Identity, FillRule.NonZero, Area).At(15, 15).Should().Be(255);
+        Cover(thrice, Affine.Identity, FillRule.EvenOdd, Area).At(15, 15).Should().Be(255);
     }
 
     [Fact]
@@ -204,7 +207,7 @@ public class CoverageTests
     {
         var clip = new PixelBox(12.25, 10.5, 30.75, 25.125);
 
-        var mask = Canvas.Coverage(Path.Rectangle(5.5, 8.3, 40, 12.6), Affine.Identity, FillRule.NonZero, clip);
+        var mask = Cover(Path.Rectangle(5.5, 8.3, 40, 12.6), Affine.Identity, FillRule.NonZero, clip);
 
         // The rectangle and the box overlap in (12.25, 10.5)–(30.75, 20.9).
         ShouldMatchExactAreas([(12.25, 10.5), (30.75, 10.5), (30.75, 20.9), (12.25, 20.9)], mask);
@@ -220,8 +223,8 @@ public class CoverageTests
         var circle = Circle(-1990, 20, 2000);
         var small = new PixelBox(0, 0, 32, 40);
 
-        var clipped = Canvas.Coverage(circle, Affine.Identity, FillRule.NonZero, small);
-        var whole = Canvas.Coverage(circle, Affine.Identity, FillRule.NonZero, new PixelBox(-4000, -2000, 32, 2100));
+        var clipped = Cover(circle, Affine.Identity, FillRule.NonZero, small);
+        var whole = Cover(circle, Affine.Identity, FillRule.NonZero, new PixelBox(-4000, -2000, 32, 2100));
 
         for (var y = 0; y < 40; y++)
         {
@@ -247,9 +250,9 @@ public class CoverageTests
             var bottom = 10 + (random.NextDouble() * 20);
             var first = Polygon([(10.3, 10.3), (top, 10.3), (bottom, 29.6), (10.3, 29.6)]);
             var second = Polygon([(top, 10.3), (30.7, 10.3), (30.7, 29.6), (bottom, 29.6)]);
-            var whole = Canvas.Coverage(Path.Rectangle(10.3, 10.3, 20.4, 19.3), Affine.Identity, FillRule.NonZero, Area);
-            var left = Canvas.Coverage(first, Affine.Identity, FillRule.NonZero, Area);
-            var right = Canvas.Coverage(second, Affine.Identity, FillRule.NonZero, Area);
+            var whole = Cover(Path.Rectangle(10.3, 10.3, 20.4, 19.3), Affine.Identity, FillRule.NonZero, Area);
+            var left = Cover(first, Affine.Identity, FillRule.NonZero, Area);
+            var right = Cover(second, Affine.Identity, FillRule.NonZero, Area);
 
             for (var y = 0; y < 64; y++)
             {
@@ -264,7 +267,7 @@ public class CoverageTests
                 .MoveTo(10.3, 10.3).LineTo(top, 10.3).LineTo(bottom, 29.6).LineTo(10.3, 29.6).Close()
                 .MoveTo(top, 10.3).LineTo(30.7, 10.3).LineTo(30.7, 29.6).LineTo(bottom, 29.6).Close()
                 .ToPath();
-            Canvas.Coverage(both, Affine.Identity, FillRule.NonZero, Area).Values.Should().Equal(whole.Values);
+            Cover(both, Affine.Identity, FillRule.NonZero, Area).Values.Should().Equal(whole.Values);
         }
     }
 

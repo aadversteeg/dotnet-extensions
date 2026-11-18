@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Graphics;
 
@@ -10,8 +14,9 @@ namespace Ave.Extensions.Documents.Graphics;
 /// (i + 1, j + 1) of device space, y down. Mutable while drawing; <see cref="ToImage"/> takes the result.
 /// </summary>
 /// <remarks>
-/// <para><b>Anti-aliasing.</b> A pixel's coverage is the exact share of its square that the shape covers
-/// (<see cref="AreaRasterizer"/>), rounded to 8 bits; it is the alpha the colour is painted with.</para>
+/// <para><b>Anti-aliasing.</b> A pixel's coverage is the share of its square that the shape covers
+/// (<see cref="AreaRasterizer"/>: exact for outlines that do not overlap themselves), rounded to 8 bits; it is the alpha
+/// the colour is painted with.</para>
 /// <para><b>Compositing.</b> Source over (Porter and Duff, "Compositing Digital Images", 1984), with coverage α and the
 /// pixel's alpha β: alpha' = α + β(1 − α), colour' = (C·α + D·β(1 − α)) / alpha'. Computed on the encoded 8-bit sRGB
 /// values in integers and rounded to the nearest. Blending in linear light would be more correct in theory; it is not
@@ -21,41 +26,43 @@ namespace Ave.Extensions.Documents.Graphics;
 /// together they cover each pixel on the edge exactly once; but source over lets a little of the pixel beneath show
 /// through (with coverage ½ and ½, a quarter). Every renderer that composites shape by shape does this (it is called
 /// conflation); a shape that must not show the seam is one path.</para>
+/// <para><b>Arguments.</b> One rule for every public member of this library: a value it cannot draw with (not finite, out
+/// of range, a size that does not fit) is answered with a <see cref="Result{T, E}"/> error with a
+/// <see cref="GraphicsErrorCodes"/> code, never with an exception; a null reference throws
+/// <see cref="ArgumentNullException"/>, and <see cref="PathBuilder"/> called out of order throws
+/// <see cref="InvalidOperationException"/>, both bugs of the caller. The ranges: every point of a path, after the
+/// transform, lies within ±<see cref="MaxCoordinate"/> in both directions, so sums and squares of a few coordinates stay
+/// finite in double precision; a clip box of <see cref="Coverage"/> lies within ±<see cref="MaxPixelCoordinate"/>.
+/// Inside these ranges the work of a fill is bounded by the pixels it can touch, never by the size of the shape: a shape
+/// is clipped to the box in floating point before any number becomes an integer.</para>
 /// </remarks>
 public sealed class Canvas
 {
-    /// <summary>The most pixels a canvas may have: 2^26 (64 Mi, about 8192 × 8192), 256 MiB of pixels. An A4 page at 600
-    /// dpi has 34.8 Mi.</summary>
+    /// <summary>The most pixels a canvas or a coverage mask may have: 2^26 (64 Mi, about 8192 × 8192), 256 MiB of
+    /// pixels. An A4 page at 600 dpi has 34.8 Mi.</summary>
     public const long MaxPixels = 1L << 26;
+
+    /// <summary>The largest distance from the origin, in each direction, of a point of a path after its transform:
+    /// 10^150. A difference or a sum of two such numbers, and the square of that, are still finite doubles.</summary>
+    public const double MaxCoordinate = 1e150;
+
+    /// <summary>The largest distance from the origin, in each direction, of a clip box of <see cref="Coverage"/>, in
+    /// pixels: 2^30, so every pixel index fits a 32-bit integer.</summary>
+    public const double MaxPixelCoordinate = 1 << 30;
 
     private readonly byte[] _pixels;
     private readonly AreaRasterizer _rasterizer = new();
     private readonly AreaRasterizer _sampler = new();
+    private readonly List<Vertex> _preimage = new(4);
+    private readonly List<Vertex> _clipFirst = new(16);
+    private readonly List<Vertex> _clipSecond = new(16);
+    private readonly List<List<Vertex>> _preimagePolygons = new(1);
 
-    /// <summary>Creates a canvas filled with a background.</summary>
-    /// <param name="width">The width in pixels, at least 1.</param>
-    /// <param name="height">The height in pixels, at least 1.</param>
-    /// <param name="background">The opaque background colour, or null for transparent pixels.</param>
-    /// <exception cref="ArgumentOutOfRangeException">A side is below 1, or the canvas has more than
-    /// <see cref="MaxPixels"/> pixels.</exception>
-    public Canvas(int width, int height, Color? background)
+    private Canvas(int width, int height, byte[] pixels)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan((long)width * height, MaxPixels, "width × height");
         Width = width;
         Height = height;
-        _pixels = new byte[(long)width * height * 4];
-        if (background is { } color)
-        {
-            for (var index = 0; index < _pixels.Length; index += 4)
-            {
-                _pixels[index] = color.Red;
-                _pixels[index + 1] = color.Green;
-                _pixels[index + 2] = color.Blue;
-                _pixels[index + 3] = 255;
-            }
-        }
+        _pixels = pixels;
     }
 
     /// <summary>The width in pixels.</summary>
@@ -67,23 +74,58 @@ public sealed class Canvas
     /// <summary>The whole canvas as a box.</summary>
     public PixelBox Bounds => new(0, 0, Width, Height);
 
+    /// <summary>Creates a canvas filled with a background.</summary>
+    /// <param name="width">The width in pixels, at least 1.</param>
+    /// <param name="height">The height in pixels, at least 1.</param>
+    /// <param name="background">The opaque background colour, or null for transparent pixels.</param>
+    /// <returns>The canvas, <c>Documents.Graphics.InvalidValue</c> for a side below 1, or <c>Documents.Graphics.TooLarge</c>
+    /// for more than <see cref="MaxPixels"/> pixels.</returns>
+    public static Result<Canvas, Error> Create(int width, int height, Color? background)
+    {
+        if (width < 1 || height < 1)
+        {
+            return Invalid<Canvas>($"A canvas is at least 1 x 1 pixels; asked for {width} x {height}.", $"{width}x{height}", "size");
+        }
+
+        if ((long)width * height > MaxPixels)
+        {
+            return TooLarge<Canvas>(width, height);
+        }
+
+        var pixels = new byte[(long)width * height * 4];
+        if (background is { } color)
+        {
+            for (var index = 0; index < pixels.Length; index += 4)
+            {
+                pixels[index] = color.Red;
+                pixels[index + 1] = color.Green;
+                pixels[index + 2] = color.Blue;
+                pixels[index + 3] = 255;
+            }
+        }
+
+        return Result<Canvas, Error>.Success(new Canvas(width, height, pixels));
+    }
+
     /// <summary>Fills a path with an opaque colour, anti-aliased by exact area coverage.</summary>
     /// <param name="path">The path; open subpaths are closed.</param>
     /// <param name="transform">From the path's coordinates to device pixels.</param>
     /// <param name="rule">The fill rule.</param>
     /// <param name="color">The colour.</param>
     /// <param name="clip">Only what lies inside this box is painted; null for the whole canvas.</param>
-    /// <exception cref="ArgumentException">The transform, a coordinate of the path or the clip box is not finite.</exception>
-    public void Fill(Path path, Affine transform, FillRule rule, Color color, PixelBox? clip = null)
+    /// <returns>Unit, or <c>Documents.Graphics.InvalidValue</c> for a value out of range (see the class remarks).</returns>
+    /// <exception cref="ArgumentNullException">The path is null.</exception>
+    public Result<Unit, Error> Fill(Path path, Affine transform, FillRule rule, Color color, PixelBox? clip = null)
     {
-        CoverageRows(_rasterizer, path, transform, rule, Box(clip), (row, first, coverage) =>
+        ArgumentNullException.ThrowIfNull(path);
+        return Box(clip).OnSuccessBind(box => CoverageRows(_rasterizer, path, transform, rule, box, (row, first, coverage) =>
         {
             var offset = (((long)row * Width) + first) * 4;
             for (var index = 0; index < coverage.Length; index++, offset += 4)
             {
                 Composite(offset, color.Red, color.Green, color.Blue, ToByte(coverage[index]));
             }
-        });
+        }));
     }
 
     /// <summary>
@@ -92,40 +134,46 @@ public sealed class Canvas
     /// </summary>
     /// <remarks>
     /// <para><b>Resampling rule: an exact box filter.</b> The image is a grid of uniformly coloured squares, as PDF draws
-    /// an image that does not ask to be interpolated (ISO 32000-1 §8.9.5.3, Interpolate false): each device pixel shows
-    /// the mean of the image over the part of the image its square covers. That part is the pixel's preimage, a
-    /// parallelogram in image space; its exact overlap with every image pixel is the weight of that pixel
-    /// (<see cref="AreaRasterizer"/> again, on the image's grid). The colours are averaged weighted by their alpha
-    /// (premultiplied), so a transparent pixel adds no colour; the alpha painted is the mean alpha over the whole
-    /// preimage, so a device pixel half outside the image gets half its alpha, and the image's edges are anti-aliased
-    /// like a filled path. For any magnification this shows the image's pixels as sharp squares; for any reduction each
-    /// image pixel counts by the area it covers.</para>
+    /// an image that does not ask to be interpolated (ISO 32000-1 §8.9.5.3, Interpolate false; the PDF/A profiles forbid
+    /// asking for interpolation, ISO 19005-3 §6.2.8): each device pixel shows the mean of the image over the part of the
+    /// image its square covers. That part is the pixel's preimage, a parallelogram in image space; its exact overlap with
+    /// every image pixel is the weight of that pixel (<see cref="AreaRasterizer"/> again, on the image's grid). The
+    /// colours are averaged weighted by their alpha (premultiplied), so a transparent pixel adds no colour; the alpha
+    /// painted is the mean alpha over the whole preimage, so a device pixel half outside the image gets half its alpha,
+    /// and the image's edges are anti-aliased like a filled path. For any magnification this shows the image's pixels as
+    /// sharp squares; for any reduction each image pixel counts by the area it covers.</para>
     /// </remarks>
     /// <param name="image">The image.</param>
     /// <param name="imageToDevice">From image space to device pixels.</param>
     /// <param name="clip">Only what lies inside this box is painted; null for the whole canvas.</param>
-    /// <exception cref="ArgumentException">The transform or the clip box is not finite.</exception>
-    public void DrawImage(RgbaImage image, Affine imageToDevice, PixelBox? clip = null)
+    /// <returns>Unit, or <c>Documents.Graphics.InvalidValue</c> for a value out of range (see the class remarks).</returns>
+    /// <exception cref="ArgumentNullException">The image is null.</exception>
+    public Result<Unit, Error> DrawImage(RgbaImage image, Affine imageToDevice, PixelBox? clip = null)
     {
         ArgumentNullException.ThrowIfNull(image);
+        var box = Box(clip);
+        if (box.IsFailure)
+        {
+            return Result<Unit, Error>.Failure(box.Error);
+        }
+
         if (!imageToDevice.IsFinite)
         {
-            throw new ArgumentException("The transform is not finite.", nameof(imageToDevice));
+            return Invalid<Unit>("The image's transform is not finite.", imageToDevice.ToString(), "transform");
         }
 
-        var box = Box(clip);
-        if (imageToDevice.Inverse() is not { } toImage || box.IsEmpty)
+        if (imageToDevice.Inverse() is not { } toImage || box.Value.IsEmpty)
         {
             // A transform that flattens the image to a line or a point gives it no area: nothing to paint.
-            return;
+            return Result<Unit, Error>.Success(Unit.Value);
         }
 
-        var outline = Path.Rectangle(0, 0, image.Width, image.Height);
         var imageBox = new PixelBox(0, 0, image.Width, image.Height);
         var preimageArea = 1 / Math.Abs(imageToDevice.Determinant);
         var weights = new Weights(image);
         CoverageRow sample = weights.Add;
-        CoverageRows(_rasterizer, outline, imageToDevice, FillRule.NonZero, box, (row, first, coverage) =>
+        var clipBox = box.Value;
+        return CoverageRows(_rasterizer, Path.Rectangle(0, 0, image.Width, image.Height), imageToDevice, FillRule.NonZero, clipBox, (row, first, coverage) =>
         {
             for (var index = 0; index < coverage.Length; index++)
             {
@@ -135,10 +183,8 @@ public sealed class Canvas
                 }
 
                 var x = first + index;
-                var cell = new PixelBox(x, row, x + 1, row + 1).Intersect(box);
-                var preimage = Flattening.Polygons(Path.Rectangle(cell.Left, cell.Top, cell.Right - cell.Left, cell.Bottom - cell.Top), toImage, imageBox);
                 weights.Clear();
-                _sampler.Rasterize(Clipping.ToBox(preimage, imageBox), FillRule.NonZero, sample);
+                SamplePreimage(new PixelBox(x, row, x + 1, row + 1).Intersect(clipBox), toImage, imageBox, sample);
                 if (weights.Alpha > 0)
                 {
                     Composite(
@@ -163,68 +209,132 @@ public sealed class Canvas
     /// <param name="path">The path.</param>
     /// <param name="transform">From the path's coordinates to device pixels.</param>
     /// <param name="rule">The fill rule.</param>
-    /// <param name="clip">The box; the mask covers the pixels from ⌊left⌋, ⌊top⌋ to ⌈right⌉, ⌈bottom⌉.</param>
-    /// <returns>The mask.</returns>
-    /// <exception cref="ArgumentException">The transform, a coordinate of the path or the clip box is not finite.</exception>
-    public static CoverageMask Coverage(Path path, Affine transform, FillRule rule, PixelBox clip)
+    /// <param name="clip">The box, within ±<see cref="MaxPixelCoordinate"/>; the mask covers the pixels from ⌊left⌋,
+    /// ⌊top⌋ to ⌈right⌉, ⌈bottom⌉, at most <see cref="MaxPixels"/>.</param>
+    /// <returns>The mask, or <c>Documents.Graphics.InvalidValue</c> / <c>TooLarge</c>.</returns>
+    /// <exception cref="ArgumentNullException">The path is null.</exception>
+    public static Result<CoverageMask, Error> Coverage(Path path, Affine transform, FillRule rule, PixelBox clip)
     {
-        if (!clip.IsValid)
+        ArgumentNullException.ThrowIfNull(path);
+        if (!clip.IsValid || Math.Abs(clip.Left) > MaxPixelCoordinate || Math.Abs(clip.Top) > MaxPixelCoordinate
+            || Math.Abs(clip.Right) > MaxPixelCoordinate || Math.Abs(clip.Bottom) > MaxPixelCoordinate)
         {
-            throw new ArgumentException("The clip box is not a finite rectangle.", nameof(clip));
+            return Invalid<CoverageMask>($"The clip box must be a finite rectangle within ±{MaxPixelCoordinate.ToString(CultureInfo.InvariantCulture)} pixels.", clip.ToString(), "clip");
         }
 
         var left = (int)Math.Floor(clip.Left);
         var top = (int)Math.Floor(clip.Top);
         var width = (int)Math.Ceiling(clip.Right) - left;
         var height = (int)Math.Ceiling(clip.Bottom) - top;
+        if ((long)width * height > MaxPixels)
+        {
+            return TooLarge<CoverageMask>(width, height);
+        }
+
         var values = new byte[(long)width * height];
-        CoverageRows(new AreaRasterizer(), path, transform, rule, clip, (row, first, coverage) =>
+        return CoverageRows(new AreaRasterizer(), path, transform, rule, clip, (row, first, coverage) =>
         {
             for (var index = 0; index < coverage.Length; index++)
             {
                 values[((long)(row - top) * width) + first + index - left] = ToByte(coverage[index]);
             }
-        });
-
-        return new CoverageMask(left, top, width, height, ImmutableArray.Create(values));
+        }).OnSuccessMap(_ => new CoverageMask(left, top, width, height, ImmutableArray.Create(values)));
     }
 
-    /// <summary>Hands each row of the coverage of a path inside a box to <paramref name="row"/>.</summary>
-    private static void CoverageRows(AreaRasterizer rasterizer, Path path, Affine transform, FillRule rule, PixelBox box, CoverageRow row)
+    /// <summary>Checks the values, then hands each row of the coverage of a path inside a box to <paramref name="row"/>.</summary>
+    private static Result<Unit, Error> CoverageRows(AreaRasterizer rasterizer, Path path, Affine transform, FillRule rule, PixelBox box, CoverageRow row)
     {
-        ArgumentNullException.ThrowIfNull(path);
-        if (!transform.IsFinite)
+        if (!Enum.IsDefined(rule))
         {
-            throw new ArgumentException("The transform is not finite.", nameof(transform));
+            return Invalid<Unit>($"{(int)rule} is not a fill rule.", ((int)rule).ToString(CultureInfo.InvariantCulture), "rule");
         }
 
-        var polygons = Flattening.Polygons(path, transform, box);
-        foreach (var polygon in polygons)
+        if (!transform.IsFinite)
         {
-            foreach (var vertex in polygon)
-            {
-                if (!double.IsFinite(vertex.X) || !double.IsFinite(vertex.Y))
-                {
-                    throw new ArgumentException("A point of the path is not finite after the transform.", nameof(path));
-                }
-            }
+            return Invalid<Unit>("The transform is not finite.", transform.ToString(), "transform");
+        }
+
+        if (OutOfRange(path, transform) is { } point)
+        {
+            return Invalid<Unit>(
+                $"A point of the path lies at ({point.X.ToString(CultureInfo.InvariantCulture)}, {point.Y.ToString(CultureInfo.InvariantCulture)}) after the transform; points must be finite and within ±{MaxCoordinate.ToString(CultureInfo.InvariantCulture)}.",
+                $"{point.X.ToString(CultureInfo.InvariantCulture)},{point.Y.ToString(CultureInfo.InvariantCulture)}",
+                "path");
         }
 
         if (!box.IsEmpty)
         {
-            rasterizer.Rasterize(Clipping.ToBox(polygons, box), rule, row);
+            rasterizer.Rasterize(Clipping.ToBox(Flattening.Polygons(path, transform, box), box), rule, row);
         }
+
+        return Result<Unit, Error>.Success(Unit.Value);
     }
 
-    private PixelBox Box(PixelBox? clip)
+    /// <summary>The first point of the path (end or control point) that is not finite or out of range after the
+    /// transform, or null.</summary>
+    private static Vertex? OutOfRange(Path path, Affine transform)
     {
-        if (clip is { IsValid: false })
+        foreach (var command in path.Commands)
         {
-            throw new ArgumentException("The clip box is not a finite rectangle.", nameof(clip));
+            var point = command switch
+            {
+                MoveTo move => Check(transform, move.X, move.Y),
+                LineTo line => Check(transform, line.X, line.Y),
+                QuadraticTo quadratic => Check(transform, quadratic.ControlX, quadratic.ControlY) ?? Check(transform, quadratic.X, quadratic.Y),
+                CubicTo cubic => Check(transform, cubic.Control1X, cubic.Control1Y) ?? Check(transform, cubic.Control2X, cubic.Control2Y) ?? Check(transform, cubic.X, cubic.Y),
+                _ => null,
+            };
+            if (point is not null)
+            {
+                return point;
+            }
         }
 
-        return clip is { } box ? box.Intersect(Bounds) : Bounds;
+        return null;
     }
+
+    private static Vertex? Check(Affine transform, double x, double y)
+    {
+        var (mappedX, mappedY) = (transform.MapX(x, y), transform.MapY(x, y));
+        return Math.Abs(mappedX) <= MaxCoordinate && Math.Abs(mappedY) <= MaxCoordinate ? null : new Vertex(mappedX, mappedY);
+    }
+
+    /// <summary>
+    /// The image samples under one device box: its four corners mapped back to image space (a parallelogram), clipped to
+    /// the image, and rasterised on the image's grid into <paramref name="sample"/>. Uses the canvas's buffers, so drawing
+    /// an image allocates nothing per pixel.
+    /// </summary>
+    private void SamplePreimage(PixelBox cell, Affine toImage, PixelBox imageBox, CoverageRow sample)
+    {
+        _preimage.Clear();
+        _preimage.Add(new Vertex(toImage.MapX(cell.Left, cell.Top), toImage.MapY(cell.Left, cell.Top)));
+        _preimage.Add(new Vertex(toImage.MapX(cell.Right, cell.Top), toImage.MapY(cell.Right, cell.Top)));
+        _preimage.Add(new Vertex(toImage.MapX(cell.Right, cell.Bottom), toImage.MapY(cell.Right, cell.Bottom)));
+        _preimage.Add(new Vertex(toImage.MapX(cell.Left, cell.Bottom), toImage.MapY(cell.Left, cell.Bottom)));
+        var clipped = Clipping.ToBox(_preimage, imageBox, _clipFirst, _clipSecond);
+        if (clipped.Count < 3)
+        {
+            return;
+        }
+
+        _preimagePolygons.Clear();
+        _preimagePolygons.Add(clipped);
+        _sampler.Rasterize(_preimagePolygons, FillRule.NonZero, sample);
+    }
+
+    private Result<PixelBox, Error> Box(PixelBox? clip) =>
+        clip is { IsValid: false } invalid
+            ? Invalid<PixelBox>("The clip box is not a finite rectangle with its edges in order.", invalid.ToString(), "clip")
+            : Result<PixelBox, Error>.Success(clip is { } box ? box.Intersect(Bounds) : Bounds);
+
+    private static Result<T, Error> Invalid<T>(string message, string value, string property) =>
+        Result<T, Error>.Failure(new Error(GraphicsErrorCodes.InvalidValue, message)
+            .With(ErrorMetadataKeys.Value, value)
+            .With(ErrorMetadataKeys.Property, property));
+
+    private static Result<T, Error> TooLarge<T>(long width, long height) =>
+        Result<T, Error>.Failure(new Error(GraphicsErrorCodes.TooLarge, $"{width} x {height} pixels is more than the {MaxPixels} pixels a canvas or a mask may have.")
+            .With(ErrorMetadataKeys.Value, $"{width}x{height}"));
 
     /// <summary>A share 0 to 1 as 8 bits, rounded to the nearest (halves up).</summary>
     private static byte ToByte(double share) => (byte)(int)((double.Clamp(share, 0, 1) * 255) + 0.5);
@@ -288,19 +398,40 @@ public sealed class Canvas
 
 /// <summary>
 /// The 8-bit coverage of a shape over a block of pixels (<see cref="Canvas.Coverage"/>): 0 not covered, 255 fully
-/// covered.
+/// covered. Made only by <see cref="Canvas.Coverage"/>, so its values always match its size.
 /// </summary>
-/// <param name="Left">The column of the first value.</param>
-/// <param name="Top">The row of the first value.</param>
-/// <param name="Width">Values per row.</param>
-/// <param name="Height">Rows.</param>
-/// <param name="Values">Width × height values, row by row.</param>
-public sealed record CoverageMask(int Left, int Top, int Width, int Height, ImmutableArray<byte> Values)
+public sealed class CoverageMask
 {
+    internal CoverageMask(int left, int top, int width, int height, ImmutableArray<byte> values)
+    {
+        Left = left;
+        Top = top;
+        Width = width;
+        Height = height;
+        Values = values;
+    }
+
+    /// <summary>The column of the first value.</summary>
+    public int Left { get; }
+
+    /// <summary>The row of the first value.</summary>
+    public int Top { get; }
+
+    /// <summary>Values per row.</summary>
+    public int Width { get; }
+
+    /// <summary>Rows.</summary>
+    public int Height { get; }
+
+    /// <summary>Width × height values, row by row.</summary>
+    public ImmutableArray<byte> Values { get; }
+
     /// <summary>The coverage of pixel (x, y), 0 outside the mask.</summary>
     /// <param name="x">The column.</param>
     /// <param name="y">The row.</param>
     /// <returns>The coverage.</returns>
     public byte At(int x, int y) =>
-        x >= Left && x < Left + Width && y >= Top && y < Top + Height ? Values[((y - Top) * Width) + x - Left] : (byte)0;
+        (long)x >= Left && (long)x < (long)Left + Width && (long)y >= Top && (long)y < (long)Top + Height
+            ? Values[(int)(((long)(y - Top) * Width) + x - Left)]
+            : (byte)0;
 }
