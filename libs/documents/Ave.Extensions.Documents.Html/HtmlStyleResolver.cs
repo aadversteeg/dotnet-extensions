@@ -189,9 +189,45 @@ public static class HtmlStyleResolver
 
         // ---- the styled tree ----
 
-        /// <summary>Styles an element and its subtree, parents first (the computer needs the parent's style).
-        /// Recursive: the parser limits the depth (HtmlInputLimits.MaxDepth).</summary>
-        private StyledElement Style(StyleElement element, StyleComputer computer, string? inheritedLanguage, bool hidden = false)
+        /// <summary>Styles an element and its subtree, parents first (the computer needs the parent's style). Without
+        /// recursion: the elements being styled are kept on a stack of their own, so the depth of the document costs no
+        /// thread stack.</summary>
+        private StyledElement Style(StyleElement root, StyleComputer computer, string? rootLanguage)
+        {
+            var open = new Stack<Open>();
+            open.Push(Begin(root, computer, rootLanguage, hidden: false));
+            while (true)
+            {
+                var current = open.Peek();
+                var html = current.Element.Element;
+                if (current.NextChild < html.Children.Count)
+                {
+                    switch (html.Children[current.NextChild++])
+                    {
+                        case HtmlElement:
+                            open.Push(Begin(current.Element.Children[current.NextElement++], computer, current.Language, current.Hidden));
+                            break;
+                        case HtmlText text:
+                            current.Children.Add(new StyledText(text, current.Style));
+                            break;
+                    }
+
+                    continue;
+                }
+
+                open.Pop();
+                var styled = new StyledElement(html, current.Style, current.Language, [.. current.Children]);
+                if (open.Count == 0)
+                {
+                    return styled;
+                }
+
+                open.Peek().Children.Add(styled);
+            }
+        }
+
+        /// <summary>Computes an element's style, refuses it where it is outside v0, and opens it for its children.</summary>
+        private Open Begin(StyleElement element, StyleComputer computer, string? inheritedLanguage, bool hidden)
         {
             var html = element.Element;
             var own = OwnDeclarations(element);
@@ -200,24 +236,28 @@ public static class HtmlStyleResolver
             hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
             var refused = RefuseElement(html, hidden);
             NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
+            return new Open(element, style, Language(html) ?? inheritedLanguage, hidden);
+        }
 
-            var language = Language(html) ?? inheritedLanguage;
-            var children = new List<StyledNode>();
-            var next = 0;
-            foreach (var child in html.Children)
-            {
-                switch (child)
-                {
-                    case HtmlElement:
-                        children.Add(Style(element.Children[next++], computer, language, hidden));
-                        break;
-                    case HtmlText text:
-                        children.Add(new StyledText(text, style));
-                        break;
-                }
-            }
+        /// <summary>An element whose children are being styled: its style, language, whether it is hidden, the styled
+        /// children so far, and where the walk of its children is.</summary>
+        private sealed class Open(StyleElement element, ComputedStyle style, string? language, bool hidden)
+        {
+            public StyleElement Element { get; } = element;
 
-            return new StyledElement(html, style, language, [.. children]);
+            public ComputedStyle Style { get; } = style;
+
+            public string? Language { get; } = language;
+
+            public bool Hidden { get; } = hidden;
+
+            public List<StyledNode> Children { get; } = [];
+
+            /// <summary>The next of the element's child nodes.</summary>
+            public int NextChild { get; set; }
+
+            /// <summary>The next of its element children (<see cref="StyleElement.Children"/>).</summary>
+            public int NextElement { get; set; }
         }
 
         /// <summary>Refuses an element outside v0 at its start tag: a form control that would be drawn, an element of
