@@ -38,10 +38,45 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   laid out for print (1 CSS px = 0.75 pt);
 - `<case>.lines.txt`: every filled rectangle as `page x0 y0 x1 y1 height`, in points, origin top left
   (`rectangles.py`, PyMuPDF): the pieces of the grid lines;
+- `<case>.print.txt`: where the print put things, page by page, read from the PDF alone (`positions.py`, PyMuPDF; see
+  "Print positions" below);
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
 `out/*.txt` over it after a deliberate re-measurement.
+
+## Print positions
+
+For rules about pages (where a page starts, where it breaks, what moves to the next page) the reference is Chromium's
+print itself, not a measurement on the screen. `positions.py` reads every case's PDF back and writes `<case>.print.txt`,
+one line per item, in points, origin at the top left of the page (y down), three decimals:
+
+```
+page <page> <width> <height>
+word <page> <x0> <x1> <baseline> <font size> <text>
+rect <page> <x0> <y0> <x1> <y1>
+image <page> <x0> <y0> <x1> <y1>
+```
+
+A word is a run of characters without white space on one baseline. Its extent is its advances (from the origin of its
+first character to the origin of its last plus that character's advance), and its height is its baseline, so neither
+depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. `rect` is a filled rectangle
+(a background, a border, a grid line, or a marker box a case draws on purpose to show where a box is); `image` is the
+area an image is drawn into, which reaches past the page when the page shows only a slice of it.
+
+The tests read these files through `PrintedPages` in the test-support project, which gives the engine's page model the
+same form (`PrintedPages.Engine`), so a test compares the two page by page: the words of each page exactly, positions
+with the comparison rule below. The harness takes any HTML with an `@page` rule, so whole documents can be measured
+the same way as the small cases.
+
+Chromium snaps more than layout units when it prints, which a case must allow for:
+
+- the page margins and the page size become whole CSS pixels (a 10 pt margin prints as 13 px = 9.75 pt), so the cases
+  that pin page breaks use sizes that are whole pixels (multiples of 0.75 pt; 12 pt margins, page areas of 150 or 180 pt);
+- with `line-height: normal` the line height is the font's ascent and descent each rounded to whole pixels: Lato at 12 pt
+  (16 px) is 16 + 3 = 19 px (14.25 pt) where the font's own values give 19.2 px (14.4 pt). The cases that pin page breaks
+  keep every decision clear of that difference, and their tests compare which words are on which page exactly and
+  positions only where the difference does not enter.
 
 ## The reference
 
@@ -132,7 +167,7 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `widths-exact` | at 10.5 pt: auto columns (`t1`), a fixed and two auto columns (`t2`), grid `fr` columns (`w3`, `w4`, their items): `boxes.txt` | `ChromiumReferenceTests`: the three width tests |
 | `widths` | the same tables at 10 pt, a size Chromium rounds | `ChromiumReferenceTests.At_a_font_size_Chromium_rounds_its_text_is_the_font_s_advances_scaled_by_the_documented_factor` |
 | `font-sizes` | 10 and 100 times "n" at 9, 10, 10.5, 11 and 12 pt: where Chromium's text width is exact (see above) | none; the numbers are in this README |
-| `b1-repeat` | a long table breaks between rows and repeats its header row | `A_long_table_breaks_between_rows_and_repeats_its_header_like_Chromium` |
+| `b1-repeat` | a long table breaks between rows and repeats its header row | `A_long_table_breaks_between_rows_and_repeats_its_header_like_Chromium`; through the print read-back (`print.txt`): `The_long_table_puts_Chromium_s_words_on_Chromium_s_pages` |
 | `b2-split-row` | a row taller than the space left breaks inside its cells | `A_row_taller_than_the_space_left_breaks_inside_its_cells_like_Chromium` |
 | `b3-keep-group` | a row group with `break-inside: avoid` moves to the next page whole | `A_row_group_kept_together_moves_to_the_next_page_whole_like_Chromium` |
 | `b4-row-span` | four labels, each over six one-line rows: the page breaks between the rows under a label, and the label continues | `Rows_under_a_label_that_spans_them_break_between_them_like_Chromium` |

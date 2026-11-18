@@ -27,7 +27,7 @@
 .EXAMPLE
     pwsh -NoProfile -File tools/reference/chromium/measure.ps1 mf4-line-0 widths
 #>
-[CmdletBinding()]
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Cases = @(),

@@ -1,0 +1,11 @@
+page 1 612.000 792.000
+word 1 0.000 45.900 8.911 8.226 nnnnnnnnnn
+word 1 0.000 459.005 19.879 8.226 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+word 1 0.000 50.981 30.847 9.138 nnnnnnnnnn
+word 1 0.000 509.802 41.815 9.138 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+word 1 0.000 53.550 53.468 9.597 nnnnnnnnnn
+word 1 0.000 535.500 65.121 9.597 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+word 1 0.000 56.061 76.774 10.049 nnnnnnnnnn
+word 1 0.000 560.598 88.428 10.049 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+word 1 0.000 61.200 101.452 10.968 nnnnnnnnnn
+word 1 0.000 611.994 114.476 10.968 nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
