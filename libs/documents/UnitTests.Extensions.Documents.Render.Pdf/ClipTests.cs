@@ -3,6 +3,7 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Pdf;
 using Ave.Extensions.Documents.Render.Pdf;
+using Ave.Extensions.Documents.Render.Pdf.Tagging;
 using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.Documents.Typesetting;
 
@@ -143,6 +144,67 @@ public class ClipTests
 
         PdfRenderer.Render(document, Tagged).IsSuccess.Should().BeTrue();
         Operators(PdfRenderer.Render(document, Tagged).Value).Count(name => name == "W").Should().Be(3);
+    }
+
+    /// <summary>A page with <paramref name="depth"/> clips one inside the other around a filled rectangle drawn as an
+    /// artifact.</summary>
+    private static PageDocument Nested(int depth) => Document(
+        [
+            .. Enumerable.Repeat<DrawItem>(Clip, depth),
+            new ArtifactStart(ArtifactKind.Layout),
+            new FillRectangle(new Rect(new Point(10, 25), new Size(50, 10)), Color.Black),
+            ArtifactEnd.Instance,
+            .. Enumerable.Repeat<DrawItem>(ClipEnd.Instance, depth),
+        ]);
+
+    [Fact]
+    public void Twenty_seven_clips_one_inside_the_other_write_28_levels_of_saved_state()
+    {
+        // Each clip is one q, the rectangle inside them one more: 28, the most ISO 19005-3 §6.1.13 and ISO 32000-1 Annex C
+        // allow.
+        var pdf = PdfRenderer.Render(Nested(PageEvents.MaxClipDepth), Tagged with { Profile = PdfProfile.PdfA3b });
+
+        pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);
+        var depth = 0;
+        var deepest = 0;
+        foreach (var name in Operators(pdf.Value))
+        {
+            depth += name switch { "q" => 1, "Q" => -1, _ => 0 };
+            deepest = Math.Max(deepest, depth);
+        }
+
+        deepest.Should().Be(28);
+    }
+
+    [Theory]
+    [InlineData(28)]
+    [InlineData(20_000)]
+    public void More_than_27_clips_one_inside_the_other_are_an_invalid_structure_in_every_profile(int depth)
+    {
+        foreach (var profile in new[] { PdfProfile.Plain, PdfProfile.PdfA3b, PdfProfile.PdfA3a })
+        {
+            PdfRenderer.Render(Nested(depth), Tagged with { Profile = profile }).Error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidStructure);
+        }
+    }
+
+    [DockerFact]
+    [Trait("Category", "Reference")]
+    public void The_file_with_27_clips_one_inside_the_other_passes_veraPDF_for_PDF_A_3b()
+    {
+        var folder = System.IO.Directory.CreateTempSubdirectory("ave-extensions-documents-clips-").FullName;
+        try
+        {
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, "clips-27.pdf"),
+                [.. PdfRenderer.Render(Nested(PageEvents.MaxClipDepth), Tagged with { Profile = PdfProfile.PdfA3b }).Value]);
+
+            var result = VeraPdf.Validate(folder, "3b").Single();
+
+            result.IsCompliant.Should().BeTrue(result.ToString());
+        }
+        finally
+        {
+            System.IO.Directory.Delete(folder, recursive: true);
+        }
     }
 
     [Fact]

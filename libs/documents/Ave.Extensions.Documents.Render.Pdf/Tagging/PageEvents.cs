@@ -45,10 +45,22 @@ internal sealed record ContentRun(ImmutableArray<DrawItem> Items, ArtifactKind? 
 internal static class PageEvents
 {
     /// <summary>
+    /// The most clips open one inside the other: 27. Every clip is one <c>q</c> in the content stream
+    /// (<see cref="PageContentStream"/>), and every drawing inside it adds one more <c>q</c> of its own (a rectangle, an
+    /// image and a glyph run each draw inside one <c>q</c>…<c>Q</c>, never deeper), so 27 clips make 28 levels of
+    /// <c>q</c>: the most ISO 32000-1 Annex C (Table C.1, "q/Q nesting depth") names as a limit of every PDF reader, and
+    /// what ISO 19005-3 §6.1.13 allows a PDF/A file ("shall not nest q/Q pairs by more than 28 nesting levels"). The same
+    /// for every profile. Deeper nesting is <c>Documents.Pdf.Write.InvalidStructure</c>; the layout never opens more
+    /// than one clip.
+    /// </summary>
+    public const int MaxClipDepth = 27;
+
+    /// <summary>
     /// Reads one page, and checks THE NESTING RULE FOR MARKERS of the page model (<see cref="DrawItem"/>): one stack of
     /// open structure, artifact and clip markers, where every end closes the innermost open marker, which must be a start
     /// of its kind (for a structure end, of its node); nothing is left open at the end of the page; no artifact or
-    /// structure marker opens inside an artifact. A page model from the painter always nests; a hand-made one may not.
+    /// structure marker opens inside an artifact; at most <see cref="MaxClipDepth"/> clips are open at once. A page model
+    /// from the painter always nests; a hand-made one may not.
     /// Clips are not events of their own: each content run carries the clips open around it, so the structure is built
     /// as if there were none, and the content stream opens and closes them between runs.
     /// </summary>
@@ -78,6 +90,8 @@ internal static class PageEvents
             {
                 case StructureStart or StructureEnd or ArtifactStart when artifact is not null:
                     return Invalid(number, item is ArtifactStart ? "an artifact inside an artifact" : "a structure marker inside an artifact");
+                case ClipStart when clips.Length >= MaxClipDepth:
+                    return Invalid(number, $"more than {MaxClipDepth} clips open one inside the other");
                 case StructureStart or ArtifactStart or ClipStart:
                     Flush();
                     open.Push(item);
