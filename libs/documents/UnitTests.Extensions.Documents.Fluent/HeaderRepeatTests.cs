@@ -10,7 +10,7 @@ namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
 /// A header row is repeated on a later page only when it is at most a quarter of the page area, as Chromium prints
-/// (<c>tools/reference/chromium</c>, cases <c>a5-header-quarter-*</c>): a header of one line with top padding above 60
+/// (<c>tools/reference/chromium</c>, cases <c>a6-header-quarter-*</c>): a header of one line with top padding above 60
 /// one-line body rows, at two page areas (180 and 360 pt) and on both sides of the step there (45.0 and 45.75 pt; 90.0
 /// and 90.75 pt). Page width 300 pt, margin 12 pt, Lato 12 pt, line height 15 pt, 0.75 pt grid lines.
 /// </summary>
@@ -28,10 +28,10 @@ public class HeaderRepeatTests
     }
 
     [Theory]
-    [InlineData("a5-header-quarter-180-4500", 180, 29.25, 8, true)]
-    [InlineData("a5-header-quarter-180-4575", 180, 30, 6, false)]
-    [InlineData("a5-header-quarter-360-9000", 360, 74.25, 4, true)]
-    [InlineData("a5-header-quarter-360-9075", 360, 75, 3, false)]
+    [InlineData("a6-header-quarter-180-4500", 180, 29.25, 8, true)]
+    [InlineData("a6-header-quarter-180-4575", 180, 30, 6, false)]
+    [InlineData("a6-header-quarter-360-9000", 360, 74.25, 4, true)]
+    [InlineData("a6-header-quarter-360-9075", 360, 75, 3, false)]
     public void A_header_row_is_repeated_only_when_it_is_at_most_a_quarter_of_the_page_area_as_in_Chromium(string caseName, double area, double padding, int pages, bool repeated)
     {
         var chromium = PrintedPages.Chromium(caseName);

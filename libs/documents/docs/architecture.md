@@ -515,7 +515,7 @@ Each is documented next to its code as well.
   continues without the header.
 - **Header rows are repeated only up to a quarter of the page area**, as Chromium prints them: a header taller than
   that is shown on the table's first page only (`TablePage.RepeatsHeader`; `HeaderRepeatTests`, cases
-  `a5-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
+  `a6-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
   90.0 and 90.75). CSS Tables 3 leaves repetition to the user agent; the step is measured in Chromium, not read from
   its source. The engine compares with the room the table has on the later page: the page area for a table that
   continues at the top of the body. A table inside a cell or a padded block that continues compares with that box's
@@ -524,13 +524,19 @@ Each is documented next to its code as well.
 - **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
   cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
   rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
-  `EmptyRowParts.Allow` the engine cuts as Chromium does, also in one more respect: a row whose cells all end on the
+  `EmptyRowParts.Allow` the engine cuts where Chromium cuts in the measured cases (one exception is listed below), also in
+  one more respect: a row whose cells all end on the
   page, with only the half of the grid line below it past the page end, is not cut but moves to the next page whole
   (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: the one step of 42, one pixel apart with and
   without a repeated header row, where this decides; under `Avoid` the cells keep their half line on the page and the
   row is cut before its last block). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
   their whole-pixel forms `a2-padded-blocks-px`, `a3-mirror-px`, with `FontMetricRounding.WholePixels`; `RowPartTests`,
-  Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. Chromium paints grid
+  Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. **Listed
+  difference:** a row whose lines all fit on the page but whose bottom padding or border does not is cut between its
+  lines under both values, where Chromium moves it to the next page whole (`a2-row-end-bottom-padding-30`, a cell of five
+  lines with 30 pt bottom padding below six lines: Chromium `a0`..`a5` on page 1 and `b0`..`b4`, `after` on page 2; the
+  engine `a0`..`a5 b0 b1 b2` and `b3 b4 after`; `PinnedDifferenceTests`). Moving the row for its padding or border waits
+  for the slicing of borders and padding across pages (stage 4). Chromium paints grid
   lines at whole pixels, the engine where layout puts them; where lengths are not whole pixels they differ by up to
   0.5 pt (`a2-rowspan-blocks`, a cell over two rows beside 10 pt blocks; 0.25 pt in `a2-padded-blocks` and
   `a3-mirror`). Whether the engine paints grid lines at whole pixels is left to the HTML front-end's stage. With `Avoid`, the code front-end's default, a
@@ -586,7 +592,14 @@ Each is documented next to its code as well.
   others (two columns, `a4-image-in-cell`; a table inside a cell, `a4-image-nested-table`). Where the content's cell
   does not start the page only because of the grid lines above it, the page is cut at the deepest place, inside every
   table around it, as Chromium cuts when no breakpoint is valid, so the slice starts at the top of the next page
-  (`ConstraintSpace.IsBelowStartInsets`, under `Slice` only). **Deliberate deviation from Chromium:** beside a sliced
+  (`ConstraintSpace.IsBelowStartInsets`, under `Slice` only). So `Slice` can change the pages of a document that has no
+  piece taller than a page: under `Refuse` that cut is not taken. **Listed difference:** `a4-nested-padded-image-160`
+  (a 160 pt image in a table inside a cell, each cell with 15 pt top padding) has 2 pages in Chromium and under `Slice`,
+  and 3 under `Refuse`, the default (`PinnedDifferenceTests`). In 600 random documents whose pieces each fit a page
+  (each laid out under `Refuse` and under `Slice`, with both values of `EmptyRowParts`), 1 under `Avoid` and 2 under
+  `Allow` had other pages under `Slice` than under `Refuse`, and 86 under `Avoid` (64 under `Allow`) that `Refuse`
+  refuses were laid out under `Slice` (the shape above, a piece that fits the page area but not with its cell's insets).
+  Taking the cut under `Refuse` too is left to later layout work. **Deliberate deviation from Chromium:** beside a sliced
   piece, the other cells of its row go on page by page beside the slices (cases `a4-image-beside-lines`,
   `a4-line-beside-lines`); Chromium holds their content back while the slices run and goes on with it below the end
   of the piece. In a cell that spans rows the pages follow from the rules for rows: the page breaks at the latest
