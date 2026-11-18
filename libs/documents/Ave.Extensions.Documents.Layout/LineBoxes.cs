@@ -23,7 +23,8 @@ internal static class LineBoxes
 
     /// <summary>
     /// The vertical extent of one inline box around the baseline (CSS 2.1 §10.8.1, "Leading and half-leading"; CSS
-    /// Inline 3 §5.3). A is the font's ascent and D its descent ('hhea'), at the box's font size; the leading L is added
+    /// Inline 3 §5.3). A is the font's ascent and D its descent, from its line metrics (<see cref="Fonts.FontMetrics.Line"/>:
+    /// 'OS/2' typographic or 'hhea', as Chromium chooses), at the box's font size; the leading L is added
     /// half above A and half below D. With <c>line-height: normal</c> (the initial value) L is the font's line gap, so
     /// the box is ascent + descent + line gap high (Inline 3 §5.3: "the font's line gap metric may also be incorporated
     /// into A and D by adding half to each side as half-leading"); with any other value "L = 'line-height' - AD" (CSS 2.1
@@ -36,11 +37,12 @@ internal static class LineBoxes
 
         public static InlineExtent Of(TrueTypeFont font, double fontSize, LineHeight lineHeight)
         {
-            var ascent = font.Metrics.ToPoints(font.Metrics.Ascender, fontSize);
-            var descent = -font.Metrics.ToPoints(font.Metrics.Descender, fontSize);
+            var metrics = font.Metrics.Line;
+            var ascent = font.Metrics.ToPoints(metrics.Ascender, fontSize);
+            var descent = -font.Metrics.ToPoints(metrics.Descender, fontSize);
             var leading = lineHeight.HeightFor(fontSize) is { } height
                 ? height - (ascent + descent)
-                : font.Metrics.ToPoints(font.Metrics.LineGap, fontSize);
+                : font.Metrics.ToPoints(metrics.LineGap, fontSize);
             return new InlineExtent(ascent, descent, leading / 2);
         }
     }

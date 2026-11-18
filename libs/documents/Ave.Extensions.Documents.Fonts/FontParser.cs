@@ -96,7 +96,25 @@ public static class FontParser
         ItalicAngle: description.Post.ItalicAngle,
         IsFixedPitch: description.Post.IsFixedPitch,
         WeightClass: description.Os2.WeightClass,
-        IsItalic: description.Os2.IsItalic);
+        IsItalic: description.Os2.IsItalic)
+    {
+        Line = LineMetricsOf(size.Hhea, description.Os2),
+    };
+
+    /// <summary>
+    /// The line metrics as Chromium reads them on Linux (<see cref="LineMetrics"/>): Skia's FreeType port, "if (os2 &amp;&amp;
+    /// os2-&gt;version != 0xFFFF &amp;&amp; (os2-&gt;fsSelection &amp; kUseTypoMetricsMask))" the typographic metrics, else the
+    /// face's ascender and descender, which FreeType takes from 'hhea' and, where both are zero, from 'OS/2' (typographic,
+    /// then Windows); Fontations states the same order ("1. Use the OS/2 metrics if the table exists and the
+    /// USE_TYPO_METRICS flag is set. 2. Otherwise, use the hhea metrics. 3. If hhea metrics are zero and the OS/2 table
+    /// exists: 3a. Use the typo metrics if they are non-zero 3b. Otherwise, use the win metrics"). The engine requires
+    /// an OS/2 table, so its version is never FreeType's 0xFFFF for "absent".
+    /// </summary>
+    private static LineMetrics LineMetricsOf(HheaTable hhea, Os2Table os2) =>
+        os2.UseTypoMetrics ? new LineMetrics(os2.Typo.Ascender, os2.Typo.Descender, os2.Typo.LineGap, LineMetricsSource.Typo)
+        : hhea.Ascender != 0 || hhea.Descender != 0 ? new LineMetrics(hhea.Ascender, hhea.Descender, hhea.LineGap, LineMetricsSource.Hhea)
+        : os2.Typo.Ascender != 0 || os2.Typo.Descender != 0 ? new LineMetrics(os2.Typo.Ascender, os2.Typo.Descender, os2.Typo.LineGap, LineMetricsSource.Typo)
+        : new LineMetrics(os2.Win.Ascent, -os2.Win.Descent, 0, LineMetricsSource.Win);
 
     /// <summary>A table the reader needs: absent is <c>Documents.Font.Parse.MissingTable</c>, present is parsed.</summary>
     private static Result<T, Error> Table<T>(TableDirectory directory, string tag, TableParser<T> parse) =>

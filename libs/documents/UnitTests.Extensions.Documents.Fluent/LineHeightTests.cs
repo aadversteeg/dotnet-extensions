@@ -124,4 +124,37 @@ public class LineHeightTests
         ((Box)block.Children[0]).Style.Text!.LineHeight.Should().Be(new LineHeight.Factor(0));
         ((Box)block.Children[1]).Style.Text!.LineHeight.Should().Be(LineHeight.Normal.Instance);
     }
+
+    [Theory]
+    [InlineData("d-typo-theano", "TheanoDidot-Regular.ttf")]
+    [InlineData("d-typo-lato", "Lato-Regular.ttf")]
+    public void Line_height_normal_takes_the_line_metrics_from_the_table_Chromium_takes_them_from(string caseName, string fontFile)
+    {
+        // Both fonts set USE_TYPO_METRICS, so Chromium and the engine take OS/2 sTypoAscender, sTypoDescender and
+        // sTypoLineGap (Fonts.FontMetrics.Line). Chromium's line is those three each rounded to whole pixels at 16 px;
+        // Theano's 'hhea' values would give another line (24 px, 18 pt, where the typographic ones give 20 px, 15 pt).
+        var font = fontFile.StartsWith("Theano", StringComparison.Ordinal) ? TestFonts.TheanoDidot : TestFonts.Regular;
+        var metrics = font.Metrics;
+        static double Pixels(double designUnits, int unitsPerEm) => Math.Round(Math.Abs(designUnits) * 16 / unitsPerEm, MidpointRounding.AwayFromZero);
+        var line = metrics.Line;
+        var chromiumPitch = 0.75 * (Pixels(line.Ascender, metrics.UnitsPerEm) + Pixels(line.Descender, metrics.UnitsPerEm) + Pixels(line.LineGap, metrics.UnitsPerEm));
+        var hheaPitch = 0.75 * (Pixels(metrics.Ascender, metrics.UnitsPerEm) + Pixels(metrics.Descender, metrics.UnitsPerEm) + Pixels(metrics.LineGap, metrics.UnitsPerEm));
+        var document = Document([Paragraph(Lines(8, caseName.EndsWith("theano", StringComparison.Ordinal) ? "t" : "l"))], Area, title: "Title", language: "en")
+            .FontFamily(font.Names.Family);
+        var engine = DocumentTranslator.ToModel(document)
+            .OnSuccessBind(model => DocumentLayout.Run(model, new Ave.Extensions.Documents.Fonts.FontSet([TestFonts.Regular, TestFonts.Bold, TestFonts.TheanoDidot])))
+            .OnSuccessMap(PrintedPages.Engine);
+        var chromium = PrintedPages.Chromium(caseName);
+
+        line.Source.Should().Be(Ave.Extensions.Documents.Fonts.LineMetricsSource.Typo);
+        engine.IsSuccess.Should().BeTrue(engine.IsFailure ? engine.Error.ToString() : string.Empty);
+        engine.Value.PageTexts.Should().Equal(chromium.PageTexts);
+        Pitches(chromium).Should().AllSatisfy(distance => distance.Should().Be(chromiumPitch));
+        Pitches(engine.Value).Should().AllSatisfy(distance => distance.Should().BeApproximately(
+            (line.Ascender - line.Descender + line.LineGap) * 12.0 / metrics.UnitsPerEm, 1e-9, "the engine's exact typographic line"));
+        if (fontFile.StartsWith("Theano", StringComparison.Ordinal))
+        {
+            hheaPitch.Should().NotBe(chromiumPitch, "the case tells the two tables apart");
+        }
+    }
 }
