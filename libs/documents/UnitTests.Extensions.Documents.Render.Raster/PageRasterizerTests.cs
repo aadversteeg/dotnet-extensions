@@ -88,7 +88,8 @@ public class PageRasterizerTests
     [Fact]
     public void Numbers_beyond_what_PDF_can_hold_are_refused_by_the_contract_not_thrown()
     {
-        // Review 38, B2: these threw ArgumentException from the canvas. They are beyond ±3.403e38 (ISO 32000-1 Annex C).
+        // Numbers beyond ±3.403e38 (ISO 32000-1 Annex C) break the shared contract: an error value, never an exception
+        // from the canvas.
         var font = TestFonts.Regular;
         var glyph = new PositionedGlyph(font.GlyphFor(new Rune('A')).Value, 1e308, "A");
         foreach (var item in new DrawItem[]
@@ -327,7 +328,7 @@ public class PageRasterizerTests
     [Fact]
     public void A_JPEG_with_a_component_no_scan_covers_is_an_error_of_the_page_not_an_exception()
     {
-        // Review 38, B1: through the page API this threw NullReferenceException.
+        // The image layer's refusal reaches the caller of the page API as the page's error.
         var jpeg = TestImages.Load("jpeg-unscanned-undefined-table.jpg");
 
         var result = PageRasterizer.Render(PageOf(40, 30, new DrawImage(new Rect(new Point(0, 0), new Size(40, 30)), jpeg)), new RasterOptions(72));

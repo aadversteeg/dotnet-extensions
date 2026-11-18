@@ -200,8 +200,8 @@ public class JpegDecoderTests
     [InlineData("jpeg-unscanned-undefined-table.jpg")]
     public void A_frame_component_that_no_scan_covers_makes_the_image_invalid(string name)
     {
-        // Review 38, B1: with an undefined table this threw NullReferenceException; with a defined one it decoded the
-        // missing components as zeros. A half-decoded picture is worse than a refusal.
+        // T.81 defines no samples for a component that no scan covers, so the image is refused, never decoded with zeros
+        // for it, whether its table is defined or not. A half-decoded picture is worse than a refusal.
         var result = Samples(Asset(name));
 
         result.IsFailure.Should().BeTrue();

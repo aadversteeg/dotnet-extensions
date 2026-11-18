@@ -26,7 +26,7 @@
     <!-- The OFL test fonts (Lato, Theano Didot), copied next to every assembly that references this project. -->
     <None Include="$(MSBuildThisFileDirectory)../assets/fonts/lato/*.ttf;$(MSBuildThisFileDirectory)../assets/fonts/lato/OFL.txt" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(MSBuildThisFileDirectory)../assets/fonts/theano/*.ttf" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <!-- A two-glyph subset of Roboto Regular (Apache License 2.0), made by tools/make-roboto-subset.sh. -->
+    <!-- A subset of Roboto Regular with two characters (Apache License 2.0), made by tools/make-roboto-subset.sh. -->
     <None Include="$(MSBuildThisFileDirectory)../assets/fonts/roboto/*.ttf" Link="fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

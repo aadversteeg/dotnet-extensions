@@ -9,8 +9,8 @@ namespace Ave.Extensions.Documents.TestSupport;
 /// 1.1, see assets/fonts/lato/OFL.txt), and Theano Didot 2.0 (SIL Open Font License 1.1, see
 /// assets/fonts/theano/OFL.txt), a font with what Lato lacks: a GDEF table, a <c>mkmk</c> feature, an old-style
 /// 'kern' table, a combining mark with a non-zero advance (U+0314, 420 units) and a non-zero line gap (560 of 2048).
-/// And a subset of Roboto Regular 2.138 (Apache License 2.0, see assets/fonts/roboto) with two glyphs whose outlines are
-/// rectangles, for tests that compute a glyph's ink exactly.
+/// And a subset of Roboto Regular 2.138 (Apache License 2.0, see assets/fonts/roboto) with two characters whose outlines
+/// are rectangles, for tests that compute a glyph's ink exactly.
 /// </summary>
 public static class TestFonts
 {
@@ -33,7 +33,7 @@ public static class TestFonts
     public static TrueTypeFont TheanoDidot => LazyTheanoDidot.Value;
 
     /// <summary>
-    /// A subset of Roboto Regular 2.138 (2048 units per em) with two glyphs: 'I' (U+0049), the rectangle x 238 to 431,
+    /// A subset of Roboto Regular 2.138 (2048 units per em) with two characters: 'I' (U+0049), the rectangle x 183 to 376,
     /// y 0 to 1456; and 'Ɨ' (U+0197), that rectangle moved 55 units right (x 238 to 431) and a bar x 20 to 657, y 651 to
     /// 803: two contours wound the same way that overlap (the non-zero rule fills their union).
     /// </summary>

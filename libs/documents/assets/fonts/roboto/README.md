@@ -1,11 +1,13 @@
 # Test font: a subset of Roboto Regular 2.138
 
 `Roboto-Regular-subset.ttf` is a **subset** of Roboto Regular, version 2.138 (2017), by Google Inc., under the Apache
-License, Version 2.0 (see `LICENSE-2.0.txt`). It holds two glyphs besides `.notdef`:
+License, Version 2.0 (see `LICENSE-2.0.txt`). It holds three glyphs besides `.notdef`:
 
 - `I` (U+0049): one rectangle, x 183 to 376, y 0 to 1456 (2048 units per em);
 - `Ɨ` (U+0197): a composite of `I`, moved 55 units right, and a bar, x 20 to 657, y 651 to 803. The two contours are
-  wound the same way and overlap, so the non-zero rule fills their union.
+  wound the same way and overlap, so the non-zero rule fills their union;
+- the bar itself, a glyph without a character of its own (`glyph00003` in fontTools), x 143 to 780, which `Ɨ` uses
+  as a component moved 123 units left.
 
 The raster back-end's page tests use it (`UnitTests.Extensions.Documents.Render.Raster/PageGeometryTests.cs`): because
 both outlines are rectangles, the exact ink of every pixel follows from the geometry alone. The other test fonts

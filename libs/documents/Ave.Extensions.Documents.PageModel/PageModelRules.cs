@@ -143,7 +143,7 @@ public static class PageModelRules
         null => Invalid(code, $"Item {index + 1} of page {number} is missing.", Number(number)),
         GlyphRun { Font: null } => Invalid(code, $"A glyph run on page {number} has no font.", Number(number)),
         GlyphRun run when !(run.FontSize is > 0 and <= MaxNumber) =>
-            Invalid(code, $"A glyph run on page {number} has the font size {run.FontSize}; it must be a positive number.", run.FontSize.ToString(CultureInfo.InvariantCulture)),
+            Invalid(code, $"A glyph run on page {number} has the font size {Number(run.FontSize)}; {(run.FontSize > MaxNumber ? $"that is above the limit of {Number(MaxNumber)}" : "it must be a positive number")}.", Number(run.FontSize)),
         GlyphRun run when run.Glyphs.Any(glyph => glyph is null) => Invalid(code, $"A glyph run on page {number} has a missing glyph.", Number(number)),
         GlyphRun run when run.Glyphs.FirstOrDefault(glyph => glyph.Glyph.Value >= run.Font.GlyphCount) is { } glyph =>
             Invalid(code, $"Page {number} draws glyph {glyph.Glyph.Value} of font '{run.Font.Names.PostScriptName}', which has {run.Font.GlyphCount} glyphs.", glyph.Glyph.Value.ToString(CultureInfo.InvariantCulture)),

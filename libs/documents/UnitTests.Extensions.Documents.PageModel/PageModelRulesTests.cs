@@ -71,6 +71,19 @@ public class PageModelRulesTests
         }
     }
 
+    [Theory]
+    [InlineData(3.403000000000001e38, "the font size 3.403000000000001E+38; that is above the limit of 3.403E+38.")]
+    [InlineData(double.PositiveInfinity, "the font size Infinity; that is above the limit of 3.403E+38.")]
+    [InlineData(0, "the font size 0; it must be a positive number.")]
+    [InlineData(-2, "the font size -2; it must be a positive number.")]
+    [InlineData(double.NaN, "the font size NaN; it must be a positive number.")]
+    public void The_message_for_a_font_size_out_of_range_says_which_end_it_breaks(double size, string expected)
+    {
+        var result = PageModelRules.Check(PageWith(new GlyphRun(TestFonts.Regular, size, Color.Black, new Point(1, 1), [])), Code);
+
+        result.Error.Message.Should().EndWith(expected);
+    }
+
     [Fact]
     public void Finite_items_pass()
     {
