@@ -12,6 +12,11 @@ public static class ErrorMetadataKeys
     /// <summary>The source line of the node or call that caused the error (int).</summary>
     public const string SourceLine = "SourceLine";
 
+    /// <summary>The 1-based column in a text a front-end read (int, in UTF-16 code units; see
+    /// <see cref="TextPosition"/>). Set together with <see cref="SourceFile"/> (the text's name) and
+    /// <see cref="SourceLine"/>.</summary>
+    public const string SourceColumn = "SourceColumn";
+
     /// <summary>The node id (string, for example <c>#7</c>).</summary>
     public const string Node = "Node";
 
