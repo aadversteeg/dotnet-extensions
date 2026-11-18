@@ -49,10 +49,14 @@ internal static class TableSegments
     /// slice when it is complete or nothing of it fits. A cell whose content goes on past the cut keeps
     /// <paramref name="clearance"/> free above the cut (clone keeps it clear of the line drawn there,
     /// <see cref="TablePage"/>); a cell that ends in the slice needs no clearance, since its own box already holds the half
-    /// of the line below it (<see cref="CellLayoutBox"/>). So the cell is laid out in the whole slice first, and only when
-    /// it does not end there again, without the clearance. Returns the fragment, stretched to the slice, where the cell
-    /// continues, and the appeal of the break inside the cell's content (its own keep rules, orphans and widows):
-    /// perfect for a cell that ends in the slice or places nothing of itself.
+    /// of the line below it (<see cref="CellLayoutBox"/>). Which of the two the cell is, its measured fragment says (the
+    /// segment's natural height of the cell, <see cref="Segment.Natural"/>): a cell whose natural height fits the slice
+    /// ends there and is laid out in the whole slice; any other cell cannot end there and is laid out without the
+    /// clearance. So a cut cell is laid out once per cut, never a second time to try the other height: in a cell of a
+    /// cell of a cell … a second layout at every level would double the work at every level (review 40, B3 (d)). Returns
+    /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
+    /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
+    /// itself.
     /// </summary>
     internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal), Error> Slice(TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0)
     {
@@ -67,8 +71,8 @@ internal static class TableSegments
         var inset = ReopenedInset(table, segment, cell);
         Result<LayoutResult, Error> LayOutIn(double height) =>
             table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: false, IsNewFormattingContext: true), cell.Token);
-        return LayOutIn(sliceHeight)
-            .OnSuccessBind(whole => clearance <= 0 || whole is LayoutResult.Placed { Continuation: null } ? Result<LayoutResult, Error>.Success(whole) : LayOutIn(sliceHeight - clearance))
+        var endsInSlice = clearance <= 0 || (segment.Natural.TryGetValue(cell.Cell, out var natural) && Fitting.Fits(natural.Size.Height, sliceHeight));
+        return LayOutIn(endsInSlice ? sliceHeight : sliceHeight - clearance)
             .OnSuccessMap(result => result switch
             {
                 LayoutResult.Placed placed => (Stretch(Lowered(placed.Fragment, inset), sliceHeight, VerticalAlign.Top),

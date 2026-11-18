@@ -9,7 +9,10 @@ public static class InputLimits
     /// <summary>
     /// How deep elements may nest: a block in a block in a table cell … at most 64 levels, the document's own list
     /// counting as level 1. Each level costs the layout one call frame, so without a limit a deep enough document ends
-    /// the process with a stack overflow; 64 is far beyond any report or letter. Deeper nesting is
+    /// the process with a stack overflow; 64 is far beyond any report or letter. At the limit, measured on .NET 10 x64
+    /// (2026-11-18): 64 nested blocks take a quarter of a second and need 304 KB of stack; 63 nested one-cell tables that
+    /// break across a page take 3 to 5 seconds, allocate 1.5 to 1.8 GB (each table measures every table inside it, so the
+    /// work grows with the square of the depth) and need 672 KB of stack. Deeper nesting is
     /// <c>Documents.Input.Invalid.TooDeep</c>. The same value as <see cref="ModelLimits.MaxNestingDepth"/>, which layout
     /// holds every model to.
     /// </summary>

@@ -43,9 +43,12 @@ public static class FlowLayout
     /// out completely, so breaking before a child just keeps a prefix of the fragments; breaking inside one lays that one
     /// child out again, where it was, with the early break in its constraint space (<see cref="ConstraintSpace.BreakAt"/>),
     /// and it breaks exactly there. So a keep rule moves a break into an earlier sibling's content when every break
-    /// between the boxes at the page end is worse, as Chromium does with its early breaks. The bound on the work: a box
-    /// given an early break follows it without looking for another, so on a page each box is laid out at most twice for
-    /// the choice of a break, however deep the early break lies (the second time only on the way to it). When no
+    /// between the boxes at the page end is worse, as Chromium does with its early breaks. The bound on the work in block
+    /// flow: a box given an early break follows it without looking for another, so on a page each box in a flow box is
+    /// laid out at most twice for the choice of a break, however deep the early break lies (the second time only on the
+    /// way to it). A table cell is laid out more often: each table around it measures it at unlimited height, and its own
+    /// table lays it out in a cut and once more for what is left of it, so a box inside k tables is laid out at most
+    /// 2k + 1 times on a page (TableNestingCostTests). When no
     /// better candidate exists, the natural break is taken even though it violates a keep rule — so content that is
     /// kept together but taller than a page still breaks, and pagination always ends.</para>
     /// <para>When even the FIRST child of this fragment has no room, there is no breakpoint before it: it is not after
