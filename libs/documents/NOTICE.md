@@ -59,7 +59,13 @@ governed by a BSD-style license that can be found in the LICENSE file":
 - `third_party/blink/renderer/core/layout/fragmentation_utils.cc` (Copyright 2017 The Chromium Authors):
   `FinishFragmentation`, bottom padding and borders that do not fit below a box's content (`Layout/SlicedBox.cs`), and
   `MovePastBreakpoint`, no breakpoint inside a box that continues from the page before (`Layout/FlowLayout.cs`);
-- the layout contract (a pure function of a box, a constraint space and a break token) is Blink LayoutNG's.
+- the layout contract (a pure function of a box, a constraint space and a break token) is Blink LayoutNG's;
+- where a line ends and how wide it is (`Typesetting/LineBreaking/GreedyLineBreaker.cs`, `Layout/InlineLayout.cs`
+  `LineEndAtSpace`), as measured in Chromium's print and cited from `third_party/blink/renderer/core/layout/inline/`
+  `line_breaker.cc` (`NeedsAccurateEndPosition`, `SetDontReshapeEndIfAtSpace`, `AddHyphen`, `BreakText`), `line_info.cc`
+  (`ComputeNeedsAccurateEndPosition`), `hyphen_result.cc` (`HyphenResult::Shape`), and
+  `third_party/blink/renderer/platform/fonts/shaping/` `shaping_line_breaker.cc` and `.h` (`ShapeLine`) and
+  `shape_result.cc` (`OffsetForPosition`).
 
 The test support follows `third_party/blink/renderer/platform/fonts/font_description.cc` and
 `third_party/blink/renderer/platform/geometry/layout_unit.h` for Chromium's text widths
@@ -173,7 +179,10 @@ DEALINGS IN THE SOFTWARE.
 
 `Typesetting/Unicode/Normalization.cs` follows HarfBuzz 15.1.0's `src/hb-ot-shape-normalize.cc` ("Copyright © 2011,2012
 Google, Inc. This is part of HarfBuzz, a text shaping library."): which clusters are decomposed, reordered and
-composed before shaping. HarfBuzz's licence (`COPYING`, the same at 15.0.0 and 15.1.0):
+composed before shaping. The flag that marks where a glyph run is not safe to break (`Typesetting/Shaping`,
+`ShapedGlyph.UnsafeToBreak`) follows HarfBuzz's `HB_GLYPH_FLAG_UNSAFE_TO_BREAK` (`src/hb-buffer.h`, `hb-buffer.hh`
+`unsafe_to_break`) and how its pair positioning sets it (`hb-ot-layout-gpos-table`, PairPos). HarfBuzz's licence
+(`COPYING`, the same at 15.0.0 and 15.1.0):
 
 ```text
 HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.
