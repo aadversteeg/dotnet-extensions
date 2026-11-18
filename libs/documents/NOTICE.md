@@ -78,6 +78,12 @@ Copyright (c) 2006-2008 Alexey Kryukov (the notice in the author's OFL.txt), lic
 GDEF table, a `mkmk` feature, an old-style 'kern' table, a combining mark with a non-zero advance and a non-zero line
 gap.
 
+`assets/fonts/roboto/Roboto-Regular-subset.ttf` is a subset of Roboto Regular 2.138, Copyright 2015 Google Inc.,
+licensed under the Apache License, Version 2.0 (`assets/fonts/roboto/LICENSE-2.0.txt`). Modified: it is a subset with
+two glyphs (`I` and `Ɨ`), made by `tools/make-roboto-subset.sh` from the Debian package fonts-roboto-unhinted
+2:0~20170802-4 (`assets/fonts/roboto/README.md` has the SHA-256 values). Used by the tests only, for a glyph whose
+contours overlap.
+
 ## Dependencies
 
 | Package | Licence | Used by |
