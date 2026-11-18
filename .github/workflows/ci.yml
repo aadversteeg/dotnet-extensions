@@ -4,7 +4,8 @@ name: CI
 # netstandard2.0 build of the libraries. When the file-system family is affected, its tests also run against the
 # netstandard2.1 build of the two libraries that have one. The documents family targets net10.0 only and has a job
 # of its own. On main it also builds and tests every package the way a release does, and runs the Azure integration
-# tests against a real storage account. Nothing here publishes anything. See docs/RELEASING.md.
+# tests against a real storage account. The last job, CI result, is the one status check that a pull request needs.
+# Nothing here publishes anything. See docs/RELEASING.md.
 
 on:
   push:
@@ -403,3 +404,29 @@ jobs:
             echo "::endgroup::"
           done < "$RUNNER_TEMP/tests.txt"
           exit $status
+
+  result:
+    # The one status check that the ruleset on main requires (see docs/RELEASING.md, "Rulesets"). The jobs above
+    # cannot be required themselves: most of them are skipped when their family is not affected and they report
+    # per matrix combination, so no fixed list of check names fits every pull request, and a required check that
+    # never reports blocks the pull request. This job always runs, also when a job before it failed or the run was
+    # cancelled, and fails unless every pull request job succeeded or was skipped. The two jobs that run on main
+    # only are not part of it.
+    name: CI result
+    needs: [changes, test, test-netstandard21, test-documents, checks]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job succeeded or was skipped
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$RESULTS"
+          # changes decides which jobs run: when it did not succeed, the other jobs are skipped for the wrong reason
+          failed=$(jq -r '[to_entries[]
+            | select(.value.result != "success" and (.value.result != "skipped" or .key == "changes"))
+            | "\(.key) (\(.value.result))"] | join(", ")' <<< "$RESULTS")
+          if [ -n "$failed" ]; then
+            echo "::error title=CI result::Not succeeded: $failed"
+            exit 1
+          fi

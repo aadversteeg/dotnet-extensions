@@ -105,7 +105,8 @@ What to do when a job fails:
 5. Check the package on nuget.org and the GitHub release. Indexing on nuget.org can take a few minutes.
 
 If the build job fails, fix the problem on `main`, delete the tag (`git push origin :refs/tags/<tag>` and
-`git tag -d <tag>`) and tag the fixed commit again. Do that only for a version that was not published.
+`git tag -d <tag>`) and tag the fixed commit again. Do that only for a version that was not published. Only a
+repository admin can delete a release tag (see "Rulesets for `main` and the release tags").
 
 ## A change across two packages
 
@@ -215,6 +216,41 @@ In the repository on GitHub: Settings, Environments, New environment, name `nuge
 - Deployment branches and tags: "Selected branches and tags", add a tag rule `*/*`. Then only a release tag can use
   the environment.
 - No secrets and no variables: trusted publishing needs neither.
+
+### Rulesets for `main` and the release tags
+
+In the repository on GitHub: Settings, Rules, Rulesets. Two rulesets, both with enforcement status "Active".
+
+A branch ruleset for `main` (target: the default branch). Nobody pushes to `main` directly; every change is a pull
+request.
+
+| rule | setting |
+|---|---|
+| Restrict deletions | on |
+| Block force pushes | on |
+| Require a pull request before merging | required approvals: 0 |
+| Require status checks to pass | one check: `CI result` |
+
+- Required approvals is 0 because there is one maintainer, and GitHub does not accept an approval from the author
+  of the pull request.
+- `CI result` is the last job of `.github/workflows/ci.yml`. It fails when any other pull request job failed or
+  was cancelled. The other jobs cannot be required themselves: most are skipped when their family is not affected.
+- The jobs that run on `main` only ("Release mode" and the Azure integration tests) run after the merge. Look at
+  the CI run on `main` after merging a pull request.
+- Bypass list: the role "Repository admin", with "For pull requests only". An admin can then merge a pull request
+  while its check is red, for example when CI itself is broken, but cannot push to `main` directly either.
+
+A tag ruleset for the release tags (target: the pattern `*/*`). A release tag never moves.
+
+| rule | setting |
+|---|---|
+| Restrict updates | on |
+| Restrict deletions | on |
+
+- Bypass list: the role "Repository admin", with "Always": for deleting the tag of a failed build (see "Release
+  one package").
+- Creating a release tag is not restricted and needs no pull request. The release workflow checks that the tagged
+  commit is on `main`, and the publish job waits for approval.
 
 ### Trusted publishing policy on nuget.org
 
