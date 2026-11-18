@@ -51,6 +51,26 @@ internal static class SlicedBox
     /// <returns>The inset, in points.</returns>
     public static double BottomInset(BoxStyle style) => style.Padding.Bottom.Points + style.Border.Widths.Bottom.Points;
 
+    /// <summary>The vertical space the top border and padding take on this fragment: on the first fragment only
+    /// (slice).</summary>
+    /// <param name="style">The box's style.</param>
+    /// <param name="incoming">The box's break token, or null on its first fragment.</param>
+    /// <returns>The inset, in points.</returns>
+    public static double TopInset(BoxStyle style, BreakToken? incoming) =>
+        incoming is null ? style.Border.Widths.Top.Points + style.Padding.Top.Points : 0;
+
+    /// <summary>
+    /// Whether the box's content starts at the very top of the page area: the box does
+    /// (<see cref="ConstraintSpace.IsAtPageStart"/>) and no top border or padding of it lies above its content on this
+    /// fragment.
+    /// </summary>
+    /// <param name="style">The box's style.</param>
+    /// <param name="space">The space on the current page.</param>
+    /// <param name="incoming">The box's break token, or null on its first fragment.</param>
+    /// <returns>True when a break before the content would make no progress.</returns>
+    public static bool ContentIsAtPageStart(BoxStyle style, ConstraintSpace space, BreakToken? incoming) =>
+        space.IsAtPageStart && !(TopInset(style, incoming) > 0);
+
     /// <summary>Whether anything of the box itself (bottom padding or border) comes after its content.</summary>
     /// <param name="style">The box's style.</param>
     /// <returns>True when the bottom inset is not zero.</returns>
@@ -73,6 +93,12 @@ internal static class SlicedBox
     /// pure, this second call is just another call; no state is kept.</item>
     /// <item>Content that does not leave that room either — empty content, which fits any height — means nothing of
     /// the box fits: the box moves to the next page whole, since its bottom padding and border are no breakpoint.</item>
+    /// <item>When not even the first piece of the content fits, the box breaks before it as a last resort
+    /// (<see cref="BreakAppeal.LastResort"/>): its fragment holds only its top border and padding, filling the rest of the
+    /// page, and the content starts the next page. A parent with any better breakpoint takes that instead, so a box lower
+    /// on the page moves whole; at the top of the page the box's own padding and border are the space a break leaves
+    /// behind (Chromium prints both cases so). Only when the content itself starts the page
+    /// (<see cref="ContentIsAtPageStart"/>) does nothing fit on any page: <c>Documents.Layout.DoesNotFit</c>.</item>
     /// <item>LIMIT: if even then nothing fits and the box is at the start of a page, it is placed anyway and its
     /// bottom padding and border overflow the page area; there is no earlier page where it would fit better.
     /// CSS Fragmentation 3 §4.4 would let the user agent "break anywhere in order to avoid losing content off the edge
@@ -82,12 +108,13 @@ internal static class SlicedBox
     /// <param name="box">The box.</param>
     /// <param name="space">The space on the current page.</param>
     /// <param name="incoming">The box's break token, or null on its first fragment.</param>
+    /// <param name="start">The token that starts the content where this fragment would: the algorithm resumes there on
+    /// the next page after a last-resort break before the content.</param>
     /// <param name="layOut">The algorithm's content layout.</param>
     /// <returns>The box fragment and continuation, NoRoom, or an error.</returns>
-    public static Result<LayoutResult, Error> Layout(Box box, ConstraintSpace space, BreakToken? incoming, ContentLayout layOut)
+    public static Result<LayoutResult, Error> Layout(Box box, ConstraintSpace space, BreakToken? incoming, BreakToken start, ContentLayout layOut)
     {
-        var (padding, border) = (box.Style.Padding, box.Style.Border.Widths);
-        var topInset = incoming is null ? border.Top.Points + padding.Top.Points : 0;
+        var topInset = TopInset(box.Style, incoming);
         var bottomInset = BottomInset(box.Style);
         if (!Fitting.Fits(topInset, space.AvailableHeight))
         {
@@ -98,9 +125,16 @@ internal static class SlicedBox
         var contentWidth = Math.Max(0, space.AvailableWidth - HorizontalInsets(box.Style));
         var contentHeight = space.AvailableHeight - topInset;
         var first = layOut(contentWidth, contentHeight);
-        if (first.IsFailure || first.Value.HasNoValue)
+        if (first.IsFailure)
         {
-            return first.IsFailure ? Result<LayoutResult, Error>.Failure(first.Error) : LayoutResult.NothingFits(box, space);
+            return Result<LayoutResult, Error>.Failure(first.Error);
+        }
+
+        if (first.Value.HasNoValue)
+        {
+            return ContentIsAtPageStart(box.Style, space, incoming)
+                ? LayoutResult.NothingFits(box, space)
+                : LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, new Content([], 0, start, BreakAppeal.LastResort)), start, BreakAppeal.LastResort);
         }
 
         var content = first.Value.Value;
@@ -114,8 +148,10 @@ internal static class SlicedBox
             }
 
             // The content placed with the room kept free must leave that room: empty content "fits" any height, even
-            // the negative one left when not even the bottom padding and border fit, and would end below the page.
-            if (reserved.Value.HasValue && Fitting.Fits(topInset + reserved.Value.Value.Height + bottomInset, space.AvailableHeight))
+            // the negative one left when not even the bottom padding and border fit, and would end below the page. And it
+            // must end at a breakpoint: a last-resort break before all of it is no earlier break, only a move.
+            if (reserved.Value.HasValue && reserved.Value.Value.Appeal > BreakAppeal.LastResort
+                && Fitting.Fits(topInset + reserved.Value.Value.Height + bottomInset, space.AvailableHeight))
             {
                 content = reserved.Value.Value;
             }

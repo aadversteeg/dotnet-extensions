@@ -46,7 +46,7 @@ public static class InlineLayout
         };
 
         return ShapeRuns(environment, box).OnSuccessBind(runs =>
-            SlicedBox.Layout(box, space, incoming, (width, height) => StackLines(runs, box.Style.TextAlign, firstLine, width, height)));
+            SlicedBox.Layout(box, space, incoming, new InlineBreakToken(firstLine), (width, height) => StackLines(runs, box.Style.TextAlign, firstLine, width, height)));
     }
 
     /// <summary>

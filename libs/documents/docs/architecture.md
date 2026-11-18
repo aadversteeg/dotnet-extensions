@@ -84,6 +84,7 @@ the three places to open, with that front-end as their first user.
 | cascade and inheritance, user-agent styles | `Fluent/DocumentTranslator.cs`, `Cascade.cs`, `UserAgentStyles.cs` | CSS Cascade 4 §4, §6.1, §7.2; HTML rendering (heading sizes) |
 | input validation | `Fluent/InputChecks.cs` | one function per rule, each cites its source |
 | block flow, keep rules, break choice | `Layout/FlowLayout.cs`, `BreakAvoidance.cs`, `ForcedBreaks.cs` | CSS 2.1 §9.4.1, CSS Fragmentation 3 §3–§4 |
+| where a page starts: a box that does not fit below margins, empty boxes or padding moves on; only content that starts the page is refused; the last-resort break | `Layout/ConstraintSpace.cs` (`IsAtPageStart`), `FlowLayout.cs`, `SlicedBox.cs`, `BreakAppeal.cs` (`LastResort`) | CSS Fragmentation 3 §4.1, §4.4, §5.2; checked against Chromium's print |
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
 | inline layout, line boxes | `Layout/InlineLayout.cs`, `LineBoxes.cs` | CSS 2.1 §9.4.2, §10.8 |
@@ -198,14 +199,6 @@ Each is documented next to its code as well.
   that fits in Chromium by less than that share of its text width can break one word earlier in the engine. The
   engine keeps the font's exact advances; the reference cases that pin lengths use sizes Chromium keeps exact
   (`tools/reference/chromium/README.md`, "Where Chromium is not exact").
-- **Leading space before the first unbreakable piece (NF-1):** leading space (margins, empty boxes) plus a first
-  unbreakable piece that together exceed the page area, at the document start or after a forced page break, is
-  refused (`Documents.Layout.DoesNotFit`; the message names the element and the room it had). The layout counts a box
-  after only its own top margin, or after empty boxes with margins, as being at the start of the page, so it does not
-  move it to the next page, where that space would be gone (`LayoutResult.NothingFits`). The same rule has two softer
-  faces: a first table row kept together that does not fit there is cut inside instead of moved, and a table's header
-  row may stand alone at the foot of that page. A paragraph of text before it makes the box move on as usual. Pinned by
-  `LeadingSpaceLimitTests` (Fluent); the rule itself is next milestone's work.
 - **A blank part of a table row as tall as the page area:** a part of a row that is as tall as the page area and
   draws nothing cannot be cut, and the document is refused (`Documents.Layout.DoesNotFit`). A row is cut only where
   some cell draws something below the row's top on that page (`TableBreaks.CutsInsideRow`); a page that would hold
@@ -317,6 +310,7 @@ Each is documented next to its code as well.
 | line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Extensions.Documents.Typesetting` |
 | shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
 | table layout | numbers measured in Chromium 159 in the pinned Playwright container with font hinting off, and pinned; compared within n layout units (1/64 px), n counted from the structure of each case; the cases, the measuring script and the rule are in `tools/reference/chromium/` | `UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs` |
+| page starts and breaks | Chromium's print of the same cases read back from its PDF, page by page (`tools/reference/chromium`, "Print positions": `positions.py` → `measured/<case>.print.txt`), compared with the engine's page model in the same form (`TestSupport/PrintedPages.cs`): the words of each page exactly, positions within n layout units | `UnitTests.Extensions.Documents.Fluent/PageStartTests.cs`, `ChromiumReferenceTests.cs` |
 | text in the PDF | PdfPig reads every glyph back at the position the page model says | `TestSupport/PdfReadBack.cs` |
 | structure tree | PdfPig reads the structure tree and marked content back (roles, order, attributes, text per element; every glyph marked) | `TestSupport/PdfStructureReadBack.cs`, `UnitTests.Extensions.Documents.Samples/TaggedPdfTests.cs`, `UnitTests.Extensions.Documents.Render.Pdf/TaggingTests.cs` |
 | PDF/A-3b, PDF/A-3a, PDF/UA-1 | veraPDF 1.30.4 in Docker (pinned by digest) on every sample; a plain file must fail as negative control | `UnitTests.Extensions.Documents.Samples/ReferenceValidationTests.cs` (trait `Category=Reference`, skipped without Docker); script step 5 |

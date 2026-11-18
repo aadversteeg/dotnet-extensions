@@ -18,7 +18,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// is null when the box is complete.</item>
 /// <item><b>Progress.</b> When nothing of the box fits, the algorithm returns <see cref="LayoutResult.NoRoom"/>
 /// — unless <see cref="ConstraintSpace.IsAtPageStart"/> is true: then nothing fits on any page and it must fail
-/// with <c>Documents.Layout.DoesNotFit</c>. This guarantees that pagination always ends.</item>
+/// with <c>Documents.Layout.DoesNotFit</c>. A box with a top padding or border may instead break before its content as a
+/// last resort (<see cref="BreakAppeal.LastResort"/>), when that content does not start the page itself. This
+/// guarantees that pagination always ends.</item>
 /// <item><b>Children.</b> The algorithm lays out child boxes through <see cref="LayoutEnvironment.Layout"/>, which
 /// picks each child's own algorithm by its id.</item>
 /// </list>

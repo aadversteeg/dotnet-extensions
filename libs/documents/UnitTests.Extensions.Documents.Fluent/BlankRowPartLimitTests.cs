@@ -12,7 +12,7 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// page area and draws nothing cannot be cut, and the document is refused. The rule for a cut inside a row
 /// (<c>TableBreaks.CutsInsideRow</c>) allows a cut only where some cell draws something below the row's top on that
 /// page; a page that would hold only blank lines or empty padded blocks of the row offers no cut, and at a page start
-/// nothing can move on. This is not the leading-space limit (NF-1, <see cref="LeadingSpaceLimitTests"/>): there is no
+/// nothing can move on. This is not a leading-space case (<see cref="PageStartTests"/>): there is no
 /// leading space here, and the row could be broken. Cutting anyway when the only other outcome is a refusal is next
 /// milestone's rule. Page area 280 × 180 pt.
 /// </summary>

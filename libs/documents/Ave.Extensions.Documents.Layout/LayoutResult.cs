@@ -35,12 +35,10 @@ public abstract record LayoutResult
 
     /// <summary>
     /// The rule every algorithm applies when not even the first piece of a box fits. At the start of a page
-    /// the box will not fit on any later page either, because all pages have the same size: that is
-    /// <see cref="LayoutErrorCodes.DoesNotFit"/>, with the box's source location and the room it had. Anywhere else it
-    /// is <see cref="NoRoom"/>, and the box moves to the next page. LIMIT (NF-1, docs/architecture.md, Known limits): a
-    /// box after only leading space (its own top margin, or empty boxes with margins), at the document start or after a
-    /// forced page break, counts as at the start of the page as well, so it is refused although it might fit on the next
-    /// page, where that space would be gone.
+    /// (<see cref="ConstraintSpace.IsAtPageStart"/>: nothing at all above the box on the page) the box will not fit on
+    /// any later page either, because all pages have the same size: that is <see cref="LayoutErrorCodes.DoesNotFit"/>,
+    /// with the box's source location and the room it had. Anywhere else it is <see cref="NoRoom"/>, and the box moves to
+    /// the next page, where the margins above it are truncated at the break (CSS Fragmentation 3 §5.2).
     /// </summary>
     /// <param name="box">The box that does not fit.</param>
     /// <param name="space">The space it was given.</param>

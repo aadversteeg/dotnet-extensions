@@ -14,11 +14,9 @@ internal static class LayoutErrors
     private static string Describe(Box box) => $"The {box.Role} made at {box.Source}";
 
     /// <summary>
-    /// A box of which not even the first piece fits, where nothing before it on the page can move to a later page
-    /// (<see cref="ConstraintSpace.IsAtPageStart"/>). The message says what does not fit and how much room it had. It
-    /// does not claim the box would not fit on an empty page: LIMIT (NF-1, docs/architecture.md, Known limits) — after
-    /// only leading space (its own top margin, or empty boxes with margins) at the document start or after a forced page
-    /// break the box counts as at the start of the page too, and it might fit on the next one.
+    /// A box of which not even the first piece fits, where nothing before it on the page can move to a later page: it
+    /// starts the page (<see cref="ConstraintSpace.IsAtPageStart"/>), or it is the root below its own top margin. The
+    /// message says what does not fit and how much room it had.
     /// </summary>
     /// <param name="box">The box.</param>
     /// <param name="available">The height it had, from the top of its border box (zero or less: none).</param>

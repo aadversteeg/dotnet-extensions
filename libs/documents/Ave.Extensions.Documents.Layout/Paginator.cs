@@ -124,9 +124,10 @@ public static class Paginator
 
             // The root establishes the block formatting context, so its margins never collapse with its
             // children's (CSS 2.1 §8.3.1). Its top margin belongs to its first fragment only (slice, CSS
-            // Fragmentation 3 §5.4); on later pages the root continues at the top of the body area.
+            // Fragmentation 3 §5.4); on later pages the root continues at the top of the body area. Below its top margin
+            // the root does not start the page, so content that does not fit there moves on (ConstraintSpace).
             var top = token is null ? document.Root.Style.Margin.Top.Points : 0;
-            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: true, token, isPageRoot: true);
+            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: !(top > 0), token, isPageRoot: true);
             if (outcome.IsFailure)
             {
                 return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);
@@ -134,6 +135,13 @@ public static class Paginator
 
             if (outcome.Value.HasNoValue)
             {
+                // Only the root's own top margin can leave no room for its top border and padding: the root cannot move
+                // to another page.
+                if (top > 0)
+                {
+                    return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.DoesNotFit(document.Root, bodyHeight - top));
+                }
+
                 throw new InvalidOperationException("A layout algorithm returned NoRoom at the start of a page; it must place content or fail.");
             }
 

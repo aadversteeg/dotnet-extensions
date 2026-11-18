@@ -31,13 +31,14 @@ internal static class BreakAvoidance
 
     /// <summary>
     /// The appeal of a break inside a box, given the appeal of the break its own layout chose: lowered to
-    /// <see cref="BreakAppeal.ViolatesAvoid"/> when the box has <c>break-inside: avoid</c>.
+    /// <see cref="BreakAppeal.ViolatesAvoid"/> when the box has <c>break-inside: avoid</c> (never raised: a last-resort
+    /// break stays one).
     /// </summary>
     /// <param name="box">The box that breaks.</param>
     /// <param name="achieved">The appeal of the break inside its content.</param>
     /// <returns>The appeal.</returns>
     public static BreakAppeal Inside(Box box, BreakAppeal achieved) =>
-        box.Style.BreakInside == BreakInside.Avoid ? BreakAppeal.ViolatesAvoid : achieved;
+        box.Style.BreakInside == BreakInside.Avoid ? Worst(BreakAppeal.ViolatesAvoid, achieved) : achieved;
 
     /// <summary>The worse of two appeals.</summary>
     public static BreakAppeal Worst(BreakAppeal first, BreakAppeal second) => first < second ? first : second;

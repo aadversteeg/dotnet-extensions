@@ -28,10 +28,13 @@ internal static class InFlowChild
     /// <param name="containerWidth">The width of the container's content area.</param>
     /// <param name="top">Where the child's border box starts, from the top of the content area.</param>
     /// <param name="containerHeight">The height of the content area available on this page.</param>
-    /// <param name="isAtPageStart">Whether nothing that could move to another page precedes the child.</param>
+    /// <param name="isAtPageStart">Whether the child's border box starts at the very top of the page area
+    /// (<see cref="ConstraintSpace.IsAtPageStart"/>).</param>
     /// <param name="resume">Where to resume inside the child, or null to start it.</param>
     /// <param name="isPageRoot">True for the root box and the page areas: the child is the root of a new formatting
     /// context (see <see cref="ConstraintSpace.IsNewFormattingContext"/>).</param>
+    /// <param name="followsContent">Whether content comes before the child on this page
+    /// (<see cref="ConstraintSpace.FollowsContent"/>).</param>
     /// <returns>The placement; None when the child has no room on this page; or an error.</returns>
     public static Result<Maybe<Placement>, Error> Place(
         LayoutEnvironment environment,
@@ -41,14 +44,18 @@ internal static class InFlowChild
         double containerHeight,
         bool isAtPageStart,
         BreakToken? resume,
-        bool isPageRoot = false)
+        bool isPageRoot = false,
+        bool followsContent = false)
     {
         var margin = child.Style.Margin;
         var space = new ConstraintSpace(
             AvailableWidth: containerWidth - margin.Horizontal.Points,
             AvailableHeight: containerHeight - top,
             IsAtPageStart: isAtPageStart,
-            IsNewFormattingContext: isPageRoot);
+            IsNewFormattingContext: isPageRoot)
+        {
+            FollowsContent = followsContent,
+        };
 
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch
         {

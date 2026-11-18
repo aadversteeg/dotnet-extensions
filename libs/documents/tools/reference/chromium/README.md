@@ -172,6 +172,7 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `b3-keep-group` | a row group with `break-inside: avoid` moves to the next page whole | `A_row_group_kept_together_moves_to_the_next_page_whole_like_Chromium` |
 | `b4-row-span` | four labels, each over six one-line rows: the page breaks between the rows under a label, and the label continues | `Rows_under_a_label_that_spans_them_break_between_them_like_Chromium` |
 | `b5-row-span-kept-cell` | the same with `break-inside: avoid` on each label: every label moves to the next page with its rows | `Rows_under_a_label_kept_together_move_to_the_next_page_whole_like_Chromium` |
+| `a1-*` | where a page starts (page area 276 × 150 pt, whole pixels): content that does not fit below an empty block's margin, its own top margin, a margin taller than the page, the margin after a forced break, a box's top padding, moves to the next page, where the margins are truncated; a forced break after only margins has no effect; a first child whose margin collapses through its box breaks inside the box as a last resort | `PageStartTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `mf4-line-*` | 3 pt lines (4 px, not snapped), Lato 12 pt, no padding; the page area ends at the centre of row 8's bottom line plus 0, 0.75, 1.5 or 2.25 pt | `TableBreakLineTests.A_row_that_fits_down_to_its_bottom_line_s_centre_stays_and_the_line_is_split_like_Chromium` |
 
 What the `mf4-line-*` cases show, read from `words.txt` and `lines.txt`: in all four, rows 1–8 are

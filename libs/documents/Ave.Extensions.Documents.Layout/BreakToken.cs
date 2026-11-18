@@ -28,6 +28,18 @@ public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : Br
 /// <param name="LineIndex">The index of the line that starts the next page.</param>
 public sealed record InlineBreakToken(int LineIndex) : BreakToken;
 
+/// <summary>The break token of <see cref="ImageLayout"/>: the image is still to be placed, on the next page, after a
+/// last-resort break before it left only the box's top padding and border on this one.</summary>
+public sealed record ImageBreakToken : BreakToken
+{
+    private ImageBreakToken()
+    {
+    }
+
+    /// <summary>The one value.</summary>
+    public static ImageBreakToken Instance { get; } = new();
+}
+
 /// <summary>The break token of <see cref="TracksLayout"/>: the first body row of the next fragment, and the cells that
 /// were cut by the page end and continue there.</summary>
 /// <param name="NextRow">The first body row of the next fragment (after the repeated header rows).</param>

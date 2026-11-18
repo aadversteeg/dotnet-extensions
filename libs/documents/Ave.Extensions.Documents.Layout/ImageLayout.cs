@@ -22,10 +22,14 @@ public static class ImageLayout
     /// <param name="environment">Not used: an image needs no fonts or other algorithms.</param>
     /// <param name="box">A box whose only child is an <see cref="ImageNode"/>.</param>
     /// <param name="space">The space on the current page.</param>
-    /// <param name="incoming">Always null: an image is never broken, so it never returns a token.</param>
+    /// <param name="incoming">Null, or an <see cref="ImageBreakToken"/> when the box's top padding and border were placed
+    /// on an earlier page by a last-resort break before the image (<see cref="SlicedBox"/>); an image itself is never
+    /// broken.</param>
     /// <returns>The fragment, NoRoom, or an error.</returns>
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming) =>
-        TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, (width, height) =>
+        incoming is not (null or ImageBreakToken)
+            ? throw new ArgumentException($"Image received a {incoming.GetType().Name} it did not produce.", nameof(incoming))
+            : TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, ImageBreakToken.Instance, (width, height) =>
         {
             var size = UsedSize(image, width);
             return Fitting.Fits(size.Height, height)
