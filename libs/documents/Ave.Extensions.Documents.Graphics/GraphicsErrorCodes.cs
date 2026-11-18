@@ -22,4 +22,19 @@ public static class GraphicsErrorCodes
     /// <summary>A canvas or a coverage mask of more than <see cref="Canvas.MaxPixels"/> pixels, or a mask with more than
     /// that many on a side. Metadata: Value.</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
+
+    /// <summary>A shape whose exact coverage asks for more work than a fill may do: its pixels where contours may overlap
+    /// or cross, counted as <see cref="Canvas.MaxFillWork"/> says, add up to more than that limit, or with the fills
+    /// before it on the same canvas to more than <see cref="Canvas.MaxCanvasWork"/>, or one row holds more than
+    /// <see cref="Canvas.MaxRowPieces"/> pieces of edges in such pixels. Nothing of the shape is painted. Metadata: Value
+    /// (the work asked for), <see cref="Limit"/>.</summary>
+    public static readonly ErrorCode TooMuchWork = _ / "TooMuchWork";
+
+    /// <summary>A pixel whose exact coverage could not be established: the pieces of edges in it and the integral of the
+    /// winding number over it do not agree to 2^-10 (a guard; no shape is known that reaches it). The rows above the
+    /// pixel have been painted, its row and the rows below it not. Metadata: Value (the pixel, x,y).</summary>
+    public static readonly ErrorCode InexactCoverage = _ / "InexactCoverage";
+
+    /// <summary>The metadata key of the limit a <see cref="TooMuchWork"/> error names.</summary>
+    public const string Limit = "Limit";
 }

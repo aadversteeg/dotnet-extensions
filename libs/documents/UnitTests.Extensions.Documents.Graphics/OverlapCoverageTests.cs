@@ -33,13 +33,14 @@ public class OverlapCoverageTests(ITestOutputHelper output)
         var rasterizer = new AreaRasterizer();
         var coverage = new Dictionary<(int X, int Y), double>();
         var flagged = rasterizer.FlaggedCells(clipped, box).ToHashSet();
-        rasterizer.Rasterize(clipped, rule, box, (row, first, values) =>
+        var result = rasterizer.Rasterize(clipped, rule, box, (row, first, values) =>
         {
             for (var index = 0; index < values.Length; index++)
             {
                 coverage[(first + index, row)] = values[index];
             }
         });
+        result.IsSuccess.Should().BeTrue($"{shape.Name} {rule}: {(result.IsFailure ? result.Error.Message : "")}");
 
         return (coverage, flagged);
     }
@@ -55,15 +56,17 @@ public class OverlapCoverageTests(ITestOutputHelper output)
 
         public double LargestFlagged { get; set; }
 
+        public long CutFlagged { get; set; }
+
         public List<string> Breaches { get; } = [];
 
         public override string ToString() =>
-            $"{Unflagged} cells not flagged (largest difference {LargestUnflagged:E2}), {Flagged} flagged (largest difference {LargestFlagged:E2})";
+            $"{Unflagged} cells not flagged (largest difference {LargestUnflagged:E2}), {Flagged} flagged (largest difference {LargestFlagged:E2}), {CutFlagged} flagged cells cut by the box";
     }
 
-    /// <summary>Compares every cell of the shape's extent, under both rules, and adds to the tally; a cell not flagged
-    /// that differs from the exact area is a breach.</summary>
-    private static void Compare(Shape shape, Tally tally, bool flaggedMustMatch)
+    /// <summary>Compares every cell of the shape's extent, under both rules, and adds to the tally; a cell that differs
+    /// from the exact area is a breach.</summary>
+    private static void Compare(Shape shape, Tally tally)
     {
         var exact = ExactCoverage.Areas(shape.Contours, shape.Box);
         foreach (var rule in new[] { FillRule.NonZero, FillRule.EvenOdd })
@@ -78,7 +81,8 @@ public class OverlapCoverageTests(ITestOutputHelper output)
                 {
                     tally.Flagged++;
                     tally.LargestFlagged = Math.Max(tally.LargestFlagged, difference);
-                    if (flaggedMustMatch && !(difference <= Rounding))
+                    tally.CutFlagged += shape.Box is { } cut && Cut(cell, cut) ? 1 : 0;
+                    if (!(difference <= Rounding))
                     {
                         tally.Breaches.Add($"{shape.Name} {rule} flagged cell {cell}: {actual:R} instead of {expected:R}");
                     }
@@ -94,6 +98,13 @@ public class OverlapCoverageTests(ITestOutputHelper output)
                 }
             }
         }
+    }
+
+    /// <summary>True when a side of the box (in 1/64 pixel) lies inside the pixel.</summary>
+    private static bool Cut((int X, int Y) cell, (long Left, long Top, long Right, long Bottom) box)
+    {
+        bool Inside(long side, int pixel) => side > pixel * 64L && side < (pixel + 1) * 64L;
+        return Inside(box.Left, cell.X) || Inside(box.Right, cell.X) || Inside(box.Top, cell.Y) || Inside(box.Bottom, cell.Y);
     }
 
     private static (long X, long Y)[] Points(params (double X, double Y)[] points) => [.. points.Select(point => ((long)Math.Round(point.X * 64), (long)Math.Round(point.Y * 64)))];
@@ -210,6 +221,44 @@ public class OverlapCoverageTests(ITestOutputHelper output)
         }
     }
 
+    [Theory]
+    [InlineData(FillRule.NonZero, new byte[] { 0, 128, 128, 0 })]
+    [InlineData(FillRule.EvenOdd, new byte[] { 0, 0, 0, 0 })]
+    public void Two_bars_on_top_of_each_other_cover_their_overlap_once(FillRule rule, byte[] overlapRow)
+    {
+        // Two bars from x 2.5 to 3.5, rows 1 to 8 and 5 to 11, wound the same way: a row of one bar and a row of both
+        // cover columns 2 and 3 by half each under non-zero; under even-odd the rows of both are empty.
+        var path = new PathBuilder()
+            .MoveTo(2.5, 1).LineTo(3.5, 1).LineTo(3.5, 8).LineTo(2.5, 8).Close()
+            .MoveTo(2.5, 5).LineTo(3.5, 5).LineTo(3.5, 11).LineTo(2.5, 11).Close()
+            .ToPath();
+        var mask = Canvas.Coverage(path, Affine.Identity, rule, new PixelBox(0, 0, 8, 12)).Value;
+
+        Enumerable.Range(1, 4).Select(x => mask.At(x, 3)).Should().Equal((byte)0, (byte)128, (byte)128, (byte)0);
+        for (var y = 5; y < 8; y++)
+        {
+            Enumerable.Range(1, 4).Select(x => mask.At(x, y)).Should().Equal(overlapRow, $"row {y}");
+        }
+    }
+
+    [Fact]
+    public void A_clip_box_one_denormal_wide_through_five_contours_gives_finite_exact_values()
+    {
+        // Five overlapping squares wound the same way, cut by a box from x 0 to the smallest double: under even-odd the
+        // mean winding over such a part overflows; every value stays finite and at most the part's own area.
+        var squares = Enumerable.Range(0, 5)
+            .Select(index => new List<Vertex> { new(-3 - index, -2 + (0.7 * index)), new(3 + index, -2 + (0.7 * index)), new(3 + index, 4 + (0.9 * index)), new(-3 - index, 4 + (0.9 * index)) })
+            .ToList();
+        var box = new PixelBox(0, -1.5, double.Epsilon, 9.5);
+        foreach (var rule in new[] { FillRule.NonZero, FillRule.EvenOdd })
+        {
+            var values = new List<double>();
+            new AreaRasterizer().Rasterize(Clipping.ToBox(squares, box), rule, box, (_, _, coverage) => values.AddRange(coverage.ToArray())).IsSuccess.Should().BeTrue();
+
+            values.Should().HaveCount(10).And.OnlyContain(value => double.IsFinite(value) && value >= 0 && value <= 1e-300, $"{rule}: {string.Join(" ", values)}");
+        }
+    }
+
     /// <summary>Overlapping convex blobs a few pixels wide, as the strokes of a glyph overlap: many cells with one
     /// contour's edges only, and some with two or three.</summary>
     internal static IEnumerable<Shape> Blobs(int seed, int count)
@@ -236,31 +285,76 @@ public class OverlapCoverageTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void The_degenerate_shapes_are_exact_in_every_cell_the_rule_does_not_flag()
+    public void The_degenerate_shapes_are_exact_in_every_cell()
     {
         var tally = new Tally();
         foreach (var shape in Degenerate())
         {
-            Compare(shape, tally, flaggedMustMatch: false);
+            Compare(shape, tally);
         }
 
         output.WriteLine(tally.ToString());
-        tally.Breaches.Should().BeEmpty($"every cell not flagged must be exact; all breaches: {string.Join("; ", tally.Breaches)}");
+        tally.Breaches.Should().BeEmpty($"every cell must be exact; all breaches: {string.Join("; ", tally.Breaches)}");
         tally.Flagged.Should().BePositive("the shapes are made to have pixels with more than two winding numbers");
     }
 
     [Fact]
-    public void Random_overlapping_and_self_crossing_shapes_are_exact_in_every_cell_the_rule_does_not_flag()
+    public void Random_overlapping_and_self_crossing_shapes_are_exact_in_every_cell()
     {
         var tally = new Tally();
         foreach (var shape in Random(20261119, 3000, 6).Concat(Random(7, 2000, 1.5)).Concat(Blobs(11, 500)))
         {
-            Compare(shape, tally, flaggedMustMatch: false);
+            Compare(shape, tally);
         }
 
         output.WriteLine(tally.ToString());
-        tally.Breaches.Should().BeEmpty($"every cell not flagged must be exact; all breaches: {string.Join("; ", tally.Breaches.Take(20))}");
+        tally.Breaches.Should().BeEmpty($"every cell must be exact; the first breaches: {string.Join("; ", tally.Breaches.Take(20))}");
         tally.Unflagged.Should().BeGreaterThan(100_000);
+        tally.Flagged.Should().BeGreaterThan(50_000);
+    }
+
+    [Fact]
+    public void Three_contours_in_one_pixel_cut_by_a_clip_box_are_exact()
+    {
+        // Three overlapping contours, wound the same way or not, under a clip box whose sides lie inside pixels: every
+        // pixel the clip cuts, flagged or not, gets the exact area of the shape inside the box, under both rules.
+        var tally = new Tally();
+        foreach (var shape in Threes(19, 1500))
+        {
+            Compare(shape, tally);
+        }
+
+        output.WriteLine(tally.ToString());
+        tally.Breaches.Should().BeEmpty($"every cell must be exact; the first breaches: {string.Join("; ", tally.Breaches.Take(20))}");
+        tally.Flagged.Should().BeGreaterThan(10_000);
+        tally.CutFlagged.Should().BeGreaterThan(1_000, "pixels the clip box cuts with three contours in them");
+    }
+
+    /// <summary>Three convex contours through a common area, wound the same way (every other shape) or the first one
+    /// reversed, each shape with a clip box whose four sides lie inside pixels.</summary>
+    internal static IEnumerable<Shape> Threes(int seed, int count)
+    {
+        var random = new Random(seed);
+        for (var index = 0; index < count; index++)
+        {
+            var contours = new (long X, long Y)[3][];
+            for (var c = 0; c < 3; c++)
+            {
+                var (cx, cy, r) = (random.Next(192, 320), random.Next(192, 320), random.Next(60, 160));
+                var sides = random.Next(3, 7);
+                var turn = index % 2 == 1 && c == 0 ? -1 : 1;
+                contours[c] = new (long X, long Y)[sides];
+                for (var v = 0; v < sides; v++)
+                {
+                    var angle = (turn * 2 * Math.PI * v / sides) + random.NextDouble();
+                    contours[c][v] = ((long)(cx + (r * Math.Cos(angle))), (long)(cy + (r * Math.Sin(angle))));
+                }
+            }
+
+            long Inside() => (random.Next(1, 8) * 64) + random.Next(1, 64);
+            var (x0, x1, y0, y1) = (Inside(), Inside(), Inside(), Inside());
+            yield return new Shape($"three {seed}/{index}", contours, (long.Min(x0, x1), long.Min(y0, y1), long.Max(x0, x1) + 1, long.Max(y0, y1) + 1));
+        }
     }
 
     [Fact]

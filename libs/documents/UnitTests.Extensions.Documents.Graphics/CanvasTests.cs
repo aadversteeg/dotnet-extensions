@@ -203,7 +203,7 @@ public class CanvasTests
         canvas.Fill(star, new Affine(0.8, 0.3, -0.3, 0.8, 18.5, -6.25), FillRule.EvenOdd, new Color(255, 69, 0), new PixelBox(3.5, 2.25, 90.75, 58.5));
         canvas.DrawImage(Image(5, 4, (x, y) => ((byte)(x * 60), (byte)(y * 80), 128, (byte)(255 - (x * 30)))), new Affine(4.3, 1.1, -0.9, 3.7, 60.2, 20.9));
 
-        Convert.ToHexStringLower(SHA256.HashData(canvas.ToImage().Pixels.AsSpan())).Should().Be("2f96bf27e7f12abc33bda90bd0358574e47e23832d4097156e2810aeb0576134");
+        Convert.ToHexStringLower(SHA256.HashData(canvas.ToImage().Pixels.AsSpan())).Should().Be("caa61fcc38389391cd5e82ce5368a103de9c51c767274a61b73021346024da19");
     }
 
     [Fact]

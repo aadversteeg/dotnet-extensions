@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Graphics;
 
@@ -26,16 +30,19 @@ internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double
 /// winding number over each cell. Exact for straight edges: the only error is the rounding of double arithmetic.</para>
 /// <para><b>Fill rules.</b> The integral a is turned into coverage by the non-zero rule as min(1, |a|) and by the even-odd
 /// rule by folding |a| into [0, 1] with period 2, each over the part of the cell inside the area the polygons are clipped
-/// to (A · g(|a| / A), <see cref="Integrate"/>; A = 1 for a cell wholly inside). Both are exact where, inside the part of
-/// a cell inside the area, the winding number takes only the values 0 and 1, or only 0 and −1: inside every outline that
-/// does not overlap itself, and wherever outlines wound the same way do not overlap. Elsewhere they are not exact.
-/// Where two contours wound the same way overlap inside a cell, the part both cover counts twice before the clamp, so
-/// the cell is too dark by that doubly covered part: up to half the cell with two contours whose edges run together
-/// through it, more with three ((n − 1) / n with n), and under even-odd up to the whole cell; only in pixels that an edge
-/// of each contour crosses inside the area (Roboto's 'Ɨ', two crossing bars, gives at most 63.3 of 255 steps; that is
-/// the test glyph, not the bound). A known defect, repaired in the raster follow-up. Where parts wound in opposite
-/// directions meet inside a cell they cancel, up to the whole cell:
-/// two half-cell rectangles of opposite direction side by side give 0 where the non-zero rule asks for 1.</para>
+/// to (A · g(|a| / A), <see cref="Integrate"/>; A = 1 for a cell wholly inside). That is exact where the winding number
+/// takes at most two values in the cell, 0 and one other or two of one sign: in every cell that one run of an outline
+/// crosses simply. Where it takes more (contours that overlap or cross in the cell, a contour that crosses itself there,
+/// a clip box's side between them) the integral alone cannot tell the parts apart. <see cref="CellFlags"/> flags every
+/// such cell, from the pieces of edges in it (a cell it does not flag is exact, by the argument there), and a flagged
+/// cell gets its coverage from the exact arrangement of those pieces (<see cref="CellArrangement"/>): the area where the
+/// winding number is not 0, or is odd, inside the cell and the area. It keeps the integral's value where the two differ by
+/// at most <see cref="KeepWithin"/>, so a cell that was right keeps its bits. So the coverage is exact in every cell, to the
+/// rounding of doubles.</para>
+/// <para><b>Work.</b> A flagged cell with m pieces costs m·(2m + m(m − 1)/2) + m² units
+/// (<see cref="CellArrangement.Charge"/>); the first pass adds them up before a row is reported, and the caller decides
+/// whether to go on (<see cref="Canvas.MaxFillWork"/>, <see cref="Canvas.MaxCanvasWork"/>). A row whose flagged cells hold
+/// more than <see cref="MaxRowPieces"/> pieces is refused here.</para>
 /// <para><b>Determinism.</b> The pixel path uses only addition, subtraction, multiplication, division and
 /// <see cref="Math.Sqrt"/>, which IEEE 754 requires to be correctly rounded, plus floor, ceiling and conversions, all on
 /// doubles and in a fixed order (no parallel loops, no vector instructions, no <see cref="Math.FusedMultiplyAdd"/>; .NET
@@ -50,7 +57,13 @@ internal sealed class AreaRasterizer
     private readonly List<Edge> _active = [];
     private double[] _cells = [];
     private double[] _coverage = [];
+    private readonly CellArrangement _arrangement = new();
     private CellFlags _flags = new(0);
+    private bool[] _flagged = [];
+    private bool _collecting;
+    private Kept[] _kept = new Kept[64];
+    private long[] _keys = new long[64];
+    private int _pieces;
     private int _firstColumn;
     private int _width;
     private int _firstRow;
@@ -63,27 +76,134 @@ internal sealed class AreaRasterizer
     /// polygon (<see cref="Number"/>).</summary>
     private readonly record struct Edge(double X0, double Y0, double X1, double Y1, int Direction, int Serial, int Turned);
 
+    /// <summary>A piece of an edge kept for a flagged cell, in the cell's own coordinates and the polygon's order.</summary>
+    private readonly record struct Kept(double X0, double Y0, double X1, double Y1);
+
+    /// <summary>The most pieces of edges the flagged cells of one row may hold: 2^18. Above it a shape is refused
+    /// (<c>Documents.Graphics.TooMuchWork</c>); the pieces of one row are kept at once.</summary>
+    public const int MaxRowPieces = 1 << 18;
+
+    /// <summary>A flagged cell keeps the value of the integral where its exact coverage differs from it by at most this,
+    /// 10^-9: a cell that was right keeps its bits.</summary>
+    public const double KeepWithin = 1e-9;
+
     /// <summary>A horizontal edge at height Y, from x <see cref="From"/> to x <see cref="To"/> in the polygon's own order.
     /// It adds nothing to the integral (no height), but it is part of the outline, so it counts for the flag.</summary>
     private readonly record struct Flat(double Y, double From, double To, int Serial, int Turned);
 
     /// <summary>
     /// Computes the coverage of the polygons, row by row from the top, and hands each row to <paramref name="row"/>: every
-    /// row and column between the polygons' extremes that is a cell of <paramref name="area"/>, and no other.
+    /// row and column between the polygons' extremes that is a cell of <paramref name="area"/>, and no other. Exact in
+    /// every cell, also where contours overlap or cross: the cells <see cref="CellFlags"/> flags get their area from
+    /// <see cref="CellArrangement"/>.
     /// </summary>
     /// <remarks>
-    /// The polygons are clipped to the area first (<see cref="Clipping"/>), so no cell outside it has coverage. The
+    /// <para>The polygons are clipped to the area first (<see cref="Clipping"/>), so no cell outside it has coverage. The
     /// extremes may still name a cell just outside: a polygon squeezed onto the area's right edge by the clip (a shape
     /// outside that touches the edge) spans no column and is given the one cell to the right of that edge, which it covers
     /// by 0. Such a cell is not reported, so a caller may index its own buffer by every cell it receives; the running sum
-    /// along a row still starts at the polygons' own first column, so the cells reported keep their exact values.
+    /// along a row still starts at the polygons' own first column, so the cells reported keep their exact values.</para>
+    /// <para>Two passes. The first flags the cells and adds up their charge (<see cref="CellArrangement.Charge"/>) over the
+    /// whole shape, and refuses a row whose flagged cells hold more than <see cref="MaxRowPieces"/> pieces; then
+    /// <paramref name="admit"/> sees the charge and may refuse it. Only then is the first row reported, so a refused shape
+    /// reports nothing. The second pass computes the rows. A flagged cell whose arrangement and integral do not agree
+    /// (<see cref="CellArrangement.TryArea"/>) stops it with <c>Documents.Graphics.InexactCoverage</c> before that row is
+    /// reported; the rows above it have been.</para>
     /// </remarks>
     /// <param name="polygons">Closed polygons; their edges together are the shape.</param>
     /// <param name="rule">The fill rule.</param>
     /// <param name="area">The cells that may be reported: columns ⌊left⌋ to ⌈right⌉ − 1, rows ⌊top⌋ to ⌈bottom⌉ − 1; its
     /// edges are integers of 32 bits after rounding outwards.</param>
     /// <param name="row">Receives each row's coverage.</param>
-    public void Rasterize(List<List<Vertex>> polygons, FillRule rule, PixelBox area, CoverageRow row)
+    /// <param name="admit">Given the charge of the shape, an error to refuse it with, or null; null admits every shape
+    /// the row limit lets through.</param>
+    /// <returns>The charge, or the error.</returns>
+    public Result<long, Error> Rasterize(List<List<Vertex>> polygons, FillRule rule, PixelBox area, CoverageRow row, Func<long, Error?>? admit = null)
+    {
+        if (!Prepare(polygons, area))
+        {
+            return Result<long, Error>.Success(0);
+        }
+
+        var (from, to) = (_fromColumn - _firstColumn, _toColumn - _firstColumn);
+        var charge = 0L;
+        var (next, flat) = (0, 0);
+        for (var y = _firstRow; y < _lastRow; y++)
+        {
+            Advance(y, ref next);
+            Flag(y, ref flat);
+            var pieces = 0L;
+            for (var column = from; column < to; column++)
+            {
+                if (_flags.IsFlagged(column))
+                {
+                    pieces += _flags.Pieces(column);
+
+                    // Counted up to MaxCharge, without passing it (each charge is at most that).
+                    var cost = CellArrangement.Charge(_flags.Pieces(column));
+                    charge = cost > CellArrangement.MaxCharge - charge ? CellArrangement.MaxCharge : charge + cost;
+                }
+            }
+
+            if (pieces > MaxRowPieces)
+            {
+                return Result<long, Error>.Failure(TooMuchWork(
+                    $"Row {y} of the shape has {pieces} pieces of edges in pixels where its contours may overlap; a row may have at most {MaxRowPieces}.",
+                    pieces,
+                    MaxRowPieces));
+            }
+        }
+
+        if (admit?.Invoke(charge) is { } refused)
+        {
+            return Result<long, Error>.Failure(refused);
+        }
+
+        _active.Clear();
+        (next, flat) = (0, 0);
+        for (var y = _firstRow; y < _lastRow; y++)
+        {
+            Advance(y, ref next);
+            Flag(y, ref flat);
+            _collecting = false;
+            for (var column = from; column < to; column++)
+            {
+                _flagged[column] = _flags.IsFlagged(column);
+                _collecting |= _flagged[column];
+            }
+
+            _pieces = 0;
+            Array.Clear(_cells, 0, _width + 2);
+            foreach (var edge in _active)
+            {
+                AddPiece(edge, y, _firstColumn);
+            }
+
+            Integrate(_width, rule, _firstColumn, Share(y, area.Top, area.Bottom), area);
+            if (_collecting)
+            {
+                CollectFlats(y, flat);
+                if (Repair(y, rule) is { } inexact)
+                {
+                    return Result<long, Error>.Failure(inexact);
+                }
+            }
+
+            row(y, _fromColumn, _coverage.AsSpan(from, to - from));
+        }
+
+        return Result<long, Error>.Success(charge);
+    }
+
+    /// <summary>
+    /// Computes the coverage of one convex polygon, as <see cref="Rasterize"/> does, without flagging: a convex polygon
+    /// winds around every point 0 times or once (one way), so the integral is the coverage in every cell.
+    /// </summary>
+    /// <param name="polygons">One convex polygon (a list of one).</param>
+    /// <param name="rule">The fill rule.</param>
+    /// <param name="area">The cells that may be reported, as for <see cref="Rasterize"/>.</param>
+    /// <param name="row">Receives each row's coverage.</param>
+    public void RasterizeConvex(List<List<Vertex>> polygons, FillRule rule, PixelBox area, CoverageRow row)
     {
         if (!Prepare(polygons, area))
         {
@@ -104,6 +224,16 @@ internal sealed class AreaRasterizer
             row(y, _fromColumn, _coverage.AsSpan(_fromColumn - _firstColumn, _toColumn - _fromColumn));
         }
     }
+
+    /// <summary>An error <c>Documents.Graphics.TooMuchWork</c> with the work asked for and the limit.</summary>
+    /// <param name="message">What was asked for.</param>
+    /// <param name="value">The amount asked for.</param>
+    /// <param name="limit">The limit.</param>
+    /// <returns>The error.</returns>
+    public static Error TooMuchWork(string message, long value, long limit) =>
+        new Error(GraphicsErrorCodes.TooMuchWork, message)
+            .With(ErrorMetadataKeys.Value, value.ToString(CultureInfo.InvariantCulture))
+            .With(GraphicsErrorCodes.Limit, limit.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>The cells of the polygons inside the area that the flag rule (<see cref="CellFlags"/>) marks as needing
     /// more than the integral: column and row of each, row by row from the top.</summary>
@@ -209,6 +339,7 @@ internal sealed class AreaRasterizer
             _cells = new double[_width + 2];
             _coverage = new double[_width + 2];
             _flags = new CellFlags(_width + 2);
+            _flagged = new bool[_width + 2];
         }
 
         // A total order of its own (not the sort's), so the sums along a row are added in the same order everywhere.
@@ -345,9 +476,20 @@ internal sealed class AreaRasterizer
         var low = double.Min(xTop, xBottom);
         var high = double.Max(xTop, xBottom);
         var column = (int)Math.Floor(low);
+
+        // For a flagged cell: an end of the piece that is the edge's own end point is kept at that point, not where the
+        // interpolation (which may miss it by a rounding) puts it; on a cell's side it must be found there exactly.
+        var (keptTop, keptBottom) = _collecting
+            ? (top == edge.Y0 ? edge.X0 - firstColumn : xTop, bottom == edge.Y1 ? edge.X1 - firstColumn : xBottom)
+            : (xTop, xBottom);
         if (high <= column + 1)
         {
             Add(column, (xTop + xBottom) / 2, height);
+            if (_collecting && _flagged[column])
+            {
+                Collect(column, y, edge.Direction, keptTop, top, keptBottom, bottom);
+            }
+
             return;
         }
 
@@ -359,7 +501,110 @@ internal sealed class AreaRasterizer
             var from = double.Max(low, cell);
             var to = double.Min(high, cell + 1);
             Add(cell, (from + to) / 2, height * ((to - from) / (high - low)));
+            if (_collecting && _flagged[cell])
+            {
+                // The part of the piece in this column, from its top end to its bottom end: at the column's sides
+                // where it is cut there, else the piece's own ends.
+                var (start, end) = xTop < xBottom ? (from, to) : (to, from);
+                Collect(
+                    cell,
+                    y,
+                    edge.Direction,
+                    start == xTop ? keptTop : start,
+                    At(start, xTop, top, xBottom, bottom),
+                    end == xBottom ? keptBottom : end,
+                    At(end, xTop, top, xBottom, bottom));
+            }
         }
+    }
+
+    /// <summary>y on the piece from (<paramref name="xTop"/>, <paramref name="top"/>) to (<paramref name="xBottom"/>,
+    /// <paramref name="bottom"/>) at x, its own ends exactly at its ends.</summary>
+    private static double At(double x, double xTop, double top, double xBottom, double bottom) =>
+        x == xTop ? top : x == xBottom ? bottom : double.Clamp(top + ((x - xTop) * ((bottom - top) / (xBottom - xTop))), top, bottom);
+
+    /// <summary>Keeps a piece of a flagged cell, from its top end to its bottom end (row-relative x), in the order the
+    /// polygon runs and relative to the cell's corner.</summary>
+    private void Collect(int cell, int y, int direction, double xTop, double top, double xBottom, double bottom)
+    {
+        var (x0, y0, x1, y1) = direction > 0 ? (xTop, top, xBottom, bottom) : (xBottom, bottom, xTop, top);
+        Keep(cell, x0 - cell, y0 - y, x1 - cell, y1 - y);
+    }
+
+    /// <summary>Keeps the horizontal edges of row <paramref name="y"/> in its flagged cells.</summary>
+    private void CollectFlats(int y, int flat)
+    {
+        for (var index = flat; index < _flats.Count && _flats[index].Y <= y + 1; index++)
+        {
+            var piece = _flats[index];
+            var (from, to) = (piece.From - _firstColumn, piece.To - _firstColumn);
+            var (low, high) = (double.Min(from, to), double.Max(from, to));
+            for (var cell = (int)Math.Floor(low); cell < high; cell++)
+            {
+                if ((uint)cell < (uint)_flagged.Length && _flagged[cell])
+                {
+                    var (left, right) = (double.Max(low, cell), double.Min(high, cell + 1));
+                    var (start, end) = to > from ? (left, right) : (right, left);
+                    Keep(cell, start - cell, piece.Y - y, end - cell, piece.Y - y);
+                }
+            }
+        }
+    }
+
+    private void Keep(int cell, double x0, double y0, double x1, double y1)
+    {
+        if (_pieces == _kept.Length)
+        {
+            Array.Resize(ref _kept, _kept.Length * 2);
+            Array.Resize(ref _keys, _keys.Length * 2);
+        }
+
+        _kept[_pieces] = new Kept(x0, y0, x1, y1);
+
+        // Sorted by cell, then by the order kept: a key of the two.
+        _keys[_pieces] = ((long)cell << 32) | (uint)_pieces;
+        _pieces++;
+    }
+
+    /// <summary>Gives every flagged cell of the row its exact coverage (<see cref="CellArrangement"/>); the old value
+    /// stays where the new one differs from it by at most <see cref="KeepWithin"/>. An error when a cell's arrangement and
+    /// integral do not agree.</summary>
+    private Error? Repair(int y, FillRule rule)
+    {
+        Array.Sort(_keys, 0, _pieces);
+        var index = 0;
+        for (var cell = _fromColumn - _firstColumn; cell < _toColumn - _firstColumn; cell++)
+        {
+            if (!_flagged[cell])
+            {
+                continue;
+            }
+
+            _arrangement.Clear();
+            while (index < _pieces && (int)(_keys[index] >> 32) < cell)
+            {
+                index++;
+            }
+
+            for (; index < _pieces && (int)(_keys[index] >> 32) == cell; index++)
+            {
+                var piece = _kept[(int)(_keys[index] & uint.MaxValue)];
+                _arrangement.Add(piece.X0, piece.Y0, piece.X1, piece.Y1);
+            }
+
+            if (!_arrangement.TryArea(_cells[cell], rule, out var exact))
+            {
+                return new Error(GraphicsErrorCodes.InexactCoverage, $"The coverage of pixel ({_firstColumn + cell}, {y}) could not be established: its edges and its integral do not agree.")
+                    .With(ErrorMetadataKeys.Value, string.Create(CultureInfo.InvariantCulture, $"{_firstColumn + cell},{y}"));
+            }
+
+            if (!(Math.Abs(exact - _coverage[cell]) <= KeepWithin))
+            {
+                _coverage[cell] = exact;
+            }
+        }
+
+        return null;
     }
 
     private void Add(int cell, double middle, double height)
@@ -386,11 +631,22 @@ internal sealed class AreaRasterizer
         for (var cell = 0; cell < width; cell++)
         {
             sum += _cells[cell];
+
+            // The running sum stays in the cell: a flagged cell's arrangement is anchored on it (Repair).
+            _cells[cell] = sum;
             var integral = Math.Abs(sum);
             var part = Share(firstColumn + cell, area.Left, area.Right) * rowShare;
-            _coverage[cell] = rule == FillRule.NonZero
-                ? double.Min(part, integral)
-                : part > 0 ? part * Fold(integral / part) : 0;
+            if (rule == FillRule.NonZero)
+            {
+                _coverage[cell] = double.Min(part, integral);
+            }
+            else
+            {
+                // Over a part of a denormal size the mean may overflow; such a cell's coverage is at most that part, and
+                // a flagged one gets its exact value from Repair.
+                var mean = part > 0 ? integral / part : 0;
+                _coverage[cell] = part > 0 && double.IsFinite(mean) ? part * Fold(mean) : 0;
+            }
         }
     }
 

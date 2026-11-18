@@ -15,9 +15,8 @@ namespace Ave.Extensions.Documents.Graphics;
 /// </summary>
 /// <remarks>
 /// <para><b>Anti-aliasing.</b> A pixel's coverage is the share of its square that the shape covers
-/// (<see cref="AreaRasterizer"/>: exact where no two contours overlap or meet inside the pixel; the error where they do
-/// is stated there), rounded to 8 bits; it is the alpha
-/// the colour is painted with.</para>
+/// (<see cref="AreaRasterizer"/>, exact also where contours overlap or cross; see <see cref="MaxFillWork"/> for the
+/// work that takes), rounded to 8 bits; it is the alpha the colour is painted with.</para>
 /// <para><b>Compositing.</b> Source over (Porter and Duff, "Compositing Digital Images", 1984), with coverage α and the
 /// pixel's alpha β: alpha' = α + β(1 − α), colour' = (C·α + D·β(1 − α)) / alpha'. Computed on the encoded 8-bit sRGB
 /// values in integers and rounded to the nearest. Blending in linear light would be more correct in theory; it is not
@@ -68,6 +67,35 @@ public sealed class Canvas
     /// </remarks>
     public const double MaxImageReach = 1L << 40;
 
+    /// <summary>
+    /// The most work the exact coverage of one fill may take: 2^27 units. A pixel where the winding number may take more
+    /// than two values (contours that overlap or cross in it, see <see cref="AreaRasterizer"/>) with m pieces of edges in
+    /// it costs m·(2m + m(m − 1)/2) + m² units; a shape whose pixels together cost more is refused with
+    /// <c>Documents.Graphics.TooMuchWork</c>, before any of it is painted.
+    /// </summary>
+    /// <remarks>
+    /// The exact area of such a pixel takes its pieces' crossings, so the work grows with the cube of the pieces in it, and
+    /// a few kilobytes of path can put thousands of edges through one pixel. Text and drawings use far less. Measured on
+    /// the development host (2026-11-19): of eight fonts at 12 pixels per em, every glyph filled on its own, the largest
+    /// glyph takes 252,044 units (DejaVu Sans 2.37), 532 times under this limit; of the engine's samples the largest page
+    /// takes 2.35 × 10^6 units at 96 dpi (<see cref="MaxCanvasWork"/> is 114 times that). About 11 ns a unit there: a fill
+    /// at this limit takes about 1.7 s, a canvas at its limit about 3.6 s. Refused, for example: a thousand thin bars
+    /// through one pixel (7.4 × 10^9 units), one contour crossing itself in one pixel with 1,001 edges (5.0 × 10^8); a
+    /// refusal comes before the work, in milliseconds. The PDF back-end writes such a page; a viewer draws it with its
+    /// own rasteriser.
+    /// </remarks>
+    public const long MaxFillWork = 1L << 27;
+
+    /// <summary>The most work the exact coverage of all fills on one canvas may take together: 2^28 units (see
+    /// <see cref="MaxFillWork"/>); the fill that would go beyond it is refused with <c>Documents.Graphics.TooMuchWork</c>
+    /// and not painted, the fills before it stay.</summary>
+    public const long MaxCanvasWork = 1L << 28;
+
+    /// <summary>The most pieces of edges the pixels of one row where contours may overlap may hold in one fill: 2^18
+    /// (the pieces of a row are kept at once). A shape with more is refused with <c>Documents.Graphics.TooMuchWork</c>,
+    /// before any of it is painted.</summary>
+    public const int MaxRowPieces = AreaRasterizer.MaxRowPieces;
+
     private readonly byte[] _pixels;
     private readonly AreaRasterizer _rasterizer = new();
     private readonly AreaRasterizer _sampler = new();
@@ -75,6 +103,7 @@ public sealed class Canvas
     private readonly List<Vertex> _clipFirst = new(16);
     private readonly List<Vertex> _clipSecond = new(16);
     private readonly List<List<Vertex>> _preimagePolygons = new(1);
+    private long _work;
     private double[] _columnShares = new double[4];
     private double[] _rowShares = new double[4];
 
@@ -133,20 +162,44 @@ public sealed class Canvas
     /// <param name="rule">The fill rule.</param>
     /// <param name="color">The colour.</param>
     /// <param name="clip">Only what lies inside this box is painted; null for the whole canvas.</param>
-    /// <returns>Unit, or <c>Documents.Graphics.InvalidValue</c> for a value out of range (see the class remarks).</returns>
+    /// <returns>Unit, or <c>Documents.Graphics.InvalidValue</c> for a value out of range (see the class remarks), or
+    /// <c>Documents.Graphics.TooMuchWork</c> for a shape whose exact coverage takes more work than
+    /// <see cref="MaxFillWork"/>, <see cref="MaxCanvasWork"/> or <see cref="MaxRowPieces"/> allow (nothing painted).</returns>
     /// <exception cref="ArgumentNullException">The path is null.</exception>
     public Result<Unit, Error> Fill(Path path, Affine transform, FillRule rule, Color color, PixelBox? clip = null)
     {
         ArgumentNullException.ThrowIfNull(path);
-        return Box(clip).OnSuccessBind(box => CoverageRows(_rasterizer, path, transform, rule, box, (row, first, coverage) =>
+        var box = Box(clip);
+        if (box.IsFailure)
+        {
+            return Result<Unit, Error>.Failure(box.Error);
+        }
+
+        var painted = CoverageRows(_rasterizer, path, transform, rule, box.Value, Admit, (row, first, coverage) =>
         {
             var offset = (((long)row * Width) + first) * 4;
             for (var index = 0; index < coverage.Length; index++, offset += 4)
             {
                 Composite(offset, color.Red, color.Green, color.Blue, ToByte(coverage[index]));
             }
-        }));
+        });
+        if (painted.IsFailure)
+        {
+            return Result<Unit, Error>.Failure(painted.Error);
+        }
+
+        _work += painted.Value;
+        return Result<Unit, Error>.Success(Unit.Value);
     }
+
+    /// <summary>The fill's charge against <see cref="MaxFillWork"/> and, with the fills before it, against
+    /// <see cref="MaxCanvasWork"/>.</summary>
+    private Error? Admit(long charge) =>
+        charge > MaxFillWork
+            ? AreaRasterizer.TooMuchWork($"The fill's exact coverage takes {charge} units of work; a fill may take at most {MaxFillWork} (Canvas.MaxFillWork).", charge, MaxFillWork)
+            : _work + charge > MaxCanvasWork
+                ? AreaRasterizer.TooMuchWork($"The fills on this canvas take {_work + charge} units of work with this one; a canvas may take at most {MaxCanvasWork} (Canvas.MaxCanvasWork).", _work + charge, MaxCanvasWork)
+                : null;
 
     /// <summary>
     /// Draws an image through an affine transform. Image space has pixel (i, j) of the image as the unit square from
@@ -211,7 +264,7 @@ public sealed class Canvas
         CoverageRow sample = weights.Add;
         var clipBox = box.Value;
         var axisAligned = imageToDevice.B == 0 && imageToDevice.C == 0;
-        return CoverageRows(_rasterizer, Path.Rectangle(0, 0, image.Width, image.Height), imageToDevice, FillRule.NonZero, clipBox, (row, first, coverage) =>
+        return CoverageRows(_rasterizer, Path.Rectangle(0, 0, image.Width, image.Height), imageToDevice, FillRule.NonZero, clipBox, admit: null, (row, first, coverage) =>
         {
             for (var index = 0; index < coverage.Length; index++)
             {
@@ -242,7 +295,7 @@ public sealed class Canvas
                         ToByte(weights.Alpha / 255 / preimageArea));
                 }
             }
-        });
+        }).OnSuccessMap(_ => Unit.Value);
     }
 
     /// <summary>The pixels drawn so far.</summary>
@@ -258,7 +311,9 @@ public sealed class Canvas
     /// <param name="rule">The fill rule.</param>
     /// <param name="clip">The box, within ±<see cref="MaxPixelCoordinate"/>; the mask covers the pixels from ⌊left⌋,
     /// ⌊top⌋ to ⌈right⌉, ⌈bottom⌉, at most <see cref="MaxPixels"/> in all and on each side.</param>
-    /// <returns>The mask, or <c>Documents.Graphics.InvalidValue</c> / <c>TooLarge</c>.</returns>
+    /// <returns>The mask, or <c>Documents.Graphics.InvalidValue</c> / <c>TooLarge</c>, or
+    /// <c>Documents.Graphics.TooMuchWork</c> for a shape whose exact coverage takes more work than
+    /// <see cref="MaxFillWork"/> or <see cref="MaxRowPieces"/> allow.</returns>
     /// <exception cref="ArgumentNullException">The path is null.</exception>
     public static Result<CoverageMask, Error> Coverage(Path path, Affine transform, FillRule rule, PixelBox clip)
     {
@@ -279,7 +334,7 @@ public sealed class Canvas
 
         // The rasteriser reports only cells of the box (AreaRasterizer.Rasterize), so every index below is in the mask.
         var values = new byte[width * height];
-        return CoverageRows(new AreaRasterizer(), path, transform, rule, clip, (row, first, coverage) =>
+        return CoverageRows(new AreaRasterizer(), path, transform, rule, clip, AdmitOne, (row, first, coverage) =>
         {
             var start = ((row - top) * width) + first - left;
             for (var index = 0; index < coverage.Length; index++)
@@ -289,33 +344,48 @@ public sealed class Canvas
         }).OnSuccessMap(_ => new CoverageMask((int)left, (int)top, (int)width, (int)height, ImmutableArray.Create(values)));
     }
 
-    /// <summary>Checks the values, then hands each row of the coverage of a path inside a box to <paramref name="row"/>.</summary>
-    private static Result<Unit, Error> CoverageRows(AreaRasterizer rasterizer, Path path, Affine transform, FillRule rule, PixelBox box, CoverageRow row)
+    /// <summary>A charge against <see cref="MaxFillWork"/> alone (a mask has no canvas).</summary>
+    private static Error? AdmitOne(long charge) =>
+        charge > MaxFillWork
+            ? AreaRasterizer.TooMuchWork($"The shape's exact coverage takes {charge} units of work; a fill may take at most {MaxFillWork} (Canvas.MaxFillWork).", charge, MaxFillWork)
+            : null;
+
+    /// <summary>Checks the values, then hands each row of the coverage of a path inside a box to <paramref name="row"/>;
+    /// the work charged, or the rasteriser's error. A null <paramref name="admit"/> is for a convex shape (an image's
+    /// outline), which needs no flagged cells.</summary>
+    private static Result<long, Error> CoverageRows(AreaRasterizer rasterizer, Path path, Affine transform, FillRule rule, PixelBox box, Func<long, Error?>? admit, CoverageRow row)
     {
         if (!Enum.IsDefined(rule))
         {
-            return Invalid<Unit>($"{(int)rule} is not a fill rule.", ((int)rule).ToString(CultureInfo.InvariantCulture), "rule");
+            return Invalid<long>($"{(int)rule} is not a fill rule.", ((int)rule).ToString(CultureInfo.InvariantCulture), "rule");
         }
 
         if (!transform.IsFinite)
         {
-            return Invalid<Unit>("The transform is not finite.", transform.ToString(), "transform");
+            return Invalid<long>("The transform is not finite.", transform.ToString(), "transform");
         }
 
         if (OutOfRange(path, transform) is { } point)
         {
-            return Invalid<Unit>(
+            return Invalid<long>(
                 $"A point of the path lies at ({point.X.ToString(CultureInfo.InvariantCulture)}, {point.Y.ToString(CultureInfo.InvariantCulture)}) after the transform; points must be finite and within ±{MaxCoordinate.ToString(CultureInfo.InvariantCulture)}.",
                 $"{point.X.ToString(CultureInfo.InvariantCulture)},{point.Y.ToString(CultureInfo.InvariantCulture)}",
                 "path");
         }
 
-        if (!box.IsEmpty)
+        if (box.IsEmpty)
         {
-            rasterizer.Rasterize(Clipping.ToBox(Flattening.Polygons(path, transform, box), box), rule, box, row);
+            return Result<long, Error>.Success(0);
         }
 
-        return Result<Unit, Error>.Success(Unit.Value);
+        var polygons = Clipping.ToBox(Flattening.Polygons(path, transform, box), box);
+        if (admit is null)
+        {
+            rasterizer.RasterizeConvex(polygons, rule, box, row);
+            return Result<long, Error>.Success(0);
+        }
+
+        return rasterizer.Rasterize(polygons, rule, box, row, admit);
     }
 
     /// <summary>The first point of the path (end or control point) that is not finite or out of range after the
@@ -367,7 +437,7 @@ public sealed class Canvas
 
         _preimagePolygons.Clear();
         _preimagePolygons.Add(clipped);
-        _sampler.Rasterize(_preimagePolygons, FillRule.NonZero, imageBox, sample);
+        _sampler.RasterizeConvex(_preimagePolygons, FillRule.NonZero, imageBox, sample);
     }
 
     /// <summary>
