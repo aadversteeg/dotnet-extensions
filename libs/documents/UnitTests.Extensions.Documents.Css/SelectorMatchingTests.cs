@@ -114,4 +114,16 @@ public class SelectorMatchingTests
 
         SelectorParser.Parse(values, relative: false, TextPosition.Start).List.Should().BeNull();
     }
+
+    [Theory]
+    [InlineData(-1, long.MinValue + 1, 1, false)]
+    [InlineData(-1, long.MinValue + 1, long.MaxValue, false)]
+    [InlineData(long.MinValue, long.MaxValue, 1, false)]
+    [InlineData(long.MinValue, 1, 1, true)]
+    [InlineData(-1, long.MaxValue, long.MaxValue, true)]
+    [InlineData(-1, long.MaxValue, 1, true)]
+    [InlineData(2, long.MinValue, 2, true)]
+    [InlineData(3, long.MinValue, 2, false)]
+    public void An_plus_B_does_not_overflow_at_the_edges_of_64_bits(long a, long b, long index, bool matches) =>
+        new AnPlusB(a, b).Matches(index).Should().Be(matches);
 }

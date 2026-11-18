@@ -369,12 +369,13 @@ internal sealed class SelectorMatcher
             return false;
         }
 
-        var (index, count) = IndexAmongMatching(pseudo, of, element);
-        return nth.Matches(fromEnd ? count - index + 1 : index);
+        return IndexAmongMatching(pseudo, of, element) is var (index, count) && index > 0
+            && nth.Matches(fromEnd ? count - index + 1 : index);
     }
 
     /// <summary>The 1-based index of an element among its siblings that match S, and their number; computed once for all
-    /// siblings of a parent.</summary>
+    /// siblings of a parent. (0, 0) when the element is not among them: matching was cut off by the work limit while the
+    /// siblings were counted, and from there on nothing matches.</summary>
     private (int Index, int Count) IndexAmongMatching(PseudoClassSelector pseudo, SelectorList of, IStyleElement element)
     {
         if (element.Parent is not { } parent)
@@ -409,7 +410,7 @@ internal sealed class SelectorMatcher
             _nthOf[key] = indexes;
         }
 
-        return indexes[element];
+        return indexes.TryGetValue(element, out var place) ? place : (0, 0);
     }
 
     /// <summary>Compares pairs by the identity of both parts.</summary>

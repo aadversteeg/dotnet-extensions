@@ -164,7 +164,8 @@ public sealed record ParentSelector(SelectorList Parent, Specificity Specificity
 /// <param name="B">The offset.</param>
 public readonly record struct AnPlusB(long A, long B)
 {
-    /// <summary>Whether a 1-based index is A×n+B for some integer n ≥ 0.</summary>
+    /// <summary>Whether a 1-based index is A×n+B for some integer n ≥ 0. Computed in 128 bits, so no A, B and index
+    /// overflow (<c>-n-9223372036854775807</c> divides by -1 at the edge of 64 bits).</summary>
     /// <param name="index">The index, from 1.</param>
     /// <returns>Whether it is selected.</returns>
     public bool Matches(long index)
@@ -174,7 +175,7 @@ public readonly record struct AnPlusB(long A, long B)
             return index == B;
         }
 
-        var difference = index - B;
+        var difference = (System.Int128)index - B;
         return difference % A == 0 && difference / A >= 0;
     }
 }

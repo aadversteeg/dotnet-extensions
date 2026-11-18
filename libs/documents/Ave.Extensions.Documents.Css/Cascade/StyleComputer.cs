@@ -526,6 +526,9 @@ public sealed class StyleComputer
             case VarSubstitution.Outcome.TooLong:
                 Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"The var() substitution in '{declaration.Name}' is longer than {CssInputLimits.MaxSubstitutionLength} characters, Chromium's limit; the property is unset, as in Chromium (CSS Variables 1 §3.1).");
                 break;
+            case VarSubstitution.Outcome.TooDeep:
+                Report(declaration, CssErrorCodes.TooDeep, $"The var() substitution in '{declaration.Name}' nests blocks and functions deeper than {CssInputLimits.MaxDepth}; it is refused.");
+                break;
             case VarSubstitution.Outcome.Uncertain:
                 Report(declaration, CssErrorCodes.TooLarge, $"The var() substitution in '{declaration.Name}' is within a few characters of {CssInputLimits.MaxSubstitutionLength}, Chromium's limit, or past the document's substitution work; whether Chromium keeps it cannot be told, so it is refused.");
                 break;

@@ -182,49 +182,71 @@ public sealed class CascadeIndex
         /// <summary>Where a rule is: its style sheet, origin, layer, and for a nested rule the parent's selectors.</summary>
         private sealed record Context(StyleSheet Sheet, CascadeOrigin Origin, LayerNode Layer, SelectorList? Parent);
 
+        /// <summary>Flattens a list of rules, with the blocks of conditional and layer rules, nested style rules and
+        /// imported sheets, in order of appearance. Without recursion: a chain of imports is as deep as
+        /// <see cref="CssInputLimits.MaxImportedSheets"/>, so the lists being walked are kept on a stack of their own.</summary>
         private void Rules(IEnumerable<CssRule> rules, Context context)
         {
-            foreach (var rule in rules)
+            var lists = new Stack<(IEnumerator<CssRule> Rules, Context Context, StyleSheet? Imported)>();
+            lists.Push((Walk(rules), context, null));
+            while (lists.Count > 0)
             {
-                switch (rule)
+                var (list, current, imported) = lists.Peek();
+                if (!list.MoveNext())
                 {
-                    case StyleRule style:
-                        Style(style, context);
+                    lists.Pop();
+                    list.Dispose();
+                    if (imported is not null)
+                    {
+                        _importing.Remove(imported);
+                    }
+
+                    continue;
+                }
+
+                switch (list.Current)
+                {
+                    case StyleRule style when Style(style, current) is { } nested:
+                        lists.Push((Walk(nested.Rules), nested.Context, null));
                         break;
-                    case NestedDeclarationsRule nested when context.Parent is { } parent:
+                    case NestedDeclarationsRule nested when current.Parent is { } parent:
                         // Same elements, same specificity behaviour as the parent rule (CSS Nesting 1 §3.3).
-                        Add(parent, nested.Declarations, context);
+                        Add(parent, nested.Declarations, current);
                         break;
                     case MediaRule mediaRule when MediaQueries.Matches(mediaRule.Queries, MediaContext):
-                        Rules(mediaRule.Rules, context);
+                        lists.Push((Walk(mediaRule.Rules), current, null));
                         break;
-                    case SupportsRule supports when Supports(supports.Condition, context.Sheet.SourceName, supports.Position):
-                        Rules(supports.Rules, context);
+                    case SupportsRule supports when Supports(supports.Condition, current.Sheet.SourceName, supports.Position):
+                        lists.Push((Walk(supports.Rules), current, null));
                         break;
                     case LayerBlockRule layer:
-                        Rules(layer.Rules, context with { Layer = layer.Name is { } layerName ? context.Layer.Resolve(layerName) : context.Layer.Anonymous() });
+                        lists.Push((Walk(layer.Rules), current with { Layer = layer.Name is { } layerName ? current.Layer.Resolve(layerName) : current.Layer.Anonymous() }, null));
                         break;
                     case LayerStatementRule statement:
                         foreach (var name in statement.Names)
                         {
-                            context.Layer.Resolve(name);
+                            current.Layer.Resolve(name);
                         }
 
                         break;
-                    case ImportRule import:
-                        Import(import, context);
+                    case ImportRule import when Import(import, current) is { } sheet:
+                        lists.Push((Walk(sheet.Rules), sheet.Context, sheet.Sheet));
                         break;
                     case FontFaceRule fontFace:
                         FontFaces.Add(fontFace);
                         break;
                     case PageRule page:
-                        Pages.Add(new CascadedPageRule(page, context.Origin));
+                        Pages.Add(new CascadedPageRule(page, current.Origin));
                         break;
                 }
             }
         }
 
-        private void Style(StyleRule rule, Context context)
+        private static IEnumerator<CssRule> Walk(IEnumerable<CssRule> rules) => rules.GetEnumerator();
+
+        /// <summary>Adds a style rule; its nested rules, with the context they are read in, or null when it has none or
+        /// is refused.</summary>
+        private (IEnumerable<CssRule> Rules, Context Context)? Style(StyleRule rule, Context context)
         {
             var selectors = context.Parent is { } parent ? Nesting.Desugar(rule.Selectors, parent) : rule.Selectors;
             if (Nesting.Depth(selectors) > CssInputLimits.MaxSelectorNesting)
@@ -232,14 +254,11 @@ public sealed class CascadeIndex
                 // Nested rules and the pseudo-class arguments in them together: the depth selector matching recurses to.
                 Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.TooDeep, $"Style rules and selector lists are nested deeper than {CssInputLimits.MaxSelectorNesting}; the rule and the rules in it are not used.", context.Sheet.SourceName, rule.Position)
                     .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSelectorNesting));
-                return;
+                return null;
             }
 
             Add(selectors, rule.Declarations, context);
-            if (!rule.ChildRules.IsEmpty)
-            {
-                Rules(rule.ChildRules, context with { Parent = selectors });
-            }
+            return rule.ChildRules.IsEmpty ? null : (rule.ChildRules, context with { Parent = selectors });
         }
 
         private void Add(SelectorList selectors, IEnumerable<Declaration> declarations, Context context)
@@ -288,40 +307,40 @@ public sealed class CascadeIndex
         }
 
         /// <summary>@import (CSS Cascade 5 §2): when its conditions hold, the imported sheet's rules take the import's
-        /// place, in the import's layer. An import of a sheet that is already being imported (a cycle) is skipped, as
-        /// browsers do.</summary>
-        private void Import(ImportRule import, Context context)
+        /// place, in the import's layer; they are returned to be walked there, the sheet marked as being imported until
+        /// they are done. An import of a sheet that is already being imported (a cycle) is skipped, as browsers do.</summary>
+        private (IEnumerable<CssRule> Rules, Context Context, StyleSheet Sheet)? Import(ImportRule import, Context context)
         {
             if (!MediaQueries.Matches(import.Media, MediaContext)
                 || (import.Supports is { } condition && !Supports(condition, context.Sheet.SourceName, import.Position)))
             {
-                return;
+                return null;
             }
 
             if (imports is null)
             {
                 Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{import.Url}' is skipped: the caller follows no imports.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, import.Url));
-                return;
+                return null;
             }
 
             if (++_imported > CssInputLimits.MaxImportedSheets)
             {
                 Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.TooLarge, $"More than {CssInputLimits.MaxImportedSheets} style sheets are imported; '{import.Url}' is not.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, CssInputLimits.MaxImportedSheets));
-                return;
+                return null;
             }
 
             if (imports(import, context.Sheet) is not { } sheet)
             {
-                return;
+                return null;
             }
 
             if (!_importing.Add(sheet))
             {
                 Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{import.Url}' is skipped: the sheet imports itself.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, import.Url));
-                return;
+                return null;
             }
 
             var layer = import.Layer switch
@@ -330,8 +349,7 @@ public sealed class CascadeIndex
                 "" => context.Layer.Anonymous(),
                 var name => context.Layer.Resolve(name),
             };
-            Rules(sheet.Rules, context with { Sheet = sheet, Layer = layer });
-            _importing.Remove(sheet);
+            return (sheet.Rules, context with { Sheet = sheet, Layer = layer }, sheet);
         }
 
         /// <summary>

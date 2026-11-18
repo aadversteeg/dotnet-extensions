@@ -20,6 +20,11 @@ namespace Ave.Extensions.Documents.Css.Cascade;
 /// value is used; past it by the lower bound it is invalid at computed-value time, as in Chromium; in between the
 /// answer depends on comments the engine does not write, and the value is refused
 /// (<see cref="Outcome.Uncertain"/>). Substitution stops as soon as the lower bound passes the limit.
+/// A substitution can also nest: <c>--b: (var(--a))</c> puts the value of <c>--a</c> one block deeper, so a chain of
+/// such properties builds a value nested as deep as the chain is long, deeper than any parsed value. The depth of the
+/// result is counted while it is made, and a value nested deeper than <see cref="CssInputLimits.MaxDepth"/> is
+/// refused (<see cref="Outcome.TooDeep"/>): every reader of values (the serializer, math functions, the property
+/// grammars) may then recurse once per level, as it does on parsed values.
 /// </remarks>
 internal static class VarSubstitution
 {
@@ -37,6 +42,9 @@ internal static class VarSubstitution
 
         /// <summary>So close to Chromium's limit that whether Chromium keeps it depends on comments it writes: refused.</summary>
         Uncertain,
+
+        /// <summary>Its blocks and functions nest deeper than <see cref="CssInputLimits.MaxDepth"/>: refused.</summary>
+        TooDeep,
     }
 
     /// <summary>Whether every var() in the values has the grammar of §3 (else the declaration is invalid when parsed,
@@ -74,7 +82,7 @@ internal static class VarSubstitution
     {
         var root = new List<ComponentValue>();
         var stack = new Stack<Frame>();
-        stack.Push(new Frame(values, root, null, null));
+        stack.Push(new Frame(values, root, null, null, 0));
         long lower = 0;
         long substitutions = 0;
         result = [];
@@ -108,6 +116,12 @@ internal static class VarSubstitution
 
                     if (lookup(arguments.Name) is { } substituted)
                     {
+                        if (frame.Depth + Depth(substituted.Tokens) > CssInputLimits.MaxDepth)
+                        {
+                            length = lower;
+                            return Outcome.TooDeep;
+                        }
+
                         lower += substituted.Text.Length;
                         substitutions++;
                         frame.Output.AddRange(substituted.Tokens);
@@ -120,15 +134,15 @@ internal static class VarSubstitution
                     }
 
                     // The fallback's values go into the same output, in the place of the var().
-                    stack.Push(new Frame(DeclarationPreparer.Trim(fallback), frame.Output, null, null));
+                    stack.Push(new Frame(DeclarationPreparer.Trim(fallback), frame.Output, null, null, frame.Depth));
                     break;
                 case FunctionValue function:
                     lower += function.Name.Length + 2;
-                    stack.Push(new Frame(function.Values, [], function, frame.Output));
+                    stack.Push(new Frame(function.Values, [], function, frame.Output, frame.Depth + 1));
                     break;
                 case SimpleBlock block:
                     lower += 2;
-                    stack.Push(new Frame(block.Values, [], block, frame.Output));
+                    stack.Push(new Frame(block.Values, [], block, frame.Output, frame.Depth + 1));
                     break;
                 default:
                     lower += Math.Max(1, value.SourceEnd - value.SourceStart);
@@ -151,6 +165,36 @@ internal static class VarSubstitution
 
         result = [.. root];
         return Outcome.Done;
+    }
+
+    /// <summary>How deeply the blocks and functions of the values nest (a value without any: 0), without recursion. Its
+    /// cost is the number of values, which is at most the length of their text, so a caller that charges that length
+    /// has paid for it.</summary>
+    public static int Depth(IReadOnlyList<ComponentValue> values)
+    {
+        var deepest = 0;
+        var stack = new Stack<(IReadOnlyList<ComponentValue> Values, int Depth)>();
+        stack.Push((values, 0));
+        while (stack.Count > 0)
+        {
+            var (list, depth) = stack.Pop();
+            foreach (var value in list)
+            {
+                IReadOnlyList<ComponentValue>? inner = value switch
+                {
+                    FunctionValue function => function.Values,
+                    SimpleBlock block => block.Values,
+                    _ => null,
+                };
+                if (inner is not null)
+                {
+                    deepest = Math.Max(deepest, depth + 1);
+                    stack.Push((inner, depth + 1));
+                }
+            }
+        }
+
+        return deepest;
     }
 
     /// <summary>The names every var() in the values refers to, fallbacks included (the edges of the dependency graph of
@@ -188,8 +232,8 @@ internal static class VarSubstitution
     }
 
     /// <summary>One list being substituted: its source values, where it is, its output, and for a function or block
-    /// the value to rebuild and the list it goes into.</summary>
-    private sealed class Frame(IReadOnlyList<ComponentValue> source, List<ComponentValue> output, ComponentValue? owner, List<ComponentValue>? into)
+    /// the value to rebuild and the list it goes into, and how deeply its output is nested in the result.</summary>
+    private sealed class Frame(IReadOnlyList<ComponentValue> source, List<ComponentValue> output, ComponentValue? owner, List<ComponentValue>? into, int depth)
     {
         /// <summary>The values of this list as written.</summary>
         public IReadOnlyList<ComponentValue> Source { get; } = source;
@@ -206,6 +250,9 @@ internal static class VarSubstitution
 
         /// <summary>The output of the enclosing list, where the rebuilt <see cref="Owner"/> goes.</summary>
         public List<ComponentValue>? Into { get; } = into;
+
+        /// <summary>The blocks and functions of the result around <see cref="Output"/>.</summary>
+        public int Depth { get; } = depth;
     }
 
     /// <summary>The arguments of var(): the name, and the fallback after the first comma (null when there is no comma;
