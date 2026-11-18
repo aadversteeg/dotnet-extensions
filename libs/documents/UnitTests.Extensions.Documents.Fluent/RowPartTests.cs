@@ -92,18 +92,29 @@ public class RowPartTests
         PrintedPages.Chromium("a3-mirror").PageTexts.Should().Equal("intro t0 t1", "t2 t3");
     }
 
-    /// <summary>The three documents where Chromium leaves a part of a row that shows nothing.</summary>
-    public static TheoryData<string> ChromiumStrips => ["a2-padded-blocks", "a2-line-breaks", "a3-mirror"];
+    /// <summary>The documents where Chromium leaves a part of a row that shows nothing: the first measured ones, whose
+    /// padded blocks of 10 and 8 pt are not whole pixels, and the same shapes with blocks of 9 pt (12 px), whose every
+    /// length is whole pixels, so grid lines compare exactly.</summary>
+    public static TheoryData<string> ChromiumStrips => ["a2-padded-blocks", "a2-line-breaks", "a3-mirror", "a2-padded-blocks-px", "a3-mirror-px"];
+
+    /// <summary>The whole-pixel ones.</summary>
+    public static TheoryData<string> WholePixelStrips => ["a2-padded-blocks-px", "a2-line-breaks", "a3-mirror-px"];
 
     private static Element[] StripBody(string caseName) => caseName switch
     {
         "a2-padded-blocks" => [Between(TableRow([Cell(""), Cell([.. Enumerable.Range(0, 20).Select(_ => (Element)Block([]).Padding(5.Pt()))])]))],
+        "a2-padded-blocks-px" => [Between(TableRow([Cell(""), Cell([.. Enumerable.Range(0, 20).Select(_ => (Element)Block([]).Padding(4.5.Pt()))])]))],
         "a2-line-breaks" => [Between(TableRow([Cell(""), Cell([Paragraph([.. Breaks(20)])])]))],
-        "a3-mirror" => [Paragraph("intro").MarginBottom(133.5.Pt()), Table(Columns(Fill(1), Fill(1)),
-                [.. Enumerable.Range(0, 4).Select(i => (TablePart)TableRow([Cell($"t{i}"), Cell([Block([]).Padding(4.Pt()), Block([]).Padding(4.Pt())])]))])
-            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks()],
+        "a3-mirror" => Mirror(133.5, 4),
+        "a3-mirror-px" => Mirror(129.75, 4.5),
         _ => throw new ArgumentException(caseName, nameof(caseName)),
     };
+
+    /// <summary>"intro" with the given bottom margin, then four rows of "t" beside two empty blocks with the given padding.</summary>
+    private static Element[] Mirror(double margin, double padding) =>
+        [Paragraph("intro").MarginBottom(margin.Pt()), Table(Columns(Fill(1), Fill(1)),
+                [.. Enumerable.Range(0, 4).Select(i => (TablePart)TableRow([Cell($"t{i}"), Cell([Block([]).Padding(padding.Pt()), Block([]).Padding(padding.Pt())])]))])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks()];
 
     /// <summary>The top of every horizontal grid line on each page (a filled rectangle one pixel high and wider than
     /// one), in points, in page order.</summary>
@@ -115,8 +126,10 @@ public class RowPartTests
             .Order()
             .ToList())];
 
-    /// <summary>A length in points rounded to a whole CSS pixel of 0.75 pt, as Chromium paints a grid line.</summary>
-    private static double WholePixel(double points) => Math.Round(points / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+    private static Result<PrintedPages, global::Ave.Extensions.ErrorPaths.Error> PrintAllowed(Element[] body) =>
+        DocumentTranslator.ToModel(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato")
+                .EmptyRowParts(EmptyRowParts.Allow).FontMetricRounding(FontMetricRounding.WholePixels))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
 
     [Theory]
     [MemberData(nameof(ChromiumStrips))]
@@ -124,22 +137,66 @@ public class RowPartTests
     {
         // EmptyRowParts.Allow, Chromium's policy: the row is cut wherever its cells can break, also where a part shows
         // nothing. With Chromium's whole-pixel font metrics too (FontMetricRounding.WholePixels: Lato 12 pt makes 19 px
-        // lines, 14.25 pt, where the exact metrics give 14.4 pt), the engine prints the same pages and words as Chromium,
-        // and its grid lines where Chromium's are. What is compared for the lines: the top of every horizontal grid line,
-        // page by page. Chromium paints a grid line at a whole pixel, the engine where layout puts it (the centre of a
-        // 0.75 pt line can fall on a third of a pixel); so the engine's tops rounded to whole pixels must be Chromium's,
-        // and before rounding they may differ by no more than 0.25 pt, the largest difference these cases show (pinned).
+        // lines), the engine prints the same pages and words as Chromium, and the cut leaves the same part of a row that
+        // shows nothing.
         var document = Document([.. StripBody(caseName)], Area, title: "Title", language: "en").FontFamily("Lato")
             .EmptyRowParts(EmptyRowParts.Allow).FontMetricRounding(FontMetricRounding.WholePixels);
-        var engine = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
-        var chromium = PrintedPages.Chromium(caseName);
+        var engine = PrintAllowed(StripBody(caseName));
 
         engine.IsSuccess.Should().BeTrue(engine.IsFailure ? engine.Error.ToString() : string.Empty);
-        engine.Value.PageTexts.Should().Equal(chromium.PageTexts);
-        var (ours, theirs) = (HorizontalLines(engine.Value), HorizontalLines(chromium));
-        ours.Select(page => page.Select(WholePixel).ToList()).Should().BeEquivalentTo(theirs, options => options.WithStrictOrdering());
-        ours.Zip(theirs).SelectMany(pages => pages.First.Zip(pages.Second, (a, b) => Math.Abs(a - b))).Max().Should().BeLessThanOrEqualTo(0.25 + 1e-9);
+        engine.Value.PageTexts.Should().Equal(PrintedPages.Chromium(caseName).PageTexts);
         RowParts.EmptyStrips(Paginate(document).Value).Should().NotBeEmpty("Chromium's cut leaves a part of a row that shows nothing");
+    }
+
+    [Theory]
+    [MemberData(nameof(WholePixelStrips))]
+    public void Where_every_length_is_whole_pixels_the_grid_lines_are_where_Chromium_paints_them(string caseName)
+    {
+        // The top of every horizontal grid line, page by page, within 0.1 pt and without rounding: every length in these
+        // cases (page, margins, 19 px lines, 12 px blocks, 1 px grid lines) is a whole number of pixels, so Chromium's
+        // painting at whole pixels moves nothing.
+        var engine = PrintAllowed(StripBody(caseName)).Value;
+        var (ours, theirs) = (HorizontalLines(engine), HorizontalLines(PrintedPages.Chromium(caseName)));
+
+        ours.Select(page => page.Count).Should().Equal(theirs.Select(page => page.Count));
+        ours.Zip(theirs).Should().AllSatisfy(pages => pages.First.Zip(pages.Second).Should().AllSatisfy(pair => pair.First.Should().BeApproximately(pair.Second, 0.1)));
+    }
+
+    [Fact]
+    public void Where_lengths_are_not_whole_pixels_Chromium_paints_grid_lines_up_to_half_a_pixel_from_where_layout_puts_them()
+    {
+        // A difference, pinned: Chromium paints a grid line at a whole pixel, the engine where layout puts it. A cell over two
+        // rows beside fourteen 10 pt blocks (13.33 px; case a2-rowspan-blocks): the same pages and words, and the line
+        // between the two spanned rows is at 168.5 pt in the engine, at 168 pt in Chromium: 0.5 pt, the largest difference
+        // measured (0.25 pt in a2-padded-blocks and a3-mirror).
+        Element[] Blocks() => [.. Enumerable.Range(0, 14).Select(_ => (Element)Block([]).PaddingTop(5.Pt()).PaddingBottom(5.Pt()))];
+        var body = Table(Columns(Fill(1), Fill(1)), [TableRow([Cell("before"), Cell("b")]), TableRow([Cell("s").RowSpan(2), Cell([.. Blocks()])]), TableRow([Cell([.. Blocks()])]), TableRow([Cell("after"), Cell("a")])])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+        var result = DocumentTranslator.ToModel(Document([body], Area, title: "Title", language: "en").FontFamily("Lato").LineHeight(15.Pt()).EmptyRowParts(EmptyRowParts.Allow))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
+        var chromium = PrintedPages.Chromium("a2-rowspan-blocks");
+
+        result.Value.PageTexts.Should().Equal(chromium.PageTexts);
+        var (ours, theirs) = (HorizontalLines(result.Value), HorizontalLines(chromium));
+        ours.Select(page => page.Count).Should().Equal(theirs.Select(page => page.Count));
+        ours.Zip(theirs).SelectMany(pages => pages.First.Zip(pages.Second, (a, b) => Math.Abs(a - b))).Max().Should().BeApproximately(0.5, 1e-9);
+    }
+
+    [Fact]
+    public void At_a_break_between_rows_Chromium_draws_a_one_pixel_line_whole_on_both_pages_where_the_engine_splits_it()
+    {
+        // A difference, pinned (case a2-split-line-1px; .SplitLinesAtBreaks()): the engine draws the upper half of the
+        // 0.75 pt line at the end of page 1 and the lower half at the top of page 2, so page 2's first row starts at the
+        // page area's top. Chromium cannot split a pixel: it draws the whole line on both pages, and page 2's first row
+        // starts 0.375 pt lower (a 3 pt line, four pixels, it does split: cases mf4-line-*).
+        var engine = PrintAllowed(Mirror(133.5, 4.5)).Value;
+        var chromium = PrintedPages.Chromium("a2-split-line-1px");
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1).Min(box => box.Y0).Should().Be(12);
+        chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1 && box.Y0 == 12).Should().AllSatisfy(box => box.Height.Should().Be(0.75));
+        engine.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1 && box.Y0 == 12).Should().AllSatisfy(box => box.Height.Should().BeApproximately(0.375, 1e-9));
+        (chromium.Pages[1].Words[0].Baseline - engine.Pages[1].Words[0].Baseline).Should().BeApproximately(0.375, 1e-9);
     }
 
     /// <summary>The a2-cells-end cases: "intro" with a 99 pt bottom margin, then rows of "t" beside a cell of two 8 pt blocks

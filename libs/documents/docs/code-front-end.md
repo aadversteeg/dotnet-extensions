@@ -129,7 +129,7 @@ properties give the same element in any order, and setting the same property twi
 | `.GridLines(Length, Color)` | tables | a border on every cell that sets none (one shared line between cells) |
 | `.CellPadding(Length)`, `.CellPadding(vertical, horizontal)` | tables | padding of every cell that sets none |
 | `.RepeatLinesAtBreaks()` (the default) | tables | at a page break between rows the page ends with the whole grid line and the next page starts with it again; a row that is cut inside itself ends the page with the whole line below it and goes on under the whole line above it, so the table is closed on both pages, as word processors print tables; modelled on `box-decoration-break: clone` |
-| `.SplitLinesAtBreaks()` | tables | at a page break between rows the grid line is split along its centre, half on each page; a row cut inside itself gets no line at the cut; as browsers print tables (`box-decoration-break: slice`) |
+| `.SplitLinesAtBreaks()` | tables | at a page break between rows the grid line is split along its centre, half on each page; a row cut inside itself gets no line at the cut (`box-decoration-break: slice`). Chromium splits a line of several pixels the same way; a one-pixel line it draws whole on both pages, so its next page starts 0.375 pt lower |
 | `.ColumnSpan(n)`, `.RowSpan(n)` | cells | `colspan`, `rowspan` |
 | `.VerticalAlign(VerticalAlign)` | cells, rows of blocks | `vertical-align`: `Top` (default), `Middle`, `Bottom` |
 | `.Columns(sizes…)` | rows of blocks | one size per item |

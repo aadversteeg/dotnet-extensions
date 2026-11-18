@@ -244,8 +244,7 @@ Each is documented next to its code as well.
   `A_line_height_given_in_Chromium_s_unit_gives_Chromium_s_pages_and_baselines`); a front-end that follows Chromium
   hands the engine its line heights in that unit. The difference that remains: Chromium paints a text baseline at the
   nearest whole pixel while the line keeps its place, so a baseline's ink can lie up to half a pixel (0.375 pt) from
-  the engine's; it never moves a line. Chromium also paints grid lines at whole pixels, up to 0.25 pt from where
-  layout puts them (`RowPartTests`).
+  the engine's; it never moves a line. Chromium also paints grid lines at whole pixels, up to 0.5 pt from where layout puts them (`a2-rowspan-blocks`, `RowPartTests`).
   For `normal` Chromium also takes a font's OS/2 typographic metrics when the font sets USE_TYPO_METRICS, and the
   'hhea' metrics otherwise; the engine always takes 'hhea' (the same values for Lato, not for Theano Didot). At 0.37
   and 0.38 pt (about half a pixel) Chromium's print shows no text at all and gives the lines no height (it floors the
@@ -263,9 +262,12 @@ Each is documented next to its code as well.
   page, with only the half of the grid line below it past the page end, is not cut but moves to the next page whole
   (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: the one step of 42, one pixel apart with and
   without a repeated header row, where this decides; under `Avoid` the cells keep their half line on the page and the
-  row is cut before its last block). The same pages and words, and the grid lines in the same
-  places once Chromium's whole-pixel painting is applied (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror`,
-  with Chromium's 14.25 pt line for `normal`; `RowPartTests`, Fluent). With `Avoid`, the code front-end's default, a
+  row is cut before its last block). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
+  their whole-pixel forms `a2-padded-blocks-px`, `a3-mirror-px`, with `FontMetricRounding.WholePixels`; `RowPartTests`,
+  Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. Chromium paints grid
+  lines at whole pixels, the engine where layout puts them; where lengths are not whole pixels they differ by up to
+  0.5 pt (`a2-rowspan-blocks`, a cell over two rows beside 10 pt blocks; 0.25 pt in `a2-padded-blocks` and
+  `a3-mirror`). Whether the engine paints grid lines at whole pixels is left to the HTML front-end's stage. With `Avoid`, the code front-end's default, a
   cut where a part shows nothing is a last resort: the row moves to the next page whole, and is cut there only where it
   cannot move (at the top of a page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`); where a row
   shows nothing over more than a page this needs a page more than Chromium. Reason for that default: an empty strip of
@@ -334,7 +336,9 @@ Each is documented next to its code as well.
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
-  lower half starting the next (as Chromium 159 draws it); `Clone`, the code front-end's default for tables, ends the
+  lower half starting the next (as Chromium 159 draws a line of several pixels, cases `mf4-line-*`; a one-pixel line
+  Chromium cannot split: it draws it whole on both pages, and the next page's first row starts 0.375 pt lower than in
+  the engine, case `a2-split-line-1px`; a difference, left to the HTML front-end's stage); `Clone`, the code front-end's default for tables, ends the
   page with the whole line and starts the next page with it again (the engine's own rule for collapsed borders,
   modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
   break inside a row, `Slice` draws no line at the cut (a box cut by a break gets no border there); `Clone` closes the
