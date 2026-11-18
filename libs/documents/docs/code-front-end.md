@@ -193,8 +193,8 @@ at most five times; otherwise the error is `Documents.Layout.NotConverging` at t
 ## Layout policies
 
 Where layout has a choice, the document says which one it takes (`Document.Profile`, a `LayoutProfile` of the
-document model). Each policy has a document modifier; the defaults suit reports, the other values print as a browser
-(Chromium) prints:
+document model). Each policy has a document modifier; the defaults suit reports, the other values follow how a
+browser (Chromium) prints, with the differences listed in `docs/architecture.md` (Known limits):
 
 | Modifier | Default | Other value |
 | --- | --- | --- |
@@ -208,9 +208,10 @@ var poster = Document([Image(photo).Alt("The team").Width(18.Cm())], PageSetup.A
     .MonolithicOverflow(MonolithicOverflow.Slice);
 ```
 
-Content in a table cell is sliced the same way when its row starts the page; the row after it starts below the last
-slice (Chromium draws that row over the slice instead). Padding and borders taller than a page are refused under
-either value.
+Content in a table cell is sliced the same way when its row starts the page, also right below a repeated header row;
+the row after it starts below the last slice (Chromium does so in some table shapes and draws that row over the slice
+in others), and the other cells of its row go on beside the slices. Padding and borders taller than a page are
+refused under either value.
 
 ## PDF/A, PDF/UA and attachments
 

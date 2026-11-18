@@ -37,6 +37,8 @@ internal static class InFlowChild
     /// <param name="followsContent">Whether content comes before the child on this page
     /// (<see cref="ConstraintSpace.FollowsContent"/>).</param>
     /// <param name="breakAt">The early break the child must end at, or null (<see cref="ConstraintSpace.BreakAt"/>).</param>
+    /// <param name="isBelowStartInsets">Whether only the top insets of boxes that start the page lie above the child
+    /// (<see cref="ConstraintSpace.IsBelowStartInsets"/>).</param>
     /// <returns>The placement; None when the child has no room on this page; or an error.</returns>
     public static Result<Maybe<Placement>, Error> Place(
         LayoutEnvironment environment,
@@ -48,7 +50,8 @@ internal static class InFlowChild
         BreakToken? resume,
         bool isPageRoot = false,
         bool followsContent = false,
-        EarlyBreak? breakAt = null)
+        EarlyBreak? breakAt = null,
+        bool isBelowStartInsets = false)
     {
         var margin = child.Style.Margin;
         var space = new ConstraintSpace(
@@ -59,6 +62,7 @@ internal static class InFlowChild
         {
             FollowsContent = followsContent,
             BreakAt = breakAt,
+            IsBelowStartInsets = isBelowStartInsets,
         };
 
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch

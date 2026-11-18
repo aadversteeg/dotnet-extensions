@@ -192,9 +192,10 @@ internal static class TablePage
         }
 
         // A last-resort cut (a part of a row that shows nothing, TableBreaks.CutShows) is taken only where the table
-        // cannot move: at the top of a page. Lower on the page the table reports no room, and its parent breaks before it
-        // instead, which leaves no strip of the row behind.
-        if (outcome.Value.HasValue && outcome.Value.Value.Appeal == BreakAppeal.LastResort && !space.IsAtPageStart)
+        // cannot move: at the top of a page, or below nothing but the top insets of boxes that start the page, where a
+        // break before the table would be a last resort as well (ConstraintSpace.IsBelowStartInsets). Lower on the page the
+        // table reports no room, and its parent breaks before it instead, which leaves no strip of the row behind.
+        if (outcome.Value.HasValue && outcome.Value.Value.Appeal == BreakAppeal.LastResort && !space.IsAtPageStart && !space.IsBelowStartInsets)
         {
             return LayoutResult.NothingFits(table.Box, space);
         }

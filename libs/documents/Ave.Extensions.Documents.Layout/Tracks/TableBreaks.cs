@@ -228,7 +228,8 @@ internal static class TableBreaks
             var firstOnPage = table.IsAtPageStart && cell.StartRow <= segment.FirstRow;
             var startsPage = firstOnPage && content.Rows.IsEmpty;
             var belowHeader = firstOnPage && table.SlicesBelowHeader && content.Rows.All(placed => placed.IsRepeated);
-            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance, startsPage, belowHeader);
+            var belowStartInsets = table.IsBelowStartInsets && cell.StartRow <= segment.FirstRow && content.Rows.IsEmpty;
+            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance, startsPage, belowHeader, belowStartInsets);
             if (sliced.IsFailure)
             {
                 return Result<Maybe<Outcome>, Error>.Failure(sliced.Error);

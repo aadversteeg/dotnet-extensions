@@ -36,4 +36,16 @@ public sealed record ConstraintSpace(
     /// breaks there, with the breakpoint's appeal; it looks for no other break.
     /// </summary>
     public EarlyBreak? BreakAt { get; init; }
+
+    /// <summary>
+    /// True when <see cref="IsAtPageStart"/> is false only because of the top padding and borders of boxes around this
+    /// one that start the page (a table cell's half of the grid line above it is such an inset): nothing else lies above
+    /// the box on this page. A break before the box would then leave only those insets on the page, which is a last
+    /// resort too, so a last-resort break inside the box is taken instead: it is as good, and it lies deeper, where
+    /// Chromium breaks when no breakpoint is valid (case <c>a4-image-nested-table</c>: the content of a table in a table
+    /// cell goes on on the next page, inside both tables). Set only under <c>MonolithicOverflow.Slice</c>, where it lets the
+    /// slice of such content start at the top of the next page; under the default profile a break before the box keeps
+    /// its own strip of insets and leaves no empty part of a table row (<c>EmptyRowParts.Avoid</c>).
+    /// </summary>
+    public bool IsBelowStartInsets { get; init; }
 }

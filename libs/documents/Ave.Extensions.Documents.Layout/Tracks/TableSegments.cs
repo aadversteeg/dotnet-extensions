@@ -61,7 +61,7 @@ internal static class TableSegments
     /// reopened cell is: its content starts the page, so content taller than the page area is sliced from right below
     /// that line, where a whole cell's content starts.</remarks>
     internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal), Error> Slice(
-        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool startsPage = false, bool belowHeader = false)
+        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool startsPage = false, bool belowHeader = false, bool belowStartInsets = false)
     {
         var info = table.Grid.Cells[cell.Cell];
         var lineAbove = belowHeader && cell.Token is null;
@@ -74,7 +74,10 @@ internal static class TableSegments
 
         var inset = ReopenedInset(table, segment, cell) + (lineAbove ? LineAboveInside(table, segment, cell) : 0);
         Result<LayoutResult, Error> LayOutIn(double height) =>
-            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: startsPage || belowHeader, IsNewFormattingContext: true), cell.Token);
+            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: startsPage || belowHeader, IsNewFormattingContext: true)
+            {
+                IsBelowStartInsets = belowStartInsets && !(startsPage || belowHeader),
+            }, cell.Token);
         return LayOutIn(sliceHeight)
             .OnSuccessBind(whole => clearance <= 0 || whole is LayoutResult.Placed { Continuation: null } ? Result<LayoutResult, Error>.Success(whole) : LayOutIn(sliceHeight - clearance))
             .OnSuccessMap(result => result switch

@@ -208,6 +208,10 @@ public static class FlowLayout
         Breakpoint? best = null;
         var leadingMarginsTakeNoSpace = LeadingMarginsTakeNoSpace(box, space, incoming, resume, children);
         var contentIsAtPageStart = SlicedBox.ContentIsAtPageStart(box.Style, space, incoming);
+        // Only where content taller than the page area is sliced: there the deepest last resort keeps the content's boxes
+        // going on, so the slice starts at the top of the next page (ConstraintSpace.IsBelowStartInsets).
+        var contentIsBelowStartInsets = environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice
+            && !contentIsAtPageStart && (space.IsAtPageStart || space.IsBelowStartInsets);
         for (var index = resume.ChildIndex; index < children.Length; index++)
         {
             var child = children[index];
@@ -246,7 +250,8 @@ public static class FlowLayout
             var followsContent = space.FollowsContent || hasContent;
             var inside = breakAt is { Inside: { } target } && breakAt.ChildIndex == index ? target : null;
             var outcome = InFlowChild.Place(
-                environment, child, contentWidth, top, contentHeight, childIsAtPageStart, childResume, followsContent: followsContent, breakAt: inside);
+                environment, child, contentWidth, top, contentHeight, childIsAtPageStart, childResume, followsContent: followsContent, breakAt: inside,
+                isBelowStartInsets: contentIsBelowStartInsets && !(top > 0));
             if (outcome.IsFailure)
             {
                 return Result<Maybe<Stacked>, Error>.Failure(outcome.Error);
