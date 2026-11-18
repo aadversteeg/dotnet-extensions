@@ -449,6 +449,9 @@ CI runs them on `main` only, in the three .NET 10 modes below, with the reposito
 `AZURE_STORAGE_ACCOUNT_NAME` and `AZURE_STORAGE_ACCOUNT_KEY`. That job fails when a secret is missing or a test is
 skipped. A pull request does not run them and never gets the account key.
 
+A release of `Ave.Extensions.FileSystem.AzureFileStorage` runs them too, on the release-mode build and in the file
+share `integration-tests-release` (see `docs/RELEASING.md`).
+
 ### Supported runtimes
 
 The packages target `netstandard2.0` and `net10.0`. `Ave.Extensions.FileSystem.InMemory` and

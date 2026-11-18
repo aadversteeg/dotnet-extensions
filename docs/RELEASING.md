@@ -65,6 +65,8 @@ The workflow starts when a tag `*/*` is pushed. It has three jobs.
      target frameworks, the minimum versions of our own packages it depends on, and its test projects;
    - builds the package in release mode, runs its test projects in release mode (head mode for the two projects
      above), leaving out the tests with the trait `Category=Network`;
+   - for `Ave.Extensions.FileSystem.AzureFileStorage` only: runs its integration tests against a real Azure
+     storage account on the release-mode build (see "The Azure integration tests in a release" below);
    - packs it from a clean tree in release mode with the version from the tag;
    - verifies the package (`eng/PackageCheck`): file name, id, version, one dependency group per target
      framework, the dependencies on our own packages at exactly their minimum versions, no development version,
@@ -78,6 +80,21 @@ The workflow starts when a tag `*/*` is pushed. It has three jobs.
 
 The GitHub release comes last on purpose. Until the approval is given and the package is on nuget.org, only the tag
 exists: there is no GitHub release for a version that is not on nuget.org.
+
+### The Azure integration tests in a release
+
+A release of `Ave.Extensions.FileSystem.AzureFileStorage` (tag `file-system-azure-file-storage/<version>`) also runs
+`IntegrationTests.AzureFileStorage` against a real Azure storage account, as the CI job "Azure integration tests"
+does on `main`. The difference is what is tested: CI tests the head build in three modes, the release tests the
+release-mode build, which is what goes into the package.
+
+- The build job fails when a repository secret (`AZURE_STORAGE_ACCOUNT_NAME`, `AZURE_STORAGE_ACCOUNT_KEY`) is
+  missing, when a test fails or when a test is skipped. Then nothing is published.
+- Only the steps that run these tests get the secrets, and only for this package. The publish job never gets them.
+- The tests empty the file share they use. A release uses the share `integration-tests-release`, CI uses
+  `integration-tests`, so a release and a CI run on `main` can run at the same time. The tests create the share
+  when it does not exist.
+- A release of any other package does not run these tests and gets no secret.
 
 What to do when a job fails:
 
