@@ -4,19 +4,20 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
-using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
-namespace Ave.Extensions.Documents.Render.Pdf;
+namespace Ave.Extensions.Documents.PageModel;
 
 /// <summary>
-/// The contract a page model must meet before the back-end writes it, whatever the profile. The back-end is a public
-/// library and other producers than this engine's layout may hand it a page model, so it checks everything it is
-/// given and answers with an error value: no input value may make it throw, or allocate without a bound, or write a
-/// file no reader can open. What a profile requires on top is checked by <see cref="ConformanceRules"/>.
+/// The contract a page model must meet before a back-end draws it, whoever produced it. The back-ends (PDF, raster)
+/// are public libraries and other producers than this engine's layout may hand them a page model, so each checks
+/// everything it is given with these rules and answers with an error value: no input value may make it throw, or
+/// allocate without a bound, or write a file no reader can open. One rule set for every back-end, so a page model one
+/// back-end accepts the other accepts too; each back-end reports a breach under its own error code (the caller says
+/// which), because the refusal is that back-end's. What a PDF profile requires on top is checked by the PDF back-end.
 /// </summary>
-internal static class PageModelRules
+public static class PageModelRules
 {
     /// <summary>
     /// Checks the page model and reports every breach together (<c>Documents.Pdf.Write.InvalidPageModel</c>):
@@ -28,6 +29,7 @@ internal static class PageModelRules
     /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
     /// the one before it, as the later glyphs of a one-to-many substitution do); every font size is a positive finite
     /// number;</item>
+    /// <item>every position and size of a glyph run, a filled rectangle and an image is a finite number;</item>
     /// <item>every artifact kind and attachment relationship is a value of its enum;</item>
     /// <item>a table cell spans at least one column and one row, and no more than the table model allows
     /// (<see cref="TableSlots.MaxColumnSpan"/>, <see cref="TableSlots.MaxRowSpan"/>), so no grid is ever sized by one
@@ -39,31 +41,50 @@ internal static class PageModelRules
     /// </list>
     /// </summary>
     /// <param name="document">The page document.</param>
+    /// <param name="code">The error code the back-end reports a breach with.</param>
     /// <returns>The document unchanged, or the breaches.</returns>
-    public static Result<PageDocument, Error> Check(PageDocument document)
+    public static Result<PageDocument, Error> Check(PageDocument document, ErrorCode code)
     {
-        var problems = Problems(document).ToList();
+        var problems = Problems(document, code).ToList();
         return problems.Count == 0
             ? Result<PageDocument, Error>.Success(document)
             : Result<PageDocument, Error>.Failure(Errors.Aggregate(problems));
     }
 
-    private static IEnumerable<Error> Problems(PageDocument? document)
+    /// <summary>
+    /// Checks one page on its own, by the rules that concern one page (all of <see cref="Check(PageDocument, ErrorCode)"/>
+    /// except those across pages: one role per node, the parts of a table, the attachments), for a back-end that draws a
+    /// single page. Messages call it page 1.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <param name="code">The error code the back-end reports a breach with.</param>
+    /// <returns>The page unchanged, or the breaches.</returns>
+    public static Result<Page, Error> Check(Page page, ErrorCode code)
+    {
+        var problems = page is null
+            ? [Invalid(code, "There is no page.", "null")]
+            : SizeProblems(page, 1, code).Concat(ItemProblems(page, 1, code)).Concat(StructureNesting.Problems(page, 1, code)).ToList();
+        return problems.Count == 0
+            ? Result<Page, Error>.Success(page!)
+            : Result<Page, Error>.Failure(Errors.Aggregate(problems));
+    }
+
+    private static IEnumerable<Error> Problems(PageDocument? document, ErrorCode code)
     {
         if (document is null)
         {
-            yield return Invalid("There is no page document.", "null");
+            yield return Invalid(code, "There is no page document.", "null");
             yield break;
         }
 
         if (document.Metadata is null)
         {
-            yield return Invalid("The page document has no metadata.", "metadata");
+            yield return Invalid(code, "The page document has no metadata.", "metadata");
         }
 
         if (document.Pages.Count == 0)
         {
-            yield return Invalid("The document has no pages; a PDF needs at least one.", "0 pages");
+            yield return Invalid(code, "The document has no pages; a back-end needs at least one to draw.", "0 pages");
         }
 
         var roles = new Dictionary<NodeId, SemanticRole>();
@@ -71,106 +92,113 @@ internal static class PageModelRules
         {
             var page = document.Pages[index];
             var problems = page is null
-                ? [Invalid($"Page {index + 1} is missing.", Number(index + 1))]
-                : SizeProblems(page, index + 1).Concat(ItemProblems(page, index + 1)).Concat(StructureNesting.Problems(page, index + 1)).Concat(RoleProblems(page, index + 1, roles));
+                ? [Invalid(code, $"Page {index + 1} is missing.", Number(index + 1))]
+                : SizeProblems(page, index + 1, code).Concat(ItemProblems(page, index + 1, code)).Concat(StructureNesting.Problems(page, index + 1, code)).Concat(RoleProblems(page, index + 1, roles, code));
             foreach (var problem in problems)
             {
                 yield return problem;
             }
         }
 
-        foreach (var problem in StructureNesting.TableParts(document.Pages))
+        foreach (var problem in StructureNesting.TableParts(document.Pages, code))
         {
             yield return problem;
         }
 
-        foreach (var problem in AttachmentProblems(document.Metadata?.Attachments ?? []))
+        foreach (var problem in AttachmentProblems(document.Metadata?.Attachments ?? [], code))
         {
             yield return problem;
         }
     }
 
-    /// <summary>The smallest page side in every profile: the smallest length the writer writes as more than 0, since it
-    /// writes <see cref="Ave.Extensions.Documents.Pdf.PdfSerializer.RealDecimals"/> decimals; a smaller side would make a /MediaBox without area. The
-    /// PDF/A profiles require 3 units (<see cref="ProfileLimits.MinPageSide"/>).</summary>
+    /// <summary>The smallest page side: 0.0001 pt, the smallest length the page model's text form and the PDF writer
+    /// keep as more than 0 (they write 4 decimals); a smaller side would be a page without area there. A PDF/A profile
+    /// requires 3 units.</summary>
     public const double MinPageSide = 0.0001;
 
-    /// <summary>A page is a rectangle of finite width and height, each at least <see cref="MinPageSide"/>: its /MediaBox
-    /// (ISO 32000-1 §14.11.2). A page of no area shows nothing; the PDF/A profiles narrow the sides further
-    /// (<see cref="ProfileLimits"/>).</summary>
-    private static IEnumerable<Error> SizeProblems(Page page, int number) =>
+    /// <summary>A page is a rectangle of finite width and height, each at least <see cref="MinPageSide"/> (in PDF its
+    /// /MediaBox, ISO 32000-1 §14.11.2). A page of no area shows nothing.</summary>
+    private static IEnumerable<Error> SizeProblems(Page page, int number, ErrorCode code) =>
         page.Size is { Width: >= MinPageSide and < double.PositiveInfinity, Height: >= MinPageSide and < double.PositiveInfinity }
             ? []
-            : [Invalid($"Page {number} is {Number(page.Size.Width)} x {Number(page.Size.Height)}; a page has a finite width and height of at least {Number(MinPageSide)}.", $"{Number(page.Size.Width)}x{Number(page.Size.Height)}")];
+            : [Invalid(code, $"Page {number} is {Number(page.Size.Width)} x {Number(page.Size.Height)}; a page has a finite width and height of at least {Number(MinPageSide)}.", $"{Number(page.Size.Width)}x{Number(page.Size.Height)}")];
 
     private static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
 
-    private static IEnumerable<Error> ItemProblems(Page page, int number) =>
-        page.Items.Select((item, index) => ItemProblem(item, index, number)).OfType<Error>();
+    private static IEnumerable<Error> ItemProblems(Page page, int number, ErrorCode code) =>
+        page.Items.Select((item, index) => ItemProblem(item, index, number, code)).OfType<Error>();
 
-    private static Error? ItemProblem(DrawItem? item, int index, int number) => item switch
+    private static Error? ItemProblem(DrawItem? item, int index, int number, ErrorCode code) => item switch
     {
-        null => Invalid($"Item {index + 1} of page {number} is missing.", Number(number)),
-        GlyphRun { Font: null } => Invalid($"A glyph run on page {number} has no font.", Number(number)),
+        null => Invalid(code, $"Item {index + 1} of page {number} is missing.", Number(number)),
+        GlyphRun { Font: null } => Invalid(code, $"A glyph run on page {number} has no font.", Number(number)),
         GlyphRun run when !(double.IsFinite(run.FontSize) && run.FontSize > 0) =>
-            Invalid($"A glyph run on page {number} has the font size {run.FontSize}; it must be a positive number.", run.FontSize.ToString(CultureInfo.InvariantCulture)),
-        GlyphRun run when run.Glyphs.Any(glyph => glyph is null) => Invalid($"A glyph run on page {number} has a missing glyph.", Number(number)),
+            Invalid(code, $"A glyph run on page {number} has the font size {run.FontSize}; it must be a positive number.", run.FontSize.ToString(CultureInfo.InvariantCulture)),
+        GlyphRun run when run.Glyphs.Any(glyph => glyph is null) => Invalid(code, $"A glyph run on page {number} has a missing glyph.", Number(number)),
         GlyphRun run when run.Glyphs.FirstOrDefault(glyph => glyph.Glyph.Value >= run.Font.GlyphCount) is { } glyph =>
-            Invalid($"Page {number} draws glyph {glyph.Glyph.Value} of font '{run.Font.Names.PostScriptName}', which has {run.Font.GlyphCount} glyphs.", glyph.Glyph.Value.ToString(CultureInfo.InvariantCulture)),
+            Invalid(code, $"Page {number} draws glyph {glyph.Glyph.Value} of font '{run.Font.Names.PostScriptName}', which has {run.Font.GlyphCount} glyphs.", glyph.Glyph.Value.ToString(CultureInfo.InvariantCulture)),
         GlyphRun run when run.Glyphs.Any(glyph => glyph.Text is null) =>
-            Invalid($"A glyph on page {number} has no text; every shown glyph needs one for its ToUnicode entry (empty for a glyph that continues the text of the glyph before it).", Number(number)),
-        DrawImage { Image: null } => Invalid($"An image on page {number} has no image data.", Number(number)),
-        StructureStart { Role: null } start => Invalid($"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
+            Invalid(code, $"A glyph on page {number} has no text; every shown glyph needs one for its ToUnicode entry (empty for a glyph that continues the text of the glyph before it).", Number(number)),
+        DrawImage { Image: null } => Invalid(code, $"An image on page {number} has no image data.", Number(number)),
+        StructureStart { Role: null } start => Invalid(code, $"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
         StructureStart start when !TableSlots.IsValidSpan(start.Span) =>
-            Invalid($"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
+            Invalid(code, $"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
+        GlyphRun run when !IsFinite(run.Origin) || run.Glyphs.Any(glyph => !double.IsFinite(glyph.X) || !double.IsFinite(glyph.Y)) =>
+            Invalid(code, $"A glyph run on page {number} has a position that is not a finite number.", $"{run.Origin}"),
+        FillRectangle fill when !IsFinite(fill.Area) => Invalid(code, $"A filled rectangle on page {number} has a position or size that is not a finite number.", $"{fill.Area}"),
+        DrawImage image when !IsFinite(image.Area) => Invalid(code, $"An image on page {number} has a position or size that is not a finite number.", $"{image.Area}"),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
-            Invalid($"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
+            Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
         _ => null,
     };
 
+    private static bool IsFinite(Point point) => double.IsFinite(point.X) && double.IsFinite(point.Y);
+
+    private static bool IsFinite(Rect area) => IsFinite(area.Origin) && double.IsFinite(area.Size.Width) && double.IsFinite(area.Size.Height);
+
     /// <summary>A node is the same node on every page: the structure tree has one element for it, with one type.</summary>
-    private static IEnumerable<Error> RoleProblems(Page page, int number, Dictionary<NodeId, SemanticRole> roles)
+    private static IEnumerable<Error> RoleProblems(Page page, int number, Dictionary<NodeId, SemanticRole> roles, ErrorCode code)
     {
         foreach (var start in page.Items.OfType<StructureStart>().Where(start => start.Role is not null))
         {
             if (roles.TryGetValue(start.Node, out var role) && role != start.Role)
             {
-                yield return Invalid($"Node {start.Node} has the role {role} and, on page {number}, {start.Role}; a node has one role.", start.Node.ToString()).WithSource(start.Source);
+                yield return Invalid(code, $"Node {start.Node} has the role {role} and, on page {number}, {start.Role}; a node has one role.", start.Node.ToString()).WithSource(start.Source);
             }
 
             roles.TryAdd(start.Node, start.Role);
         }
     }
 
-    private static IEnumerable<Error> AttachmentProblems(ValueList<Attachment> attachments)
+    private static IEnumerable<Error> AttachmentProblems(ValueList<Attachment> attachments, ErrorCode code)
     {
         foreach (var attachment in attachments)
         {
             if (attachment is null)
             {
-                yield return Invalid("An attachment is missing.", "attachment");
+                yield return Invalid(code, "An attachment is missing.", "attachment");
                 continue;
             }
 
             if (string.IsNullOrWhiteSpace(attachment.FileName))
             {
-                yield return Invalid("An attachment has no file name; the file specification needs one (veraPDF rule 7.11-1: \"non-empty F and UF keys\").", attachment.FileName ?? "null").WithSource(attachment.Source);
+                yield return Invalid(code, "An attachment has no file name; the file specification needs one (veraPDF rule 7.11-1: \"non-empty F and UF keys\").", attachment.FileName ?? "null").WithSource(attachment.Source);
             }
 
             if (string.IsNullOrWhiteSpace(attachment.MediaType))
             {
-                yield return Invalid($"Attachment '{attachment.FileName}' has no media type.", attachment.MediaType ?? "null").WithSource(attachment.Source);
+                yield return Invalid(code, $"Attachment '{attachment.FileName}' has no media type.", attachment.MediaType ?? "null").WithSource(attachment.Source);
             }
 
             if (attachment.Relationship is { } relationship && !Enum.IsDefined(relationship))
             {
-                yield return Invalid($"Attachment '{attachment.FileName}' has the relationship {(int)relationship}, which is not a relationship.", ((int)relationship).ToString(CultureInfo.InvariantCulture)).WithSource(attachment.Source);
+                yield return Invalid(code, $"Attachment '{attachment.FileName}' has the relationship {(int)relationship}, which is not a relationship.", ((int)relationship).ToString(CultureInfo.InvariantCulture)).WithSource(attachment.Source);
             }
         }
 
         foreach (var duplicate in attachments.Where(attachment => attachment?.FileName is not null).GroupBy(attachment => attachment.FileName).Where(group => group.Count() > 1))
         {
-            yield return Invalid($"Two attachments have the file name '{duplicate.Key}'; a name can be embedded once.", duplicate.Key)
+            yield return Invalid(code, $"Two attachments have the file name '{duplicate.Key}'; a name can be embedded once.", duplicate.Key)
                 .WithSource(duplicate.Last().Source);
         }
     }
@@ -180,9 +208,10 @@ internal static class PageModelRules
     /// <summary>A breach of the page-model contract.</summary>
     /// <param name="message">What is wrong, in words about the page model.</param>
     /// <param name="value">The offending value.</param>
+    /// <param name="code">The back-end's error code.</param>
     /// <returns>The error.</returns>
-    internal static Error Invalid(string message, string value) =>
-        new Error(PdfRenderErrorCodes.Write.InvalidPageModel, message).With(ErrorMetadataKeys.Value, value);
+    internal static Error Invalid(ErrorCode code, string message, string value) =>
+        new Error(code, message).With(ErrorMetadataKeys.Value, value);
 }
 
 /// <summary>
@@ -217,8 +246,9 @@ internal static class StructureNesting
     /// <summary>Every structure start on the page whose parent or own type breaks the table rules.</summary>
     /// <param name="page">The page.</param>
     /// <param name="number">Its page number.</param>
+    /// <param name="code">The back-end's error code.</param>
     /// <returns>The breaches.</returns>
-    public static IEnumerable<Error> Problems(Page page, int number)
+    public static IEnumerable<Error> Problems(Page page, int number, ErrorCode code)
     {
         var open = new Stack<string?>();
         foreach (var item in page.Items)
@@ -229,7 +259,7 @@ internal static class StructureNesting
                 var parent = open.FirstOrDefault(candidate => candidate is not null);
                 if (type is not null && Breach(type, parent) is { } reason)
                 {
-                    yield return PageModelRules.Invalid($"Node {start.Node} on page {number} is a {type} {reason}.", type).WithSource(start.Source);
+                    yield return PageModelRules.Invalid(code, $"Node {start.Node} on page {number} is a {type} {reason}.", type).WithSource(start.Source);
                 }
 
                 open.Push(type);
@@ -251,8 +281,9 @@ internal static class StructureNesting
     /// rule (PDF/UA-1, rule 7.2-14). Linear in the number of structure markers, whatever their shape.
     /// </summary>
     /// <param name="pages">The pages; missing pages are reported elsewhere and skipped here.</param>
+    /// <param name="code">The back-end's error code.</param>
     /// <returns>One breach per table that has one.</returns>
-    public static IEnumerable<Error> TableParts(IEnumerable<Page?> pages)
+    public static IEnumerable<Error> TableParts(IEnumerable<Page?> pages, ErrorCode code)
     {
         var kids = new Dictionary<NodeId, List<(string Type, SourceLocation Source)>>();
         var seen = new HashSet<(NodeId Table, NodeId Kid)>();
@@ -280,11 +311,11 @@ internal static class StructureNesting
             }
         }
 
-        return kids.Select(table => PartsBreach(table.Key, table.Value)).OfType<Error>();
+        return kids.Select(table => PartsBreach(table.Key, table.Value, code)).OfType<Error>();
     }
 
     /// <summary>The first way a table's kids, in order, break the rule of <see cref="TableParts"/>, or null.</summary>
-    private static Error? PartsBreach(NodeId table, List<(string Type, SourceLocation Source)> kids)
+    private static Error? PartsBreach(NodeId table, List<(string Type, SourceLocation Source)> kids, ErrorCode code)
     {
         var types = kids.Select(kid => kid.Type).ToList();
         var reason =
@@ -294,7 +325,7 @@ internal static class StructureNesting
             : null;
         return reason is null
             ? null
-            : PageModelRules.Invalid($"Table node {table} {reason} (ISO 32000-1 Table 337).", string.Join(",", types)).WithSource(kids[0].Source);
+            : PageModelRules.Invalid(code, $"Table node {table} {reason} (ISO 32000-1 Table 337).", string.Join(",", types)).WithSource(kids[0].Source);
     }
 
     private static string? Breach(string type, string? parent) =>
