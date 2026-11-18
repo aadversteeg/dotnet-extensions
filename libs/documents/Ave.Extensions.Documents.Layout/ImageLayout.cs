@@ -29,7 +29,7 @@ public static class ImageLayout
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming) =>
         incoming is not (null or ImageBreakToken)
             ? throw new ArgumentException($"Image received a {incoming.GetType().Name} it did not produce.", nameof(incoming))
-            : TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, ImageBreakToken.Instance, (width, height) =>
+            : TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, ImageBreakToken.Instance, (width, height, _) =>
         {
             var size = UsedSize(image, width);
             return Fitting.Fits(size.Height, height)

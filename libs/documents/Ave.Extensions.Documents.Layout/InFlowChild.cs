@@ -16,7 +16,8 @@ internal static class InFlowChild
     /// <param name="Fragment">The child's fragment, positioned in the container's content area.</param>
     /// <param name="Continuation">Where the child resumes on the next page, or null when it is complete.</param>
     /// <param name="Appeal">How good the break inside the child is (see <see cref="LayoutResult.Placed"/>).</param>
-    public sealed record Placement(PlacedFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal);
+    /// <param name="BestBreak">For a complete child, the best breakpoint inside it (see <see cref="LayoutResult.Placed.BestBreak"/>).</param>
+    public sealed record Placement(PlacedFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal, EarlyBreak? BestBreak = null);
 
     /// <summary>Lays out <paramref name="child"/> with the top of its BORDER box at <paramref name="top"/>.</summary>
     /// <remarks>
@@ -35,6 +36,7 @@ internal static class InFlowChild
     /// context (see <see cref="ConstraintSpace.IsNewFormattingContext"/>).</param>
     /// <param name="followsContent">Whether content comes before the child on this page
     /// (<see cref="ConstraintSpace.FollowsContent"/>).</param>
+    /// <param name="breakAt">The early break the child must end at, or null (<see cref="ConstraintSpace.BreakAt"/>).</param>
     /// <returns>The placement; None when the child has no room on this page; or an error.</returns>
     public static Result<Maybe<Placement>, Error> Place(
         LayoutEnvironment environment,
@@ -45,7 +47,8 @@ internal static class InFlowChild
         bool isAtPageStart,
         BreakToken? resume,
         bool isPageRoot = false,
-        bool followsContent = false)
+        bool followsContent = false,
+        EarlyBreak? breakAt = null)
     {
         var margin = child.Style.Margin;
         var space = new ConstraintSpace(
@@ -55,12 +58,13 @@ internal static class InFlowChild
             IsNewFormattingContext: isPageRoot)
         {
             FollowsContent = followsContent,
+            BreakAt = breakAt,
         };
 
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch
         {
             LayoutResult.Placed placed => Maybe.From(new Placement(
-                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation, placed.Appeal)),
+                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation, placed.Appeal, placed.BestBreak)),
             _ => Maybe<Placement>.None,
         });
     }

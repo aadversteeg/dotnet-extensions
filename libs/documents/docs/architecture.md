@@ -84,6 +84,7 @@ the three places to open, with that front-end as their first user.
 | cascade and inheritance, user-agent styles | `Fluent/DocumentTranslator.cs`, `Cascade.cs`, `UserAgentStyles.cs` | CSS Cascade 4 §4, §6.1, §7.2; HTML rendering (heading sizes) |
 | input validation | `Fluent/InputChecks.cs` | one function per rule, each cites its source |
 | block flow, keep rules, break choice | `Layout/FlowLayout.cs`, `BreakAvoidance.cs`, `ForcedBreaks.cs` | CSS 2.1 §9.4.1, CSS Fragmentation 3 §3–§4 |
+| early breaks: a keep rule that reaches back into an earlier box's content; a box whose bottom padding does not fit breaks at its best inner breakpoint | `Layout/EarlyBreak.cs`, `FlowLayout.cs`, `InlineLayout.cs`, `Tracks/TablePage.cs`, `SlicedBox.cs` | CSS Fragmentation 3 §4.4, §4.5; checked against Chromium's print |
 | where a page starts: a box that does not fit below margins, empty boxes or padding moves on; only content that starts the page is refused; the last-resort break | `Layout/ConstraintSpace.cs` (`IsAtPageStart`), `FlowLayout.cs`, `SlicedBox.cs`, `BreakAppeal.cs` (`LastResort`) | CSS Fragmentation 3 §4.1, §4.4, §5.2; checked against Chromium's print |
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
@@ -190,7 +191,8 @@ Each is documented next to its code as well.
 - **Layout:** negative margins (refused as unsupported); orphans and widows; the `line-height` property and the strut
   (a line is always `line-height: normal`, which is why the timesheet tunes cell padding); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
-  borders; a keep rule never moves a break into an earlier sibling's content; padding that does not fit at the top of
+  borders; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut
+  depends on where the page ends, so a table offers no early break there); padding that does not fit at the top of
   an empty page overflows; a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
@@ -199,10 +201,6 @@ Each is documented next to its code as well.
   that fits in Chromium by less than that share of its text width can break one word earlier in the engine. The
   engine keeps the font's exact advances; the reference cases that pin lengths use sizes Chromium keeps exact
   (`tools/reference/chromium/README.md`, "Where Chromium is not exact").
-- **Two older first-on-page cases (review 36, notes):** a block with padding that is first on a page and holds a
-  piece that cannot be broken, between "page area minus both paddings" and "page area minus the top padding" high, is
-  refused; lower on the page the same block is placed and broken. A paragraph kept together that is first on a page
-  inside a padded block is broken, although it would fit the next page. Both were so before fix round 5.
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
@@ -320,5 +318,9 @@ Three ideas come from other engines, studied through their public documents, not
 a pure function of a box, a constraint space (the space the box may use on the current page) and an incoming break
 token, returning a fragment and an outgoing break token, plus a second function for the intrinsic widths
 (`MinMax`) — follows Chromium's LayoutNG. Choosing among breakpoints by their appeal, and among the best the latest,
-follows Chromium's `BreakAppeal`; CSS Fragmentation 3 §4.5 leaves that choice to the user agent. The page-count
+follows Chromium's `BreakAppeal` (`third_party/blink/renderer/core/layout/break_appeal.h`, read for its order of
+appeals and its last resort, "not a valid class A, B or C breakpoint"); CSS Fragmentation 3 §4.5 leaves that choice to
+the user agent. Going back to a better breakpoint inside earlier content by laying it out once more follows Chromium's
+`EarlyBreak` (`early_break.h`: "In cases where we run out of space at an unideal location, we may want to go back and
+break here instead"), with the same bound: one more layout, and no early break while following one. The page-count
 fixpoint is capped at five passes, as Typst caps the same fixpoint.

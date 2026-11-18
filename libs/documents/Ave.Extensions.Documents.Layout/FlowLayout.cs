@@ -32,18 +32,22 @@ public static class FlowLayout
     /// </list>
     /// <para>Keep rules (§3.1 <c>break-before</c>/<c>break-after: avoid</c>, §3.2 <c>break-inside: avoid</c>) give
     /// every breakpoint an appeal (<see cref="BreakAvoidance"/>). Every class-A breakpoint between two children on
-    /// this page is remembered as a candidate — §4.1: "Between sibling boxes", empty boxes included — when a break
+    /// this page is remembered as a candidate, and so is the best breakpoint inside every child placed whole (its
+    /// early break, <see cref="LayoutResult.Placed.BestBreak"/>), in page order between the breakpoints before and after
+    /// that child. A class-A candidate counts — §4.1: "Between sibling boxes", empty boxes included — when a break
     /// there makes progress, which is when the child after it does not start the page
     /// (<see cref="ConstraintSpace.IsAtPageStart"/>): content, empty boxes with their margins, or this box's own top
-    /// padding lie above it; when the natural break of cases 2 and 3 has a LOWER appeal than the
+    /// padding lie above it. When the natural break of cases 2 and 3 has a LOWER appeal than the
     /// best candidate, the page breaks at that candidate instead (the latest one of the highest appeal, the one
     /// that fits the most content, as Chromium chooses; CSS Fragmentation 3 §4.5 leaves the choice to the user agent). The children before a candidate are already laid
-    /// out completely, so breaking there just keeps a prefix of the fragments; nothing is laid out again. When no
+    /// out completely, so breaking before a child just keeps a prefix of the fragments; breaking inside one lays that one
+    /// child out again, where it was, with the early break in its constraint space (<see cref="ConstraintSpace.BreakAt"/>),
+    /// and it breaks exactly there. So a keep rule moves a break into an earlier sibling's content when every break
+    /// between the boxes at the page end is worse, as Chromium does with its early breaks. The bound on the work: a box
+    /// given an early break follows it without looking for another, so on a page each box is laid out at most twice for
+    /// the choice of a break, however deep the early break lies (the second time only on the way to it). When no
     /// better candidate exists, the natural break is taken even though it violates a keep rule — so content that is
     /// kept together but taller than a page still breaks, and pagination always ends.</para>
-    /// <para>LIMIT: candidates are this box's own class-A breakpoints. A keep rule never moves a break into an
-    /// earlier child's content (Chromium can, by laying that child out again with an "early break"); the box's
-    /// parent may still move the whole box, by comparing the appeal this box returns with its own candidates.</para>
     /// <para>When even the FIRST child of this fragment has no room, there is no breakpoint before it: it is not after
     /// a sibling, and nothing but margins separates it from this box's top edge (a class C breakpoint needs a gap there,
     /// §4.1). The box then breaks before it as a last resort (<see cref="BreakAppeal.LastResort"/>), with the empty
@@ -71,8 +75,13 @@ public static class FlowLayout
         };
 
         var children = box.Children.Cast<Box>().ToImmutableArray();
-        return SlicedBox.Layout(box, space, incoming, resume, (width, height) =>
-            StackChildren(environment, box, space, incoming, resume, children, width, height));
+        return SlicedBox.Layout(box, space, incoming, resume, (width, height, breakAt) =>
+            StackChildren(environment, box, space, incoming, resume, children, width, height, breakAt switch
+            {
+                null => null,
+                FlowEarlyBreak flow => flow,
+                _ => throw new ArgumentException($"Flow received a {breakAt.GetType().Name} it did not report.", nameof(space)),
+            }));
     }
 
     /// <summary>
@@ -90,12 +99,28 @@ public static class FlowLayout
                     widths.Select(width => width.MaxContent).DefaultIfEmpty(0).Max())
                 .Plus(SlicedBox.HorizontalInsets(box.Style)));
 
-    /// <summary>A class-A breakpoint before child <see cref="Index"/>: what the page holds if it breaks there.</summary>
-    /// <param name="Index">The child that would start the next page.</param>
-    /// <param name="PlacedCount">How many fragments come before it.</param>
-    /// <param name="Cursor">The bottom of the content before it.</param>
+    /// <summary>
+    /// A breakpoint on this page: before child <see cref="Index"/> (class A), or inside it at the child's own early break
+    /// (<see cref="Inside"/>), which takes laying the child out once more.
+    /// </summary>
+    /// <param name="Index">The child that would start the next page, or that breaks.</param>
+    /// <param name="PlacedCount">How many fragments come before that child.</param>
+    /// <param name="Cursor">The bottom of the content before that child.</param>
     /// <param name="Appeal">The breakpoint's appeal.</param>
-    private sealed record Breakpoint(int Index, int PlacedCount, double Cursor, BreakAppeal Appeal);
+    /// <param name="Inside">For a break inside the child: how the child was placed and its early break.</param>
+    private sealed record Breakpoint(int Index, int PlacedCount, double Cursor, BreakAppeal Appeal, ChildBreak? Inside = null)
+    {
+        /// <summary>The breakpoint as this box reports it to its parent.</summary>
+        public FlowEarlyBreak ToEarlyBreak() => new(Index, Inside?.Break, Appeal);
+    }
+
+    /// <summary>A child placed whole on this page, with what laying it out again needs to break inside it.</summary>
+    /// <param name="Top">Where its border box starts, from the top of the content area.</param>
+    /// <param name="Resume">Where it resumed on this page, or null.</param>
+    /// <param name="IsAtPageStart">Whether it starts the page.</param>
+    /// <param name="FollowsContent">Whether content comes before it on this page.</param>
+    /// <param name="Break">Its early break.</param>
+    private sealed record ChildBreak(double Top, BreakToken? Resume, bool IsAtPageStart, bool FollowsContent, EarlyBreak Break);
 
     /// <summary>The children stacked on this page, and the margin after the last of them that stays inside the box
     /// (0 when the content breaks, or when that margin leaves the box through its bottom edge).</summary>
@@ -112,10 +137,11 @@ public static class FlowLayout
     /// <list type="bullet">
     /// <item>Bottom padding or a border: they must end on this page with the box, and there is no breakpoint between
     /// the child and its margin (CSS Fragmentation 3 §4.1: a class C break needs a gap between a child's margin edge and
-    /// its container's content edge). So the break must come earlier: the children are laid out again with the
-    /// margin's room kept free, as <see cref="SlicedBox"/> does for the bottom padding. When no earlier break exists,
-    /// the box does not fit here and moves on — except at the start of an empty page, where moving on gains nothing:
-    /// there the margin is truncated at the page end.</item>
+    /// its container's content edge). So the break must come earlier: the children are laid out once more, breaking at
+    /// the best breakpoint among them (an early break), as <see cref="SlicedBox"/> does for the bottom padding. When the
+    /// children have no breakpoint, the box does not fit here and moves on — except at the start of an empty page, where
+    /// moving on gains nothing: there the margin is truncated where the bottom padding and border still fit above the
+    /// page end.</item>
     /// <item>Nothing: no bottom padding and no border. Then the margin is the last thing of the box, so where it passes
     /// the end of the content area it adjoins the break there, and it is truncated as §5.2 truncates the margins
     /// adjoining an unforced break ("any margins adjoining the break are truncated to zero"). It never moves content to
@@ -133,9 +159,10 @@ public static class FlowLayout
         FlowBreakToken resume,
         ImmutableArray<Box> children,
         double contentWidth,
-        double contentHeight)
+        double contentHeight,
+        FlowEarlyBreak? breakAt)
     {
-        var first = Stack(environment, box, space, incoming, resume, children, contentWidth, contentHeight);
+        var first = Stack(environment, box, space, incoming, resume, children, contentWidth, contentHeight, breakAt);
         if (first.IsFailure || first.Value.HasNoValue || Fitting.Fits(first.Value.Value.Content.Height, contentHeight))
         {
             return first.OnSuccessMap(stacked => stacked.OnSomeMap(result => result.Content));
@@ -147,23 +174,22 @@ public static class FlowLayout
             return Truncated(complete, contentHeight);
         }
 
-        // The second layout looks for an earlier break only; it may not force anything onto the page, so it is told
-        // that the page already has content, and a last-resort break before all of it is no earlier break.
-        var earlier = Stack(environment, box, space with { IsAtPageStart = false }, incoming, resume, children, contentWidth, contentHeight - complete.TrailingMargin);
-        if (earlier.IsFailure || (earlier.Value.HasValue && earlier.Value.Value.Content.Appeal > BreakAppeal.LastResort))
+        if (complete.Content.BestBreak is FlowEarlyBreak earlier)
         {
-            return earlier.OnSuccessMap(stacked => stacked.OnSomeMap(result => result.Content));
+            return Stack(environment, box, space, incoming, resume, children, contentWidth, contentHeight, earlier)
+                .OnSuccessMap(stacked => stacked.OnSomeMap(result => result.Content));
         }
 
-        return space.IsAtPageStart ? Truncated(complete, contentHeight) : SlicedBox.NothingFits;
+        // At the start of an empty page the margin is cut off where the box's bottom padding and border still fit.
+        return space.IsAtPageStart ? Truncated(complete, contentHeight - SlicedBox.BottomInset(box.Style)) : SlicedBox.NothingFits;
     }
 
     /// <summary>The complete content with its trailing margin cut off at the end of the content area (§5.2).</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> Truncated(Stacked complete, double contentHeight) =>
-        SlicedBox.Placed(complete.Content.Children, Math.Max(complete.Content.Height - complete.TrailingMargin, contentHeight), null);
+        SlicedBox.Placed(complete.Content.Children, Math.Max(complete.Content.Height - complete.TrailingMargin, contentHeight), null, bestBreak: complete.Content.BestBreak);
 
     /// <summary>The loop described on <see cref="Layout"/>: stacks the children in a content area of the given
-    /// size. None when not even the first content fits.</summary>
+    /// size, or up to the early break when one is given. None when not even the first content fits.</summary>
     private static Result<Maybe<Stacked>, Error> Stack(
         LayoutEnvironment environment,
         Box box,
@@ -172,7 +198,8 @@ public static class FlowLayout
         FlowBreakToken resume,
         ImmutableArray<Box> children,
         double contentWidth,
-        double contentHeight)
+        double contentHeight,
+        FlowEarlyBreak? breakAt)
     {
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var cursor = 0.0;
@@ -192,6 +219,12 @@ public static class FlowLayout
                 return Broken(SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null)));
             }
 
+            if (breakAt is { Inside: null } before && before.ChildIndex == index)
+            {
+                // The early break before this child: the page ends here, as it would have at this class-A breakpoint.
+                return Broken(SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, null), before.Appeal));
+            }
+
             var childResume = index == resume.ChildIndex ? resume.ChildToken : null;
             var isEmpty = MarginCollapsing.IsEmpty(child);
             var top = cursor + Gap(child, pending, isEmpty, leadingMarginsTakeNoSpace || childResume is not null);
@@ -207,12 +240,13 @@ public static class FlowLayout
             if (index > resume.ChildIndex && !childIsAtPageStart)
             {
                 // Remember this class-A breakpoint; a later tie wins because it fits more content.
-                var candidate = new Breakpoint(index, placed.Count, cursor, BreakAvoidance.Between(children[index - 1], child));
-                best = best is null || candidate.Appeal >= best.Appeal ? candidate : best;
+                best = Better(best, new Breakpoint(index, placed.Count, cursor, BreakAvoidance.Between(children[index - 1], child)));
             }
 
+            var followsContent = space.FollowsContent || hasContent;
+            var inside = breakAt is { Inside: { } target } && breakAt.ChildIndex == index ? target : null;
             var outcome = InFlowChild.Place(
-                environment, child, contentWidth, top, contentHeight, childIsAtPageStart, childResume, followsContent: space.FollowsContent || hasContent);
+                environment, child, contentWidth, top, contentHeight, childIsAtPageStart, childResume, followsContent: followsContent, breakAt: inside);
             if (outcome.IsFailure)
             {
                 return Result<Maybe<Stacked>, Error>.Failure(outcome.Error);
@@ -225,20 +259,34 @@ public static class FlowLayout
                 // no breakpoint, only the last resort (see Layout).
                 return Broken(best is null
                     ? SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, childResume), BreakAppeal.LastResort)
-                    : BreakAt(placed, best));
+                    : BreakAt(environment, children, contentWidth, contentHeight, placed, best));
             }
 
             var placement = outcome.Value.Value;
             if (placement.Continuation is { } continuation)
             {
-                var appeal = BreakAvoidance.Inside(child, placement.Appeal);
-                if (best is not null && best.Appeal > appeal)
+                // Broken at the early break this box was asked for, or at the child's own best break: unless an earlier
+                // breakpoint of this box is better.
+                var appeal = inside is not null ? breakAt!.Appeal : BreakAvoidance.Inside(child, placement.Appeal);
+                if (inside is null && best is not null && best.Appeal > appeal)
                 {
-                    return Broken(BreakAt(placed, best));
+                    return Broken(BreakAt(environment, children, contentWidth, contentHeight, placed, best));
                 }
 
                 placed.Add(placement.Fragment);
                 return Broken(SlicedBox.Placed(placed.ToImmutable(), top + placement.Fragment.Fragment.Size.Height, new FlowBreakToken(index, continuation), appeal));
+            }
+
+            if (inside is not null)
+            {
+                throw new InvalidOperationException($"{child.Layout} did not break at the early break it reported.");
+            }
+
+            if (placement.BestBreak is { } early)
+            {
+                // A breakpoint inside the child, which came after the one before it and before the one after it.
+                best = Better(best, new Breakpoint(
+                    index, placed.Count, cursor, BreakAvoidance.Inside(child, early.Appeal), new ChildBreak(top, childResume, childIsAtPageStart, followsContent, early)));
             }
 
             placed.Add(placement.Fragment);
@@ -260,17 +308,41 @@ public static class FlowLayout
         // new formatting context separates them from it, they stay inside and add to the box's height.
         var bottomAdjoins = !space.IsNewFormattingContext && MarginCollapsing.BottomAdjoinsChildren(box);
         var trailing = bottomAdjoins ? 0 : pending;
-        return SlicedBox.Placed(placed.ToImmutable(), cursor + trailing, null)
+        return SlicedBox.Placed(placed.ToImmutable(), cursor + trailing, null, bestBreak: best?.ToEarlyBreak())
             .OnSuccessMap(content => content.OnSomeMap(complete => new Stacked(complete, trailing)));
     }
+
+    /// <summary>The better of two breakpoints in page order: the higher appeal, and of equal ones the later
+    /// (<paramref name="later"/>), which fits more content (CSS Fragmentation 3 §4.5 leaves the choice to the user agent;
+    /// Chromium chooses so).</summary>
+    private static Breakpoint Better(Breakpoint? earlier, Breakpoint later) =>
+        earlier is null || later.Appeal >= earlier.Appeal ? later : earlier;
 
     /// <summary>Content that ends on this page at a break: no margin trails it (§5.2 truncates the margins there).</summary>
     private static Result<Maybe<Stacked>, Error> Broken(Result<Maybe<SlicedBox.Content>, Error> content) =>
         content.OnSuccessMap(placed => placed.OnSomeMap(result => new Stacked(result, 0)));
 
-    /// <summary>Ends the page at a remembered breakpoint: the fragments before it stay, the rest moves on.</summary>
-    private static Result<Maybe<SlicedBox.Content>, Error> BreakAt(ImmutableArray<PlacedFragment>.Builder placed, Breakpoint breakpoint) =>
-        SlicedBox.Placed([.. placed.Take(breakpoint.PlacedCount)], breakpoint.Cursor, new FlowBreakToken(breakpoint.Index, null), breakpoint.Appeal);
+    /// <summary>
+    /// Ends the page at a remembered breakpoint. Before a child: the fragments before it stay, the rest moves on. Inside a
+    /// child: the fragments before the child stay, and the child is laid out once more, where it was, breaking at its
+    /// early break; it must break there, so the result always has a continuation. Pure: the second call of the child's
+    /// layout sees exactly the arguments of the first, plus the early break.
+    /// </summary>
+    private static Result<Maybe<SlicedBox.Content>, Error> BreakAt(
+        LayoutEnvironment environment, ImmutableArray<Box> children, double contentWidth, double contentHeight, ImmutableArray<PlacedFragment>.Builder placed, Breakpoint breakpoint)
+    {
+        ValueList<PlacedFragment> before = [.. placed.Take(breakpoint.PlacedCount)];
+        if (breakpoint.Inside is not { } inside)
+        {
+            return SlicedBox.Placed(before, breakpoint.Cursor, new FlowBreakToken(breakpoint.Index, null), breakpoint.Appeal);
+        }
+
+        var child = children[breakpoint.Index];
+        return InFlowChild.Place(environment, child, contentWidth, inside.Top, contentHeight, inside.IsAtPageStart, inside.Resume, followsContent: inside.FollowsContent, breakAt: inside.Break)
+            .OnSuccessBind(outcome => outcome is { HasValue: true, Value.Continuation: { } continuation }
+                ? SlicedBox.Placed([.. before, outcome.Value.Fragment], inside.Top + outcome.Value.Fragment.Fragment.Size.Height, new FlowBreakToken(breakpoint.Index, continuation), breakpoint.Appeal)
+                : throw new InvalidOperationException($"{child.Layout} did not break at the early break it reported."));
+    }
 
     /// <summary>
     /// The space above a child: the collapsed margin between the content above (<paramref name="pending"/>) and the

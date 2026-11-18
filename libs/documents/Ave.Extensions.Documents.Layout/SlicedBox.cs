@@ -20,23 +20,26 @@ internal static class SlicedBox
     /// <param name="Height">The height the content used.</param>
     /// <param name="Continuation">Where the content resumes on the next page, or null when it is complete.</param>
     /// <param name="Appeal">How good the break is that ends the content on this page.</param>
-    public sealed record Content(ValueList<PlacedFragment> Children, double Height, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect);
+    /// <param name="BestBreak">For complete content, the best breakpoint inside it (<see cref="LayoutResult.Placed.BestBreak"/>).</param>
+    public sealed record Content(ValueList<PlacedFragment> Children, double Height, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect, EarlyBreak? BestBreak = null);
 
     /// <summary>
-    /// Lays out an algorithm's content in a content area of the given size: the content or None when not even
-    /// its first piece fits, or an error. Pure, so it may be called twice (see <see cref="Layout"/>).
+    /// Lays out an algorithm's content in a content area of the given size, ending at <paramref name="breakAt"/> when
+    /// it is given: the content or None when not even its first piece fits, or an error. Pure, so it may be called
+    /// twice (see <see cref="Layout"/>).
     /// </summary>
-    public delegate Result<Maybe<Content>, Error> ContentLayout(double contentWidth, double contentHeight);
+    public delegate Result<Maybe<Content>, Error> ContentLayout(double contentWidth, double contentHeight, EarlyBreak? breakAt);
 
     /// <summary>The result "this content was placed".</summary>
     /// <param name="children">The child fragments, relative to the content area.</param>
     /// <param name="height">The height the content used.</param>
     /// <param name="continuation">Where to resume on the next page, or null.</param>
     /// <param name="appeal">How good the break is that ends the content.</param>
+    /// <param name="bestBreak">For complete content, the best breakpoint inside it.</param>
     /// <returns>The successful content result.</returns>
     public static Result<Maybe<Content>, Error> Placed(
-        ValueList<PlacedFragment> children, double height, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect) =>
-        Result<Maybe<Content>, Error>.Success(Maybe.From(new Content(children, height, continuation, appeal)));
+        ValueList<PlacedFragment> children, double height, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect, EarlyBreak? bestBreak = null) =>
+        Result<Maybe<Content>, Error>.Success(Maybe.From(new Content(children, height, continuation, appeal, continuation is null ? bestBreak : null)));
 
     /// <summary>The result for a box of which not even the first piece of content fits.</summary>
     public static Result<Maybe<Content>, Error> NothingFits => Result<Maybe<Content>, Error>.Success(Maybe<Content>.None);
@@ -87,12 +90,15 @@ internal static class SlicedBox
     /// fill any remaining fragmentainer extent" (CSS Fragmentation 3 §5.3), so its background reaches the page
     /// end.</item>
     /// <item>When the content is complete but the bottom padding and border no longer fit below it, the box cannot
-    /// end on this page: they are not a place where a break is possible (§4.1), so the break must come earlier.
-    /// The content is laid out again with that space kept free, which moves the break to the last breakpoint
-    /// before it — what Chromium prints for this case (checked against its print output). Because a layout call is
-    /// pure, this second call is just another call; no state is kept.</item>
-    /// <item>Content that does not leave that room either — empty content, which fits any height — means nothing of
-    /// the box fits: the box moves to the next page whole, since its bottom padding and border are no breakpoint.</item>
+    /// end on this page: they are not a place where a break is possible (§4.1), so the break must come earlier. The
+    /// content is laid out once more, breaking at the best breakpoint inside it (its <see cref="Content.BestBreak"/>, an
+    /// early break); a fragment that breaks has no bottom padding or border (slice), so the content may use the whole
+    /// height up to that breakpoint. That is what Chromium prints (cases <c>a3-pad-*</c> of
+    /// <c>tools/reference/chromium</c>: a block with padding at the top of a page holding a piece that fits with its top
+    /// padding only keeps the piece and moves what follows it). Because a layout call is pure, this second call is just
+    /// another call; no state is kept.</item>
+    /// <item>Content without a breakpoint inside it means nothing of the box can end here: the box moves to the next
+    /// page whole, since its bottom padding and border are no breakpoint.</item>
     /// <item>When not even the first piece of the content fits, the box breaks before it as a last resort
     /// (<see cref="BreakAppeal.LastResort"/>): its fragment holds only its top border and padding, filling the rest of the
     /// page, and the content starts the next page. A parent with any better breakpoint takes that instead, so a box lower
@@ -124,7 +130,7 @@ internal static class SlicedBox
         // The content width never becomes negative: wider content overflows, as in CSS.
         var contentWidth = Math.Max(0, space.AvailableWidth - HorizontalInsets(box.Style));
         var contentHeight = space.AvailableHeight - topInset;
-        var first = layOut(contentWidth, contentHeight);
+        var first = layOut(contentWidth, contentHeight, space.BreakAt);
         if (first.IsFailure)
         {
             return Result<LayoutResult, Error>.Failure(first.Error);
@@ -141,19 +147,17 @@ internal static class SlicedBox
         var endsHere = content.Continuation is null;
         if (endsHere && !Fitting.Fits(topInset + content.Height + bottomInset, space.AvailableHeight))
         {
-            var reserved = layOut(contentWidth, contentHeight - bottomInset);
-            if (reserved.IsFailure)
+            if (content.BestBreak is { } earlier)
             {
-                return Result<LayoutResult, Error>.Failure(reserved.Error);
-            }
+                var broken = layOut(contentWidth, contentHeight, earlier);
+                if (broken.IsFailure)
+                {
+                    return Result<LayoutResult, Error>.Failure(broken.Error);
+                }
 
-            // The content placed with the room kept free must leave that room: empty content "fits" any height, even
-            // the negative one left when not even the bottom padding and border fit, and would end below the page. And it
-            // must end at a breakpoint: a last-resort break before all of it is no earlier break, only a move.
-            if (reserved.Value.HasValue && reserved.Value.Value.Appeal > BreakAppeal.LastResort
-                && Fitting.Fits(topInset + reserved.Value.Value.Height + bottomInset, space.AvailableHeight))
-            {
-                content = reserved.Value.Value;
+                content = broken.Value.HasValue && broken.Value.Value.Continuation is not null
+                    ? broken.Value.Value
+                    : throw new InvalidOperationException($"{box.Layout} did not break at the early break it reported.");
             }
             else if (!space.IsAtPageStart)
             {
@@ -161,7 +165,7 @@ internal static class SlicedBox
             }
         }
 
-        return LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, content), content.Continuation, content.Appeal);
+        return LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, content), content.Continuation, content.Appeal, content.BestBreak);
     }
 
     /// <summary>

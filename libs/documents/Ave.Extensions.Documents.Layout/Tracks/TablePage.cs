@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -126,8 +127,9 @@ internal static class TablePage
     }
 
     /// <summary>The page's result: its content, the bottom line (null when the page end cuts the last row), the
-    /// continuation and the appeal of the break.</summary>
-    public sealed record Outcome(Content Content, LineAt? BottomLine, TracksBreakToken? Continuation, BreakAppeal Appeal);
+    /// continuation, the appeal of the break, and for a complete page of the table the best breakpoint between its body
+    /// units (its early break), or null.</summary>
+    public sealed record Outcome(Content Content, LineAt? BottomLine, TracksBreakToken? Continuation, BreakAppeal Appeal, TracksEarlyBreak? BestBreak = null);
 
     /// <summary>Lays out one page of the table and builds its fragment.</summary>
     public static Result<LayoutResult, Error> LayOut(TableGeometry table, ConstraintSpace space, TracksBreakToken? incoming)
@@ -136,13 +138,19 @@ internal static class TablePage
         var isFirst = incoming is null;
         var resume = incoming ?? new TracksBreakToken(grid.HeaderRowCount, [], false);
         var hasHeader = grid.HeaderRowCount > 0;
-        var outcome = Attempt(table, space, resume, isFirst, hasHeader);
+        var breakAt = space.BreakAt switch
+        {
+            null => null,
+            TracksEarlyBreak row => row,
+            _ => throw new ArgumentException($"Tracks received a {space.BreakAt.GetType().Name} it did not report.", nameof(space)),
+        };
+        var outcome = Attempt(table, space, resume, isFirst, hasHeader, breakAt);
 
         // A later page that cannot hold the header and some body content that shows goes on without the header (see
         // remarks): under the header the body has no room, or only a last-resort cut.
         if (!isFirst && hasHeader && outcome.IsSuccess && OnlyLastResort(outcome.Value))
         {
-            var without = Attempt(table, space, resume, isFirst, includeHeader: false);
+            var without = Attempt(table, space, resume, isFirst, includeHeader: false, breakAt);
             outcome = without.IsFailure || (without.Value.HasValue && !OnlyLastResort(without.Value)) || outcome.Value.HasNoValue ? without : outcome;
         }
 
@@ -152,12 +160,12 @@ internal static class TablePage
         }
 
         return outcome.Value.HasValue
-            ? LayoutResult.Place(TableFragments.Build(table, outcome.Value.Value), outcome.Value.Value.Continuation, outcome.Value.Value.Appeal)
+            ? LayoutResult.Place(TableFragments.Build(table, outcome.Value.Value), outcome.Value.Value.Continuation, outcome.Value.Value.Appeal, outcome.Value.Value.BestBreak)
             : LayoutResult.NothingFits(table.Box, space);
     }
 
     /// <summary>One try at the page, with or without the header rows on top. None when no body content fits.</summary>
-    private static Result<Maybe<Outcome>, Error> Attempt(TableGeometry table, ConstraintSpace space, TracksBreakToken resume, bool isFirst, bool includeHeader)
+    private static Result<Maybe<Outcome>, Error> Attempt(TableGeometry table, ConstraintSpace space, TracksBreakToken resume, bool isFirst, bool includeHeader, TracksEarlyBreak? breakAt)
     {
         var grid = table.Grid;
         var height = space.AvailableHeight;
@@ -212,7 +220,7 @@ internal static class TablePage
             content = content with { Lines = content.Lines.Add(new LineAt(grid.HeaderRowCount - 1, nextBody, resumeContext, content.Bottom)) };
         }
 
-        var body = PlaceBody(table, content, resume, height);
+        var body = PlaceBody(table, content, resume, height, breakAt);
 
         // The header alone at the start of an empty page: nothing better is possible there (see remarks); a body that only
         // a last-resort cut would place is not better.
@@ -242,8 +250,9 @@ internal static class TablePage
     }
 
     /// <summary>The body rows from the resume point, unit by unit, until one does not fit; then the best break
-    /// (<see cref="TableBreaks"/>).</summary>
-    private static Result<Maybe<Outcome>, Error> PlaceBody(TableGeometry table, Content start, TracksBreakToken resume, double height)
+    /// (<see cref="TableBreaks"/>). With an early break, the page ends before its row, as it would have at that
+    /// breakpoint. A complete page reports its best breakpoint before a unit as its early break.</summary>
+    private static Result<Maybe<Outcome>, Error> PlaceBody(TableGeometry table, Content start, TracksBreakToken resume, double height, TracksEarlyBreak? breakAt)
     {
         var grid = table.Grid;
         var breakpoints = new List<TableBreaks.Breakpoint>();
@@ -262,7 +271,13 @@ internal static class TablePage
             var segment = measured.Value;
             if (content.HasBody)
             {
-                breakpoints.Add(TableBreaks.BeforeUnit(grid, content, row));
+                var before = TableBreaks.BeforeUnit(grid, content, row);
+                if (breakAt is { } target && target.Row == row)
+                {
+                    return TableBreaks.TakeBest(table, [before with { Appeal = target.Appeal }], height);
+                }
+
+                breakpoints.Add(before);
             }
 
             if (!Fitting.Fits(segment.Top + segment.Height + InsideBelow(table, unit.LastRow), height))
@@ -279,7 +294,13 @@ internal static class TablePage
             }
         }
 
-        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content)));
+        var best = breakpoints
+            .Where(breakpoint => breakpoint.Kind == TableBreaks.BreakKind.BeforeUnit)
+            .OrderByDescending(breakpoint => breakpoint.Appeal)
+            .ThenByDescending(breakpoint => breakpoint.Row)
+            .Select(breakpoint => new TracksEarlyBreak(breakpoint.Row, breakpoint.Appeal))
+            .FirstOrDefault();
+        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content) with { BestBreak = best }));
     }
 
     internal static int? Next(TableGrid grid, int row) => row + 1 < grid.Rows.Length ? row + 1 : null;

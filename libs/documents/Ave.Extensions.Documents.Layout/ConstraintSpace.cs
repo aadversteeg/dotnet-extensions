@@ -28,4 +28,12 @@ public sealed record ConstraintSpace(
     /// before it, it would only make an empty page.
     /// </summary>
     public bool FollowsContent { get; init; }
+
+    /// <summary>
+    /// Null, or the early break at which the box must end its fragment on this page: one the box reported in an earlier
+    /// layout of the same page (<see cref="LayoutResult.Placed.BestBreak"/>), when its parent found that breaking there
+    /// is better than where the parent ran out of room. The box lays its content out as before up to that breakpoint and
+    /// breaks there, with the breakpoint's appeal; it looks for no other break.
+    /// </summary>
+    public EarlyBreak? BreakAt { get; init; }
 }

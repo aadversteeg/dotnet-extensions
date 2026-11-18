@@ -46,7 +46,13 @@ public static class InlineLayout
         };
 
         return ShapeRuns(environment, box).OnSuccessBind(runs =>
-            SlicedBox.Layout(box, space, incoming, new InlineBreakToken(firstLine), (width, height) => StackLines(runs, box.Style.TextAlign, firstLine, width, height)));
+            SlicedBox.Layout(box, space, incoming, new InlineBreakToken(firstLine), (width, height, breakAt) =>
+                StackLines(runs, box.Style.TextAlign, firstLine, width, height, breakAt switch
+                {
+                    null => null,
+                    InlineEarlyBreak line => line,
+                    _ => throw new ArgumentException($"Inline received a {breakAt.GetType().Name} it did not report.", nameof(space)),
+                })));
     }
 
     /// <summary>
@@ -109,15 +115,22 @@ public static class InlineLayout
     };
 
     /// <summary>Breaks the paragraph into lines for the content width and stacks them from
-    /// <paramref name="firstLine"/> until the next one does not fit. None when not even that first line fits.</summary>
+    /// <paramref name="firstLine"/> until the next one does not fit, or up to the early break when one is given. None
+    /// when not even that first line fits. The breakpoints are the places between two lines (class B, CSS Fragmentation
+    /// 3 §4.1); the best one of a complete fragment is reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.ShapedRun> runs, TextAlign align, int firstLine, double contentWidth, double contentHeight)
+        IReadOnlyList<LineBoxes.ShapedRun> runs, TextAlign align, int firstLine, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], contentWidth);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)
         {
+            if (breakAt is { } target && target.LineIndex == index)
+            {
+                return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index), target.Appeal);
+            }
+
             var line = LineBoxes.Build(lines[index], runs, contentWidth, align, isLastLine: index == lines.Count - 1);
             if (!Fitting.Fits(bottom + line.Size.Height, contentHeight))
             {
@@ -130,6 +143,9 @@ public static class InlineLayout
             bottom += line.Size.Height;
         }
 
-        return SlicedBox.Placed(placed.ToImmutable(), bottom, null);
+        // The best breakpoint of the complete fragment: before its last line, the latest of the equally good ones between
+        // its lines (a break before the fragment's first line is no breakpoint of the fragment).
+        var best = lines.Count - 1 > firstLine ? new InlineEarlyBreak(lines.Count - 1, BreakAppeal.Perfect) : null;
+        return SlicedBox.Placed(placed.ToImmutable(), bottom, null, bestBreak: best);
     }
 }
