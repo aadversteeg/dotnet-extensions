@@ -169,6 +169,14 @@ public static class FlowLayout
         }
 
         var complete = first.Value.Value;
+        if (complete.Content.Continuation is not null)
+        {
+            // Content that breaks and is still taller than the content area: a child placed at the start of the page
+            // overflowed it (the limit of SlicedBox), and something of this box is left for the next page. Cutting the
+            // result to the area would drop that rest, and leaving the overflow on this page is not built: refused.
+            return Result<Maybe<SlicedBox.Content>, Error>.Failure(Overflowing(box, complete.Content, contentHeight));
+        }
+
         if (!SlicedBox.HasBottomInset(box.Style))
         {
             return Truncated(complete, contentHeight);
@@ -182,6 +190,17 @@ public static class FlowLayout
 
         // At the start of an empty page the margin is cut off where the box's bottom padding and border still fit.
         return space.IsAtPageStart ? Truncated(complete, contentHeight - SlicedBox.BottomInset(box.Style)) : SlicedBox.NothingFits;
+    }
+
+    /// <summary>The refusal for content that breaks below the end of its content area: names the last child that
+    /// reaches past the end, with the room it had, or the box itself when no child does.</summary>
+    private static Error Overflowing(Box box, SlicedBox.Content content, double contentHeight)
+    {
+        var child = content.Children.LastOrDefault(placed =>
+            placed.Fragment is BoxFragment && !Fitting.Fits(placed.Offset.Y + placed.Fragment.Size.Height, contentHeight));
+        return child is { Fragment: BoxFragment fragment }
+            ? LayoutErrors.DoesNotFit(fragment.Box, contentHeight - child.Offset.Y)
+            : LayoutErrors.DoesNotFit(box, contentHeight);
     }
 
     /// <summary>The complete content with its trailing margin cut off at the end of the content area (§5.2).</summary>

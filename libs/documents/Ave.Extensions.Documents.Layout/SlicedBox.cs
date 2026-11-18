@@ -108,7 +108,9 @@ internal static class SlicedBox
     /// <item>LIMIT: if even then nothing fits and the box is at the start of a page, it is placed anyway and its
     /// bottom padding and border overflow the page area; there is no earlier page where it would fit better.
     /// CSS Fragmentation 3 §4.4 would let the user agent "break anywhere in order to avoid losing content off the edge
-    /// of the fragmentainer"; the engine does not cut padding or borders.</item>
+    /// of the fragmentainer"; the engine does not cut padding or borders. When anything of the container follows the box
+    /// on a later page, the container refuses the page instead (<c>Documents.Layout.DoesNotFit</c>, see
+    /// <see cref="FlowLayout"/>): no result is a success while content is left that no page shows.</item>
     /// </list>
     /// </remarks>
     /// <param name="box">The box.</param>

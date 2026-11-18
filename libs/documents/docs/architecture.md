@@ -196,8 +196,9 @@ Each is documented next to its code as well.
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
   borders; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut
-  depends on where the page ends, so a table offers no early break there); padding that does not fit at the top of
-  an empty page overflows; a paragraph with a page counter that breaks across pages is re-broken with each page's
+  depends on where the page ends, so a table offers no early break there); bottom padding or a bottom border that does
+  not fit below a box's content at the top of an empty page overflows the page when the box ends the document, and
+  is refused (`Documents.Layout.DoesNotFit`) when content follows it; a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
 - **Against Chromium:** at most font sizes Chromium's text is narrower than the font's advances, by a share that
