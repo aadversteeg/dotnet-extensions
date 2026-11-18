@@ -31,6 +31,8 @@
   <ItemGroup>
     <!-- The pinned reference tools image (qpdf, poppler, MuPDF, fontTools), built by ReferenceTools from this file. -->
     <None Include="$(MSBuildThisFileDirectory)../tools/reference/tools.Dockerfile" Link="tools/tools.Dockerfile" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The fontTools script the outline decoder is compared with (UnitTests.Extensions.Documents.Fonts). -->
+    <None Include="$(MSBuildThisFileDirectory)../tools/reference/glyph-outlines.py" Link="tools/glyph-outlines.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
