@@ -37,7 +37,7 @@ public static class PageModelRules
     /// <item>metadata and at least one page: a document without a page has nothing to show; every
     /// page of positive width and height;</item>
     /// <item>every number is a number PDF can hold: finite and within ±<see cref="MaxNumber"/> (page sizes, font sizes,
-    /// positions and sizes of glyph runs, glyphs, filled rectangles and images);</item>
+    /// positions and sizes of glyph runs, glyphs, filled rectangles, images and clips);</item>
     /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
     /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
@@ -170,6 +170,7 @@ public static class PageModelRules
             Invalid(code, $"A glyph run on page {number} has a position that is not a number within ±{Number(MaxNumber)}.", $"{run.Origin}"),
         FillRectangle fill when !InRange(fill.Area) => Invalid(code, $"A filled rectangle on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{fill.Area}"),
         DrawImage image when !InRange(image.Area) => Invalid(code, $"An image on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{image.Area}"),
+        ClipStart clip when !InRange(clip.Area) => Invalid(code, $"A clip on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{clip.Area}"),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
             Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
         _ => null,

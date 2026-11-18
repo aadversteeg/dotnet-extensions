@@ -44,6 +44,21 @@ public class PageModelRulesTests
     }
 
     [Theory]
+    [InlineData(double.NaN, 5.0)]
+    [InlineData(0.0, double.NegativeInfinity)]
+    [InlineData(0.0, 3.5e38)]
+    public void A_clip_whose_position_or_size_is_not_a_number_within_range_is_a_breach(double x, double width)
+    {
+        var page = PageWith(new ClipStart(new Rect(new Point(x, 0), new Size(width, 5))), ClipEnd.Instance);
+
+        var result = PageModelRules.Check(new PageDocument(Metadata, [page]), Code);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(Code);
+        result.Error.Message.Should().Contain("A clip on page 1");
+    }
+
+    [Theory]
     [InlineData(PageModelRules.MaxNumber, true)]
     [InlineData(-PageModelRules.MaxNumber, true)]
     [InlineData(3.4031e38, false)]
