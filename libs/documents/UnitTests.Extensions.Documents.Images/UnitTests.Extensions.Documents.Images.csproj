@@ -5,6 +5,10 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
     <!-- The engine targets net10.0 only: -p:UseNs20=true and -p:UseNs21=true do not apply here -->
     <Ns20AssetUnderTest>false</Ns20AssetUnderTest>
+    <!-- Release runs these tests in head mode: they use Ave.Extensions.Documents.TestSupport (Docker, the reference
+         tools image), which depends on Ave.Extensions.Documents.Images; in release mode it would bring the published
+         package next to the one under test (CS1704). See docs/RELEASING.md. -->
+    <TestInHeadMode>true</TestInHeadMode>
     <!-- Output must not depend on the machine's culture (numbers in PDF and in the text serialisations) -->
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
@@ -29,6 +33,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.Documents.Images\Ave.Extensions.Documents.Images.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.TestSupport\Ave.Extensions.Documents.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>

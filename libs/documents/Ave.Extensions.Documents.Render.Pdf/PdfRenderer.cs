@@ -35,7 +35,7 @@ public static class PdfRenderer
     /// or a <see cref="PdfErrorCodes.Write"/> error.</returns>
     public static Result<ImmutableArray<byte>, Error> Render(PageDocument document, PdfRenderOptions options) =>
         CheckOptions(options)
-            .OnSuccessBind(_ => PageModelRules.Check(document))
+            .OnSuccessBind(_ => PageModelRules.Check(document, PdfRenderErrorCodes.Write.InvalidPageModel))
             .OnSuccessBind(validDocument => ConformanceRules.Check(validDocument, options.Profile))
             .OnSuccessBind(ReadEvents)
             .OnSuccessCombine(pages => Structure(pages, options.Profile))

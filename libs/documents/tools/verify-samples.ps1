@@ -23,7 +23,7 @@
 
     The independent checks run in the reference tools image, built from tools/reference/tools.Dockerfile: Debian 13
     pinned by digest, packages from snapshot.debian.org at a fixed date, each tool at its exact version (qpdf 12.2.0,
-    poppler 25.03.0, MuPDF 1.25.1, fontTools 4.57.0, Pillow 11.1.0), so a check never runs with another tool than
+    poppler 25.03.0, MuPDF 1.25.1, fontTools 4.57.0, Pillow 11.1.0, libjpeg-turbo 2.1.5), so a check never runs with another tool than
     the one it was written for. The tag is the first 12 hex digits of the Dockerfile's SHA-256, the same image the
     reference tests use (TestSupport/ReferenceTools.cs).
 

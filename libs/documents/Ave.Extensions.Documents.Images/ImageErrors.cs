@@ -19,6 +19,12 @@ internal static class ImageErrors
         Result<T, Error>.Failure(new Error(ImageErrorCodes.Unsupported, $"Unsupported image variant: {variant}.")
             .With(ErrorMetadataKeys.Value, variant));
 
+    /// <summary>Scans that visit the frame's blocks more than <paramref name="limit"/> times together
+    /// (<c>Documents.Image.TooMuchWork</c>).</summary>
+    public static Result<T, Error> TooMuchWork<T>(double passes, int limit) =>
+        Result<T, Error>.Failure(new Error(ImageErrorCodes.TooMuchWork, $"The JPEG's scans visit its blocks {passes.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} times or more; the engine decodes at most {limit} passes over the image.")
+            .With(ErrorMetadataKeys.Value, passes.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)));
+
     /// <summary>An image above <see cref="ImageLimits.MaxPixels"/> (<c>Documents.Image.TooLarge</c>).</summary>
     public static Result<T, Error> TooLarge<T>(long width, long height) =>
         Result<T, Error>.Failure(new Error(ImageErrorCodes.TooLarge, $"The image is {width}x{height} pixels; the engine decodes at most {ImageLimits.MaxPixels} pixels.")

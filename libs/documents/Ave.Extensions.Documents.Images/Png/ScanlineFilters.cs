@@ -3,7 +3,7 @@ using System;
 namespace Ave.Extensions.Documents.Images.Png;
 
 /// <summary>
-/// Undoes PNG filter method 0 (PNG §9 "Filtering"). Every scanline starts with one filter-type byte; the encoder
+/// PNG filter method 0 (PNG §9 "Filtering"), both ways. Every scanline starts with one filter-type byte; the encoder
 /// replaced each byte x by x minus a prediction from its neighbours, and the decoder adds the prediction back
 /// (§9.2, Table 9.1): a = the byte one pixel to the left, b = the byte above, c = the byte above and to the left,
 /// all zero outside the image. Arithmetic is modulo 256.
@@ -41,6 +41,26 @@ internal static class ScanlineFilters
         }
 
         return -1;
+    }
+
+    /// <summary>
+    /// Filters one scanline with one filter type: each byte x becomes x minus the prediction (§9.2), modulo 256 —
+    /// the exact inverse of <see cref="Unfilter"/>.
+    /// </summary>
+    /// <param name="line">The scanline's bytes.</param>
+    /// <param name="previous">The scanline above, or empty for the first one.</param>
+    /// <param name="bytesPerPixel">Bytes per complete pixel.</param>
+    /// <param name="filterType">0 to 4.</param>
+    /// <param name="filtered">Receives the filtered bytes (as many as the line has).</param>
+    public static void Filter(ReadOnlySpan<byte> line, ReadOnlySpan<byte> previous, int bytesPerPixel, byte filterType, Span<byte> filtered)
+    {
+        for (var index = 0; index < line.Length; index++)
+        {
+            var a = index >= bytesPerPixel ? line[index - bytesPerPixel] : 0;
+            var b = previous.IsEmpty ? 0 : previous[index];
+            var c = index >= bytesPerPixel && !previous.IsEmpty ? previous[index - bytesPerPixel] : 0;
+            filtered[index] = (byte)(line[index] - Prediction(filterType, a, b, c));
+        }
     }
 
     /// <summary>The prediction of each filter type (Table 9.1): None, Sub, Up, Average, Paeth.</summary>

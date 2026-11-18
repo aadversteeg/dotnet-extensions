@@ -11,7 +11,7 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 
 namespace UnitTests.Extensions.Documents.Fluent;
 
-/// <summary>The whole pipeline through <see cref="DocumentRendering.ToPdf"/>: errors from later layers still
+/// <summary>The whole pipeline through <see cref="DocumentRendering.ToPdf(Document, FontSet, PdfRenderOptions)"/>: errors from later layers still
 /// point at the caller's line.</summary>
 public class RenderingTests
 {

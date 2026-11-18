@@ -11,7 +11,7 @@ released on its own.
 | `libs/error-paths` | `Ave.Extensions.ErrorPaths`, `.Functional`, `.Serialization`, `.FluentAssertions`, `.AspNetCore` | [README](libs/error-paths/README.md) |
 | `libs/fluent-contracts` | `Ave.Extensions.FluentContracts`, `.ForTesting`, `.ForValidation` | [README](libs/fluent-contracts/README.md) |
 | `libs/file-system` | `Ave.Extensions.FileSystem.Abstractions`, `Ave.Extensions.FileSystem`, `.Local`, `.InMemory`, `.AzureFileStorage`, `.MimeDetective` | [README](libs/file-system/README.md) |
-| `libs/documents` | `Ave.Extensions.Documents` and `.Core`, `.Fonts`, `.Images`, `.Pdf`, `.Typesetting`, `.DocumentModel`, `.PageModel`, `.Layout`, `.Render.Pdf`, `.Fluent`, and the HTML front-end in progress, `.Html.Parsing`, `.Css`, `.Html`: a document engine that writes PDF/A and PDF/UA | [README](libs/documents/README.md) |
+| `libs/documents` | `Ave.Extensions.Documents` and `.Core`, `.Fonts`, `.Images`, `.Pdf`, `.Typesetting`, `.DocumentModel`, `.PageModel`, `.Layout`, `.Render.Pdf`, `.Render.Raster`, `.Graphics`, `.Fluent`, and the HTML front-end in progress, `.Html.Parsing`, `.Css`, `.Html`: a document engine that writes PDF/A and PDF/UA, and preview images | [README](libs/documents/README.md) |
 
 The libraries target `netstandard2.0` and `net10.0`, with these differences: `Ave.Extensions.FileSystem.InMemory` and
 `Ave.Extensions.FileSystem.AzureFileStorage` also target `netstandard2.1` (see the file-system README), and
@@ -90,8 +90,8 @@ on .NET Framework.
 `.github/workflows/ci.yml` runs this check and the tests (Linux and Windows; the `net10.0` and the `netstandard2.0`
 build), and on Windows also on .NET Framework 4.8, for every pull request and every push to `main`. When the change
 affects the file-system family, it also runs the file-system tests with `-p:UseNs21=true`. The documents family
-runs on Linux and Windows against its `net10.0` build only; its reference tests need Docker with Linux containers
-and are skipped where there is none (see the documents README).
+runs on Linux and Windows against its `net10.0` build only, and on arm64 Linux without its reference tests; its
+reference tests need Docker with Linux containers and are skipped where there is none (see the documents README).
 
 Nobody pushes to `main` directly: every change is a pull request, and it can be merged when the job `CI result`
 is green. That job fails when any other pull request job failed. The rules are in

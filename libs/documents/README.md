@@ -14,16 +14,18 @@ front-end, is in progress: its first part, HTML and CSS to the computed style of
 
 | Package | What it is |
 | --- | --- |
-| `Ave.Extensions.Documents` | The whole engine in one call: `document.ToPdf(fonts, options)`. Applications reference this one. |
+| `Ave.Extensions.Documents` | The whole engine in one call: `document.ToPdf(fonts, options)`, or preview images with `ToPng`. Applications reference this one. |
 | `Ave.Extensions.Documents.Fluent` | The code front-end: a document as an immutable value, built from plain function calls. |
 | `Ave.Extensions.Documents.DocumentModel` | The engine-neutral document model: a styled box tree with CSS semantics. |
 | `Ave.Extensions.Documents.Layout` | Layout: block flow, inline text, tables, images, pagination with page templates, painting. |
 | `Ave.Extensions.Documents.PageModel` | The page model: per page a display list of glyph runs, shapes, images and structure markers. |
 | `Ave.Extensions.Documents.Render.Pdf` | The PDF back-end: embedded subset fonts, searchable text, tagging, XMP, the conformance profiles. |
+| `Ave.Extensions.Documents.Render.Raster` | The raster back-end: a page as pixels, for previews and visual checks. |
+| `Ave.Extensions.Documents.Graphics` | 2D graphics: paths, exact-area anti-aliased filling, an RGBA canvas, image drawing. |
 | `Ave.Extensions.Documents.Typesetting` | Text: white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping, justification. |
 | `Ave.Extensions.Documents.Pdf` | PDF objects and a PDF file writer (ISO 32000-1); knows nothing about layout or fonts. |
-| `Ave.Extensions.Documents.Fonts` | A TrueType reader (with GSUB, GPOS, GDEF, kern) and subsetter. |
-| `Ave.Extensions.Documents.Images` | PNG decoding and JPEG header reading (JPEG is embedded as it is). |
+| `Ave.Extensions.Documents.Fonts` | A TrueType reader (with GSUB, GPOS, GDEF, kern, glyph outlines) and subsetter. |
+| `Ave.Extensions.Documents.Images` | PNG decoding and encoding; JPEG header reading (a PDF embeds JPEG as it is) and decoding. |
 | `Ave.Extensions.Documents.Html` | The HTML front-end, first part: an HTML document and its style sheets to the computed style of every element. |
 | `Ave.Extensions.Documents.Css` | CSS: style sheets, selectors, the cascade with layers, nesting and custom properties, and the property registry. |
 | `Ave.Extensions.Documents.Html.Parsing` | The HTML Standard's parsing algorithm: an immutable tree with source positions and every parse error as a diagnostic. |
@@ -104,6 +106,30 @@ profiles, what each refuses, and the checks a person must still make for PDF/UA)
 works, for a reviewer). The samples in `samples/Ave.Extensions.Documents.Samples` are a letter, a long text and a
 timesheet with tables over several pages, in Dutch and English.
 
+## Preview images
+
+The raster back-end draws the same pages the PDF has, as pixels: glyphs as their outlines at their exact positions,
+rectangles and images, every edge anti-aliased by the exact share of the pixel it covers (exact where no two contours
+overlap inside a pixel; `docs/architecture.md` states the error where they do). Lay the document out once
+and give the pages to both back-ends (with `invoice`, `fonts` and `options` from the example above):
+
+```csharp
+using Ave.Extensions.Documents.Render.Raster;   // RasterOptions
+
+var pages = fonts.OnSuccessBind(set => invoice.ToPages(set));         // translate and lay out, once
+if (pages.IsSuccess)
+{
+    var pdf = pages.Value.ToPdf(options);                             // the PDF
+    var preview = pages.Value.ToPng(1, new RasterOptions(96));        // page 1 as a PNG file, 96 pixels per inch
+    var thumbnails = pages.Value.ToPngPages(new RasterOptions(48));   // every page
+}
+```
+
+`ToImages` gives the pixels instead (8-bit RGBA, sRGB). The output is deterministic: the same pages and options give
+the same pixels, checked on x64 Linux, x64 Windows and arm64 Linux for .NET 10. The PNG bytes are compressed by the
+runtime's deflate, like PDF streams; see *Deterministic output* below. As a sanity check, the pages are compared with
+MuPDF and poppler renders of the engine's own PDF (`tools/reference/raster/README.md`).
+
 ## HTML and CSS to computed style (M2, first part)
 
 The HTML front-end reads a document as Chromium 159 prints it and refuses what it cannot follow. Its first part
@@ -139,7 +165,11 @@ styled tree and the diagnostics of a file.
 - **PDF:** PDF/A-3b, PDF/A-3a and PDF/UA-1 as profiles that add what each standard requires and refuse what it
   forbids: tagged PDF from the page model's structure markers, XMP metadata, an sRGB output intent, embedded files
   with their relationship (as a Factur-X invoice carries its XML).
-- **Deterministic output:** the same document, fonts and creation date give the same bytes on every machine.
+- **Preview images:** any page as PNG or pixels, at any resolution, in pure managed code.
+- **Deterministic output:** the same document, fonts and creation date give the same bytes on every run, and the same
+  raster pixels on x64 Linux, x64 Windows and arm64 Linux (tested). Compressed streams (PDF and PNG) come from the .NET
+  runtime's deflate, so another runtime version or zlib build can give other bytes for the same content
+  (`docs/architecture.md`, Determinism, says what is tested).
 
 ## How the claims are checked
 
@@ -151,6 +181,8 @@ styled tree and the diagnostics of a file.
 | Shaping matches HarfBuzz | HarfBuzz 15.0.0, run as WebAssembly inside the tests: 44 lines in three fonts, 2,602 glyphs, all identical (`HarfBuzzCorpusTests`); the known differences are Unicode composition only. |
 | Table layout matches a browser | Column widths, page breaks, repeated headers and split rows are compared with numbers measured in Chromium 159 (`ChromiumReferenceTests`, `TableBreakLineTests`; cases and measurements in `tools/reference/chromium`). |
 | The files are well-formed and readable by other tools | qpdf `--check`, poppler's `pdftotext` and `pdffonts`, every embedded font opened with fontTools, renderings by poppler and MuPDF, attachments extracted by qpdf and compared byte for byte (`tools/verify-samples.ps1`, reference tests). |
+| Preview images are drawn right | Whole pages are checked pixel by pixel against the exact areas their geometry gives: glyphs (overlapping contours, offsets, size), an image in a box of another shape, a rule thinner than a pixel (`PageGeometryTests`); the Graphics tests prove coverage, compositing and the image rule the same way. As a sanity check, every sample page is compared with MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF at 96 and 300 dpi: for the largest difference away from edges, the mean squared error and the pixels over 128 steps the engine is no farther from either viewer than the viewers are from each other, and for the pixels over 32 and 64 steps no farther from the nearer viewer (`RasterReferenceTests`, `tools/reference/raster/README.md`); it catches gross errors, not small ones. The samples' pages are pinned as golden images, which catch change, not error. |
+| Glyph outlines and JPEG decoding are right | Every glyph of the test fonts decodes to the points fontTools 4.57.0 reads, exactly (`GlyphShapeReferenceTests`); the ITU-T T.83 compliance streams decode to the reference coefficients, exactly (`JpegConformanceTests`). |
 | The HTML parser follows the HTML Standard | The html5lib tokenizer tests and the tree-construction tests of web-platform-tests, every case of every file, counts asserted (`TokenizerSuiteTests`, `TreeConstructionSuiteTests`); where Chromium 159 builds another tree, its tree is measured and the parser follows it or a listed limit says why not (`tools/reference/chromium/html-tree`). |
 | CSS is read as Chromium 159 reads it | The css-parsing-tests suite and the CSS cases of web-platform-tests, each answer counted as equal, refused or different, with different pinned at 0 or a named skip (`CssParsingSuiteTests`, `ColorSuiteTests`, `WptCssSuiteTests`, `WptComputedValueTests`); the computed style of every element and property against Chromium's (`ChromiumCorpusTests`, cases in `tools/reference/chromium/computed-style`). |
 | No native code | `UnitTests.Extensions.Documents.Architecture` reads every compiled library: no P/Invoke, no module references, IL only, no unsafe code; the samples' publish folder holds IL-only assemblies only. |
@@ -164,7 +196,7 @@ Each layer is its own package and depends only on the layers below it. The depen
 assemblies by `UnitTests.Extensions.Documents.Architecture`.
 
 ```
- Ave.Extensions.Documents                composition: ToPdf runs front-end, layout and PDF back-end in a row
+ Ave.Extensions.Documents                composition: ToPages runs front-end and layout; ToPdf, ToPng draw the pages
         │
         ▼
  Ave.Extensions.Documents.Fluent         code front-end: a document as an immutable value built from function calls
@@ -188,12 +220,17 @@ assemblies by `UnitTests.Extensions.Documents.Architecture`.
         ▼
  PDF bytes
 
+ Ave.Extensions.Documents.Render.Raster  page model → pixels (beside Render.Pdf): glyph outlines, rectangles, images
+                                         ← uses Graphics
+
  Ave.Extensions.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping,
                                          justification
  Ave.Extensions.Documents.Pdf            PDF objects, content operators, file writer, XMP writer, sRGB ICC profile,
                                          PdfProfile (knows nothing about layout)
- Ave.Extensions.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
- Ave.Extensions.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and JPEG header reader
+ Ave.Extensions.Documents.Graphics       paths, affine transforms, exact-area anti-aliased filling, RGBA canvas, images
+ Ave.Extensions.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern, glyph outlines) and subsetter
+ Ave.Extensions.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and encoder; JPEG header reader and
+                                         decoder (baseline and progressive)
  Ave.Extensions.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, metadata,
                                          attachments, error codes, the ASCII rules and encoding labels of the WHATWG
                                          standards
@@ -273,6 +310,12 @@ Tests that need Docker (veraPDF, qpdf and the other reference tools in pinned im
 says so; `dotnet test --filter Category!=Reference` leaves them out. On Linux and macOS the containers run as the
 current user.
 
+The JPEG conformance tests (`JpegConformanceTests`) download the ITU-T T.83 data, which may not be redistributed, and
+carry the trait `Category=Network`, the repository's trait for tests that reach a host outside. They fetch it only when
+they run (not when tests are listed or filtered out), check its SHA-256, and keep the zip in the temporary folder for the
+next run, checked again each time. When it cannot be fetched they fail on CI (`GITHUB_ACTIONS` or `CI` is `true`) and
+are skipped with the reason elsewhere; `dotnet test --filter Category!=Network` leaves them out.
+
 `pwsh -NoProfile -File tools/verify-samples.ps1` publishes the samples, proves the publish folder contains only IL-only
 managed assemblies, runs them, and checks the PDFs with the independent tools listed above, all in Docker; the PNG
 renderings go to `out/samples/png`. `tools/reference/chromium/measure.ps1` measures the Chromium reference cases
@@ -302,7 +345,9 @@ Known limits, each documented next to the code: negative margins (reported as un
 line-height property and strut, `vertical-align: baseline` in cells, column gaps and column styles, the separated
 border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content, interlaced
 and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and other OpenType
-lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts. At most font sizes Chromium's text is narrower
+lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts; in preview images: no hinting (small text is lighter than in viewers that hint), two rectangles that meet
+inside a pixel let some of the page show through (a quarter at half a pixel, as in MuPDF), and an enlarged image shows
+its sample squares, as the PDF defines it, where some viewers smooth it. At most font sizes Chromium's text is narrower
 than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small
 sizes; none at 9, 10.5 and 12 pt), so a line that fits in Chromium by less than that share of its text width can
 break one word earlier in the engine, which keeps the font's exact advances (`tools/reference/chromium/README.md`,
