@@ -238,6 +238,7 @@ jobs:
     # The documents family on arm64 Linux: the proof that its output does not depend on the processor. The golden PNG
     # files, the pinned pixel hash of the Graphics scene and the pinned PNG bytes must come out the same as on x64.
     # The Docker reference tests (trait Category=Reference) are left out: their images are built for x64.
+    # The JPEG conformance tests (trait Category=Network) need no Docker and run here too.
     name: Test (ubuntu-24.04-arm, net10.0, documents)
     needs: changes
     if: needs.changes.outputs.documents == 'true'

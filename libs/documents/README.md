@@ -252,6 +252,12 @@ Tests that need Docker (veraPDF, qpdf and the other reference tools in pinned im
 says so; `dotnet test --filter Category!=Reference` leaves them out. On Linux and macOS the containers run as the
 current user.
 
+The JPEG conformance tests (`JpegConformanceTests`) download the ITU-T T.83 data, which may not be redistributed, and
+carry the trait `Category=Network`, the repository's trait for tests that reach a host outside. They fetch it only when
+they run (not when tests are listed or filtered out), check its SHA-256, and keep the zip in the temporary folder for the
+next run, checked again each time. When it cannot be fetched they fail on CI (`GITHUB_ACTIONS` or `CI` is `true`) and
+are skipped with the reason elsewhere; `dotnet test --filter Category!=Network` leaves them out.
+
 `pwsh -NoProfile -File tools/verify-samples.ps1` publishes the samples, proves the publish folder contains only IL-only
 managed assemblies, runs them, and checks the PDFs with the independent tools listed above, all in Docker; the PNG
 renderings go to `out/samples/png`. `tools/reference/chromium/measure.ps1` measures the Chromium reference cases

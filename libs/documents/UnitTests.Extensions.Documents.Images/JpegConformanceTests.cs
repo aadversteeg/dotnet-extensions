@@ -12,8 +12,10 @@ namespace UnitTests.Extensions.Documents.Images;
 /// the decoder implements (8-bit, Huffman): A1 baseline interleaved, C1 and C2 extended sequential interleaved and not,
 /// G1 progressive spectral selection, K1 full progressive (spectral selection and successive approximation), all with
 /// restart intervals and four components of mixed sampling factors. The data is free to download but carries no licence
-/// grant, so it is not in the repository: it is downloaded on first use into the temporary folder and checked against its
-/// SHA-256 (skipped with a message when it cannot be downloaded).
+/// grant, so it is not in the repository: the class fixture (<see cref="T83Data"/>) downloads it when a test of this class
+/// runs — never when tests are only listed or filtered out — and checks it against its SHA-256. When it cannot be
+/// downloaded, the tests fail on CI and are skipped with the reason elsewhere. Trait <c>Category=Network</c>: no Docker is
+/// needed, so every CI leg runs them; leave them out with <c>Category!=Network</c>.
 /// </summary>
 /// <remarks>
 /// Two checks per component, both exact:
@@ -27,19 +29,16 @@ namespace UnitTests.Extensions.Documents.Images;
 /// Both files hold, per component, every block of the component (⌈width/8⌉ × ⌈height/8⌉, edge blocks included) in raster
 /// order, 64 big-endian 16-bit coefficients per block in zig-zag order (Readme.txt of the data).
 /// </remarks>
-[Trait("Category", "Reference")]
-public sealed class JpegConformanceTests
+[Trait("Category", "Network")]
+public sealed class JpegConformanceTests(JpegConformanceTests.T83Data data) : IClassFixture<JpegConformanceTests.T83Data>
 {
     private const string Url = "https://www.itu.int/wftp3/Public/t/testsignal/SpeImage/T83/v1994_11/T83_data_files.zip";
     private const string Sha256 = "9f5ed0a74a3087c6c93f4cbb0bd5128c2a87b128e4f59f5b6649e32941da7069";
 
-    private static readonly Lazy<string?> Folder = new(Download);
+    /// <summary>The user agent the download presents: the project, honestly.</summary>
+    private const string UserAgent = "Ave.Extensions.Documents-tests/1.0 (+https://github.com/aadversteeg/dotnet-extensions)";
 
-    /// <summary>Why the data cannot be used here, or null: read when the tests are discovered, which downloads the data
-    /// the first time on a machine.</summary>
-    public static string? UnavailableReason => Folder.Value is null ? $"Skipped: the T.83 data could not be downloaded from {Url}." : null;
-
-    [ConformanceTheory]
+    [RuntimeSkipTheory]
     [InlineData("T83_process1/A1.JPG")]
     [InlineData("T83_process2/C1.JPG")]
     [InlineData("T83_process2/C2.JPG")]
@@ -47,7 +46,9 @@ public sealed class JpegConformanceTests
     [InlineData("T83_process10/K1.JPG")]
     public void A_conformance_stream_decodes_to_the_reference_coefficients(string stream)
     {
-        var folder = Folder.Value!;
+        var folder = data.Folder ?? (data.OnContinuousIntegration
+            ? throw new InvalidOperationException(data.Problem)
+            : throw new SkipTestException(data.Problem!));
         var result = JpegDecoder.Components(File.ReadAllBytes(Path.Combine(folder, stream)));
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         var components = result.Value;
@@ -124,55 +125,74 @@ public sealed class JpegConformanceTests
         return values;
     }
 
-    /// <summary>Downloads and unpacks the data once per machine (the folder is named by the SHA-256); null when the
-    /// download fails. A file with another digest is an error, not a skip.</summary>
-    private static string? Download()
+    /// <summary>
+    /// The T.83 data for the tests of the class: the zip is kept in the temporary folder under its SHA-256 and checked
+    /// against it on every use (a file that does not match is fetched again), then unpacked into a folder of its own,
+    /// deleted afterwards. Made only when a test of the class runs. A failure is kept as <see cref="Problem"/>, not
+    /// thrown, so each test can decide: fail on CI, skip elsewhere.
+    /// </summary>
+    public sealed class T83Data : IDisposable
     {
-        var folder = Path.Combine(Path.GetTempPath(), "ave-extensions-documents-t83-" + Sha256[..12]);
-        if (Directory.Exists(Path.Combine(folder, "T83_process1")))
+        public T83Data()
         {
-            return folder;
+            OnContinuousIntegration = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" || Environment.GetEnvironmentVariable("CI") == "true";
+            try
+            {
+                var zip = Zip();
+                var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-t83-").FullName;
+                ZipFile.ExtractToDirectory(new MemoryStream(zip), folder);
+                Folder = folder;
+            }
+            catch (Exception exception) when (exception is HttpRequestException or System.Threading.Tasks.TaskCanceledException or IOException or InvalidDataException)
+            {
+                Problem = $"The T.83 data could not be fetched from {Url}: {exception.Message}";
+            }
         }
 
-        byte[] zip;
-        try
+        /// <summary>The unpacked data, or null when it could not be fetched.</summary>
+        public string? Folder { get; }
+
+        /// <summary>Why there is no data.</summary>
+        public string? Problem { get; }
+
+        /// <summary>True on a CI runner, where missing data fails the tests.</summary>
+        public bool OnContinuousIntegration { get; }
+
+        public void Dispose()
         {
+            if (Folder is not null)
+            {
+                Directory.Delete(Folder, recursive: true);
+            }
+        }
+
+        private static byte[] Zip()
+        {
+            var cache = Path.Combine(Path.GetTempPath(), $"ave-extensions-documents-t83-{Sha256[..12]}.zip");
+            if (File.Exists(cache))
+            {
+                var kept = File.ReadAllBytes(cache);
+                if (Convert.ToHexStringLower(SHA256.HashData(kept)) == Sha256)
+                {
+                    return kept;
+                }
+
+                File.Delete(cache);
+            }
+
             using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+            var zip = client.GetByteArrayAsync(Url).GetAwaiter().GetResult();
+            var digest = Convert.ToHexStringLower(SHA256.HashData(zip));
+            if (digest != Sha256)
+            {
+                throw new InvalidDataException($"the file has SHA-256 {digest}, not {Sha256}");
+            }
 
-            // The ITU server refuses requests without a browser-like user agent.
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36");
-            zip = client.GetByteArrayAsync(Url).GetAwaiter().GetResult();
+            var partial = cache + ".partial-" + Environment.ProcessId;
+            File.WriteAllBytes(partial, zip);
+            File.Move(partial, cache, overwrite: true);
+            return zip;
         }
-        catch (Exception exception) when (exception is HttpRequestException or System.Threading.Tasks.TaskCanceledException)
-        {
-            return null;
-        }
-
-        var digest = Convert.ToHexStringLower(SHA256.HashData(zip));
-        if (digest != Sha256)
-        {
-            throw new InvalidOperationException($"The T.83 data downloaded from {Url} has SHA-256 {digest}, not {Sha256}.");
-        }
-
-        var unpacking = folder + ".partial-" + Environment.ProcessId;
-        ZipFile.ExtractToDirectory(new MemoryStream(zip), unpacking, overwriteFiles: true);
-        try
-        {
-            Directory.Move(unpacking, folder);
-        }
-        catch (IOException) when (Directory.Exists(folder))
-        {
-            // Another test process unpacked it first.
-            Directory.Delete(unpacking, recursive: true);
-        }
-
-        return folder;
     }
-}
-
-/// <summary>A theory over the T.83 data: skipped with a message when the data cannot be downloaded.</summary>
-public sealed class ConformanceTheoryAttribute : TheoryAttribute
-{
-    /// <summary>Sets <see cref="FactAttribute.Skip"/> when the data is not available.</summary>
-    public ConformanceTheoryAttribute() => Skip = JpegConformanceTests.UnavailableReason;
 }
