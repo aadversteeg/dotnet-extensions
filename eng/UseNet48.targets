@@ -1,0 +1,12 @@
+<Project>
+  <!--
+    -p:UseNet48=true (see Directory.Build.props and Directory.Build.targets). Directory.Build.props imports this file
+    through BeforeTargetFrameworkInferenceTargets: after the project body and before the SDK reads TargetFramework,
+    so it can replace the net10.0 that a test project sets. It selects the same projects as the other test
+    switches: UnitTests.*, IntegrationTests.* and PlatformTests.*, unless the project sets
+    <Ns20AssetUnderTest>false</Ns20AssetUnderTest>.
+  -->
+  <PropertyGroup Condition="($(MSBuildProjectName.StartsWith('UnitTests.')) or $(MSBuildProjectName.StartsWith('IntegrationTests.')) or $(MSBuildProjectName.StartsWith('PlatformTests.'))) and '$(Ns20AssetUnderTest)' != 'false'">
+    <TargetFramework>net48</TargetFramework>
+  </PropertyGroup>
+</Project>

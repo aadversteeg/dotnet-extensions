@@ -8,9 +8,10 @@ using Xunit.Abstractions;
 namespace DotnetExtensions.AssetCheck
 {
     /// <summary>
-    /// Compiled into every test project when the repository is built with -p:UseNs20=true or -p:UseNs21=true (see
-    /// Directory.Build.targets). Proves that the test run really used the build of each library that the mode asks
-    /// for. Only the test of the active mode is compiled.
+    /// Compiled into every test project when the repository is built with -p:UseNs20=true, -p:UseNs21=true or
+    /// -p:UseNet48=true (see Directory.Build.targets). Proves that the test run really used the build of each library
+    /// that the mode asks for, and with -p:UseNet48=true also the runtime. Only the tests of the active mode are
+    /// compiled.
     /// </summary>
     public class AssetCheckTests
     {
@@ -68,6 +69,20 @@ namespace DotnetExtensions.AssetCheck
         public void NS20001()
         {
             Check("the netstandard2.0 asset", name => NetStandard20);
+        }
+#endif
+
+#if NETFRAMEWORK
+        /// <summary>
+        /// With -p:UseNet48=true the tests run on .NET Framework, not on .NET (Core).
+        /// </summary>
+        [Fact(DisplayName = "NET48-001: The test host runs on .NET Framework")]
+        public void NET48001()
+        {
+            var description = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+            var process = System.Diagnostics.Process.GetCurrentProcess();
+            _output.WriteLine($"Runtime: {description}; CLR {Environment.Version}; process {process.MainModule?.FileName}; 64-bit {Environment.Is64BitProcess}");
+            Assert.StartsWith(".NET Framework", description, StringComparison.Ordinal);
         }
 #endif
 

@@ -19,10 +19,15 @@
 
     <!-- Test switches: -p:UseNs20=true runs the net10.0 test projects against the netstandard2.0 asset of our
          libraries instead of the net10.0 one. -p:UseNs21=true runs them against the netstandard2.1 asset where
-         a library has one, otherwise the netstandard2.0 asset. Use one at a time. The switches themselves live
-         in Directory.Build.targets. -->
+         a library has one, otherwise the netstandard2.0 asset. -p:UseNet48=true (Windows only) makes the test
+         projects target net48, so they run on .NET Framework 4.8 against the netstandard2.0 asset. Use one at a
+         time. The switches themselves live in Directory.Build.targets; only the net48 target framework of
+         -p:UseNet48=true lives in eng/UseNet48.targets, because the test projects set TargetFramework themselves
+         and only a file the SDK imports after the project body can replace it. -->
     <UseNs20 Condition="'$(UseNs20)' == ''">false</UseNs20>
     <UseNs21 Condition="'$(UseNs21)' == ''">false</UseNs21>
+    <UseNet48 Condition="'$(UseNet48)' == ''">false</UseNet48>
+    <BeforeTargetFrameworkInferenceTargets Condition="'$(UseNet48)' == 'true'">$(MSBuildThisFileDirectory)eng/UseNet48.targets</BeforeTargetFrameworkInferenceTargets>
 
     <!-- The version comes from the release tag (-p:Version); local builds are 0.0.0-dev -->
     <VersionPrefix>0.0.0</VersionPrefix>
