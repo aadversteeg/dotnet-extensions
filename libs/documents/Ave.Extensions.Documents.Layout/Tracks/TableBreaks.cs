@@ -5,6 +5,7 @@ using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 using static Ave.Extensions.Documents.Layout.TablePage;
 
@@ -100,7 +101,13 @@ internal static class TableBreaks
             ? table.HorizontalWidth(row - 1, row, CollapsedBorders.LineContext.Interior) / 2
             : table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2;
 
-    /// <summary>The latest breakpoint of the highest appeal that places body content, taken; None when none does.</summary>
+    /// <summary>
+    /// The latest breakpoint of the highest appeal that places body content, taken; None when none does. A cut inside a
+    /// row that would leave a part of the row that shows nothing (<see cref="CutShows"/>) is only a last resort: it is
+    /// taken when no other breakpoint places anything, with <see cref="BreakAppeal.LastResort"/>, so the table's parent
+    /// prefers any breakpoint of its own (which moves the table to the next page), and only a table at the top of a
+    /// page, where moving gains nothing, is cut there.
+    /// </summary>
     /// <param name="table">The table.</param>
     /// <param name="breakpoints">The page's breakpoints.</param>
     /// <param name="height">The page's available height.</param>
@@ -111,16 +118,19 @@ internal static class TableBreaks
             .OrderByDescending(breakpoint => breakpoint.Appeal)
             .ThenByDescending(breakpoint => breakpoint.Row)
             .ThenByDescending(breakpoint => breakpoint.Kind);
+        Maybe<Outcome> lastResort = Maybe<Outcome>.None;
         foreach (var breakpoint in ordered)
         {
             var taken = Take(table, breakpoint, height);
-            if (taken.IsFailure || taken.Value.HasValue)
+            if (taken.IsFailure || (taken.Value.HasValue && taken.Value.Value.Appeal == breakpoint.Appeal))
             {
                 return taken;
             }
+
+            lastResort = lastResort.HasValue ? lastResort : taken.Value;
         }
 
-        return Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
+        return Result<Maybe<Outcome>, Error>.Success(lastResort);
     }
 
     /// <summary>
@@ -168,7 +178,8 @@ internal static class TableBreaks
     /// Takes a break inside a segment: the rows above <paramref name="cutRow"/> whole; the cells that reach past the
     /// cut laid out again in the height down to <paramref name="cutY"/> — the row's top for a break between rows, the
     /// page end (or just above it, see <see cref="Take"/>) for a break inside the row, which then ends the page. None
-    /// when the rule for a cut inside a row refuses it (<see cref="CutsInsideRow"/>).
+    /// when nothing of the row would be left (<see cref="LeavesSomething"/>); a last resort when a part of the row would
+    /// show nothing (<see cref="CutShows"/>).
     /// </summary>
     private static Result<Maybe<Outcome>, Error> Cut(
         TableGeometry table, Content content, TableSegments.Segment segment, int cutRow, double cutY, bool inside, BreakAppeal appeal)
@@ -218,7 +229,20 @@ internal static class TableBreaks
             continuing.Add(next);
         }
 
-        if (inside && !CutsInsideRow(segment.RowTop(cutRow), cut))
+        if (inside && !LeavesSomething(cut))
+        {
+            return Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
+        }
+
+        var shows = inside ? CutShows(table, segment, cutRow, cut) : Result<bool, Error>.Success(true);
+        if (shows.IsFailure)
+        {
+            return Result<Maybe<Outcome>, Error>.Failure(shows.Error);
+        }
+
+        // A last resort must still move on: something above the row is on the page, or some cut cell placed something,
+        // even if it shows nothing. A cut that changes no cell would start the next page as this one started.
+        if (!shows.Value && !content.HasBody && cutRow == segment.FirstRow && !Advances(segment, cut))
         {
             return Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
         }
@@ -234,29 +258,60 @@ internal static class TableBreaks
         var bottomLine = !inside ? BottomLine(table, cutRow - 1, cutRow, bottom)
             : IsCloned(table) ? new LineAt(cutRow, Next(grid, cutRow), PageEndContext(table, cutRow), bottom)
             : null;
-        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), appeal)));
+        // A cut that leaves a part of the row showing nothing is only a last resort (CutShows).
+        var taken = shows.Value ? appeal : BreakAppeal.LastResort;
+        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), taken)));
     }
 
     /// <summary>
-    /// THE RULE FOR A CUT INSIDE A ROW: a row is cut inside itself only when, on this page and below the top of that
-    /// row, some cell draws something, and something of the row is left for the next page. It is decided from the
-    /// placed result, the cut cells as laid out on this page, not from the document tree: what counts is what the page
-    /// shows (<see cref="DrawnContent"/>: a visible glyph, an image, a rule, a filled or bordered box). So a cell that
-    /// spans rows and placed its text above the row does not count, nor does a cell of invisible characters, or an
-    /// empty block with padding only; an empty block with a border or a background does, as it draws. A cell's own
-    /// background is not counted: it fills every part of the row on every page, whatever the cell holds, so it says
-    /// nothing about whether this part shows anything. (In the collapsing border model a cell paints no border of its
-    /// own; the table draws the grid lines.) Without the first half, a page would end with an empty strip of the row
-    /// and the whole row would follow on the next page; without the second, a row whose cells all end on this page
-    /// would be split into the whole row and an empty part on the next. Refused, the row moves to the next page whole.
+    /// THE RULE FOR A CUT INSIDE A ROW, part 1: a row is cut inside itself only when something of it is left for the
+    /// next page: some cell the cut lays out again goes on there. Otherwise every cell ends on this page, and the row
+    /// would be split into the whole row and an empty part.
     /// </summary>
-    /// <param name="rowTop">The cut row's top, from the table's top edge.</param>
     /// <param name="cut">Every cell the cut lays out again: its top (from the table's top edge), its fragment on this
     /// page and where it continues.</param>
-    /// <returns>Whether the row may be cut here.</returns>
-    private static bool CutsInsideRow(double rowTop, IReadOnlyList<(double Top, BoxFragment Fragment, CellBreak Next)> cut) =>
-        cut.Any(cell => DrawnContent.ChildrenDrawBelow(cell.Fragment.Children, rowTop - cell.Top))
-        && cut.Any(cell => !cell.Next.IsComplete);
+    /// <returns>Whether anything of the row goes on.</returns>
+    private static bool LeavesSomething(IReadOnlyList<(double Top, BoxFragment Fragment, CellBreak Next)> cut) =>
+        cut.Any(cell => !cell.Next.IsComplete);
+
+    /// <summary>Whether a cut lays out some cell further than where the page started it.</summary>
+    private static bool Advances(TableSegments.Segment segment, IReadOnlyList<(double Top, BoxFragment Fragment, CellBreak Next)> cut) =>
+        cut.Any(cell => segment.Cells.Single(active => active.Cell == cell.Next.Cell) is var start
+            && (cell.Next.Token != start.Token || cell.Next.IsComplete != start.IsComplete));
+
+    /// <summary>
+    /// THE RULE FOR A CUT INSIDE A ROW, part 2: the cut is a breakpoint only when both parts of the row show something.
+    /// On this page, some cell draws something in the visible part of the row, which starts under the grid line above it
+    /// (that line covers what lies in its lower half); and on the next page, the rest of some cell draws something. What
+    /// is drawn is decided from placed results, not from the document tree (<see cref="DrawnContent"/>: a visible glyph,
+    /// an image, a rule, a filled or bordered box). So a cell that spans rows and placed its text above the row does not
+    /// count, nor does text hidden under a thick line, nor a cell of invisible characters, or an empty block with padding
+    /// only; an empty block with a border or a background does, as it draws. A cell's own background is not counted: it
+    /// fills every part of the row on every page, whatever the cell holds, so it says nothing about whether a part shows
+    /// anything. (In the collapsing border model a cell paints no border of its own; the table draws the grid lines.)
+    /// Without the first half a page would end with an empty strip of the row; without the second the next page would
+    /// start with one. A cut that fails this rule is a last resort (<see cref="TakeBest"/>): the row moves to the next
+    /// page whole when it can, and is cut anyway only where nothing else is possible, so a row that draws nothing over
+    /// a page's height is never refused.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="segment">The unit the cut is in, measured.</param>
+    /// <param name="cutRow">The row the cut is inside.</param>
+    /// <param name="cut">Every cell the cut lays out again, as for <see cref="LeavesSomething"/>.</param>
+    /// <returns>Whether both parts show something, or an error from laying out the rest of a cell.</returns>
+    private static Result<bool, Error> CutShows(
+        TableGeometry table, TableSegments.Segment segment, int cutRow, IReadOnlyList<(double Top, BoxFragment Fragment, CellBreak Next)> cut)
+    {
+        var visibleTop = segment.RowTop(cutRow) + LineInside(table, segment, cutRow);
+        if (!cut.Any(cell => DrawnContent.ChildrenDrawBelow(cell.Fragment.Children, visibleTop - cell.Top)))
+        {
+            return Result<bool, Error>.Success(false);
+        }
+
+        return cut.Where(cell => !cell.Next.IsComplete)
+            .TraverseAll(cell => TableSegments.Rest(table, segment, cell.Next))
+            .OnSuccessMap(rests => rests.Any(rest => DrawnContent.ChildrenDrawBelow(rest.Children, double.NegativeInfinity)));
+    }
 
     /// <summary>The appeal of a class-A break before a body row: lower inside a row group kept together, or where
     /// the rows (or, at a group boundary, the groups) avoid a break between them.</summary>

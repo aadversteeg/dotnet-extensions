@@ -77,6 +77,22 @@ internal static class TableSegments
     }
 
     /// <summary>
+    /// The rest of a cut cell as the next page would lay it out, with unlimited height: what is left of it after the
+    /// cut (<see cref="TableBreaks"/>, CutShows, asks whether it draws anything).
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="segment">The segment the cut is in.</param>
+    /// <param name="next">Where the cell continues; not complete.</param>
+    /// <returns>The rest's fragment, or an error.</returns>
+    internal static Result<BoxFragment, Error> Rest(TableGeometry table, Segment segment, CellBreak next)
+    {
+        var info = table.Grid.Cells[next.Cell];
+        var box = CellLayoutBox(table, segment, new ActiveCell(next.Cell, info.Row, next.Token, false));
+        return table.Environment.Layout(box, new ConstraintSpace(table.CellWidth(info), double.PositiveInfinity, false, true), next.Token)
+            .OnSuccessMap(result => result is LayoutResult.Placed placed ? placed.Fragment : EmptyCell(box, table.CellWidth(info), 0));
+    }
+
+    /// <summary>
     /// With clone, the rest of every cell that continues from the previous page — a cell cut inside its own row, or a
     /// spanning cell cut between or inside the rows it spans — starts under the whole line that starts the page, which
     /// runs across the full width (see <see cref="TablePage"/>): half that line's width lies in the cell, as for a whole

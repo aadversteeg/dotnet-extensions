@@ -46,11 +46,13 @@ namespace Ave.Extensions.Documents.Layout;
 /// </list>
 /// <para>Only the last row of the table needs the half of the table's bottom border that lies inside the table. A break
 /// inside a row is a breakpoint only when it cuts content. The rule, decided from the placed result: a row is cut
-/// inside itself only when, on this page and below the top of that row, some cell draws something, and something of
-/// the row is left for the next page (stated once, in <see cref="TableBreaks"/>, CutsInsideRow). So a row whose cells all
-/// end on this page is never split into a full row and an empty one, and a row of which nothing would show on this page
-/// — beside a cell that spans rows and placed its text higher up, or beside cells of invisible characters — is never
-/// split into an empty strip at the page end and the whole row on the next page: it moves to the next page whole.</para>
+/// inside itself only when something of it is left for the next page, and both parts show something: on this page,
+/// some cell draws something below the grid line above the row, and on the next the rest of some cell draws something
+/// (stated once, in <see cref="TableBreaks"/>, LeavesSomething and CutShows). So a row whose cells all end on this page
+/// is never split into a full row and an empty one, and a row of which nothing would show on one of the pages — beside
+/// a cell that spans rows and placed its text higher up, beside cells of invisible characters, under a thick line — is
+/// not split into an empty strip and the rest: it moves to the next page whole. Only where it cannot move (at the top of
+/// a page) such a cut is taken as a last resort, so no row is refused.</para>
 /// <para><b>The grid lines at a break inside a row</b> follow the same decoration break. <see cref="BoxDecorationBreak.Slice"/>
 /// draws nothing at the cut: the row's cells are boxes cut by a break, which get no border there (CSS Fragmentation 3
 /// §5.4). <see cref="BoxDecorationBreak.Clone"/> closes the table on both pages, as word processors do: the page ends
@@ -136,10 +138,12 @@ internal static class TablePage
         var hasHeader = grid.HeaderRowCount > 0;
         var outcome = Attempt(table, space, resume, isFirst, hasHeader);
 
-        // A later page that cannot hold the header and some body content goes on without the header (see remarks).
-        if (!isFirst && hasHeader && outcome.IsSuccess && outcome.Value.HasNoValue)
+        // A later page that cannot hold the header and some body content that shows goes on without the header (see
+        // remarks): under the header the body has no room, or only a last-resort cut.
+        if (!isFirst && hasHeader && outcome.IsSuccess && OnlyLastResort(outcome.Value))
         {
-            outcome = Attempt(table, space, resume, isFirst, includeHeader: false);
+            var without = Attempt(table, space, resume, isFirst, includeHeader: false);
+            outcome = without.IsFailure || (without.Value.HasValue && !OnlyLastResort(without.Value)) || outcome.Value.HasNoValue ? without : outcome;
         }
 
         if (outcome.IsFailure)
@@ -210,8 +214,9 @@ internal static class TablePage
 
         var body = PlaceBody(table, content, resume, height);
 
-        // The header alone at the start of an empty page: nothing better is possible there (see remarks).
-        return body.IsSuccess && body.Value.HasNoValue && includeHeader && isFirst && space.IsAtPageStart
+        // The header alone at the start of an empty page: nothing better is possible there (see remarks); a body that only
+        // a last-resort cut would place is not better.
+        return body.IsSuccess && OnlyLastResort(body.Value) && includeHeader && isFirst && space.IsAtPageStart
             ? Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(
                 content with { Lines = content.Lines.RemoveAt(content.Lines.Count - 1) },
                 BottomLine(table, grid.HeaderRowCount - 1, nextBody, content.Bottom),
@@ -278,6 +283,9 @@ internal static class TablePage
     }
 
     internal static int? Next(TableGrid grid, int row) => row + 1 < grid.Rows.Length ? row + 1 : null;
+
+    /// <summary>True when an attempt placed nothing, or only by a last-resort cut (<see cref="TableBreaks.TakeBest"/>).</summary>
+    private static bool OnlyLastResort(Maybe<Outcome> outcome) => outcome.HasNoValue || outcome.Value.Appeal == BreakAppeal.LastResort;
 
     /// <summary>The context of the line below a row: the table's bottom border joins it when it is the last row.</summary>
     internal static CollapsedBorders.LineContext EdgeContext(TableGrid grid, int row) =>

@@ -199,33 +199,24 @@ Each is documented next to its code as well.
   that fits in Chromium by less than that share of its text width can break one word earlier in the engine. The
   engine keeps the font's exact advances; the reference cases that pin lengths use sizes Chromium keeps exact
   (`tools/reference/chromium/README.md`, "Where Chromium is not exact").
-- **A blank part of a table row as tall as the page area:** a part of a row that is as tall as the page area and
-  draws nothing cannot be cut, and the document is refused (`Documents.Layout.DoesNotFit`). A row is cut only where
-  some cell draws something below the row's top on that page (`TableBreaks.CutsInsideRow`); a page that would hold
-  only blank lines, empty padded blocks or no-break spaces of the row offers no cut, and at the top of a page the row
-  cannot move on. The row may have text elsewhere: "top", 30 blank lines and "end" in one cell is refused, because
-  the page after "top" would hold blank lines only. This is not the leading-space limit above: there is no leading
-  space, and the row could be broken; the message does not name the blank stretch as the cause. Pinned by
-  `BlankRowPartLimitTests` (Fluent). Cutting anyway when the only other outcome is a refusal is next milestone's
-  rule.
-- **Three smaller table and page-start cases (review 36, notes):**
-  - *The mirror of the strip.* A row may be cut where it draws text on this page while what is left of it for the
-    next page draws nothing; that page then starts with an empty part of the row, 8 to 10 pt high. Seen for one kind
-    of cell only: a cell with two empty blocks with padding (237 of 2 400 documents in the reviewer's sweep). The rule
-    for a cut asks only that something of the row is left, not that it draws.
-  - *A thin strip under a thick line.* With an 8 pt line under the first row of each group of rows under a label, a
-    page may end with the 8 pt line and the 1 pt line that closes the table right under it, and the second row
-    follows whole on the next page (1 page of 107 in the reviewer's probe). The label's text line ends 1 pt below the
-    top of the second row, inside the thick line, so something is drawn below that row's top by the letter of the
-    rule, although nothing of the row shows.
-  - *Two older first-on-page cases.* A block with padding that is first on a page and holds a piece that cannot be
-    broken, between "page area minus both paddings" and "page area minus the top padding" high, is refused; lower
-    on the page the same block is placed and broken. A paragraph kept together that is first on a page inside a
-    padded block is broken, although it would fit the next page. Both were so before fix round 5.
+- **Two older first-on-page cases (review 36, notes):** a block with padding that is first on a page and holds a
+  piece that cannot be broken, between "page area minus both paddings" and "page area minus the top padding" high, is
+  refused; lower on the page the same block is placed and broken. A paragraph kept together that is first on a page
+  inside a padded block is broken, although it would fit the next page. Both were so before fix round 5.
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
   continues without the header.
+- **Deliberate deviation from Chromium: no part of a table row that shows nothing where moving the row avoids it.**
+  Chromium cuts a row wherever its cells can break, so a page may end with a part of a row that shows nothing (a row of
+  empty padded blocks after other rows) or start with one (the rest of a row whose text ended on the page before; case
+  `a3-mirror`). The engine cuts a row only where both parts show something, and otherwise moves the row to the next
+  page whole; a cut where a part shows nothing is a last resort, taken only where the row cannot move (at the top of a
+  page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`). Where a row shows nothing over more than
+  a page, the engine therefore needs a page more than Chromium (cases `a2-padded-blocks`, `a2-line-breaks`: the engine's
+  page 2 is the blank part of the row, Chromium's page 1 ends with it). Reason: an empty strip of a row reads as a
+  layout fault in a report, and the rule that avoids it costs nothing where the row can move. Pinned by `RowPartTests`
+  (Fluent).
 - **Text:** no Unicode normalization before shaping (HarfBuzz composes a base and a mark into a precomposed glyph,
   this engine does not); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
   (GPOS type 6); default language system only; complex scripts, bidi and hyphenation are not implemented. Only
@@ -258,11 +249,13 @@ Each is documented next to its code as well.
   break is closed there by its own borders: where the line crosses it, its bottom and top border compete as two
   cells' do, and the line is the same on both pages; where the line is its own bottom or top edge (a cut inside its
   last or first row), the line is resolved as anywhere else, with what lies beyond it. A row is cut inside itself only
-  when, on this page and below the top of that row, some cell draws something (a visible glyph, an image, a rule, a
-  filled or bordered box), and something of the row is left for the next page; otherwise it moves to the next page
-  whole (`Tracks/TableBreaks.cs`, `CutsInsideRow`, decided from the placed result). So no page ends with an empty strip
-  of a row: not beside a cell that spans rows and placed its text higher up, nor beside cells of invisible characters
-  or empty padded blocks. With `Clone` such a cut needs one line width more room than with `Slice`, so on a very small
+  when something of it is left for the next page, and both parts show something: on this page some cell draws
+  something (a visible glyph, an image, a rule, a filled or bordered box) below the grid line above the row, and on the
+  next page the rest of some cell does (`Tracks/TableBreaks.cs`, `LeavesSomething` and `CutShows`, decided from the
+  placed result); otherwise it moves to the next page whole, and only where it cannot move is the cut taken as a last
+  resort (see the deviation above). So no page ends or starts with an empty strip of a row where the row could move:
+  not beside a cell that spans rows and placed its text higher up, nor beside cells of invisible characters or empty
+  padded blocks, nor under a thick line that hides the text reaching into the row. With `Clone` such a cut needs one line width more room than with `Slice`, so on a very small
   page area a table may not fit with `Clone` that fits with `Slice`. A row span does not keep its rows together: a
   break between two rows that a spanning cell crosses is an ordinary break between rows, with the appeal it would
   have without the span, and the cell continues on the next page (`TableBreaks.BetweenRowsAppeal`). The author's keep

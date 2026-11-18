@@ -42,7 +42,7 @@ $out = Join-Path $here 'out'
 New-Item -ItemType Directory -Force $out | Out-Null
 
 $user = if ($IsWindows) { @() } else { @('--user', "$(id -u):$(id -g)") }
-$names = if ($Cases.Count -gt 0) { $Cases } else { @(Get-ChildItem (Join-Path $here 'cases') -Filter *.html | Sort-Object Name | ForEach-Object BaseName) }
+$names = @(if ($Cases.Count -gt 0) { $Cases } else { Get-ChildItem (Join-Path $here 'cases') -Filter *.html | Sort-Object Name | ForEach-Object BaseName })
 
 # MEASURE_IMAGE: measure.mjs records the image in versions.txt, next to the Chromium version and flags.
 $playwright = @('run', '--rm') + $user + @('-e', 'HOME=/tmp', '-e', "MEASURE_IMAGE=$PlaywrightImage", '-v', "${family}:/family", '-w', '/family/tools/reference/chromium', $PlaywrightImage)
