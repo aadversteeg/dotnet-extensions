@@ -34,11 +34,11 @@ namespace UnitTests.Extensions.Documents.Samples;
 /// chance;</item>
 /// <item>no other tolerance; the golden PNG files catch any change over time.</item>
 /// </list>
-/// <para><b>Images.</b> Both viewers fit an image to whole pixels before they draw it, and the engine maps it exactly onto
-/// its rectangle, as the page model says. So on a page whose image does not lie on the pixel grid its content lands up to
-/// half a pixel apart, and image rectangles, grown by one pixel, are left out of the away-from-edges metric there
-/// (<see cref="EdgeMask"/> with <c>imagesAsEdges</c>). Images that lie exactly on the pixel grid (1:1, whole-number
-/// enlargements and reductions) are compared inside as well, where fitting changes nothing.</para>
+/// <para><b>Images.</b> Both viewers fit an image to whole pixels before they draw it and smooth some enlargements, and the
+/// engine maps it exactly onto its rectangle as sample squares, as the PDF defines it (ISO 32000-1 §8.9.5.3; PDF/A forbids
+/// asking for interpolation, ISO 19005-3 §6.2.8). So image rectangles, grown by one pixel, are left out of the
+/// away-from-edges metric (<see cref="EdgeMask"/>). The image rule is proven exactly in Graphics; decoding and colour are
+/// compared with MuPDF on images at 1:1 on the pixel grid (<c>RasterReferenceTests</c>).</para>
 /// </remarks>
 internal static class RasterComparison
 {
@@ -97,7 +97,8 @@ internal static class RasterComparison
     /// <summary>
     /// The pixels at an edge: a pixel is at an edge of an item when that item's coverage is not the same in all pixels of
     /// the pixel's 3 × 3 neighbourhood, and at an edge when it is at an edge of any item of the page (a glyph, a filled
-    /// rectangle, an image's rectangle), whatever is drawn over or under it. Coverage is the exact coverage of
+    /// rectangle, an image's rectangle), whatever is drawn over or under it, and every pixel within one pixel of an image's
+    /// rectangle is at an edge too. Coverage is the exact coverage of
     /// Ave.Extensions.Documents.Graphics, of each item on its own: so a partly covered pixel, a pixel next to one, and a
     /// pixel next to an edge that falls exactly between two pixels are at an edge; everything else is away from edges.
     /// Each item's geometry is worked out here from the page model, independently of the raster back-end's painter: a
@@ -106,10 +107,8 @@ internal static class RasterComparison
     /// </summary>
     /// <param name="page">The page.</param>
     /// <param name="resolution">Pixels per inch.</param>
-    /// <param name="imagesAsEdges">True to count every pixel of an image's rectangle, grown by one pixel, as at an edge
-    /// (for pages whose images do not lie on the pixel grid; see the class remarks).</param>
     /// <returns>Width × height flags, row by row, with the size of the engine's image of the page.</returns>
-    public static (int Width, int Height, bool[] AtEdge) EdgeMask(Page page, double resolution, bool imagesAsEdges)
+    public static (int Width, int Height, bool[] AtEdge) EdgeMask(Page page, double resolution)
     {
         var (longWidth, longHeight) = PageRasterizer.PixelSize(page.Size, resolution);
         var (width, height) = ((int)longWidth, (int)longHeight);
@@ -145,21 +144,19 @@ internal static class RasterComparison
             }
         }
 
-        if (imagesAsEdges)
+        // Image rectangles, grown by one pixel, count as edges (see the class remarks).
+        foreach (var image in page.Items.OfType<DrawImage>())
         {
-            foreach (var image in page.Items.OfType<DrawImage>())
+            var area = image.Area;
+            var left = (int)Math.Floor(Math.Min(area.Origin.X, area.Origin.X + area.Size.Width) * scale) - 1;
+            var top = (int)Math.Floor(Math.Min(area.Origin.Y, area.Origin.Y + area.Size.Height) * scale) - 1;
+            var right = (int)Math.Ceiling(Math.Max(area.Origin.X, area.Origin.X + area.Size.Width) * scale) + 1;
+            var bottom = (int)Math.Ceiling(Math.Max(area.Origin.Y, area.Origin.Y + area.Size.Height) * scale) + 1;
+            for (var y = Math.Max(0, top); y < Math.Min(height, bottom); y++)
             {
-                var area = image.Area;
-                var left = (int)Math.Floor(Math.Min(area.Origin.X, area.Origin.X + area.Size.Width) * scale) - 1;
-                var top = (int)Math.Floor(Math.Min(area.Origin.Y, area.Origin.Y + area.Size.Height) * scale) - 1;
-                var right = (int)Math.Ceiling(Math.Max(area.Origin.X, area.Origin.X + area.Size.Width) * scale) + 1;
-                var bottom = (int)Math.Ceiling(Math.Max(area.Origin.Y, area.Origin.Y + area.Size.Height) * scale) + 1;
-                for (var y = Math.Max(0, top); y < Math.Min(height, bottom); y++)
+                for (var x = Math.Max(0, left); x < Math.Min(width, right); x++)
                 {
-                    for (var x = Math.Max(0, left); x < Math.Min(width, right); x++)
-                    {
-                        atEdge[(y * width) + x] = true;
-                    }
+                    atEdge[(y * width) + x] = true;
                 }
             }
         }

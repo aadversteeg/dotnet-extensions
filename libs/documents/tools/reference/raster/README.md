@@ -22,9 +22,10 @@ Per page, over the pixels the images share, on red, green and blue:
 
 - **away**: the largest channel difference over the pixels away from edges. A pixel is at an edge when the exact coverage
   of some item of the page (a glyph, a rectangle, an image's rectangle), taken on its own, is not the same over the
-  pixel's 3 × 3 neighbourhood. On pages whose images do not lie on the pixel grid, image rectangles grown by one pixel are
-  left out too: both viewers fit an image to whole pixels before they draw it, and the engine maps it exactly onto its
-  rectangle, as the page model says, so the image's content lands up to half a pixel apart.
+  pixel's 3 × 3 neighbourhood. Image rectangles grown by one pixel are left out too: both viewers fit an image to whole
+  pixels before they draw it and smooth some enlargements, while the engine maps it exactly onto its rectangle as
+  sample squares, as the PDF defines it (ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3
+  §6.2.8, veraPDF rule 6.2.8-3).
 - **MSE**: Σ d² / (3 × pixels), in 8-bit steps squared.
 - **over 32 / 64 / 128**: the pixels where some channel differs by more than that many steps.
 
@@ -33,6 +34,13 @@ references' distance to each other. Over 32 and over 64 measure how an edge is d
 a known reason (heavier glyph edges, thin rectangles snapped to whole pixels), so there the engine must not be the
 outlier: its distance to the NEARER reference is not larger than the references' distance to each other. No other
 tolerance; the golden PNG files (`UnitTests.Extensions.Documents.Samples/Golden/*.png`) catch any change over time.
+
+Images: the image rule (a device pixel is the area-weighted mean of the sample squares it covers) is proven exactly in
+`UnitTests.Extensions.Documents.Graphics/ImageResamplingTests.cs`, against analytic areas, for enlargements and
+reductions by whole and fractional factors, offsets inside a pixel, mirrors, rotations and shears. The viewers are
+used only where resampling plays no part: an image at 1:1 on the pixel grid, engine against MuPDF, PNG equal and JPEG
+within the bound derived against djpeg for the file's sampling (1 grey, 3 colour); all pass. Poppler is not a reference
+for image interiors (below).
 
 ## Measured: the samples (2026-11-18, all pass)
 
@@ -69,9 +77,12 @@ third as far from MuPDF as either viewer is from poppler.
 | timesheet-normal.nl | 96 | 1 | 0 | 165.40 | 30396 / 11012 / 369 | 0 | 496.90 | 50111 / 26987 / 7665 | 0 | 630.98 | 47314 / 27267 / 11457 |
 | timesheet-normal.nl | 96 | 2 | 0 | 56.55 | 9283 / 3970 / 322 | 0 | 180.86 | 18442 / 11422 / 2856 | 0 | 225.28 | 18068 / 11651 / 4000 |
 
-## Measured: images on the pixel grid (2026-11-18; not passed, the test is skipped until the rule is decided)
+## Measured: images on the pixel grid (2026-11-18; information, not a check)
 
-One image per page, starting on a whole pixel at 96 dpi, at whole-number scales. What the numbers show:
+One image per page, starting on a whole pixel at 96 dpi, at whole-number scales. The viewers differ from the engine
+because they do not show the sample squares the PDF defines: both smooth an image enlarged 2× (MuPDF does not at 3×), and
+poppler resamples every image drawn below 4×. They differ from each other because each has its own rule for when and how
+to smooth. What the numbers show:
 
 - At 1:1 and 3× the engine draws exactly what MuPDF draws for PNG (0 everywhere) and within 1–2 steps for JPEG (the two
   JPEG decoders' rounding). Reductions: the engine is close to MuPDF (JPEG 1, a fine PNG test pattern 24–36).

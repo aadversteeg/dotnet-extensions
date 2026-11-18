@@ -282,8 +282,8 @@ line-height property and strut, `vertical-align: baseline` in cells, column gaps
 border model, diagonal border joins, keep rules that would move a break into an earlier sibling's content, interlaced
 and 16-bit PNG, CMYK and arithmetic-coded JPEG, Unicode normalization before shaping, contextual and other OpenType
 lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts; in preview images: no hinting (small text is lighter than in viewers that hint), two rectangles that meet
-inside a pixel let a little of the page show through (as in MuPDF), and an enlarged image shows sharp pixels where
-viewers may smooth it. At most font sizes Chromium's text is narrower
+inside a pixel let some of the page show through (a quarter at half a pixel, as in MuPDF), and an enlarged image shows
+its sample squares, as the PDF defines it, where some viewers smooth it. At most font sizes Chromium's text is narrower
 than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small
 sizes; none at 9, 10.5 and 12 pt), so a line that fits in Chromium by less than that share of its text width can
 break one word earlier in the engine, which keeps the font's exact advances (`tools/reference/chromium/README.md`,

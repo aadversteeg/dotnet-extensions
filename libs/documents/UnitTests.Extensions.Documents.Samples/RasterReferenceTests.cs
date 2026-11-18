@@ -21,8 +21,7 @@ namespace UnitTests.Extensions.Documents.Samples;
 /// </summary>
 /// <remarks>
 /// Two kinds of pages: every page of every sample (images not on the pixel grid, so image rectangles are left out of the
-/// away-from-edges metric), and pages of images placed exactly on the pixel grid at 1:1, at whole-number enlargements and
-/// at whole-number reductions, PNG and JPEG, grey and colour, where the image's interior is compared too. With the
+/// away-from-edges metric), and pages of one image at 1:1 on the pixel grid, compared with MuPDF inside the image. With the
 /// environment variable <c>RASTER_REFERENCE_OUT</c> set to a folder, the test writes the table of distances
 /// (<c>distances.md</c>) and, for every timesheet page, the three images side by side (engine, MuPDF, poppler);
 /// <c>tools/reference/raster/README.md</c> keeps the table measured last.
@@ -43,29 +42,6 @@ public sealed class RasterReferenceTests
         return cases;
     }
 
-    /// <summary>Images and the scales they are drawn at on the pixel grid: 1 is 1:1, 2 and 3 enlargements, 0.5 and 0.25
-    /// reductions (only where the image's size divides).</summary>
-    public static TheoryData<string, double> GridImages()
-    {
-        var cases = new TheoryData<string, double>();
-        foreach (var (file, scales) in new[]
-        {
-            ("rgb8-filters.png", new[] { 1, 2, 3, 0.5, 0.25 }),
-            ("grey8.png", new[] { 1, 2, 3.0 }),
-            ("rgba8.png", new[] { 1, 2, 3.0 }),
-            ("baseline-rgb.jpg", new[] { 1, 2, 3, 0.5 }),
-            ("baseline-grey.jpg", new[] { 1, 2, 3, 0.5 }),
-        })
-        {
-            foreach (var scale in scales)
-            {
-                cases.Add(file, scale);
-            }
-        }
-
-        return cases;
-    }
-
     [DockerTheory]
     [MemberData(nameof(Samples))]
     public void Every_sample_page_is_as_close_to_each_viewer_as_the_rule_asks(string name, double resolution)
@@ -73,26 +49,68 @@ public sealed class RasterReferenceTests
         var document = SampleFiles.Documents.Single(sample => sample.Name == name).Document;
         var pages = Ave.Extensions.Documents.DocumentRendering.ToPages(document, TestFonts.SetWithItalic).Value;
 
-        Compare(name, pages, resolution, imagesAsEdges: true);
+        Compare(name, pages, resolution);
     }
 
-    [DockerTheory(Skip = "Waiting for the rule for images on the pixel grid: at 2x both viewers interpolate and the engine does not, and poppler resamples every image below 4x (tools/reference/raster/README.md, \"Images on the pixel grid\").")]
-    [MemberData(nameof(GridImages))]
-    public void An_image_on_the_pixel_grid_is_as_close_to_each_viewer_as_the_rule_asks(string file, double scale)
+    /// <summary>
+    /// Image interiors against MuPDF, where resampling plays no part: the image at 1:1 on the pixel grid (at 96 dpi a
+    /// pixel is 0.75 pt), so each device pixel is one sample square and the comparison checks decoding and colour only.
+    /// The image rule itself (area-weighted sample squares, ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation,
+    /// ISO 19005-3 §6.2.8) is proven exactly in Graphics (<c>ImageResamplingTests</c>). PNG: equal. JPEG: within the bound
+    /// <c>JpegDecoderReferenceTests</c> derived against djpeg for the file's sampling — 1 for grey, 3 for colour (the
+    /// inverse DCT's rounding, counted up to 1.772 times through the colour transform, and the rounding of up-sampled
+    /// chroma). Poppler is not a reference for image interiors: it resamples every image drawn below 4×, at 1:1 too
+    /// (measured: up to 198–245 from MuPDF and the engine, both equal there; tools/reference/raster/README.md). A PNG with
+    /// alpha is left out: on the white page its pixels test compositing arithmetic, not decoding (Graphics tests it).
+    /// </summary>
+    [DockerTheory]
+    [InlineData("rgb8-filters.png", 0)]
+    [InlineData("grey8.png", 0)]
+    [InlineData("palette4.png", 0)]
+    [InlineData("baseline-grey.jpg", 1)]
+    [InlineData("baseline-rgb.jpg", 3)]
+    [InlineData("progressive-rgb.jpg", 3)]
+    [InlineData("jpeg-444.jpg", 3)]
+    public void An_image_at_one_to_one_on_the_pixel_grid_decodes_like_MuPDF(string file, int largest)
     {
-        // At 96 dpi a pixel is 0.75 pt: the image starts on a whole pixel, 4 pixels from the page's edges, and covers whole
-        // pixels.
-        const double resolution = 96;
         var image = TestImages.Load(file);
-        var (width, height) = (image.PixelWidth * scale, image.PixelHeight * scale);
+        var (width, height) = (image.PixelWidth, image.PixelHeight);
         var page = new Page(
             new Size((width + 8) * 0.75, (height + 8) * 0.75),
             [new DrawImage(new Rect(new Point(4 * 0.75, 4 * 0.75), new Size(width * 0.75, height * 0.75)), image)]);
+        var pages = new PageDocument(new DocumentMetadata(file, null), [page]);
+        var engine = PageRasterizer.Render(pages, new RasterOptions(96)).Value[0];
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-raster-").FullName;
+        try
+        {
+            File.WriteAllBytes(Path.Combine(folder, "document.pdf"), [.. PdfRenderer.Render(pages, new PdfRenderOptions(SampleOutput.Options.CreationDate)).Value]);
+            var (exitCode, output) = Docker.Run(
+                ["run", "--rm", .. Docker.UserArguments, "-v", $"{folder}:/work", ReferenceTools.Image, "mutool", "draw", "-q", "-r", "96", "-A", "8", "-o", "/work/mupdf-%d.png", "/work/document.pdf"],
+                TimeSpan.FromMinutes(2));
+            exitCode.Should().Be(0, output);
+            var (mupdfWidth, _, channels, mupdf) = Renders(folder, "mupdf-").Single();
 
-        Compare($"{file} at {scale.ToString(CultureInfo.InvariantCulture)}", new PageDocument(new DocumentMetadata(file, null), [page]), resolution, imagesAsEdges: false);
+            var difference = 0;
+            for (var y = 4; y < 4 + height; y++)
+            {
+                for (var x = 4; x < 4 + width; x++)
+                {
+                    for (var channel = 0; channel < 3; channel++)
+                    {
+                        difference = Math.Max(difference, Math.Abs(engine.Pixels[(((y * engine.Width) + x) * 4) + channel] - mupdf[(((y * mupdfWidth) + x) * channels) + channel]));
+                    }
+                }
+            }
+
+            difference.Should().BeLessThanOrEqualTo(largest, $"{file} at 1:1: the largest channel difference inside the image");
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
-    private static void Compare(string name, PageDocument pages, double resolution, bool imagesAsEdges)
+    private static void Compare(string name, PageDocument pages, double resolution)
     {
         var engine = PageRasterizer.Render(pages, new RasterOptions(resolution)).Value;
         var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-raster-").FullName;
@@ -115,7 +133,7 @@ public sealed class RasterReferenceTests
             var table = new StringBuilder();
             for (var index = 0; index < engine.Length; index++)
             {
-                var edges = RasterComparison.EdgeMask(pages.Pages[index], resolution, imagesAsEdges);
+                var edges = RasterComparison.EdgeMask(pages.Pages[index], resolution);
                 var ours = (engine[index].Width, engine[index].Height, 4, engine[index].Pixels.ToArray());
                 var toMupdf = RasterComparison.Compare(ours, mupdf[index], edges);
                 var toPoppler = RasterComparison.Compare(ours, poppler[index], edges);

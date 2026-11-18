@@ -169,13 +169,17 @@ pinned pixels of a Graphics scene and the pinned bytes of a PNG are verified on 
 **Compared with viewers.** `tools/reference/raster/README.md`: every sample page against MuPDF and poppler renders of
 the engine's PDF, by the rule in `UnitTests.Extensions.Documents.Samples/RasterComparison.cs` (no farther from either
 viewer than the viewers are from each other; for pixels over 32 and 64, no farther from the nearer one). The engine is
-closest to MuPDF; poppler draws glyph edges heavier and snaps thin rectangles to whole pixels.
+closest to MuPDF; poppler draws glyph edges heavier and snaps thin rectangles to whole pixels. Images follow the PDF's
+definition, not a viewer: the image rule is proven exactly against analytic areas (`Graphics` tests, any scale, offset
+and affine map), and the viewers check only decoding and colour, on images at 1:1 on the pixel grid against MuPDF
+(poppler resamples every image drawn below 4×, also at 1:1).
 
 **Known limits.** No hinting: small text is lighter than in a viewer that hints (PDFium). Two items that meet at a
-boundary inside a pixel each paint their exact coverage, so a little of what is beneath shows through (a quarter at
-half a pixel) — MuPDF does the same, poppler snaps rectangle edges to whole pixels instead; the samples have no such
-items. Both viewers fit an image to whole pixels and smooth some enlargements; the engine maps the image exactly and
-shows its pixels as sharp squares. JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
+boundary inside a pixel each paint their exact coverage, so some of what is beneath shows through: two rectangles of
+colour 51,102,153 on white meeting at half a pixel give 102,140,178 at the boundary (a quarter of the white), MuPDF
+95,135,175; poppler moves rectangle edges to whole pixels instead (51,102,153, but the boundary moves); the samples have
+no such items (`tools/reference/raster/README.md`). An enlarged image shows its sample squares, as the PDF defines it
+(ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
 PDF embeds them. Encoding a PNG costs more than drawing the page (about 50 ms at 96 dpi, 500 ms at 300 dpi for an A4
 page); speed is stage 5's work.
 
