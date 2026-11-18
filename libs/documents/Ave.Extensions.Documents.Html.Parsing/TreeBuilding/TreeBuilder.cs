@@ -45,6 +45,9 @@ internal sealed partial class TreeBuilder
     private bool _fosterParenting;
     private bool _skipNextLineFeed;
     private bool _stopped;
+
+    /// <summary>Set when the end of the file closed a template and must be processed again (§13.2.6.4.16).</summary>
+    private bool _endOfFileAgain;
     private MutableElement? _context;
 
     /// <summary>Creates a tree builder for a whole document.</summary>
@@ -135,6 +138,12 @@ internal sealed partial class TreeBuilder
             {
                 _skipNextLineFeed = false;
                 Process(Input.Of(token));
+                while (_endOfFileAgain)
+                {
+                    _endOfFileAgain = false;
+                    Process(Input.Of(token));
+                }
+
                 if (token is { Kind: TokenKind.StartTag, SelfClosing: true, SelfClosingAcknowledged: false })
                 {
                     Error("non-void-html-element-start-tag-with-trailing-solidus", token.Start, token.Name);

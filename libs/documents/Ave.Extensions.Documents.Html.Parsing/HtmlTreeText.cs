@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Ave.Extensions.Documents.Core;
 using System.Text;
 
 namespace Ave.Extensions.Documents.Html.Parsing;
@@ -18,41 +20,56 @@ namespace Ave.Extensions.Documents.Html.Parsing;
 /// </remarks>
 public static class HtmlTreeText
 {
-    /// <summary>The text form of a node and everything under it (a document or fragment: its children).</summary>
+    /// <summary>The text form of a node and everything under it (a document or fragment: its children). Without
+    /// recursion: the nodes still to write are kept on a stack of their own, so a tree as deep as the parser allows is
+    /// written on a small thread.</summary>
     /// <param name="node">The node.</param>
     /// <returns>The text.</returns>
     public static string Format(HtmlNode node)
     {
         var text = new StringBuilder();
+        var pending = new Stack<(HtmlNode? Node, int Depth)>();
         switch (node)
         {
             case HtmlDocument document:
-                foreach (var child in document.Children)
-                {
-                    Write(text, child, 0);
-                }
-
+                PushChildren(pending, document.Children, 0);
                 break;
             case HtmlDocumentFragment fragment:
-                foreach (var child in fragment.Children)
-                {
-                    Write(text, child, 0);
-                }
-
+                PushChildren(pending, fragment.Children, 0);
                 break;
             default:
-                Write(text, node, 0);
+                pending.Push((node, 0));
                 break;
+        }
+
+        while (pending.Count > 0)
+        {
+            var (next, depth) = pending.Pop();
+            Write(text, next, depth, pending);
         }
 
         return text.ToString();
     }
 
-    private static void Write(StringBuilder text, HtmlNode node, int depth)
+    /// <summary>Pushes nodes so that they are written in order.</summary>
+    private static void PushChildren(Stack<(HtmlNode? Node, int Depth)> pending, ValueList<HtmlNode> children, int depth)
+    {
+        for (var i = children.Count - 1; i >= 0; i--)
+        {
+            pending.Push((children[i], depth));
+        }
+    }
+
+    /// <summary>Writes one node's own lines and pushes what comes under it: a null node is the line <c>content</c> of
+    /// a template.</summary>
+    private static void Write(StringBuilder text, HtmlNode? node, int depth, Stack<(HtmlNode? Node, int Depth)> pending)
     {
         var indent = "| " + new string(' ', depth * 2);
         switch (node)
         {
+            case null:
+                text.Append(indent).Append("content\n");
+                break;
             case HtmlElement element:
                 text.Append(indent).Append('<').Append(Prefix(element.Namespace)).Append(element.LocalName).Append(">\n");
                 foreach (var attribute in element.Attributes.OrderBy(Name, StringComparer.Ordinal))
@@ -60,18 +77,12 @@ public static class HtmlTreeText
                     text.Append(indent).Append("  ").Append(Name(attribute)).Append("=\"").Append(attribute.Value).Append("\"\n");
                 }
 
+                // Children last, so the template's contents (under its line "content") come out first.
+                PushChildren(pending, element.Children, depth + 1);
                 if (element.TemplateContent is { } content)
                 {
-                    text.Append(indent).Append("  content\n");
-                    foreach (var child in content.Children)
-                    {
-                        Write(text, child, depth + 2);
-                    }
-                }
-
-                foreach (var child in element.Children)
-                {
-                    Write(text, child, depth + 1);
+                    PushChildren(pending, content.Children, depth + 2);
+                    pending.Push((null, depth + 1));
                 }
 
                 break;

@@ -103,6 +103,85 @@ public class BoundedWorkTests
         cloned!.Value.IsSuccess.Should().BeTrue();
     }
 
+    /// <summary>Runs on a thread with a 256 KB stack (a stack overflow there ends the test process); an exception fails
+    /// the test.</summary>
+    private static T OnSmallStack<T>(Func<T> work)
+    {
+        T? result = default;
+        Exception? thrown = null;
+        var thread = new Thread(
+            () =>
+            {
+                try
+                {
+                    result = work();
+                }
+                catch (Exception exception)
+                {
+                    thrown = exception;
+                }
+            },
+            256 * 1024);
+        thread.Start();
+        thread.Join();
+        thrown.Should().BeNull();
+        return result!;
+    }
+
+    [Theory]
+    [InlineData("<template><tr>", 255)]
+    [InlineData("<template><tbody>", 255)]
+    [InlineData("<template><td>", 255)]
+    [InlineData(" <template><col>", 509)]
+    [InlineData("<template>", 510)]
+    public void The_end_of_the_file_inside_nested_templates_is_processed_on_a_256_KB_stack(string unit, int n)
+    {
+        // The end of the file closes one template at a time and is processed again after each (§13.2.6.4.16): this
+        // recursed once per open template.
+        var parsed = OnSmallStack(() => HtmlParser.Parse(Repeat(unit, n) + "x"));
+
+        parsed.IsSuccess.Should().BeTrue();
+        var templates = 0;
+        var pending = new Stack<HtmlNode>(parsed.Value.Document.Children);
+        while (pending.Count > 0)
+        {
+            if (pending.Pop() is HtmlElement element)
+            {
+                templates += element.TemplateContent is null ? 0 : 1;
+                foreach (var child in element.Children.Concat(element.TemplateContent?.Children ?? []))
+                {
+                    pending.Push(child);
+                }
+            }
+        }
+
+        templates.Should().Be(n);
+    }
+
+    [Fact]
+    public void The_text_form_of_the_deepest_document_is_written_on_a_256_KB_stack()
+    {
+        // html, body, the divs, a template and its b: the parser's depth limit.
+        const int Divs = HtmlInputLimits.MaxDepth - 4;
+        var parsed = HtmlParser.Parse(Repeat("<div>", Divs) + "<template><b>x").Value;
+
+        var text = OnSmallStack(() => HtmlTreeText.Format(parsed.Document));
+        var described = OnSmallStack(() => parsed.Document.ToString() + parsed.Document.DocumentElement!.ToString());
+
+        text.Split('\n').Count(line => line.TrimStart('|', ' ') == "<div>").Should().Be(Divs);
+        text.Should().Contain("content\n");
+        described.Should().Contain("Children = ");
+    }
+
+    [Fact]
+    public void The_text_form_writes_a_template_and_its_contents_in_the_suites_order()
+    {
+        var parsed = HtmlParser.Parse("<!DOCTYPE html><template a=1><p>x</p></template><i>y").Value;
+
+        HtmlTreeText.Format(parsed.Document).Should().Be(
+            "| <!DOCTYPE html>\n| <html>\n|   <head>\n|     <template>\n|       a=\"1\"\n|       content\n|         <p>\n|           \"x\"\n|   <body>\n|     <i>\n|       \"y\"\n");
+    }
+
     [Fact]
     public void The_number_of_diagnostics_is_bounded_and_the_rest_is_counted()
     {

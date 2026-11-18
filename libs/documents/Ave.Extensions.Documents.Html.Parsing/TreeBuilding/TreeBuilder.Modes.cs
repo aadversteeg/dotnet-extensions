@@ -1731,7 +1731,9 @@ internal sealed partial class TreeBuilder
                 ClearFormattingToLastMarker();
                 _templateModes.RemoveAt(_templateModes.Count - 1);
                 ResetInsertionMode();
-                Process(t);
+                // "Reprocess the token": once per open template, so the run loop does it (EndOfFileAgain) rather than a
+                // call from here, which would recurse once per template (up to MaxDepth levels).
+                _endOfFileAgain = true;
                 return;
             case TokenKind.EndTag:
                 if (t.IsEnd("template"))
