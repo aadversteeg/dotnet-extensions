@@ -106,6 +106,20 @@ public class ListedDifferenceTests
     }
 
     [Fact]
+    public void Under_a_repeated_header_a_cell_whose_box_s_bottom_padding_moves_on_takes_a_page_more()
+    {
+        // A cell with a bordered box around "a", whose 20 pt bottom padding does not fit below it (page area 36 pt). The
+        // engine repeats the 18 pt header (Chromium does not: it is more than a quarter of the page area), and on page 2
+        // only the top border of the box fits below it, so page 2 holds the header and that border; Chromium prints "a"
+        // there. Without the header row both print a | (blank) | AFTER (fr-header-pad-none-36).
+        var table = Table([Fill()], [HeaderRow([Cell("H")]), TableRow([Cell([Block([Paragraph("a").PaddingBottom(20.Pt())]).Border(1.5.Pt(), Color.Black)])])])
+            .GridLines(0.Pt(), Color.Black).SplitLinesAtBreaks();
+        BothAre("fr-header-pad-box-20", "H | H | H a |  | AFTER", "H | a |  | AFTER", Engine(60, 1, table, Paragraph("AFTER")));
+        var alone = Table([Fill()], [TableRow([Cell([Block([Paragraph("a").PaddingBottom(36.Pt())]).Border(1.5.Pt(), Color.Black)])])]).GridLines(0.Pt(), Color.Black).SplitLinesAtBreaks();
+        BothAre("fr-header-pad-none-36", "a |  | AFTER", "a |  | AFTER", Engine(60, 1, alone, Paragraph("AFTER")));
+    }
+
+    [Fact]
     public void A_header_taller_than_the_page_is_refused()
     {
         // Chromium cuts such a header like a body row.

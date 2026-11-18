@@ -55,8 +55,11 @@ public static class FlowLayout
     /// a sibling, and nothing but margins separates it from this box's top edge (a class C breakpoint needs a gap there,
     /// §4.1). The box then breaks before it as a last resort (<see cref="BreakAppeal.LastResort"/>), with the empty
     /// boxes before it on this page; its parent takes any better breakpoint instead, which moves the whole box. A child
-    /// that has no room is never at the start of the page (it would have failed instead), so this break always makes
-    /// progress.</para>
+    /// that has no room is never at the start of the page (it would have failed instead), so this break makes progress,
+    /// except in a box that continues from the page before inside that same child: such a box has no top border or
+    /// padding on this page, the break would resume where the fragment resumed, and the box has no room here instead
+    /// (as <see cref="SlicedBox"/> has it for content of which nothing fits; under a table's repeated header the table
+    /// then goes on without the header).</para>
     /// </remarks>
     /// <param name="environment">The fonts and algorithms.</param>
     /// <param name="box">A box whose children are all boxes.</param>
@@ -290,9 +293,18 @@ public static class FlowLayout
             {
                 // The natural break is before this child — the candidate just recorded — unless an earlier one is
                 // better. The margins adjoining an unforced break are truncated (§5.2). Before the first child there is
-                // no breakpoint, only the last resort (see Layout).
+                // no breakpoint, only the last resort (see Layout). A last resort that would resume where this fragment
+                // resumed leaves nothing of the box on the page (a box that continues has no top border or padding
+                // here): no progress, so nothing of the box fits here, as SlicedBox has it for content of which nothing
+                // fits.
+                var lastResort = new FlowBreakToken(index, childResume);
+                if (best is null && lastResort.Equals(incoming))
+                {
+                    return Result<Maybe<Stacked>, Error>.Success(Maybe<Stacked>.None);
+                }
+
                 return Broken(best is null
-                    ? SlicedBox.Placed(placed.ToImmutable(), cursor, new FlowBreakToken(index, childResume), BreakAppeal.LastResort)
+                    ? SlicedBox.Placed(placed.ToImmutable(), cursor, lastResort, BreakAppeal.LastResort)
                     : BreakAt(environment, children, contentWidth, contentHeight, placed, best, isEarlier: best.Index != index || best.Inside is not null));
             }
 

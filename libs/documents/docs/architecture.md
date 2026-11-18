@@ -553,6 +553,14 @@ Each is documented next to its code as well.
   (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
   the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
   row whole on the next (cases `fr-f4-padding-page-start`, `a2-cells-end-page-top`).
+  Under a repeated header row, a cell whose box's bottom or top padding does not fit on a page with the box's content
+  takes the engine a page more than Chromium: with the header repeated (a listed rule above), a page holds the header
+  and only the top border of the box, where Chromium prints the box's first line (cases `fr-header-pad-box-20`,
+  `fr-header-pad-box-36`, `fr-header-pad-grid-36`, `fr-header-pad-top-36`); where Chromium repeats the header too, the
+  engine leaves the header alone on the first page, where Chromium cuts the row below it because its line fits and
+  only its padding does not (`fr-header-pad-box-72`). Without the header row both print the same pages
+  (`fr-header-pad-none-36`). Padding taller than the page area with content after it is refused (the limit above;
+  `fr-header-pad-box-50`).
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body

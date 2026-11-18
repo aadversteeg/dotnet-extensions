@@ -81,4 +81,77 @@ public class PageBreakProgressTests
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
     }
+
+    /// <summary>A table with a header row "H" and one body cell, then "AFTER", on a page 300 pt wide with 18 pt lines,
+    /// <c>orphans</c> and <c>widows</c> 1 (cases <c>fr-header-pad-*</c>): the pages, separated by <c> | </c>, or the error
+    /// code.</summary>
+    private static string UnderHeader(double height, Element cell, double gridLines = 0)
+    {
+        var table = Table([Fill()], [HeaderRow([Cell("H")]), TableRow([Cell([cell])])]).GridLines(gridLines.Pt(), Color.Black).SplitLinesAtBreaks().Orphans(1).Widows(1);
+        var document = Document([table, Paragraph("AFTER").Orphans(1).Widows(1)], Page(300.Pt(), height.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+            .FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt());
+        var result = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
+        return result.IsFailure ? result.Error.Code.ToString() : string.Join(" | ", result.Value.PageTexts);
+    }
+
+    private static BlockElement Bordered(params Element[] content) => Block([.. content]).Border(1.5.Pt(), Color.Black);
+
+    private static string Chromium(string caseName) => string.Join(" | ", PrintedPages.Chromium(caseName).PageTexts);
+
+    [Fact]
+    public void A_cell_whose_box_has_bottom_padding_as_tall_as_the_page_area_under_a_repeated_header_is_printed()
+    {
+        // The smallest such document: the header row, then a cell with a bordered box around "a", whose bottom padding is
+        // the page area's height (36 pt). The box went on to the next page with only that padding left; under the
+        // repeated header it had no room, and the box broke before its first child as a last resort, which resumed where
+        // it resumed: the table returned the token it was given, and the layout ended in Documents.Layout.EngineDefect.
+        // A box that continues has no top border or padding on that page, so such a break leaves nothing of it there: it
+        // has no room instead, and the page goes on without the header (TablePage). Chromium prints H | a | (blank) |
+        // AFTER (case fr-header-pad-box-36): it does not repeat a header taller than a quarter of the page area, and it
+        // does not leave a page with only the header and the box's top border (both listed in docs/architecture.md).
+        UnderHeader(60, Bordered(Paragraph("a").PaddingBottom(36.Pt()))).Should().Be("H | H | H a |  | H | AFTER");
+        Chromium("fr-header-pad-box-36").Should().Be("H | a |  | AFTER");
+    }
+
+    [Theory]
+    [InlineData("top padding", "H | H |  | a | AFTER", "H |  |  | a | AFTER")]
+    [InlineData("grid lines", "H | H | a |  | H | AFTER", "H | a |  | AFTER")]
+    [InlineData("inner box", "H | H | H a |  | H | AFTER", null)]
+    public void The_same_with_top_padding_with_grid_lines_and_on_an_inner_box_is_printed(string shape, string engine, string? chromium)
+    {
+        // Top padding as tall as the page area (fr-header-pad-top-36; Chromium's pages differ by the header rule again),
+        // the same box in a table with grid lines (fr-header-pad-grid-36), and the padding on a box inside the bordered
+        // one (not measured).
+        var (cell, gridLines, caseName) = shape switch
+        {
+            "top padding" => (Bordered(Paragraph("a").PaddingTop(36.Pt())), 0.0, "fr-header-pad-top-36"),
+            "grid lines" => (Bordered(Paragraph("a").PaddingBottom(36.Pt())), 0.75, "fr-header-pad-grid-36"),
+            _ => (Bordered(Block([Paragraph("a")]).PaddingBottom(36.Pt())), 0.0, null),
+        };
+
+        UnderHeader(60, cell, gridLines).Should().Be(engine);
+        if (caseName is not null)
+        {
+            Chromium(caseName).Should().Be(chromium);
+        }
+    }
+
+    [Fact]
+    public void The_same_on_a_page_where_Chromium_repeats_the_header_is_printed()
+    {
+        // Page area 72 pt: the 18 pt header is a quarter of it, so Chromium repeats it as well (fr-header-pad-box-72,
+        // H a | H | H AFTER). The engine leaves the header alone on page 1, where Chromium cuts the row below it (a listed
+        // difference in docs/architecture.md).
+        UnderHeader(96, Bordered(Paragraph("a").PaddingBottom(72.Pt()))).Should().Be("H | H a |  | H AFTER");
+        Chromium("fr-header-pad-box-72").Should().Be("H a | H | H AFTER");
+    }
+
+    [Fact]
+    public void Padding_taller_than_the_page_area_under_a_repeated_header_with_content_after_it_is_refused()
+    {
+        // 50 pt of bottom padding on a page area of 36 pt, with AFTER after the table: the listed limit for bottom padding
+        // taller than the page area with content after it (docs/architecture.md); Chromium prints it (fr-header-pad-box-50).
+        UnderHeader(60, Bordered(Paragraph("a").PaddingBottom(50.Pt()))).Should().Be(LayoutErrorCodes.DoesNotFit.ToString());
+        Chromium("fr-header-pad-box-50").Should().Be("H | a |  | AFTER");
+    }
 }
