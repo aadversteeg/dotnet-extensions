@@ -36,6 +36,13 @@ Written from the specifications:
 - Images: the PNG Specification, Second Edition (ISO/IEC 15948:2004) — chunks §5, filtering §9, IHDR/PLTE/IDAT/IEND
   §11.2, tRNS §11.3.2.1; JPEG: ITU-T T.81 (ISO/IEC 10918-1) Annex B, marker and frame header syntax; PDF image
   XObjects and soft masks: ISO 32000-1 §8.9, §11.6.5.3.
+- Graphics (`Ave.Extensions.Documents.Graphics`): paths, fill rules and image space as ISO 32000-1 §8.3.3, §8.5.2,
+  §8.5.3.3 and §8.9.5.3 define them; exact-area anti-aliasing by signed-area accumulation as described (in words, not
+  code) by S. Barrett, "How the stb_truetype Anti-Aliased Software Rasterizer v2 Works" (2015) and R. Levien, "Inside
+  the fastest font renderer in the world" (2016), an idea credited to Raph Levien's LibArt; polygon clipping after
+  I. E. Sutherland and G. W. Hodgman, "Reentrant polygon clipping" (CACM 17(1), 1974); source-over compositing after
+  T. Porter and T. Duff, "Compositing Digital Images" (SIGGRAPH 1984). No code of stb_truetype, font-rs, FreeType,
+  AGG, vello, MuPDF, poppler or PDFium was read or used.
 - Break appeal (choosing among breakpoints by how many keep rules they violate): the idea of Chromium's
   `BreakAppeal`, known from Chromium's public design documents; no Chromium code was read or used. Chromium (157,
   then 159) was used through Playwright to measure reference layouts that the tests pin as numbers

@@ -19,6 +19,7 @@ public class AssemblyRulesTests
         ["Ave.Extensions.Documents.Core"] = [],
         ["Ave.Extensions.Documents.Fonts"] = ["Core"],
         ["Ave.Extensions.Documents.Images"] = ["Core"],
+        ["Ave.Extensions.Documents.Graphics"] = ["Core"],
         ["Ave.Extensions.Documents.Pdf"] = ["Core"],
         ["Ave.Extensions.Documents.Typesetting"] = ["Core", "Fonts"],
         ["Ave.Extensions.Documents.DocumentModel"] = ["Core", "Images"],
