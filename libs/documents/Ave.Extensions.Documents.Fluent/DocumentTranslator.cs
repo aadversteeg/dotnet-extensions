@@ -39,6 +39,7 @@ public static class DocumentTranslator
             .Concat(InputChecks.Text(format, document.Source))
             .Concat(InputChecks.Metadata(document.Title, document.Author, document.Source))
             .Concat(InputChecks.Language(document.Language, document.Source))
+            .Concat(InputChecks.Profile(document.Profile, document.Source))
             .Concat(InputChecks.Attachments(document.Attachments))
             .Concat(format.FontFamily is null ? [InputChecks.MissingFontFamily(document.Source)] : [])
             .ToImmutableArray();
@@ -63,7 +64,7 @@ public static class DocumentTranslator
 
         // The body and the page areas are translated independently, so the problems of both are reported together.
         return WithProblems([.. problems, .. ProblemsOf(page)], root)
-            .OnSuccessBind(box => page.OnSuccessMap(pageStyle => new StyledDocument(Metadata(document), pageStyle, box)));
+            .OnSuccessBind(box => page.OnSuccessMap(pageStyle => new StyledDocument(Metadata(document), pageStyle, box) { Profile = document.Profile }));
     }
 
     /// <summary>The document's metadata, carried through every layer unchanged (checked in <see cref="ToModel"/>).</summary>

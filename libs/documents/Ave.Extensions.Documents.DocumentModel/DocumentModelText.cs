@@ -7,7 +7,8 @@ namespace Ave.Extensions.Documents.DocumentModel;
 /// <summary>
 /// Writes a document model as stable, human-readable text: one line per node, children indented by two spaces.
 /// Used for golden-file tests and for reading what a front-end produced. Only properties that differ from
-/// their CSS initial value are written, so the text shows what the author actually set.
+/// their CSS initial value are written, so the text shows what the author actually set; likewise the layout profile
+/// (<see cref="StyledDocument.Profile"/>) only when it is not <see cref="LayoutProfile.Default"/>.
 /// </summary>
 /// <example>
 /// <code>
@@ -30,6 +31,9 @@ public static class DocumentModelText
             "document" + Attribute("title", document.Metadata.Title) + Attribute("author", document.Metadata.Author),
             $"page size={InvariantNumber.Format(document.Page.Width.Points)}x{InvariantNumber.Format(document.Page.Height.Points)}"
                 + $" margin={document.Page.Margins}",
+            .. document.Profile is { } profile && profile != LayoutProfile.Default
+                ? new[] { $"profile monolithic-overflow={profile.MonolithicOverflow} empty-row-parts={profile.EmptyRowParts}" }
+                : [],
             .. TemplateLines("page-template", document.Page.Template),
             .. document.Page.FirstPage is { } first ? TemplateLines("first-page-template", first) : [],
             .. NodeLines(document.Root, depth: 0),

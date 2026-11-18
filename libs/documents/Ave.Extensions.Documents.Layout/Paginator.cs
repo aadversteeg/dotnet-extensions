@@ -41,6 +41,9 @@ public static class Paginator
     /// <see cref="LayOutPages"/>). Without this check pagination could loop forever.</exception>
     public static Result<ValueList<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document)
     {
+        // The document's policies are the ones its front-end chose; every algorithm reads them from the environment. A
+        // model without a profile gets the default one.
+        var withProfile = environment with { Profile = document.Profile ?? LayoutProfile.Default };
         var page = document.Page;
         if (!(page.AreaWidth.Points > 0 && page.AreaHeight.Points > 0))
         {
@@ -52,14 +55,14 @@ public static class Paginator
         // Without a page count shown anywhere, no pass can change what an earlier one laid out: one pass is final.
         if (!PageCountReferences(document).Any())
         {
-            return LayOutPages(environment, document, pageCount: 1);
+            return LayOutPages(withProfile, document, pageCount: 1);
         }
 
         var counts = ImmutableArray.CreateBuilder<int>();
         var assumedCount = 1;
         for (var pass = 1; pass <= MaxPasses; pass++)
         {
-            var pages = LayOutPages(environment, document, assumedCount);
+            var pages = LayOutPages(withProfile, document, assumedCount);
             if (pages.IsFailure || pages.Value.Count == assumedCount)
             {
                 return pages;

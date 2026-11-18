@@ -52,9 +52,12 @@ internal static class TableSegments
     /// of the line below it (<see cref="CellLayoutBox"/>). So the cell is laid out in the whole slice first, and only when
     /// it does not end there again, without the clearance. Returns the fragment, stretched to the slice, where the cell
     /// continues, and the appeal of the break inside the cell's content (its own keep rules, orphans and widows):
-    /// perfect for a cell that ends in the slice or places nothing of itself.
+    /// perfect for a cell that ends in the slice or places nothing of itself. A cell is laid out as starting the page
+    /// (<see cref="ConstraintSpace.IsAtPageStart"/>) only when <paramref name="startsPage"/> says nothing lies above it on
+    /// the page; every other cell may always leave its content for the next page.
     /// </summary>
-    internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal), Error> Slice(TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0)
+    internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal), Error> Slice(
+        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool startsPage = false)
     {
         var info = table.Grid.Cells[cell.Cell];
         var box = CellLayoutBox(table, segment, cell);
@@ -66,7 +69,7 @@ internal static class TableSegments
 
         var inset = ReopenedInset(table, segment, cell);
         Result<LayoutResult, Error> LayOutIn(double height) =>
-            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: false, IsNewFormattingContext: true), cell.Token);
+            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: startsPage, IsNewFormattingContext: true), cell.Token);
         return LayOutIn(sliceHeight)
             .OnSuccessBind(whole => clearance <= 0 || whole is LayoutResult.Placed { Continuation: null } ? Result<LayoutResult, Error>.Success(whole) : LayOutIn(sliceHeight - clearance))
             .OnSuccessMap(result => result switch

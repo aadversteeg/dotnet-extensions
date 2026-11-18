@@ -119,4 +119,26 @@ public static class SampleDocuments
         "When something cannot be laid out, the error names that line instead of showing a stack trace.",
         "The PDF writer numbers its objects in a fixed order, so two runs produce identical files.",
     ];
+
+    /// <summary>
+    /// Sample C: content taller than the page, sliced over pages as a browser prints it
+    /// (<see cref="DocumentModel.MonolithicOverflow.Slice"/>). On a small page (300 × 204 pt, a page area of 276 × 180 pt)
+    /// a 250 pt logo and a line of 200 pt type each continue on the next page; the text and the logo's alternative text
+    /// are in the document once.
+    /// </summary>
+    /// <param name="logo">The logo, a PNG or JPEG file.</param>
+    public static Document Sliced(ImmutableArray<byte> logo) =>
+        Document(
+            [
+                Heading(1, "Taller than a page").MarginBottom(6.Pt()),
+                Paragraph("The logo below is taller than the page area. It starts on the next page and is sliced over two pages."),
+                Image(logo.AsSpan()).Alt("A white letter V on an orange square").Width(250.Pt()),
+                Paragraph("The line below is set in 200 point type, also taller than the page area."),
+                Paragraph("W").FontSize(200.Pt()),
+                Paragraph("The end."),
+            ],
+            new PageSetup(300.Pt(), 204.Pt(), Edges.All(12.Pt())),
+            title: "Taller than a page",
+            language: "en")
+            .FontFamily("Lato").FontSize(11.Pt()).MonolithicOverflow(DocumentModel.MonolithicOverflow.Slice);
 }

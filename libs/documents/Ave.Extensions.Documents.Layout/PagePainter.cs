@@ -28,9 +28,9 @@ public static class PagePainter
     private static Page PaintPage(PageFragment page) =>
         new(page.PageSize,
         [
-            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true)) : [],
-            .. Items(page.Root.Fragment, page.Root.Offset, inArtifact: false),
-            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true)) : [],
+            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, page.PageSize.Width)) : [],
+            .. Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width),
+            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, page.PageSize.Width)) : [],
         ]);
 
     /// <summary>
@@ -50,28 +50,42 @@ public static class PagePainter
     /// role is a layout artifact as a whole; repeated content (<see cref="BoxFragment.IsRepeated"/>, a table's repeated
     /// header rows) is a pagination artifact, since the document structure has it once. Everything else is content of
     /// the innermost structure marker around it. <paramref name="inArtifact"/> is true inside an artifact, where no
-    /// further markers are written: artifacts do not nest and hold no structure.
+    /// further markers are written: artifacts do not nest and hold no structure. The slices of content taller than a page
+    /// (<see cref="SliceFragment"/>) are clipped, each to its own top and bottom across the whole width of the page
+    /// (<paramref name="pageWidth"/>); every slice after the first repeats content the structure has once, so it is a
+    /// pagination artifact, like a repeated header row.
     /// </remarks>
-    private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact) => fragment switch
+    private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact, double pageWidth) => fragment switch
     {
-        BoxFragment box => Box(box, origin, inArtifact),
-        LineFragment line => Children(line.Children, origin, inArtifact),
+        BoxFragment box => Box(box, origin, inArtifact, pageWidth),
+        LineFragment line => Children(line.Children, origin, inArtifact, pageWidth),
         TextFragment text => Glyphs(text, origin) is { Glyphs.Count: > 0 } run ? [run] : [],
         ImageFragment image => [new DrawImage(new Rect(origin, image.Size), image.Image.Image)],
         RuleFragment rule => Decoration([new FillRectangle(new Rect(origin, rule.Size), rule.Color)], inArtifact),
+        SliceFragment slice => Clipped(new Rect(new Point(0, origin.Y), new Size(pageWidth, slice.Size.Height)),
+            slice.IsContinuation && !inArtifact
+                ? Artifact(ArtifactKind.Repeated, Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact: true, pageWidth))
+                : Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact, pageWidth)),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
 
-    private static IEnumerable<DrawItem> Box(BoxFragment box, Point origin, bool inArtifact)
+    /// <summary>The items between a clip start and end; nothing at all when there are no items.</summary>
+    private static IEnumerable<DrawItem> Clipped(Rect area, IEnumerable<DrawItem> items)
+    {
+        ImmutableArray<DrawItem> content = [.. items];
+        return content.IsEmpty ? [] : [new ClipStart(area), .. content, ClipEnd.Instance];
+    }
+
+    private static IEnumerable<DrawItem> Box(BoxFragment box, Point origin, bool inArtifact, double pageWidth)
     {
         if (inArtifact)
         {
-            return [.. Background(box, origin), .. Border(box, origin), .. Children(box.Children, origin, inArtifact: true)];
+            return [.. Background(box, origin), .. Border(box, origin), .. Children(box.Children, origin, inArtifact: true, pageWidth)];
         }
 
         if (box.IsRepeated || box.Box.Role == SemanticRole.Decorative)
         {
-            return Artifact(box.IsRepeated ? ArtifactKind.Repeated : ArtifactKind.Layout, Box(box, origin, inArtifact: true));
+            return Artifact(box.IsRepeated ? ArtifactKind.Repeated : ArtifactKind.Layout, Box(box, origin, inArtifact: true, pageWidth));
         }
 
         // The box's own background and border go inside its markers, before its children: they are a layout
@@ -81,13 +95,13 @@ public static class PagePainter
         [
             new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span },
             .. Decoration([.. Background(box, origin), .. Border(box, origin)], inArtifact: false),
-            .. Children(box.Children, origin, inArtifact: false),
+            .. Children(box.Children, origin, inArtifact: false, pageWidth),
             new StructureEnd(box.Box.Id),
         ];
     }
 
-    private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact) =>
-        children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact));
+    private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, double pageWidth) =>
+        children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact, pageWidth));
 
     /// <summary>Decoration outside an artifact becomes a layout artifact of its own; inside one it is drawn as is.</summary>
     private static IEnumerable<DrawItem> Decoration(ImmutableArray<DrawItem> items, bool inArtifact) =>

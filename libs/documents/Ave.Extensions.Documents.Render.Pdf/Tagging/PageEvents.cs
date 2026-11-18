@@ -31,19 +31,26 @@ internal sealed record StructureClosed : PageEvent
     public static StructureClosed Instance { get; } = new();
 }
 
-/// <summary>Consecutive content items with the same owner.</summary>
+/// <summary>Consecutive content items with the same owner, under the same clips.</summary>
 /// <param name="Items">The items, in painting order (glyph runs, rectangles, images; never markers).</param>
 /// <param name="Artifact">The artifact the items belong to, or null when they are content of the innermost open
 /// structure node (or of nothing, when no node is open).</param>
-internal sealed record ContentRun(ImmutableArray<DrawItem> Items, ArtifactKind? Artifact) : PageEvent;
+internal sealed record ContentRun(ImmutableArray<DrawItem> Items, ArtifactKind? Artifact) : PageEvent
+{
+    /// <summary>The clips open around the items (<see cref="ClipStart"/>), outermost first; empty when none is.</summary>
+    public ImmutableArray<Rect> Clips { get; init; } = [];
+}
 
 /// <summary>Reads pages into <see cref="PageEvent"/>s and checks that their markers nest.</summary>
 internal static class PageEvents
 {
     /// <summary>
-    /// Reads one page. The markers must follow the page model's rules (<see cref="StructureStart"/>,
-    /// <see cref="ArtifactStart"/>): structure markers nest and every start ends on the same page; artifacts do not
-    /// nest and hold no structure markers. A page model from the painter always does; a hand-made one may not.
+    /// Reads one page, and checks THE NESTING RULE FOR MARKERS of the page model (<see cref="DrawItem"/>): one stack of
+    /// open structure, artifact and clip markers, where every end closes the innermost open marker, which must be a start
+    /// of its kind (for a structure end, of its node); nothing is left open at the end of the page; no artifact or
+    /// structure marker opens inside an artifact. A page model from the painter always nests; a hand-made one may not.
+    /// Clips are not events of their own: each content run carries the clips open around it, so the structure is built
+    /// as if there were none, and the content stream opens and closes them between runs.
     /// </summary>
     /// <param name="page">The page.</param>
     /// <param name="number">Its page number, for the error message.</param>
@@ -52,14 +59,15 @@ internal static class PageEvents
     {
         var events = ImmutableArray.CreateBuilder<PageEvent>();
         var content = ImmutableArray.CreateBuilder<DrawItem>();
-        var open = new Stack<NodeId>();
+        var open = new Stack<DrawItem>();
         ArtifactKind? artifact = null;
+        var clips = ImmutableArray<Rect>.Empty;
 
         void Flush()
         {
             if (content.Count > 0)
             {
-                events.Add(new ContentRun(content.ToImmutable(), artifact));
+                events.Add(new ContentRun(content.ToImmutable(), artifact) { Clips = clips });
                 content.Clear();
             }
         }
@@ -68,40 +76,42 @@ internal static class PageEvents
         {
             switch (item)
             {
-                case StructureStart or StructureEnd when artifact is not null:
-                    return Invalid(number, "a structure marker inside an artifact");
-                case StructureStart start:
+                case StructureStart or StructureEnd or ArtifactStart when artifact is not null:
+                    return Invalid(number, item is ArtifactStart ? "an artifact inside an artifact" : "a structure marker inside an artifact");
+                case StructureStart or ArtifactStart or ClipStart:
                     Flush();
-                    open.Push(start.Node);
-                    events.Add(new StructureOpened(start));
-                    break;
-                case StructureEnd end:
-                    if (open.Count == 0 || open.Peek() != end.Node)
+                    open.Push(item);
+                    (artifact, clips) = item switch
                     {
-                        return Invalid(number, $"the end of {end.Node} without its start", end.Node);
+                        ArtifactStart start => (start.Kind, clips),
+                        ClipStart clip => (artifact, clips.Add(clip.Area)),
+                        _ => (artifact, clips),
+                    };
+                    if (item is StructureStart opened)
+                    {
+                        events.Add(new StructureOpened(opened));
+                    }
+
+                    break;
+                case StructureEnd or ArtifactEnd or ClipEnd:
+                    if (EndProblem(item, open.Count > 0 ? open.Peek() : null) is { } problem)
+                    {
+                        return Invalid(number, problem, (item as StructureEnd)?.Node);
                     }
 
                     Flush();
                     open.Pop();
-                    events.Add(StructureClosed.Instance);
-                    break;
-                case ArtifactStart start:
-                    if (artifact is not null)
+                    (artifact, clips) = item switch
                     {
-                        return Invalid(number, "an artifact inside an artifact");
+                        ArtifactEnd => (null, clips),
+                        ClipEnd => (artifact, clips.RemoveAt(clips.Length - 1)),
+                        _ => (artifact, clips),
+                    };
+                    if (item is StructureEnd)
+                    {
+                        events.Add(StructureClosed.Instance);
                     }
 
-                    Flush();
-                    artifact = start.Kind;
-                    break;
-                case ArtifactEnd:
-                    if (artifact is null)
-                    {
-                        return Invalid(number, "the end of an artifact without its start");
-                    }
-
-                    Flush();
-                    artifact = null;
                     break;
                 default:
                     content.Add(item);
@@ -110,10 +120,32 @@ internal static class PageEvents
         }
 
         Flush();
-        return open.Count > 0 ? Invalid(number, $"{open.Peek()} without its end", open.Peek())
-            : artifact is not null ? Invalid(number, "an artifact without its end")
-            : Result<ImmutableArray<PageEvent>, Error>.Success(events.ToImmutable());
+        return open.Count == 0 ? Result<ImmutableArray<PageEvent>, Error>.Success(events.ToImmutable())
+            : open.Peek() switch
+            {
+                StructureStart start => Invalid(number, $"{start.Node} without its end", start.Node),
+                ArtifactStart => Invalid(number, "an artifact without its end"),
+                _ => Invalid(number, "a clip without its end"),
+            };
     }
+
+    /// <summary>Why an end marker does not close the innermost open marker, or null when it does.</summary>
+    private static string? EndProblem(DrawItem end, DrawItem? innermost) => (end, innermost) switch
+    {
+        (StructureEnd closing, StructureStart start) when start.Node == closing.Node => null,
+        (ArtifactEnd, ArtifactStart) or (ClipEnd, ClipStart) => null,
+        (StructureEnd closing, _) => $"the end of {closing.Node} without its start" + Inside(innermost),
+        (ArtifactEnd, _) => "the end of an artifact without its start" + Inside(innermost),
+        _ => "the end of a clip without its start" + Inside(innermost),
+    };
+
+    private static string Inside(DrawItem? innermost) => innermost switch
+    {
+        null => string.Empty,
+        StructureStart start => $" (inside {start.Node})",
+        ArtifactStart => " (inside an artifact)",
+        _ => " (inside a clip)",
+    };
 
     private static Result<ImmutableArray<PageEvent>, Error> Invalid(int page, string problem, NodeId? node = null)
     {

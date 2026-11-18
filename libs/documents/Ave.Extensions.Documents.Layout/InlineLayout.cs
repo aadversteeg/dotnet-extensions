@@ -37,16 +37,18 @@ public static class InlineLayout
     /// <returns>The fragment and continuation, NoRoom, or an error (missing font or glyph, with the run's location).</returns>
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming)
     {
-        var firstLine = incoming switch
+        var start = incoming switch
         {
-            null => 0,
-            InlineBreakToken token => token.LineIndex,
+            null => new InlineBreakToken(0),
+            InlineBreakToken token => token,
             _ => throw new ArgumentException($"Inline received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
         };
 
+        // A first line taller than the page area that starts the page is sliced when the profile says so (MonolithicSlices).
+        var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
         return ShapeRuns(environment, box).OnSuccessBind(runs => StrutOf(environment, box).OnSuccessBind(strut =>
-            SlicedBox.Layout(box, space, incoming, new InlineBreakToken(firstLine), (width, height, breakAt) =>
-                StackLines(runs, strut, box.Style, firstLine, width, height, breakAt switch
+            SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
+                StackLines(runs, strut, box.Style, start, slices, width, height, breakAt switch
                 {
                     null => null,
                     InlineEarlyBreak line => line,
@@ -131,14 +133,16 @@ public static class InlineLayout
         _ => throw new InvalidOperationException($"Unknown inline run {run.GetType().Name}; checked before."),
     };
 
-    /// <summary>Breaks the paragraph into lines for the content width and stacks them from
-    /// <paramref name="firstLine"/> until the next one does not fit, or up to the early break when one is given. None
-    /// when not even that first line fits. The breakpoints are the places between two lines (class B, CSS Fragmentation
+    /// <summary>Breaks the paragraph into lines for the content width and stacks them from the line
+    /// <paramref name="start"/> names until the next one does not fit, or up to the early break when one is given. None
+    /// when not even that first line fits — unless it starts the page and <paramref name="slices"/> is set, or earlier
+    /// pages showed slices of it: then this page shows its next slice (<see cref="MonolithicSlices"/>), and the lines
+    /// after the last slice follow below it. The breakpoints are the places between two lines (class B, CSS Fragmentation
     /// 3 §4.1), with <c>orphans</c> and <c>widows</c>: where the next line does not fit, <see cref="BreakWhereFull"/>
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, BoxStyle style, int firstLine, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, BoxStyle style, InlineBreakToken start, bool slices, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var broken = BreakLines(runs, contentWidth);
         if (broken.IsFailure)
@@ -147,6 +151,7 @@ public static class InlineLayout
         }
 
         var lines = broken.Value;
+        var firstLine = start.LineIndex;
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)
@@ -157,6 +162,26 @@ public static class InlineLayout
             }
 
             var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut);
+            var shown = index == firstLine ? start.Shown : 0;
+            if (shown > 0 || (placed.Count == 0 && slices && !Fitting.Fits(line.Size.Height, contentHeight)))
+            {
+                var next = MonolithicSlices.Next(line, shown, contentHeight);
+                if (next.HasNoValue)
+                {
+                    return SlicedBox.NothingFits;
+                }
+
+                var (slice, shownAfter) = next.Value;
+                placed.Add(new PlacedFragment(new Point(0, bottom), slice));
+                bottom += slice.Size.Height;
+                if (shownAfter is { } after)
+                {
+                    return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index) { Shown = after });
+                }
+
+                continue;
+            }
+
             if (!Fitting.Fits(bottom + line.Size.Height, contentHeight))
             {
                 if (placed.Count == 0)

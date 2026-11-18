@@ -124,7 +124,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 
 | Condition | What a person checks | This engine |
 | --- | --- | --- |
-| 01-001 | an artifact is tagged as real content | Met by design: only backgrounds, borders, grid lines, decorative images, page header and footer, and repeated header rows are artifacts; the painter decides, not the author. Text you write in the body is content, even if you meant it as decoration. |
+| 01-001 | an artifact is tagged as real content | Met by design: only backgrounds, borders, grid lines, decorative images, page header and footer, repeated header rows and the later slices of content taller than a page (`MonolithicOverflow.Slice`; the first slice is the content) are artifacts; the painter decides, not the author. Text you write in the body is content, even if you meant it as decoration. |
 | 01-002 | real content is marked as an artifact | **Your part.** Everything in a page header or footer is an artifact. Put nothing there that is not also in the body. In the timesheet sample, the title shown in the first-page header is therefore not read out; the document title in the metadata carries it. |
 | 01-006, 09-003 | a structure type does not fit its content | Met where the element says what it is: Heading → H1–H6, Paragraph → P, Table → Table, Image → Figure. Blocks and rows of blocks are Div, which carries no meaning. **Your part:** a bold paragraph used as a heading is a P; use `Heading`. |
 | 02-002 | a role mapping is inappropriate | Not possible: only standard structure types are written, so there is no role map. |

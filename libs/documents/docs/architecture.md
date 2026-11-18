@@ -48,14 +48,20 @@ Document ──DocumentTranslator.ToModel──▶ StyledDocument ──Document
   `LayoutAlgorithmId`), `TextRun`/`CounterRun` and `ImageNode`. Every node has an id (pre-order) and the source
   location of the call that made it. Roles (`Core/SemanticRole.cs`) are separate from layout: a box laid out as a
   table is not necessarily a table for a screen reader. Any front-end (code now, markup later) produces this model.
+  The document also carries its layout profile (`DocumentModel/LayoutProfile.cs`): the policies its front-end chose
+  where layout has a choice (see the policy table below).
 - **Fragment tree** (`Layout/Fragment.cs`). The output of layout per page: boxes cut at page breaks, lines, text,
-  images, table rules, with positions relative to the parent. Internal to the layout layer, but serialised for tests.
+  images, table rules, and slices of content taller than a page, with positions relative to the parent. Internal to
+  the layout layer, but serialised for tests.
 - **Page model** (`PageModel/DrawItem.cs`, `PageDocument.cs`). What to draw, in absolute page coordinates: glyph runs
   (glyph ids, not text plus a font name), filled rectangles, images, and markers — `StructureStart`/`StructureEnd`
   (node, role, source location, cell span) for content, `ArtifactStart`/`ArtifactEnd` for decoration and page
-  furniture. It does not depend on the document model, so other back-ends (raster, SVG) and a future PDF reader can
-  share it. Rule: markers nest; artifacts do not nest and contain no structure markers; content outside every marker
-  belongs to nothing (a tagged profile refuses it).
+  furniture, `ClipStart`/`ClipEnd` (a rectangle) around what is drawn clipped. It does not depend on the document
+  model, so other back-ends (raster, SVG) and a future PDF reader can share it. One nesting rule for all three kinds
+  of marker, stated once on `DrawItem` and checked where the PDF back-end reads the markers (`Render.Pdf/Tagging/
+  PageEvents.cs`): the markers of a page nest as one sequence of pairs, every end closing the innermost open marker
+  of its own kind; artifacts do not nest and contain no structure markers; a clip may open anywhere. Content outside
+  every structure and artifact marker belongs to nothing (a tagged profile refuses it).
 
 All three have a stable text form (`DocumentModelText`, `FragmentText`, `PageModelText`) used by golden tests.
 
@@ -65,7 +71,8 @@ All three have a stable text form (`DocumentModelText`, `FragmentText`, `PageMod
 incoming break token) → `LayoutResult` (a fragment plus an outgoing break token and a break appeal, or "no room",
 or an error). `ConstraintSpace.cs` is the available space and whether this is the top of a page; `BreakToken.cs`
 says where to continue; `LayoutResult.cs` and `BreakAppeal.cs` carry the result and how good the break is.
-`LayoutEnvironment.cs` holds the fonts, the algorithms by id, and the current page (for page counters). The
+`LayoutEnvironment.cs` holds the fonts, the algorithms by id, the current page (for page counters) and the document's
+layout profile, which the paginator takes from the document (`DocumentLayout.Run` needs nothing else). The
 paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with the previous page's token until no token
 is left. When the document shows its page count, it repeats the whole document until that count settles (at most 5
 passes); otherwise one pass is all.
@@ -78,6 +85,19 @@ table are a display type (`TableDisplay`), not algorithms. When a front-end need
 the three places to open, with that front-end as their first user.
 
 ## Where the policies and whole algorithms are
+
+Where CSS lets the layout choose, or where the engine offers a choice beside what Chromium prints, the choice is a
+policy of the document's layout profile (`DocumentModel/LayoutProfile.cs`). The policies are bundled per front-end
+family: the profile is a value in the document model, the front-end sets it (the code front-end keeps the defaults
+unless the author asks otherwise, a browser-like front-end would set Chromium's values), and layout reads it. The
+policies today:
+
+| Policy | Values (default first) | Where | Rule |
+| --- | --- | --- | --- |
+| monolithic overflow: an image or a line box taller than the page area, at the top of a page | `Refuse` (`Documents.Layout.DoesNotFit`); `Slice` (Chromium: sliced over the pages it needs, each slice clipped, later slices are pagination artifacts) | `Layout/MonolithicSlices.cs`, `ImageLayout.cs`, `InlineLayout.cs`, `PagePainter.cs` | CSS Fragmentation 3 §4.4 ("the UA may also fragment the contents of monolithic elements by slicing the element's graphical representation"); checked against Chromium's print (cases `a4-*`) |
+| empty row parts: a cut of a table row where one part shows nothing | `Avoid` (such a cut is a last resort: the row moves whole where it can); `Allow` (Chromium: a row is cut wherever its cells can break) | `Tracks/TableBreaks.cs` (`Cut`, `CutShows`) | CSS leaves where a row breaks to the user agent; checked against Chromium's print (cases `a2-*`, `a3-mirror`) |
+
+The whole algorithms and the other rules:
 
 | What | Where | Rule it implements |
 | --- | --- | --- |
@@ -94,7 +114,8 @@ the three places to open, with that front-end as their first user.
 | tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
 | images | `Layout/ImageLayout.cs` | CSS 2.1 §10.3.2 (with a stated deviation for width + height) |
 | page templates, page counters | `Layout/PageAreas.cs`, `Paginator.cs`, `PageContext.cs` | CSS Paged Media 3 §4.2.2, §5, §6.1 |
-| what is content and what is an artifact | `Layout/PagePainter.cs` | ISO 32000-1 §14.8.2.2 |
+| what is content and what is an artifact (a repeated header row and every slice after the first of content taller than a page are pagination artifacts) | `Layout/PagePainter.cs` | ISO 32000-1 §14.8.2.2 |
+| clips in PDF: `q x y w h re W n` … `Q` between marked-content sequences, never across one | `Render.Pdf/PageContentStream.cs` (`Clips`) | ISO 32000-1 §8.4.2, §8.5.4 |
 | line breaking | `Typesetting/LineBreaking/UnicodeLineBreaking.cs`, `GreedyLineBreaker.cs` | UAX #14 rev. 57 |
 | shaping | `Typesetting/Shaper.cs`, `Shaping/` | OpenType GSUB/GPOS/GDEF, legacy kern |
 | Unicode normalization before shaping: decompose, reorder marks, recompose, as far as the font allows | `Typesetting/Unicode/Normalization.cs`, data `UnicodeNormalizationData.g.cs` | UAX #15; HarfBuzz's normalizer (hb-ot-shape-normalize.cc) |
@@ -120,9 +141,9 @@ together, at the author's line where there is one.
 
 | Layer | Checks | Error codes |
 | --- | --- | --- |
-| front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth | `Documents.Input.*` |
+| front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| PDF back-end contract (`Render.Pdf/PageModelRules.cs`, `PdfRenderer.cs` for the options) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
+| PDF back-end contract (`Render.Pdf/PageModelRules.cs`, `PdfRenderer.cs` for the options) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule (`Tagging/PageEvents.cs`, `Documents.Pdf.Write.InvalidStructure`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidStructure`, `InvalidOptions`, `InvalidFileIdentifier` |
 | profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
 The slot-filling rule of a table (which slot each cell takes, and when a span runs past its group or overlaps
@@ -214,16 +235,28 @@ Each is documented next to its code as well.
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
   continues without the header.
-- **Deliberate deviation from Chromium: no part of a table row that shows nothing where moving the row avoids it.**
-  Chromium cuts a row wherever its cells can break, so a page may end with a part of a row that shows nothing (a row of
-  empty padded blocks after other rows) or start with one (the rest of a row whose text ended on the page before; case
-  `a3-mirror`). The engine cuts a row only where both parts show something, and otherwise moves the row to the next
-  page whole; a cut where a part shows nothing is a last resort, taken only where the row cannot move (at the top of a
-  page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`). Where a row shows nothing over more than
-  a page, the engine therefore needs a page more than Chromium (cases `a2-padded-blocks`, `a2-line-breaks`: the engine's
-  page 2 is the blank part of the row, Chromium's page 1 ends with it). Reason: an empty strip of a row reads as a
-  layout fault in a report, and the rule that avoids it costs nothing where the row can move. Pinned by `RowPartTests`
-  (Fluent).
+- **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
+  cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
+  rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
+  `EmptyRowParts.Allow` the engine cuts as Chromium does: the same pages and words, and the grid lines in the same
+  places once Chromium's whole-pixel painting is applied (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror`,
+  with Chromium's 14.25 pt line for `normal`; `RowPartTests`, Fluent). With `Avoid`, the code front-end's default, a
+  cut where a part shows nothing is a last resort: the row moves to the next page whole, and is cut there only where it
+  cannot move (at the top of a page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`); where a row
+  shows nothing over more than a page this needs a page more than Chromium. Reason for that default: an empty strip of
+  a row reads as a layout fault in a report, and avoiding it costs nothing where the row can move.
+- **Monolithic content taller than the page area is a policy** (`LayoutProfile.MonolithicOverflow`): refused by
+  default, or sliced as Chromium slices it (`Layout/MonolithicSlices.cs`): the same pages, the same image rectangles
+  and the content after the last slice in the same place (cases `a4-*`, `MonolithicSliceTests`). Each slice is clipped to
+  its part of the page area across the whole page width (Chromium clips only in the block direction); the first slice
+  is tagged content and later ones are pagination artifacts (`/Artifact /Type /Pagination`: ISO 32000-1 §14.8.2.2.1
+  calls artifacts content "generated by the conforming writer in the course of pagination, layout, or other strictly
+  mechanical processes", and a slice repeated because of a page break is pagination, as a repeated header row is), so
+  text and alternative text are read once; veraPDF passes PDF/A-3a and PDF/UA-1 on such a file (sample C). A sliced
+  figure is on several pages, so it has no `/BBox` (ISO 32000-1 Table 344 asks for one only for a figure "appearing in
+  its entirety on a single page"). **Deliberate deviation from Chromium:** in a table cell Chromium draws the next row
+  at the top of the page, over the last slice (case `a4-image-in-cell`); the engine starts that row below the slice.
+  Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
   precomposed, decompose what it lacks), except that enclosing marks (Me) do not count as marks and HarfBuzz's fallbacks
   for a missing space or non-breaking hyphen are not made (`Typesetting/Unicode/Normalization.cs`); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning

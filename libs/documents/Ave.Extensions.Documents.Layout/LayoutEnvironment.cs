@@ -18,6 +18,11 @@ namespace Ave.Extensions.Documents.Layout;
 /// <param name="Page">The page being laid out, for page counters.</param>
 public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<LayoutAlgorithmId, RegisteredAlgorithm> Algorithms, PageContext Page)
 {
+    /// <summary>The layout policies of the document being laid out (<see cref="StyledDocument.Profile"/>): the
+    /// paginator takes them from the document, so a front-end chooses them in the document model and the entry points
+    /// (<see cref="DocumentLayout.Run(StyledDocument, FontSet)"/>) stay as they are.</summary>
+    public LayoutProfile Profile { get; internal init; } = LayoutProfile.Default;
+
     /// <summary>The environment with the engine's algorithms: <see cref="FlowLayout"/>, <see cref="InlineLayout"/>,
     /// <see cref="TracksLayout"/> and <see cref="ImageLayout"/>; page 1 of 1.</summary>
     /// <param name="fonts">The fonts text may use.</param>

@@ -58,6 +58,10 @@ public static class DocumentErrorCodes
             /// Value, Property.</summary>
             public static readonly ErrorCode Widows = _ / "Widows";
 
+            /// <summary>A document without a layout profile, or with a policy value its enum does not have.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode LayoutProfile = _ / "LayoutProfile";
+
             /// <summary>A heading level outside 1–6. Metadata: Value.</summary>
             public static readonly ErrorCode HeadingLevel = _ / "HeadingLevel";
 

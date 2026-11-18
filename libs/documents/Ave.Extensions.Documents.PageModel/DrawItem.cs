@@ -13,6 +13,15 @@ namespace Ave.Extensions.Documents.PageModel;
 /// case) and a group with a transform, a clip and compositing (opacity, blend mode, soft mask) that
 /// holds its own items. Existing cases keep their meaning; a back-end that meets a case it does not know
 /// reports it instead of skipping it.
+/// <para><b>THE NESTING RULE FOR MARKERS</b>, for all three kinds — structure (<see cref="StructureStart"/>,
+/// <see cref="StructureEnd"/>), artifact (<see cref="ArtifactStart"/>, <see cref="ArtifactEnd"/>) and clip
+/// (<see cref="ClipStart"/>, <see cref="ClipEnd"/>): the markers of a page nest as one sequence of pairs. Every end
+/// closes the innermost marker still open, which is a start of its own kind (and for a structure end, of its node);
+/// every start ends on the same page. Inside an artifact there is no other artifact and no structure marker: an
+/// artifact is not part of the structure. A clip may open anywhere, also inside an artifact or another clip. This is
+/// how the PDF writer can keep its graphics-state pairs (<c>q</c>/<c>Q</c>, ISO 32000-1 §8.4.2) and its marked-content
+/// pairs (<c>BDC</c>/<c>EMC</c>, §14.6) inside each other. A back-end checks the rule and refuses a page that breaks
+/// it.</para>
 /// </remarks>
 public abstract record DrawItem
 {
@@ -58,8 +67,9 @@ public sealed record PositionedGlyph(GlyphId Glyph, double X, string Text, doubl
 
 /// <summary>
 /// Starts the content of a document node with a meaning (a paragraph, a heading). Every start has a matching
-/// <see cref="StructureEnd"/> on the same page; a node split over two pages has a pair on each page, with the
-/// same id. Markers nest like the document tree, and content between a start and its end belongs to that node. Tagged
+/// <see cref="StructureEnd"/> on the same page (the nesting rule, <see cref="DrawItem"/>); a node split over two pages
+/// has a pair on each page, with the same id. Markers nest like the document tree, and content between a start and its
+/// end belongs to that node. Tagged
 /// PDF builds its structure tree from these markers, in their order (reading order = document order).
 /// </summary>
 /// <param name="Node">The document node.</param>
@@ -78,8 +88,9 @@ public sealed record StructureEnd(NodeId Node) : DrawItem;
 
 /// <summary>
 /// Starts content that is not part of the document's structure: decoration or page furniture (an "artifact", ISO
-/// 32000-1 §14.8.2.2). Ends at the next <see cref="ArtifactEnd"/>; artifacts do not nest, and contain no structure
-/// markers. Content outside every artifact belongs to the innermost open structure marker.
+/// 32000-1 §14.8.2.2). Ends at its <see cref="ArtifactEnd"/>; artifacts do not nest, and contain no structure markers
+/// (the nesting rule, <see cref="DrawItem"/>). Content outside every artifact belongs to the innermost open structure
+/// marker.
 /// </summary>
 /// <param name="Kind">What kind of artifact.</param>
 public sealed record ArtifactStart(ArtifactKind Kind) : DrawItem;
@@ -89,6 +100,22 @@ public sealed record ArtifactEnd : DrawItem
 {
     /// <summary>The one end marker.</summary>
     public static ArtifactEnd Instance { get; } = new();
+}
+
+/// <summary>
+/// Starts a clip: the items up to the matching <see cref="ClipEnd"/> are drawn only inside the rectangle (and inside
+/// every clip around it), as the slices of content taller than a page are. A rectangle only, in page coordinates; the
+/// pair nests with the other markers (the nesting rule, <see cref="DrawItem"/>). A clip says nothing about structure:
+/// the content inside it belongs where it would without it.
+/// </summary>
+/// <param name="Area">The rectangle.</param>
+public sealed record ClipStart(Rect Area) : DrawItem;
+
+/// <summary>Ends the clip started by the innermost open <see cref="ClipStart"/>.</summary>
+public sealed record ClipEnd : DrawItem
+{
+    /// <summary>The one end marker.</summary>
+    public static ClipEnd Instance { get; } = new();
 }
 
 /// <summary>The kinds of artifact (ISO 32000-1 §14.8.2.2.2, Table 330, the <c>/Type</c> and <c>/Subtype</c> entries).</summary>

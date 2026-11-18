@@ -1,4 +1,5 @@
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.TestSupport;
@@ -11,19 +12,22 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <summary>
 /// Cuts inside a table row whose part on one page would show nothing (<c>TableBreaks</c>, LeavesSomething and
 /// CutShows), against Chromium's print of the same tables (<c>tools/reference/chromium</c>, cases <c>a2-*</c> and
-/// <c>a3-*</c>). Such a cut is a last resort: the row moves to the next page whole where it can, and is cut anyway where
-/// it cannot, so no table is refused. Chromium cuts a row wherever its cells can break, also where a part shows
-/// nothing; the engine deliberately does not leave such a strip at a page end or start where moving the row avoids it
-/// (docs/architecture.md, "Deliberate deviations"). Page area 276 × 180 pt (<c>@page { size: 300pt 204pt; margin:
-/// 12pt }</c>), 0.75 pt grid lines (one pixel), split at breaks as Chromium draws them.
+/// <c>a3-*</c>). Under the default policy (<see cref="EmptyRowParts.Avoid"/>) such a cut is a last resort: the row moves to
+/// the next page whole where it can, and is cut anyway where it cannot, so no table is refused. Chromium cuts a row
+/// wherever its cells can break, also where a part shows nothing, and so does the engine under
+/// <see cref="EmptyRowParts.Allow"/> (docs/architecture.md, "Empty row parts are a policy"). Page area 276 × 180 pt
+/// (<c>@page { size: 300pt 204pt; margin: 12pt }</c>), 0.75 pt grid lines (one pixel), split at breaks as Chromium draws
+/// them.
 /// </summary>
 public class RowPartTests
 {
     private static PageSetup Area => Page(300.Pt(), 204.Pt()).Margin(12.Pt());
 
     private static Result<ValueList<PageFragment>, global::Ave.Extensions.ErrorPaths.Error> Paginate(params Element[] body) =>
-        DocumentTranslator.ToModel(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato"))
-            .OnSuccessBind(model => Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model));
+        Paginate(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato"));
+
+    private static Result<ValueList<PageFragment>, global::Ave.Extensions.ErrorPaths.Error> Paginate(Document document) =>
+        DocumentTranslator.ToModel(document).OnSuccessBind(model => Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model));
 
     private static Result<PrintedPages, global::Ave.Extensions.ErrorPaths.Error> Print(params Element[] body) =>
         DocumentTranslator.ToModel(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato"))
@@ -62,7 +66,7 @@ public class RowPartTests
         // Twenty empty blocks with padding (200 pt) beside an empty cell: no part of the row shows anything. The engine
         // moves the row to page 2, where it cannot move again and is cut as a last resort; Chromium cuts it right after
         // "before" and leaves an empty strip at the end of page 1. Both are on a blank part of the row; the engine's page 2
-        // is that part, Chromium's is the rest of it. A deliberate deviation (see the class).
+        // is that part, Chromium's is the rest of it: the default policy, Avoid (see the class).
         var padded = Printed(Between(TableRow([Cell(""), Cell([.. Enumerable.Range(0, 20).Select(_ => (Element)Block([]).Padding(5.Pt()))])])));
         var breaks = Printed(Between(TableRow([Cell(""), Cell([Paragraph([.. Breaks(20)])])])));
 
@@ -77,7 +81,7 @@ public class RowPartTests
     {
         // The mirror of the strip (review 36): each row is a line of text beside two empty blocks with 4 pt padding. The
         // page end falls below t1's text but inside its second block: Chromium cuts there, so page 2 starts with an empty
-        // 9 pt part of t1. The engine moves t1 to page 2 whole (a deliberate deviation, see the class).
+        // 9 pt part of t1. The engine moves t1 to page 2 whole: the default policy, Avoid (see the class).
         TableElement Rows() => Table(Columns(Fill(1), Fill(1)),
                 [.. Enumerable.Range(0, 4).Select(i => (TablePart)TableRow([Cell($"t{i}"), Cell([Block([]).Padding(4.Pt()), Block([]).Padding(4.Pt())])]))])
             .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
@@ -86,6 +90,49 @@ public class RowPartTests
 
         engine.PageTexts.Should().Equal("intro t0", "t1 t2 t3");
         PrintedPages.Chromium("a3-mirror").PageTexts.Should().Equal("intro t0 t1", "t2 t3");
+    }
+
+    /// <summary>The three documents where Chromium leaves a part of a row that shows nothing.</summary>
+    public static TheoryData<string> ChromiumStrips => ["a2-padded-blocks", "a2-line-breaks", "a3-mirror"];
+
+    private static Element[] StripBody(string caseName) => caseName switch
+    {
+        "a2-padded-blocks" => [Between(TableRow([Cell(""), Cell([.. Enumerable.Range(0, 20).Select(_ => (Element)Block([]).Padding(5.Pt()))])]))],
+        "a2-line-breaks" => [Between(TableRow([Cell(""), Cell([Paragraph([.. Breaks(20)])])]))],
+        "a3-mirror" => [Paragraph("intro").MarginBottom(133.5.Pt()), Table(Columns(Fill(1), Fill(1)),
+                [.. Enumerable.Range(0, 4).Select(i => (TablePart)TableRow([Cell($"t{i}"), Cell([Block([]).Padding(4.Pt()), Block([]).Padding(4.Pt())])]))])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks()],
+        _ => throw new ArgumentException(caseName, nameof(caseName)),
+    };
+
+    /// <summary>The top of every horizontal grid line on each page (a filled rectangle one pixel high and wider than
+    /// one), in pixels of 0.75 pt, rounded to whole pixels as Chromium paints them.</summary>
+    private static List<List<long>> HorizontalLines(PrintedPages pages) =>
+        [.. pages.Pages.Select(page => page.Rectangles
+            .Where(box => Math.Abs(box.Height - 0.75) < 1e-6 && box.X1 - box.X0 > 0.75 + 1e-6)
+            .Select(box => (long)Math.Round(box.Y0 / 0.75, MidpointRounding.AwayFromZero))
+            .Distinct()
+            .Order()
+            .ToList())];
+
+    [Theory]
+    [MemberData(nameof(ChromiumStrips))]
+    public void With_empty_row_parts_allowed_rows_are_cut_where_Chromium_cuts_them(string caseName)
+    {
+        // EmptyRowParts.Allow, Chromium's policy: the row is cut wherever its cells can break, also where a part shows
+        // nothing. Same pages and words as Chromium, and the grid lines in the same places. Chromium's line of
+        // line-height: normal for Lato 12 pt is 19 px, 14.25 pt (docs/architecture.md, "Against Chromium"), so the
+        // engine's document sets that line height; Chromium paints a grid line at whole pixels, so the engine's lines are
+        // compared rounded to whole pixels.
+        var document = Document([.. StripBody(caseName)], Area, title: "Title", language: "en").FontFamily("Lato").LineHeight(14.25.Pt())
+            .EmptyRowParts(EmptyRowParts.Allow);
+        var engine = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
+        var chromium = PrintedPages.Chromium(caseName);
+
+        engine.IsSuccess.Should().BeTrue(engine.IsFailure ? engine.Error.ToString() : string.Empty);
+        engine.Value.PageTexts.Should().Equal(chromium.PageTexts);
+        HorizontalLines(engine.Value).Should().BeEquivalentTo(HorizontalLines(chromium), options => options.WithStrictOrdering());
+        RowParts.EmptyStrips(Paginate(document).Value).Should().NotBeEmpty("Chromium's cut leaves a part of a row that shows nothing");
     }
 
     [Theory]

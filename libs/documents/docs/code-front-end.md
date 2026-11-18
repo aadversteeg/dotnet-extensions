@@ -190,6 +190,27 @@ groups move to the next page whole when they fit on one, and break anyway when t
 The page count is known only after layout, so layout runs again until the count it shows is the count it produces,
 at most five times; otherwise the error is `Documents.Layout.NotConverging` at the `PageCount()` call.
 
+## Layout policies
+
+Where layout has a choice, the document says which one it takes (`Document.Profile`, a `LayoutProfile` of the
+document model). Each policy has a document modifier; the defaults suit reports, the other values print as a browser
+(Chromium) prints:
+
+| Modifier | Default | Other value |
+| --- | --- | --- |
+| `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next page-area height of it; what follows starts below its end; only the first slice is document content, so text and alternative text are read once |
+| `.EmptyRowParts(…)`: a table row whose part on a page would show nothing | `Avoid`: the row moves to the next page whole where that avoids the empty strip | `Allow`: the row is cut wherever its cells can break |
+
+```csharp
+var poster = Document([Image(photo).Alt("The team").Width(18.Cm())], PageSetup.A4.Margin(2.Cm()), title: "Poster", language: "en")
+    .FontFamily("Lato")
+    .MonolithicOverflow(MonolithicOverflow.Slice);
+```
+
+Content in a table cell is sliced the same way when its row starts the page; the row after it starts below the last
+slice (Chromium draws that row over the slice instead). Padding and borders taller than a page are refused under
+either value.
+
 ## PDF/A, PDF/UA and attachments
 
 The standard a file is written to is a render option, `PdfRenderOptions.Profile`: `PdfProfile.Plain` (the default),

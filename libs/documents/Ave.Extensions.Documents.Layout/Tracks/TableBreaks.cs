@@ -222,7 +222,9 @@ internal static class TableBreaks
             // (see TablePage): the line below the cut row, or the line above the row a break between rows comes before.
             var top = segment.RowTop(cell.StartRow);
             var clearance = IsCloned(table) ? InsideBelow(table, inside ? cutRow : cutRow - 1) : 0;
-            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance);
+            // A cell of the page's first row with nothing above it starts the page (with only the grid line above it).
+            var startsPage = table.IsAtPageStart && content.Rows.IsEmpty && cell.StartRow <= segment.FirstRow;
+            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance, startsPage);
             if (sliced.IsFailure)
             {
                 return Result<Maybe<Outcome>, Error>.Failure(sliced.Error);
@@ -264,11 +266,14 @@ internal static class TableBreaks
         var bottomLine = !inside ? BottomLine(table, cutRow - 1, cutRow, bottom)
             : IsCloned(table) ? new LineAt(cutRow, Next(grid, cutRow), PageEndContext(table, cutRow), bottom)
             : null;
-        // A cut that leaves a part of the row showing nothing is only a last resort (CutShows). Otherwise the cut is as good
-        // as the worst break it makes inside a cut cell's content (a cell's own keep rules, orphans and widows): every
-        // cell is a flow of its own that breaks there, and Chromium joins the cells' break appeals into the row's (case
-        // c-cell-orphan-moves: a row whose cell would leave one line on the page moves to the next page).
-        var taken = shows.Value ? BreakAvoidance.Worst(appeal, cellsAppeal) : BreakAppeal.LastResort;
+        // A cut that leaves a part of the row showing nothing is only a last resort (CutShows) under EmptyRowParts.Avoid;
+        // under Allow it is a breakpoint like any other, as Chromium cuts. Otherwise the cut is as good as the worst break
+        // it makes inside a cut cell's content (a cell's own keep rules, orphans and widows): every cell is a flow of its
+        // own that breaks there, and Chromium joins the cells' break appeals into the row's (case c-cell-orphan-moves: a
+        // row whose cell would leave one line on the page moves to the next page).
+        var taken = shows.Value || table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
+            ? BreakAvoidance.Worst(appeal, cellsAppeal)
+            : BreakAppeal.LastResort;
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), taken)));
     }
 

@@ -1,5 +1,6 @@
 using System;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
 namespace Ave.Extensions.Documents.Layout;
 
@@ -26,18 +27,32 @@ public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : Br
 
 /// <summary>The break token of <see cref="InlineLayout"/>: the first line of the next fragment.</summary>
 /// <param name="LineIndex">The index of the line that starts the next page.</param>
-public sealed record InlineBreakToken(int LineIndex) : BreakToken;
+public sealed record InlineBreakToken(int LineIndex) : BreakToken
+{
+    /// <summary>How much of the line's height earlier pages showed, when the line is taller than the page area and is
+    /// sliced (<see cref="MonolithicOverflow.Slice"/>, <see cref="SliceFragment"/>); 0 when the line starts on the next
+    /// page.</summary>
+    public double Shown { get; init; }
+}
 
 /// <summary>The break token of <see cref="ImageLayout"/>: the image is still to be placed, on the next page, after a
-/// last-resort break before it left only the box's top padding and border on this one.</summary>
+/// last-resort break before it left only the box's top padding and border on this one; or the image is taller than the
+/// page area and sliced, and the next page shows the next part of it (<see cref="Shown"/>).</summary>
 public sealed record ImageBreakToken : BreakToken
 {
-    private ImageBreakToken()
-    {
-    }
+    private ImageBreakToken(double shown) => Shown = shown;
 
-    /// <summary>The one value.</summary>
-    public static ImageBreakToken Instance { get; } = new();
+    /// <summary>The image is still to be placed from its top.</summary>
+    public static ImageBreakToken Instance { get; } = new(0);
+
+    /// <summary>How much of the image's height earlier pages showed as slices (<see cref="MonolithicOverflow.Slice"/>,
+    /// <see cref="SliceFragment"/>); 0 when the image is still to be placed from its top.</summary>
+    public double Shown { get; }
+
+    /// <summary>The token after the slices that showed <paramref name="shown"/> of the image.</summary>
+    /// <param name="shown">The height shown so far, more than 0.</param>
+    /// <returns>The token.</returns>
+    internal static ImageBreakToken After(double shown) => new(shown);
 }
 
 /// <summary>The break token of <see cref="TracksLayout"/>: the first body row of the next fragment, and the cells that

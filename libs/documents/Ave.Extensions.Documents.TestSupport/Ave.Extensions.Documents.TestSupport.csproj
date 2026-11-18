@@ -36,6 +36,8 @@
   <ItemGroup>
     <!-- Chromium's prints of the reference cases, read back (tools/reference/chromium/measured), for PrintedPages.Chromium. -->
     <None Include="$(MSBuildThisFileDirectory)../tools/reference/chromium/measured/*.print.txt" Link="chromium/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The images the reference cases show (tools/reference/chromium/cases), so a test lays out the same image. -->
+    <None Include="$(MSBuildThisFileDirectory)../tools/reference/chromium/cases/*.png" Link="chromium/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

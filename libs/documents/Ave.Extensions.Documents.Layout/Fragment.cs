@@ -66,3 +66,16 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
 /// <param name="Size">The glyphs' total advance and the font's ascent plus descent.</param>
 public sealed record TextFragment(InlineRun Run, TrueTypeFont Font, double Ascent, ValueList<ShapedGlyph> Glyphs, Size Size)
     : Fragment(Size);
+
+/// <summary>
+/// One page's slice of monolithic content taller than the page area — an image, or a line box — under
+/// <see cref="MonolithicOverflow.Slice"/>: the whole content, placed so that the part this page shows lies inside the
+/// slice, drawn clipped to the slice's top and bottom edges (CSS Fragmentation 3 §4.4, "slicing the element's graphical
+/// representation"). Chromium clips only in the block direction, so content wider than the slice is not cut at its
+/// sides.
+/// </summary>
+/// <param name="Size">The slice on this page: the content's width, and the height it shows here.</param>
+/// <param name="Content">The whole content, at <c>(0, −shown)</c>, where <c>shown</c> is the height earlier pages showed.</param>
+/// <param name="IsContinuation">True for every slice after the first: it repeats content the document has once, so
+/// the painter marks it as a pagination artifact; the first slice is the content.</param>
+public sealed record SliceFragment(Size Size, PlacedFragment Content, bool IsContinuation) : Fragment(Size);

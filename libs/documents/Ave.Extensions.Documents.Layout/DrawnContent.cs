@@ -27,6 +27,8 @@ internal static class DrawnContent
         LineFragment line => ChildrenDrawBelow(line.Children, y),
         TextFragment text => text.Glyphs.Any(IsVisible) && AreaBelow(0, text.Size.Height, y),
         ImageFragment or RuleFragment => AreaBelow(0, fragment.Size.Height, y),
+        // A slice draws its content clipped to its own height (counted as the content's areas are: a line by its box).
+        SliceFragment slice => AreaBelow(0, slice.Size.Height, y) && DrawsBelow(slice.Content.Fragment, y - slice.Content.Offset.Y),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
 

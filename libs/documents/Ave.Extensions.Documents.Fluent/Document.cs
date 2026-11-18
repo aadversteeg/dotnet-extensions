@@ -1,4 +1,5 @@
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
 namespace Ave.Extensions.Documents.Fluent;
 
@@ -28,6 +29,26 @@ public sealed record Document(
 
     /// <summary>The files embedded in the document, in the order they were attached.</summary>
     public ValueList<Attachment> Attachments { get; init; }
+
+    /// <summary>The layout policies of the document: <see cref="LayoutProfile.Default"/> unless changed with
+    /// <see cref="MonolithicOverflow(DocumentModel.MonolithicOverflow)"/> or <see cref="EmptyRowParts(DocumentModel.EmptyRowParts)"/>.</summary>
+    public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
+
+    /// <summary>
+    /// What layout does with an image or a line taller than the page area: refuse the document (the default), or slice
+    /// it over as many pages as it needs, as a browser prints it (<see cref="DocumentModel.MonolithicOverflow"/>).
+    /// </summary>
+    /// <param name="overflow">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document MonolithicOverflow(MonolithicOverflow overflow) => this with { Profile = Profile with { MonolithicOverflow = overflow } };
+
+    /// <summary>
+    /// Whether a table row may be cut where one part of it shows nothing: avoided where moving the row helps (the
+    /// default), or allowed wherever its cells can break, as a browser prints it (<see cref="DocumentModel.EmptyRowParts"/>).
+    /// </summary>
+    /// <param name="parts">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document EmptyRowParts(EmptyRowParts parts) => this with { Profile = Profile with { EmptyRowParts = parts } };
 
     /// <summary>
     /// Embeds a file in the document, for example its data as XML. Made with <see cref="Elements.Attachment"/>;
