@@ -162,6 +162,57 @@ public class PageRasterizerTests
     }
 
     [Theory]
+    [InlineData(1e12)]
+    [InlineData(1e13)]
+    [InlineData(1e14)]
+    [InlineData(1e15)]
+    [InlineData(1e16)]
+    [InlineData(1e17)]
+    [InlineData(1e18)]
+    [InlineData(1e30)]
+    [InlineData(PageModelRules.MaxNumber / 2)]
+    public void An_image_around_the_page_shows_the_same_picture_however_far_its_edges_lie(double half)
+    {
+        // The image's rectangle runs from -h to h both ways, so the page shows the middle of the image: for every h the
+        // same picture, here the colour of pixel (30, 21) of a 61 x 43 image over the whole page. Each pixel's preimage is
+        // a tiny part of one image pixel, far (h) from the image's origin; it must keep its area.
+        var jpeg = TestImages.Load("jpeg-rgb.jpg");
+        var near = Draw(PageOf(100, 100, new DrawImage(new Rect(new Point(-1e6, -1e6), new Size(2e6, 2e6)), jpeg)));
+
+        var far = Draw(PageOf(100, 100, new DrawImage(new Rect(new Point(-half, -half), new Size(2 * half, 2 * half)), jpeg)));
+
+        far.Pixels.Should().Equal(near.Pixels, $"h = {half}");
+        var centre = ((21 * 61) + 30) * 3;
+        var samples = ImageDecoder.DecodeSamples(jpeg).Value.Samples;
+        far.Pixels.Chunk(4).Should().OnlyContain(pixel => pixel[0] == samples[centre] && pixel[1] == samples[centre + 1] && pixel[2] == samples[centre + 2] && pixel[3] == 255);
+    }
+
+    [Theory]
+    [InlineData(1e12)]
+    [InlineData(1e14)]
+    [InlineData(1e15)]
+    [InlineData(1e16)]
+    [InlineData(1e17)]
+    [InlineData(1e18)]
+    public void An_image_that_reaches_the_page_from_far_away_is_drawn_up_to_its_own_edge(double distance)
+    {
+        // Origin -h, width h + 50: the image's last column covers the left half of the page. The right edge is the page
+        // model's own number, -h + (h + 50): 50 up to 10^16, 48 at 10^17 (h + 50 rounds to h + 48), 0 from 10^18 (it
+        // rounds to h). Left of the edge the picture of a near image, right of it the white page.
+        var jpeg = TestImages.Load("jpeg-rgb.jpg");
+        var near = Draw(PageOf(100, 100, new DrawImage(new Rect(new Point(-1e6, 0), new Size(1e6 + 50, 100)), jpeg)));
+        var edge = -distance + (distance + 50);
+
+        var far = Draw(PageOf(100, 100, new DrawImage(new Rect(new Point(-distance, 0), new Size(distance + 50, 100)), jpeg)));
+
+        for (var index = 0; index < far.Pixels.Length; index++)
+        {
+            var x = index / 4 % 100;
+            far.Pixels[index].Should().Be(x < edge ? near.Pixels[index] : (byte)255, $"h = {distance}, pixel ({x}, {index / 400}), edge {edge}");
+        }
+    }
+
+    [Theory]
     [InlineData(595.2756, 841.8898, 96, 794, 1123)]
     [InlineData(612, 792, 72, 612, 792)]
     [InlineData(612, 792, 300, 2550, 3300)]

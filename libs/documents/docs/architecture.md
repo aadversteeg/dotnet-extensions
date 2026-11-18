@@ -205,7 +205,13 @@ boundary inside a pixel each paint their exact coverage, so some of what is bene
 colour 51,102,153 on white meeting at half a pixel give 102,140,178 at the boundary (a quarter of the white), MuPDF
 95,135,175; poppler moves rectangle edges to whole pixels instead (51,102,153, but the boundary moves); the samples have
 no such items (`tools/reference/raster/README.md`). An enlarged image shows its sample squares, as the PDF defines it
-(ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
+(ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. An image
+of the page model (never rotated) is drawn by that rule at any distance in the number range: a test draws one whose
+edges lie at ±1.7 × 10^38 pt and gets the same page as when they lie at ±10^6 pt; its edges lie where its numbers put
+them, with their rounding (at 10^17 pt one step is 16 pt). `Canvas.DrawImage` with a rotation or shear, which no page
+model asks for, loses the area of device pixels when the image is enlarged very far (the rounding of the image
+coordinates; a 61 × 43 image: right at 10^12 times, up to 3 steps off at 10^13, up to 129 at 10^15; `Graphics/Canvas.cs`).
+JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
 PDF embeds them. Encoding a PNG costs more than drawing the page (about 50 ms at 96 dpi, 500 ms at 300 dpi for an A4
 page); speed is stage 5's work. Memory and time not yet bounded beyond the limits below: `ToPngPages` draws and keeps
 every page before it returns (about 35 MB per A4 page at 300 dpi); a damaged JPEG can cost the decoder hundreds of MB and

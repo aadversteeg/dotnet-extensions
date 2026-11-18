@@ -58,6 +58,8 @@ public sealed class Canvas
     private readonly List<Vertex> _clipFirst = new(16);
     private readonly List<Vertex> _clipSecond = new(16);
     private readonly List<List<Vertex>> _preimagePolygons = new(1);
+    private double[] _columnShares = new double[4];
+    private double[] _rowShares = new double[4];
 
     private Canvas(int width, int height, byte[] pixels)
     {
@@ -143,6 +145,13 @@ public sealed class Canvas
     /// painted is the mean alpha over the whole preimage, so a device pixel half outside the image gets half its alpha,
     /// and the image's edges are anti-aliased like a filled path. For any magnification this shows the image's pixels as
     /// sharp squares; for any reduction each image pixel counts by the area it covers.</para>
+    /// <para><b>Far from the image's origin.</b> An image drawn without rotation or shear keeps this rule at any distance
+    /// in range: its preimage is a rectangle, and each axis is computed relative to the image's nearest grid line (see
+    /// <see cref="SampleAxisAligned"/>). Its edges lie where the transform maps its corners, which carries the rounding
+    /// of the numbers there, as every position does (at 10^17 one step is 16). A rotated or sheared image maps each
+    /// pixel's corners back to the image; there a preimage near the rounding of the image coordinates (about the image's
+    /// size × 2^-52 image pixels) loses its area: measured on a 61 × 43 image, right when enlarged 10^12 times, up to 3
+    /// steps off at 10^13, up to 129 at 10^15.</para>
     /// </remarks>
     /// <param name="image">The image.</param>
     /// <param name="imageToDevice">From image space to device pixels.</param>
@@ -174,6 +183,7 @@ public sealed class Canvas
         var weights = new Weights(image);
         CoverageRow sample = weights.Add;
         var clipBox = box.Value;
+        var axisAligned = imageToDevice.B == 0 && imageToDevice.C == 0;
         return CoverageRows(_rasterizer, Path.Rectangle(0, 0, image.Width, image.Height), imageToDevice, FillRule.NonZero, clipBox, (row, first, coverage) =>
         {
             for (var index = 0; index < coverage.Length; index++)
@@ -185,7 +195,16 @@ public sealed class Canvas
 
                 var x = first + index;
                 weights.Clear();
-                SamplePreimage(new PixelBox(x, row, x + 1, row + 1).Intersect(clipBox), toImage, imageBox, sample);
+                var cell = new PixelBox(x, row, x + 1, row + 1).Intersect(clipBox);
+                if (axisAligned)
+                {
+                    SampleAxisAligned(cell, imageToDevice, weights);
+                }
+                else
+                {
+                    SamplePreimage(cell, toImage, imageBox, sample);
+                }
+
                 if (weights.Alpha > 0)
                 {
                     Composite(
@@ -324,6 +343,81 @@ public sealed class Canvas
         _sampler.Rasterize(_preimagePolygons, FillRule.NonZero, imageBox, sample);
     }
 
+    /// <summary>
+    /// The image samples under one device box for an image drawn without rotation or shear (b = c = 0): the preimage is a
+    /// rectangle, so the share of each image pixel is the product of its overlap along x and its overlap along y, each
+    /// computed on its own axis.
+    /// </summary>
+    /// <remarks>
+    /// Exact at any distance from the image's origin. Along an axis, the box's two ends are taken relative to the image's
+    /// grid line nearest to the box, mapped forward to the device as the image's own edges are; a box that lies between
+    /// two grid lines gets its whole length in that pixel, computed from the box's own width, not as a difference of two
+    /// positions. So an image enlarged so much that the page shows a small part of one of its pixels keeps every box's
+    /// area, where mapping the corners back to the image one by one would round them all to the same point.
+    /// </remarks>
+    private void SampleAxisAligned(PixelBox cell, Affine imageToDevice, Weights weights)
+    {
+        var (firstColumn, columns) = Overlaps(cell.Left, cell.Right, imageToDevice.A, imageToDevice.E, weights.Image.Width, ref _columnShares);
+        var (firstRow, rows) = Overlaps(cell.Top, cell.Bottom, imageToDevice.D, imageToDevice.F, weights.Image.Height, ref _rowShares);
+        for (var row = 0; row < rows; row++)
+        {
+            for (var column = 0; column < columns; column++)
+            {
+                weights.AddPixel(firstColumn + column, firstRow + row, _columnShares[column] * _rowShares[row]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Along one axis, the overlap of the device interval [from, to] with each image pixel, the image mapped by
+    /// <c>scale · u + offset</c> and <paramref name="size"/> pixels long: the first pixel and the number of shares written.
+    /// </summary>
+    private static (int First, int Count) Overlaps(double from, double to, double scale, double offset, int size, ref double[] shares)
+    {
+        // The grid line nearest to the interval, at its device position: u relative to that line is small where a pixel
+        // edge can fall inside the interval, so it is exact there.
+        var line = Nearest((((from + to) / 2) - offset) / scale, size);
+        var position = (scale * line) + offset;
+        var (low, high) = ((from - position) / scale, (to - position) / scale);
+        if (scale < 0)
+        {
+            (low, high) = (high, low);
+        }
+
+        if (high <= -line || low >= size - line)
+        {
+            return (0, 0);
+        }
+
+        // Far from the image's origin both ends may round to the same number; the interval still has its length.
+        var (clippedLow, clippedHigh) = (double.Max(low, -line), double.Min(high, size - line));
+
+        var first = (int)Math.Floor(clippedLow);
+        var count = int.Max(1, (int)Math.Ceiling(clippedHigh) - first);
+        if (shares.Length < count)
+        {
+            shares = new double[int.Max(count, 2 * shares.Length)];
+        }
+
+        if (count == 1)
+        {
+            // Inside one pixel: the whole length, from the interval's own width when the image's edge does not cut it.
+            shares[0] = clippedLow == low && clippedHigh == high ? (to - from) / Math.Abs(scale) : clippedHigh - clippedLow;
+        }
+        else
+        {
+            for (var index = 0; index < count; index++)
+            {
+                shares[index] = double.Min(clippedHigh, first + index + 1) - double.Max(clippedLow, first + index);
+            }
+        }
+
+        return (line + first, count);
+    }
+
+    /// <summary>The grid line nearest to an image coordinate, 0 to <paramref name="size"/>.</summary>
+    private static int Nearest(double value, int size) => double.IsNaN(value) ? 0 : (int)double.Clamp(Math.Floor(value + 0.5), 0, size);
+
     private Result<PixelBox, Error> Box(PixelBox? clip) =>
         clip is { IsValid: false } invalid
             ? Invalid<PixelBox>("The clip box is not a finite rectangle with its edges in order.", invalid.ToString(), "clip")
@@ -374,7 +468,20 @@ public sealed class Canvas
 
         public double Blue { get; private set; }
 
+        public RgbaImage Image => image;
+
         public void Clear() => (Alpha, Red, Green, Blue) = (0, 0, 0, 0);
+
+        /// <summary>Adds one image pixel with its share of the preimage.</summary>
+        public void AddPixel(int column, int row, double share)
+        {
+            var offset = ((row * image.Width) + column) * 4;
+            var weight = share * image.Pixels[offset + 3];
+            Alpha += weight;
+            Red += weight * image.Pixels[offset];
+            Green += weight * image.Pixels[offset + 1];
+            Blue += weight * image.Pixels[offset + 2];
+        }
 
         public void Add(int row, int first, ReadOnlySpan<double> share)
         {
