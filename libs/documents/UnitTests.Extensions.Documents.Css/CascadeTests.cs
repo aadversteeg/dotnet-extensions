@@ -96,6 +96,35 @@ public class CascadeTests
         computed.Value(root["x"], "color").Should().Be("rgb(255, 0, 0)");
     }
 
+    [Theory]
+    // CSS Cascade 5 §7.3.5: as if no rules were in the layer or between its normal and important levels, so the normal
+    // declarations of the layer and of every later layer, the unlayered ones too, are rolled back with the important
+    // ones of the later layers; the earlier layers are next.
+    [InlineData("p { margin-top: 3pt } @layer a { #x { margin-top: revert-layer !important } }", "0pt")]
+    [InlineData("@layer a { p { margin-top: 2pt; margin-top: var(--nope, revert-layer) !important } }", "0pt")]
+    [InlineData("p { margin-top: 2pt; margin-top: var(--nope, revert-layer) !important }", "0pt")]
+    [InlineData("@layer a { p { margin-top: 2pt } } @layer b { p { margin-top: revert-layer !important } } @layer c { p { margin-top: 7pt !important } } p { margin-top: 3pt }", "2pt")]
+    [InlineData("@layer b, a; @layer a { p { margin-top: 2pt } } @layer b { p { margin-top: 4pt } } @layer a { p { margin-top: revert-layer !important } }", "4pt")]
+    public void An_important_revert_layer_rolls_back_past_the_normal_declarations_of_its_layer_and_the_later_ones(string css, string marginTop)
+    {
+        var root = Doc(E("p", A("id", "x")));
+
+        Compute(root, css).Value(root["x"], "margin-top").Should().Be(marginTop);
+    }
+
+    [Theory]
+    [InlineData("-internal-ave-th-center")]
+    [InlineData("-INTERNAL-AVE-TH-CENTER")]
+    public void The_user_agents_own_keyword_given_by_var_is_invalid_in_an_author_sheet(string keyword)
+    {
+        var root = Doc(E("div", E("p", A("id", "y"))));
+        var computed = Compute(root, $"div {{ text-align: right }} p {{ --k: {keyword}; text-align: left; text-align: var(--k) }}");
+
+        // Invalid at computed-value time (a warning): unset, so text-align is inherited from the div.
+        computed.Value(root["y"], "text-align").Should().Be("right");
+        computed.Coded(CssErrorCodes.Invalid.Value).Should().ContainSingle().Which.Message.Should().Contain("-internal-");
+    }
+
     [Fact]
     public void Sublayers_come_before_their_parent_layers_own_rules()
     {

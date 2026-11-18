@@ -60,6 +60,37 @@ public class ChromiumBehaviourTests
     public void The_value_is_Chromiums(string body, string id, string property, string chromium) =>
         Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
 
+    [Theory]
+    // An important revert-layer rolls back as if no rules were in its layer or between the layer's normal and important
+    // levels (CSS Cascade 5 §7.3.5): written, through var(), in a shorthand, in all, in a custom property; in the style
+    // attribute it rolls back the attribute's declarations only. Measured in Chromium 159.0.8154.6.
+    [InlineData("<style>p { color: red } @layer a { p { color: revert-layer !important } }</style><div id=d><p id=a>x</p></div>", "a", "color", "rgb(0, 0, 0)")]
+    [InlineData("<style>@layer a { p { margin-left: 2px; margin-left: var(--x, revert-layer) !important } }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "0px")]
+    [InlineData("<style>p { margin-left: 2px; margin-left: var(--x, revert-layer) !important }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "0px")]
+    [InlineData("<style>@layer a { p { margin-left: 2px } } p { margin-left: 3px; margin-left: revert-layer !important }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "2px")]
+    [InlineData("<style>@layer a { p { margin-left: 2px } } @layer b { p { margin-left: 5px; margin-left: revert-layer !important } } @layer c { p { margin-left: 7px } } p { margin-left: 3px }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "2px")]
+    [InlineData("<style>@layer a { p { margin-left: 2px } } @layer b { p { margin-left: 5px; margin-left: revert-layer !important } } @layer c { p { margin-left: 7px !important } }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "2px")]
+    [InlineData("<style>@layer a { p { margin-left: 2px } } @layer b { p { margin-left: revert-layer !important } } p { margin-left: 3px !important }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "2px")]
+    [InlineData("<style>@layer a { p { color: green } } @layer b { p { color: revert-layer !important } }</style><div id=d><p id=a style=\"color: red\">x</p></div>", "a", "color", "rgb(0, 128, 0)")]
+    [InlineData("<style>@layer a { p { color: green } } p { color: blue }</style><div id=d><p id=a style=\"color: red; color: revert-layer !important\">x</p></div>", "a", "color", "rgb(0, 0, 255)")]
+    [InlineData("<style>@layer a { @layer x { p { margin-left: 2px } } @layer y { p { margin-left: 4px; margin-left: revert-layer !important } } p { margin-left: 6px } }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "2px")]
+    [InlineData("<style>@layer a { p { margin: 2px } } @layer b { p { margin: 5px; margin: revert-layer !important } } p { margin: 3px }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "2px")]
+    [InlineData("<style>@layer a { p { margin-left: 2px; color: green } } @layer b { p { all: revert-layer !important } } p { margin-left: 3px; color: red }</style><div id=d><p id=a>x</p></div>", "a", "color", "rgb(0, 128, 0)")]
+    [InlineData("<style>@layer a { p { text-align: left } } @layer b { p { text-align: revert-layer !important } } p { text-align: right }</style><div id=d><p id=a align=center>x</p></div>", "a", "text-align", "left")]
+    [InlineData("<style>@layer b { p { text-align: revert-layer !important } } p { text-align: right }</style><div id=d><p id=a align=center>x</p></div>", "a", "text-align", "-webkit-center")]
+    [InlineData("<style>@layer a { div { color: green } } @layer b { div { color: blue; color: revert-layer !important } } div { color: red }</style><div id=d><p id=a>x</p></div>", "d", "color", "rgb(0, 128, 0)")]
+    [InlineData("<style>@layer a { p { margin-left: 2px } p { margin-left: revert-layer !important } } @layer a { p { margin-left: 8px } }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "0px")]
+    [InlineData("<style>@layer b, a; @layer a { p { margin-left: 2px } } @layer b { p { margin-left: 4px } } @layer a { p { margin-left: revert-layer !important } }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "4px")]
+    [InlineData("<style>@layer b, a; @layer a { p { margin-left: 2px } } @layer b { p { margin-left: 4px } } @layer b { p { margin-left: revert-layer !important } }</style><div id=d><p id=a>x</p></div>", "a", "margin-left", "0px")]
+    [InlineData("<style>@layer a { p { --c: green } } @layer b { p { --c: red; --c: revert-layer !important; color: var(--c, blue) } }</style><div id=d><p id=a>x</p></div>", "a", "color", "rgb(0, 128, 0)")]
+    // The engine's own -internal- keyword is the user agent's also when var() gives it: an author's text-align is then
+    // invalid at computed-value time and unset (inherited).
+    [InlineData("<style>p { --k: -internal-ave-th-center; text-align: right; text-align: var(--k) }</style><div id=d><p id=a>x</p></div>", "a", "text-align", "start")]
+    [InlineData("<style>p { --k: -INTERNAL-AVE-TH-CENTER; text-align: right; text-align: var(--k) }</style><div id=d><p id=a>x</p></div>", "a", "text-align", "start")]
+    [InlineData("<style>p { text-align: right; text-align: var(--nope, -internal-ave-th-center) }</style><div id=d><p id=a>x</p></div>", "a", "text-align", "start")]
+    public void The_roll_back_of_an_important_revert_layer_and_a_substituted_internal_keyword_are_Chromiums(string body, string id, string property, string chromium) =>
+        Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
+
     [Fact]
     public void Body_margins_come_from_the_last_attribute_of_each_pair()
     {

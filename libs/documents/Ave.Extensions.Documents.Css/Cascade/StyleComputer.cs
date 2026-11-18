@@ -382,9 +382,13 @@ public sealed class StyleComputer
 
     /// <summary>The winning candidate (CSS Cascade 5 §6.1), or null when none is left: refused values are reported and
     /// skipped; <c>revert</c> skips the rest of its origin (presentational hints count as author), <c>revert-layer</c> the
-    /// rest of its layer (§7.3). The candidates of <c>all</c> are taken in the cascade order together with the
-    /// property's own. Each candidate looked at costs one unit, and whether it is rolled back is one look-up, so
-    /// k <c>revert-layer</c> in k layers cost k, not k².</summary>
+    /// rest of its layer (§7.3.4, §7.3.5). An important <c>revert-layer</c> rolls back as if no rules were in its layer
+    /// or between the layer's normal and important levels (§7.3.5): it skips every candidate down to and including the
+    /// layer's normal declarations, so the lower layers of the normal order are next. In the style attribute it skips
+    /// the attribute's declarations only, not the important rules between (§7.3.5, element-attached styles). The
+    /// candidates of <c>all</c> are taken in the cascade order together with the property's own. Each candidate looked
+    /// at costs one unit, and whether it is rolled back is one look-up, so k <c>revert-layer</c> in k layers cost k, not
+    /// k².</summary>
     private Candidate? Winner(List<Candidate>? candidates, List<Candidate>? all = null)
     {
         if (candidates is null && all is null)
@@ -406,6 +410,7 @@ public sealed class StyleComputer
 
         var reverted = 0;
         HashSet<(CascadeOrigin Origin, bool Important, object Layer)>? layers = null;
+        (int Origin, int Attached, int Layer)? floor = null;
         int own = 0, shared = 0;
         while (true)
         {
@@ -426,7 +431,8 @@ public sealed class StyleComputer
             }
 
             if ((reverted & (1 << RevertGroup(candidate.Origin))) != 0
-                || (layers is not null && layers.Contains((candidate.Origin, candidate.Entry.Declaration.Important, candidate.Layer))))
+                || (layers is not null && layers.Contains((candidate.Origin, candidate.Entry.Declaration.Important, candidate.Layer)))
+                || (floor is { } level && Level(candidate.Priority).CompareTo(level) >= 0))
             {
                 continue;
             }
@@ -446,14 +452,29 @@ public sealed class StyleComputer
                 case WideKeywordEntry { Keyword: "revert" }:
                     reverted |= 1 << RevertGroup(candidate.Origin);
                     continue;
+                case WideKeywordEntry { Keyword: "revert-layer" } when candidate.Entry.Declaration.Important && !ReferenceEquals(candidate.Layer, StyleAttributeLayer):
+                    // The layer's normal level, the lowest the roll-back reaches: an important layer's Layer is minus its rank.
+                    var normal = (Priority.OriginRank(candidate.Origin, important: false), 0, -candidate.Priority.Layer);
+                    floor = floor is { } lower && lower.CompareTo(normal) < 0 ? lower : normal;
+                    continue;
                 case WideKeywordEntry { Keyword: "revert-layer" }:
-                    (layers ??= new(new LayerKeyComparer())).Add((candidate.Origin, candidate.Entry.Declaration.Important, candidate.Layer));
+                    layers ??= new(new LayerKeyComparer());
+                    layers.Add((candidate.Origin, candidate.Entry.Declaration.Important, candidate.Layer));
+                    if (candidate.Entry.Declaration.Important)
+                    {
+                        layers.Add((candidate.Origin, false, candidate.Layer));
+                    }
+
                     continue;
                 default:
                     return candidate;
             }
         }
     }
+
+    /// <summary>Where a candidate stands in the cascade above specificity and order: origin and importance, element
+    /// attachment, layer (CSS Cascade 5 §6.1).</summary>
+    private static (int Origin, int Attached, int Layer) Level(Priority priority) => (priority.Origin, priority.Attached, priority.Layer);
 
     /// <summary>The origin <c>revert</c> rolls back (CSS Cascade 5 §7.3): user agent, user, or author with the
     /// presentational hints, which count as author-level (§6.2).</summary>
@@ -752,7 +773,7 @@ public sealed class StyleComputer
             case SpecifiedEntry specified:
                 return Computed(property, specified.Value, context, declaration) ?? Unset();
             case PendingEntry pending:
-                return Substituted(property, pending, declaration, context, custom, shorthands) ?? Unset();
+                return Substituted(property, pending, declaration, winner.Origin, context, custom, shorthands) ?? Unset();
             default:
                 return Unset();
         }
@@ -821,8 +842,11 @@ public sealed class StyleComputer
         property.Compute(property.Initial, context).Value ?? property.Initial;
 
     /// <summary>A pending value after var() substitution: parsed as the longhand, or as its shorthand (once per
-    /// declaration and element); invalid at computed-value time when it does not parse (CSS Variables 1 §3.1).</summary>
-    private CssValue? Substituted(PropertyDefinition property, PendingEntry pending, PreparedDeclaration declaration, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
+    /// declaration and element); invalid at computed-value time when it does not parse (CSS Variables 1 §3.1). A
+    /// -internal- keyword the substitution gives an author's text-align is invalid there too, as it is written directly
+    /// (<see cref="DeclarationPreparer"/>; Chromium 159, measured: <c>text-align: var(--k)</c> with
+    /// <c>--k: -internal-ave-th-center</c> is start).</summary>
+    private CssValue? Substituted(PropertyDefinition property, PendingEntry pending, PreparedDeclaration declaration, CascadeOrigin origin, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
     {
         var outcome = Substitute(declaration.Source.Value, custom, declaration, out var values);
         if (outcome != VarSubstitution.Outcome.Done)
@@ -839,6 +863,12 @@ public sealed class StyleComputer
         if (pending.IsAll)
         {
             Report(declaration, CssErrorCodes.Unsupported.Value, $"'all' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ('all' takes only a CSS-wide keyword); every property is unset.");
+            return null;
+        }
+
+        if (origin != CascadeOrigin.UserAgent && declaration.Name == "text-align" && DeclarationPreparer.ContainsInternalKeyword(values))
+        {
+            Report(declaration, CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; '{declaration.Name}' after var() substitution is invalid and the property is unset.");
             return null;
         }
 
