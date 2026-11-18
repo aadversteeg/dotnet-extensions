@@ -76,6 +76,18 @@ namespace Ave.Extensions.Documents.Layout;
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
 /// would be gained by moving on. On a later page whose height cannot hold the header and some body content, the header
 /// is left out, so the table always makes progress.</para>
+/// <para><b>Content taller than the page area under a repeated header row</b> (<see cref="MonolithicOverflow.Slice"/>
+/// only): it is sliced right below the header, on a page after one that showed no body row other than slices of a
+/// piece that was itself sliced (<see cref="TracksBreakToken.BodyShown"/>); after a page that did show a body row, the
+/// page holds only the header and the row moves on once. The header stays above every later slice, and each slice is
+/// as tall as the room below it, so the slices show the piece once. Chromium starts the first slice on the same page
+/// and at the same place in every measured case (<c>tools/reference/chromium</c>, cases <c>a4-header-*</c>), the page
+/// with only the header included; on the later pages it moves the piece up a whole page area and either leaves the
+/// header out or draws it over the piece, which the engine does not copy (docs/architecture.md). The first row's cells
+/// then start the page through the line above them (<see cref="TableSegments.Slice"/>), so the piece starts where a
+/// whole cell's content starts. Whether the piece is taller than the page area is found by laying the page out without
+/// the header in that way: only if it is sliced even then. A piece taller than the room below the header but not than
+/// the page area goes on without the header, as any body content does.</para>
 /// </remarks>
 internal static class TablePage
 {
@@ -147,11 +159,31 @@ internal static class TablePage
         var outcome = Attempt(table, space, resume, isFirst, hasHeader, breakAt);
 
         // A later page that cannot hold the header and some body content that shows goes on without the header (see
-        // remarks): under the header the body has no room, or only a last-resort cut.
+        // remarks): under the header the body has no room, or only a last-resort cut. Content taller than the page area,
+        // which would be sliced anyway, is sliced below the header instead, after a page with only the header (see
+        // remarks).
         if (!isFirst && hasHeader && outcome.IsSuccess && OnlyLastResort(outcome.Value))
         {
-            var without = Attempt(table, space, resume, isFirst, includeHeader: false, breakAt);
-            outcome = without.IsFailure || (without.Value.HasValue && !OnlyLastResort(without.Value)) || outcome.Value.HasNoValue ? without : outcome;
+            // Taller than the page area: laid out on the page without the header, with the first row's cells starting the
+            // page (through the line above them), it would still be sliced.
+            var sliced = table with { SlicesBelowHeader = true };
+            var taller = space.IsAtPageStart && table.Environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice
+                ? Attempt(sliced, space, resume, isFirst, includeHeader: false, breakAt)
+                : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
+            var belowHeader = taller.IsFailure || (taller.Value.HasValue && StartsSlice(taller.Value.Value))
+                ? taller.OnSuccessBind(_ => resume.BodyShown
+                    ? Attempt(table, space, resume, isFirst, includeHeader: true, breakAt, headerAlone: true)
+                    : Attempt(sliced, space, resume, isFirst, includeHeader: true, breakAt))
+                : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
+            if (belowHeader.IsFailure || (belowHeader.Value.HasValue && (resume.BodyShown || !OnlyLastResort(belowHeader.Value))))
+            {
+                outcome = belowHeader;
+            }
+            else
+            {
+                var without = Attempt(table, space, resume, isFirst, includeHeader: false, breakAt);
+                outcome = without.IsFailure || (without.Value.HasValue && !OnlyLastResort(without.Value)) || outcome.Value.HasNoValue ? without : outcome;
+            }
         }
 
         if (outcome.IsFailure)
@@ -168,12 +200,33 @@ internal static class TablePage
         }
 
         return outcome.Value.HasValue
-            ? LayoutResult.Place(TableFragments.Build(table, outcome.Value.Value), outcome.Value.Value.Continuation, outcome.Value.Value.Appeal, outcome.Value.Value.BestBreak)
+            ? LayoutResult.Place(
+                TableFragments.Build(table, outcome.Value.Value),
+                outcome.Value.Value.Continuation is { } next ? next with { BodyShown = ShowsBody(table, outcome.Value.Value.Content) } : null,
+                outcome.Value.Value.Appeal,
+                outcome.Value.Value.BestBreak)
             : LayoutResult.NothingFits(table.Box, space);
     }
 
+    /// <summary>Whether a page's body cells draw anything besides slices of content taller than the page
+    /// (<see cref="TracksBreakToken.BodyShown"/>).</summary>
+    private static bool ShowsBody(TableGeometry table, Content content) =>
+        content.Cells.Any(cell => table.Grid.Cells[cell.Cell].Row >= table.Grid.HeaderRowCount && DrawnContent.DrawsOutsideSlices(cell.Fragment));
+
+    /// <summary>Whether an outcome starts slicing content taller than the page area: some cell holds a first slice.</summary>
+    private static bool StartsSlice(Outcome outcome) => outcome.Content.Cells.Any(cell => HoldsFirstSlice(cell.Fragment));
+
+    private static bool HoldsFirstSlice(Fragment fragment) => fragment switch
+    {
+        SliceFragment slice => !slice.IsContinuation,
+        BoxFragment box => box.Children.Any(child => HoldsFirstSlice(child.Fragment)),
+        LineFragment line => line.Children.Any(child => HoldsFirstSlice(child.Fragment)),
+        _ => false,
+    };
+
     /// <summary>One try at the page, with or without the header rows on top. None when no body content fits.</summary>
-    private static Result<Maybe<Outcome>, Error> Attempt(TableGeometry table, ConstraintSpace space, TracksBreakToken resume, bool isFirst, bool includeHeader, TracksEarlyBreak? breakAt)
+    private static Result<Maybe<Outcome>, Error> Attempt(
+        TableGeometry table, ConstraintSpace space, TracksBreakToken resume, bool isFirst, bool includeHeader, TracksEarlyBreak? breakAt, bool headerAlone = false)
     {
         var grid = table.Grid;
         var height = space.AvailableHeight;
@@ -223,6 +276,12 @@ internal static class TablePage
             if (nextBody is null)
             {
                 return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content)));
+            }
+
+            // The page with only the header before content taller than the page area is sliced below it (see remarks).
+            if (headerAlone)
+            {
+                return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(content, BottomLine(table, grid.HeaderRowCount - 1, nextBody, content.Bottom), resume, BreakAppeal.ViolatesAvoid)));
             }
 
             content = content with { Lines = content.Lines.Add(new LineAt(grid.HeaderRowCount - 1, nextBody, resumeContext, content.Bottom)) };

@@ -277,6 +277,14 @@ Each is documented next to its code as well.
   figure is on several pages, so it has no `/BBox` (ISO 32000-1 Table 344 asks for one only for a figure "appearing in
   its entirety on a single page"). **Deliberate deviation from Chromium:** in a table cell Chromium draws the next row
   at the top of the page, over the last slice (case `a4-image-in-cell`); the engine starts that row below the slice.
+  Under a repeated header row the content is sliced right below the header, on a page after one that showed no body row
+  other than slices of a piece that was itself sliced; after a page that did show one, the page holds only the header
+  and the row moves on once. That page with only the header is Chromium's: the first slice starts on Chromium's page and
+  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`).
+  **Deliberate deviation from Chromium:** on the later pages the engine repeats the header above every slice and makes
+  each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
+  page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt
+  of the content that are never shown (`a4-header-row-image-row`).
   Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
   precomposed, decompose what it lacks), except that enclosing marks (Me) do not count as marks and HarfBuzz's fallbacks

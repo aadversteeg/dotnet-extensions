@@ -81,15 +81,24 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// </summary>
     internal TablePreparation? Prepared { get; init; }
 
+    /// <summary>
+    /// True when the page this token ends showed body content other than slices of a piece taller than the page (a
+    /// body cell that draws something outside a <see cref="SliceFragment"/>). Under <see cref="MonolithicOverflow.Slice"/>
+    /// a piece that does not fit below a repeated header row is sliced there only after a page that showed no such body
+    /// content (<see cref="TablePage"/>, remarks): the row moved once, and the page with only the header shows that
+    /// moving gains nothing. Part of the position.
+    /// </summary>
+    public bool BodyShown { get; init; } = true;
+
     /// <summary>Equal when the positions are equal (<see cref="Prepared"/> is not compared).</summary>
     /// <param name="other">The other token.</param>
     /// <returns>True for the same position.</returns>
     public bool Equals(TracksBreakToken? other) =>
-        other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit;
+        other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown;
 
     /// <summary>The hash of the position.</summary>
     /// <returns>The hash code.</returns>
-    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit);
+    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown);
 }
 
 /// <summary>Where one cut cell continues.</summary>

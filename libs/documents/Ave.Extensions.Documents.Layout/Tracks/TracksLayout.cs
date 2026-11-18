@@ -156,6 +156,11 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     /// is sliced or refused (<see cref="MonolithicSlices"/>) instead of moving on.</summary>
     public bool IsAtPageStart { get; init; }
 
+    /// <summary>True on a later page where content taller than the page area starts the page right below the repeated
+    /// header rows (<see cref="TablePage"/>, remarks): the cells of the page's first body row are laid out as starting
+    /// the page.</summary>
+    public bool SlicesBelowHeader { get; init; }
+
     /// <summary>The grid.</summary>
     public TableGrid Grid => Prepared.Grid;
 

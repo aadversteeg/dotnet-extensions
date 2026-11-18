@@ -222,9 +222,13 @@ internal static class TableBreaks
             // (see TablePage): the line below the cut row, or the line above the row a break between rows comes before.
             var top = segment.RowTop(cell.StartRow);
             var clearance = IsCloned(table) ? InsideBelow(table, inside ? cutRow : cutRow - 1) : 0;
-            // A cell of the page's first row with nothing above it starts the page (with only the grid line above it).
-            var startsPage = table.IsAtPageStart && content.Rows.IsEmpty && cell.StartRow <= segment.FirstRow;
-            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance, startsPage);
+            // A cell of the page's first row with nothing above it starts the page (with only the grid line above it); so
+            // does one with only the repeated header rows above it, where content taller than the page area is sliced
+            // below the header (TablePage).
+            var firstOnPage = table.IsAtPageStart && cell.StartRow <= segment.FirstRow;
+            var startsPage = firstOnPage && content.Rows.IsEmpty;
+            var belowHeader = firstOnPage && table.SlicesBelowHeader && content.Rows.All(placed => placed.IsRepeated);
+            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance, startsPage, belowHeader);
             if (sliced.IsFailure)
             {
                 return Result<Maybe<Outcome>, Error>.Failure(sliced.Error);
