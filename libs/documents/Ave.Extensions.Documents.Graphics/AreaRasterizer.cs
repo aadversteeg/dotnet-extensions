@@ -46,13 +46,26 @@ internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double
 internal sealed class AreaRasterizer
 {
     private readonly List<Edge> _edges = [];
+    private readonly List<Flat> _flats = [];
     private readonly List<Edge> _active = [];
     private double[] _cells = [];
     private double[] _coverage = [];
+    private CellFlags _flags = new(0);
+    private int _firstColumn;
+    private int _width;
+    private int _firstRow;
+    private int _lastRow;
+    private int _fromColumn;
+    private int _toColumn;
 
     /// <summary>An edge going down from (X0, Y0) to (X1, Y1), Y0 &lt; Y1; <see cref="Direction"/> is +1 when the polygon goes
-    /// down along it and −1 when it goes up.</summary>
-    private readonly record struct Edge(double X0, double Y0, double X1, double Y1, int Direction);
+    /// down along it and −1 when it goes up. <see cref="Serial"/> and <see cref="Turned"/> number the edges along their
+    /// polygon (<see cref="Number"/>).</summary>
+    private readonly record struct Edge(double X0, double Y0, double X1, double Y1, int Direction, int Serial, int Turned);
+
+    /// <summary>A horizontal edge at height Y, from x <see cref="From"/> to x <see cref="To"/> in the polygon's own order.
+    /// It adds nothing to the integral (no height), but it is part of the outline, so it counts for the flag.</summary>
+    private readonly record struct Flat(double Y, double From, double To, int Serial, int Turned);
 
     /// <summary>
     /// Computes the coverage of the polygons, row by row from the top, and hands each row to <paramref name="row"/>: every
@@ -72,18 +85,93 @@ internal sealed class AreaRasterizer
     /// <param name="row">Receives each row's coverage.</param>
     public void Rasterize(List<List<Vertex>> polygons, FillRule rule, PixelBox area, CoverageRow row)
     {
+        if (!Prepare(polygons, area))
+        {
+            return;
+        }
+
+        var next = 0;
+        for (var y = _firstRow; y < _lastRow; y++)
+        {
+            Advance(y, ref next);
+            Array.Clear(_cells, 0, _width + 2);
+            foreach (var edge in _active)
+            {
+                AddPiece(edge, y, _firstColumn);
+            }
+
+            Integrate(_width, rule, _firstColumn, Share(y, area.Top, area.Bottom), area);
+            row(y, _fromColumn, _coverage.AsSpan(_fromColumn - _firstColumn, _toColumn - _fromColumn));
+        }
+    }
+
+    /// <summary>The cells of the polygons inside the area that the flag rule (<see cref="CellFlags"/>) marks as needing
+    /// more than the integral: column and row of each, row by row from the top.</summary>
+    /// <param name="polygons">Closed polygons, as for <see cref="Rasterize"/>.</param>
+    /// <param name="area">The cells that may be reported, as for <see cref="Rasterize"/>.</param>
+    /// <returns>The flagged cells.</returns>
+    public List<(int Column, int Row)> FlaggedCells(List<List<Vertex>> polygons, PixelBox area)
+    {
+        var flagged = new List<(int Column, int Row)>();
+        if (!Prepare(polygons, area))
+        {
+            return flagged;
+        }
+
+        var (next, flat) = (0, 0);
+        for (var y = _firstRow; y < _lastRow; y++)
+        {
+            Advance(y, ref next);
+            Flag(y, ref flat);
+            for (var column = _fromColumn - _firstColumn; column < _toColumn - _firstColumn; column++)
+            {
+                if (_flags.IsFlagged(column))
+                {
+                    flagged.Add((_firstColumn + column, y));
+                }
+            }
+        }
+
+        return flagged;
+    }
+
+    /// <summary>
+    /// Takes the polygons' edges, numbered (<see cref="Number"/>) and sorted, and the extent of rows and columns; false
+    /// when there is nothing to report.
+    /// </summary>
+    private bool Prepare(List<List<Vertex>> polygons, PixelBox area)
+    {
         _edges.Clear();
+        _flats.Clear();
         double minX = double.PositiveInfinity, maxX = double.NegativeInfinity, minY = double.PositiveInfinity, maxY = double.NegativeInfinity;
+        var serial = 0;
         foreach (var polygon in polygons)
         {
+            var count = 0;
             var previous = polygon[^1];
             foreach (var point in polygon)
             {
-                if (point.Y != previous.Y)
+                count += point != previous ? 1 : 0;
+                previous = point;
+            }
+
+            var index = 0;
+            previous = polygon[^1];
+            foreach (var point in polygon)
+            {
+                if (point != previous)
                 {
-                    _edges.Add(previous.Y < point.Y
-                        ? new Edge(previous.X, previous.Y, point.X, point.Y, 1)
-                        : new Edge(point.X, point.Y, previous.X, previous.Y, -1));
+                    var (number, turned) = Number(serial, index++, count);
+                    if (point.Y != previous.Y)
+                    {
+                        _edges.Add(previous.Y < point.Y
+                            ? new Edge(previous.X, previous.Y, point.X, point.Y, 1, number, turned)
+                            : new Edge(point.X, point.Y, previous.X, previous.Y, -1, number, turned));
+                    }
+                    else
+                    {
+                        _flats.Add(new Flat(point.Y, previous.X, point.X, number, turned));
+                    }
                 }
 
                 minX = double.Min(minX, point.X);
@@ -92,31 +180,35 @@ internal sealed class AreaRasterizer
                 maxY = double.Max(maxY, point.Y);
                 previous = point;
             }
+
+            // A gap of one between polygons: the last edge of one and the first of the next are never consecutive.
+            serial += count + 1;
         }
 
         if (_edges.Count == 0)
         {
-            return;
+            return false;
         }
 
         // The row's cells are the ones the polygons' extent touches, ⌊min x⌋ to ⌈max x⌉ − 1 (at least one), and of them
         // only those inside the area are reported. A piece adds to its own cell and to the next, and a vertical edge on
         // ⌈max x⌉ itself adds to the cell there: two cells more are kept for those differences, and they are never reported.
-        var firstColumn = (int)Math.Floor(minX);
-        var width = int.Max(1, (int)Math.Ceiling(maxX) - firstColumn);
-        var firstRow = int.Max((int)Math.Floor(minY), (int)Math.Floor(area.Top));
-        var lastRow = int.Min((int)Math.Ceiling(maxY), (int)Math.Ceiling(area.Bottom));
-        var fromColumn = int.Max(firstColumn, (int)Math.Floor(area.Left));
-        var toColumn = int.Min(firstColumn + width, (int)Math.Ceiling(area.Right));
-        if (toColumn <= fromColumn)
+        _firstColumn = (int)Math.Floor(minX);
+        _width = int.Max(1, (int)Math.Ceiling(maxX) - _firstColumn);
+        _firstRow = int.Max((int)Math.Floor(minY), (int)Math.Floor(area.Top));
+        _lastRow = int.Min((int)Math.Ceiling(maxY), (int)Math.Ceiling(area.Bottom));
+        _fromColumn = int.Max(_firstColumn, (int)Math.Floor(area.Left));
+        _toColumn = int.Min(_firstColumn + _width, (int)Math.Ceiling(area.Right));
+        if (_toColumn <= _fromColumn)
         {
-            return;
+            return false;
         }
 
-        if (_cells.Length < width + 2)
+        if (_cells.Length < _width + 2)
         {
-            _cells = new double[width + 2];
-            _coverage = new double[width + 2];
+            _cells = new double[_width + 2];
+            _coverage = new double[_width + 2];
+            _flags = new CellFlags(_width + 2);
         }
 
         // A total order of its own (not the sort's), so the sums along a row are added in the same order everywhere.
@@ -128,34 +220,108 @@ internal sealed class AreaRasterizer
             order = order != 0 ? order : left.X1.CompareTo(right.X1);
             return order != 0 ? order : left.Direction.CompareTo(right.Direction);
         });
+        _flats.Sort(static (left, right) => left.Y.CompareTo(right.Y));
         _active.Clear();
-        var next = 0;
-        for (var y = firstRow; y < lastRow; y++)
+        return true;
+    }
+
+    /// <summary>
+    /// The two numbers of edge <paramref name="index"/> of a polygon with <paramref name="count"/> edges whose numbers start
+    /// at <paramref name="first"/>: its place along the polygon, and its place counted from the edge half way round.
+    /// </summary>
+    /// <remarks>
+    /// Edges that follow each other along the polygon have numbers that follow each other, except where the polygon closes
+    /// (its last edge and its first). Counted from half way round, those two follow each other, and the break lies
+    /// opposite. So a run of edges that follow each other around the polygon, the closing pair included, has consecutive
+    /// numbers in at least one of the two countings unless it holds both breaks, which takes more than half the polygon.
+    /// </remarks>
+    private static (int Serial, int Turned) Number(int first, int index, int count) =>
+        (first + index, first + ((index + (count / 2)) % count));
+
+    /// <summary>Brings the active edges to row <paramref name="y"/>: those that start above its bottom and end below its
+    /// top.</summary>
+    private void Advance(int y, ref int next)
+    {
+        while (next < _edges.Count && _edges[next].Y0 < y + 1)
         {
-            while (next < _edges.Count && _edges[next].Y0 < y + 1)
+            _active.Add(_edges[next++]);
+        }
+
+        // Drop the edges that end above this row, in place: no closure, so a row allocates nothing.
+        var kept = 0;
+        for (var index = 0; index < _active.Count; index++)
+        {
+            if (_active[index].Y1 > y)
             {
-                _active.Add(_edges[next++]);
+                _active[kept++] = _active[index];
+            }
+        }
+
+        _active.RemoveRange(kept, _active.Count - kept);
+    }
+
+    /// <summary>
+    /// The flags of row <paramref name="y"/>: every piece of an edge that lies in a cell, the cell taken closed (its sides
+    /// included), with the edges' own pieces as <see cref="AddPiece"/> cuts them and the horizontal edges at the row's height.
+    /// </summary>
+    private void Flag(int y, ref int flat)
+    {
+        _flags.Clear(_width + 2);
+        foreach (var edge in _active)
+        {
+            var top = double.Max(edge.Y0, y);
+            var bottom = double.Min(edge.Y1, y + 1);
+            if (bottom <= top)
+            {
+                continue;
             }
 
-            // Drop the edges that end above this row, in place: no closure, so a row allocates nothing.
-            var kept = 0;
-            for (var index = 0; index < _active.Count; index++)
+            var slope = (edge.X1 - edge.X0) / (edge.Y1 - edge.Y0);
+            var (xMin, xMax) = (double.Min(edge.X0, edge.X1), double.Max(edge.X0, edge.X1));
+            var xTop = double.Clamp(edge.X0 + ((top - edge.Y0) * slope), xMin, xMax) - _firstColumn;
+            var xBottom = double.Clamp(edge.X0 + ((bottom - edge.Y0) * slope), xMin, xMax) - _firstColumn;
+
+            // The sides as the polygon runs: down (+1) or up (−1); right, left or neither.
+            var dx = (xBottom - xTop) * edge.Direction;
+            var signs = (edge.Direction > 0 ? CellFlags.Down : CellFlags.Up) | (dx > 0 ? CellFlags.Right : dx < 0 ? CellFlags.Left : CellFlags.Vertical);
+            Mark(double.Min(xTop, xBottom), double.Max(xTop, xBottom), edge.Serial, edge.Turned, signs);
+        }
+
+        // Horizontal edges at the row's height, its top and bottom lines included: sorted by height, and one on a line
+        // between two rows belongs to both.
+        while (flat < _flats.Count && _flats[flat].Y < y)
+        {
+            flat++;
+        }
+
+        for (var index = flat; index < _flats.Count && _flats[index].Y <= y + 1; index++)
+        {
+            var piece = _flats[index];
+            var (from, to) = (piece.From - _firstColumn, piece.To - _firstColumn);
+            Mark(double.Min(from, to), double.Max(from, to), piece.Serial, piece.Turned, to > from ? CellFlags.Right : CellFlags.Left);
+        }
+    }
+
+    /// <summary>Marks the closed cells a piece from x <paramref name="low"/> to <paramref name="high"/> (row-relative
+    /// columns) lies in with a positive length: a vertical piece on the line between two cells lies in both.</summary>
+    private void Mark(double low, double high, int serial, int turned, int signs)
+    {
+        var column = (int)Math.Floor(low);
+        if (high <= low)
+        {
+            _flags.Mark(column, serial, turned, signs);
+            if (column == low)
             {
-                if (_active[index].Y1 > y)
-                {
-                    _active[kept++] = _active[index];
-                }
+                _flags.Mark(column - 1, serial, turned, signs);
             }
 
-            _active.RemoveRange(kept, _active.Count - kept);
-            Array.Clear(_cells, 0, width + 2);
-            foreach (var edge in _active)
-            {
-                AddPiece(edge, y, firstColumn);
-            }
+            return;
+        }
 
-            Integrate(width, rule, firstColumn, Share(y, area.Top, area.Bottom), area);
-            row(y, fromColumn, _coverage.AsSpan(fromColumn - firstColumn, toColumn - fromColumn));
+        var last = (int)Math.Ceiling(high) - 1;
+        for (var cell = column; cell <= last; cell++)
+        {
+            _flags.Mark(cell, serial, turned, signs);
         }
     }
 
