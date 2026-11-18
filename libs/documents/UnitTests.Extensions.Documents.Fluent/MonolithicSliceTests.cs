@@ -48,6 +48,8 @@ public class MonolithicSliceTests
         "a4-image-first" => [TallImage(), Paragraph("after")],
         "a4-image-after-text" => [Paragraph("intro"), TallImage(), Paragraph("after")],
         "a4-line-after-text" => [Paragraph("intro"), Paragraph("W").FontSize(200.Pt()), Paragraph("after")],
+        // The first column is 54.75 pt (line centre to line centre) because that is the width Chromium's automatic table
+        // layout gives it in this case (the case sets no widths); the engine's automatic layout is not the subject here.
         "a4-image-in-cell" => [Table(Columns(54.75.Pt(), Fill(1)), [TableRow([Cell("x"), Cell([TallImage()])]), TableRow([Cell("after"), Cell("a")])])
             .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks()],
         _ => throw new ArgumentException(caseName, nameof(caseName)),
