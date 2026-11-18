@@ -74,12 +74,20 @@ public static class InlineLayout
     /// <param name="box">A box whose children are all inline runs.</param>
     /// <returns>The widths, or a font error.</returns>
     public static Result<IntrinsicWidths, Error> Measure(LayoutEnvironment environment, Box box) =>
-        ShapeRuns(environment, box).OnSuccessMap(runs =>
+        ShapeRuns(environment, box).OnSuccessBind(runs =>
         {
-            ValueList<ValueList<ShapedGlyph>> glyphs = [.. runs.Select(run => run.Glyphs)];
-            double Widest(double width) => GreedyLineBreaker.BreakLines(glyphs, width).Select(line => line.Width).DefaultIfEmpty(0).Max();
-            return new IntrinsicWidths(Widest(0), Widest(double.PositiveInfinity)).Plus(SlicedBox.HorizontalInsets(box.Style));
+            Result<double, Error> Widest(double width) =>
+                BreakLines(runs, width).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
+            return Widest(0).OnSuccessBind(least => Widest(double.PositiveInfinity).OnSuccessMap(most =>
+                new IntrinsicWidths(least, most).Plus(SlicedBox.HorizontalInsets(box.Style))));
         });
+
+    /// <summary>The paragraph's lines at a width, each shaped as the line it is: where a line ends or starts at a place
+    /// that is not safe to break, its end is shaped again with the run's font (<see cref="GreedyLineBreaker"/>, THE RULE
+    /// FOR SHAPING AT A BREAK). A shaping error names the run.</summary>
+    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.ShapedRun> runs, double width) =>
+        GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], width, (run, text, showsHyphen) =>
+            Shaper.ShapeLinePiece(text, runs[run].Font, runs[run].Run.Style.FontSize.Points, showsHyphen).MapError(error => error.WithSource(runs[run].Run.Source)));
 
     /// <summary>
     /// True when the box's text makes at least one line box: some text is left after white-space collapsing.
@@ -132,7 +140,13 @@ public static class InlineLayout
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
         IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, BoxStyle style, int firstLine, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
-        var lines = GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], contentWidth);
+        var broken = BreakLines(runs, contentWidth);
+        if (broken.IsFailure)
+        {
+            return Result<Maybe<SlicedBox.Content>, Error>.Failure(broken.Error);
+        }
+
+        var lines = broken.Value;
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)

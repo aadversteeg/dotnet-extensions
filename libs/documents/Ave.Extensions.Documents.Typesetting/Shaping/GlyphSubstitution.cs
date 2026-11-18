@@ -164,9 +164,13 @@ internal static class GlyphSubstitution
 
     /// <summary>
     /// Type 4: "replace multiple glyphs with one glyph". The components must follow the first glyph in order;
-    /// glyphs the lookup skips may sit between them and are kept, after the ligature, in their order. The
-    /// ligature shows the text of all its components. Each glyph looked at for a component, skipped or matched, costs one
-    /// operation of the budget; no ligature is made once the budget is used up.
+    /// glyphs the lookup skips may sit between them and are kept, after the ligature, in their order. The ligature shows
+    /// the text of everything from its first component to its last, the skipped glyphs' too, in the order of the text,
+    /// and the skipped glyphs show none of their own: they join the ligature's cluster, as HarfBuzz merges the clusters of
+    /// a ligature and the glyphs it skips (hb-ot-layout-gsubgpos.hh, <c>ligate_input</c>). So the glyphs' texts stay the
+    /// text in its order, and a break between the components — at a soft hyphen the ligature skipped — falls inside one
+    /// cluster, where the line breaker shapes both sides again. Each glyph looked at for a component, skipped or matched,
+    /// costs one operation of the budget; no ligature is made once the budget is used up.
     /// </summary>
     private static Substitution? Ligate(ImmutableArray<GlyphItem> glyphs, int index, Ligature ligature, LookupFlags flags, GlyphFilter filter, ShapingBudget budget)
     {
@@ -193,9 +197,9 @@ internal static class GlyphSubstitution
         var result = first with
         {
             Glyph = ligature.Glyph,
-            Text = string.Concat(matched.Select(glyph => glyph.Text)),
+            Text = string.Concat(glyphs.Skip(index).Take(position - index).Select(glyph => glyph.Text)),
             Class = filter.ClassAfterSubstitution(ligature.Glyph, GlyphClass.Ligature),
         };
-        return new Substitution([result, .. skipped], position);
+        return new Substitution([result, .. skipped.Select(glyph => glyph with { Text = string.Empty })], position);
     }
 }
