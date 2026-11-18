@@ -3,7 +3,8 @@ using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Images;
 
-/// <summary>Errors about images (decoding the bytes a caller passed in).</summary>
+/// <summary>Errors about images: decoding the bytes a caller passed in, and encoding the pixels a caller passed in. A
+/// value the image layer cannot work with is answered with one of these, never with an exception.</summary>
 public static class ImageErrorCodes
 {
     /// <summary><c>Documents.Image</c>.</summary>
@@ -18,12 +19,16 @@ public static class ImageErrorCodes
     /// nor JPEG.</summary>
     public static readonly ErrorCode Unsupported = _ / "Unsupported";
 
-    /// <summary>An image with more pixels than the engine decodes (<c>ImageLimits.MaxPixels</c>, 2^26). Metadata:
-    /// Value (width x height).</summary>
+    /// <summary>An image with more pixels than the engine decodes or encodes (<c>ImageLimits.MaxPixels</c>, 2^26).
+    /// Metadata: Value (width x height).</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
 
     /// <summary>A JPEG whose scans together visit the blocks of its frame more often than the decoder does work for
     /// (<c>JpegDecoder.MaxPasses</c>, 32 times): a progressive file can ask for much work in few bytes. Metadata: Value
     /// (the passes asked for, as blocks visited per block of the frame).</summary>
     public static readonly ErrorCode TooMuchWork = _ / "TooMuchWork";
+
+    /// <summary>Pixels to encode that are not an image (<c>ImageEncoder.EncodePng</c>): a side below 1, or a number of
+    /// bytes other than width × height × 4. Metadata: Value, Property.</summary>
+    public static readonly ErrorCode InvalidPixels = _ / "InvalidPixels";
 }

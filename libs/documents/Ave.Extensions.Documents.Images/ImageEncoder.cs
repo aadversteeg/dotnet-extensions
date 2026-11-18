@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Immutable;
+using System.Globalization;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Images.Png;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Images;
 
@@ -16,19 +20,35 @@ public static class ImageEncoder
     /// <param name="width">The width in pixels, at least 1.</param>
     /// <param name="height">The height in pixels, at least 1.</param>
     /// <param name="rgba">width × height × 4 bytes.</param>
-    /// <returns>The PNG file.</returns>
-    /// <exception cref="ArgumentException">A side is below 1, the image has more than
-    /// <see cref="ImageLimits.MaxPixels"/> pixels, or the pixels do not match the size.</exception>
-    public static ImmutableArray<byte> EncodePng(int width, int height, ReadOnlySpan<byte> rgba)
+    /// <returns>The PNG file; <c>Documents.Image.InvalidPixels</c> for a side below 1 or pixels that do not match the
+    /// size, <c>Documents.Image.TooLarge</c> for more than <see cref="ImageLimits.MaxPixels"/> pixels.</returns>
+    public static Result<ImmutableArray<byte>, Error> EncodePng(int width, int height, ReadOnlySpan<byte> rgba)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan((long)width * height, ImageLimits.MaxPixels, "width × height");
-        if (rgba.Length != (long)width * height * 4)
+        var size = $"{width.ToString(CultureInfo.InvariantCulture)}x{height.ToString(CultureInfo.InvariantCulture)}";
+        if (width < 1 || height < 1)
         {
-            throw new ArgumentException($"A {width} x {height} image has {(long)width * height * 4} bytes of RGBA pixels, not {rgba.Length}.", nameof(rgba));
+            return Failure(ImageErrorCodes.InvalidPixels, $"An image is at least 1 x 1 pixels; asked for {width} x {height}.", size, "size");
         }
 
-        return PngEncoder.Encode(width, height, rgba);
+        if ((long)width * height > ImageLimits.MaxPixels)
+        {
+            return Failure(ImageErrorCodes.TooLarge, $"A {width} x {height} image has more than the {ImageLimits.MaxPixels} pixels the engine encodes.", size, "size");
+        }
+
+        if (rgba.Length != (long)width * height * 4)
+        {
+            return Failure(
+                ImageErrorCodes.InvalidPixels,
+                $"A {width} x {height} image has {(long)width * height * 4} bytes of RGBA pixels, not {rgba.Length}.",
+                rgba.Length.ToString(CultureInfo.InvariantCulture),
+                "rgba");
+        }
+
+        return Result<ImmutableArray<byte>, Error>.Success(PngEncoder.Encode(width, height, rgba));
     }
+
+    private static Result<ImmutableArray<byte>, Error> Failure(ErrorCode code, string message, string value, string property) =>
+        Result<ImmutableArray<byte>, Error>.Failure(new Error(code, message)
+            .With(ErrorMetadataKeys.Value, value)
+            .With(ErrorMetadataKeys.Property, property));
 }

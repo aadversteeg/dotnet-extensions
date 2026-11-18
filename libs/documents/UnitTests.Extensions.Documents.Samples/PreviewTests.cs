@@ -47,7 +47,7 @@ public class PreviewTests
         images.Should().HaveCount(pages.Pages.Count);
         pngs.Should().HaveCount(pages.Pages.Count);
         pngs[1].Should().Equal(pages.ToPng(2, Screen).Value);
-        pngs[1].Should().Equal(ImageEncoder.EncodePng(images[1].Width, images[1].Height, images[1].Pixels.AsSpan()));
+        pngs[1].Should().Equal(ImageEncoder.EncodePng(images[1].Width, images[1].Height, images[1].Pixels.AsSpan()).Value);
         document.ToPngPages(fonts, Screen).Value.Select(png => png.Length).Should().Equal(pngs.Select(png => png.Length));
         document.ToImages(fonts, Screen).Value[0].Pixels.Should().Equal(images[0].Pixels);
     }

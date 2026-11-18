@@ -70,7 +70,7 @@ public static class DocumentRendering
     /// <param name="options">The resolution and background.</param>
     /// <returns>The PNG file, or the error.</returns>
     public static Result<ImmutableArray<byte>, Error> ToPng(this PageDocument pages, int pageNumber, RasterOptions options) =>
-        PageRasterizer.Render(pages, pageNumber, options).OnSuccessMap(Png);
+        PageRasterizer.Render(pages, pageNumber, options).OnSuccessBind(Png);
 
     /// <summary>Draws every page of a document as a PNG file: <see cref="ToPages"/>, then the raster back-end.</summary>
     /// <param name="document">The document.</param>
@@ -85,7 +85,22 @@ public static class DocumentRendering
     /// <param name="options">The resolution and background.</param>
     /// <returns>One PNG file per page, in order, or the error.</returns>
     public static Result<ImmutableArray<ImmutableArray<byte>>, Error> ToPngPages(this PageDocument pages, RasterOptions options) =>
-        pages.ToImages(options).OnSuccessMap(images => ImmutableArray.CreateRange(images, Png));
+        pages.ToImages(options).OnSuccessBind(images =>
+        {
+            var files = ImmutableArray.CreateBuilder<ImmutableArray<byte>>(images.Length);
+            foreach (var image in images)
+            {
+                var file = Png(image);
+                if (file.IsFailure)
+                {
+                    return Result<ImmutableArray<ImmutableArray<byte>>, Error>.Failure(file.Error);
+                }
+
+                files.Add(file.Value);
+            }
+
+            return Result<ImmutableArray<ImmutableArray<byte>>, Error>.Success(files.MoveToImmutable());
+        });
 
     /// <summary>Draws every page of a document as pixels: <see cref="ToPages"/>, then the raster back-end.</summary>
     /// <param name="document">The document.</param>
@@ -102,5 +117,6 @@ public static class DocumentRendering
     public static Result<ImmutableArray<RgbaImage>, Error> ToImages(this PageDocument pages, RasterOptions options) =>
         PageRasterizer.Render(pages, options);
 
-    private static ImmutableArray<byte> Png(RgbaImage image) => ImageEncoder.EncodePng(image.Width, image.Height, image.Pixels.AsSpan());
+    // An RgbaImage always matches its size and holds at most 2^26 pixels, so the encoder does not refuse it.
+    private static Result<ImmutableArray<byte>, Error> Png(RgbaImage image) => ImageEncoder.EncodePng(image.Width, image.Height, image.Pixels.AsSpan());
 }

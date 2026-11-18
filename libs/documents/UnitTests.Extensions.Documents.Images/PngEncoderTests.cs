@@ -55,7 +55,7 @@ public class PngEncoderTests
     {
         var pixels = Photo(37, 23, opaque);
 
-        var file = ImageEncoder.EncodePng(37, 23, pixels);
+        var file = ImageEncoder.EncodePng(37, 23, pixels).Value;
         var image = (RasterImage)ImageDecoder.Decode(file.AsMemory()).Value;
 
         image.ColorSpace.Should().Be(ImageColorSpace.Rgb);
@@ -73,14 +73,14 @@ public class PngEncoderTests
     [Fact]
     public void The_file_has_the_stated_chunks_and_header()
     {
-        var file = ImageEncoder.EncodePng(5, 3, Photo(5, 3, opaque: false)).ToArray();
+        var file = ImageEncoder.EncodePng(5, 3, Photo(5, 3, opaque: false)).Value.ToArray();
 
         var chunks = Chunks(file);
 
         chunks.Select(chunk => chunk.Type).Should().Equal("IHDR", "sRGB", "IDAT", "IEND");
         chunks[0].Data.Should().Equal(0, 0, 0, 5, 0, 0, 0, 3, 8, 6, 0, 0, 0);
         chunks[1].Data.Should().Equal(0);
-        Chunks(ImageEncoder.EncodePng(5, 3, Photo(5, 3, opaque: true)).ToArray())[0].Data[9].Should().Be(2, "opaque pixels are written as truecolour");
+        Chunks(ImageEncoder.EncodePng(5, 3, Photo(5, 3, opaque: true)).Value.ToArray())[0].Data[9].Should().Be(2, "opaque pixels are written as truecolour");
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class PngEncoderTests
             _ => ((byte)(x % 2), (byte)(x % 2), (byte)(x % 2), 255),
         });
 
-        var data = Chunks(ImageEncoder.EncodePng(4, 4, pixels).ToArray()).Single(chunk => chunk.Type == "IDAT").Data;
+        var data = Chunks(ImageEncoder.EncodePng(4, 4, pixels).Value.ToArray()).Single(chunk => chunk.Type == "IDAT").Data;
         using var zlib = new ZLibStream(new MemoryStream(data), CompressionMode.Decompress);
         var raw = new byte[4 * (1 + 12)];
         zlib.ReadExactly(raw);
@@ -110,18 +110,26 @@ public class PngEncoderTests
         // The one test that pins PNG bytes: they come from the runtime's zlib, which another .NET release or another zlib
         // build may change without a pixel changing. Equal on x64 Linux, x64 Windows and arm64 Linux for .NET 10. The
         // golden images compare pixels (GoldenImages.ComparePixels in the Samples tests), so a change of zlib fails only here.
-        var file = ImageEncoder.EncodePng(64, 48, Photo(64, 48, opaque: false));
+        var file = ImageEncoder.EncodePng(64, 48, Photo(64, 48, opaque: false)).Value;
 
-        ImageEncoder.EncodePng(64, 48, Photo(64, 48, opaque: false)).Should().Equal(file);
+        ImageEncoder.EncodePng(64, 48, Photo(64, 48, opaque: false)).Value.Should().Equal(file);
         Convert.ToHexStringLower(SHA256.HashData(file.AsSpan())).Should().Be("39d1221ab6d3a18b127d79c091dd9ca95ca89ca799963afce256e251d1b0540a");
     }
 
-    [Fact]
-    public void Invalid_sizes_are_a_bug_of_the_caller()
+    [Theory]
+    [InlineData(0, 1, 0, "Documents.Image.InvalidPixels")]
+    [InlineData(1, -1, 0, "Documents.Image.InvalidPixels")]
+    [InlineData(int.MinValue, int.MinValue, 0, "Documents.Image.InvalidPixels")]
+    [InlineData(2, 2, 15, "Documents.Image.InvalidPixels")]
+    [InlineData(2, 2, 17, "Documents.Image.InvalidPixels")]
+    [InlineData(1 << 14, (1 << 12) + 1, 0, "Documents.Image.TooLarge")]
+    [InlineData(int.MaxValue, int.MaxValue, 0, "Documents.Image.TooLarge")]
+    public void Pixels_that_are_not_an_image_are_an_error_value(int width, int height, int bytes, string code)
     {
-        FluentActions.Invoking(() => ImageEncoder.EncodePng(0, 1, [])).Should().Throw<ArgumentOutOfRangeException>();
-        FluentActions.Invoking(() => ImageEncoder.EncodePng(2, 2, new byte[15])).Should().Throw<ArgumentException>();
-        FluentActions.Invoking(() => ImageEncoder.EncodePng(1 << 14, (1 << 12) + 1, [])).Should().Throw<ArgumentOutOfRangeException>();
+        var result = ImageEncoder.EncodePng(width, height, new byte[bytes]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.ToString().Should().Be(code);
     }
 
     [DockerFact]
@@ -132,7 +140,7 @@ public class PngEncoderTests
         try
         {
             var pixels = Photo(37, 23, opaque: false);
-            File.WriteAllBytes(Path.Combine(folder, "image.png"), [.. ImageEncoder.EncodePng(37, 23, pixels)]);
+            File.WriteAllBytes(Path.Combine(folder, "image.png"), [.. ImageEncoder.EncodePng(37, 23, pixels).Value]);
             var (exitCode, output) = Docker.Run(
                 ["run", "--rm", .. Docker.UserArguments, "-v", $"{folder}:/work", ReferenceTools.Image, "python3", "-I", "-c",
                     "from PIL import Image; image = Image.open('/work/image.png'); image.load(); "

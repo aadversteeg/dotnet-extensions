@@ -211,6 +211,6 @@ public sealed class RasterReferenceTests
             left += partWidth;
         }
 
-        File.WriteAllBytes(Path.Combine(folder, $"{name}.{dpi}dpi.page{index + 1}.engine-mupdf-poppler.png"), [.. ImageEncoder.EncodePng(width, height, sheet)]);
+        File.WriteAllBytes(Path.Combine(folder, $"{name}.{dpi}dpi.page{index + 1}.engine-mupdf-poppler.png"), [.. ImageEncoder.EncodePng(width, height, sheet).Value]);
     }
 }

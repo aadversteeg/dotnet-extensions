@@ -30,7 +30,7 @@ internal static class GoldenImages
         if (Environment.GetEnvironmentVariable("UPDATE_GOLDEN") == "1")
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllBytes(path, [.. ImageEncoder.EncodePng(width, height, rgba)]);
+            File.WriteAllBytes(path, [.. ImageEncoder.EncodePng(width, height, rgba).Value]);
             return null;
         }
 
