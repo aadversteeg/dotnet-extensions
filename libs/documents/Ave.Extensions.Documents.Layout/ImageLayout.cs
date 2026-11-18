@@ -33,7 +33,7 @@ public static class ImageLayout
             : TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, (incoming as ImageBreakToken) ?? ImageBreakToken.Instance, (width, height, _) =>
         {
             var size = UsedSize(image, width);
-            var shown = (incoming as ImageBreakToken)?.Shown ?? 0;
+            var (shown, slices) = incoming is ImageBreakToken token ? (token.Shown, token.Slices) : (0, 0);
             if (shown == 0 && Fitting.Fits(size.Height, height))
             {
                 return SlicedBox.Placed([new PlacedFragment(new Point(0, 0), new ImageFragment(image, size))], size.Height, null);
@@ -46,13 +46,12 @@ public static class ImageLayout
                 return SlicedBox.NothingFits;
             }
 
-            var next = MonolithicSlices.Next(new ImageFragment(image, size), shown, height);
-            return next.HasNoValue
+            return MonolithicSlices.Next(box, new ImageFragment(image, size), shown, slices, height).OnSuccessBind(next => next.HasNoValue
                 ? SlicedBox.NothingFits
                 : SlicedBox.Placed(
                     [new PlacedFragment(new Point(0, 0), next.Value.Slice)],
                     next.Value.Slice.Size.Height,
-                    next.Value.ShownAfter is { } after ? ImageBreakToken.After(after) : null);
+                    next.Value.ShownAfter is { } after ? ImageBreakToken.After(after, slices + 1) : null));
         }));
 
     /// <summary>The intrinsic widths of an image box: min-content and max-content are both its used width when no

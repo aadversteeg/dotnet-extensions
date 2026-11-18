@@ -198,7 +198,7 @@ document model). Each policy has a document modifier; the defaults suit reports,
 
 | Modifier | Default | Other value |
 | --- | --- | --- |
-| `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next page-area height of it; what follows starts below its end; only the first slice is document content, so text and alternative text are read once |
+| `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next page-area height of it; what follows starts below its end; only the first slice is document content, so text and alternative text are read once; a piece is cut into at most 100 slices, a taller one is the error `Documents.Layout.TooManySlices` |
 | `.FontMetricRounding(…)`: a font's ascent, descent and line gap | `Exact`: as the font gives them, scaled to the size | `WholePixels`: each rounded to a whole CSS pixel (0.75 pt), as Chromium does, so a `normal` line is a whole number of pixels (Lato 12 pt: 14.25 pt instead of 14.4) |
 | `.EmptyRowParts(…)`: a table row whose part on a page would show nothing | `Avoid`: the row moves to the next page whole where that avoids the empty strip | `Allow`: the row is cut wherever its cells can break |
 

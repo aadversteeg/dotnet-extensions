@@ -33,6 +33,10 @@ public sealed record InlineBreakToken(int LineIndex) : BreakToken
     /// sliced (<see cref="MonolithicOverflow.Slice"/>, <see cref="SliceFragment"/>); 0 when the line starts on the next
     /// page.</summary>
     public double Shown { get; init; }
+
+    /// <summary>How many slices of the line earlier pages showed (at most <see cref="MonolithicSlices.MaxSlices"/>); 0 when
+    /// the line starts on the next page.</summary>
+    public int Slices { get; init; }
 }
 
 /// <summary>The break token of <see cref="ImageLayout"/>: the image is still to be placed, on the next page, after a
@@ -40,19 +44,24 @@ public sealed record InlineBreakToken(int LineIndex) : BreakToken
 /// page area and sliced, and the next page shows the next part of it (<see cref="Shown"/>).</summary>
 public sealed record ImageBreakToken : BreakToken
 {
-    private ImageBreakToken(double shown) => Shown = shown;
+    private ImageBreakToken(double shown, int slices) => (Shown, Slices) = (shown, slices);
 
     /// <summary>The image is still to be placed from its top.</summary>
-    public static ImageBreakToken Instance { get; } = new(0);
+    public static ImageBreakToken Instance { get; } = new(0, 0);
 
     /// <summary>How much of the image's height earlier pages showed as slices (<see cref="MonolithicOverflow.Slice"/>,
     /// <see cref="SliceFragment"/>); 0 when the image is still to be placed from its top.</summary>
     public double Shown { get; }
 
-    /// <summary>The token after the slices that showed <paramref name="shown"/> of the image.</summary>
+    /// <summary>How many slices of the image earlier pages showed (at most <see cref="MonolithicSlices.MaxSlices"/>); 0
+    /// when the image is still to be placed from its top.</summary>
+    public int Slices { get; }
+
+    /// <summary>The token after the <paramref name="slices"/> slices that showed <paramref name="shown"/> of the image.</summary>
     /// <param name="shown">The height shown so far, more than 0.</param>
+    /// <param name="slices">The slices shown so far, 1 or more.</param>
     /// <returns>The token.</returns>
-    internal static ImageBreakToken After(double shown) => new(shown);
+    internal static ImageBreakToken After(double shown, int slices) => new(shown, slices);
 }
 
 /// <summary>The break token of <see cref="TracksLayout"/>: the first body row of the next fragment, and the cells that

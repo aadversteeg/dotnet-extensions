@@ -48,7 +48,7 @@ public static class InlineLayout
         var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
         return ShapeRuns(environment, box).OnSuccessBind(runs => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
-                StackLines(runs, strut, box.Style, start, slices, environment.Profile.FontMetricRounding, width, height, breakAt switch
+                StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, width, height, breakAt switch
                 {
                     null => null,
                     InlineEarlyBreak line => line,
@@ -142,7 +142,7 @@ public static class InlineLayout
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, BoxStyle style, InlineBreakToken start, bool slices, FontMetricRounding rounding, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var broken = BreakLines(runs, contentWidth);
         if (broken.IsFailure)
@@ -151,6 +151,7 @@ public static class InlineLayout
         }
 
         var lines = broken.Value;
+        var style = box.Style;
         var firstLine = start.LineIndex;
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
@@ -165,18 +166,19 @@ public static class InlineLayout
             var shown = index == firstLine ? start.Shown : 0;
             if (shown > 0 || (placed.Count == 0 && slices && !Fitting.Fits(line.Size.Height, contentHeight)))
             {
-                var next = MonolithicSlices.Next(line, shown, contentHeight);
-                if (next.HasNoValue)
+                var sliceCount = index == firstLine ? start.Slices : 0;
+                var next = MonolithicSlices.Next(box, line, shown, sliceCount, contentHeight);
+                if (next.IsFailure || next.Value.HasNoValue)
                 {
-                    return SlicedBox.NothingFits;
+                    return next.IsFailure ? Result<Maybe<SlicedBox.Content>, Error>.Failure(next.Error) : SlicedBox.NothingFits;
                 }
 
-                var (slice, shownAfter) = next.Value;
+                var (slice, shownAfter) = next.Value.Value;
                 placed.Add(new PlacedFragment(new Point(0, bottom), slice));
                 bottom += slice.Size.Height;
                 if (shownAfter is { } after)
                 {
-                    return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index) { Shown = after });
+                    return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index) { Shown = after, Slices = sliceCount + 1 });
                 }
 
                 continue;

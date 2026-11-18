@@ -66,7 +66,9 @@ public enum MonolithicOverflow
     /// the page area reaches, and each following page shows the next page-area height of it, until its end; what follows
     /// it starts right below that end. Each slice is clipped to its part of the page area (a page-model clip); only the
     /// first slice is document content, the later ones repeat it because of the page breaks (a pagination artifact in
-    /// tagged PDF), so text and alternative text are read once.</summary>
+    /// tagged PDF), so text and alternative text are read once. One piece is cut into at most 100 slices, one per page:
+    /// a piece that would need more (taller than 100 page areas) is refused with <c>Documents.Layout.TooManySlices</c>,
+    /// so the number of pages follows from the size of the input, not from the numbers in it.</summary>
     Slice,
 }
 
