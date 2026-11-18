@@ -238,16 +238,36 @@ public class RowPartTests
     }
 
     [Fact]
-    public void With_empty_row_parts_avoided_the_cells_keep_their_line_on_the_page_and_the_row_is_cut()
+    public void With_empty_row_parts_avoided_a_row_whose_cells_end_on_the_page_but_not_its_line_moves_whole_as_in_Chromium()
     {
-        // The default policy keeps each cell's half of the line below on the page: the cell breaks before its last block, so
-        // row t2 is cut, its text on page 1 and the line "u" on page 2, where Chromium moves the row whole (Allow follows
-        // Chromium, above).
+        // The same document under the default policy: cutting row t2 where its cells keep their half of the line below on
+        // the page would leave the line "u" for page 2, and that cut is a last resort (TableBreaks.Take), so the row moves
+        // to page 2 whole, as Chromium prints it (case a2-cells-end-text).
         var engine = PrintedWith(EmptyRowParts.Avoid, CellsEnd("a2-cells-end-text"));
+        var chromium = PrintedPages.Chromium("a2-cells-end-text");
 
-        engine.Pages[0].Words.Select(word => word.Text).Should().Contain("t2");
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.Pages[1].Words.Select(word => word.Text).Should().StartWith(["t2", "u"]);
+    }
+
+    [Fact]
+    public void With_empty_row_parts_avoided_a_row_that_cannot_move_keeps_its_cells_line_on_the_page_and_is_cut()
+    {
+        // Where the row cannot move whole, the last resort is taken: a table at the top of the first page, its first row
+        // "t" beside a cell of two 85.6 pt paddings and the line "u" (6 pt on 8 pt), so the cells end 0.05 pt above the
+        // page end and only the half of the line below the row passes it. The cells keep their half line on the page and
+        // break earlier: the row is cut, "t" on page 1, "u" at the top of page 2, nothing past the page area. Chromium's
+        // print of this document is not measured; at the top of a page Chromium leaves a blank first page for a row whose
+        // bottom padding does not fit (TableBreakReferenceTests, case fr-f4-padding-page-start, listed).
+        CellElement Second() => Cell([Block([]).PaddingTop(85.6.Pt()).PaddingBottom(85.6.Pt()), Paragraph("u").FontSize(6.Pt()).LineHeight(8.Pt())]);
+        var table = Table(Columns(Fill(1), Fill(1)), [TableRow([Cell("t"), Second()]), TableRow([Cell("after"), Cell("a")])])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+
+        var engine = PrintedWith(EmptyRowParts.Avoid, [table]);
+
+        engine.PageTexts.Should().Equal("t", "u after a");
         engine.Pages[1].Words.Select(word => word.Text).Should().StartWith(["u"]);
-        PrintedPages.Chromium("a2-cells-end-text").Pages[1].Words.Select(word => word.Text).Should().StartWith(["t2", "u"]);
+        engine.Pages[0].Rectangles.Should().AllSatisfy(box => box.Y1.Should().BeLessThanOrEqualTo(192 + 1e-9, "the page area ends at 192 pt"));
     }
 
     [Theory]
