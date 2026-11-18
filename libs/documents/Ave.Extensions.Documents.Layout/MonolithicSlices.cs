@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
@@ -36,6 +37,53 @@ internal static class MonolithicSlices
     /// it a document has at most 100 pages per piece more than it has pieces (docs/architecture.md, "Bounded work").
     /// </summary>
     public const int MaxSlices = 100;
+
+    /// <summary>
+    /// The most slices one document is cut into, all pieces together: 1 000, room for ten pieces at
+    /// <see cref="MaxSlices"/>. The limit per piece bounds the pages per piece, not the pages per input byte: a paragraph
+    /// of many tall lines takes up to 100 pages per line, and its lines are laid out again on every page it reaches. So
+    /// the slices of a whole document are counted too (<see cref="Paginator"/>), and the page that would bring the count
+    /// past 1 000 is refused with <c>Documents.Layout.TooManySlices</c>; the message names this limit. Only content taller
+    /// than the page area is sliced, so a document without such a piece never meets the limit, however many pages it has
+    /// (docs/architecture.md, "Bounded work").
+    /// </summary>
+    public const int MaxSlicesPerDocument = 1_000;
+
+    /// <summary>The number of slices a fragment holds, at any depth (without recursion: fragments nest as deep as the
+    /// input).</summary>
+    /// <param name="fragment">The fragment, for instance the body of one page.</param>
+    /// <returns>The number of <see cref="SliceFragment"/>s in it.</returns>
+    public static int Count(Fragment fragment)
+    {
+        var count = 0;
+        var pending = new Stack<Fragment>();
+        pending.Push(fragment);
+        while (pending.Count > 0)
+        {
+            switch (pending.Pop())
+            {
+                case SliceFragment:
+                    count++;
+                    break;
+                case BoxFragment box:
+                    foreach (var child in box.Children)
+                    {
+                        pending.Push(child.Fragment);
+                    }
+
+                    break;
+                case LineFragment line:
+                    foreach (var child in line.Children)
+                    {
+                        pending.Push(child.Fragment);
+                    }
+
+                    break;
+            }
+        }
+
+        return count;
+    }
 
     /// <summary>The slice of <paramref name="whole"/> this page shows, after the <paramref name="shown"/> height that
     /// <paramref name="slices"/> slices on earlier pages showed, in the <paramref name="height"/> the page has for it.</summary>

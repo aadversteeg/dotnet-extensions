@@ -73,7 +73,8 @@ public enum MonolithicOverflow
     /// PDF every slice of an image is content of its figure, whose alternative text is read once; the later slices of a
     /// line of text are pagination artifacts, so its text is read once. One piece is cut into at most 100 slices, one per page:
     /// a piece that would need more (taller than 100 page areas) is refused with <c>Documents.Layout.TooManySlices</c>,
-    /// so the number of pages follows from the size of the input, not from the numbers in it.</summary>
+    /// so the number of pages follows from the size of the input, not from the numbers in it. A document is cut into at
+    /// most 1 000 slices, all pieces together; one that would need more is refused with the same code.</summary>
     Slice,
 }
 

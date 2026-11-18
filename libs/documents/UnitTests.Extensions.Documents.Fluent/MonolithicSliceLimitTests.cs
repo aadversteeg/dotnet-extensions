@@ -86,4 +86,52 @@ public class MonolithicSliceLimitTests
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         result.Value.Pages.Select(page => page.Items.OfType<ClipStart>().Count()).Should().Equal(Enumerable.Repeat(1, 100));
     }
+
+    /// <summary>Nine images of 100 slices, one of <paramref name="slices"/> slices and one of 2 (200 pt) on a page area of
+    /// 144 pt: 902 + <paramref name="slices"/> slices in all, none of them past the limit for one piece.</summary>
+    private static Element[] ElevenImages(int slices) =>
+        [.. Enumerable.Range(0, 9).Select(_ => (Element)Image14400()), Image(Tall).Alt("tall").Height((slices * 144.0).Pt()), Image(Tall).Alt("tall").Height(200.Pt()), Paragraph("after")];
+
+    [Fact]
+    public void A_document_whose_pieces_take_1000_slices_together_is_laid_out()
+    {
+        // 9 × 100 + 98 + 2: each tall image starts a page, the last slice of each but the 200 pt one fills its page.
+        var result = Run(Area(144), ElevenImages(98));
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        result.Value.Pages.Sum(page => page.Items.OfType<ClipStart>().Count()).Should().Be(1_000);
+        result.Value.Pages.Should().HaveCount(1_000);
+    }
+
+    [Fact]
+    public void A_document_whose_pieces_would_take_1001_slices_together_is_refused_and_the_message_names_the_limit_for_one_document()
+    {
+        // 9 × 100 + 99 + 2: every piece within the limit for one piece, the document one slice past its own.
+        var result = Run(Area(144), ElevenImages(99));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(LayoutErrorCodes.TooManySlices);
+        result.Error.Message.Should().Contain("1000 slices").And.Contain("the limit for one document");
+    }
+
+    [Fact]
+    public void The_refusal_of_a_piece_names_the_limit_for_one_piece()
+    {
+        var result = Run(Area(143.9), Image14400());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Message.Should().Contain("100 slices").And.Contain("the limit for one piece");
+    }
+
+    [Fact]
+    public void A_document_without_a_piece_taller_than_the_page_area_never_meets_the_limit_for_one_document()
+    {
+        // 1 200 paragraphs of one line, 12 lines a page: 100 pages under Slice, no slice among them, as under Refuse.
+        var body = Enumerable.Range(0, 1_200).Select(i => (Element)Paragraph($"p{i}").LineHeight(12.Pt())).ToArray();
+        var sliced = Run(Area(144), body);
+
+        sliced.IsSuccess.Should().BeTrue(sliced.IsFailure ? sliced.Error.ToString() : string.Empty);
+        sliced.Value.Pages.Should().HaveCount(100);
+        sliced.Value.Pages.SelectMany(page => page.Items.OfType<ClipStart>()).Should().BeEmpty();
+    }
 }

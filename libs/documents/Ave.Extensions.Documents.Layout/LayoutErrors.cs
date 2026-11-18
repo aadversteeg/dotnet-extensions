@@ -47,11 +47,25 @@ internal static class LayoutErrors
     public static Error TooManySlices(Box box, double height, double shown) =>
         new Error(
                 LayoutErrorCodes.TooManySlices,
-                $"{Describe(box)} is {InvariantNumber.Format(height)}pt tall and would need more than {MonolithicSlices.MaxSlices} slices, one per page; "
-                + $"{MonolithicSlices.MaxSlices} slices showed {InvariantNumber.Format(shown)}pt of it.")
+                $"{Describe(box)} is {InvariantNumber.Format(height)}pt tall and would need more than {MonolithicSlices.MaxSlices} slices, one per page, "
+                + $"the limit for one piece; {MonolithicSlices.MaxSlices} slices showed {InvariantNumber.Format(shown)}pt of it.")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())
             .With(ErrorMetadataKeys.Value, $"{InvariantNumber.Format(height)}>{InvariantNumber.Format(shown)}")
             .WithSource(box.Source);
+
+    /// <summary>A document whose content taller than the page area would need more than
+    /// <see cref="MonolithicSlices.MaxSlicesPerDocument"/> slices, all pieces together.</summary>
+    /// <param name="root">The document's root box.</param>
+    /// <param name="page">The page that would bring the count past the limit.</param>
+    /// <param name="slices">The number of slices up to and including that page.</param>
+    public static Error TooManySlicesInDocument(Box root, int page, int slices) =>
+        new Error(
+                LayoutErrorCodes.TooManySlices,
+                $"The document would need more than {MonolithicSlices.MaxSlicesPerDocument} slices of content taller than the page area, "
+                + $"the limit for one document; its first {page} pages hold {slices}.")
+            .With(ErrorMetadataKeys.Node, root.Id.ToString())
+            .With(ErrorMetadataKeys.Value, $"{slices}>{MonolithicSlices.MaxSlicesPerDocument}")
+            .WithSource(root.Source);
 
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";

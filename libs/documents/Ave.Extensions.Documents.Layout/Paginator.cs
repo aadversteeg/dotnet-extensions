@@ -106,6 +106,8 @@ public static class Paginator
         var pageSize = new Size(page.Width.Points, page.Height.Points);
         var (areaWidth, areaHeight) = (page.AreaWidth.Points, page.AreaHeight.Points);
         var pages = ImmutableArray.CreateBuilder<PageFragment>();
+        var counts = environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice;
+        var slices = 0;
         BreakToken? token = null;
         do
         {
@@ -152,6 +154,13 @@ public static class Paginator
             if (placement.Continuation is not null && placement.Continuation == token)
             {
                 throw new InvalidOperationException("A layout algorithm made no progress: it returned the break token it was given.");
+            }
+
+            // The limit per document on slices (MonolithicSlices.MaxSlicesPerDocument); without slicing there are none.
+            slices += counts ? MonolithicSlices.Count(placement.Fragment.Fragment) : 0;
+            if (slices > MonolithicSlices.MaxSlicesPerDocument)
+            {
+                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.TooManySlicesInDocument(document.Root, number, slices));
             }
 
             var origin = new Point(page.Margins.Left.Points, page.Margins.Top.Points);
