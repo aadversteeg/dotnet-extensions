@@ -107,16 +107,19 @@ public class MonolithicSliceTests
     }
 
     [Fact]
-    public void A_sliced_line_is_drawn_on_each_page_one_page_area_higher_as_Chromium_draws_it()
+    public void A_sliced_line_is_drawn_on_each_page_where_Chromium_draws_it()
     {
-        var engine = Printed(Body("a4-line-after-text"));
+        // With Chromium's whole-pixel font metrics the 200 pt line's ascent is 263 px (197.25 pt): its baseline is at
+        // 209.25 pt on page 2 and one page area higher, 29.25 pt, on page 3, in both. The line height is whole pixels
+        // (240 pt = 320 px), so the baselines compare exactly.
+        var result = Run(Doc(MonolithicOverflow.Slice, Body("a4-line-after-text")).FontMetricRounding(FontMetricRounding.WholePixels));
+        var engine = PrintedPages.Engine(result.Value);
         var chromium = PrintedPages.Chromium("a4-line-after-text");
 
         var engineW = engine.Pages.SelectMany(page => page.Words).Where(word => word.Text == "W").ToList();
         var chromiumW = chromium.Pages.SelectMany(page => page.Words).Where(word => word.Text == "W").ToList();
-        engineW.Select(word => word.Page).Should().Equal(2, 3).And.Equal(chromiumW.Select(word => word.Page));
-        (engineW[0].Baseline - engineW[1].Baseline).Should().BeApproximately(AreaHeight, 1e-9);
-        (chromiumW[0].Baseline - chromiumW[1].Baseline).Should().Be(AreaHeight);
+        engineW.Select(word => (word.Page, word.Baseline)).Should().Equal(chromiumW.Select(word => (word.Page, word.Baseline)));
+        chromiumW.Select(word => (word.Page, word.Baseline)).Should().Equal((2, 209.25), (3, 209.25 - AreaHeight));
     }
 
     [Fact]

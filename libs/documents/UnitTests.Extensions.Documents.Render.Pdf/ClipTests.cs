@@ -208,6 +208,27 @@ public class ClipTests
     }
 
     [Fact]
+    public void A_figure_half_outside_its_clip_has_the_box_of_its_visible_part()
+    {
+        // The image covers x 20–60 and, y down, 30–50; the clip shows y 40–70 of the page, so only y 40–50 of the image is
+        // visible: in user space (a 100 pt page) y 50 to 60.
+        var document = Document(
+            new StructureStart(new NodeId(0), SemanticRole.Document, Here),
+            new StructureStart(new NodeId(1), SemanticRole.Figure("a square"), Here),
+            new ClipStart(new Rect(new Point(0, 40), new Size(200, 30))),
+            new DrawImage(new Rect(new Point(20, 30), new Size(40, 20)), TestImages.Load("rgba8.png")),
+            ClipEnd.Instance,
+            End(1),
+            End(0));
+
+        var pdf = PdfRenderer.Render(document, Tagged);
+
+        pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);
+        PdfStructureReadBack.Read(pdf.Value).SelectMany(element => element.DepthFirst()).Single(element => element.Type == "Figure")
+            .BoundingBox.Should().Equal(20, 50, 60, 60);
+    }
+
+    [Fact]
     public void The_text_form_writes_a_clip_and_its_end()
     {
         PageModelText.Write(Document(Start(1), Clip, ClipEnd.Instance, End(1))).Should().Contain("  clip (0, 20) 200x30\n  end clip\n");
