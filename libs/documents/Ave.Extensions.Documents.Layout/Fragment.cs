@@ -76,6 +76,7 @@ public sealed record TextFragment(InlineRun Run, TrueTypeFont Font, double Ascen
 /// </summary>
 /// <param name="Size">The slice on this page: the content's width, and the height it shows here.</param>
 /// <param name="Content">The whole content, at <c>(0, −shown)</c>, where <c>shown</c> is the height earlier pages showed.</param>
-/// <param name="IsContinuation">True for every slice after the first: it repeats content the document has once, so
-/// the painter marks it as a pagination artifact; the first slice is the content.</param>
+/// <param name="IsContinuation">True for every slice after the first. The painter keeps a later slice of an image as
+/// content of its figure and marks a later slice of a line as an artifact (<c>ArtifactKind.SliceContinuation</c>), so
+/// the line's text is read once.</param>
 public sealed record SliceFragment(Size Size, PlacedFragment Content, bool IsContinuation) : Fragment(Size);

@@ -123,8 +123,8 @@ public static class SampleDocuments
     /// <summary>
     /// Sample C: content taller than the page, sliced over pages as a browser prints it
     /// (<see cref="DocumentModel.MonolithicOverflow.Slice"/>). On a small page (300 × 204 pt, a page area of 276 × 180 pt)
-    /// a 250 pt logo and a line of 200 pt type each continue on the next page; the text and the logo's alternative text
-    /// are in the document once.
+    /// a 250 pt logo and a line of 200 pt type each continue on the next page, and a 200 pt logo in a table is sliced
+    /// below its repeated header row; the text and each logo's alternative text are in the document once.
     /// </summary>
     /// <param name="logo">The logo, a PNG or JPEG file.</param>
     public static Document Sliced(ImmutableArray<byte> logo) =>
@@ -135,6 +135,9 @@ public static class SampleDocuments
                 Image(logo.AsSpan()).Alt("A white letter V on an orange square").Width(250.Pt()),
                 Paragraph("The line below is set in 200 point type, also taller than the page area."),
                 Paragraph("W").FontSize(200.Pt()),
+                Paragraph("The table below repeats its header row above each slice of the logo in it."),
+                Table(Columns(Fill(1)), [HeaderRow([Cell("Logo")]), TableRow([Cell([Image(logo.AsSpan()).Alt("The same logo in a table").Width(200.Pt())])])])
+                    .GridLines(0.75.Pt(), Navy),
                 Paragraph("The end."),
             ],
             new PageSetup(300.Pt(), 204.Pt(), Edges.All(12.Pt())),

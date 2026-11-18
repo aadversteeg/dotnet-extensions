@@ -135,13 +135,22 @@ public class MonolithicSliceTests
     }
 
     [Fact]
-    public void Each_slice_is_clipped_to_its_part_of_the_page_area_and_later_slices_are_pagination_artifacts()
+    public void Each_slice_is_clipped_to_its_part_of_the_page_area_and_every_slice_of_an_image_is_content_of_its_figure()
     {
         var pages = Run(Doc(MonolithicOverflow.Slice, Body("a4-image-first"))).Value.Pages;
 
         pages.Select(page => page.Items.OfType<ClipStart>().Single().Area).Should().Equal(
             new Rect(new Point(0, 12), new Size(300, 180)), new Rect(new Point(0, 12), new Size(300, 180)), new Rect(new Point(0, 12), new Size(300, 48)));
-        pages.Select(page => page.Items.OfType<ArtifactStart>().Count(start => start.Kind == ArtifactKind.Repeated)).Should().Equal(0, 1, 1);
+        pages.Should().AllSatisfy(page => page.Items.OfType<ArtifactStart>().Should().BeEmpty("each slice is content of the figure"));
+        pages.Select(page => page.Items.OfType<StructureStart>().Count(start => start.Role is SemanticRole.FigureRole)).Should().Equal(1, 1, 1);
+    }
+
+    [Fact]
+    public void Every_slice_of_a_line_after_the_first_is_an_artifact_so_its_text_is_read_once()
+    {
+        var pages = Run(Doc(MonolithicOverflow.Slice, Body("a4-line-after-text"))).Value.Pages;
+
+        pages.Select(page => page.Items.OfType<ArtifactStart>().Count(start => start.Kind == ArtifactKind.SliceContinuation)).Should().Equal(0, 0, 1);
     }
 
     private static double Baseline(PrintedPages pages, string text) =>

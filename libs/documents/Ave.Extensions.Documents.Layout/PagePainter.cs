@@ -52,8 +52,11 @@ public static class PagePainter
     /// the innermost structure marker around it. <paramref name="inArtifact"/> is true inside an artifact, where no
     /// further markers are written: artifacts do not nest and hold no structure. The slices of content taller than a page
     /// (<see cref="SliceFragment"/>) are clipped, each to its own top and bottom across the whole width of the page
-    /// (<paramref name="pageWidth"/>); every slice after the first repeats content the structure has once, so it is a
-    /// pagination artifact, like a repeated header row.
+    /// (<paramref name="pageWidth"/>). The slices of an image are all content of its figure, as the pages of a paragraph
+    /// are content of the paragraph: each page shows another part of the image, and its alternative text is on the
+    /// figure, read once. Every slice of a line of text after the first is an artifact
+    /// (<see cref="ArtifactKind.SliceContinuation"/>, a stated choice): the first slice delivers the line's text, and the
+    /// later ones draw the same glyphs again.
     /// </remarks>
     private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact, double pageWidth) => fragment switch
     {
@@ -63,8 +66,8 @@ public static class PagePainter
         ImageFragment image => [new DrawImage(new Rect(origin, image.Size), image.Image.Image)],
         RuleFragment rule => Decoration([new FillRectangle(new Rect(origin, rule.Size), rule.Color)], inArtifact),
         SliceFragment slice => Clipped(new Rect(new Point(0, origin.Y), new Size(pageWidth, slice.Size.Height)),
-            slice.IsContinuation && !inArtifact
-                ? Artifact(ArtifactKind.Repeated, Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact: true, pageWidth))
+            slice.IsContinuation && !inArtifact && slice.Content.Fragment is LineFragment
+                ? Artifact(ArtifactKind.SliceContinuation, Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact: true, pageWidth))
                 : Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact, pageWidth)),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };

@@ -6,9 +6,10 @@ namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// Sample C, content taller than the page sliced over pages (<c>MonolithicOverflow.Slice</c>), read back with PdfPig as
-/// PDF/A-3a + PDF/UA-1: every slice is clipped to its part of the page, the first slice of each piece is tagged content
-/// and the later ones are pagination artifacts, so a reader that follows the tags reads the sliced line's text and the
-/// logo's alternative text once. veraPDF's verdict on the sample is in <see cref="ReferenceValidationTests"/>.
+/// PDF/A-3a + PDF/UA-1: every slice is clipped to its part of the page; every slice of a logo is content of its figure,
+/// and the slices of the line after the first are pagination artifacts, so a reader that follows the tags reads the
+/// line's text and each logo's alternative text once. One logo is in a table, below its repeated header row. veraPDF's
+/// verdict on the sample is in <see cref="ReferenceValidationTests"/>.
 /// </summary>
 public class SlicedContentTests
 {
@@ -47,16 +48,33 @@ public class SlicedContentTests
             + "Thelogobelowistallerthanthepagearea.Itstartsonthenextpageandisslicedovertwopages."
             + "Thelinebelowissetin200pointtype,alsotallerthanthepagearea."
             + "W"
+            + "Thetablebelowrepeatsitsheaderrowaboveeachsliceofthelogoinit."
+            + "Logo"
             + "Theend.");
     }
 
     [Fact]
-    public void The_logo_is_one_figure_with_its_alternative_text_once()
+    public void Each_logo_is_one_figure_with_its_alternative_text_once()
     {
         var elements = PdfStructureReadBack.Read(Sliced()).Single().DepthFirst().ToList();
 
-        elements.Should().ContainSingle(element => element.Type == "Figure").Which.Details.Should().Be("Alt=\"A white letter V on an orange square\"");
-        elements.Count(element => element.Details.Contains("Alt=", StringComparison.Ordinal)).Should().Be(1);
+        elements.Where(element => element.Type == "Figure").Select(element => element.Details)
+            .Should().Equal("Alt=\"A white letter V on an orange square\"", "Alt=\"The same logo in a table\"");
+        elements.Count(element => element.Details.Contains("Alt=", StringComparison.Ordinal)).Should().Be(2);
+    }
+
+    [Fact]
+    public void Every_slice_of_a_logo_is_tagged_content_on_its_page()
+    {
+        // Each page shows another part of the logo: marked content of the figure on every page, never an artifact.
+        using var pdf = PdfDocument.Open([.. Sliced()]);
+        var images = pdf.GetPages().SelectMany(page => page.GetMarkedContents().SelectMany(content => Flatten(content))
+            .Where(content => content.Images.Any())
+            .Select(content => (page.Number, content.IsArtifact, content.Tag))).ToList();
+
+        images.Should().HaveCountGreaterThanOrEqualTo(4);
+        images.Should().AllSatisfy(image => image.IsArtifact.Should().BeFalse($"page {image.Number}"));
+        images.Select(image => image.Tag).Distinct().Should().Equal("Figure");
     }
 
     [Fact]
@@ -69,7 +87,7 @@ public class SlicedContentTests
             .Select(operators => System.Text.RegularExpressions.Regex.Matches(operators, "re\nW\nn\n").Count)
             .ToList();
 
-        clips.Sum().Should().Be(4, "the logo and the line each have two slices");
+        clips.Sum().Should().Be(6, "each logo and the line have two slices");
     }
 
     private static IEnumerable<UglyToad.PdfPig.Content.MarkedContentElement> Flatten(UglyToad.PdfPig.Content.MarkedContentElement element) =>

@@ -212,7 +212,7 @@ dotnet run --project samples/Ave.Extensions.Documents.Samples -- out/samples
 with `-Project` and `-Filter` for one project or a subset.
 
 The samples app writes `sample-a-letter.pdf` (two pages), `sample-b-long.pdf` (five pages), `sample-c-sliced.pdf`
-(an image and a line taller than a small page, sliced over pages) and the timesheet for three
+(an image and a line taller than a small page, sliced over pages, and an image sliced in a table under its repeated header row) and the timesheet for three
 synthetic data sets in Dutch and English (`timesheet-{normal,long,edge}.{nl,en}.pdf`), all as PDF/A-3a + PDF/UA-1,
 each with `.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its intermediate models.
 The timesheets embed `timesheet.xml`, also written next to them as `.attachment.timesheet.xml`.
