@@ -115,9 +115,9 @@ public class PageRasterizerTests
         var items = new DrawItem[]
         {
             new FillRectangle(new Rect(new Point(-limit, -limit), new Size(limit, limit)), Color.Black),
-            new FillRectangle(new Rect(new Point(limit, limit), new Size(limit, limit)), Color.Black),
+            new FillRectangle(new Rect(new Point(limit, limit), new Size(-limit, -limit)), Color.Black),
             new GlyphRun(font, limit, Color.Black, new Point(10, 10), [new PositionedGlyph(font.GlyphFor(new Rune('W')).Value, 0, "W")]),
-            new GlyphRun(font, 10, Color.Black, new Point(limit, limit), [glyph]),
+            new GlyphRun(font, 10, Color.Black, new Point(-limit, limit), [glyph]),
         };
 
         foreach (var item in items)
@@ -135,6 +135,27 @@ public class PageRasterizerTests
         Draw(PageOf(100, 100, items[0])).Pixels.Should().OnlyContain(value => value == 255);
         Draw(PageOf(100, 100, new FillRectangle(new Rect(new Point(-limit / 2, -limit / 2), new Size(limit, limit)), Color.Black))).Pixels
             .Where((_, index) => index % 4 == 0).Should().OnlyContain(value => value == 0);
+    }
+
+    private const double Max = PageModelRules.MaxNumber;
+
+    public static TheoryData<string, DrawItem> ItemsWithAFarEdgeOutOfRange => new()
+    {
+        { "clip", new ClipStart(new Rect(new Point(0, Max), new Size(5, Max))) },
+        { "filled rectangle", new FillRectangle(new Rect(new Point(0, Max), new Size(5, Max)), Color.Black) },
+        { "image", new DrawImage(new Rect(new Point(Max, 0), new Size(Max, 5)), TestImages.Load("rgb8.png")) },
+        { "glyph run", new GlyphRun(TestFonts.Regular, 10, Color.Black, new Point(Max, 10), [new PositionedGlyph(TestFonts.Regular.GlyphFor(new Rune('W')).Value, Max, "W")]) },
+    };
+
+    [Theory]
+    [MemberData(nameof(ItemsWithAFarEdgeOutOfRange))]
+    public void An_item_whose_far_edge_the_PDF_back_end_cannot_write_is_refused_by_the_contract(string kind, DrawItem item)
+    {
+        // Each number is within ±MaxNumber, the far edge (6.8e38) is not: the raster back-end could draw it (beside the
+        // page, nothing shows), the PDF back-end cannot write it, so the shared contract refuses it for both.
+        var page = PageOf(100, 100, item is ClipStart ? [item, ClipEnd.Instance] : [item]);
+
+        PageRasterizer.Render(page, new RasterOptions(96)).Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel, kind);
     }
 
     [Fact]

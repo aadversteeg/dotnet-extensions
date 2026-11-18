@@ -13,9 +13,14 @@ namespace Ave.Extensions.Documents.PageModel;
 /// The contract a page model must meet before a back-end draws it, whoever produced it. The back-ends (PDF, raster)
 /// are public libraries and other producers than this engine's layout may hand them a page model, so each checks
 /// everything it is given with these rules and answers with an error value: no input value may make it throw, or
-/// allocate without a bound, or write a file no reader can open. One rule set for every back-end, so a page model one
-/// back-end accepts the other accepts too; each back-end reports a breach under its own error code (the caller says
-/// which), because the refusal is that back-end's. What a PDF profile requires on top is checked by the PDF back-end.
+/// allocate without a bound, or write a file no reader can open. One rule set for every back-end, so a page model that
+/// breaks these rules is refused by every back-end; each back-end reports a breach under its own error code (the caller
+/// says which), because the refusal is that back-end's. What a PDF profile requires on top is checked by the PDF
+/// back-end. Past these rules each back-end refuses, with an error of its own, only what it cannot draw exactly: the
+/// raster back-end an image whose pixel grid lies beyond its reach (<c>Documents.Raster.ImageOutOfReach</c>), the PDF
+/// back-end a gap between two glyphs of a run that, in thousandths of a very small font size, is a number beyond the
+/// range of a PDF real (<c>Documents.Pdf.Write.InvalidNumber</c>, ISO 32000-1 §9.4.3: TJ gives such a gap in those
+/// units).
 /// </summary>
 public static class PageModelRules
 {
@@ -26,7 +31,7 @@ public static class PageModelRules
     /// <c>q</c>: the most ISO 32000-1 Annex C (Table C.1, "q/Q nesting depth") names as a limit of every PDF reader, and
     /// what ISO 19005-3 §6.1.13 allows a PDF/A file ("shall not nest q/Q pairs by more than 28 nesting levels"), in every
     /// profile. The raster back-end has no such limit of its own; it takes the PDF one, so that both back-ends accept the
-    /// same page models. The layout never opens more than one clip.
+    /// same nesting of clips. The layout never opens more than one clip.
     /// </summary>
     public const int MaxClipDepth = 27;
 
@@ -37,7 +42,9 @@ public static class PageModelRules
     /// <item>metadata and at least one page: a document without a page has nothing to show; every
     /// page of positive width and height;</item>
     /// <item>every number is a number PDF can hold: finite and within ±<see cref="MaxNumber"/> (page sizes, font sizes,
-    /// positions and sizes of glyph runs, glyphs, filled rectangles, images and clips);</item>
+    /// positions and sizes of glyph runs, glyphs, filled rectangles, images and clips), and so is every edge computed
+    /// from them: x + width and y + height of a rectangle, the place of a glyph (run origin + glyph), and their height
+    /// above the foot of the page;</item>
     /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
     /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
@@ -134,8 +141,10 @@ public static class PageModelRules
     /// <summary>
     /// The largest magnitude of a number of the page model: 3.403 × 10^38, the range of a real number in PDF (ISO 32000-1
     /// Annex C, Table C.1, "real: ±3.403 × 10^38"; veraPDF rule 6.1.13-2 enforces it for PDF/A). The same value as the
-    /// PDF writer's limit, so a page model one back-end accepts never holds a number the other cannot write; inside it the
-    /// raster back-end computes in double precision without overflow.
+    /// PDF writer's limit. The rules hold each number to it and also the edges a back-end computes from them (x + width,
+    /// y + height, and the height above the foot of the page, which the PDF back-end writes), so a page model that passes
+    /// holds no position or size the PDF writer cannot write; inside it the raster back-end computes in double precision
+    /// without overflow.
     /// </summary>
     public const double MaxNumber = 3.403e38;
 
@@ -148,10 +157,15 @@ public static class PageModelRules
 
     private static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
 
-    private static IEnumerable<Error> ItemProblems(Page page, int number, ErrorCode code) =>
-        page.Items.Select((item, index) => ItemProblem(item, index, number, code)).OfType<Error>();
+    /// <summary>The breaches of the items of a page. Heights above the foot of a page whose height is itself a breach
+    /// are measured from 0, so that breach is reported once, as the page's.</summary>
+    private static IEnumerable<Error> ItemProblems(Page page, int number, ErrorCode code)
+    {
+        var height = page.Size.Height is >= MinPageSide and <= MaxNumber ? page.Size.Height : 0;
+        return page.Items.Select((item, index) => ItemProblem(item, index, number, height, code)).OfType<Error>();
+    }
 
-    private static Error? ItemProblem(DrawItem? item, int index, int number, ErrorCode code) => item switch
+    private static Error? ItemProblem(DrawItem? item, int index, int number, double pageHeight, ErrorCode code) => item switch
     {
         null => Invalid(code, $"Item {index + 1} of page {number} is missing.", Number(number)),
         GlyphRun { Font: null } => Invalid(code, $"A glyph run on page {number} has no font.", Number(number)),
@@ -171,6 +185,11 @@ public static class PageModelRules
         FillRectangle fill when !InRange(fill.Area) => Invalid(code, $"A filled rectangle on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{fill.Area}"),
         DrawImage image when !InRange(image.Area) => Invalid(code, $"An image on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{image.Area}"),
         ClipStart clip when !InRange(clip.Area) => Invalid(code, $"A clip on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{clip.Area}"),
+        GlyphRun run when run.Glyphs.Any(glyph => !EdgesInRange(run.Origin, glyph, pageHeight)) =>
+            Invalid(code, $"A glyph run on page {number} places a glyph at {EdgesText}.", $"{run.Origin}"),
+        FillRectangle fill when !EdgesInRange(fill.Area, pageHeight) => Invalid(code, $"A filled rectangle on page {number} has {EdgesText}.", $"{fill.Area}"),
+        DrawImage image when !EdgesInRange(image.Area, pageHeight) => Invalid(code, $"An image on page {number} has {EdgesText}.", $"{image.Area}"),
+        ClipStart clip when !EdgesInRange(clip.Area, pageHeight) => Invalid(code, $"A clip on page {number} has {EdgesText}.", $"{clip.Area}"),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
             Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
         _ => null,
@@ -182,6 +201,22 @@ public static class PageModelRules
     private static bool InRange(Point point) => InRange(point.X) && InRange(point.Y);
 
     private static bool InRange(Rect area) => InRange(area.Origin) && InRange(area.Size.Width) && InRange(area.Size.Height);
+
+    private static readonly string EdgesText = $"an edge that is not a number within ±{Number(MaxNumber)} (x + width, y + height, or its height above the foot of the page)";
+
+    /// <summary>
+    /// The edges a back-end computes from a rectangle whose four numbers are in range: its far edges (x + width,
+    /// y + height) and its lower edge measured from the foot of the page (page height − y − height, in that order of
+    /// operations: the y a PDF content stream writes for the rectangle, whose origin is the page's lower left corner,
+    /// ISO 32000-1 §8.3.2.3). Each must be in range too, or one back-end would draw what the other cannot write.
+    /// </summary>
+    private static bool EdgesInRange(Rect area, double pageHeight) =>
+        InRange(area.Origin.X + area.Size.Width) && InRange(area.Origin.Y + area.Size.Height) && InRange(pageHeight - area.Origin.Y - area.Size.Height);
+
+    /// <summary>The place of a glyph on the page (run origin + glyph offset) and its height above the foot of the page
+    /// (page height − that y, the y a PDF text position is written with), each in range.</summary>
+    private static bool EdgesInRange(Point origin, PositionedGlyph glyph, double pageHeight) =>
+        InRange(origin.X + glyph.X) && InRange(origin.Y + glyph.Y) && InRange(pageHeight - (origin.Y + glyph.Y));
 
     /// <summary>A node is the same node on every page: the structure tree has one element for it, with one type.</summary>
     private static IEnumerable<Error> RoleProblems(Page page, int number, Dictionary<NodeId, SemanticRole> roles, ErrorCode code)
