@@ -22,7 +22,7 @@ namespace Ave.Extensions.Documents.Images.Jpeg;
 /// before anything is allocated, so the coefficient planes take at most 2 bytes per coefficient of the padded block grid
 /// (at most 2^26 × 3 × 2 bytes plus the padding of the last blocks). A progressive file is a list of scans, each of which
 /// visits blocks; a scan costs a few bytes in the file whatever it visits, so the blocks all scans visit together are
-/// limited to <see cref="MaxPasses"/> times the blocks of the frame (<c>Documents.Image.TooLarge</c>). Typical files
+/// limited to <see cref="MaxPasses"/> times the blocks of the frame (<c>Documents.Image.TooMuchWork</c>). Typical files
 /// use 1 (sequential) to about 4 (progressive).</para>
 /// </remarks>
 internal sealed class JpegDecoder
@@ -71,6 +71,11 @@ internal sealed class JpegDecoder
         public int BlockRows { get; set; }
 
         public short[] Coefficients { get; set; } = [];
+
+        /// <summary>The quantisation table in force when the component's first scan started (T.81 §B.2.4.1: a table
+        /// "shall be used" by the scans that follow its definition, so a later DQT for the same id does not change a
+        /// component already scanned); null until a scan covers the component.</summary>
+        public ushort[]? Quantisation { get; set; }
 
         public int DcPrediction { get; set; }
     }
@@ -122,9 +127,22 @@ internal sealed class JpegDecoder
             var marker = span[offset];
             if (marker == EndOfImage)
             {
-                return _frame is not null && _visits > 0
-                    ? Result<bool, Error>.Success(true)
-                    : ImageErrors.Invalid<bool>("the image ends before any scan.", offset);
+                if (_frame is null || _visits == 0)
+                {
+                    return ImageErrors.Invalid<bool>("the image ends before any scan.", offset);
+                }
+
+                // A component that no scan covers has no image data: decoding it as zeros would show a picture that is
+                // not the file's, so the file is refused.
+                foreach (var component in _frame.Components)
+                {
+                    if (component.Quantisation is null)
+                    {
+                        return ImageErrors.Invalid<bool>($"frame component {component.Id} is in no scan, so it has no image data.", offset);
+                    }
+                }
+
+                return Result<bool, Error>.Success(true);
             }
 
             if (marker is >= 0xD0 and <= 0xD7)
@@ -364,10 +382,12 @@ internal sealed class JpegDecoder
         {
             var needsDc = scan.Start == 0 && scan.High == 0;
             var needsAc = scan.Start > 0 || !frame.Progressive;
-            if ((needsDc && _dcTables[dc] is null) || (needsAc && _acTables[ac] is null) || _quantisation[component.Table] is null)
+            if ((needsDc && _dcTables[dc] is null) || (needsAc && _acTables[ac] is null) || (component.Quantisation is null && _quantisation[component.Table] is null))
             {
                 return ImageErrors.Invalid<int>($"the scan of component {component.Id} uses a Huffman or quantisation table that was not defined before it.", offset);
             }
+
+            component.Quantisation ??= _quantisation[component.Table];
         }
 
         var blocks = scan.Components.Length == 1
@@ -382,7 +402,7 @@ internal sealed class JpegDecoder
 
         if (_visits > MaxPasses * frameBlocks)
         {
-            return ImageErrors.TooLarge<int>(frame.Width, frame.Height);
+            return ImageErrors.TooMuchWork<int>((double)_visits / frameBlocks, MaxPasses);
         }
 
         return Entropy(frame, scan, dataStart);
@@ -752,7 +772,7 @@ internal sealed class JpegDecoder
     /// transformed, on the padded block grid, row stride <c>BlocksPerLine × 8</c>.</summary>
     private byte[] Plane(Component component)
     {
-        var table = _quantisation[component.Table]!;
+        var table = component.Quantisation!;
         var stride = component.BlocksPerLine * 8;
         var samples = new byte[(long)stride * component.BlockRows * 8];
         Span<double> dequantised = stackalloc double[64];
@@ -785,6 +805,6 @@ internal sealed class JpegDecoder
         var decoder = new JpegDecoder(file);
         return decoder.Segments().OnSuccessMap(_ => ImmutableArray.CreateRange(
             decoder._frame!.Components,
-            component => new DecodedComponent(component.Id, component.Width, component.Height, component.BlocksPerLine, component.BlockRows, component.Coefficients, decoder._quantisation[component.Table]!, decoder.Plane(component))));
+            component => new DecodedComponent(component.Id, component.Width, component.Height, component.BlocksPerLine, component.BlockRows, component.Coefficients, component.Quantisation!, decoder.Plane(component))));
     }
 }

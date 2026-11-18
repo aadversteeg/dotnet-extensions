@@ -45,6 +45,8 @@ public sealed class JpegDecoderReferenceTests
     [InlineData("jpeg-progressive.jpg", 3)]
     [InlineData("jpeg-progressive-restart.jpg", 3)]
     [InlineData("jpeg-mixed.jpg", 3)]
+    [InlineData("jpeg-three-scans.jpg", 3)]
+    [InlineData("jpeg-table-redefined.jpg", 3)]
     public void Decodes_like_djpeg_within_the_rounding_of_the_transforms(string name, int largest)
     {
         var (decoded, expected) = BothDecodings(name);

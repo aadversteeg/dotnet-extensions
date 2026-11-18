@@ -1,7 +1,10 @@
 """Generates the JPEG test files of the decoder with libjpeg-turbo's cjpeg (an independent encoder), each in one of the
 variants the decoder must read: chroma sampling 4:4:4, 4:2:2, 4:4:0, 4:2:0, 4:1:1 and 3:1:1, mixed factors, restart
 intervals, progressive coding (libjpeg's default script: spectral selection and successive approximation), grey, RGB
-without colour transform (Adobe marker transform 0), 16-bit quantisation tables, odd sizes and a 1 x 1 image.
+without colour transform (Adobe marker transform 0), 16-bit quantisation tables, odd sizes and a 1 x 1 image; and, by
+editing the segments of a file with one scan per component, files the decoder must refuse or read with care: frame
+components that no scan covers (with a defined and with an undefined quantisation table), and a quantisation table
+redefined between scans (T.81 §B.2.4.1: a component keeps the table in force when its first scan starts).
 
 Runs in the reference tools image (tools/reference/tools.Dockerfile: Pillow and libjpeg-turbo 2.1.5), from the family
 folder (libs/documents):
@@ -46,6 +49,68 @@ def cjpeg(source, name, *options):
     subprocess.run(["cjpeg", *options, "-outfile", os.path.join(ASSETS, name), source], check=True)
 
 
+def segments(data):
+    """The marker segments of a JPEG file in order: (marker, start, end), a scan's entropy-coded data included in its
+    SOS segment (it runs to the next marker that is not a stuffed FF 00 or a restart marker)."""
+    result = []
+    position = 2
+    while position < len(data):
+        marker = data[position + 1]
+        if marker == 0xD9:
+            result.append((marker, position, position + 2))
+            break
+        end = position + 2 + int.from_bytes(data[position + 2:position + 4], "big")
+        if marker == 0xDA:
+            while not (data[end] == 0xFF and data[end + 1] not in (0x00, *range(0xD0, 0xD8))):
+                end += 1
+        result.append((marker, position, end))
+        position = end
+    return result
+
+
+def edited(source, name, edit):
+    """Writes a copy of an asset with its marker segments changed by edit(data, segments) -> bytes."""
+    data = open(os.path.join(ASSETS, source), "rb").read()
+    open(os.path.join(ASSETS, name), "wb").write(edit(data, segments(data)))
+
+
+def frame_tables(data, segments_, tables):
+    """The file with the quantisation table selector of each frame component set to tables[i] (None: unchanged)."""
+    out = bytearray(data)
+    marker, start, _ = next(segment for segment in segments_ if segment[0] in (0xC0, 0xC1, 0xC2))
+    for index, table in enumerate(tables):
+        if table is not None:
+            out[start + 12 + (3 * index)] = table
+    return bytes(out)
+
+
+def without_scans(data, segments_, keep):
+    """The file with only the scans whose index (0, 1, …) is in keep."""
+    scans = [segment for segment in segments_ if segment[0] == 0xDA]
+    parts = [data[:scans[0][1]]]
+    parts += [data[start:end] for index, (_, start, end) in enumerate(scans) if index in keep]
+    parts.append(data[scans[-1][2]:])
+    return b"".join(parts)
+
+
+def table_redefined(data, segments_):
+    """A three-scan file whose chroma components use table 0, redefined as the original chroma table (table 1) between
+    the luma scan and the chroma scans: valid by T.81 §B.2.4.1, and the right decoding is the original's."""
+    tables = {}
+    for marker, start, end in segments_:
+        if marker == 0xDB:
+            position = start + 4
+            while position < end:
+                precision, table = data[position] >> 4, data[position] & 15
+                size = 64 if precision == 0 else 128
+                tables[table] = data[position + 1:position + 1 + size]
+                position += 1 + size
+    redefine = b"\xff\xdb" + (3 + len(tables[1])).to_bytes(2, "big") + bytes([0]) + tables[1]
+    scans = [segment for segment in segments_ if segment[0] == 0xDA]
+    out = frame_tables(data, segments_, [None, 0, 0])
+    return out[:scans[1][1]] + redefine + out[scans[1][1]:]
+
+
 def main():
     os.makedirs(ASSETS, exist_ok=True)
     with tempfile.TemporaryDirectory() as folder:
@@ -72,6 +137,14 @@ def main():
         cjpeg(large, "jpeg-progressive-restart.jpg", "-quality", "85", "-progressive", "-restart", "1")
         cjpeg(large, "jpeg-progressive-grey.jpg", "-quality", "85", "-progressive", "-grayscale")
         cjpeg(large, "jpeg-progressive-444.jpg", "-quality", "92", "-progressive", "-sample", "1x1")
+
+        # A sequential file with one scan per component, and three variants made from it by editing its segments.
+        scans = os.path.join(folder, "scans.txt")
+        open(scans, "w").write("0;\n1;\n2;\n")
+        cjpeg(small, "jpeg-three-scans.jpg", "-quality", "85", "-sample", "1x1", "-scans", scans)
+        edited("jpeg-three-scans.jpg", "jpeg-unscanned-components.jpg", lambda data, s: without_scans(data, s, [0]))
+        edited("jpeg-three-scans.jpg", "jpeg-unscanned-undefined-table.jpg", lambda data, s: without_scans(frame_tables(data, s, [None, 3, 3]), segments(frame_tables(data, s, [None, 3, 3])), [0]))
+        edited("jpeg-three-scans.jpg", "jpeg-table-redefined.jpg", table_redefined)
     print("written:", sorted(name for name in os.listdir(ASSETS) if name.startswith("jpeg-")))
 
 

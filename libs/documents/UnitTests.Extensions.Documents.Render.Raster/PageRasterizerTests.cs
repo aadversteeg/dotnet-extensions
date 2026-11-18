@@ -305,6 +305,18 @@ public class PageRasterizerTests
     }
 
     [Fact]
+    public void A_JPEG_with_a_component_no_scan_covers_is_an_error_of_the_page_not_an_exception()
+    {
+        // Review 38, B1: through the page API this threw NullReferenceException.
+        var jpeg = TestImages.Load("jpeg-unscanned-undefined-table.jpg");
+
+        var result = PageRasterizer.Render(PageOf(40, 30, new DrawImage(new Rect(new Point(0, 0), new Size(40, 30)), jpeg)), new RasterOptions(72));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(ImageErrorCodes.Invalid);
+    }
+
+    [Fact]
     public void Markers_draw_nothing()
     {
         var start = new StructureStart(new NodeId(1), SemanticRole.Paragraph, new SourceLocation("x.cs", 1));

@@ -173,7 +173,22 @@ public class JpegDecoderTests
         var result = Samples(repeated);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be(ImageErrorCodes.TooLarge);
+        result.Error.Code.Should().Be(ImageErrorCodes.TooMuchWork);
+        result.Error.Message.Should().Contain("passes").And.NotContain("pixels");
+    }
+
+    [Theory]
+    [InlineData("jpeg-unscanned-components.jpg")]
+    [InlineData("jpeg-unscanned-undefined-table.jpg")]
+    public void A_frame_component_that_no_scan_covers_makes_the_image_invalid(string name)
+    {
+        // Review 38, B1: with an undefined table this threw NullReferenceException; with a defined one it decoded the
+        // missing components as zeros. A half-decoded picture is worse than a refusal.
+        var result = Samples(Asset(name));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(ImageErrorCodes.Invalid);
+        result.Error.Message.Should().Contain("no scan");
     }
 
     [Fact]

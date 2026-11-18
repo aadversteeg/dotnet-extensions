@@ -21,4 +21,9 @@ public static class ImageErrorCodes
     /// <summary>An image with more pixels than the engine decodes (<c>ImageLimits.MaxPixels</c>, 2^26). Metadata:
     /// Value (width x height).</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
+
+    /// <summary>A JPEG whose scans together visit the blocks of its frame more often than the decoder does work for
+    /// (<c>JpegDecoder.MaxPasses</c>, 32 times): a progressive file can ask for much work in few bytes. Metadata: Value
+    /// (the passes asked for, as blocks visited per block of the frame).</summary>
+    public static readonly ErrorCode TooMuchWork = _ / "TooMuchWork";
 }
