@@ -68,8 +68,10 @@ public enum MonolithicOverflow
     Refuse,
 
     /// <summary>The content is sliced as Chromium prints it: placed whole at the top of the page, it shows there as far as
-    /// the page area reaches, and each following page shows the next page-area height of it, until its end; what follows
-    /// it starts right below that end. Each slice is clipped to its part of the page area (a page-model clip). In tagged
+    /// the page area reaches, and each following page shows the next part of it, as tall as the room it has there, until
+    /// its end; what follows it starts right below that end (one known defect: after a block whose bottom padding does
+    /// not fit below the last slice, what follows is lost; docs/architecture.md, "Known limits"). Each slice is clipped
+    /// to its part of the page area (a page-model clip). In tagged
     /// PDF every slice of an image is content of its figure, whose alternative text is read once; the later slices of a
     /// line of text are pagination artifacts, so its text is read once. One piece is cut into at most 100 slices, one per page:
     /// a piece that would need more is refused with <c>Documents.Layout.TooManySlices</c> (a slice is as tall as the room

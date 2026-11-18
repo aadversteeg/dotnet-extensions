@@ -15,7 +15,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// the contents of monolithic elements by slicing the element's graphical representation"), as Chromium prints it
 /// (<c>tools/reference/chromium</c>, cases <c>a4-*</c>): the content is placed whole at the top of the page and shows
 /// there down to the end of the page area; each later page shows the next part of it, one page-area height (the height
-/// it is given there) at a time; the last slice is as tall as what is left, and what follows starts right below it.
+/// it is given there) at a time; the last slice is as tall as what is left, and what follows starts right below it
+/// (one known defect: after a block whose bottom padding does not fit below the last slice, what follows is lost;
+/// docs/architecture.md, "Known limits").
 /// Each slice is a <see cref="SliceFragment"/>, clipped to its own top and bottom.
 /// </summary>
 internal static class MonolithicSlices
@@ -31,10 +33,12 @@ internal static class MonolithicSlices
     /// <summary>
     /// The most slices one piece is cut into: 100. The longest length the front-end accepts is 14 400 pt
     /// (<c>InputLimits.MaxLength</c>), so 100 slices show an image of that height whole on a page area of 144 pt (2 inches)
-    /// or more. A taller piece (a line height may be a large multiple of the font size) or a smaller page area is refused
-    /// with <c>Documents.Layout.TooManySlices</c> at its 101st slice. Without the limit the number of pages would follow
-    /// from numbers in the input, not from its size (a 14 400 pt image on a page area of 0.01 pt is 1 440 000 pages); with
-    /// it a document has at most 100 pages per piece more than it has pieces (docs/architecture.md, "Bounded work").
+    /// or more. A taller piece (a line height may be a large multiple of the font size), a smaller page area, or less room
+    /// per page (a slice is as tall as the room it has: under a repeated header row or inside padding that is less than
+    /// the page area) is refused with <c>Documents.Layout.TooManySlices</c> at its 101st slice. Without the limit the
+    /// number of pages would follow from numbers in the input, not from its size (a 14 400 pt image on a page area of
+    /// 0.01 pt is 1 440 000 pages); with it one piece (an image, or one line box; a paragraph of several tall lines has
+    /// that many pieces) is on at most 100 pages (docs/architecture.md, "Bounded work").
     /// </summary>
     public const int MaxSlices = 100;
 

@@ -228,7 +228,7 @@ browser (Chromium) prints, with the differences listed in `docs/architecture.md`
 
 | Modifier | Default | Other value |
 | --- | --- | --- |
-| `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next page-area height of it; what follows starts below its end; in tagged PDF every slice of an image is content of its figure and the later slices of a line are artifacts, so text and alternative text are read once; a piece is cut into at most 100 slices, a taller one is the error `Documents.Layout.TooManySlices` |
+| `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next part of it, as tall as the room it has there; what follows starts below its end (one known defect: after a block whose bottom padding does not fit below the last slice, what follows is lost, see docs/architecture.md); in tagged PDF every slice of an image is content of its figure and the later slices of a line are artifacts, so text and alternative text are read once; a piece is cut into at most 100 slices and a document into at most 1 000, and one that needs more is the error `Documents.Layout.TooManySlices` |
 | `.FontMetricRounding(…)`: a font's ascent, descent and line gap | `Exact`: as the font gives them, scaled to the size | `WholePixels`: each rounded to a whole CSS pixel (0.75 pt), as Chromium does, so a `normal` line is a whole number of pixels (Lato 12 pt: 14.25 pt instead of 14.4) |
 | `.EmptyRowParts(…)`: a table row whose part on a page would show nothing | `Avoid`: the row moves to the next page whole where that avoids the empty strip | `Allow`: the row is cut wherever its cells can break |
 
@@ -240,8 +240,9 @@ var poster = Document([Image(photo).Alt("The team").Width(18.Cm())], PageSetup.A
 
 Content in a table cell is sliced the same way when its row starts the page, also right below a repeated header row;
 the row after it starts below the last slice (Chromium does so in some table shapes and draws that row over the slice
-in others), and the other cells of its row go on beside the slices. Padding and borders taller than a page are
-refused under either value.
+in others), and the other cells of its row go on beside the slices. A piece in a cell that fits the page area but not
+with the cell's padding and grid lines is sliced too, where Chromium moves it whole. Padding and borders taller than a
+page are refused under either value.
 
 ## PDF/A, PDF/UA and attachments
 

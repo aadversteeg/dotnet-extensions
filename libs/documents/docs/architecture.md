@@ -153,13 +153,14 @@ structure kids) are records with private constructors, each in one file so the w
 ## Who checks what
 
 Every rule is checked in one place, by the layer that owns the reason for it; each check reports all its problems
-together, at the author's line where there is one.
+together, at the author's line where there is one. One problem is one error with its own code; two or more come as one
+error with the code `Aggregate` (Ave.Extensions.ErrorPaths), whose parts carry each problem's code.
 
 | Layer | Checks | Error codes |
 | --- | --- | --- |
 | front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, content that would need more than 100 slices (one piece) or 1 000 (one document), columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
+| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes (and edges) within the range of a PDF real, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier`; while the structure tree is built (`Render.Pdf/Tagging/StructureTree.cs`), a node under two parents or a decorative node in the structure: `Documents.Pdf.Write.InvalidStructure` |
 | raster back-end (`Render.Raster/PageRasterizer.cs`) | the same page-model contract (`PageModel/PageModelRules.cs`); options with a positive finite resolution; a page of at most 2^26 pixels at that resolution; a page number of the document | `Documents.Raster.InvalidPageModel`, `InvalidOptions`, `TooLarge`, `PageNotFound` |
 | profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
@@ -527,9 +528,10 @@ Each is documented next to its code as well.
   `EmptyRowParts.Allow` the engine cuts where Chromium cuts in the measured cases (one exception is listed below), also in
   one more respect: a row whose cells all end on the
   page, with only the half of the grid line below it past the page end, is not cut but moves to the next page whole
-  (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: the one step of 42, one pixel apart with and
-  without a repeated header row, where this decides; under `Avoid` the cells keep their half line on the page and the
-  row is cut before its last block). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
+  (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: in a series of 42 cases one pixel apart, with and
+  without a repeated header row, the one step where this decides; under `Avoid`, in `a2-cells-end-text` the cells keep
+  their half line on the page and the row is cut before its last block, and in the other two, whose last block is
+  empty, the row moves whole there too, since its rest would show nothing). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
   their whole-pixel forms `a2-padded-blocks-px`, `a3-mirror-px`, with `FontMetricRounding.WholePixels`; `RowPartTests`,
   Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. **Listed
   difference:** a row whose lines all fit on the page but whose bottom padding or border does not is cut between its
@@ -568,11 +570,12 @@ Each is documented next to its code as well.
   the line, which hides it, as the engine has only solid, opaque lines (no dashed or translucent ones). Limits (i) to
   (iii) and the background go away when borders are sliced at page breaks, noted for stage 4.
 - **Monolithic content taller than the page area is a policy** (`LayoutProfile.MonolithicOverflow`): refused by
-  default, or sliced as Chromium slices it (`Layout/MonolithicSlices.cs`): the same pages, the same image rectangles
-  and the content after the last slice in the same place where the piece stands alone on its pages, in a one-column
-  table and in a table inside a cell (cases `a4-image-first`, `a4-image-after-text`, `a4-line-after-text`,
-  `a4-image-single-cell`, `a4-image-nested-table`; `MonolithicSliceTests`, `SliceInTableTests`); the differences in
-  other table shapes are listed below. A piece is cut into at most 100 slices, one per page (`MonolithicSlices.MaxSlices`): 100 slices show the longest image the front-end accepts, 14 400 pt, on a page area of 144 pt, and a piece that needs more is `Documents.Layout.TooManySlices` (`MonolithicSliceLimitTests`). A document is cut into at most 1 000 slices, all pieces together (`MonolithicSlices.MaxSlicesPerDocument`): the limit per piece bounds the pages per piece, not the pages per input byte, since one paragraph of many tall lines takes up to 100 pages per line. The page that would bring the count past 1 000 is `Documents.Layout.TooManySlices` too, and its message names the limit for one document. Each slice is clipped to
+  default, or sliced as Chromium slices it (`Layout/MonolithicSlices.cs`): the same pages and the same image
+  rectangles where the piece stands alone on its pages, in a one-column table and in a table inside a cell, and the
+  content after the last slice in the same place in the first three shapes (cases `a4-image-first`,
+  `a4-image-after-text`, `a4-line-after-text`, `a4-image-single-cell`, `a4-image-nested-table`; `MonolithicSliceTests`,
+  `SliceInTableTests`); in a table inside a cell the row after the slice stands lower than in Chromium (below the
+  last slice), and the differences in other table shapes are listed below. A piece is cut into at most 100 slices, one per page (`MonolithicSlices.MaxSlices`): 100 slices show the longest image the front-end accepts, 14 400 pt, on a page area of 144 pt, and a piece that needs more is `Documents.Layout.TooManySlices` (`MonolithicSliceLimitTests`). A document is cut into at most 1 000 slices, all pieces together (`MonolithicSlices.MaxSlicesPerDocument`): the limit per piece bounds the pages per piece, not the pages per input byte, since one paragraph of many tall lines takes up to 100 pages per line. The page that would bring the count past 1 000 is `Documents.Layout.TooManySlices` too, and its message names the limit for one document. Each slice is clipped to
   its part of the page area across the whole page width (Chromium clips only in the block direction). In tagged PDF
   every slice of an image is content of its figure, as the pages of a paragraph are content of the paragraph: each page
   shows another part of the image, the alternative text is on the figure and is read once. The later slices of a line
@@ -581,8 +584,8 @@ Each is documented next to its code as well.
   the document's author. Artifacts are graphics objects that are not part of the author's original content but rather
   are generated by the conforming writer in the course of pagination, layout, or other strictly mechanical processes."
   The lower part of a glyph is the author's content, so by the first sentence a later slice is real content; but the
-  first slice already delivers the line's text, and the later pages draw the same glyphs again, so as content the text
-  would be read twice. The engine marks them as artifacts so that the text is read once (PDF/UA-1 checkpoint 01-002,
+  first slice already delivers the line's text (it draws the whole line, clipped; ISO 32000-1 §14.8.2.2.3), and the
+  later pages draw the same glyphs again, so as content the text would be read twice. The engine marks them as artifacts so that the text is read once (PDF/UA-1 checkpoint 01-002,
   `docs/pdf-profiles-and-accessibility.md`). veraPDF passes PDF/A-3a and PDF/UA-1 on such a file (sample C, with a
   sliced image, a sliced line and a sliced image in a table under a header row). A sliced figure is on several pages,
   so it has no `/BBox` (ISO 32000-1 Table 344 asks for one only for a figure "appearing in
@@ -627,6 +630,10 @@ Each is documented next to its code as well.
   is refused as before. A block outside a table whose bottom padding does not fit below such a piece at the top of a
   page keeps the piece whole and lets the padding pass, as Chromium does.
   Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
+  **Known defect, content lost:** a sliced piece in a block whose bottom padding does not fit below the last slice on
+  its page (a 408 pt image in a block with `padding-bottom` 133 pt, page area 180 pt): what follows the block is on no
+  page, and layout reports success. The repair is on the layout branch that is not merged yet; its test comes with
+  that merge.
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
   precomposed, decompose what it lacks), except that enclosing marks (Me) do not count as marks and HarfBuzz's fallbacks
   for a missing space or non-breaking hyphen are not made (`Typesetting/Unicode/Normalization.cs`); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning

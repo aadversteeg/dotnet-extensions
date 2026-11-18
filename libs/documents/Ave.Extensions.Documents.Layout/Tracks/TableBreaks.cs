@@ -172,8 +172,9 @@ internal static class TableBreaks
 
         // Under EmptyRowParts.Allow, as Chromium cuts: a row whose cells' content all ends on this page, with only the
         // half of the line below the row (which each cell's box holds) past the page end, is not cut, and moves to the next
-        // page whole (cases a2-cells-end, a2-cells-end-header, a2-cells-end-text). Under Avoid the cells keep their half
-        // line on the page and break earlier.
+        // page whole (cases a2-cells-end, a2-cells-end-header, a2-cells-end-text). Under Avoid, in a2-cells-end-text the
+        // cells keep their half line on the page and break earlier; in the other two the row moves whole there too, since
+        // its rest would show nothing.
         if (table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow)
         {
             var lineBelow = table.HorizontalWidth(row, Next(table.Grid, row), TablePage.EdgeContext(table.Grid, row)) / 2;

@@ -87,7 +87,8 @@ public class ClipTests
     public void A_glyph_cut_by_a_clip_edge_inside_a_pixel_shows_the_exact_area_inside_the_clip()
     {
         // 'I' of the Roboto subset is one rectangle (design units 183, 0, 376, 1456 of 2048): at 20 pt with its baseline at
-        // 14.6 pt it reaches from 0.38 pt above the clip's top to below its bottom, and the clip cuts it across.
+        // 14.6 pt it reaches from 0.38 pt below the page's top (4.07 pt above the clip's top) to below the clip's bottom, and
+        // the clip cuts it across.
         const double scale = 120.0 / 72;
         var font = TestFonts.RobotoSubset;
         var (size, originX, originY) = (20.0, 6.1, 14.6);

@@ -11,10 +11,12 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// The three policies of a <see cref="LayoutProfile"/> are independent: each is read in one place, and none changes the
-/// rules of another. Over all eight combinations, on documents with content taller than the page area (an image in a
-/// table row that also breaks, under a repeated header row; a tall line between lines): no exception, every word drawn
-/// outside artifacts exactly once, and whether a document is refused depends on the overflow policy alone.
+/// The three policies of a <see cref="LayoutProfile"/> over all eight combinations, on two documents with content taller
+/// than the page area (an image in a table row that also breaks, under a repeated header row; a tall line between
+/// lines): no exception, every word drawn outside artifacts exactly once, and for these two documents whether they are
+/// refused depends on the overflow policy alone. That is not a claim for every document: the overflow policy is read in
+/// several places, and it changes the pages of some documents without a piece taller than the page area
+/// (docs/architecture.md, "Known limits").
 /// </summary>
 public class LayoutProfileCombinationTests
 {
@@ -55,7 +57,7 @@ public class LayoutProfileCombinationTests
     ];
 
     [Fact]
-    public void The_rule_for_a_slice_under_a_repeated_header_row_does_not_depend_on_the_other_two_policies()
+    public void The_first_slice_under_a_repeated_header_row_comes_on_the_same_page_under_every_row_part_and_font_metric_policy()
     {
         // Under Slice the image's first slice comes on the same page, below the header, whatever the row-part and font
         // metric policies are (TablePage: content taller than the page area under a repeated header row).
