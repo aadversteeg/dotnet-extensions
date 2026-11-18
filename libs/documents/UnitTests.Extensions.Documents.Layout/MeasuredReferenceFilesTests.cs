@@ -239,6 +239,14 @@ public class MeasuredReferenceFilesTests
         ["fr-border-top-and-bottom.lines.txt"] = 2,
         ["fr-border-top-and-bottom.print.txt"] = 6,
         ["fr-border-top-and-bottom.words.txt"] = 2,
+        ["fr-empty-span-trailing-space.boxes.txt"] = 2,
+        ["fr-empty-span-trailing-space.lines.txt"] = 0,
+        ["fr-empty-span-trailing-space.print.txt"] = 3,
+        ["fr-empty-span-trailing-space.words.txt"] = 2,
+        ["fr-empty-span.boxes.txt"] = 2,
+        ["fr-empty-span.lines.txt"] = 0,
+        ["fr-empty-span.print.txt"] = 3,
+        ["fr-empty-span.words.txt"] = 2,
         ["fr-f4-grid-line-second-row.boxes.txt"] = 2,
         ["fr-f4-grid-line-second-row.lines.txt"] = 8,
         ["fr-f4-grid-line-second-row.print.txt"] = 17,
@@ -367,6 +375,14 @@ public class MeasuredReferenceFilesTests
         ["fr-keep-inside-box.lines.txt"] = 0,
         ["fr-keep-inside-box.print.txt"] = 9,
         ["fr-keep-inside-box.words.txt"] = 7,
+        ["fr-lh-first-baseline.boxes.txt"] = 2,
+        ["fr-lh-first-baseline.lines.txt"] = 0,
+        ["fr-lh-first-baseline.print.txt"] = 6,
+        ["fr-lh-first-baseline.words.txt"] = 5,
+        ["fr-lh-mixed-sizes.boxes.txt"] = 1,
+        ["fr-lh-mixed-sizes.lines.txt"] = 0,
+        ["fr-lh-mixed-sizes.print.txt"] = 21,
+        ["fr-lh-mixed-sizes.words.txt"] = 20,
         ["fr-pad-after-content.boxes.txt"] = 1,
         ["fr-pad-after-content.lines.txt"] = 0,
         ["fr-pad-after-content.print.txt"] = 7,
@@ -447,7 +463,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(105);
+        cases.Should().HaveCount(109);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Order(StringComparer.Ordinal), "four files per case and the versions");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

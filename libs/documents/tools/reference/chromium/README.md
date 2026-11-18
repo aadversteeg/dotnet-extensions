@@ -73,8 +73,10 @@ Chromium snaps more than layout units when it prints, which a case must allow fo
 
 - the page margins and the page size become whole CSS pixels (a 10 pt margin prints as 13 px = 9.75 pt), so the cases
   that pin page breaks use sizes that are whole pixels (multiples of 0.75 pt; 12 pt margins, page areas of 150 or 180 pt);
-- with `line-height: normal` the line height is the font's ascent and descent each rounded to whole pixels: Lato at 12 pt
-  (16 px) is 16 + 3 = 19 px (14.25 pt) where the font's own values give 19.2 px (14.4 pt). The cases that pin page breaks
+- with `line-height: normal` the line height is the font's ascent, descent and line gap each rounded to whole pixels:
+  Lato at 12 pt (16 px, no line gap) is 16 + 3 = 19 px (14.25 pt) where the font's own values give 19.2 px (14.4 pt).
+  Every inline box's ascent and descent are rounded so, under any line height, and the half-leading above it is
+  floored to a whole pixel; a used line height is snapped to 1/64 px (docs/architecture.md, "Against Chromium"). The cases that pin page breaks
   keep every decision clear of that difference, and their tests compare which words are on which page exactly and
   positions only where the difference does not enter.
 
@@ -113,8 +115,10 @@ under `third_party/blink/renderer/`):
 - a table's auto columns get truncated shares of the space to distribute, and the last column the remainder:
   `core/layout/table/table_layout_utils.cc:466` (`DistributeInlineSizeToComputedInlineSizeAuto`);
 - grid `fr` tracks get truncated shares, the fractions carried to the next track: `core/layout/grid/grid_track_sizing_algorithm.cc:1281–1309`;
-- printing scales the page by 0.75 (CSS px to points) and does not round coordinates: `components/printing/renderer/print_render_frame_helper.cc`,
-  `printing/metafile_skia.cc`.
+- printing scales the page by 0.75 (CSS px to points) and does not round coordinates in that transform:
+  `components/printing/renderer/print_render_frame_helper.cc`, `printing/metafile_skia.cc`; but layout puts baselines at
+  whole pixels (with a 21.90625 px line the baselines step 22, 22, 21, 22 px), so a baseline in the print is a whole
+  pixel even where the line height is not.
 
 ## Where Chromium is not exact
 
@@ -184,6 +188,7 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `fr-pad-*`, `fr-border-*` | bottom padding and borders that do not fit below a box's content (page areas 60, 54, 44, 96 and 818.25 pt; `figure.png` is a 7 × 10 px picture): the box breaks before them and they start the next page; lower on a page the box moves whole; a box with a breakpoint inside breaks there whatever its appeal; a box that continues moves only its border | `BottomPaddingTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `fr-keep-*` | keep rules next to content that continues from the page before (page areas 45 and 90 pt): they never reach back into a continued paragraph or box; inside a box at a page end the paragraph before the keep is split | `BottomPaddingTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `fr-f4-*` … `fr-f9-*` | where tables break (page area 276 × 150 pt, 18 pt lines, 0.75 pt lines split at breaks; the documents of review 40's tables sub-review): a row moves whole when a cell's lines fit and only its bottom padding or grid line does not (at the top of a page Chromium leaves the first page blank, the engine cuts: listed); a keep rule never reaches into a continued table; inside a kept row group the rows break between them; a kept row keeps the rows its spanning cell reaches into; a spanning cell fills the page; a box or a cell keeps the break it chose against orphans | `TableBreakReferenceTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `fr-empty-span*`, `fr-lh-*` | line boxes (page width 300 pt, Lato): an inline box without a glyph on the line (an empty span, a span whose space collapses at the line end) counts for the line height; two font sizes on a line under a 15 pt line height (Chromium 1 page, the engine 2: a listed difference); the first baseline under `line-height: 1.5` at 10 pt (the engine 0.87 pt lower: listed) | `LineBoxReferenceTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `mf4-line-*` | 3 pt lines (4 px, not snapped), Lato 12 pt, no padding; the page area ends at the centre of row 8's bottom line plus 0, 0.75, 1.5 or 2.25 pt | `TableBreakLineTests.A_row_that_fits_down_to_its_bottom_line_s_centre_stays_and_the_line_is_split_like_Chromium` |
 
 What the `mf4-line-*` cases show, read from `words.txt` and `lines.txt`: in all four, rows 1–8 are

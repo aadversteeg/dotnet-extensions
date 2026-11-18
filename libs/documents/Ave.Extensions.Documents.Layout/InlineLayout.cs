@@ -147,6 +147,7 @@ public static class InlineLayout
         }
 
         var lines = broken.Value;
+        var empty = LineBoxes.EmptyRunsByLine(lines, runs);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)
@@ -156,7 +157,7 @@ public static class InlineLayout
                 return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index), target.Appeal);
             }
 
-            var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut);
+            var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, empty[index]);
             if (!Fitting.Fits(bottom + line.Size.Height, contentHeight))
             {
                 if (placed.Count == 0)

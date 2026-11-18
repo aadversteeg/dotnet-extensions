@@ -64,8 +64,10 @@ internal static class LineBoxes
     /// <param name="align">The paragraph's text-align.</param>
     /// <param name="isLastLine">True for the paragraph's last line, which is never justified.</param>
     /// <param name="strut">The paragraph's strut, or null when the model gives the paragraph no text properties.</param>
+    /// <param name="empty">The paragraph's runs that put no glyph on any line and lie on this one (<see cref="EmptyRunsByLine"/>):
+    /// their inline boxes count for the line's height all the same.</param>
     /// <returns>The line fragment with its text fragments.</returns>
-    public static LineFragment Build(TextLine broken, IReadOnlyList<ShapedRun> runs, double width, TextAlign align, bool isLastLine, Strut? strut)
+    public static LineFragment Build(TextLine broken, IReadOnlyList<ShapedRun> runs, double width, TextAlign align, bool isLastLine, Strut? strut, IReadOnlyList<ShapedRun>? empty = null)
     {
         var (line, offset) = LineJustification.Place(broken, width, align, isLastLine);
         var pieces = line.Segments
@@ -73,6 +75,7 @@ internal static class LineBoxes
             .Select(piece => (piece.Segment, piece.Run, Extent: InlineExtent.Of(piece.Run.Font, piece.Run.Run.Style.FontSize.Points, piece.Run.Run.Style.LineHeight)))
             .ToImmutableArray();
         ImmutableArray<InlineExtent> extents = [.. pieces.Select(piece => piece.Extent),
+            .. (empty ?? []).Select(run => InlineExtent.Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight)),
             .. strut is { } own ? [InlineExtent.Of(own.Font, own.Style.FontSize.Points, own.Style.LineHeight)] : Array.Empty<InlineExtent>()];
 
         var above = extents.Max(extent => extent.Above);
@@ -90,5 +93,44 @@ internal static class LineBoxes
         }
 
         return new LineFragment(new Size(x, above + below), children.MoveToImmutable());
+    }
+
+    /// <summary>
+    /// The runs that put no glyph on any line (an empty span, a span whose only space collapses at a line edge), each with
+    /// the line it lies on: the line of the last run before it that has glyphs, or the first line. "Empty inline elements
+    /// generate empty inline boxes, but these boxes still have margins, padding, borders and a line height, and thus
+    /// influence the line box height calculation just like elements with content" (CSS 2.1 §10.8), as Chromium counts
+    /// them (case <c>fr-empty-span</c>).
+    /// </summary>
+    /// <param name="lines">The paragraph's lines.</param>
+    /// <param name="runs">The paragraph's runs.</param>
+    /// <returns>Per line, the runs without glyphs that lie on it.</returns>
+    public static IReadOnlyList<IReadOnlyList<ShapedRun>> EmptyRunsByLine(IReadOnlyList<TextLine> lines, IReadOnlyList<ShapedRun> runs)
+    {
+        // One pass over the segments and one over the runs: linear in the paragraph.
+        var lastLineOf = new int?[runs.Count];
+        for (var line = 0; line < lines.Count; line++)
+        {
+            foreach (var segment in lines[line].Segments)
+            {
+                lastLineOf[segment.Run] = line;
+            }
+        }
+
+        var byLine = Enumerable.Range(0, lines.Count).Select(_ => new List<ShapedRun>()).ToList();
+        var current = 0;
+        for (var run = 0; run < runs.Count && lines.Count > 0; run++)
+        {
+            if (lastLineOf[run] is { } line)
+            {
+                // A run on several lines: an empty run after it lies on its last line.
+                current = line;
+                continue;
+            }
+
+            byLine[current].Add(runs[run]);
+        }
+
+        return byLine;
     }
 }
