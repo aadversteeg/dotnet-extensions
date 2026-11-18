@@ -68,6 +68,40 @@ public static class TextModifiers
     public static T Color<T>(this T element, Color color) where T : IFormatted<T> =>
         element.WithText(element.Format.Text with { Color = color });
 
+    /// <summary>Sets the line height as a multiple of the font size (CSS <c>line-height: &lt;number&gt;</c>, inherited
+    /// as the number: a descendant with another font size gets its own multiple). On a paragraph it is also the height of
+    /// its strut, so no line is lower (CSS 2.1 §10.8.1).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="factor">The multiple, for example 1.5; not negative.</param>
+    /// <returns>A copy with the line height set.</returns>
+    public static T LineHeight<T>(this T element, double factor) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { LineHeight = new LineHeightValue.Number(factor) });
+
+    /// <summary>Sets the line height as a length (CSS <c>line-height: &lt;length&gt;</c>, inherited as the length).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="height">The line height, for example <c>14.Pt()</c>; not negative.</param>
+    /// <returns>A copy with the line height set.</returns>
+    public static T LineHeight<T>(this T element, Length height) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { LineHeight = new LineHeightValue.Fixed(height) });
+
+    /// <summary>Sets the line height as a percentage of the element's own font size (CSS <c>line-height:
+    /// &lt;percentage&gt;</c>), which computes to a length and is inherited as that length.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="percent">The percentage, for example 120; not negative.</param>
+    /// <returns>A copy with the line height set.</returns>
+    public static T LineHeightPercent<T>(this T element, double percent) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { LineHeight = new LineHeightValue.Percentage(percent) });
+
+    /// <summary>Sets the line height back to <c>normal</c>, the font's own line spacing (the initial value).</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <returns>A copy with the line height set.</returns>
+    public static T LineHeightNormal<T>(this T element) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { LineHeight = LineHeightValue.Normal.Instance });
+
     private static T WithText<T>(this T element, TextFormat text) where T : IFormatted<T> =>
         element.WithFormat(element.Format with { Text = text });
 }

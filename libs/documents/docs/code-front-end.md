@@ -154,10 +154,12 @@ properties give the same element in any order, and setting the same property twi
 | `.BorderTop/Right/Bottom/Left(Length, Color)` | elements with a box, `Style` | `border-top` … |
 | `.KeepTogether()` | elements with a box, rows, row groups | `break-inside: avoid` |
 | `.KeepWithNext()`, `.KeepWithPrevious()` | elements with a box, rows | `break-after: avoid`, `break-before: avoid` |
+| `.LineHeight(double)`, `.LineHeight(Length)`, `.LineHeightPercent(double)`, `.LineHeightNormal()` | every element and `Style` | `line-height` (inherited, initial `normal`): a number (a multiple of the font size, inherited as the number), a length, a percentage of the element's font size (inherited as the length), or the font's own spacing; on a paragraph also the height of its strut, so no line is lower |
+| `.Orphans(int)`, `.Widows(int)` | blocks, paragraphs, `Style` | `orphans`, `widows` (inherited, initial 2, at least 1): the fewest lines of a paragraph a page keeps before a break inside it, and after it |
 | `.GridLines(Length, Color)` | tables | a border on every cell that sets none (one shared line between cells) |
 | `.CellPadding(Length)`, `.CellPadding(vertical, horizontal)` | tables | padding of every cell that sets none |
 | `.RepeatLinesAtBreaks()` (the default) | tables | at a page break between rows the page ends with the whole grid line and the next page starts with it again; a row that is cut inside itself ends the page with the whole line below it and goes on under the whole line above it, so the table is closed on both pages, as word processors print tables; modelled on `box-decoration-break: clone` |
-| `.SplitLinesAtBreaks()` | tables | at a page break between rows the grid line is split along its centre, half on each page; a row cut inside itself gets no line at the cut; as browsers print tables (`box-decoration-break: slice`) |
+| `.SplitLinesAtBreaks()` | tables | at a page break between rows the grid line is split along its centre, half on each page; a row cut inside itself gets no line at the cut (`box-decoration-break: slice`). Chromium splits a line of several pixels the same way; a one-pixel line it draws whole on both pages, so its next page starts 0.375 pt lower |
 | `.ColumnSpan(n)`, `.RowSpan(n)` | cells | `colspan`, `rowspan` |
 | `.VerticalAlign(VerticalAlign)` | cells, rows of blocks | `vertical-align`: `Top` (default), `Middle`, `Bottom` |
 | `.Columns(sizes…)` | rows of blocks | one size per item |
@@ -175,7 +177,7 @@ an image size or a header or footer height above it is reported with that proper
 Precedence is a fixed rule, never the order of the calls:
 
 1. an element's own modifier values win over its style (`.With`), which wins over what the parent passes down
-   (the text properties and `TextAlign` are inherited, like in CSS);
+   (the text properties, `LineHeight`, `TextAlign`, `Orphans` and `Widows` are inherited, like in CSS);
 2. within one of those, a single side (`MarginTop`) wins over the all-sides value (`Margin`).
 
 Text properties are inherited by children; box properties (margins, padding, background) are not. Adjoining
@@ -217,6 +219,29 @@ groups move to the next page whole when they fit on one, and break anyway when t
 
 The page count is known only after layout, so layout runs again until the count it shows is the count it produces,
 at most five times; otherwise the error is `Documents.Layout.NotConverging` at the `PageCount()` call.
+
+## Layout policies
+
+Where layout has a choice, the document says which one it takes (`Document.Profile`, a `LayoutProfile` of the
+document model). Each policy has a document modifier; the defaults suit reports, the other values follow how a
+browser (Chromium) prints, with the differences listed in `docs/architecture.md` (Known limits):
+
+| Modifier | Default | Other value |
+| --- | --- | --- |
+| `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next page-area height of it; what follows starts below its end; in tagged PDF every slice of an image is content of its figure and the later slices of a line are artifacts, so text and alternative text are read once; a piece is cut into at most 100 slices, a taller one is the error `Documents.Layout.TooManySlices` |
+| `.FontMetricRounding(…)`: a font's ascent, descent and line gap | `Exact`: as the font gives them, scaled to the size | `WholePixels`: each rounded to a whole CSS pixel (0.75 pt), as Chromium does, so a `normal` line is a whole number of pixels (Lato 12 pt: 14.25 pt instead of 14.4) |
+| `.EmptyRowParts(…)`: a table row whose part on a page would show nothing | `Avoid`: the row moves to the next page whole where that avoids the empty strip | `Allow`: the row is cut wherever its cells can break |
+
+```csharp
+var poster = Document([Image(photo).Alt("The team").Width(18.Cm())], PageSetup.A4.Margin(2.Cm()), title: "Poster", language: "en")
+    .FontFamily("Lato")
+    .MonolithicOverflow(MonolithicOverflow.Slice);
+```
+
+Content in a table cell is sliced the same way when its row starts the page, also right below a repeated header row;
+the row after it starts below the last slice (Chromium does so in some table shapes and draws that row over the slice
+in others), and the other cells of its row go on beside the slices. Padding and borders taller than a page are
+refused under either value.
 
 ## PDF/A, PDF/UA and attachments
 

@@ -34,4 +34,9 @@ internal sealed record GlyphItem(
     /// <summary>True for a mandatory line break (UAX #14 classes BK, CR, LF, NL): it ends the line, draws nothing, and
     /// ends the shaping run it is in.</summary>
     public bool IsLineBreak { get; init; }
+
+    /// <summary>True when a lookup joined this glyph to a glyph before it — a kerning pair, a mark on its base — so text
+    /// broken before this glyph's cluster shapes differently: both sides must be shaped again (HarfBuzz's
+    /// <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>, <see cref="ShapedGlyph.UnsafeToBreak"/>).</summary>
+    public bool UnsafeToBreak { get; init; }
 }

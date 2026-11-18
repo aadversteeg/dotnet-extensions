@@ -13,7 +13,9 @@
 // "page xMin yMin xMax yMax word", points, origin top left, as pdftotext reports them), <case>.boxes.txt (width and
 // height in points of every table cell, every element with an id and every grid item, laid out with print media;
 // widths of a box do not depend on pagination), <case>.lines.txt (one line per filled rectangle, such as a piece of a
-// grid line: "page x0 y0 x1 y1 height", points, origin top left) and versions.txt.
+// grid line: "page x0 y0 x1 y1 height", points, origin top left), <case>.print.txt (the print's pages, words with their
+// baselines, filled rectangles and images, read from the PDF by positions.py: README.md, "Print positions") and
+// versions.txt.
 // The engine's tests pin numbers measured this way; see README.md for which test uses which case.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';

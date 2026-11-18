@@ -19,6 +19,7 @@ internal static class SampleFiles
     [
         ("sample-a-letter", SampleDocuments.Letter()),
         ("sample-b-long", SampleDocuments.LongText()),
+        ("sample-c-sliced", SampleDocuments.Sliced(Brand.Logo)),
         .. new[] { "normal", "long", "edge" }.SelectMany(dataSet => new[] { "nl-NL", "en-US" }
             .Select(culture => ($"timesheet-{dataSet}.{culture[..2]}", Timesheet(dataSet, culture)))),
     ];

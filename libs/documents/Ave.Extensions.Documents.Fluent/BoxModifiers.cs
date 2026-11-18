@@ -119,6 +119,26 @@ public static class BoxModifiers
     public static T TextAlign<T>(this T element, TextAlign align) where T : IBoxFormatted<T> =>
         element.WithFormat(element.Format with { Text = element.Format.Text with { TextAlign = align } });
 
+    /// <summary>Sets the fewest lines of a paragraph a page may hold before a break inside it (CSS <c>orphans</c>,
+    /// CSS Fragmentation 3 §3.3; inherited, like <c>TextAlign</c>). The initial value is 2, as in CSS. A page break that
+    /// leaves fewer is taken only when no better one exists; a paragraph with fewer lines than orphans and widows
+    /// together then moves to the next page whole.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The block, paragraph or style.</param>
+    /// <param name="lines">The number of lines, at least 1.</param>
+    /// <returns>A copy with orphans set.</returns>
+    public static T Orphans<T>(this T element, int lines) where T : IBoxFormatted<T> =>
+        element.WithFormat(element.Format with { Text = element.Format.Text with { Orphans = lines } });
+
+    /// <summary>Sets the fewest lines of a paragraph a page may hold after a break inside it (CSS <c>widows</c>, CSS
+    /// Fragmentation 3 §3.3; inherited). The initial value is 2, as in CSS.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The block, paragraph or style.</param>
+    /// <param name="lines">The number of lines, at least 1.</param>
+    /// <returns>A copy with widows set.</returns>
+    public static T Widows<T>(this T element, int lines) where T : IBoxFormatted<T> =>
+        element.WithFormat(element.Format with { Text = element.Format.Text with { Widows = lines } });
+
     /// <summary>Sets a solid border on all four sides (CSS <c>border</c>). A side set with <see cref="BorderTop{T}"/>
     /// and the like wins over it.</summary>
     /// <typeparam name="T">The element or style type.</typeparam>

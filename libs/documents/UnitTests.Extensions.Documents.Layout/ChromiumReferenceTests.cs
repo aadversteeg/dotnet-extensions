@@ -184,6 +184,20 @@ public class ChromiumReferenceTests
     }
 
     [Fact]
+    public void The_long_table_puts_Chromium_s_words_on_Chromium_s_pages()
+    {
+        // The same case read back from Chromium's PDF (measured/b1-repeat.print.txt) and from the engine's page model in
+        // one form (PrintedPages): every word of every page, in reading order, is the same. Compared exactly.
+        var t = new TableModels();
+        var document = PrintCase(t, t.Body([.. Enumerable.Range(1, 20).Select(i => t.Row(t.Cell($"r{i:00}"), t.Cell($"cell {i}")))]));
+
+        var engine = DocumentLayout.Run(document, TestFonts.Set);
+
+        engine.IsSuccess.Should().BeTrue(engine.IsFailure ? engine.Error.ToString() : string.Empty);
+        PrintedPages.Engine(engine.Value).PageTexts.Should().Equal(PrintedPages.Chromium("b1-repeat").PageTexts);
+    }
+
+    [Fact]
     public void A_row_taller_than_the_space_left_breaks_inside_its_cells_like_Chromium()
     {
         // Chromium print: r05's second cell holds 25 lines (separated by <br>; here 25 paragraphs). Page 1:

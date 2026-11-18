@@ -20,13 +20,24 @@ namespace Ave.Extensions.Documents.PageModel;
 public static class PageModelRules
 {
     /// <summary>
+    /// The most clips open one inside the other on a page, for every back-end: 27. The PDF back-end writes every clip as
+    /// one <c>q</c> of its content stream, and every drawing inside it adds one more <c>q</c> of its own (a rectangle, an
+    /// image and a glyph run each draw inside one <c>q</c>…<c>Q</c>, never deeper), so 27 clips make 28 levels of
+    /// <c>q</c>: the most ISO 32000-1 Annex C (Table C.1, "q/Q nesting depth") names as a limit of every PDF reader, and
+    /// what ISO 19005-3 §6.1.13 allows a PDF/A file ("shall not nest q/Q pairs by more than 28 nesting levels"), in every
+    /// profile. The raster back-end has no such limit of its own; it takes the PDF one, so that both back-ends accept the
+    /// same page models. The layout never opens more than one clip.
+    /// </summary>
+    public const int MaxClipDepth = 27;
+
+    /// <summary>
     /// Checks the page model and reports every breach together, under the code the back-end passes
     /// (<c>Documents.Pdf.Write.InvalidPageModel</c>, <c>Documents.Raster.InvalidPageModel</c>):
     /// <list type="bullet">
     /// <item>metadata and at least one page: a document without a page has nothing to show; every
     /// page of positive width and height;</item>
     /// <item>every number is a number PDF can hold: finite and within ±<see cref="MaxNumber"/> (page sizes, font sizes,
-    /// positions and sizes of glyph runs, glyphs, filled rectangles and images);</item>
+    /// positions and sizes of glyph runs, glyphs, filled rectangles, images and clips);</item>
     /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
     /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
@@ -36,6 +47,8 @@ public static class PageModelRules
     /// <item>a table cell spans at least one column and one row, and no more than the table model allows
     /// (<see cref="TableSlots.MaxColumnSpan"/>, <see cref="TableSlots.MaxRowSpan"/>), so no grid is ever sized by one
     /// number;</item>
+    /// <item>the markers of every page nest by THE NESTING RULE FOR MARKERS (<see cref="DrawItem"/>,
+    /// <see cref="MarkerNesting"/>), with at most <see cref="MaxClipDepth"/> clips one inside the other;</item>
     /// <item>the structure nests as tagged PDF's table elements do (<see cref="StructureNesting"/>), and one node keeps
     /// one role on every page;</item>
     /// <item>every attachment has a file name, a media type and content, and no two share a file name: the embedded-files
@@ -65,7 +78,7 @@ public static class PageModelRules
     {
         var problems = page is null
             ? [Invalid(code, "There is no page.", "null")]
-            : SizeProblems(page, 1, code).Concat(ItemProblems(page, 1, code)).Concat(StructureNesting.Problems(page, 1, code)).ToList();
+            : SizeProblems(page, 1, code).Concat(ItemProblems(page, 1, code)).Concat(MarkerNesting.Problems(page, 1, code)).Concat(StructureNesting.Problems(page, 1, code)).ToList();
         return problems.Count == 0
             ? Result<Page, Error>.Success(page!)
             : Result<Page, Error>.Failure(Errors.Aggregate(problems));
@@ -95,7 +108,7 @@ public static class PageModelRules
             var page = document.Pages[index];
             var problems = page is null
                 ? [Invalid(code, $"Page {index + 1} is missing.", Number(index + 1))]
-                : SizeProblems(page, index + 1, code).Concat(ItemProblems(page, index + 1, code)).Concat(StructureNesting.Problems(page, index + 1, code)).Concat(RoleProblems(page, index + 1, roles, code));
+                : SizeProblems(page, index + 1, code).Concat(ItemProblems(page, index + 1, code)).Concat(MarkerNesting.Problems(page, index + 1, code)).Concat(StructureNesting.Problems(page, index + 1, code)).Concat(RoleProblems(page, index + 1, roles, code));
             foreach (var problem in problems)
             {
                 yield return problem;
@@ -157,6 +170,7 @@ public static class PageModelRules
             Invalid(code, $"A glyph run on page {number} has a position that is not a number within ±{Number(MaxNumber)}.", $"{run.Origin}"),
         FillRectangle fill when !InRange(fill.Area) => Invalid(code, $"A filled rectangle on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{fill.Area}"),
         DrawImage image when !InRange(image.Area) => Invalid(code, $"An image on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{image.Area}"),
+        ClipStart clip when !InRange(clip.Area) => Invalid(code, $"A clip on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{clip.Area}"),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
             Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
         _ => null,
@@ -225,6 +239,93 @@ public static class PageModelRules
     /// <returns>The error.</returns>
     internal static Error Invalid(ErrorCode code, string message, string value) =>
         new Error(code, message).With(ErrorMetadataKeys.Value, value);
+}
+
+/// <summary>
+/// THE NESTING RULE FOR MARKERS of the page model (<see cref="DrawItem"/>), checked once for every back-end: one stack of
+/// open structure, artifact and clip markers per page, where every end closes the innermost open marker, which must be a
+/// start of its kind (for a structure end, of its node); nothing is left open at the end of the page; no artifact or
+/// structure marker opens inside an artifact; at most <see cref="PageModelRules.MaxClipDepth"/> clips are open at once.
+/// The PDF back-end keeps its graphics-state and marked-content pairs inside each other by this rule; the raster
+/// back-end opens and closes its clips by it.
+/// </summary>
+internal static class MarkerNesting
+{
+    /// <summary>The first breach of the rule on the page, or none.</summary>
+    /// <param name="page">The page.</param>
+    /// <param name="number">Its page number.</param>
+    /// <param name="code">The back-end's error code.</param>
+    /// <returns>The breach, if any: after the first one the rest of the page cannot be read by the rule.</returns>
+    public static IEnumerable<Error> Problems(Page page, int number, ErrorCode code)
+    {
+        var open = new Stack<DrawItem>();
+        var inArtifact = false;
+        var clips = 0;
+        foreach (var item in page.Items)
+        {
+            string? problem = item switch
+            {
+                StructureStart or StructureEnd or ArtifactStart when inArtifact =>
+                    item is ArtifactStart ? "an artifact inside an artifact" : "a structure marker inside an artifact",
+                ClipStart when clips >= PageModelRules.MaxClipDepth => $"more than {PageModelRules.MaxClipDepth} clips open one inside the other",
+                StructureEnd or ArtifactEnd or ClipEnd => EndProblem(item, open.Count > 0 ? open.Peek() : null),
+                _ => null,
+            };
+            if (problem is not null)
+            {
+                yield return Invalid(code, number, problem, (item as StructureEnd)?.Node);
+                yield break;
+            }
+
+            switch (item)
+            {
+                case StructureStart or ArtifactStart or ClipStart:
+                    open.Push(item);
+                    inArtifact |= item is ArtifactStart;
+                    clips += item is ClipStart ? 1 : 0;
+                    break;
+                case StructureEnd or ArtifactEnd or ClipEnd:
+                    open.Pop();
+                    inArtifact &= item is not ArtifactEnd;
+                    clips -= item is ClipEnd ? 1 : 0;
+                    break;
+            }
+        }
+
+        if (open.Count > 0)
+        {
+            yield return open.Peek() switch
+            {
+                StructureStart start => Invalid(code, number, $"{start.Node} without its end", start.Node),
+                ArtifactStart => Invalid(code, number, "an artifact without its end"),
+                _ => Invalid(code, number, "a clip without its end"),
+            };
+        }
+    }
+
+    /// <summary>Why an end marker does not close the innermost open marker, or null when it does.</summary>
+    private static string? EndProblem(DrawItem end, DrawItem? innermost) => (end, innermost) switch
+    {
+        (StructureEnd closing, StructureStart start) when start.Node == closing.Node => null,
+        (ArtifactEnd, ArtifactStart) or (ClipEnd, ClipStart) => null,
+        (StructureEnd closing, _) => $"the end of {closing.Node} without its start" + Inside(innermost),
+        (ArtifactEnd, _) => "the end of an artifact without its start" + Inside(innermost),
+        _ => "the end of a clip without its start" + Inside(innermost),
+    };
+
+    private static string Inside(DrawItem? innermost) => innermost switch
+    {
+        null => string.Empty,
+        StructureStart start => $" (inside {start.Node})",
+        ArtifactStart => " (inside an artifact)",
+        _ => " (inside a clip)",
+    };
+
+    private static Error Invalid(ErrorCode code, int page, string problem, NodeId? node = null)
+    {
+        var error = PageModelRules.Invalid(code, $"Page {page} has {problem}.", page.ToString(CultureInfo.InvariantCulture));
+        return node is { } id ? error.With(ErrorMetadataKeys.Node, id.ToString()) : error;
+    }
 }
 
 /// <summary>

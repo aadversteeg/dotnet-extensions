@@ -1,9 +1,7 @@
-using System.Collections.Generic;
+using System;
 using System.Collections.Immutable;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.PageModel;
-using Ave.Extensions.ErrorPaths;
-using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 
@@ -31,35 +29,41 @@ internal sealed record StructureClosed : PageEvent
     public static StructureClosed Instance { get; } = new();
 }
 
-/// <summary>Consecutive content items with the same owner.</summary>
+/// <summary>Consecutive content items with the same owner, under the same clips.</summary>
 /// <param name="Items">The items, in painting order (glyph runs, rectangles, images; never markers).</param>
 /// <param name="Artifact">The artifact the items belong to, or null when they are content of the innermost open
 /// structure node (or of nothing, when no node is open).</param>
-internal sealed record ContentRun(ImmutableArray<DrawItem> Items, ArtifactKind? Artifact) : PageEvent;
+internal sealed record ContentRun(ImmutableArray<DrawItem> Items, ArtifactKind? Artifact) : PageEvent
+{
+    /// <summary>The clips open around the items (<see cref="ClipStart"/>), outermost first; empty when none is.</summary>
+    public ImmutableArray<Rect> Clips { get; init; } = [];
+}
 
-/// <summary>Reads pages into <see cref="PageEvent"/>s and checks that their markers nest.</summary>
+/// <summary>Reads pages into <see cref="PageEvent"/>s.</summary>
 internal static class PageEvents
 {
     /// <summary>
-    /// Reads one page. The markers must follow the page model's rules (<see cref="StructureStart"/>,
-    /// <see cref="ArtifactStart"/>): structure markers nest and every start ends on the same page; artifacts do not
-    /// nest and hold no structure markers. A page model from the painter always does; a hand-made one may not.
+    /// Reads one page whose markers nest by THE NESTING RULE FOR MARKERS of the page model (<see cref="DrawItem"/>),
+    /// which <c>PageModelRules</c> checked before (<c>MarkerNesting</c>, for every back-end). Clips are not events of
+    /// their own: each content run carries the clips open around it, so the structure is built as if there were none,
+    /// and the content stream opens and closes them between runs.
     /// </summary>
-    /// <param name="page">The page.</param>
-    /// <param name="number">Its page number, for the error message.</param>
-    /// <returns>The events, or <c>Documents.Pdf.Write.InvalidStructure</c>.</returns>
-    public static Result<ImmutableArray<PageEvent>, Error> Read(Page page, int number)
+    /// <param name="page">The page, checked.</param>
+    /// <returns>The events.</returns>
+    /// <exception cref="InvalidOperationException">The page's markers do not nest: the page was not checked.</exception>
+    public static ImmutableArray<PageEvent> Read(Page page)
     {
         var events = ImmutableArray.CreateBuilder<PageEvent>();
         var content = ImmutableArray.CreateBuilder<DrawItem>();
-        var open = new Stack<NodeId>();
+        var depth = 0;
         ArtifactKind? artifact = null;
+        var clips = ImmutableArray<Rect>.Empty;
 
         void Flush()
         {
             if (content.Count > 0)
             {
-                events.Add(new ContentRun(content.ToImmutable(), artifact));
+                events.Add(new ContentRun(content.ToImmutable(), artifact) { Clips = clips });
                 content.Clear();
             }
         }
@@ -68,40 +72,35 @@ internal static class PageEvents
         {
             switch (item)
             {
-                case StructureStart or StructureEnd when artifact is not null:
-                    return Invalid(number, "a structure marker inside an artifact");
-                case StructureStart start:
+                case StructureStart or ArtifactStart or ClipStart:
                     Flush();
-                    open.Push(start.Node);
-                    events.Add(new StructureOpened(start));
-                    break;
-                case StructureEnd end:
-                    if (open.Count == 0 || open.Peek() != end.Node)
+                    depth++;
+                    (artifact, clips) = item switch
                     {
-                        return Invalid(number, $"the end of {end.Node} without its start", end.Node);
+                        ArtifactStart start => (start.Kind, clips),
+                        ClipStart clip => (artifact, clips.Add(clip.Area)),
+                        _ => (artifact, clips),
+                    };
+                    if (item is StructureStart opened)
+                    {
+                        events.Add(new StructureOpened(opened));
                     }
 
-                    Flush();
-                    open.Pop();
-                    events.Add(StructureClosed.Instance);
                     break;
-                case ArtifactStart start:
-                    if (artifact is not null)
+                case StructureEnd or ArtifactEnd or ClipEnd:
+                    Flush();
+                    depth = depth > 0 ? depth - 1 : throw Unchecked();
+                    (artifact, clips) = item switch
                     {
-                        return Invalid(number, "an artifact inside an artifact");
+                        ArtifactEnd => (null, clips),
+                        ClipEnd => (artifact, clips.Length > 0 ? clips.RemoveAt(clips.Length - 1) : throw Unchecked()),
+                        _ => (artifact, clips),
+                    };
+                    if (item is StructureEnd)
+                    {
+                        events.Add(StructureClosed.Instance);
                     }
 
-                    Flush();
-                    artifact = start.Kind;
-                    break;
-                case ArtifactEnd:
-                    if (artifact is null)
-                    {
-                        return Invalid(number, "the end of an artifact without its start");
-                    }
-
-                    Flush();
-                    artifact = null;
                     break;
                 default:
                     content.Add(item);
@@ -110,15 +109,9 @@ internal static class PageEvents
         }
 
         Flush();
-        return open.Count > 0 ? Invalid(number, $"{open.Peek()} without its end", open.Peek())
-            : artifact is not null ? Invalid(number, "an artifact without its end")
-            : Result<ImmutableArray<PageEvent>, Error>.Success(events.ToImmutable());
+        return depth == 0 ? events.ToImmutable() : throw Unchecked();
     }
 
-    private static Result<ImmutableArray<PageEvent>, Error> Invalid(int page, string problem, NodeId? node = null)
-    {
-        var error = new Error(PdfRenderErrorCodes.Write.InvalidStructure, $"Page {page} has {problem}.")
-            .With(ErrorMetadataKeys.Value, page.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        return Result<ImmutableArray<PageEvent>, Error>.Failure(node is { } id ? error.With(ErrorMetadataKeys.Node, id.ToString()) : error);
-    }
+    private static InvalidOperationException Unchecked() =>
+        new("The page's markers do not nest; PageModelRules checks them before the PDF back-end reads them.");
 }

@@ -43,10 +43,45 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   laid out for print (1 CSS px = 0.75 pt);
 - `<case>.lines.txt`: every filled rectangle as `page x0 y0 x1 y1 height`, in points, origin top left
   (`rectangles.py`, PyMuPDF): the pieces of the grid lines;
+- `<case>.print.txt`: where the print put things, page by page, read from the PDF alone (`positions.py`, PyMuPDF; see
+  "Print positions" below);
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
 `out/*.txt` over it after a deliberate re-measurement.
+
+## Print positions
+
+For rules about pages (where a page starts, where it breaks, what moves to the next page) the reference is Chromium's
+print itself, not a measurement on the screen. `positions.py` reads every case's PDF back and writes `<case>.print.txt`,
+one line per item, in points, origin at the top left of the page (y down), three decimals:
+
+```
+page <page> <width> <height>
+word <page> <x0> <x1> <baseline> <font size> <text>
+rect <page> <x0> <y0> <x1> <y1>
+image <page> <x0> <y0> <x1> <y1>
+```
+
+A word is a run of characters without white space on one baseline. Its extent is its advances (from the origin of its
+first character to the origin of its last plus that character's advance), and its height is its baseline, so neither
+depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. `rect` is a filled rectangle
+(a background, a border, a grid line, or a marker box a case draws on purpose to show where a box is); `image` is the
+area an image is drawn into, which reaches past the page when the page shows only a slice of it.
+
+The tests read these files through `PrintedPages` in the test-support project, which gives the engine's page model the
+same form (`PrintedPages.Engine`), so a test compares the two page by page: the words of each page exactly, positions
+with the comparison rule below. The harness takes any HTML with an `@page` rule, so whole documents can be measured
+the same way as the small cases.
+
+Chromium snaps more than layout units when it prints, which a case must allow for:
+
+- the page margins and the page size become whole CSS pixels (a 10 pt margin prints as 13 px = 9.75 pt), so the cases
+  that pin page breaks use sizes that are whole pixels (multiples of 0.75 pt; 12 pt margins, page areas of 150 or 180 pt);
+- with `line-height: normal` the line height is the font's ascent and descent each rounded to whole pixels: Lato at 12 pt
+  (16 px) is 16 + 3 = 19 px (14.25 pt) where the font's own values give 19.2 px (14.4 pt). The cases that pin page breaks
+  keep every decision clear of that difference, and their tests compare which words are on which page exactly and
+  positions only where the difference does not enter.
 
 ## The reference
 
@@ -137,11 +172,25 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `widths-exact` | at 10.5 pt: auto columns (`t1`), a fixed and two auto columns (`t2`), grid `fr` columns (`w3`, `w4`, their items): `boxes.txt` | `ChromiumReferenceTests`: the three width tests |
 | `widths` | the same tables at 10 pt, a size Chromium rounds | `ChromiumReferenceTests.At_a_font_size_Chromium_rounds_its_text_is_the_font_s_advances_scaled_by_the_documented_factor` |
 | `font-sizes` | 10 and 100 times "n" at 9, 10, 10.5, 11 and 12 pt: where Chromium's text width is exact (see above) | none; the numbers are in this README |
-| `b1-repeat` | a long table breaks between rows and repeats its header row | `A_long_table_breaks_between_rows_and_repeats_its_header_like_Chromium` |
+| `b1-repeat` | a long table breaks between rows and repeats its header row | `A_long_table_breaks_between_rows_and_repeats_its_header_like_Chromium`; through the print read-back (`print.txt`): `The_long_table_puts_Chromium_s_words_on_Chromium_s_pages` |
 | `b2-split-row` | a row taller than the space left breaks inside its cells | `A_row_taller_than_the_space_left_breaks_inside_its_cells_like_Chromium` |
 | `b3-keep-group` | a row group with `break-inside: avoid` moves to the next page whole | `A_row_group_kept_together_moves_to_the_next_page_whole_like_Chromium` |
 | `b4-row-span` | four labels, each over six one-line rows: the page breaks between the rows under a label, and the label continues | `Rows_under_a_label_that_spans_them_break_between_them_like_Chromium` |
 | `b5-row-span-kept-cell` | the same with `break-inside: avoid` on each label: every label moves to the next page with its rows | `Rows_under_a_label_kept_together_move_to_the_next_page_whole_like_Chromium` |
+| `a1-*` | where a page starts (page area 276 × 150 pt, whole pixels): content that does not fit below an empty block's margin, its own top margin, a margin taller than the page, the margin after a forced break, a box's top padding, moves to the next page, where the margins are truncated; a forced break after only margins has no effect; a first child whose margin collapses through its box breaks inside the box as a last resort | `PageStartTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `a2-*`, `a3-mirror` | cuts inside a table row where a part shows nothing (page area 276 × 180 pt): a blank stretch of a page's height between text (`a2-blank-part`, the engine prints the same pages), a row that shows nothing at all (`a2-padded-blocks`, `a2-line-breaks`), the rest of a row that would show nothing on the next page (`a3-mirror`); the last three are where Chromium leaves a part of a row that shows nothing, which the engine avoids by default and prints as Chromium does with `EmptyRowParts.Allow` (docs/architecture.md) | `RowPartTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `a2-padded-blocks-px`, `a3-mirror-px`, `a2-rowspan-blocks`, `a2-split-line-1px`, `a2-cells-end*` | the row-part cases with blocks of 9 pt (12 px), so every length is whole pixels and grid lines compare exactly; a cell over two rows beside 10 pt blocks (grid lines up to 0.5 pt from Chromium's); a break between rows at a one-pixel line (Chromium draws it whole on both pages); a row whose cells end on the page with only the half line below past its end (Chromium moves it whole), with and without a header row and with text | `RowPartTests` |
+| `a4-*` | monolithic content taller than the page area (page area 276 × 180 pt; `cases/tall.png`, a 4 × 16 pixel image shown 102 × 408 pt; Lato 200 pt, a 240 pt line): an image at the top of a page, an image and a line after a line of text (moved to a fresh page first), an image in a table cell (the row is cut after the cell's top line); Chromium slices each, clipped at the page area, and starts what follows below the last slice, except in the cell case, where the next row is drawn over it | `MonolithicSliceTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `a4-header-*`, `a4-intro-header-image-row`, `a4-two-image-rows`, `a4-row-image-row` | the same image or line in a table with a repeated header row (thead), after one row, after rows that fill a page or a row cut over two pages, after a paragraph, two images in a row, an image that fits before one that does not; and two shapes without a header. Fixed table layout, line height 15 pt, whole pixels. Chromium starts the first slice below the header on the page after one that showed no body row but slices, after a page with only the header otherwise; on later pages it moves the image a whole page area and leaves the header out or draws it over the image | `SliceUnderHeaderTests` |
+| `a4-image-beside-lines`, `a4-line-beside-lines`, `a4-image-nested-table`, `a4-image-rowspan`, `a4-image-single-cell` | the image or line beside 30 lines in the next cell, in a table inside a cell, in a cell that spans two rows, alone in a one-column table, each followed by a row | `SliceInTableTests` |
+| `a5-*` | keep rules (page area 276 × 180 pt): a cell kept together is not cut inside its own row while the row can move (and the same row without the keep is cut); a row kept together moves whole; a short kept cell beside a tall one moves the row, as a kept cell is counted by its box; kept content taller than a page moves to a fresh page first and breaks there | `KeepReferenceTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `a3-pad-*` | a block with 20 pt padding at the top of a page (and lower on it) whose content fits under the top padding but not with the bottom padding too: it breaks before what follows the piece (page area 276 × 180 pt) | `PaddedBlockBreakTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `b-*` | keep rules that reach back (page area 276 × 150 pt, `orphans` and `widows` 1): every break between the boxes at the page end violates a keep, so the page breaks between the lines of an earlier paragraph, inside an earlier block (also three blocks deep), or between the rows of an earlier table | `ReachBackTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `c-*` | `orphans` and `widows` (page area 276 × 150 pt, ten lines): a paragraph that would leave one line moves whole; one that would leave one line for the next page takes a second with it; a paragraph too short for both keeps its orphans (Chromium's rule); custom values; values of 1; a table row whose cell would leave one line moves; a row whose cell has no line on the page yet moves | `OrphansWidowsTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `d-*` | `line-height` (page area 276 × 150 pt, line heights of whole pixels): a length, a number, a percentage; a number inherits as the number, a percentage as its length; the paragraph's strut keeps 6 pt text with a 9 pt line height on 18 pt lines; with `normal` the strut is the paragraph's own font's spacing | `LineHeightTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `f-*` | Chromium's whole-pixel font metrics (page area 276 × 180 pt, 240 px; 40 lines each, so 1/64 px per line would show): Lato and Theano Didot at 9, 10, 11 and 13 pt with `line-height: normal` (ascent, descent and line gap rounded on both sides of half a pixel), three sizes and two fonts on one line (`f-mixed`), `1.3` at 11 pt and 13 pt (`f-number`, `f-number-theano`), 13.3 pt at 10 pt (`f-length`). Normal lines: every baseline is whole pixels from the page top, as rounding each metric and flooring the half-leading predicts; numbers and lengths: Chromium's line height is in 1/64 px and its baselines are painted at whole pixels | `FontMetricRoundingTests` (`UnitTests.Extensions.Documents.Fluent`; the Theano cases and `f-mixed` with the USE_TYPO_METRICS change of the layout backlog branch) |
+| `f-mixed-lato`, `f-tiny`, `f-tiny-038` | Lato 11 pt with a 13 pt word and a 9 pt bold word on every line (40 lines); fifty lines of Lato at 0.37 and 0.38 pt, then a 12 pt line: Chromium prints none of the tiny text and gives its lines no height | `FontMetricRoundingTests` |
+| `f-length-three`, `f-length-nine`, `f-letter-length`, `f-letter-percent`, `f-letter-number`, `f-length-15004`, `f-number-1501`, `f-length-floor` | line heights given as a length, a percentage or a number (20 pt on page areas of 60 and 180 pt; 14.4 pt, 120 % and 1.2 at 12 pt on US Letter with 36 pt margins; 15.004 pt and 1.501 at 10 pt; 14.245 pt at 11 pt): Chromium keeps them in 1/64 px, a length or a percentage rounded, a number times the font size floored | `ChromiumLineHeightTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `mf4-line-*` | 3 pt lines (4 px, not snapped), Lato 12 pt, no padding; the page area ends at the centre of row 8's bottom line plus 0, 0.75, 1.5 or 2.25 pt | `TableBreakLineTests.A_row_that_fits_down_to_its_bottom_line_s_centre_stays_and_the_line_is_split_like_Chromium` |
 
 What the `mf4-line-*` cases show, read from `words.txt` and `lines.txt`: in all four, rows 1–8 are

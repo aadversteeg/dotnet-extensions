@@ -169,7 +169,7 @@ Tools used outside the build, in `tools/verify-samples.ps1` and in the reference
 containers: veraPDF 1.30.4 (`verapdf/cli`, GPL-3.0-or-later / MPL-2.0), qpdf (Apache-2.0), poppler-utils (GPL-2.0),
 MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets), fontTools (MIT, the outline reference),
 libjpeg-turbo's cjpeg and djpeg (IJG, BSD-3-Clause and zlib licences; the JPEG reference). They are run, not linked or
-distributed. `tools/generate-test-images.py` uses Pillow to write the image test files, `tools/generate-test-jpegs.py`
+distributed. `tools/generate-test-images.py` uses Pillow to write the image test files (and writes `tools/reference/chromium/cases/tall.png` without it), `tools/generate-test-jpegs.py`
 cjpeg to write the JPEG test files (`UnitTests.Extensions.Documents.Images/Assets/jpeg-*.jpg`).
 
 ## Sample data

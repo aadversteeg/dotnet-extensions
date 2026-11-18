@@ -82,6 +82,10 @@ internal static class GlyphPositioning
 
             var adjustment = kerning.Adjustment(glyphs[index].Glyph, glyphs[next].Glyph);
             glyphs[index] = glyphs[index] with { XAdvance = glyphs[index].XAdvance + adjustment };
+            if (adjustment != 0)
+            {
+                UnsafeToBreak(glyphs, index, next);
+            }
         }
 
         return budget.Exceeded is null ? [.. glyphs] : null;
@@ -193,6 +197,7 @@ internal static class GlyphPositioning
 
         glyphs[index] = Adjusted(glyphs[index], values.First);
         glyphs[second] = Adjusted(glyphs[second], values.Second);
+        UnsafeToBreak(glyphs, index, second);
         return secondHasValues ? second + 1 : second;
     }
 
@@ -238,7 +243,23 @@ internal static class GlyphPositioning
         }
 
         glyphs[index] = glyphs[index] with { Attachment = new MarkAttachment(baseIndex, baseAnchor.X - mark.Anchor.X, baseAnchor.Y - mark.Anchor.Y) };
+        UnsafeToBreak(glyphs, baseIndex, index);
         return index + 1;
+    }
+
+    /// <summary>
+    /// Marks the glyphs after <paramref name="first"/> up to <paramref name="last"/> as unsafe to break before: a lookup
+    /// joined the two (a pair, a mark on its base), so a break between them changes how both sides are shaped. HarfBuzz
+    /// does the same for every lookup that matches more than one glyph (<c>unsafe_to_break</c> in hb-buffer.hh; the flag's
+    /// meaning: "if input text is broken at the beginning of the cluster this glyph is part of, then both sides need to be
+    /// re-shaped", hb-buffer.h, <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>).
+    /// </summary>
+    private static void UnsafeToBreak(GlyphItem[] glyphs, int first, int last)
+    {
+        for (var index = first + 1; index <= last; index++)
+        {
+            glyphs[index] = glyphs[index] with { UnsafeToBreak = true };
+        }
     }
 
     /// <summary>

@@ -18,11 +18,16 @@ namespace Ave.Extensions.Documents.Render.Raster;
 /// (points, origin top-left, y down) become pixels: multiply by <c>scale</c> (= resolution / 72).
 /// </summary>
 /// <remarks>
-/// <para><b>Clipping.</b> Every item is drawn through the walk's current clip box, which is the whole canvas today. A clip
-/// that the page model may state later (a rectangle that brackets items, as PDF's <c>q … re W n … Q</c>) is two more cases
-/// of the walk: at its start, push the current box and intersect it with the rectangle in pixels
-/// (<see cref="ToPixels(Rect, double)"/>, <see cref="PixelBox.Intersect"/>); at its end, pop it. Nothing else changes: the
-/// draw calls already take the box.</para>
+/// <para><b>Clipping.</b> Every item is drawn through the walk's current clip box: the whole canvas, intersected with the
+/// rectangle of every clip open around the item (<see cref="ClipStart"/> … <see cref="ClipEnd"/>, as PDF's
+/// <c>q x y w h re W n … Q</c>). At a clip's start the current box is pushed and intersected with the clip's rectangle in
+/// pixels (<see cref="ClipBox"/>, <see cref="PixelBox.Intersect"/>); at its end it is popped. The clips nest, as the
+/// page-model rules guarantee (<see cref="PageModelRules"/>). The box is always an axis-parallel rectangle in pixels: a
+/// clip of the page model is a rectangle with sides along the page's axes, the map from points to pixels is a scale
+/// only (no rotation or shear), and the intersection of axis-parallel rectangles is one. The draw calls clip the
+/// geometry to the box before they compute coverage (<see cref="Canvas.Fill"/>, <see cref="Canvas.DrawImage"/>), so a
+/// pixel a clip edge crosses shows the exact area of the shape inside the clip. A clip of no area, or one beside the page,
+/// lets nothing through.</para>
 /// <para><b>Glyphs.</b> Each glyph is its outline (<see cref="TrueTypeFont.Shape"/>), in design units with y up, mapped to
 /// the page by font size / units per em with y flipped, placed at its exact position (run origin plus the glyph's offset),
 /// and filled with the non-zero rule (TrueType's). One fill per glyph, as PDF viewers draw them: where two glyphs overlap,
@@ -37,8 +42,20 @@ internal static class PagePainter
     public static Result<Unit, Error> Paint(Page page, Canvas canvas, double scale, Images images)
     {
         var clip = canvas.Bounds;
+        var outer = new Stack<PixelBox>();
         foreach (var item in page.Items)
         {
+            switch (item)
+            {
+                case ClipStart start:
+                    outer.Push(clip);
+                    clip = clip.Intersect(ClipBox(start.Area, scale));
+                    continue;
+                case ClipEnd:
+                    clip = outer.Pop();
+                    continue;
+            }
+
             var drawn = item switch
             {
                 FillRectangle fill => Rectangle(canvas, fill, scale, clip),
@@ -83,6 +100,14 @@ internal static class PagePainter
     /// <summary>A rectangle of the page in pixels.</summary>
     internal static PixelBox ToPixels(Rect area, double scale) =>
         new(area.Origin.X * scale, area.Origin.Y * scale, (area.Origin.X + area.Size.Width) * scale, (area.Origin.Y + area.Size.Height) * scale);
+
+    /// <summary>A clip's rectangle in pixels, by the same map as every item (<see cref="ToPixels"/>), with its edges in
+    /// order: a negative width or height spans the same rectangle from the other corner, as PDF's <c>re</c> reads it.</summary>
+    private static PixelBox ClipBox(Rect area, double scale)
+    {
+        var box = ToPixels(area, scale);
+        return new PixelBox(double.Min(box.Left, box.Right), double.Min(box.Top, box.Bottom), double.Max(box.Left, box.Right), double.Max(box.Top, box.Bottom));
+    }
 
     private static Result<Unit, Error> Rectangle(Canvas canvas, FillRectangle fill, double scale, PixelBox clip)
     {

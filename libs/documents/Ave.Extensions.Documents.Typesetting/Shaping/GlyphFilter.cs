@@ -36,7 +36,7 @@ internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
     /// <summary>
     /// True when a substitution lookup with these flags skips the glyph while matching: as <see cref="Skips"/>, and a
     /// default-ignorable character, so that it does not stop a ligature (glyphs the match skips are kept after the
-    /// ligature). HarfBuzz 15.0.0, the reference the tests compare with, skips a default ignorable while matching GSUB
+    /// ligature, in its cluster). HarfBuzz 15.0.0, the reference the tests compare with, skips a default ignorable while matching GSUB
     /// (hb-ot-layout-gsubgpos.hh, <c>matcher_t::may_skip</c>) unless it is the zero width non-joiner, the zero width
     /// joiner of a lookup that does not skip it, or a glyph HarfBuzz marks hidden (hb-ot-layout.hh,
     /// <c>UPROPS_MASK_HIDDEN</c>: U+180B–U+180D and U+180F, the Mongolian free variation selectors; U+E0020–U+E007F, the
@@ -44,30 +44,20 @@ internal sealed record GlyphFilter(GlyphDefinitions? Definitions)
     /// ignorable and "i" in Lato is the fi ligature followed by the invisible glyph. Where the engine differs from
     /// HarfBuzz: it skips the hidden ones too (f, a tag character and i ligate here, not in HarfBuzz); and a default
     /// ignorable of another script (U+180E, U+061C, U+17B4) ends the script run here (<see cref="Shaper"/>), so no
-    /// ligature joins across it, where HarfBuzz, given the whole text as one run, ligates. Two exceptions on purpose:
-    /// <list type="bullet">
-    /// <item>The zero width non-joiner is matched, so it stops a ligature: it is "intended to break both cursive
-    /// connections and ligatures" (the Unicode Standard §23.2). HarfBuzz does the same.</item>
-    /// <item>The soft hyphen and the zero width space are matched too, so they stop a ligature. Here the engine does not
-    /// do what HarfBuzz does, on purpose: they are line break opportunities, and the engine does not shape a line
-    /// again where it breaks (HarfBuzz leaves that to its caller). A ligature across one would keep both letters on
-    /// one line whichever way the line breaks.</item>
-    /// </list>
+    /// ligature joins across it, where HarfBuzz, given the whole text as one run, ligates. One exception, as in
+    /// HarfBuzz: the zero width non-joiner is matched, so it stops a ligature: it is "intended to break both cursive
+    /// connections and ligatures" (the Unicode Standard §23.2). The soft hyphen and the zero width space are skipped like
+    /// every other default ignorable, so a ligature forms across them as in HarfBuzz; where a line breaks at one of them,
+    /// the line breaker shapes both lines again (<see cref="GreedyLineBreaker"/>), which splits the ligature.
     /// </summary>
     /// <remarks>A forced line break counts as a default ignorable here too: the shaper cuts the text after every one
     /// (<see cref="Shaper"/>), so it is the last glyph of its piece and nothing follows it that a match could join to it,
     /// and as a glyph the lookup skips it is not substituted either.</remarks>
     public bool SkipsInSubstitution(LookupFlags flags, GlyphItem item) =>
-        (item.IsDefaultIgnorable && item.Text is not (ZeroWidthNonJoiner or SoftHyphen or ZeroWidthSpace)) || Skips(flags, item);
+        (item.IsDefaultIgnorable && item.Text != ZeroWidthNonJoiner) || Skips(flags, item);
 
     /// <summary>U+200C ZERO WIDTH NON-JOINER.</summary>
     private const string ZeroWidthNonJoiner = "\u200C";
-
-    /// <summary>U+00AD SOFT HYPHEN.</summary>
-    private const string SoftHyphen = "\u00AD";
-
-    /// <summary>U+200B ZERO WIDTH SPACE.</summary>
-    private const string ZeroWidthSpace = "\u200B";
 
     /// <summary>True when a positioning lookup with these flags skips the glyph: as <see cref="Skips"/>, and every
     /// default-ignorable character, which takes no space and so has no place in a kerning pair or under a mark.</summary>

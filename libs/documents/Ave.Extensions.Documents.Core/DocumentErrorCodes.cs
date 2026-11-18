@@ -52,6 +52,22 @@ public static class DocumentErrorCodes
             /// <summary>No font family set, or an empty one.</summary>
             public static readonly ErrorCode FontFamily = _ / "FontFamily";
 
+            /// <summary>A <c>line-height</c> that is negative ("Negative values are illegal", CSS 2.1 §10.8.1), not a finite
+            /// number, or larger than the front-end allows. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode LineHeight = _ / "LineHeight";
+
+            /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
+            /// positive integers are allowed"). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Orphans = _ / "Orphans";
+
+            /// <summary>A <c>widows</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3). Metadata:
+            /// Value, Property.</summary>
+            public static readonly ErrorCode Widows = _ / "Widows";
+
+            /// <summary>A document without a layout profile, or with a policy value its enum does not have.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode LayoutProfile = _ / "LayoutProfile";
+
             /// <summary>A heading level outside 1–6. Metadata: Value.</summary>
             public static readonly ErrorCode HeadingLevel = _ / "HeadingLevel";
 

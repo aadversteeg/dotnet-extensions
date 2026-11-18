@@ -2,7 +2,8 @@
 through libjpeg), so the engine's own decoder is never tested against files it produced itself.
 
 Run from the repository root:  python tools/generate-test-images.py
-Writes UnitTests.Extensions.Documents.Images/Assets/*.png|*.jpg and samples/Ave.Extensions.Documents.Samples/assets/logo.png.
+Writes UnitTests.Extensions.Documents.Images/Assets/*.png|*.jpg, samples/Ave.Extensions.Documents.Samples/assets/logo.png
+and tools/reference/chromium/cases/tall.png (the image of the Chromium reference cases for content taller than a page).
 The pixel pattern is a formula (see pattern()), repeated in the C# tests, so every decoded pixel can be checked.
 Only test and sample assets are made here; nothing of this runs in the engine.
 """
@@ -16,6 +17,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(ROOT, "UnitTests.Extensions.Documents.Images", "Assets")
 SAMPLE_ASSETS = os.path.join(ROOT, "samples", "Ave.Extensions.Documents.Samples", "assets")
+CHROMIUM_CASES = os.path.join(ROOT, "tools", "reference", "chromium", "cases")
 
 # 7 x 5 pixels: an odd width, so rows of packed palette indices end inside a byte.
 W, H = 7, 5
@@ -80,6 +82,18 @@ def png_with_every_filter():
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(bytes(raw))) + chunk(b"IEND", b"")
 
 
+def solid_png(width, height, rgb):
+    """A truecolour PNG of one colour, written without Pillow: IHDR, one IDAT (filter type 0 on every row, zlib level 9)
+    and IEND, no other chunk. 4 x 16 pixels of (200, 60, 60) is cases/tall.png, 74 bytes."""
+    raw = b"".join(b"\x00" + bytes(rgb) * width for _ in range(height))
+
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+
+
 def patch_ihdr(data, offset_in_ihdr, value):
     """Changes one byte of IHDR and fixes its CRC, to make a well-formed file of a variant Pillow cannot write."""
     ihdr_start = 8  # after the signature: length (4), type (4), data (13), crc (4)
@@ -135,7 +149,9 @@ def main():
     points = [(22, 26), (36, 26), (50, 62), (64, 26), (78, 26), (56, 78), (44, 78)]
     ImageDraw.Draw(logo).polygon([(x * scale * supersample, y * scale * supersample) for x, y in points], fill=(255, 255, 255))
     logo.resize((100 * scale, 100 * scale), Image.LANCZOS).save(os.path.join(SAMPLE_ASSETS, "logo.png"))
-    print("written:", sorted(os.listdir(ASSETS)), "and samples/.../assets/logo.png")
+    with open(os.path.join(CHROMIUM_CASES, "tall.png"), "wb") as tall:
+        tall.write(solid_png(4, 16, (200, 60, 60)))
+    print("written:", sorted(os.listdir(ASSETS)), "samples/.../assets/logo.png and tools/reference/chromium/cases/tall.png")
 
 
 if __name__ == "__main__":
