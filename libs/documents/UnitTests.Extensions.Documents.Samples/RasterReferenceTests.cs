@@ -63,9 +63,10 @@ public sealed class RasterReferenceTests
         /// error and the counts (<see cref="RasterComparison.ImageInteriors"/>).</summary>
         ImageInterior = 1,
 
-        /// <summary>Text baselines: the viewers draw a glyph's baseline on a whole pixel row (MuPDF the nearest, poppler the
-        /// one above), the engine where the page model puts it. Removed by drawing the engine's page again with every
-        /// baseline on the viewer's row (<see cref="RasterComparison.BaselinesOnPixelRows"/>).</summary>
+        /// <summary>Text baselines: the viewers draw a glyph's baseline on a whole pixel row (MuPDF the nearest, up to an em
+        /// of 256 pixels; poppler the one above, at every size), the engine where the page model puts it. Removed by drawing
+        /// the engine's page again with every such baseline on the viewer's row
+        /// (<see cref="RasterComparison.BaselinesOnPixelRows"/>).</summary>
         BaselineOnWholePixel = 2,
     }
 
@@ -150,6 +151,41 @@ public sealed class RasterReferenceTests
             }
 
             difference.Should().BeLessThanOrEqualTo(largest, $"{file} at 1:1: the largest channel difference inside the image");
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// The size up to which MuPDF puts a glyph's baseline on a whole pixel row, which the baseline cause relies on
+    /// (<see cref="RasterComparison.MupdfLargestEmOnRow"/>): the letter "H" with its baseline on a whole row and 0.3
+    /// pixel below it gives two equal pages up to an em of 256 pixels; above it MuPDF draws the glyph at its exact place.
+    /// At 72 dpi, where a point is a pixel.
+    /// </summary>
+    [DockerTheory]
+    [InlineData(256, true)]
+    [InlineData(256.01, false)]
+    public void MuPDF_puts_a_baseline_on_a_whole_pixel_row_up_to_an_em_of_256_pixels(double em, bool onRow)
+    {
+        var font = TestFonts.Regular;
+        var glyph = font.GlyphFor(new Rune('H')).Value;
+        Page At(double fraction) => new(
+            new Size((1.2 * em) + 20, (2.5 * em) + 20),
+            [new GlyphRun(font, em, Color.Black, new Point(10, (2 * em) + 10 + fraction), [new PositionedGlyph(glyph, 0, "H")])]);
+        var pages = new PageDocument(new DocumentMetadata("baseline", null), [At(0), At(0.3)]);
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-raster-").FullName;
+        try
+        {
+            File.WriteAllBytes(Path.Combine(folder, "document.pdf"), [.. PdfRenderer.Render(pages, new PdfRenderOptions(SampleOutput.Options.CreationDate)).Value]);
+            var (exitCode, output) = Docker.Run(
+                ["run", "--rm", .. Docker.UserArguments, "-v", $"{folder}:/work", ReferenceTools.Image, "mutool", "draw", "-q", "-r", "72", "-A", "8", "-o", "/work/mupdf-%d.png", "/work/document.pdf"],
+                TimeSpan.FromMinutes(2));
+            exitCode.Should().Be(0, output);
+            var drawn = Renders(folder, "mupdf-");
+
+            drawn[0].Pixels.SequenceEqual(drawn[1].Pixels).Should().Be(onRow, $"an em of {em} pixels, baselines 0.3 pixel apart");
         }
         finally
         {
@@ -253,17 +289,17 @@ public sealed class RasterReferenceTests
         Page page, double resolution, Cause causes,
         (int Width, int Height, int Channels, byte[] Pixels) mupdf, (int Width, int Height, int Channels, byte[] Pixels) poppler, (int Width, int Height, bool[] AtEdge) edges)
     {
-        (int, int, int, byte[]) Engine(Func<double, double> row)
+        (int, int, int, byte[]) Engine(Func<double, double> row, double largestEm)
         {
-            var drawn = causes.HasFlag(Cause.BaselineOnWholePixel) ? RasterComparison.BaselinesOnPixelRows(page, resolution, row) : page;
+            var drawn = causes.HasFlag(Cause.BaselineOnWholePixel) ? RasterComparison.BaselinesOnPixelRows(page, resolution, row, largestEm) : page;
             var image = PageRasterizer.Render(drawn, new RasterOptions(resolution)).Value;
             return (image.Width, image.Height, 4, image.Pixels.ToArray());
         }
 
         var leftOut = causes.HasFlag(Cause.ImageInterior) ? RasterComparison.ImageInteriors(page, resolution) : new bool[edges.Width * edges.Height];
         return (
-            RasterComparison.Compare(Engine(RasterComparison.MupdfRow), mupdf, edges, leftOut),
-            RasterComparison.Compare(Engine(RasterComparison.PopplerRow), poppler, edges, leftOut),
+            RasterComparison.Compare(Engine(RasterComparison.MupdfRow, RasterComparison.MupdfLargestEmOnRow), mupdf, edges, leftOut),
+            RasterComparison.Compare(Engine(RasterComparison.PopplerRow, RasterComparison.PopplerLargestEmOnRow), poppler, edges, leftOut),
             RasterComparison.Compare(mupdf, poppler, edges, leftOut));
     }
 

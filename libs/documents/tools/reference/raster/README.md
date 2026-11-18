@@ -186,7 +186,7 @@ interiors out where that cause is named, for all three pairs):
 | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- |
 | 96 | 2 | image interior | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 |
 | 96 | 3 | image interior and baseline | 0 | 7.57 | 149 / 0 / 0 | 0 | 17.73 | 464 / 2 / 0 | 0 | 333.93 | 1763 / 1111 / 535 |
-| 96 | 5 | baseline | 0 | 4.35 | 106 / 0 / 0 | 0 | 15.82 | 588 / 18 / 0 | 0 | 26.25 | 856 / 140 / 0 |
+| 96 | 5 | baseline | 0 | 4.02 | 62 / 0 / 0 | 0 | 15.82 | 588 / 18 / 0 | 0 | 26.25 | 856 / 140 / 0 |
 | 96 | 6 | baseline | 0 | 0.62 | 0 / 0 / 0 | 0 | 36.89 | 758 / 740 / 0 | 0 | 42.72 | 757 / 736 / 0 |
 | 96 | 7 | image interior and baseline | 0 | 0.55 | 0 / 0 / 0 | 0 | 23.15 | 220 / 202 / 0 | 0 | 26.46 | 219 / 198 / 0 |
 | 96 | 8 | baseline | 0 | 6.69 | 316 / 48 / 0 | 0 | 41.06 | 1144 / 787 / 0 | 0 | 47.58 | 1212 / 742 / 0 |
@@ -210,9 +210,10 @@ shows there.
 
 ### Cause: baselines on whole pixels
 
-Both viewers draw a glyph's baseline on a whole pixel row, the engine where the page model puts it. Measured on the
-engine's own PDF of lines of Lato 11 pt ("Hxgb") whose baselines lie at 0.1, 0.3, 0.476, 0.5, 0.6, 0.8 and 0.95 of a
-pixel, by the shift of each line's ink centre from the engine's, at 96 and 300 dpi:
+Both viewers draw a glyph's baseline on a whole pixel row, MuPDF up to an em of 256 pixels, poppler at every size; the
+engine draws it where the page model puts it. Measured on the engine's own PDF of lines of Lato 11 pt ("Hxgb") whose
+baselines lie at 0.1, 0.3, 0.476, 0.5, 0.6, 0.8 and 0.95 of a pixel, by the shift of each line's ink centre from the
+engine's, at 96 and 300 dpi:
 
 | Fraction | MuPDF 96 | poppler 96 | MuPDF 300 | poppler 300 |
 | ---: | ---: | ---: | ---: | ---: |
@@ -225,11 +226,22 @@ pixel, by the shift of each line's ink centre from the engine's, at 96 and 300 d
 | 0.95 | +0.045 | −0.958 | +0.048 | −0.959 |
 
 So MuPDF draws the baseline on the nearest whole pixel row (a half goes down the page) and poppler on the row above it
-(it floors), at both resolutions. In the sliced sample, page 5's line has its baseline at 110.476 px at 96 dpi; both
+(it floors), at both resolutions.
+
+A larger glyph MuPDF draws at its exact place. Measured on the letter "H" with its baseline on a whole row and 0.3 pixel
+below it, two pages of one PDF: MuPDF's two pages are equal up to an em of 256 pixels and differ from an em of
+256.0001 pixels on (the second page's ink centre 0.17 to 0.31 pixel lower), at 72, 96 and 300 dpi, in Lato Regular
+and Theano Didot alike; ems of 100, 200, 230, 250, 255, 255.99 and 256 equal, 256.0001, 256.001, 256.01, 256.1, 256.5,
+257, 260 and 267 different. Poppler floors at every size measured (an em up to 833 pixels). The sliced sample's
+200 pt "W" has an em of 266.7 pixels at 96 dpi, so MuPDF draws it at its exact place, as the engine does.
+`RasterReferenceTests.MuPDF_puts_a_baseline_on_a_whole_pixel_row_up_to_an_em_of_256_pixels` holds MuPDF to that step.
+
+In the sliced sample, page 5's line has its baseline at 110.476 px at 96 dpi; both
 viewers draw it at 110 (ink centre row 105.33 in both, 105.82 in the engine, with equal ink). Removed by drawing the
-engine's page again from a page model in which every glyph run's baseline is on the viewer's row
-(`RasterComparison.BaselinesOnPixelRows`, `MupdfRow`, `PopplerRow`), a transformation of the test, not an option of the
-engine. The difference is there on every sample (`docs/architecture.md`, "Different from the viewers").
+engine's page again from a page model in which every glyph run's baseline is on the viewer's row, for MuPDF only the
+runs with an em of at most 256 pixels (`RasterComparison.BaselinesOnPixelRows`, `MupdfRow`, `PopplerRow`,
+`MupdfLargestEmOnRow`), a transformation of the test, not an option of the engine. The difference is there on every
+sample (`docs/architecture.md`, "Different from the viewers").
 
 ## Measured: rectangles that meet inside a pixel (2026-11-18)
 
