@@ -187,9 +187,9 @@ public static partial class PropertyRegistry
         var words = new List<string>();
         void Flush()
         {
-            if (words.Count == 1 && GenericFamilies.Contains(Ascii.ToLower(words[0])))
+            if (words.Count == 1 && GenericFamilies.Contains(InfraAscii.ToLower(words[0])))
             {
-                families.Add(new CssKeyword(Ascii.ToLower(words[0])));
+                families.Add(new CssKeyword(InfraAscii.ToLower(words[0])));
             }
             else if (words.Count > 0)
             {
@@ -209,7 +209,7 @@ public static partial class PropertyRegistry
                     expectName = false;
                     break;
                 case CssToken { Kind: CssTokenKind.Ident } word when expectName:
-                    if (words.Count == 0 && Ascii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default")
+                    if (words.Count == 0 && InfraAscii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default")
                     {
                         return ParsedValue.Invalid($"'{word.Text}' cannot be a font family name without quotes");
                     }

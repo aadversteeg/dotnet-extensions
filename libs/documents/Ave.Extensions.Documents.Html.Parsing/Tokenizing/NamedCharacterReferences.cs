@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -37,7 +38,7 @@ internal static class NamedCharacterReferences
     {
         var available = Math.Min(LongestName, text.Length - start);
         var end = 0;
-        while (end < available && (Ascii.IsAlphanumeric(text[start + end]) || text[start + end] == ';'))
+        while (end < available && (InfraAscii.IsAlphanumeric(text[start + end]) || text[start + end] == ';'))
         {
             end++;
             if (text[start + end - 1] == ';')

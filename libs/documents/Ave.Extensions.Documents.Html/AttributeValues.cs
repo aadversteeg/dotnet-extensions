@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Globalization;
 using System.Text;
@@ -110,7 +111,7 @@ internal static class AttributeValues
     public static CssColor? LegacyColor(string value)
     {
         var input = value.Trim(' ', '\t', '\n', '\f', '\r');
-        if (input.Length == 0 || Ascii.EqualsIgnoreCase(input, "transparent"))
+        if (input.Length == 0 || InfraAscii.EqualsIgnoreCase(input, "transparent"))
         {
             return null;
         }

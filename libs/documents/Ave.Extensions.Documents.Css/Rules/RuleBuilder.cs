@@ -42,7 +42,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         {
             switch (rule)
             {
-                case SyntaxAtRule at when Ascii.EqualsIgnoreCase(at.Name, "import"):
+                case SyntaxAtRule at when InfraAscii.EqualsIgnoreCase(at.Name, "import"):
                     if (!importsAllowed)
                     {
                         Report(CssErrorCodes.Invalid.Rule, "An @import after another rule is invalid (CSS Cascade 5 §2).", at.Position);
@@ -55,10 +55,10 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     }
 
                     continue;
-                case SyntaxAtRule at when Ascii.EqualsIgnoreCase(at.Name, "charset"):
+                case SyntaxAtRule at when InfraAscii.EqualsIgnoreCase(at.Name, "charset"):
                     // @charset is read when bytes are decoded (CSS Syntax 3 §3.2); as a rule it is nothing.
                     continue;
-                case SyntaxAtRule at when Ascii.EqualsIgnoreCase(at.Name, "layer") && at.Block is null:
+                case SyntaxAtRule at when InfraAscii.EqualsIgnoreCase(at.Name, "layer") && at.Block is null:
                     // Layer statements may come before @import (CSS Cascade 5 §2).
                     if (LayerStatement(at) is { } statement)
                     {
@@ -78,7 +78,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
             // Only a valid rule closes the place for @import (CSS Cascade 5 §2): one the engine skips as unreadable
             // does not, as a browser drops it before it counts.
-            if (built is not null || (rule is SyntaxAtRule known && (UnsupportedAtRules.Contains(Ascii.ToLower(known.Name)) || IgnoredAtRules.Contains(Ascii.ToLower(known.Name)))))
+            if (built is not null || (rule is SyntaxAtRule known && (UnsupportedAtRules.Contains(InfraAscii.ToLower(known.Name)) || IgnoredAtRules.Contains(InfraAscii.ToLower(known.Name)))))
             {
                 importsAllowed = false;
             }
@@ -187,7 +187,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
     private CssRule? AtRule(SyntaxAtRule at, bool nested)
     {
-        var name = Ascii.ToLower(at.Name);
+        var name = InfraAscii.ToLower(at.Name);
         switch (name)
         {
             case "media" when at.Block is not null:
@@ -280,7 +280,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                         return null;
                     }
 
-                    if (ident.Text is var text && (Ascii.EqualsIgnoreCase(text, "initial") || Ascii.EqualsIgnoreCase(text, "inherit") || Ascii.EqualsIgnoreCase(text, "unset") || Ascii.EqualsIgnoreCase(text, "revert") || Ascii.EqualsIgnoreCase(text, "revert-layer") || Ascii.EqualsIgnoreCase(text, "default")))
+                    if (ident.Text is var text && (InfraAscii.EqualsIgnoreCase(text, "initial") || InfraAscii.EqualsIgnoreCase(text, "inherit") || InfraAscii.EqualsIgnoreCase(text, "unset") || InfraAscii.EqualsIgnoreCase(text, "revert") || InfraAscii.EqualsIgnoreCase(text, "revert-layer") || InfraAscii.EqualsIgnoreCase(text, "default")))
                     {
                         return null;
                     }
@@ -396,7 +396,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         foreach (var declaration in declarations)
         {
             var values = declaration.Value.Items.RemoveAll(value => value is CssToken { Kind: CssTokenKind.Whitespace });
-            switch (Ascii.ToLower(declaration.Name))
+            switch (InfraAscii.ToLower(declaration.Name))
             {
                 case "font-family":
                     family = values.Length == 1 && values[0] is CssToken { Kind: CssTokenKind.String } quoted
@@ -412,7 +412,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     weight = FontWeights(values) ?? weight;
                     break;
                 case "font-style":
-                    style = values.Length > 0 && values[0] is CssToken { Kind: CssTokenKind.Ident } styleName ? Ascii.ToLower(styleName.Text) : style;
+                    style = values.Length > 0 && values[0] is CssToken { Kind: CssTokenKind.Ident } styleName ? InfraAscii.ToLower(styleName.Text) : style;
                     break;
                 case "unicode-range":
                     foreach (var value in values)
@@ -460,7 +460,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                         url = function.Values.OfType<CssToken>().FirstOrDefault(token => token.Kind == CssTokenKind.String)?.Text;
                         break;
                     case FunctionValue function when function.IsNamed("format"):
-                        format = function.Values.OfType<CssToken>().FirstOrDefault(token => token.Kind is CssTokenKind.String or CssTokenKind.Ident) is { } hint ? Ascii.ToLower(hint.Text) : null;
+                        format = function.Values.OfType<CssToken>().FirstOrDefault(token => token.Kind is CssTokenKind.String or CssTokenKind.Ident) is { } hint ? InfraAscii.ToLower(hint.Text) : null;
                         break;
                     case FunctionValue function when function.IsNamed("local"):
                         Report(CssErrorCodes.Unsupported.Value, "local() in @font-face src is not supported: the engine never looks at installed fonts.", function.Position);
@@ -550,8 +550,8 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                 case null:
                     declarations.AddRange(item.Declarations);
                     break;
-                case SyntaxAtRule margin when MarginRules.Contains(Ascii.ToLower(margin.Name)) && margin.Block is not null:
-                    margins.Add(new PageMarginRule(Ascii.ToLower(margin.Name), SyntaxParser.Materialise(margin.Contents).Declarations, margin.Position));
+                case SyntaxAtRule margin when MarginRules.Contains(InfraAscii.ToLower(margin.Name)) && margin.Block is not null:
+                    margins.Add(new PageMarginRule(InfraAscii.ToLower(margin.Name), SyntaxParser.Materialise(margin.Contents).Declarations, margin.Position));
                     break;
                 case SyntaxAtRule other:
                     Report(CssErrorCodes.Unsupported.AtRule, $"'@{other.Name}' in @page is not valid or not supported in this profile (it is not a page-margin rule); the rule is skipped.", other.Position);
@@ -581,7 +581,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                 return null;
             }
 
-            var lower = Ascii.ToLower(pseudoName.Text);
+            var lower = InfraAscii.ToLower(pseudoName.Text);
             if (lower is not ("first" or "left" or "right" or "blank"))
             {
                 return null;

@@ -37,6 +37,11 @@ public class AssemblyRulesTests
     /// <summary>The names of the product libraries (the layer list), for the rules on other things than assemblies.</summary>
     internal static IReadOnlyCollection<string> LibraryNames => AllowedReferences.Keys;
 
+    /// <summary>The engine libraries a library may depend on, by full name.</summary>
+    /// <param name="library">The library.</param>
+    /// <returns>The allowed names.</returns>
+    internal static IEnumerable<string> AllowedFor(string library) => AllowedReferences[library].Select(name => "Ave.Extensions.Documents." + name);
+
     public static TheoryData<string> Libraries => [.. AllowedReferences.Keys];
 
     private static string PathOf(string assembly) => Path.Combine(AppContext.BaseDirectory, assembly + ".dll");

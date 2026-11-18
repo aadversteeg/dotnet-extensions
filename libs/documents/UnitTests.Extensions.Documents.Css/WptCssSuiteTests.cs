@@ -20,19 +20,18 @@ namespace UnitTests.Extensions.Documents.Css;
 /// cases are counted. Whether a value or selector is valid is compared; the CSSOM serialisation the tests also check is
 /// not (the engine has no CSSOM), by rule. test_computed_value needs the test's markup and runs in the HTML front-end's
 /// tests.
-/// <para>A value of a feature outside v0 (a property supported at its initial value only, a math function the engine
-/// does not evaluate) is refused without its grammar being checked. Where Chromium finds such a value invalid the
-/// engine refuses it rather than drops it: never silently different, at worst refused when it need not be. Those
-/// cases are counted and listed, not failed; a value Chromium takes that the engine drops, or one Chromium drops that
-/// the engine takes, fails.</para>
+/// <para>Each case has one of three outcomes. Equal: Chromium takes it and the engine does, or Chromium drops it and
+/// the engine drops it with a warning. Refused: the engine refuses it, whatever Chromium says (valid CSS outside the
+/// profile, or input the engine cannot read, review 39 ruling D-b); never counted as agreeing. Different: the engine
+/// takes what Chromium drops or drops what Chromium takes; it fails. The number of each is pinned.</para>
 /// </summary>
 public class WptCssSuiteTests(ITestOutputHelper output)
 {
     private enum Verdict
     {
-        Valid,
+        Taken,
         Refused,
-        Invalid,
+        Dropped,
         OutsideRegistry,
     }
 
@@ -61,19 +60,20 @@ public class WptCssSuiteTests(ITestOutputHelper output)
         if (tooDeep is not null || values.Any(item => item is CssToken { Kind: CssTokenKind.Semicolon or CssTokenKind.BadString or CssTokenKind.BadUrl or CssTokenKind.CloseParen or CssTokenKind.CloseSquare or CssTokenKind.CloseCurly })
             || ImportantAtEnd(values))
         {
-            return Verdict.Invalid;
+            return Verdict.Dropped;
         }
 
         var diagnostics = new DiagnosticCollector();
         var order = 0;
         var declaration = new Declaration(name, values, false, TextPosition.Start) { OriginalText = name.StartsWith("--", StringComparison.Ordinal) ? value : null };
         var block = DeclarationPreparer.Prepare([declaration], "wpt", CascadeOrigin.Author, ref order, diagnostics);
-        if (diagnostics.Count > 0)
+        var found = diagnostics.ToValueList();
+        if (found.Any(error => CssDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal) || block.Entries.Any(entry => entry.Value is RefusedEntry))
         {
-            return Verdict.Invalid;
+            return Verdict.Refused;
         }
 
-        return block.Entries.Any(entry => entry.Value is RefusedEntry) ? Verdict.Refused : Verdict.Valid;
+        return found.IsEmpty ? Verdict.Taken : Verdict.Dropped;
     }
 
     private static bool ImportantAtEnd(ValueList<ComponentValue> values)
@@ -98,69 +98,76 @@ public class WptCssSuiteTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Values_are_valid_where_Chromium_takes_them_and_invalid_where_it_drops_them()
+    public void Values_are_taken_where_Chromium_takes_them_dropped_where_it_drops_them_or_refused()
     {
-        var (taken, outside, refused, testDiffers, failures, needlessly) = (0, 0, 0, 0, new List<string>(), new List<string>());
+        var (equal, refusedTaken, refusedDropped, outside, testDiffers, failures) = (0, 0, 0, 0, 0, new List<string>());
         foreach (var (item, chromium) in Measured().Where(pair => pair.Case.GetProperty("helper").GetString()!.EndsWith("_value", StringComparison.Ordinal)))
         {
             var args = item.GetProperty("args");
             var (property, value) = (args[0].GetString()!, args[1].GetString()!);
             var verdict = Judge(property, value);
-            if (verdict == Verdict.OutsideRegistry)
-            {
-                outside++;
-                continue;
-            }
-
-            taken++;
             testDiffers += chromium != (item.GetProperty("helper").GetString() == "test_valid_value") ? 1 : 0;
-            var line = $"{Place(item)} {property}: {value} → engine {verdict}, Chromium {(chromium ? "valid" : "invalid")}";
-            if (!chromium && verdict == Verdict.Refused)
+            switch (verdict)
             {
-                needlessly.Add(line);
-            }
-            else if (chromium ? verdict == Verdict.Invalid : verdict != Verdict.Invalid)
-            {
-                failures.Add(line);
-            }
-            else
-            {
-                refused += verdict == Verdict.Refused ? 1 : 0;
+                case Verdict.OutsideRegistry:
+                    outside++;
+                    break;
+                case Verdict.Refused:
+                    _ = chromium ? refusedTaken++ : refusedDropped++;
+                    break;
+                case Verdict.Taken when chromium:
+                case Verdict.Dropped when !chromium:
+                    equal++;
+                    break;
+                default:
+                    failures.Add($"{Place(item)} {property}: {value} → engine {verdict}, Chromium {(chromium ? "takes it" : "drops it")}");
+                    break;
             }
         }
 
-        output.WriteLine($"values: {taken} taken, {taken - failures.Count - needlessly.Count} agree with Chromium ({refused} of them valid and refused as outside v0), "
-            + $"{needlessly.Count} refused where Chromium drops them (outside v0, grammar not checked), {outside} skipped (property outside the registry); "
-            + $"Chromium disagrees with the test in {testDiffers}; {failures.Count} failed");
+        output.WriteLine($"values: {equal} equal, {refusedTaken + refusedDropped} refused ({refusedTaken} that Chromium takes, {refusedDropped} that it drops), "
+            + $"{failures.Count} different; {outside} outside the registry; Chromium disagrees with the test in {testDiffers}");
         failures.ForEach(output.WriteLine);
-        output.WriteLine("Refused where Chromium drops them:");
-        needlessly.ForEach(output.WriteLine);
         failures.Should().BeEmpty();
+        (equal, refusedTaken, refusedDropped, outside, testDiffers).Should().Be((17, 144, 253, 45, 52));
     }
 
-    private static bool SelectorParses(string selector)
+    /// <summary>What the engine makes of a selector: taken (it parses, and every part is supported or never matches in a
+    /// static document), or refused (it does not parse, or a part is outside the profile).</summary>
+    private static bool SelectorTaken(string selector)
     {
         var (values, tooDeep) = SyntaxParser.ParseComponentValues(CssSource.Of(selector), (_, _) => { });
-        return tooDeep is null && SelectorParser.Parse(values, relative: false, TextPosition.Start).List is not null;
+        return tooDeep is null && SelectorParser.Parse(values, relative: false, TextPosition.Start) is { List: not null } parsed
+            && parsed.Findings.All(finding => finding.Support != SelectorSupport.Unsupported);
     }
 
     [Fact]
-    public void Selectors_parse_where_Chromium_takes_them()
+    public void Selectors_are_taken_where_Chromium_takes_them_or_refused()
     {
-        var (taken, testDiffers, failures) = (0, 0, new List<string>());
+        var (equal, refusedTaken, refusedDropped, testDiffers, failures) = (0, 0, 0, 0, new List<string>());
         foreach (var (item, chromium) in Measured().Where(pair => pair.Case.GetProperty("helper").GetString()!.EndsWith("_selector", StringComparison.Ordinal)))
         {
-            taken++;
             var selector = item.GetProperty("args")[0].GetString()!;
             testDiffers += chromium != (item.GetProperty("helper").GetString() == "test_valid_selector") ? 1 : 0;
-            if (SelectorParses(selector) != chromium)
+            var taken = SelectorTaken(selector);
+            if (taken && chromium)
             {
-                failures.Add($"{Place(item)} {selector} → engine {(chromium ? "invalid" : "valid")}, Chromium {(chromium ? "valid" : "invalid")}");
+                equal++;
+            }
+            else if (taken)
+            {
+                failures.Add($"{Place(item)} {selector} → engine takes it, Chromium drops it");
+            }
+            else
+            {
+                _ = chromium ? refusedTaken++ : refusedDropped++;
             }
         }
 
-        output.WriteLine($"selectors: {taken} taken, {taken - failures.Count} agree with Chromium; Chromium disagrees with the test in {testDiffers}; {failures.Count} failed");
+        output.WriteLine($"selectors: {equal} equal, {refusedTaken + refusedDropped} refused ({refusedTaken} that Chromium takes, {refusedDropped} that it drops), "
+            + $"{failures.Count} different; Chromium disagrees with the test in {testDiffers}");
         failures.ForEach(output.WriteLine);
         failures.Should().BeEmpty();
+        (equal, refusedTaken, refusedDropped, testDiffers).Should().Be((101, 68, 134, 56));
     }
 }

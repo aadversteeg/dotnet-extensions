@@ -191,14 +191,20 @@ internal static class VarSubstitution
     /// the value to rebuild and the list it goes into.</summary>
     private sealed class Frame(IReadOnlyList<ComponentValue> source, List<ComponentValue> output, ComponentValue? owner, List<ComponentValue>? into)
     {
+        /// <summary>The values of this list as written.</summary>
         public IReadOnlyList<ComponentValue> Source { get; } = source;
 
+        /// <summary>The next value of <see cref="Source"/> to substitute.</summary>
         public int Index { get; set; }
 
+        /// <summary>The values substituted so far.</summary>
         public List<ComponentValue> Output { get; } = output;
 
+        /// <summary>The function or block this list is the contents of, rebuilt with <see cref="Output"/>; null for the
+        /// top list.</summary>
         public ComponentValue? Owner { get; } = owner;
 
+        /// <summary>The output of the enclosing list, where the rebuilt <see cref="Owner"/> goes.</summary>
         public List<ComponentValue>? Into { get; } = into;
     }
 

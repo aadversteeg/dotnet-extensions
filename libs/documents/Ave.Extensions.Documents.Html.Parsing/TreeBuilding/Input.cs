@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Html.Parsing.Tokenizing;
 
 namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
@@ -28,5 +29,5 @@ internal readonly record struct Input(TokenKind Kind, Token? Token, int Char, in
     public bool IsEnd(params string[] names) => Kind == TokenKind.EndTag && System.Array.IndexOf(names, Token!.Name) >= 0;
 
     /// <summary>A character token that is ASCII whitespace (tab, line feed, form feed, carriage return, space).</summary>
-    public bool IsWhitespace => Kind == TokenKind.Characters && Ascii.IsWhitespace(Char);
+    public bool IsWhitespace => Kind == TokenKind.Characters && InfraAscii.IsWhitespace(Char);
 }

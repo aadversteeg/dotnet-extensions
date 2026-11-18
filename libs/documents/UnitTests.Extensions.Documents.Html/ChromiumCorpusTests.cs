@@ -31,16 +31,19 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
     /// computed-value time, the engine cannot tell that from a value beyond the profile: ruling D-b); fonts-tables-lists
     /// has break-after: always and selectors has [type=CHECKME s], both of which Chromium 159 drops and the engine
     /// refuses (D-b); elements has every element outside v0, one refusal each. The values are equal in all of them, as
-    /// the warnings-only resolution shows.</summary>
+    /// the warnings-only resolution shows. hints-gaps and ua-extra (from review 39's suite sub-review) hold elements and
+    /// attributes outside v0 among the ones they test, refused one by one.</summary>
     private static readonly Dictionary<string, (int Values, int Equal, int Refused, int Refusals)> Pinned = new()
     {
         ["cascade"] = (5_327, 5_327, 0, 2),
         ["elements"] = (18_143, 12_815, 5_328, 36),
         ["fonts-tables-lists"] = (16_703, 16_703, 0, 1),
         ["hints"] = (16_847, 16_847, 0, 0),
+        ["hints-gaps"] = (12_527, 11_951, 576, 4),
         ["properties"] = (16_415, 16_415, 0, 0),
         ["selectors"] = (8_783, 8_783, 0, 1),
         ["ua-bare"] = (10_079, 10_079, 0, 0),
+        ["ua-extra"] = (15_551, 13_967, 1_584, 4),
     };
 
     public static TheoryData<string> Cases =>
@@ -77,7 +80,7 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
             }
 
             var engine = element.Value(property);
-            if (property == "line-height" && element.Style["line-height"] is Ave.Extensions.Documents.Css.Values.CssNumber number)
+            if (property == "line-height" && element.Style[Ave.Extensions.Documents.Css.Properties.PropertyRegistry.LineHeight] is Ave.Extensions.Documents.Css.Values.CssNumber number)
             {
                 engine = ComputedText.Pixels(number.Value * double.Parse(element.Value("font-size")[..^2], CultureInfo.InvariantCulture));
             }

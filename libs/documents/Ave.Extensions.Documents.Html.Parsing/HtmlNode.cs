@@ -21,8 +21,9 @@ public abstract record HtmlNode(TextPosition Position);
 /// <param name="Children">Its children: comments, at most one doctype, and the <c>html</c> element.</param>
 public sealed record HtmlDocument(DocumentMode Mode, ValueList<HtmlNode> Children) : HtmlNode(TextPosition.Start)
 {
-    /// <summary>The document element: the <c>html</c> element every parsed document has.</summary>
-    public HtmlElement DocumentElement => Children.OfType<HtmlElement>().First();
+    /// <summary>The document element: the <c>html</c> element every parsed document has; null for a document made in
+    /// code without an element.</summary>
+    public HtmlElement? DocumentElement => Children.OfType<HtmlElement>().FirstOrDefault();
 }
 
 /// <summary>A document fragment (DOM Standard §4.7): the content of a <c>template</c> element, or the result of

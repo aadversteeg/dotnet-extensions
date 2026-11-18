@@ -1,6 +1,7 @@
 /*
  * The user-agent style sheet of the HTML front-end: the rules of the HTML Standard §15.3 and §15.4 ("Rendering",
- * read 2026-11-18), as Chromium 159 applies them, measured on a bare document (tools/reference/chromium/
+ * read 2026-11-18; Copyright © WHATWG (Apple, Google, Mozilla, Microsoft), CSS incorporated in source code under the
+ * BSD 3-Clause License, NOTICE.md), as Chromium 159 applies them, measured on a bare document (tools/reference/chromium/
  * computed-style, case ua-bare). It is read by the engine's own CSS reader, in the user-agent origin; a test checks
  * that reading it gives no diagnostic.
  *

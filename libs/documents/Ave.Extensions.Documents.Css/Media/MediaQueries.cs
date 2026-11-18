@@ -104,7 +104,7 @@ public static class MediaQueries
     /// <summary>Whether one media query matches; unknown is false (§3.1).</summary>
     public static bool Matches(MediaQuery query, MediaContext context)
     {
-        var typeMatches = query.Type is null or "all" || query.Type == Ascii.ToLower(context.Type);
+        var typeMatches = query.Type is null or "all" || query.Type == InfraAscii.ToLower(context.Type);
         var condition = query.Condition is null ? Kleene.True : Evaluate(query.Condition, context);
         var result = typeMatches ? condition : Kleene.False;
         if (query.Negated)
@@ -122,6 +122,7 @@ public static class MediaQueries
         Unknown,
     }
 
+    /// <summary><c>not</c> in the three-valued logic of Media Queries 4 §3.1: unknown stays unknown.</summary>
     private static Kleene Not(Kleene value) => value switch
     {
         Kleene.True => Kleene.False,
@@ -129,6 +130,8 @@ public static class MediaQueries
         _ => Kleene.Unknown,
     };
 
+    /// <summary>A condition in three-valued logic (Media Queries 4 §3.1): <c>and</c> is false when an operand is false,
+    /// <c>or</c> true when one is true, otherwise unknown if an operand is.</summary>
     private static Kleene Evaluate(MediaCondition condition, MediaContext context)
     {
         switch (condition)
@@ -179,6 +182,8 @@ public static class MediaQueries
     /// <summary>Chromium's tolerance for the inclusive comparisons of media features: 1/64 px, in points.</summary>
     private const double Tolerance = 0.75 / 64;
 
+    /// <summary>A width or height test (Media Queries 4 §4.1, §4.2) against the page: the boolean form, the
+    /// <c>min-</c>/<c>max-</c> forms and the range syntax (§2.4.3).</summary>
     private static Kleene Test(MediaFeatureTest test, MediaContext context)
     {
         var actual = test.Feature == "width" ? context.Width.Points : context.Height.Points;
@@ -221,6 +226,7 @@ public static class MediaQueries
     {
         private int _index;
 
+        /// <summary>Whether every token of the query was read.</summary>
         public bool AtEnd => _index >= tokens.Count;
 
         private ComponentValue? Peek => _index < tokens.Count ? tokens[_index] : null;
@@ -254,7 +260,7 @@ public static class MediaQueries
             }
 
             // An unknown or deprecated media type is valid and matches nothing (§2.3, §3.2); these words are not types.
-            var type = Ascii.ToLower(typeToken.Text);
+            var type = InfraAscii.ToLower(typeToken.Text);
             if (type is "only" or "not" or "and" or "or" or "layer")
             {
                 return null;
@@ -346,7 +352,7 @@ public static class MediaQueries
             }
 
             var nameToken = (CssToken)inner[nameIndex];
-            var lower = Ascii.ToLower(nameToken.Text);
+            var lower = InfraAscii.ToLower(nameToken.Text);
             var prefix = lower.StartsWith("min-", System.StringComparison.Ordinal) ? "min-" : lower.StartsWith("max-", System.StringComparison.Ordinal) ? "max-" : string.Empty;
             var name = lower[prefix.Length..];
             if (name is not ("width" or "height"))
@@ -483,7 +489,7 @@ public static class MediaQueries
                 case CssToken { Kind: CssTokenKind.Number, Number: 0 }:
                     return new MediaLength(0, string.Empty);
                 case CssToken { Kind: CssTokenKind.Dimension } dimension:
-                    var unit = Ascii.ToLower(dimension.Text);
+                    var unit = InfraAscii.ToLower(dimension.Text);
                     if (Units.PointsPer(unit) is not null || unit is "em" or "rem" or "vw" or "vh")
                     {
                         return new MediaLength(dimension.Number, unit);

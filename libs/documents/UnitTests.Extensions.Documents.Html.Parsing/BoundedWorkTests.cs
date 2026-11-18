@@ -42,7 +42,7 @@ public class BoundedWorkTests
     [InlineData(100_000)]
     [InlineData(1_900_000)]
     public void Many_attributes_on_one_tag_cost_their_number(int n) =>
-        ParsedWithin("<p" + Attributes(n) + ">").Document.DocumentElement.Children.Should().NotBeEmpty();
+        ParsedWithin("<p" + Attributes(n) + ">").Document.DocumentElement!.Children.Should().NotBeEmpty();
 
     [Theory]
     [InlineData(80_000)]
@@ -57,7 +57,7 @@ public class BoundedWorkTests
     {
         var parsed = ParsedWithin("<select>" + Repeat("<selectedcontent></selectedcontent>", n) + Repeat("<option selected>", n));
 
-        parsed.Document.DocumentElement.Should().NotBeNull();
+        parsed.Document.DocumentElement!.Should().NotBeNull();
     }
 
     [Theory]
@@ -83,7 +83,7 @@ public class BoundedWorkTests
             text.Append("<html a").Append(i.ToString("x")).Append('>');
         }
 
-        ParsedWithin(text.ToString()).Document.DocumentElement.Attributes.Count.Should().Be(n);
+        ParsedWithin(text.ToString()).Document.DocumentElement!.Attributes.Count.Should().Be(n);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Text;
 

@@ -67,7 +67,7 @@ void Print(StyledElement element, int depth)
     var id = element.Element.Attribute("id") is { } value ? "#" + value : string.Empty;
     bool NoBorder(PropertyDefinition property) =>
         property.Name.StartsWith("border-", StringComparison.Ordinal) && property.Name.EndsWith("-width", StringComparison.Ordinal)
-        && element.Style[property.Name.Replace("-width", "-style", StringComparison.Ordinal)].ToString() == "none";
+        && element.Style.Find(property.Name.Replace("-width", "-style", StringComparison.Ordinal))?.ToString() == "none";
     var changed = PropertyRegistry.Longhands
         .Where(property => !Equals(element.Style[property], property.Initial) && !NoBorder(property))
         .Select(property => $"{property.Name}: {element.Style[property]}");

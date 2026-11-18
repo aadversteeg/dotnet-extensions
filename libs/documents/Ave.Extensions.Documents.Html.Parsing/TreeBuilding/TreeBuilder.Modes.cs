@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using Ave.Extensions.Documents.Html.Parsing.Tokenizing;
 
@@ -103,8 +104,8 @@ internal sealed partial class TreeBuilder
     /// <summary>The quirks and limited-quirks conditions of §13.2.6.4.1 (compared ASCII case-insensitively).</summary>
     private static DocumentMode DoctypeMode(Token token)
     {
-        var publicId = token.PublicId is null ? null : Ascii.ToLower(token.PublicId);
-        var systemId = token.SystemId is null ? null : Ascii.ToLower(token.SystemId);
+        var publicId = token.PublicId is null ? null : InfraAscii.ToLower(token.PublicId);
+        var systemId = token.SystemId is null ? null : InfraAscii.ToLower(token.SystemId);
         var systemMissingOrEmpty = string.IsNullOrEmpty(systemId);
         bool PublicStarts(string prefix) => publicId is not null && publicId.StartsWith(prefix, StringComparison.Ordinal);
 
@@ -663,7 +664,7 @@ internal sealed partial class TreeBuilder
                 }
 
                 VoidElement(token);
-                if (token.Attribute("type") is not { } type || !Ascii.EqualsIgnoreCase(type, "hidden"))
+                if (token.Attribute("type") is not { } type || !InfraAscii.EqualsIgnoreCase(type, "hidden"))
                 {
                     _framesetOk = false;
                 }
@@ -1349,7 +1350,7 @@ internal sealed partial class TreeBuilder
         {
             InHead(t);
         }
-        else if (t.IsStart("input") && t.Token!.Attribute("type") is { } type && Ascii.EqualsIgnoreCase(type, "hidden"))
+        else if (t.IsStart("input") && t.Token!.Attribute("type") is { } type && InfraAscii.EqualsIgnoreCase(type, "hidden"))
         {
             Error("unexpected-start-tag", t);
             InsertHtmlElement(t.Token!);
@@ -1411,7 +1412,7 @@ internal sealed partial class TreeBuilder
             return;
         }
 
-        if (_pendingTableCharacters.Exists(pending => !Ascii.IsWhitespace(pending.Character)))
+        if (_pendingTableCharacters.Exists(pending => !InfraAscii.IsWhitespace(pending.Character)))
         {
             foreach (var (character, source) in _pendingTableCharacters)
             {

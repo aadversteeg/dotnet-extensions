@@ -487,7 +487,7 @@ internal sealed class SyntaxParser
             return null;
         }
 
-        if (Ascii.EqualsIgnoreCase(name.Text, "unicode-range") && value.Count > 0 && _source is not null)
+        if (InfraAscii.EqualsIgnoreCase(name.Text, "unicode-range") && value.Count > 0 && _source is not null)
         {
             // "Consume the value of a unicode-range descriptor" from the original text (§5.5.11).
             var ranges = ComponentValues(new CssTokenizer(_source, _error, unicodeRangesAllowed: true, value[0].SourceStart, value[^1].SourceEnd));
@@ -551,14 +551,19 @@ internal sealed class SyntaxParser
         private readonly Stack<int> _marks = new();
         private int _index;
 
+        /// <summary>"The next token" of §5.3: null at the end, where the standard has an EOF token.</summary>
         public ComponentValue? Next => _index < values.Count ? values[_index] : null;
 
+        /// <summary>"Empty" of §5.3.</summary>
         public bool IsEmpty => _index >= values.Count;
 
+        /// <summary>Whether the next token is a token of <paramref name="kind"/>.</summary>
         public bool NextIs(CssTokenKind kind) => Next is CssToken token && token.Kind == kind;
 
+        /// <summary>"Consume a token" of §5.3.</summary>
         public ComponentValue Consume() => values[_index++];
 
+        /// <summary>"Discard a token" of §5.3: nothing at the end.</summary>
         public void Discard()
         {
             if (!IsEmpty)
@@ -567,6 +572,7 @@ internal sealed class SyntaxParser
             }
         }
 
+        /// <summary>"Discard whitespace" of §5.3.</summary>
         public void DiscardWhitespace()
         {
             while (NextIs(CssTokenKind.Whitespace))
@@ -575,10 +581,13 @@ internal sealed class SyntaxParser
             }
         }
 
+        /// <summary>"Mark" of §5.3.</summary>
         public void Mark() => _marks.Push(_index);
 
+        /// <summary>"Restore a mark" of §5.3.</summary>
         public void RestoreMark() => _index = _marks.Pop();
 
+        /// <summary>"Discard a mark" of §5.3.</summary>
         public void DiscardMark() => _marks.Pop();
     }
 }

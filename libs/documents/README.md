@@ -5,7 +5,9 @@ native library, no P/Invoke and no external program at run time; the reference t
 qpdf, poppler, MuPDF, HarfBuzz, Chromium) run only in its tests and scripts. It writes PDF/A-3b, PDF/A-3a and PDF/UA-1:
 archivable, tagged and accessible files, as business documents such as invoices and timesheets need.
 
-Status: preview (milestone M1). The first release from this repository is `0.1.0-preview.2`. The packages target
+Status: preview. Milestone M1, the code front-end to PDF, is released as `0.1.0-preview.2`. Milestone M2, the HTML
+front-end, is in progress: its first part, HTML and CSS to the computed style of every element, is in the packages
+`Html.Parsing`, `Css` and `Html`, which are not released yet and do not lay out or print anything. The packages target
 `net10.0` only.
 
 ## Packages
@@ -102,6 +104,28 @@ profiles, what each refuses, and the checks a person must still make for PDF/UA)
 works, for a reviewer). The samples in `samples/Ave.Extensions.Documents.Samples` are a letter, a long text and a
 timesheet with tables over several pages, in Dutch and English.
 
+## HTML and CSS to computed style (M2, first part)
+
+The HTML front-end reads a document as Chromium 159 prints it and refuses what it cannot follow. Its first part
+parses the HTML (the HTML Standard's algorithm), reads the style sheets (CSS Syntax 3, Selectors 4, Cascade 5) and
+gives every element its computed style, with every parse error, refusal and ignored declaration as a diagnostic that
+carries the file, line and column. Layout of the result comes in a later stage.
+
+```csharp
+using Ave.Extensions.Documents.Html;           // HtmlStyleResolver, HtmlStyleOptions, StyledHtmlDocument
+using Ave.Extensions.Documents.Html.Parsing;   // HtmlParser, HtmlParseOptions
+using Ave.Extensions.Functional;               // OnSuccessBind, Match
+
+var styled = HtmlParser.Parse(File.ReadAllBytes("invoice.html"), new HtmlParseOptions("invoice.html"))
+    .OnSuccessBind(document => HtmlStyleResolver.Resolve(document, new HtmlStyleOptions()));
+```
+
+A style sheet alone is read with `CssParser.ParseStyleSheet` (`Ave.Extensions.Documents.Css`); a document alone with
+`HtmlParser.Parse`. The engine opens no file and no URL: linked style sheets and `@import` are read through
+`HtmlStyleOptions.Resources`, a function the caller gives. What is supported, refused and ignored is listed in
+`docs/html-css-profile.md`, generated from the code; `samples/Ave.Extensions.Documents.Samples.HtmlStyles` prints the
+styled tree and the diagnostics of a file.
+
 ## What it does
 
 - **Text:** Unicode line breaking (UAX #14, Unicode 18.0.0), OpenType shaping (GSUB, GPOS, GDEF, legacy kern) for
@@ -127,6 +151,8 @@ timesheet with tables over several pages, in Dutch and English.
 | Shaping matches HarfBuzz | HarfBuzz 15.0.0, run as WebAssembly inside the tests: 44 lines in three fonts, 2,602 glyphs, all identical (`HarfBuzzCorpusTests`); the known differences are Unicode composition only. |
 | Table layout matches a browser | Column widths, page breaks, repeated headers and split rows are compared with numbers measured in Chromium 159 (`ChromiumReferenceTests`, `TableBreakLineTests`; cases and measurements in `tools/reference/chromium`). |
 | The files are well-formed and readable by other tools | qpdf `--check`, poppler's `pdftotext` and `pdffonts`, every embedded font opened with fontTools, renderings by poppler and MuPDF, attachments extracted by qpdf and compared byte for byte (`tools/verify-samples.ps1`, reference tests). |
+| The HTML parser follows the HTML Standard | The html5lib tokenizer tests and the tree-construction tests of web-platform-tests, every case of every file, counts asserted (`TokenizerSuiteTests`, `TreeConstructionSuiteTests`); where Chromium 159 builds another tree, its tree is measured and the parser follows it or a listed limit says why not (`tools/reference/chromium/html-tree`). |
+| CSS is read as Chromium 159 reads it | The css-parsing-tests suite and the CSS cases of web-platform-tests, each answer counted as equal, refused or different, with different pinned at 0 or a named skip (`CssParsingSuiteTests`, `ColorSuiteTests`, `WptCssSuiteTests`, `WptComputedValueTests`); the computed style of every element and property against Chromium's (`ChromiumCorpusTests`, cases in `tools/reference/chromium/computed-style`). |
 | No native code | `UnitTests.Extensions.Documents.Architecture` reads every compiled library: no P/Invoke, no module references, IL only, no unsafe code; the samples' publish folder holds IL-only assemblies only. |
 
 What a PDF/UA document needs beyond these checks (reading order, meaningful alternative texts) is for a person to
@@ -169,8 +195,29 @@ assemblies by `UnitTests.Extensions.Documents.Architecture`.
  Ave.Extensions.Documents.Fonts          TrueType reader (incl. GSUB, GPOS, GDEF, kern) and subsetter
  Ave.Extensions.Documents.Images         PNG decoder (8-bit grey/RGB/alpha, palette) and JPEG header reader
  Ave.Extensions.Documents.Core           lengths, geometry, colour, value lists, source locations, roles, metadata,
-                                         attachments, error codes
+                                         attachments, error codes, the ASCII rules and encoding labels of the WHATWG
+                                         standards
 ```
+
+The HTML front-end (M2) is not in that row yet: it stops at computed style, and a later stage translates it to the
+document model as the code front-end does. Its three packages:
+
+```
+ Ave.Extensions.Documents.Html           HTML front-end: a parsed document and its style sheets to the computed
+        │                                style of every element (user-agent sheet, presentational hints, style
+        │                                attributes)
+        ├───────────────────────────────────────┐
+        ▼                                       ▼
+ Ave.Extensions.Documents.Html.Parsing   Ave.Extensions.Documents.Css
+   the HTML Standard's tokenizer and       CSS Syntax 3, selectors, media queries, @supports, the cascade
+   tree construction, byte decoding        with layers, nesting and custom properties, the property registry
+        │                                       │
+        └───────────────────┬───────────────────┘
+                            ▼
+ Ave.Extensions.Documents.Core
+```
+
+`Css` and `Html.Parsing` depend on Core only, and neither knows the other; `Html` joins them.
 
 Where the contracts are:
 
@@ -182,6 +229,9 @@ Where the contracts are:
 - Page model: `Ave.Extensions.Documents.PageModel/PageDocument.cs`, `DrawItem.cs` (with structure and artifact markers).
 - Conformance: `Ave.Extensions.Documents.Pdf/PdfProfile.cs`, `Ave.Extensions.Documents.Render.Pdf/ConformanceRules.cs`,
   `Ave.Extensions.Documents.Render.Pdf/Tagging/`.
+- HTML and CSS: `Ave.Extensions.Documents.Html.Parsing/HtmlParser.cs`, `Ave.Extensions.Documents.Css/CssParser.cs`,
+  `Ave.Extensions.Documents.Css/Properties/PropertyRegistry.cs` (every property, its initial value, inheritance and
+  what is supported), `Ave.Extensions.Documents.Html/HtmlStyleResolver.cs`.
 - Error codes: each library defines the codes it raises in its own `*ErrorCodes.cs` (`Core/DocumentErrorCodes.cs` holds
   the root and the input codes every front-end shares). `UnitTests.Extensions.Documents.Architecture/ErrorCodeTests.cs`
   checks that no library raises another library's codes.

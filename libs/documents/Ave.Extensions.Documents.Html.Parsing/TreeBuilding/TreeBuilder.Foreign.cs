@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Html.Parsing.Tokenizing;
 
 namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
@@ -104,7 +105,7 @@ internal sealed partial class TreeBuilder
         var name = t.Name!;
         var index = _stack.Count - 1;
         var node = _stack[index];
-        if (Ascii.ToLower(node.LocalName) != name)
+        if (InfraAscii.ToLower(node.LocalName) != name)
         {
             Error("misnested-end-tag", t);
         }
@@ -116,7 +117,7 @@ internal sealed partial class TreeBuilder
                 return;
             }
 
-            if (Ascii.ToLower(node.LocalName) == name)
+            if (InfraAscii.ToLower(node.LocalName) == name)
             {
                 while (Pop() != node)
                 {

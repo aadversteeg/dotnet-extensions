@@ -16,6 +16,8 @@ internal sealed class ComputeContext
 
     private readonly double _rootFontSize;
 
+    /// <summary>Starts computing one element: <paramref name="parent"/> is null for the root, which inherits the
+    /// initial values.</summary>
     public ComputeContext(ComputedStyle? parent, double rootFontSize, ValueContext values, bool isRoot)
     {
         Parent = parent;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
@@ -101,13 +102,19 @@ public sealed class StyleComputer
 
     /// <summary>The computed style of an element.</summary>
     /// <param name="element">The element; its parent's style must have been computed by this computer first (the root
-    /// has none).</param>
+    /// has none): elements are computed in tree order. A child whose parent was not computed is a programming error,
+    /// <see cref="InvalidOperationException"/>, not a style without inheritance (review 39 API-4).</param>
     /// <param name="own">Its style attribute and presentational hints.</param>
     /// <returns>Its computed style.</returns>
     public ComputedStyle Compute(IStyleElement element, ElementDeclarations? own = null)
     {
         _element = element;
-        var parent = element.Parent is { } parentElement && _styles.TryGetValue(parentElement, out var parentStyle) ? parentStyle : null;
+        ComputedStyle? parent = null;
+        if (element.Parent is { } parentElement && !_styles.TryGetValue(parentElement, out parent))
+        {
+            throw new InvalidOperationException("The parent's style has not been computed: compute the elements in tree order, parents first.");
+        }
+
         var candidates = Collect(element, own ?? ElementDeclarations.None);
         var context = new ComputeContext(parent, _rootFontSize, _values, element.IsRoot);
         var custom = CustomProperties(candidates.Custom, parent);
@@ -138,6 +145,8 @@ public sealed class StyleComputer
     /// specificity, order of appearance.</summary>
     private readonly record struct Priority(int Origin, int Attached, int Layer, Specificity Specificity, int Order) : IComparable<Priority>
     {
+        /// <summary>Compares by the criteria of CSS Cascade 5 §6.1 in their order: the first that differs decides.
+        /// </summary>
         public int CompareTo(Priority other) =>
             Origin != other.Origin ? Origin.CompareTo(other.Origin)
             : Attached != other.Attached ? Attached.CompareTo(other.Attached)
@@ -164,10 +173,14 @@ public sealed class StyleComputer
 
     private sealed class Candidates
     {
+        /// <summary>The candidates for each longhand, by <see cref="PropertyDefinition.Index"/>; null where none was
+        /// declared.</summary>
         public List<Candidate>[] Longhands { get; } = new List<Candidate>[PropertyRegistry.Longhands.Count];
 
+        /// <summary>The candidates for each custom property, by its name as written.</summary>
         public Dictionary<string, List<Candidate>> Custom { get; } = new(StringComparer.Ordinal);
 
+        /// <summary>Adds a declared value to the list of the property it sets.</summary>
         public void Add(Candidate candidate)
         {
             if (candidate.Entry.Longhand is { } longhand)
@@ -185,6 +198,9 @@ public sealed class StyleComputer
         }
     }
 
+    /// <summary>The declared values for an element (CSS Cascade 5 §4.2): the declarations of every rule whose selector
+    /// matches it, its presentational hints and its style attribute, each property's sorted by the cascade order, highest
+    /// first (§6.1).</summary>
     private Candidates Collect(IStyleElement element, ElementDeclarations own)
     {
         var candidates = new Candidates();
@@ -262,9 +278,9 @@ public sealed class StyleComputer
 
     // ---- the cascaded value (§6, §7.3.3, §7.3.4) ----
 
-    /// <summary>The winning candidate, or null when none is left: refused values are reported and skipped;
-    /// <c>revert</c> skips the rest of its origin (presentational hints count as author), <c>revert-layer</c> the rest of
-    /// its layer.</summary>
+    /// <summary>The winning candidate (CSS Cascade 5 §6.1), or null when none is left: refused values are reported and
+    /// skipped; <c>revert</c> skips the rest of its origin (presentational hints count as author), <c>revert-layer</c> the
+    /// rest of its layer (§7.3).</summary>
     private Candidate? Winner(List<Candidate>? candidates)
     {
         if (candidates is null)
@@ -308,6 +324,8 @@ public sealed class StyleComputer
         return null;
     }
 
+    /// <summary>The origin <c>revert</c> rolls back (CSS Cascade 5 §7.3): user agent, user, or author with the
+    /// presentational hints, which count as author-level (§6.2).</summary>
     private static int RevertGroup(CascadeOrigin origin) => origin switch
     {
         CascadeOrigin.UserAgent => 0,
@@ -380,10 +398,11 @@ public sealed class StyleComputer
             }
         }
 
-        return result;
+        // Frozen: a computed style's custom properties cannot change, also through a cast (review 39 R-4).
+        return result.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
-    private static readonly IReadOnlyDictionary<string, CssTokens> NoCustomProperties = new Dictionary<string, CssTokens>(StringComparer.Ordinal);
+    private static readonly IReadOnlyDictionary<string, CssTokens> NoCustomProperties = FrozenDictionary<string, CssTokens>.Empty;
 
     /// <summary>A strongly connected component of the dependency graph: one property, or the properties of a cycle.</summary>
     private sealed record Component(List<string> Names, bool Cyclic);
@@ -691,9 +710,11 @@ public sealed class StyleComputer
     /// <summary>Compares (declaration, element) keys by identity.</summary>
     private sealed class ReportedForComparer : IEqualityComparer<(PreparedDeclaration Declaration, IStyleElement Element)>
     {
+        /// <inheritdoc />
         public bool Equals((PreparedDeclaration Declaration, IStyleElement Element) x, (PreparedDeclaration Declaration, IStyleElement Element) y) =>
             ReferenceEquals(x.Declaration, y.Declaration) && ReferenceEquals(x.Element, y.Element);
 
+        /// <inheritdoc />
         public int GetHashCode((PreparedDeclaration Declaration, IStyleElement Element) obj) =>
             HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Declaration), System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Element));
     }
@@ -701,9 +722,11 @@ public sealed class StyleComputer
     /// <summary>Compares substitution keys by the identity of the declaration and the table.</summary>
     private sealed class SubstitutionComparer : IEqualityComparer<(PreparedDeclaration Declaration, object Custom)>
     {
+        /// <inheritdoc />
         public bool Equals((PreparedDeclaration Declaration, object Custom) x, (PreparedDeclaration Declaration, object Custom) y) =>
             ReferenceEquals(x.Declaration, y.Declaration) && ReferenceEquals(x.Custom, y.Custom);
 
+        /// <inheritdoc />
         public int GetHashCode((PreparedDeclaration Declaration, object Custom) obj) =>
             HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Declaration), System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Custom));
     }

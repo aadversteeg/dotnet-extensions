@@ -1,6 +1,8 @@
 # HTML and CSS profile (v0)
 
-Generated from the code by `UnitTests.Extensions.Documents.Html/ProfileDocumentTests.cs`; do not edit. What the HTML
+The tables are generated from the code by `UnitTests.Extensions.Documents.Html/ProfileDocumentTests.cs`; do not edit.
+The prose around them and the table of presentational attributes are written by hand in that test and in
+`Html/PresentationalHints.cs` (`Documented`); the corpus checks the attributes against Chromium. What the HTML
 front-end supports, what it ignores by rule (no effect in a static paged document) and what it refuses. Valid input
 that is not listed as supported or ignored is refused: a diagnostic of class Refusal with its line and column
 (`HtmlStyleDiagnostics.ClassOf`), which fails the document unless the caller asked for warnings only. The
@@ -86,91 +88,93 @@ names nothing.
 
 ### Supported at the initial value only
 
-What the layout always does: a declaration that sets one of these to its initial value is accepted (so resets and
-the user-agent style sheet are not refused); any other value is refused.
+What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and
+the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,
+which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and
+on any other element stage 4 applies the ratio or refuses it. Any other value is refused.
 
-| Property | Initial | Defined in |
-| --- | --- | --- |
-| `aspect-ratio` | `auto` | CSS Sizing 4 §2.1 |
-| `backdrop-filter` | `none` | Filter Effects 2 §3 |
-| `background-attachment` | `scroll` | CSS Backgrounds 3 §2.4 |
-| `background-clip` | `border-box` | CSS Backgrounds 3 §2.8 |
-| `background-image` | `none` | CSS Backgrounds 3 §2.2 |
-| `background-origin` | `padding-box` | CSS Backgrounds 3 §2.7 |
-| `background-position-x` | `0%` | CSS Backgrounds 4 §2.6 |
-| `background-position-y` | `0%` | CSS Backgrounds 4 §2.6 |
-| `background-repeat` | `repeat` | CSS Backgrounds 3 §2.3 |
-| `background-size` | `auto` | CSS Backgrounds 3 §2.9 |
-| `border-bottom-left-radius` | `0pt` | CSS Backgrounds 3 §5.1 |
-| `border-bottom-right-radius` | `0pt` | CSS Backgrounds 3 §5.1 |
-| `border-top-left-radius` | `0pt` | CSS Backgrounds 3 §5.1 |
-| `border-top-right-radius` | `0pt` | CSS Backgrounds 3 §5.1 |
-| `bottom` | `auto` | CSS Positioned Layout 3 §3.1 |
-| `box-shadow` | `none` | CSS Backgrounds 3 §6.1 |
-| `clear` | `none` | CSS 2.1 §9.5.2 |
-| `clip-path` | `none` | CSS Masking 1 §5.1 |
-| `column-count` | `auto` | CSS Multi-column 1 §3.2 |
-| `column-gap` | `normal` | CSS Box Alignment 3 §8.1 |
-| `column-width` | `auto` | CSS Multi-column 1 §3.1 |
-| `contain` | `none` | CSS Containment 2 §2 |
-| `content` | `normal` | CSS Generated Content 3 §1 |
-| `content-visibility` | `visible` | CSS Containment 2 §4 |
-| `counter-increment` | `none` | CSS Lists 3 §4.3 |
-| `counter-reset` | `none` | CSS Lists 3 §4.2 |
-| `counter-set` | `none` | CSS Lists 3 §4.4 |
-| `direction` | `ltr` | CSS Writing Modes 4 §2.1 |
-| `filter` | `none` | Filter Effects 1 §5 |
-| `float` | `none` | CSS 2.1 §9.5.1 |
-| `font-feature-settings` | `normal` | CSS Fonts 4 §7.1 |
-| `font-kerning` | `auto` | CSS Fonts 4 §6.3 |
-| `font-language-override` | `normal` | CSS Fonts 4 §7.4 |
-| `font-optical-sizing` | `auto` | CSS Fonts 4 §2.6 |
-| `font-size-adjust` | `none` | CSS Fonts 5 §2.1 |
-| `font-stretch` | `100%` | CSS Fonts 4 §2.3 |
-| `font-variant-alternates` | `normal` | CSS Fonts 4 §6.8 |
-| `font-variant-caps` | `normal` | CSS Fonts 4 §6.6 |
-| `font-variant-east-asian` | `normal` | CSS Fonts 4 §6.10 |
-| `font-variant-emoji` | `normal` | CSS Fonts 4 §6.11 |
-| `font-variant-ligatures` | `normal` | CSS Fonts 4 §6.4 |
-| `font-variant-numeric` | `normal` | CSS Fonts 4 §6.7 |
-| `font-variant-position` | `normal` | CSS Fonts 4 §6.5 |
-| `font-variation-settings` | `normal` | CSS Fonts 4 §7.2 |
-| `hyphens` | `manual` | CSS Text 3 §5.4 |
-| `image-rendering` | `auto` | CSS Images 3 §5.3 |
-| `isolation` | `auto` | Compositing 1 §3.3 |
-| `left` | `auto` | CSS Positioned Layout 3 §3.1 |
-| `letter-spacing` | `normal` | CSS Text 3 §7.2 |
-| `line-break` | `auto` | CSS Text 3 §5.3 |
-| `list-style-image` | `none` | CSS Lists 3 §3.4 |
-| `max-height` | `none` | CSS Sizing 3 §3.2 |
-| `min-height` | `auto` | CSS Sizing 3 §3.2 |
-| `mix-blend-mode` | `normal` | Compositing 1 §3.2 |
-| `object-fit` | `fill` | CSS Images 3 §5.5 |
-| `opacity` | `1` | CSS Color 4 §11.2 |
-| `outline-style` | `none` | CSS UI 4 §3.3 |
-| `overflow-wrap` | `normal` | CSS Text 3 §5.5 |
-| `page` | `auto` | CSS Paged Media 3 §6 |
-| `position` | `static` | CSS Positioned Layout 3 §2.1 |
-| `quotes` | `auto` | CSS Generated Content 3 §3 |
-| `right` | `auto` | CSS Positioned Layout 3 §3.1 |
-| `row-gap` | `normal` | CSS Box Alignment 3 §8.1 |
-| `tab-size` | `8` | CSS Text 3 §4.2 |
-| `text-align-last` | `auto` | CSS Text 3 §6.2 |
-| `text-decoration-thickness` | `auto` | CSS Text Decoration 4 §2.4 |
-| `text-indent` | `0pt` | CSS Text 3 §8.1 |
-| `text-justify` | `auto` | CSS Text 3 §6.4 |
-| `text-overflow` | `clip` | CSS Overflow 3 §5.1 |
-| `text-rendering` | `auto` | SVG 2 §11.9 |
-| `text-shadow` | `none` | CSS Text Decoration 3 §4 |
-| `text-transform` | `none` | CSS Text 3 §2.1 |
-| `text-wrap-style` | `auto` | CSS Text 4 §6.2 |
-| `top` | `auto` | CSS Positioned Layout 3 §3.1 |
-| `transform` | `none` | CSS Transforms 1 §5 |
-| `visibility` | `visible` | CSS Display 3 §4 |
-| `word-break` | `normal` | CSS Text 3 §5.2 |
-| `word-spacing` | `0pt` | CSS Text 4 §7.1 |
-| `writing-mode` | `horizontal-tb` | CSS Writing Modes 4 §3.1 |
-| `z-index` | `auto` | CSS 2.1 §9.9.1 |
+| Property | Initial | Accepted | Defined in |
+| --- | --- | --- | --- |
+| `aspect-ratio` | `auto` | `auto \| auto && <ratio>` | CSS Sizing 4 §2.1 |
+| `backdrop-filter` | `none` | `none` | Filter Effects 2 §3 |
+| `background-attachment` | `scroll` | `scroll` | CSS Backgrounds 3 §2.4 |
+| `background-clip` | `border-box` | `border-box` | CSS Backgrounds 3 §2.8 |
+| `background-image` | `none` | `none` | CSS Backgrounds 3 §2.2 |
+| `background-origin` | `padding-box` | `padding-box` | CSS Backgrounds 3 §2.7 |
+| `background-position-x` | `0%` | `0%` | CSS Backgrounds 4 §2.6 |
+| `background-position-y` | `0%` | `0%` | CSS Backgrounds 4 §2.6 |
+| `background-repeat` | `repeat` | `repeat` | CSS Backgrounds 3 §2.3 |
+| `background-size` | `auto` | `auto` | CSS Backgrounds 3 §2.9 |
+| `border-bottom-left-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
+| `border-bottom-right-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
+| `border-top-left-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
+| `border-top-right-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
+| `bottom` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
+| `box-shadow` | `none` | `none` | CSS Backgrounds 3 §6.1 |
+| `clear` | `none` | `none` | CSS 2.1 §9.5.2 |
+| `clip-path` | `none` | `none` | CSS Masking 1 §5.1 |
+| `column-count` | `auto` | `auto` | CSS Multi-column 1 §3.2 |
+| `column-gap` | `normal` | `normal` | CSS Box Alignment 3 §8.1 |
+| `column-width` | `auto` | `auto` | CSS Multi-column 1 §3.1 |
+| `contain` | `none` | `none` | CSS Containment 2 §2 |
+| `content` | `normal` | `normal` | CSS Generated Content 3 §1 |
+| `content-visibility` | `visible` | `visible` | CSS Containment 2 §4 |
+| `counter-increment` | `none` | `none` | CSS Lists 3 §4.3 |
+| `counter-reset` | `none` | `none` | CSS Lists 3 §4.2 |
+| `counter-set` | `none` | `none` | CSS Lists 3 §4.4 |
+| `direction` | `ltr` | `ltr` | CSS Writing Modes 4 §2.1 |
+| `filter` | `none` | `none` | Filter Effects 1 §5 |
+| `float` | `none` | `none` | CSS 2.1 §9.5.1 |
+| `font-feature-settings` | `normal` | `normal` | CSS Fonts 4 §7.1 |
+| `font-kerning` | `auto` | `auto` | CSS Fonts 4 §6.3 |
+| `font-language-override` | `normal` | `normal` | CSS Fonts 4 §7.4 |
+| `font-optical-sizing` | `auto` | `auto` | CSS Fonts 4 §2.6 |
+| `font-size-adjust` | `none` | `none` | CSS Fonts 5 §2.1 |
+| `font-stretch` | `100%` | `normal \| 100%` | CSS Fonts 4 §2.3 |
+| `font-variant-alternates` | `normal` | `normal` | CSS Fonts 4 §6.8 |
+| `font-variant-caps` | `normal` | `normal` | CSS Fonts 4 §6.6 |
+| `font-variant-east-asian` | `normal` | `normal` | CSS Fonts 4 §6.10 |
+| `font-variant-emoji` | `normal` | `normal` | CSS Fonts 4 §6.11 |
+| `font-variant-ligatures` | `normal` | `normal` | CSS Fonts 4 §6.4 |
+| `font-variant-numeric` | `normal` | `normal` | CSS Fonts 4 §6.7 |
+| `font-variant-position` | `normal` | `normal` | CSS Fonts 4 §6.5 |
+| `font-variation-settings` | `normal` | `normal` | CSS Fonts 4 §7.2 |
+| `hyphens` | `manual` | `manual` | CSS Text 3 §5.4 |
+| `image-rendering` | `auto` | `auto` | CSS Images 3 §5.3 |
+| `isolation` | `auto` | `auto` | Compositing 1 §3.3 |
+| `left` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
+| `letter-spacing` | `normal` | `normal` | CSS Text 3 §7.2 |
+| `line-break` | `auto` | `auto` | CSS Text 3 §5.3 |
+| `list-style-image` | `none` | `none` | CSS Lists 3 §3.4 |
+| `max-height` | `none` | `none` | CSS Sizing 3 §3.2 |
+| `min-height` | `auto` | `auto` | CSS Sizing 3 §3.2 |
+| `mix-blend-mode` | `normal` | `normal` | Compositing 1 §3.2 |
+| `object-fit` | `fill` | `fill` | CSS Images 3 §5.5 |
+| `opacity` | `1` | `1` | CSS Color 4 §11.2 |
+| `outline-style` | `none` | `none` | CSS UI 4 §3.3 |
+| `overflow-wrap` | `normal` | `normal` | CSS Text 3 §5.5 |
+| `page` | `auto` | `auto` | CSS Paged Media 3 §6 |
+| `position` | `static` | `static` | CSS Positioned Layout 3 §2.1 |
+| `quotes` | `auto` | `auto` | CSS Generated Content 3 §3 |
+| `right` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
+| `row-gap` | `normal` | `normal` | CSS Box Alignment 3 §8.1 |
+| `tab-size` | `8` | `8` | CSS Text 3 §4.2 |
+| `text-align-last` | `auto` | `auto` | CSS Text 3 §6.2 |
+| `text-decoration-thickness` | `auto` | `auto` | CSS Text Decoration 4 §2.4 |
+| `text-indent` | `0pt` | `0` | CSS Text 3 §8.1 |
+| `text-justify` | `auto` | `auto` | CSS Text 3 §6.4 |
+| `text-overflow` | `clip` | `clip` | CSS Overflow 3 §5.1 |
+| `text-rendering` | `auto` | `auto` | SVG 2 §11.9 |
+| `text-shadow` | `none` | `none` | CSS Text Decoration 3 §4 |
+| `text-transform` | `none` | `none` | CSS Text 3 §2.1 |
+| `text-wrap-style` | `auto` | `auto` | CSS Text 4 §6.2 |
+| `top` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
+| `transform` | `none` | `none` | CSS Transforms 1 §5 |
+| `visibility` | `visible` | `visible` | CSS Display 3 §4 |
+| `word-break` | `normal` | `normal` | CSS Text 3 §5.2 |
+| `word-spacing` | `0pt` | `normal \| 0` | CSS Text 4 §7.1 |
+| `writing-mode` | `horizontal-tb` | `horizontal-tb` | CSS Writing Modes 4 §3.1 |
+| `z-index` | `auto` | `auto` | CSS 2.1 §9.9.1 |
 
 ### Shorthands
 
@@ -179,34 +183,34 @@ the user-agent style sheet are not refused); any other value is refused.
 | `background` | background-color, background-image, background-repeat, background-attachment, background-position-x, background-position-y, background-size, background-origin, background-clip | `<color> \| none (one layer, no image)` | CSS Backgrounds 3 §2.10 |
 | `border` | border-top-width, border-top-style, border-top-color, border-right-width, border-right-style, border-right-color, border-bottom-width, border-bottom-style, border-bottom-color, border-left-width, border-left-style, border-left-color | `<line-width> \|\| <line-style> \|\| <color>` | CSS Backgrounds 3 §3.4 |
 | `border-bottom` | border-bottom-width, border-bottom-style, border-bottom-color | `<line-width> \|\| <line-style> \|\| <color>` | CSS Backgrounds 3 §3.4 |
-| `border-color` | border-top-color, border-right-color, border-bottom-color, border-left-color | `1 to 4 values` | CSS Backgrounds 3 §3.1 |
+| `border-color` | border-top-color, border-right-color, border-bottom-color, border-left-color | `<'border-top-color'>{1,4}` | CSS Backgrounds 3 §3.1 |
 | `border-left` | border-left-width, border-left-style, border-left-color | `<line-width> \|\| <line-style> \|\| <color>` | CSS Backgrounds 3 §3.4 |
-| `border-radius` | border-top-left-radius, border-top-right-radius, border-bottom-right-radius, border-bottom-left-radius | `1 to 4 values` | CSS Backgrounds 3 §5.1 |
+| `border-radius` | border-top-left-radius, border-top-right-radius, border-bottom-right-radius, border-bottom-left-radius | `<'border-top-left-radius'>{1,4}` | CSS Backgrounds 3 §5.1 |
 | `border-right` | border-right-width, border-right-style, border-right-color | `<line-width> \|\| <line-style> \|\| <color>` | CSS Backgrounds 3 §3.4 |
-| `border-style` | border-top-style, border-right-style, border-bottom-style, border-left-style | `1 to 4 values` | CSS Backgrounds 3 §3.2 |
+| `border-style` | border-top-style, border-right-style, border-bottom-style, border-left-style | `<'border-top-style'>{1,4}` | CSS Backgrounds 3 §3.2 |
 | `border-top` | border-top-width, border-top-style, border-top-color | `<line-width> \|\| <line-style> \|\| <color>` | CSS Backgrounds 3 §3.4 |
-| `border-width` | border-top-width, border-right-width, border-bottom-width, border-left-width | `1 to 4 values` | CSS Backgrounds 3 §3.3 |
+| `border-width` | border-top-width, border-right-width, border-bottom-width, border-left-width | `<'border-top-width'>{1,4}` | CSS Backgrounds 3 §3.3 |
 | `columns` | column-width, column-count | `auto` | CSS Multi-column 1 §3.3 |
 | `font` | font-style, font-variant-caps, font-weight, font-stretch, font-size, line-height, font-family, font-variant-ligatures, font-variant-numeric, font-variant-east-asian, font-variant-position, font-variant-alternates, font-variant-emoji, font-size-adjust, font-kerning, font-optical-sizing, font-feature-settings, font-variation-settings, font-language-override | `[ normal \| italic \|\| <font-weight> ]? <font-size> [ / <line-height> ]? <font-family>#` | CSS Fonts 4 §2.8 |
 | `font-synthesis` | font-synthesis-weight, font-synthesis-style, font-synthesis-small-caps | `none \| [ weight \|\| style \|\| small-caps ]` | CSS Fonts 4 §7.3 |
 | `font-variant` | font-variant-ligatures, font-variant-caps, font-variant-alternates, font-variant-numeric, font-variant-east-asian, font-variant-position, font-variant-emoji | `normal` | CSS Fonts 4 §6.12 |
 | `gap` | row-gap, column-gap | `normal` | CSS Box Alignment 3 §8.3 |
-| `inset` | top, right, bottom, left | `1 to 4 values` | CSS Positioned Layout 3 §3.1 |
+| `inset` | top, right, bottom, left | `<'top'>{1,4}` | CSS Positioned Layout 3 §3.1 |
 | `list-style` | list-style-position, list-style-image, list-style-type | `<list-style-position> \|\| none \|\| <list-style-type>` | CSS Lists 3 §3.6 |
-| `margin` | margin-top, margin-right, margin-bottom, margin-left | `1 to 4 values` | CSS Box Model 3 §5.1 |
-| `margin-block` | margin-top, margin-bottom | `1 or 2 values` | CSS Logical 1 §4 |
+| `margin` | margin-top, margin-right, margin-bottom, margin-left | `<'margin-top'>{1,4}` | CSS Box Model 3 §5.1 |
+| `margin-block` | margin-top, margin-bottom | `<'margin-top'>{1,2}` | CSS Logical 1 §4 |
 | `margin-block-end` | margin-bottom | `<length-percentage [0,∞]> \| auto` | CSS Logical 1 §4.2 |
 | `margin-block-start` | margin-top | `<length-percentage [0,∞]> \| auto` | CSS Logical 1 §4.2 |
-| `margin-inline` | margin-left, margin-right | `1 or 2 values` | CSS Logical 1 §4 |
+| `margin-inline` | margin-left, margin-right | `<'margin-left'>{1,2}` | CSS Logical 1 §4 |
 | `margin-inline-end` | margin-right | `<length-percentage [0,∞]> \| auto` | CSS Logical 1 §4.2 |
 | `margin-inline-start` | margin-left | `<length-percentage [0,∞]> \| auto` | CSS Logical 1 §4.2 |
 | `outline` | outline-width, outline-style, outline-color | `<line-width> \|\| none \|\| <color>` | CSS UI 4 §3.1 |
-| `overflow` | overflow-x, overflow-y | `visible` | CSS Overflow 3 §3.1 |
-| `padding` | padding-top, padding-right, padding-bottom, padding-left | `1 to 4 values` | CSS Box Model 3 §5.2 |
-| `padding-block` | padding-top, padding-bottom | `1 or 2 values` | CSS Logical 1 §4 |
+| `overflow` | overflow-x, overflow-y | `[ visible \| hidden \| clip ]{1,2}` | CSS Overflow 3 §3.1 |
+| `padding` | padding-top, padding-right, padding-bottom, padding-left | `<'padding-top'>{1,4}` | CSS Box Model 3 §5.2 |
+| `padding-block` | padding-top, padding-bottom | `<'padding-top'>{1,2}` | CSS Logical 1 §4 |
 | `padding-block-end` | padding-bottom | `<length-percentage [0,∞]>` | CSS Logical 1 §4.3 |
 | `padding-block-start` | padding-top | `<length-percentage [0,∞]>` | CSS Logical 1 §4.3 |
-| `padding-inline` | padding-left, padding-right | `1 or 2 values` | CSS Logical 1 §4 |
+| `padding-inline` | padding-left, padding-right | `<'padding-left'>{1,2}` | CSS Logical 1 §4 |
 | `padding-inline-end` | padding-right | `<length-percentage [0,∞]>` | CSS Logical 1 §4.3 |
 | `padding-inline-start` | padding-left | `<length-percentage [0,∞]>` | CSS Logical 1 §4.3 |
 | `page-break-after` | break-after | `auto \| always \| avoid` | CSS Fragmentation 3 §3.4 (legacy) |

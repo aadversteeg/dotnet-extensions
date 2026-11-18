@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-"""Writes the encoding label table of the HTML and CSS readers from the Encoding Standard's encodings.json.
+"""Writes the encoding label table of Core, which the HTML and CSS readers share, from the Encoding Standard's
+encodings.json.
 
 The Encoding Standard, section 4.2 "Names and labels", publishes the table as JSON at
 https://encoding.spec.whatwg.org/encodings.json. Download it, then run:
 
     python3 -I tools/generate-encoding-labels.py encodings.json \
-        Ave.Extensions.Documents.Html.Parsing/Decoding/EncodingLabels.g.cs
-    python3 -I tools/generate-encoding-labels.py encodings.json \
-        Ave.Extensions.Documents.Css/Syntax/EncodingLabels.g.cs Ave.Extensions.Documents.Css.Syntax
+        Ave.Extensions.Documents.Core/EncodingLabels.g.cs
 
 The readers need only to know which encoding a label names, to tell UTF-8 from every other encoding (HTML Standard
 section 13.2.3.2, "prescan a byte stream", and 13.2.6.4.4, "in head" for meta; CSS Syntax 3 section 3.2, "determine the
-fallback encoding"); they decode nothing but UTF-8 and UTF-16. The optional third argument is the namespace (the HTML
-parser's by default); each library keeps its own copy, as neither depends on the other.
+fallback encoding"); they decode nothing but UTF-8 and UTF-16. Both depend on Core only, so the one table is there.
 """
 
 import hashlib
@@ -20,7 +18,7 @@ import json
 import sys
 
 
-def main(source: str, target: str, namespace: str = 'Ave.Extensions.Documents.Html.Parsing.Decoding') -> None:
+def main(source: str, target: str, namespace: str = 'Ave.Extensions.Documents.Core') -> None:
     data = open(source, 'rb').read()
     groups = json.loads(data.decode('utf-8'))
     pairs = sorted(
@@ -36,7 +34,7 @@ def main(source: str, target: str, namespace: str = 'Ave.Extensions.Documents.Ht
         '',
         f'namespace {namespace};',
         '',
-        'internal static partial class EncodingLabels',
+        'public static partial class EncodingLabels',
         '{',
         f'    /// <summary>Every label of the Encoding Standard ({len(pairs)}), lowercase, to the name of its encoding.</summary>',
         '    private static readonly FrozenDictionary<string, string> Names = new Dictionary<string, string>',

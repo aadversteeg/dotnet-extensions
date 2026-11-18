@@ -9,7 +9,7 @@
     (README.md). On Linux and macOS the container runs as the current user.
 
 .PARAMETER Step
-    corpus, wpt, or all (default).
+    corpus, wpt, colors, or all (default).
 
 .PARAMETER Cases
     The corpus cases to measure, by name (default: every case).
@@ -21,7 +21,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('all', 'corpus', 'wpt')]
+    [ValidateSet('all', 'corpus', 'wpt', 'colors')]
     [string]$Step = 'all',
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Cases = @(),

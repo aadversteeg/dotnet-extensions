@@ -22,8 +22,11 @@ public static class HtmlParser
     /// <param name="options">The options, or null for none.</param>
     /// <returns>The document and its diagnostics, or <see cref="HtmlErrorCodes.TooLarge"/> or
     /// <see cref="HtmlErrorCodes.TooDeep"/>.</returns>
+    /// <exception cref="ArgumentNullException">The text is null.</exception>
     public static Result<HtmlParseResult, Error> Parse(string text, HtmlParseOptions? options = null)
     {
+        // A null text is a programming error, not input that can fail (review 39 HR-9).
+        ArgumentNullException.ThrowIfNull(text);
         options ??= HtmlParseOptions.Default;
         return text.Length > HtmlInputLimits.MaxCharacters
             ? TooLarge(options)
@@ -45,7 +48,7 @@ public static class HtmlParser
         options ??= HtmlParseOptions.Default;
         if (bytes.Length > HtmlInputLimits.MaxCharacters)
         {
-            return TooLarge(options);
+            return Result<HtmlParseResult, Error>.Failure(TooLargeError(options, "bytes"));
         }
 
         var decoded = ByteDecoding.Decode(bytes.Span);
@@ -85,8 +88,11 @@ public static class HtmlParser
     /// <param name="context">The context element.</param>
     /// <param name="options">The options, or null for none.</param>
     /// <returns>The fragment and its diagnostics, or an error.</returns>
+    /// <exception cref="ArgumentNullException">The text or the context is null.</exception>
     public static Result<HtmlFragmentResult, Error> ParseFragment(string text, HtmlFragmentContext context, HtmlParseOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(context);
         options ??= HtmlParseOptions.Default;
         if (text.Length > HtmlInputLimits.MaxCharacters)
         {
@@ -121,10 +127,13 @@ public static class HtmlParser
     /// counted only.</summary>
     private sealed class Diagnostics
     {
+        /// <summary>The first diagnostics, in the order they were found.</summary>
         public List<Diagnostic> Kept { get; } = [];
 
+        /// <summary>How many came after the limit and were counted only.</summary>
         public int Suppressed { get; private set; }
 
+        /// <summary>Keeps a diagnostic, or counts it once the limit is reached.</summary>
         public void Add(Diagnostic diagnostic)
         {
             if (Kept.Count < HtmlInputLimits.MaxDiagnostics)
@@ -175,14 +184,14 @@ public static class HtmlParser
         {
             label = charset;
         }
-        else if (meta.Token.Attribute("http-equiv") is { } equiv && Ascii.EqualsIgnoreCase(equiv, "content-type")
+        else if (meta.Token.Attribute("http-equiv") is { } equiv && InfraAscii.EqualsIgnoreCase(equiv, "content-type")
                  && meta.Token.Attribute("content") is { } content && MetaPrescan.ContentCharset(content) is { } fromContent
                  && EncodingLabels.Resolve(fromContent) is not null)
         {
             label = fromContent;
         }
 
-        return label is not null && EncodingLabels.ForMeta(EncodingLabels.Resolve(label)!) != EncodingLabels.Utf8
+        return label is not null && MetaEncodings.ForMeta(EncodingLabels.Resolve(label)!) != EncodingLabels.Utf8
             ? EncodingError(options, label, source.PositionOf(meta.Start)).Error
             : null;
     }
@@ -213,8 +222,10 @@ public static class HtmlParser
     private static Result<HtmlParseResult, Error> TooLarge(HtmlParseOptions options) =>
         Result<HtmlParseResult, Error>.Failure(TooLargeError(options));
 
-    private static Error TooLargeError(HtmlParseOptions options) =>
-        new Error(HtmlErrorCodes.TooLarge, $"The text is longer than {HtmlInputLimits.MaxCharacters} characters, the most the HTML parser reads.")
+    private static Error TooLargeError(HtmlParseOptions options, string unit = "characters") =>
+        new Error(HtmlErrorCodes.TooLarge, unit == "bytes"
+                ? $"The document is longer than {HtmlInputLimits.MaxCharacters} bytes, the most the HTML parser reads (each character takes at least one byte, so this is checked before decoding)."
+                : $"The text is longer than {HtmlInputLimits.MaxCharacters} characters, the most the HTML parser reads.")
             .With(ErrorMetadataKeys.Value, HtmlInputLimits.MaxCharacters)
             .With(ErrorMetadataKeys.SourceFile, options.SourceName);
 

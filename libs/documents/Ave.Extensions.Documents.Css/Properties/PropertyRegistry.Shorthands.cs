@@ -53,10 +53,10 @@ public static partial class PropertyRegistry
             "<line-width> || <line-style> || <color>", "CSS Backgrounds 3 §3.4", reader => ParseBorderSide(reader, Sides)));
 
         shorthands.Add(new ShorthandDefinition(
-            "outline", ["outline-width", "outline-style", "outline-color"], "<line-width> || none || <color>", "CSS UI 4 §3.1", ParseOutline));
+            "outline", OutlineLonghands, "<line-width> || none || <color>", "CSS UI 4 §3.1", ParseOutline));
 
         shorthands.Add(new ShorthandDefinition(
-            "overflow", ["overflow-x", "overflow-y"], "visible", "CSS Overflow 3 §3.1",
+            "overflow", ["overflow-x", "overflow-y"], "[ visible | hidden | clip ]{1,2}", "CSS Overflow 3 §3.1",
             reader => Pair(reader, "overflow-x", "overflow-y")));
 
         shorthands.Add(new ShorthandDefinition(
@@ -67,10 +67,10 @@ public static partial class PropertyRegistry
             "font", FontLonghands, "[ normal | italic || <font-weight> ]? <font-size> [ / <line-height> ]? <font-family>#", "CSS Fonts 4 §2.8", ParseFont));
 
         shorthands.Add(new ShorthandDefinition(
-            "font-variant", ["font-variant-ligatures", "font-variant-caps", "font-variant-alternates", "font-variant-numeric", "font-variant-east-asian", "font-variant-position", "font-variant-emoji"],
+            "font-variant", FontVariantLonghands,
             "normal", "CSS Fonts 4 §6.12",
             reader => reader.Count == 1 && reader.Keyword("normal") is not null
-                ? Expand(["font-variant-ligatures", "font-variant-caps", "font-variant-alternates", "font-variant-numeric", "font-variant-east-asian", "font-variant-position", "font-variant-emoji"], new Dictionary<string, CssValue>())
+                ? Expand(FontVariantLonghands, new Dictionary<string, CssValue>())
                 : ShorthandParse.Refused("font-variant is supported only as normal")));
 
         shorthands.Add(new ShorthandDefinition(
@@ -78,19 +78,19 @@ public static partial class PropertyRegistry
             "CSS Fonts 4 §7.3", ParseFontSynthesis));
 
         shorthands.Add(new ShorthandDefinition(
-            "list-style", ["list-style-position", "list-style-image", "list-style-type"], "<list-style-position> || none || <list-style-type>",
+            "list-style", ListStyleLonghands, "<list-style-position> || none || <list-style-type>",
             "CSS Lists 3 §3.6", ParseListStyle));
 
         shorthands.Add(new ShorthandDefinition(
-            "text-decoration", ["text-decoration-line", "text-decoration-style", "text-decoration-color", "text-decoration-thickness"],
+            "text-decoration", TextDecorationLonghands,
             "<text-decoration-line> || <text-decoration-style> || <color>", "CSS Text Decoration 3 §2.4", ParseTextDecoration));
 
         shorthands.Add(new ShorthandDefinition(
-            "white-space", ["white-space-collapse", "text-wrap-mode"], "normal | pre | nowrap | pre-wrap | <white-space-collapse> || <text-wrap-mode>",
+            "white-space", WhiteSpaceLonghands, "normal | pre | nowrap | pre-wrap | <white-space-collapse> || <text-wrap-mode>",
             "CSS Text 4 §3", ParseWhiteSpace));
 
         shorthands.Add(new ShorthandDefinition(
-            "text-wrap", ["text-wrap-mode", "text-wrap-style"], "<text-wrap-mode> || <text-wrap-style>", "CSS Text 4 §6.3",
+            "text-wrap", TextWrapLonghands, "<text-wrap-mode> || <text-wrap-style>", "CSS Text 4 §6.3",
             reader =>
             {
                 var values = new Dictionary<string, CssValue>();
@@ -108,15 +108,15 @@ public static partial class PropertyRegistry
                     values[parsed.Name] = parsed.Value.Value!;
                 }
 
-                return reader.Count == 0 ? ShorthandParse.Invalid("text-wrap needs a value") : Expand(["text-wrap-mode", "text-wrap-style"], values);
+                return reader.Count == 0 ? ShorthandParse.Invalid("text-wrap needs a value") : Expand(TextWrapLonghands, values);
             }));
 
         shorthands.Add(new ShorthandDefinition(
             "gap", ["row-gap", "column-gap"], "normal", "CSS Box Alignment 3 §8.3", reader => Pair(reader, "row-gap", "column-gap")));
 
         shorthands.Add(new ShorthandDefinition(
-            "columns", ["column-width", "column-count"], "auto", "CSS Multi-column 1 §3.3",
-            reader => reader.Count == 1 && reader.Keyword("auto") is not null ? Expand(["column-width", "column-count"], new Dictionary<string, CssValue>()) : ShorthandParse.Refused("multi-column layout is not supported")));
+            "columns", ColumnsLonghands, "auto", "CSS Multi-column 1 §3.3",
+            reader => reader.Count == 1 && reader.Keyword("auto") is not null ? Expand(ColumnsLonghands, new Dictionary<string, CssValue>()) : ShorthandParse.Refused("multi-column layout is not supported")));
 
         foreach (var (name, longhand) in new[] { ("page-break-before", "break-before"), ("page-break-after", "break-after") })
         {
@@ -146,6 +146,27 @@ public static partial class PropertyRegistry
         _ => "bottom-left",
     };
 
+    /// <summary>The longhands the outline shorthand sets and resets (CSS UI 4 §3.1).</summary>
+    private static readonly string[] OutlineLonghands = ["outline-width", "outline-style", "outline-color"];
+
+    /// <summary>The longhands the font-variant shorthand sets and resets (CSS Fonts 4 §6.12).</summary>
+    private static readonly string[] FontVariantLonghands = ["font-variant-ligatures", "font-variant-caps", "font-variant-alternates", "font-variant-numeric", "font-variant-east-asian", "font-variant-position", "font-variant-emoji"];
+
+    /// <summary>The longhands the list-style shorthand sets and resets (CSS Lists 3 §3.6).</summary>
+    private static readonly string[] ListStyleLonghands = ["list-style-position", "list-style-image", "list-style-type"];
+
+    /// <summary>The longhands the text-decoration shorthand sets and resets (CSS Text Decoration 3 §2.4).</summary>
+    private static readonly string[] TextDecorationLonghands = ["text-decoration-line", "text-decoration-style", "text-decoration-color", "text-decoration-thickness"];
+
+    /// <summary>The longhands the white-space shorthand sets and resets (CSS Text 4 §3).</summary>
+    private static readonly string[] WhiteSpaceLonghands = ["white-space-collapse", "text-wrap-mode"];
+
+    /// <summary>The longhands the text-wrap shorthand sets and resets (CSS Text 4 §6.3).</summary>
+    private static readonly string[] TextWrapLonghands = ["text-wrap-mode", "text-wrap-style"];
+
+    /// <summary>The longhands the columns shorthand sets and resets (CSS Multi-column 1 §3.3).</summary>
+    private static readonly string[] ColumnsLonghands = ["column-width", "column-count"];
+
     /// <summary>The longhands the font shorthand sets and resets (CSS Fonts 4 §2.8).</summary>
     private static readonly string[] FontLonghands =
     [
@@ -168,7 +189,7 @@ public static partial class PropertyRegistry
 
     /// <summary>A shorthand of the four sides: 1 to 4 values, top, right, bottom, left (CSS Box Model 3 §5).</summary>
     private static ShorthandDefinition BoxSides(string name, Func<string, string> longhand, Func<ValueReader, string, ParsedValue> parse, string specification) =>
-        new(name, [.. Sides.Select(longhand)], "1 to 4 values", specification, reader =>
+        new(name, [.. Sides.Select(longhand)], $"<'{longhand(Sides[0])}'>{{1,4}}", specification, reader =>
         {
             var values = new List<CssValue>();
             foreach (var item in reader.Remaining)
@@ -202,7 +223,7 @@ public static partial class PropertyRegistry
 
     /// <summary>A logical shorthand of two physical longhands: one value for both, or start then end.</summary>
     private static ShorthandDefinition Logical(string name, string[] longhands, Func<ValueReader, string, ParsedValue> parse) =>
-        new(name, longhands, "1 or 2 values", "CSS Logical 1 §4", reader =>
+        new(name, longhands, $"<'{longhands[0]}'>{{1,2}}", "CSS Logical 1 §4", reader =>
         {
             var values = new List<CssValue>();
             foreach (var item in reader.Remaining)
@@ -314,6 +335,8 @@ public static partial class PropertyRegistry
         return new ShorthandParse(values, null, false);
     }
 
+    /// <summary>outline = &lt;'outline-width'&gt; || &lt;'outline-style'&gt; || &lt;'outline-color'&gt; (CSS UI 4 §3.1), in
+    /// any order, each at most once; a style the longhand refuses refuses the shorthand.</summary>
     private static ShorthandParse ParseOutline(ValueReader reader)
     {
         var values = new Dictionary<string, CssValue>();
@@ -348,7 +371,7 @@ public static partial class PropertyRegistry
             return ShorthandParse.Invalid("not a value of outline");
         }
 
-        return reader.Count == 0 ? ShorthandParse.Invalid("outline needs a value") : Expand(["outline-width", "outline-style", "outline-color"], values);
+        return reader.Count == 0 ? ShorthandParse.Invalid("outline needs a value") : Expand(OutlineLonghands, values);
     }
 
     /// <summary>background (CSS Backgrounds 3 §2.10): one layer with a colour and no image. An image, a position, a size
@@ -503,6 +526,8 @@ public static partial class PropertyRegistry
         return Expand(FontLonghands, values);
     }
 
+    /// <summary>font-synthesis = none | [ weight || style || small-caps ] (CSS Fonts 4 §7.3): each named longhand
+    /// auto, the others none.</summary>
     private static ShorthandParse ParseFontSynthesis(ValueReader reader)
     {
         if (reader.Count == 1 && reader.Keyword("none") is not null)
@@ -603,7 +628,7 @@ public static partial class PropertyRegistry
             }
         }
 
-        return Expand(["list-style-position", "list-style-image", "list-style-type"], values);
+        return Expand(ListStyleLonghands, values);
     }
 
     /// <summary>white-space (CSS Text 4 §3): the CSS 2 keywords, each a pair of white-space-collapse and text-wrap-mode
@@ -640,7 +665,7 @@ public static partial class PropertyRegistry
             values[name] = value.Value!;
         }
 
-        return reader.Count == 0 ? ShorthandParse.Invalid("white-space needs a value") : Expand(["white-space-collapse", "text-wrap-mode"], values);
+        return reader.Count == 0 ? ShorthandParse.Invalid("white-space needs a value") : Expand(WhiteSpaceLonghands, values);
     }
 
     /// <summary>text-decoration (CSS Text Decoration 3 §2.4): line || style || color.</summary>
@@ -695,6 +720,6 @@ public static partial class PropertyRegistry
             values["text-decoration-line"] = line.Value!;
         }
 
-        return reader.Count == 0 ? ShorthandParse.Invalid("text-decoration needs a value") : Expand(["text-decoration-line", "text-decoration-style", "text-decoration-color", "text-decoration-thickness"], values);
+        return reader.Count == 0 ? ShorthandParse.Invalid("text-decoration needs a value") : Expand(TextDecorationLonghands, values);
     }
 }

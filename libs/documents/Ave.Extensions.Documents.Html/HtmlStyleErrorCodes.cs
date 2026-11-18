@@ -42,6 +42,10 @@ public static class HtmlStyleErrorCodes
         public static readonly ErrorCode QuirksMode = _ / "QuirksMode";
     }
 
+    /// <summary>A document with no element (made in code; the parser always makes the html element): there is nothing to
+    /// style, and the resolution fails. Metadata: SourceFile.</summary>
+    public static readonly ErrorCode NoDocumentElement = _ / "NoDocumentElement";
+
     /// <summary>Parts of the document that do not apply, as in a browser: listed, never refused.</summary>
     public static class Ignored
     {

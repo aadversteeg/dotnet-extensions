@@ -15,7 +15,7 @@ public class HtmlParserTests
         result.Match(value => throw new InvalidOperationException($"Expected a failure, got {value}."), error => error);
 
     private static HtmlElement Body(HtmlDocument document) =>
-        document.DocumentElement.Children.OfType<HtmlElement>().Single(element => element.IsHtml("body"));
+        document.DocumentElement!.Children.OfType<HtmlElement>().Single(element => element.IsHtml("body"));
 
     [Fact]
     public void Every_node_carries_the_line_and_column_where_it_was_written()
@@ -39,10 +39,27 @@ public class HtmlParserTests
         var body = Body(document);
         var cell = body.Children.OfType<HtmlElement>();
 
-        document.DocumentElement.Position.Should().Be(new TextPosition(3, 3));
+        document.DocumentElement!.Position.Should().Be(new TextPosition(3, 3));
         body.Position.Should().Be(new TextPosition(3, 3));
         cell.Should().BeEmpty("a td start tag in body is ignored, and its text goes into the body");
         body.Children.Single().Should().Be(new HtmlText("x", new TextPosition(3, 7)));
+    }
+
+    [Fact]
+    public void A_null_text_is_a_programming_error_not_a_parse()
+    {
+        // Review 39 HR-9: it was a NullReferenceException from inside the parser.
+        FluentActions.Invoking(() => HtmlParser.Parse((string)null!)).Should().Throw<ArgumentNullException>();
+        FluentActions.Invoking(() => HtmlParser.ParseFragment(null!, HtmlFragmentContext.Body)).Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Bytes_past_the_limit_are_reported_as_bytes()
+    {
+        // Review 39 HR-10: the message said characters for a limit counted in bytes.
+        var error = HtmlParser.Parse(new byte[HtmlInputLimits.MaxCharacters + 1]).Match(_ => throw new InvalidOperationException(), failure => failure);
+
+        error.Message.Should().Contain("bytes");
     }
 
     [Fact]
@@ -128,7 +145,7 @@ public class HtmlParserTests
     [Fact]
     public void A_template_has_contents_and_other_elements_have_none()
     {
-        var head = Parsed("<template><p>x</template>").Document.DocumentElement.Children.OfType<HtmlElement>().First();
+        var head = Parsed("<template><p>x</template>").Document.DocumentElement!.Children.OfType<HtmlElement>().First();
         var template = (HtmlElement)head.Children[0];
 
         template.TemplateContent!.Children.OfType<HtmlElement>().Single().IsHtml("p").Should().BeTrue();

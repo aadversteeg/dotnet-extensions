@@ -1,3 +1,5 @@
+using Ave.Extensions.Documents.Core;
+
 namespace Ave.Extensions.Documents.Html.Parsing.Tokenizing;
 
 /// <summary>The states of the tokenizer, one case each, in the order of the HTML Standard §13.2.5.1–§13.2.5.84.</summary>
@@ -188,7 +190,7 @@ internal sealed partial class Tokenizer
                 EmitEndOfFile();
                 break;
             default:
-                if (Ascii.IsAlpha(c))
+                if (InfraAscii.IsAlpha(c))
                 {
                     CreateTag(endTag: false);
                     Reconsume(TokenizerState.TagName);
@@ -218,7 +220,7 @@ internal sealed partial class Tokenizer
     private void EndTagOpenState()
     {
         var c = Consume();
-        if (Ascii.IsAlpha(c))
+        if (InfraAscii.IsAlpha(c))
         {
             CreateTag(endTag: true);
             Reconsume(TokenizerState.TagName);
@@ -268,7 +270,7 @@ internal sealed partial class Tokenizer
                 EmitEndOfFile();
                 break;
             default:
-                AppendCodePoint(_name, Ascii.ToLower(c));
+                AppendCodePoint(_name, InfraAscii.ToLower(c));
                 break;
         }
     }
@@ -293,7 +295,7 @@ internal sealed partial class Tokenizer
     private void TextEndTagOpenState(TokenizerState endTagName, TokenizerState text)
     {
         var c = Consume();
-        if (Ascii.IsAlpha(c))
+        if (InfraAscii.IsAlpha(c))
         {
             CreateTag(endTag: true);
             Reconsume(endTagName);
@@ -324,9 +326,9 @@ internal sealed partial class Tokenizer
                 return;
         }
 
-        if (Ascii.IsAlpha(c))
+        if (InfraAscii.IsAlpha(c))
         {
-            _name.Append((char)Ascii.ToLower(c));
+            _name.Append((char)InfraAscii.ToLower(c));
             _buffer.Append((char)c);
             return;
         }
@@ -473,7 +475,7 @@ internal sealed partial class Tokenizer
             _buffer.Clear();
             State = TokenizerState.ScriptDataEscapedEndTagOpen;
         }
-        else if (Ascii.IsAlpha(c))
+        else if (InfraAscii.IsAlpha(c))
         {
             _buffer.Clear();
             EmitCharacter('<', _markupStart);
@@ -495,9 +497,9 @@ internal sealed partial class Tokenizer
             State = _buffer.ToString() == "script" ? whenScript : otherwise;
             EmitCurrent();
         }
-        else if (Ascii.IsAlpha(c))
+        else if (InfraAscii.IsAlpha(c))
         {
-            _buffer.Append((char)Ascii.ToLower(c));
+            _buffer.Append((char)InfraAscii.ToLower(c));
             EmitCurrent();
         }
         else
@@ -660,7 +662,7 @@ internal sealed partial class Tokenizer
                 _attributeName.Append((char)c);
                 break;
             default:
-                AppendCodePoint(_attributeName, Ascii.ToLower(c));
+                AppendCodePoint(_attributeName, InfraAscii.ToLower(c));
                 break;
         }
     }
@@ -1155,7 +1157,7 @@ internal sealed partial class Tokenizer
                 break;
             default:
                 CreateDoctype();
-                AppendCodePoint(_name, Ascii.ToLower(c));
+                AppendCodePoint(_name, InfraAscii.ToLower(c));
                 State = TokenizerState.DoctypeName;
                 break;
         }
@@ -1187,7 +1189,7 @@ internal sealed partial class Tokenizer
                 EmitEndOfFile();
                 break;
             default:
-                AppendCodePoint(_name, Ascii.ToLower(c));
+                AppendCodePoint(_name, InfraAscii.ToLower(c));
                 break;
         }
     }
@@ -1512,7 +1514,7 @@ internal sealed partial class Tokenizer
     private void ProcessingInstructionOpenState()
     {
         var c = Consume();
-        if (Ascii.IsAlpha(c) || c == '_')
+        if (InfraAscii.IsAlpha(c) || c == '_')
         {
             Reconsume(TokenizerState.ProcessingInstructionTarget);
         }
@@ -1536,7 +1538,7 @@ internal sealed partial class Tokenizer
         if (c is '\t' or '\n' or '\f' or ' ' or '?' or '>')
         {
             var target = _buffer.ToString();
-            if (Ascii.EqualsIgnoreCase(target, "xml") || Ascii.EqualsIgnoreCase(target, "xml-stylesheet"))
+            if (InfraAscii.EqualsIgnoreCase(target, "xml") || InfraAscii.EqualsIgnoreCase(target, "xml-stylesheet"))
             {
                 Error("disallowed-processing-instruction-target");
                 BufferToComment();
@@ -1548,7 +1550,7 @@ internal sealed partial class Tokenizer
                 Reconsume(TokenizerState.AfterProcessingInstructionTarget);
             }
         }
-        else if (Ascii.IsAlphanumeric(c) || c is '-' or '_')
+        else if (InfraAscii.IsAlphanumeric(c) || c is '-' or '_')
         {
             _buffer.Append((char)c);
         }
@@ -1638,7 +1640,7 @@ internal sealed partial class Tokenizer
         _buffer.Clear();
         _buffer.Append('&');
         var c = Consume();
-        if (Ascii.IsAlphanumeric(c))
+        if (InfraAscii.IsAlphanumeric(c))
         {
             Reconsume(TokenizerState.NamedCharacterReference);
         }
@@ -1673,7 +1675,7 @@ internal sealed partial class Tokenizer
         _buffer.Append(_text, start, length);
         var endsWithSemicolon = _text[start + length - 1] == ';';
         var next = _index < _text.Length ? _text[_index] : EndOfFile;
-        if (ReferenceInAttribute && !endsWithSemicolon && (next == '=' || Ascii.IsAlphanumeric(next)))
+        if (ReferenceInAttribute && !endsWithSemicolon && (next == '=' || InfraAscii.IsAlphanumeric(next)))
         {
             FlushBufferAsWritten();
             State = _returnState;
@@ -1693,7 +1695,7 @@ internal sealed partial class Tokenizer
     private void AmbiguousAmpersandState()
     {
         var c = Consume();
-        if (Ascii.IsAlphanumeric(c))
+        if (InfraAscii.IsAlphanumeric(c))
         {
             if (ReferenceInAttribute)
             {
@@ -1725,7 +1727,7 @@ internal sealed partial class Tokenizer
             _buffer.Append((char)c);
             State = TokenizerState.HexadecimalCharacterReferenceStart;
         }
-        else if (Ascii.IsDigit(c))
+        else if (InfraAscii.IsDigit(c))
         {
             Reconsume(TokenizerState.DecimalCharacterReference);
         }
@@ -1741,7 +1743,7 @@ internal sealed partial class Tokenizer
     private void HexadecimalCharacterReferenceStartState()
     {
         var c = Consume();
-        if (Ascii.IsHexDigit(c))
+        if (InfraAscii.IsHexDigit(c))
         {
             Reconsume(TokenizerState.HexadecimalCharacterReference);
         }
@@ -1757,10 +1759,10 @@ internal sealed partial class Tokenizer
     private void DigitsState(bool hexadecimal)
     {
         var c = Consume();
-        var isDigit = hexadecimal ? Ascii.IsHexDigit(c) : Ascii.IsDigit(c);
+        var isDigit = hexadecimal ? InfraAscii.IsHexDigit(c) : InfraAscii.IsDigit(c);
         if (isDigit)
         {
-            var value = Ascii.IsDigit(c) ? c - '0' : Ascii.ToLower(c) - 'a' + 10;
+            var value = InfraAscii.IsDigit(c) ? c - '0' : InfraAscii.ToLower(c) - 'a' + 10;
             _characterReferenceCode = System.Math.Min(_characterReferenceCode * (hexadecimal ? 16 : 10) + value, 0x110000);
         }
         else if (c == ';')
@@ -1798,7 +1800,7 @@ internal sealed partial class Tokenizer
         {
             Error("noncharacter-character-reference");
         }
-        else if (code == 0x0D || (IsControl(code) && !Ascii.IsWhitespace((int)code)))
+        else if (code == 0x0D || (IsControl(code) && !InfraAscii.IsWhitespace((int)code)))
         {
             Error("control-character-reference");
             code = Windows1252Replacement((int)code);

@@ -14,7 +14,7 @@ public class EncodingTests
 
     private static string BodyText(Result<HtmlParseResult, Error> result) =>
         result.Match(
-            parsed => string.Concat(parsed.Document.DocumentElement.Children.OfType<HtmlElement>().Single(element => element.IsHtml("body")).Children.OfType<HtmlText>().Select(text => text.Data)),
+            parsed => string.Concat(parsed.Document.DocumentElement!.Children.OfType<HtmlElement>().Single(element => element.IsHtml("body")).Children.OfType<HtmlText>().Select(text => text.Data)),
             error => throw new InvalidOperationException(error.ToString()));
 
     private static Error Failed(Result<HtmlParseResult, Error> result) =>

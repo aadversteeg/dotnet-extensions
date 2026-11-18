@@ -66,9 +66,9 @@ internal sealed class StyleElement : IStyleElement
     {
         // A set built once per element: an element with many classes against many class selectors costs their sum.
         _classSet ??= IsQuirksMode
-            ? [.. _classes.Select(Ascii.ToLower)]
+            ? [.. _classes.Select(InfraAscii.ToLower)]
             : [.. _classes];
-        return _classSet.Contains(IsQuirksMode ? Ascii.ToLower(name) : name);
+        return _classSet.Contains(IsQuirksMode ? InfraAscii.ToLower(name) : name);
     }
 
     /// <inheritdoc/>
@@ -78,11 +78,11 @@ internal sealed class StyleElement : IStyleElement
         if (!_words.TryGetValue((localName, ignoreCase), out var words))
         {
             var value = Element.Attribute(localName) ?? string.Empty;
-            words = [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(item => ignoreCase ? Ascii.ToLower(item) : item)];
+            words = [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(item => ignoreCase ? InfraAscii.ToLower(item) : item)];
             _words[(localName, ignoreCase)] = words;
         }
 
-        return words.Contains(ignoreCase ? Ascii.ToLower(word) : word);
+        return words.Contains(ignoreCase ? InfraAscii.ToLower(word) : word);
     }
 
     /// <inheritdoc/>
@@ -132,7 +132,7 @@ internal sealed class StyleElement : IStyleElement
     public static StyleElement Tree(HtmlDocument document)
     {
         var quirks = document.Mode == DocumentMode.Quirks;
-        var root = new StyleElement(document.DocumentElement, null, quirks);
+        var root = new StyleElement(document.DocumentElement!, null, quirks);
         var pending = new Stack<StyleElement>();
         pending.Push(root);
         while (pending.Count > 0)

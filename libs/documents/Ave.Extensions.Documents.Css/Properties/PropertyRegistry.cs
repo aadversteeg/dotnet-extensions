@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -37,11 +38,12 @@ public static partial class PropertyRegistry
             longhands[i].Index = i;
         }
 
-        Longhands = longhands;
+        // Read-only views: a cast cannot change the registry for the whole process (review 39 R-4).
+        Longhands = longhands.AsReadOnly();
         ByName = longhands.ToFrozenDictionary(property => property.Name, StringComparer.Ordinal);
-        Shorthands = ShorthandProperties();
+        Shorthands = Array.AsReadOnly([.. ShorthandProperties()]);
         ShorthandsByName = Shorthands.ToFrozenDictionary(shorthand => shorthand.Name, StringComparer.Ordinal);
-        Ignored = IgnoredProperties();
+        Ignored = Array.AsReadOnly([.. IgnoredProperties()]);
         IgnoredByName = Ignored.ToFrozenDictionary(ignored => ignored.Name, StringComparer.Ordinal);
 
         FontSize = ByName["font-size"];
@@ -88,13 +90,13 @@ public static partial class PropertyRegistry
     public static PropertyDefinition TextAlign { get; }
 
     /// <summary>The longhand of this name (any case), or null.</summary>
-    public static PropertyDefinition? Find(string name) => ByName.TryGetValue(Ascii.ToLower(name), out var property) ? property : null;
+    public static PropertyDefinition? Find(string name) => ByName.TryGetValue(InfraAscii.ToLower(name), out var property) ? property : null;
 
     /// <summary>The shorthand of this name (any case), or null.</summary>
-    public static ShorthandDefinition? FindShorthand(string name) => ShorthandsByName.TryGetValue(Ascii.ToLower(name), out var shorthand) ? shorthand : null;
+    public static ShorthandDefinition? FindShorthand(string name) => ShorthandsByName.TryGetValue(InfraAscii.ToLower(name), out var shorthand) ? shorthand : null;
 
     /// <summary>The ignored property of this name (any case), or null.</summary>
-    public static IgnoredProperty? FindIgnored(string name) => IgnoredByName.TryGetValue(Ascii.ToLower(name), out var ignored) ? ignored : null;
+    public static IgnoredProperty? FindIgnored(string name) => IgnoredByName.TryGetValue(InfraAscii.ToLower(name), out var ignored) ? ignored : null;
 
     // ---- helpers for the definitions ----
 

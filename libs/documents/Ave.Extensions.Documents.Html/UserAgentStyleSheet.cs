@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Ave.Extensions.Documents.Css;
 using Ave.Extensions.Documents.Css.Rules;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Html;
 
@@ -16,7 +17,8 @@ internal static class UserAgentStyleSheet
     {
         using var stream = typeof(UserAgentStyleSheet).Assembly.GetManifestResourceStream("Ave.Extensions.Documents.Html.html.css")!;
         using var reader = new StreamReader(stream);
-        return CssParser.ParseStyleSheet(reader.ReadToEnd(), new CssSourceOptions(SourceName));
+        return CssParser.ParseStyleSheet(reader.ReadToEnd(), new CssSourceOptions(SourceName))
+            .Match(read => read, error => new CssResult<StyleSheet>(new StyleSheet([], SourceName), [error]));
     });
 
     /// <summary>The sheet.</summary>

@@ -299,8 +299,14 @@ Known limits of stage 3 (also in the profile document):
   makes a layer (each changes Chromium's printed rendering, measured).
 - `-webkit-left`, `-webkit-right`, `-webkit-center` (from align attributes and the caption) must align descendant
   blocks as well as text; `border-style: inset` and `outset` (hr, table border) are drawn in two shades by Chromium;
-  `overflow: hidden | clip` (hr, img) clips; `unicode-bidi: isolate` is accepted as it changes nothing in
+  `overflow: hidden | clip` (hr, img) clips; `aspect-ratio: auto` with a ratio (the width and height attributes of
+  img) gives a ratio to an element that is not replaced; `unicode-bidi: isolate` is accepted as it changes nothing in
   left-to-right text. Stage 4 implements these or refuses them.
+- Until stage 4 the code front-end keeps its own cascade (`Fluent/Cascade.cs`: own style, shared style, table cell
+  defaults, inherited) with its own initial values and its own list of what inherits, beside the property registry
+  the HTML front-end reads. The facts both hold, the initial font size (12pt) and the heading sizes (2, 1.5, 1.17, 1,
+  0.83 and 0.67 em), are tied by `UnitTests.Extensions.Documents.Architecture/FrontEndFactsTests.cs`; the rest is not
+  tied until stage 4 reads the registry for both.
 
 ## Known limits (all stages)
 

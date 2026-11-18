@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -104,7 +105,7 @@ internal static class ElementTables
         if (element.Namespace == ElementNamespace.MathMl && element.LocalName == "annotation-xml")
         {
             var encoding = element.Token.Attribute("encoding");
-            return encoding is not null && (Ascii.EqualsIgnoreCase(encoding, "text/html") || Ascii.EqualsIgnoreCase(encoding, "application/xhtml+xml"));
+            return encoding is not null && (InfraAscii.EqualsIgnoreCase(encoding, "text/html") || InfraAscii.EqualsIgnoreCase(encoding, "application/xhtml+xml"));
         }
 
         return element.Namespace == ElementNamespace.Svg && element.LocalName is "foreignObject" or "desc" or "title";

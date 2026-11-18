@@ -5,6 +5,7 @@ using Ave.Extensions.Documents.Css.Media;
 using Ave.Extensions.Documents.Css.Rules;
 using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Css;
 
@@ -32,33 +33,35 @@ public sealed record CssSourceOptions(string SourceName)
 }
 
 /// <summary>
-/// Reads CSS (CSS Syntax 3): style sheets into typed rules, and the declarations of a <c>style</c> attribute. Reading
-/// never fails: what does not parse is dropped as CSS says, and reported. Input past the limits
-/// (<see cref="CssInputLimits"/>) gives an empty result and a refusal.
+/// Reads CSS (CSS Syntax 3): style sheets into typed rules, and the declarations of a <c>style</c> attribute. What does
+/// not parse is dropped as CSS says, and reported, so reading gives a result with its diagnostics. It fails only for
+/// input past the limits (<see cref="CssInputLimits"/>: <see cref="CssErrorCodes.TooLarge"/>,
+/// <see cref="CssErrorCodes.TooDeep"/>) and bytes it does not decode (<see cref="CssErrorCodes.Unsupported.Encoding"/>),
+/// as <c>HtmlParser</c> fails for the same conditions: then there is no style sheet to use.
 /// </summary>
 public static class CssParser
 {
     /// <summary>Reads a style sheet from text.</summary>
     /// <param name="text">The style sheet.</param>
     /// <param name="options">Its name and place.</param>
-    /// <returns>The style sheet and the diagnostics.</returns>
-    public static CssResult<StyleSheet> ParseStyleSheet(string text, CssSourceOptions options)
+    /// <returns>The style sheet and the diagnostics, or the error past a limit.</returns>
+    public static Result<CssResult<StyleSheet>, Error> ParseStyleSheet(string text, CssSourceOptions options)
     {
         var diagnostics = new DiagnosticCollector();
         if (text.Length > CssInputLimits.MaxCharacters)
         {
-            return TooLarge(options);
+            return Fail<StyleSheet>(TooLarge(options));
         }
 
         var source = CssSource.Of(text, options.Origin, options.Positions);
         var (rules, tooDeepAt) = SyntaxParser.ParseStyleSheet(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
-            return new CssResult<StyleSheet>(new StyleSheet([], options.SourceName), [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
+            return Fail<StyleSheet>(TooDeep(source, deep, options));
         }
 
         var built = new RuleBuilder(options.SourceName, diagnostics).StyleSheet(rules);
-        return new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), diagnostics.ToValueList());
+        return Result<CssResult<StyleSheet>, Error>.Success(new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), diagnostics.ToValueList()));
     }
 
     /// <summary>
@@ -69,12 +72,12 @@ public static class CssParser
     /// </summary>
     /// <param name="bytes">The style sheet's bytes.</param>
     /// <param name="options">Its name, place and encodings.</param>
-    /// <returns>The style sheet and the diagnostics.</returns>
-    public static CssResult<StyleSheet> ParseStyleSheet(ReadOnlyMemory<byte> bytes, CssSourceOptions options)
+    /// <returns>The style sheet and the diagnostics, or the error past a limit or for an encoding not decoded.</returns>
+    public static Result<CssResult<StyleSheet>, Error> ParseStyleSheet(ReadOnlyMemory<byte> bytes, CssSourceOptions options)
     {
         if (bytes.Length > 3L * CssInputLimits.MaxCharacters)
         {
-            return TooLarge(options);
+            return Fail<StyleSheet>(TooLarge(options));
         }
 
         var encoding = CssDecoding.EncodingOf(bytes.Span, options.ProtocolEncoding, options.EnvironmentEncoding);
@@ -83,31 +86,29 @@ public static class CssParser
             return ParseStyleSheet(text, options);
         }
 
-        return new CssResult<StyleSheet>(new StyleSheet([], options.SourceName), [
-            new Error(CssErrorCodes.Unsupported.Encoding, $"The style sheet is in the encoding {encoding}, which the engine does not decode; only UTF-8 and UTF-16 are read.")
-                .With(ErrorMetadataKeys.Value, encoding)
-                .With(ErrorMetadataKeys.SourceFile, options.SourceName),
-        ]);
+        return Fail<StyleSheet>(new Error(CssErrorCodes.Unsupported.Encoding, $"The style sheet is in the encoding {encoding}, which the engine does not decode; only UTF-8 and UTF-16 are read.")
+            .With(ErrorMetadataKeys.Value, encoding)
+            .With(ErrorMetadataKeys.SourceFile, options.SourceName));
     }
 
     /// <summary>"Parse a list of declarations" (CSS Syntax 3 §5.4.5) for a <c>style</c> attribute: the declarations
     /// that parse, in order. Their values are checked by the cascade, which reports the invalid ones.</summary>
     /// <param name="text">The attribute's value.</param>
     /// <param name="options">Its name and place.</param>
-    /// <returns>The declarations and the diagnostics.</returns>
-    public static CssResult<ValueList<Declaration>> ParseDeclarations(string text, CssSourceOptions options)
+    /// <returns>The declarations and the diagnostics, or the error past a limit.</returns>
+    public static Result<CssResult<ValueList<Declaration>>, Error> ParseDeclarations(string text, CssSourceOptions options)
     {
         var diagnostics = new DiagnosticCollector();
         if (text.Length > CssInputLimits.MaxCharacters)
         {
-            return new CssResult<ValueList<Declaration>>([], TooLarge(options).Diagnostics);
+            return Fail<ValueList<Declaration>>(TooLarge(options));
         }
 
         var source = CssSource.Of(text, options.Origin, options.Positions);
         var (items, tooDeepAt) = SyntaxParser.ParseDeclarationList(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
-            return new CssResult<ValueList<Declaration>>([], [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
+            return Fail<ValueList<Declaration>>(TooDeep(source, deep, options));
         }
 
         var declarations = new List<Declaration>();
@@ -123,42 +124,43 @@ public static class CssParser
             }
         }
 
-        return new CssResult<ValueList<Declaration>>([.. declarations], diagnostics.ToValueList());
+        return Result<CssResult<ValueList<Declaration>>, Error>.Success(new CssResult<ValueList<Declaration>>([.. declarations], diagnostics.ToValueList()));
     }
 
     /// <summary>"Parse a media query list" (Media Queries 4 §3) from text: a media attribute of HTML, for one.</summary>
     /// <param name="text">The text.</param>
     /// <param name="options">Its name and place.</param>
-    /// <returns>The list and the diagnostics.</returns>
-    public static CssResult<MediaQueryList> ParseMediaQueryList(string text, CssSourceOptions options)
+    /// <returns>The list and the diagnostics, or the error past a limit (a list that is not read matches nothing for a
+    /// caller that goes on).</returns>
+    public static Result<CssResult<MediaQueryList>, Error> ParseMediaQueryList(string text, CssSourceOptions options)
     {
         var diagnostics = new DiagnosticCollector();
         if (text.Length > CssInputLimits.MaxCharacters)
         {
-            return new CssResult<MediaQueryList>(MediaQueryList.None, TooLarge(options).Diagnostics);
+            return Fail<MediaQueryList>(TooLarge(options));
         }
 
         var source = CssSource.Of(text, options.Origin, options.Positions);
         var (values, tooDeepAt) = SyntaxParser.ParseComponentValues(source, Syntax(source, options, diagnostics));
         if (tooDeepAt is { } deep)
         {
-            return new CssResult<MediaQueryList>(MediaQueryList.None, [.. diagnostics.ToValueList(), TooDeep(source, deep, options)]);
+            return Fail<MediaQueryList>(TooDeep(source, deep, options));
         }
 
         var list = MediaQueries.Parse(values, options.SourceName, diagnostics);
-        return new CssResult<MediaQueryList>(list, diagnostics.ToValueList());
+        return Result<CssResult<MediaQueryList>, Error>.Success(new CssResult<MediaQueryList>(list, diagnostics.ToValueList()));
     }
+
+    private static Result<CssResult<T>, Error> Fail<T>(Error error) => Result<CssResult<T>, Error>.Failure(error);
 
     private static Action<string, int> Syntax(CssSource source, CssSourceOptions options, DiagnosticCollector diagnostics) =>
         (message, index) => diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Parse.Syntax, message, options.SourceName, source.PositionOf(index))
             .With(ErrorMetadataKeys.Value, message));
 
-    private static CssResult<StyleSheet> TooLarge(CssSourceOptions options) =>
-        new(new StyleSheet([], options.SourceName), [
-            new Error(CssErrorCodes.TooLarge, $"The style sheet is longer than {CssInputLimits.MaxCharacters} characters; it is not read.")
-                .With(ErrorMetadataKeys.Value, CssInputLimits.MaxCharacters)
-                .With(ErrorMetadataKeys.SourceFile, options.SourceName),
-        ]);
+    private static Error TooLarge(CssSourceOptions options) =>
+        new Error(CssErrorCodes.TooLarge, $"The style sheet is longer than {CssInputLimits.MaxCharacters} characters; it is not read.")
+            .With(ErrorMetadataKeys.Value, CssInputLimits.MaxCharacters)
+            .With(ErrorMetadataKeys.SourceFile, options.SourceName);
 
     private static Error TooDeep(CssSource source, int index, CssSourceOptions options) =>
         CssDiagnostics.At(CssErrorCodes.TooDeep, $"Blocks and functions are nested deeper than {CssInputLimits.MaxDepth}; the style sheet is not read.", options.SourceName, source.PositionOf(index))

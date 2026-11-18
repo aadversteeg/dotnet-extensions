@@ -58,7 +58,7 @@ public class RefusalPolicyTests
     [Fact]
     public void A_selector_that_does_not_parse_is_refused()
     {
-        var sheet = CssParser.ParseStyleSheet("p:bogus-state { color: red }", new CssSourceOptions("a.css"));
+        var sheet = CssParser.ParseStyleSheet("p:bogus-state { color: red }", new CssSourceOptions("a.css")).Value;
 
         var refusal = sheet.Diagnostics.Should().ContainSingle().Subject;
         refusal.Code.Should().Be(CssErrorCodes.Unsupported.Selector);
@@ -74,7 +74,7 @@ public class RefusalPolicyTests
         // Chromium 159: the rule applies to #t (review 39 SU-5). :host itself is outside the profile (shadow trees).
         computed.Value(root["t"], "margin-top").Should().Be("0.75pt");
         Refusals(computed).Should().ContainSingle().Which.Message.Should().Contain(":host()");
-        CssParser.ParseStyleSheet(":host(:not(.a .b)) {}", new CssSourceOptions("a.css")).Diagnostics
+        CssParser.ParseStyleSheet(":host(:not(.a .b)) {}", new CssSourceOptions("a.css")).Value.Diagnostics
             .Should().ContainSingle().Which.Message.Should().Contain("not valid or not supported in this profile");
     }
 
@@ -86,7 +86,7 @@ public class RefusalPolicyTests
     [InlineData("screen and")]
     public void A_media_query_the_engine_cannot_evaluate_is_refused_never_false(string query)
     {
-        var sheet = CssParser.ParseStyleSheet($"@media {query} {{ p {{ color: red }} }}", new CssSourceOptions("a.css"));
+        var sheet = CssParser.ParseStyleSheet($"@media {query} {{ p {{ color: red }} }}", new CssSourceOptions("a.css")).Value;
 
         sheet.Diagnostics.Should().ContainSingle().Which.Code.Should().Be(CssErrorCodes.Unsupported.MediaFeature);
     }
@@ -97,7 +97,7 @@ public class RefusalPolicyTests
     [InlineData("@supports (display: block) and { p {} }")]
     public void An_at_rule_the_engine_cannot_read_is_refused(string rule)
     {
-        var sheet = CssParser.ParseStyleSheet(rule, new CssSourceOptions("a.css"));
+        var sheet = CssParser.ParseStyleSheet(rule, new CssSourceOptions("a.css")).Value;
 
         var refusal = sheet.Diagnostics.Should().ContainSingle().Subject;
         refusal.Code.Should().Be(CssErrorCodes.Unsupported.AtRule);
@@ -107,7 +107,7 @@ public class RefusalPolicyTests
     [Fact]
     public void An_unreadable_rule_before_an_import_does_not_block_it()
     {
-        var sheet = CssParser.ParseStyleSheet("@bogus; @import 'red.css'; @media bogus-query! {} @import 'late.css';", new CssSourceOptions("a.css"));
+        var sheet = CssParser.ParseStyleSheet("@bogus; @import 'red.css'; @media bogus-query! {} @import 'late.css';", new CssSourceOptions("a.css")).Value;
 
         // Chromium 159 imports red.css (review 39 F18): only a valid rule closes the place for @import.
         sheet.Value.Rules.OfType<ImportRule>().Select(import => import.Url).Should().Equal("red.css");
@@ -117,7 +117,7 @@ public class RefusalPolicyTests
     [Fact]
     public void Selection_and_placeholder_never_draw_on_paper_and_are_ignored_by_rule()
     {
-        var sheet = CssParser.ParseStyleSheet("::selection { color: red } input::placeholder { color: red }", new CssSourceOptions("a.css"));
+        var sheet = CssParser.ParseStyleSheet("::selection { color: red } input::placeholder { color: red }", new CssSourceOptions("a.css")).Value;
 
         sheet.Diagnostics.Select(error => error.Code).Should().Equal(CssErrorCodes.Ignored.Selector, CssErrorCodes.Ignored.Selector);
     }

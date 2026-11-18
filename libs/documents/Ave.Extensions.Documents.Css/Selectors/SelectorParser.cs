@@ -36,9 +36,10 @@ public sealed record SelectorParseResult(SelectorList? List, string? Error, Text
 /// invalid: no namespace is declared, since <c>@namespace</c> is not supported.
 /// </summary>
 /// <remarks>Each step returns null when the selector is invalid; the context keeps the first reason.</remarks>
-public static class SelectorParser
+internal static class SelectorParser
 {
-    /// <summary>Parses a selector list from component values (a style rule's prelude).</summary>
+    /// <summary>Parses a selector list from component values (a style rule's prelude), by the grammar of Selectors 4
+    /// §16; a list with one invalid selector is invalid as a whole (§3.9), outside the forgiving lists.</summary>
     /// <param name="values">The values.</param>
     /// <param name="relative">Whether the selectors may start with a combinator (a nested style rule).</param>
     /// <param name="start">Where the values start, for an empty list.</param>
@@ -55,10 +56,14 @@ public static class SelectorParser
     /// <summary>The first reason a selector is invalid, and the findings so far.</summary>
     private sealed class Context
     {
+        /// <summary>The first reason the selector is invalid, or null.</summary>
         public string? Error { get; private set; }
 
+        /// <summary>Where <see cref="Error"/> was found.</summary>
         public TextPosition ErrorPosition { get; private set; }
 
+        /// <summary>What the selector uses that the engine does not support or Chromium does not follow, in order.
+        /// </summary>
         public List<SelectorFinding> Findings { get; } = [];
 
         /// <summary>Whether the selector being read is inside the argument of :has(), where another :has() is invalid
@@ -439,7 +444,7 @@ public static class SelectorParser
         var modifier = AttributeCase.Default;
         if (cursor.Peek is CssToken { Kind: CssTokenKind.Ident } flag)
         {
-            switch (Ascii.ToLower(flag.Text))
+            switch (InfraAscii.ToLower(flag.Text))
             {
                 case "i":
                     modifier = AttributeCase.Insensitive;
@@ -501,7 +506,7 @@ public static class SelectorParser
         {
             case CssToken { Kind: CssTokenKind.Ident } ident:
                 cursor.Next();
-                var lower = Ascii.ToLower(ident.Text);
+                var lower = InfraAscii.ToLower(ident.Text);
                 if (lower is "before" or "after" or "first-line" or "first-letter")
                 {
                     context.Findings.Add(new SelectorFinding(SelectorSupport.Unsupported, ":" + lower, position));
@@ -517,7 +522,7 @@ public static class SelectorParser
                 return new PseudoClassSelector(lower, entry.Support);
             case FunctionValue function:
                 cursor.Next();
-                var name = Ascii.ToLower(function.Name);
+                var name = InfraAscii.ToLower(function.Name);
                 if (PseudoClasses.FindClass(name, functional: true) is not { } known)
                 {
                     return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{function.Name}()'", position);
@@ -743,12 +748,17 @@ public static class SelectorParser
     {
         private int _index;
 
+        /// <summary>Whether every value was read.</summary>
         public bool AtEnd => _index >= values.Count;
 
+        /// <summary>The next value, not read; null at the end.</summary>
         public ComponentValue? Peek => PeekAt(0);
 
+        /// <summary>The value <paramref name="ahead"/> places after the next one, not read; null past the end.
+        /// </summary>
         public ComponentValue? PeekAt(int ahead) => _index + ahead < values.Count ? values[_index + ahead] : null;
 
+        /// <summary>Reads the next value.</summary>
         public ComponentValue Next() => values[_index++];
 
         /// <summary>Skips white space; returns whether there was any.</summary>

@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,21 +84,21 @@ public static partial class PropertyRegistry
     private static bool OnlyKeywords(IReadOnlyList<ComponentValue> values, params string[] keywords) =>
         Meaningful(values).All(value => value is CssToken { Kind: CssTokenKind.Comma }
             || (value is CssToken { Kind: CssTokenKind.Ident } word
-                && (keywords.Contains(Ascii.ToLower(word.Text)) || Ascii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer")));
+                && (keywords.Contains(InfraAscii.ToLower(word.Text)) || InfraAscii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer")));
 
     /// <summary>Whether an animation shorthand names an animation: an identifier that is not one of the other
     /// longhands' keywords, or a string.</summary>
     private static bool NamesAnimation(IReadOnlyList<ComponentValue> values) =>
         Meaningful(values).Any(value => value is CssToken { Kind: CssTokenKind.String }
             || (value is CssToken { Kind: CssTokenKind.Ident } word
-                && !AnimationKeywords.Contains(Ascii.ToLower(word.Text))
-                && Ascii.ToLower(word.Text) is not ("initial" or "inherit" or "unset" or "revert" or "revert-layer")));
+                && !AnimationKeywords.Contains(InfraAscii.ToLower(word.Text))
+                && InfraAscii.ToLower(word.Text) is not ("initial" or "inherit" or "unset" or "revert" or "revert-layer")));
 
     /// <summary>zoom: normal, 1 or 100%, or a CSS-wide keyword.</summary>
     private static bool IsUnitZoom(IReadOnlyList<ComponentValue> values) =>
         Meaningful(values) is [var only] && only switch
         {
-            CssToken { Kind: CssTokenKind.Ident } word => Ascii.ToLower(word.Text) is "normal" or "initial" or "inherit" or "unset" or "revert" or "revert-layer",
+            CssToken { Kind: CssTokenKind.Ident } word => InfraAscii.ToLower(word.Text) is "normal" or "initial" or "inherit" or "unset" or "revert" or "revert-layer",
             CssToken { Kind: CssTokenKind.Number } number => number.Number == 1,
             CssToken { Kind: CssTokenKind.Percentage } percentage => percentage.Number == 100,
             _ => false,

@@ -5,9 +5,9 @@
 using System.Collections.Frozen;
 using System.Collections.Generic;
 
-namespace Ave.Extensions.Documents.Css.Syntax;
+namespace Ave.Extensions.Documents.Core;
 
-internal static partial class EncodingLabels
+public static partial class EncodingLabels
 {
     /// <summary>Every label of the Encoding Standard (228), lowercase, to the name of its encoding.</summary>
     private static readonly FrozenDictionary<string, string> Names = new Dictionary<string, string>

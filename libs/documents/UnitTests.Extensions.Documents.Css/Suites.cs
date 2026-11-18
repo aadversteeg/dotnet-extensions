@@ -19,4 +19,8 @@ internal static class Suites
     /// <summary>Chromium's verdicts on those cases (tools/reference/chromium/computed-style/measured).</summary>
     public static string ChromiumWptVerdicts([CallerFilePath] string thisFile = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", "tools", "reference", "chromium", "computed-style", "measured", "wpt-css-verdicts.json"));
+
+    /// <summary>The colour Chromium 159 computes for each named colour (computed-style/measure.ps1 -Step colors).</summary>
+    public static string ChromiumNamedColors([CallerFilePath] string thisFile = "") =>
+        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", "tools", "reference", "chromium", "computed-style", "measured", "named-colors.txt"));
 }

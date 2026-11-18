@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Globalization;
 using System.Text;
@@ -183,13 +184,13 @@ internal sealed class CssTokenizer
             case '}':
                 return Token(CssTokenKind.CloseCurly, string.Empty, start);
             default:
-                if (Ascii.IsDigit(c))
+                if (InfraAscii.IsDigit(c))
                 {
                     _index = start;
                     return ConsumeNumeric(start);
                 }
 
-                if ((c is 'U' or 'u') && _unicodeRangesAllowed && Peek() == '+' && (Peek(1) == '?' || Ascii.IsHexDigit(Peek(1))))
+                if ((c is 'U' or 'u') && _unicodeRangesAllowed && Peek() == '+' && (Peek(1) == '?' || InfraAscii.IsHexDigit(Peek(1))))
                 {
                     return ConsumeUnicodeRange(start);
                 }
@@ -258,7 +259,7 @@ internal sealed class CssTokenizer
     private CssToken ConsumeIdentLike(int start)
     {
         var name = ConsumeIdentSequence();
-        if (Ascii.EqualsIgnoreCase(name, "url") && Peek() == '(')
+        if (InfraAscii.EqualsIgnoreCase(name, "url") && Peek() == '(')
         {
             Consume();
             while (IsWhitespace(Peek()) && IsWhitespace(Peek(1)))
@@ -404,13 +405,13 @@ internal sealed class CssTokenizer
             return 0xFFFD;
         }
 
-        if (!Ascii.IsHexDigit(c))
+        if (!InfraAscii.IsHexDigit(c))
         {
             return c;
         }
 
         var value = HexValue(c);
-        for (var digits = 1; digits < 6 && Ascii.IsHexDigit(Peek()); digits++)
+        for (var digits = 1; digits < 6 && InfraAscii.IsHexDigit(Peek()); digits++)
         {
             value = (value * 16) + HexValue(Consume());
         }
@@ -423,7 +424,7 @@ internal sealed class CssTokenizer
         return value == 0 || value is >= 0xD800 and <= 0xDFFF || value > 0x10FFFF ? 0xFFFD : value;
     }
 
-    private static int HexValue(int c) => Ascii.IsDigit(c) ? c - '0' : Ascii.ToLower(c) - 'a' + 10;
+    private static int HexValue(int c) => InfraAscii.IsDigit(c) ? c - '0' : InfraAscii.ToLower(c) - 'a' + 10;
 
     // §4.3.12
     private string ConsumeIdentSequence()
@@ -461,15 +462,15 @@ internal sealed class CssTokenizer
             number.Append(sign.Value);
         }
 
-        while (Ascii.IsDigit(Peek()))
+        while (InfraAscii.IsDigit(Peek()))
         {
             number.Append((char)Consume());
         }
 
-        if (Peek() == '.' && Ascii.IsDigit(Peek(1)))
+        if (Peek() == '.' && InfraAscii.IsDigit(Peek(1)))
         {
             number.Append((char)Consume());
-            while (Ascii.IsDigit(Peek()))
+            while (InfraAscii.IsDigit(Peek()))
             {
                 number.Append((char)Consume());
             }
@@ -478,7 +479,7 @@ internal sealed class CssTokenizer
         }
 
         var exponent = new StringBuilder();
-        if (Peek() is 'e' or 'E' && (Ascii.IsDigit(Peek(1)) || (Peek(1) is '+' or '-' && Ascii.IsDigit(Peek(2)))))
+        if (Peek() is 'e' or 'E' && (InfraAscii.IsDigit(Peek(1)) || (Peek(1) is '+' or '-' && InfraAscii.IsDigit(Peek(2)))))
         {
             Consume();
             if (Peek() is '+' or '-')
@@ -486,7 +487,7 @@ internal sealed class CssTokenizer
                 exponent.Append((char)Consume());
             }
 
-            while (Ascii.IsDigit(Peek()))
+            while (InfraAscii.IsDigit(Peek()))
             {
                 exponent.Append((char)Consume());
             }
@@ -508,7 +509,7 @@ internal sealed class CssTokenizer
     {
         Consume();
         var first = new StringBuilder();
-        while (first.Length < 6 && Ascii.IsHexDigit(Peek()))
+        while (first.Length < 6 && InfraAscii.IsHexDigit(Peek()))
         {
             first.Append((char)Consume());
         }
@@ -527,11 +528,11 @@ internal sealed class CssTokenizer
         }
 
         var rangeStart = int.Parse(segment, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-        if (Peek() == '-' && Ascii.IsHexDigit(Peek(1)))
+        if (Peek() == '-' && InfraAscii.IsHexDigit(Peek(1)))
         {
             Consume();
             var last = new StringBuilder();
-            while (last.Length < 6 && Ascii.IsHexDigit(Peek()))
+            while (last.Length < 6 && InfraAscii.IsHexDigit(Peek()))
             {
                 last.Append((char)Consume());
             }
@@ -573,9 +574,9 @@ internal sealed class CssTokenizer
     /// </summary>
     private static bool IsNonAsciiIdent(int c) => c >= 0x80;
 
-    private static bool IsIdentStart(int c) => Ascii.IsAlpha(c) || c == '_' || IsNonAsciiIdent(c);
+    private static bool IsIdentStart(int c) => InfraAscii.IsAlpha(c) || c == '_' || IsNonAsciiIdent(c);
 
-    private static bool IsIdentCodePoint(int c) => IsIdentStart(c) || Ascii.IsDigit(c) || c == '-';
+    private static bool IsIdentCodePoint(int c) => IsIdentStart(c) || InfraAscii.IsDigit(c) || c == '-';
 
     private static bool IsNonPrintable(int c) => c is >= 0 and <= 8 or 0x0B or >= 0x0E and <= 0x1F or 0x7F;
 
@@ -590,9 +591,9 @@ internal sealed class CssTokenizer
 
     private static bool WouldStartNumber(int first, int second, int third) => first switch
     {
-        '+' or '-' => Ascii.IsDigit(second) || (second == '.' && Ascii.IsDigit(third)),
-        '.' => Ascii.IsDigit(second),
-        _ => Ascii.IsDigit(first),
+        '+' or '-' => InfraAscii.IsDigit(second) || (second == '.' && InfraAscii.IsDigit(third)),
+        '.' => InfraAscii.IsDigit(second),
+        _ => InfraAscii.IsDigit(first),
     };
 
     private static void Append(StringBuilder builder, int codePoint)

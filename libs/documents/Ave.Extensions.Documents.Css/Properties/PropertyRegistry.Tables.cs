@@ -89,7 +89,7 @@ public static partial class PropertyRegistry
     /// <summary>The largest orphans and widows Chromium keeps: it stores them in 16 bits.</summary>
     private const int MaxShortInteger = 32767;
 
-    /// <summary>border-spacing: one length for both directions, or horizontal then vertical.</summary>
+    /// <summary>border-spacing: one length for both directions, or horizontal then vertical (CSS 2 §17.6.1).</summary>
     private static ParsedValue ParseBorderSpacing(ValueReader reader)
     {
         var lengths = new List<CssValue>();
@@ -116,6 +116,7 @@ public static partial class PropertyRegistry
         return ParsedValue.Of(new CssList([lengths[0], lengths.Count == 2 ? lengths[1] : lengths[0]], CommaSeparated: false));
     }
 
+    /// <summary>The computed border-spacing: two absolute lengths, horizontal then vertical (CSS 2 §17.6.1).</summary>
     private static ComputedResult ComputeBorderSpacing(CssValue value, ComputeContext context)
     {
         var list = (CssList)value;

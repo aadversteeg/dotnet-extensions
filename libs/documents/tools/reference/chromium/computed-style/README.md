@@ -64,6 +64,8 @@ replaced element only).
 | `cascade` | origins and importance, the style attribute, specificity and order, layers, revert and revert-layer, nesting, custom properties, inheritance and defaulting, calc(), @media, @supports, media attributes |
 | `hints` | the presentational attributes of the v0 elements |
 | `elements` | every element of the HTML Standard's element index, in its usual place: the ones outside v0 are refused |
+| `hints-gaps` | presentational attributes with values the other cases do not try (invalid, negative, empty, relative), from review 39 |
+| `ua-extra` | elements the user-agent sheet has rules for that `ua-bare` does not contain, from review 39 |
 
 ## How the tests compare
 

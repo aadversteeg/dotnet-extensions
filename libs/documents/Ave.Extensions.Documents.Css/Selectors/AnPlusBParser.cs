@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -68,11 +69,11 @@ internal static class AnPlusBParser
         if (first is { Kind: CssTokenKind.Dimension, IsInteger: true })
         {
             a = (long)first.Number;
-            rest = Ascii.ToLower(first.Text);
+            rest = InfraAscii.ToLower(first.Text);
         }
         else if (first.Kind == CssTokenKind.Ident)
         {
-            var lower = Ascii.ToLower(first.Text);
+            var lower = InfraAscii.ToLower(first.Text);
             if (lower.StartsWith("-n", StringComparison.Ordinal))
             {
                 a = -1;
@@ -84,10 +85,10 @@ internal static class AnPlusBParser
                 rest = lower;
             }
         }
-        else if (first.IsDelim('+') && tokens.Count > 1 && !spaceBefore[1] && tokens[1].Kind == CssTokenKind.Ident && Ascii.ToLower(tokens[1].Text).StartsWith('n'))
+        else if (first.IsDelim('+') && tokens.Count > 1 && !spaceBefore[1] && tokens[1].Kind == CssTokenKind.Ident && InfraAscii.ToLower(tokens[1].Text).StartsWith('n'))
         {
             a = 1;
-            rest = Ascii.ToLower(tokens[1].Text);
+            rest = InfraAscii.ToLower(tokens[1].Text);
             index = 2;
         }
         else
@@ -145,7 +146,7 @@ internal static class AnPlusBParser
     {
         foreach (var c in text)
         {
-            if (!Ascii.IsDigit(c))
+            if (!InfraAscii.IsDigit(c))
             {
                 return false;
             }

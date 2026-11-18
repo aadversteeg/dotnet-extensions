@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System.Collections.Generic;
 
 namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
@@ -25,10 +26,16 @@ internal sealed partial class TreeBuilder
 
     private sealed class SelectState
     {
+        /// <summary>The last option with a <c>selected</c> attribute: the selected option of a select that is not
+        /// <c>multiple</c>.</summary>
         public MutableElement? LastWithSelected { get; set; }
 
+        /// <summary>The first option that is not disabled: the selected one when none has <c>selected</c> and the
+        /// display size is 1.</summary>
         public MutableElement? FirstEnabled { get; set; }
 
+        /// <summary>The <c>selectedcontent</c> elements of the select, filled with a clone of the selected option.
+        /// </summary>
         public List<MutableElement> SelectedContents { get; } = [];
 
         /// <summary>Counts the times an option became the selected one; a selectedcontent filled at an older count is
@@ -213,7 +220,7 @@ internal sealed partial class TreeBuilder
         }
 
         var start = 0;
-        while (start < size.Length && Ascii.IsWhitespace(size[start]))
+        while (start < size.Length && InfraAscii.IsWhitespace(size[start]))
         {
             start++;
         }
@@ -224,7 +231,7 @@ internal sealed partial class TreeBuilder
         }
 
         var end = start;
-        while (end < size.Length && Ascii.IsDigit(size[end]))
+        while (end < size.Length && InfraAscii.IsDigit(size[end]))
         {
             end++;
         }

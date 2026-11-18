@@ -30,16 +30,22 @@ internal sealed class TreeFreezer
     /// its children, then (for a template) its contents.</summary>
     private sealed class Frame(MutableParent parent, int depth)
     {
+        /// <summary>The parent being frozen.</summary>
         public MutableParent Parent { get; } = parent;
 
+        /// <summary>Its depth in the tree, for the limit on depth.</summary>
         public int Depth { get; } = depth;
 
+        /// <summary>The next child to freeze; null once all are.</summary>
         public MutableNode? Next { get; set; } = parent.First;
 
+        /// <summary>The frozen children so far.</summary>
         public List<HtmlNode> Children { get; } = [];
 
+        /// <summary>For a template, its frozen children, kept while its contents are frozen.</summary>
         public ValueList<HtmlNode>? ElementChildren { get; set; }
 
+        /// <summary>Whether the template's contents, not its children, are being frozen.</summary>
         public bool InContent { get; set; }
     }
 

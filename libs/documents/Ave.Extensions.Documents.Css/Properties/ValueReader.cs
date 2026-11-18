@@ -15,6 +15,7 @@ internal sealed class ValueReader
     private readonly List<ComponentValue> _values;
     private int _index;
 
+    /// <summary>Reads a value as the parser gave it; white space is removed here.</summary>
     internal ValueReader(IReadOnlyList<ComponentValue> values)
     {
         _values = [];
@@ -50,7 +51,7 @@ internal sealed class ValueReader
     {
         if (Peek is CssToken { Kind: CssTokenKind.Ident } ident)
         {
-            var lower = Ascii.ToLower(ident.Text);
+            var lower = InfraAscii.ToLower(ident.Text);
             if (System.Array.IndexOf(keywords, lower) >= 0)
             {
                 _index++;
@@ -67,7 +68,7 @@ internal sealed class ValueReader
         if (Peek is CssToken { Kind: CssTokenKind.Ident } ident)
         {
             _index++;
-            return Ascii.ToLower(ident.Text);
+            return InfraAscii.ToLower(ident.Text);
         }
 
         return null;
@@ -105,7 +106,7 @@ internal sealed class ValueReader
                     ? ParsedValue.Invalid($"a negative percentage for {property}")
                     : ParsedValue.Of(new CssPercentage(percentage.Number));
             case CssToken { Kind: CssTokenKind.Dimension } dimension:
-                var unit = Ascii.ToLower(dimension.Text);
+                var unit = InfraAscii.ToLower(dimension.Text);
                 if (Units.PointsPer(unit) is { } points)
                 {
                     _index++;

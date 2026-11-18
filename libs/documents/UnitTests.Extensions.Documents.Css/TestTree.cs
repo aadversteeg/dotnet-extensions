@@ -101,7 +101,7 @@ public static class TestTree
     public static StyleSheet Sheet(string css, string name = "author.css")
     {
         var result = CssParser.ParseStyleSheet(css, new CssSourceOptions(name));
-        return result.Value;
+        return result.Value.Value;
     }
 
     /// <summary>The computed styles of every element, with every diagnostic (of reading the sheets, of the cascade).</summary>
@@ -112,12 +112,12 @@ public static class TestTree
         var sheets = new List<CascadeSheet>();
         if (userAgent is not null)
         {
-            var ua = CssParser.ParseStyleSheet(userAgent, new CssSourceOptions("ua.css"));
+            var ua = CssParser.ParseStyleSheet(userAgent, new CssSourceOptions("ua.css")).Value;
             diagnostics.AddRange(ua.Diagnostics);
             sheets.Add(new CascadeSheet(ua.Value, CascadeOrigin.UserAgent));
         }
 
-        var parsed = CssParser.ParseStyleSheet(author, new CssSourceOptions("author.css"));
+        var parsed = CssParser.ParseStyleSheet(author, new CssSourceOptions("author.css")).Value;
         diagnostics.AddRange(parsed.Diagnostics);
         sheets.Add(new CascadeSheet(parsed.Value, CascadeOrigin.Author));
         var index = CascadeIndex.Build(sheets, media ?? MediaContext.PrintA4, imports);
@@ -135,11 +135,11 @@ public static class TestTree
 
     /// <summary>A style attribute's declarations.</summary>
     public static ElementDeclarations Style(string text) =>
-        new(CssParser.ParseDeclarations(text, new CssSourceOptions("doc.html")).Value, [], "doc.html");
+        new(CssParser.ParseDeclarations(text, new CssSourceOptions("doc.html")).Value.Value, [], "doc.html");
 
     /// <summary>Presentational hints written as declarations.</summary>
     public static ElementDeclarations Hints(string text) =>
-        new([], CssParser.ParseDeclarations(text, new CssSourceOptions("doc.html")).Value, "doc.html");
+        new([], CssParser.ParseDeclarations(text, new CssSourceOptions("doc.html")).Value.Value, "doc.html");
 }
 
 /// <summary>Computed styles and diagnostics.</summary>
@@ -148,7 +148,7 @@ public sealed record Computed(Dictionary<TestElement, ComputedStyle> Styles, Lis
     public ComputedStyle this[TestElement element] => Styles[element];
 
     /// <summary>A computed value as text.</summary>
-    public string Value(TestElement element, string property) => Styles[element][property].ToString()!;
+    public string Value(TestElement element, string property) => Styles[element].Find(property)!.ToString()!;
 
     public IEnumerable<Error> Coded(ErrorCode code) => Diagnostics.Where(error => error.Code == code);
 }

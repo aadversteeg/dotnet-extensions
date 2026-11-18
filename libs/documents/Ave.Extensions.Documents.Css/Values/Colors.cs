@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -56,9 +57,12 @@ internal static partial class Colors
     internal static readonly HashSet<string> OtherFunctions =
         ["hwb", "lab", "lch", "oklab", "oklch", "color", "color-mix", "light-dark", "contrast-color", "device-cmyk", "-webkit-image-set"];
 
+    /// <summary>The names of the named colours, lowercase.</summary>
+    public static IEnumerable<string> NamedColorNames => Named.Keys;
+
     /// <summary>The named colour of CSS Color 4 §6.1 with this name (ASCII case-insensitive), or null.</summary>
     public static CssColor? NamedColor(string name) =>
-        Named.TryGetValue(Ascii.ToLower(name), out var rgb) ? new CssColor(rgb.Red, rgb.Green, rgb.Blue, 1) : null;
+        Named.TryGetValue(InfraAscii.ToLower(name), out var rgb) ? new CssColor(rgb.Red, rgb.Green, rgb.Blue, 1) : null;
 
     /// <summary>Reads one component value as a &lt;color&gt;.</summary>
     /// <param name="value">The value.</param>
@@ -74,7 +78,7 @@ internal static partial class Colors
             case CssToken { Kind: CssTokenKind.Hash } hash:
                 return Hex(hash.Text, out color) ? ColorOutcome.Color : ColorOutcome.Invalid;
             case CssToken { Kind: CssTokenKind.Ident } ident:
-                var name = Ascii.ToLower(ident.Text);
+                var name = InfraAscii.ToLower(ident.Text);
                 if (name == "currentcolor")
                 {
                     return ColorOutcome.CurrentColor;
@@ -105,7 +109,7 @@ internal static partial class Colors
 
                 return ColorOutcome.Invalid;
             case FunctionValue function:
-                var functionName = Ascii.ToLower(function.Name);
+                var functionName = InfraAscii.ToLower(function.Name);
                 if (functionName is "rgb" or "rgba")
                 {
                     return Rgb(function, out color, out message);
@@ -134,7 +138,7 @@ internal static partial class Colors
         color = default;
         foreach (var c in digits)
         {
-            if (!Ascii.IsHexDigit(c))
+            if (!InfraAscii.IsHexDigit(c))
             {
                 return false;
             }
@@ -257,7 +261,7 @@ internal static partial class Colors
             ? "a 'none' component of a colour is not supported"
             : null;
 
-    /// <summary>&lt;alpha-value&gt; = &lt;number&gt; | &lt;percentage&gt;, clamped to 0–1.</summary>
+    /// <summary>&lt;alpha-value&gt; = &lt;number&gt; | &lt;percentage&gt;, clamped to 0–1 (CSS Color 4 §4.2).</summary>
     private static double? Alpha(ComponentValue? value, bool legacy)
     {
         if (value is null)
@@ -422,7 +426,7 @@ internal static partial class Colors
     private static double? Hue(ComponentValue value) => value switch
     {
         CssToken { Kind: CssTokenKind.Number } number => number.Number,
-        CssToken { Kind: CssTokenKind.Dimension } angle => Ascii.ToLower(angle.Text) switch
+        CssToken { Kind: CssTokenKind.Dimension } angle => InfraAscii.ToLower(angle.Text) switch
         {
             "deg" => angle.Number,
             "rad" => angle.Number * 180 / Math.PI,
@@ -435,8 +439,9 @@ internal static partial class Colors
         _ => null,
     };
 
-    /// <summary>The conversion of CSS Color 4 §7.1 (hslToRgb): hue in degrees, saturation and lightness 0–100; returns
-    /// channels 0–1.</summary>
+    /// <summary>HSL to RGB by the textbook formula: the chroma C = (1 − |2L − 1|) · S, the hue's sector of 60°, the
+    /// second component X = C · (1 − |H′ mod 2 − 1|), and the match value m = L − C / 2 added to each channel. Hue in
+    /// degrees, saturation and lightness 0–100; returns channels 0–1.</summary>
     private static (double Red, double Green, double Blue) HslToRgb(double hue, double saturation, double lightness)
     {
         hue %= 360;
@@ -447,13 +452,19 @@ internal static partial class Colors
 
         var s = saturation / 100;
         var l = lightness / 100;
-        double F(double n)
+        var chroma = (1 - Math.Abs((2 * l) - 1)) * s;
+        var sector = hue / 60;
+        var second = chroma * (1 - Math.Abs((sector % 2) - 1));
+        var (red, green, blue) = (int)Math.Floor(sector) switch
         {
-            var k = (n + (hue / 30)) % 12;
-            var a = s * Math.Min(l, 1 - l);
-            return l - (a * Math.Max(-1, Math.Min(Math.Min(k - 3, 9 - k), 1)));
-        }
-
-        return (F(0), F(8), F(4));
+            0 => (chroma, second, 0.0),
+            1 => (second, chroma, 0.0),
+            2 => (0.0, chroma, second),
+            3 => (0.0, second, chroma),
+            4 => (second, 0.0, chroma),
+            _ => (chroma, 0.0, second),
+        };
+        var match = l - (chroma / 2);
+        return (red + match, green + match, blue + match);
     }
 }

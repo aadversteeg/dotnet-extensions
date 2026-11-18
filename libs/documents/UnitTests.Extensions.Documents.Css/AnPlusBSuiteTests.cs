@@ -30,5 +30,6 @@ public class AnPlusBSuiteTests(ITestOutputHelper output)
         output.WriteLine($"An+B.json: {items.Count / 2} cases, {failures.Count} failed");
         failures.ForEach(output.WriteLine);
         failures.Should().BeEmpty();
+        (items.Count / 2).Should().Be(128);
     }
 }

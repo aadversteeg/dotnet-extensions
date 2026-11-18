@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -26,7 +27,7 @@ namespace Ave.Extensions.Documents.Css.Selectors;
 /// and the cascade refuses the document. The facts remembered are capped at
 /// <see cref="CssInputLimits.MaxMatchingMemo"/>; past that they are computed again, inside the work limit.</para>
 /// </remarks>
-public sealed class SelectorMatcher
+internal sealed class SelectorMatcher
 {
     private readonly Dictionary<(IStyleElement Parent, PseudoClassSelector Pseudo), Dictionary<IStyleElement, (int Index, int Count)>> _nthOf =
         new(new IdentityComparer<IStyleElement, PseudoClassSelector>());
@@ -72,9 +73,13 @@ public sealed class SelectorMatcher
     /// <summary>One fact to compute, and how far its computation is.</summary>
     private struct Goal(Kind kind, int step, IStyleElement element)
     {
+        /// <summary>What fact is computed.</summary>
         public Kind Kind = kind;
+        /// <summary>The compound of the selector, counted from the right, the fact is about.</summary>
         public int Step = step;
+        /// <summary>The element the fact is about.</summary>
         public IStyleElement Element = element;
+        /// <summary>0 before the goal is looked up or started; 1 once the facts it waits for are pushed.</summary>
         public int Phase;
     }
 
@@ -226,7 +231,7 @@ public sealed class SelectorMatcher
     private bool MatchesSimple(SimpleSelector simple, IStyleElement element) => simple switch
     {
         TypeSelector type => MatchesType(type, element),
-        IdSelector id => element.Id is { } value && (element.IsQuirksMode ? Ascii.EqualsIgnoreCase(value, id.Name) : value == id.Name),
+        IdSelector id => element.Id is { } value && (element.IsQuirksMode ? InfraAscii.EqualsIgnoreCase(value, id.Name) : value == id.Name),
         ClassSelector name => element.HasClass(name.Name),
         AttributeSelector attribute => MatchesAttribute(attribute, element),
         PseudoClassSelector pseudo => MatchesPseudoClass(pseudo, element),
@@ -251,13 +256,13 @@ public sealed class SelectorMatcher
             return true;
         }
 
-        return element.IsHtml ? Ascii.ToLower(type.LocalName) == element.LocalName : type.LocalName == element.LocalName;
+        return element.IsHtml ? InfraAscii.ToLower(type.LocalName) == element.LocalName : type.LocalName == element.LocalName;
     }
 
     /// <summary>Selectors 4 §6.1–§6.3.</summary>
     private bool MatchesAttribute(AttributeSelector selector, IStyleElement element)
     {
-        var name = element.IsHtml ? Ascii.ToLower(selector.LocalName) : selector.LocalName;
+        var name = element.IsHtml ? InfraAscii.ToLower(selector.LocalName) : selector.LocalName;
         if (element.GetAttribute(name) is not { } value)
         {
             return false;
@@ -278,7 +283,7 @@ public sealed class SelectorMatcher
         if (ignoreCase)
         {
             // ASCII case-insensitive (Infra §4.6): only A–Z fold, so compare the ASCII lowercase forms ordinally.
-            (value, wanted, comparison) = (Ascii.ToLower(value), Ascii.ToLower(wanted), StringComparison.Ordinal);
+            (value, wanted, comparison) = (InfraAscii.ToLower(value), InfraAscii.ToLower(wanted), StringComparison.Ordinal);
         }
 
         return selector.Operator switch
@@ -412,9 +417,11 @@ public sealed class SelectorMatcher
         where TFirst : class
         where TSecond : class
     {
+        /// <inheritdoc />
         public bool Equals((TFirst First, TSecond Second) x, (TFirst First, TSecond Second) y) =>
             ReferenceEquals(x.First, y.First) && ReferenceEquals(x.Second, y.Second);
 
+        /// <inheritdoc />
         public int GetHashCode((TFirst First, TSecond Second) obj) =>
             HashCode.Combine(RuntimeHelpers.GetHashCode(obj.First), RuntimeHelpers.GetHashCode(obj.Second));
     }
@@ -422,9 +429,11 @@ public sealed class SelectorMatcher
     /// <summary>Compares fact keys by the identity of the selector and the element.</summary>
     private sealed class FactComparer : IEqualityComparer<(ComplexSelector Selector, int Fact, IStyleElement Element)>
     {
+        /// <inheritdoc />
         public bool Equals((ComplexSelector Selector, int Fact, IStyleElement Element) x, (ComplexSelector Selector, int Fact, IStyleElement Element) y) =>
             x.Fact == y.Fact && ReferenceEquals(x.Selector, y.Selector) && ReferenceEquals(x.Element, y.Element);
 
+        /// <inheritdoc />
         public int GetHashCode((ComplexSelector Selector, int Fact, IStyleElement Element) obj) =>
             HashCode.Combine(RuntimeHelpers.GetHashCode(obj.Selector), obj.Fact, RuntimeHelpers.GetHashCode(obj.Element));
     }

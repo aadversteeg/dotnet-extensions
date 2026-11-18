@@ -1,5 +1,6 @@
 using System.Globalization;
 using Ave.Extensions.Documents.Css.Cascade;
+using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Values;
 
 namespace UnitTests.Extensions.Documents.Html;
@@ -13,11 +14,11 @@ namespace UnitTests.Extensions.Documents.Html;
 /// </summary>
 internal static class ComputedText
 {
-    public static string Of(string property, ComputedStyle style) => Of(property, style[property], style);
+    public static string Of(string property, ComputedStyle style) => Of(property, style.Find(property)!, style);
 
     private static string Of(string property, CssValue value, ComputedStyle style) => value switch
     {
-        CssKeyword { Name: "currentcolor" } => style["color"] is CssColorValue color ? color.Color.ToString() : "currentcolor",
+        CssKeyword { Name: "currentcolor" } => style[PropertyRegistry.Color] is CssColorValue color ? color.Color.ToString() : "currentcolor",
         CssKeyword { Name: "auto" } when property is "min-width" or "min-height" => "0px",
         CssLength length => Pixels(length.Points / 0.75),
         CssNumber number => Number(number.Value),

@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace Ave.Extensions.Documents.Css.Selectors;
 /// any pseudo-classes … for which they have no usable level of support"); the tables follow the names Chromium 159
 /// accepts, so a selector Chromium keeps is never dropped here as invalid: it is supported, never matches, or is refused.
 /// </summary>
-public static class PseudoClasses
+internal static class PseudoClasses
 {
     /// <summary>One known name.</summary>
     /// <param name="Name">The name, lowercase, without colons or parenthesis.</param>
@@ -234,7 +235,7 @@ public static class PseudoClasses
     /// <param name="functional">Whether it was written as a function.</param>
     /// <returns>The entry, or null.</returns>
     public static Entry? FindClass(string name, bool functional) =>
-        Classes.TryGetValue((Ascii.ToLower(name), functional), out var entry) ? entry : null;
+        Classes.TryGetValue((InfraAscii.ToLower(name), functional), out var entry) ? entry : null;
 
     /// <summary>The pseudo-element of this name, or null when it is not known. Names starting with <c>-webkit-</c> are
     /// Chromium's own pseudo-elements (scroll bars, form parts): known, and unsupported.</summary>
@@ -243,7 +244,7 @@ public static class PseudoClasses
     /// <returns>The entry, or null.</returns>
     public static Entry? FindElement(string name, bool functional)
     {
-        var lower = Ascii.ToLower(name);
+        var lower = InfraAscii.ToLower(name);
         if (Elements.TryGetValue((lower, functional), out var entry))
         {
             return entry;

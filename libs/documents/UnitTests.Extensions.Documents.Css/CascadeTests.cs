@@ -327,6 +327,29 @@ public class CascadeTests
     }
 
     [Fact]
+    public void A_style_by_name_is_null_for_what_is_not_a_longhand()
+    {
+        // Review 39 API-2: the string indexer threw for a shorthand, an ignored property and a custom property.
+        var style = ComputedStyle.Initial;
+
+        style.Find("margin-top").Should().NotBeNull();
+        style.Find("MARGIN-TOP").Should().Be(style.Find("margin-top"));
+        style.Find("margin").Should().BeNull();
+        style.Find("zoom").Should().BeNull();
+        style.Find("--x").Should().BeNull();
+    }
+
+    [Fact]
+    public void A_child_computed_before_its_parent_is_a_programming_error()
+    {
+        // Review 39 API-4: the child silently inherited nothing.
+        var root = Doc(E("p", A("id", "x")));
+        var computer = new StyleComputer(CascadeIndex.Build([new CascadeSheet(Sheet("p { color: red }"), CascadeOrigin.Author)], MediaContext.PrintA4, null).Value, ValueContext.A4);
+
+        FluentActions.Invoking(() => computer.Compute(root["x"])).Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
     public void Relative_units_need_font_metrics_for_ex_and_ch()
     {
         var root = Doc(E("p", A("id", "x")), E("div", A("id", "y")));

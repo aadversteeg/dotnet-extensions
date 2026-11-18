@@ -8,10 +8,6 @@ public sealed record MediaQueryList(ValueList<MediaQuery> Queries)
 {
     /// <summary>The empty list, which matches every medium.</summary>
     public static MediaQueryList All { get; } = new([]);
-
-    /// <summary>A list that matches no medium (<c>not all</c>): what a list past the reader's limits is, so that a
-    /// list the reader could not read never applies.</summary>
-    public static MediaQueryList None { get; } = new([MediaQuery.NotAll(TextPosition.Start)]);
 }
 
 /// <summary>A media query (Media Queries 4 §3): <c>[not | only]? type [and condition]?</c>, or a condition alone.</summary>

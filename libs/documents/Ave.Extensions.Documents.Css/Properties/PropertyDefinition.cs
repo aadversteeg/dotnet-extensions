@@ -25,6 +25,7 @@ public enum PropertySupport
 /// </summary>
 public sealed class PropertyDefinition
 {
+    /// <summary>Defines a longhand; only the property registry makes them.</summary>
     internal PropertyDefinition(
         string name,
         bool inherited,
@@ -69,7 +70,8 @@ public sealed class PropertyDefinition
     /// <summary>The specification and section that defines the property.</summary>
     public string Specification { get; }
 
-    /// <summary>The position of the property in the registry (an index into a computed style).</summary>
+    /// <summary>The position of the property in the registry (an index into a computed style), set once by the
+    /// registry's type initialiser; not visible outside the library.</summary>
     internal int Index { get; set; }
 
     /// <summary>Parses a specified value (white space removed, no var(), no CSS-wide keyword).</summary>
@@ -85,10 +87,11 @@ public sealed class PropertyDefinition
 /// <summary>A shorthand property (CSS Cascade 5 §1.2): it sets several longhands at once.</summary>
 public sealed class ShorthandDefinition
 {
+    /// <summary>Defines a shorthand; only the property registry makes them.</summary>
     internal ShorthandDefinition(string name, string[] longhands, string supported, string specification, Func<ValueReader, ShorthandParse> parse)
     {
         Name = name;
-        Longhands = longhands;
+        Longhands = Array.AsReadOnly([.. longhands]);
         Supported = supported;
         Specification = specification;
         Parse = parse;
@@ -136,12 +139,18 @@ internal readonly record struct ParsedValue(CssValue? Value, string? Problem, bo
     /// <see cref="CssErrorCodes.Unsupported.Value"/> (a math or colour function).</summary>
     public ErrorCode? Code { get; init; }
 
+    /// <summary>A valid value the engine supports.</summary>
     public static ParsedValue Of(CssValue value) => new(value, null, false);
 
+    /// <summary>Invalid CSS: Chromium drops the declaration too, so it is dropped with a warning and the cascade goes
+    /// on (CSS Syntax 3 §5.4.4, ruling D-b in docs/architecture.md).</summary>
     public static ParsedValue Invalid(string problem) => new(null, problem, false);
 
+    /// <summary>CSS the engine cannot follow: valid, or not readable by the engine's grammar. Refused when it would
+    /// win, as the profile says (ruling D-b in docs/architecture.md), never dropped silently.</summary>
     public static ParsedValue Refused(string problem) => new(null, problem, true);
 
+    /// <summary>Whether there is a value.</summary>
     public bool IsValid => Value is not null;
 }
 
@@ -159,8 +168,10 @@ internal readonly record struct ShorthandParse(System.Collections.Generic.IReadO
     public static ShorthandParse Failed(ParsedValue value, string? problem = null) =>
         new(null, value.Problem ?? problem ?? "not a value", value.Unsupported) { Code = value.Code };
 
+    /// <summary>Invalid CSS, as <see cref="ParsedValue.Invalid"/>.</summary>
     public static ShorthandParse Invalid(string problem) => new(null, problem, false);
 
+    /// <summary>CSS the engine refuses, as <see cref="ParsedValue.Refused"/>.</summary>
     public static ShorthandParse Refused(string problem) => new(null, problem, true);
 }
 
@@ -170,7 +181,9 @@ internal readonly record struct ShorthandParse(System.Collections.Generic.IReadO
 /// <param name="Unsupported">Why it is refused, or null.</param>
 internal readonly record struct ComputedResult(CssValue? Value, string? Unsupported)
 {
+    /// <summary>A computed value.</summary>
     public static implicit operator ComputedResult(CssValue value) => new(value, null);
 
+    /// <summary>A specified value the engine cannot compute, refused.</summary>
     public static ComputedResult Refused(string why) => new(null, why);
 }

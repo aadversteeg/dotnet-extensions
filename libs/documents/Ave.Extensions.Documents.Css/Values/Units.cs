@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 
@@ -34,11 +35,11 @@ public static class Units
     /// <summary>The number of points in one of an absolute unit, or null when the unit is not absolute.</summary>
     /// <param name="unit">The unit, any case.</param>
     /// <returns>Points per unit, or null.</returns>
-    public static double? PointsPer(string unit) => Absolute.TryGetValue(Ascii.ToLower(unit), out var points) ? points : null;
+    public static double? PointsPer(string unit) => Absolute.TryGetValue(InfraAscii.ToLower(unit), out var points) ? points : null;
 
     /// <summary>Whether a unit is one of the relative units the engine resolves.</summary>
-    public static bool IsResolvedRelative(string unit) => Relative.Contains(Ascii.ToLower(unit));
+    public static bool IsResolvedRelative(string unit) => Relative.Contains(InfraAscii.ToLower(unit));
 
     /// <summary>Whether a unit is a length unit CSS defines that the engine refuses.</summary>
-    public static bool IsUnsupportedLength(string unit) => UnsupportedRelative.Contains(Ascii.ToLower(unit));
+    public static bool IsUnsupportedLength(string unit) => UnsupportedRelative.Contains(InfraAscii.ToLower(unit));
 }

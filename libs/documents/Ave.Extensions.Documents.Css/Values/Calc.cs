@@ -46,7 +46,7 @@ public sealed record CalcFunction(string Name, ValueList<CalcNode> Arguments) : 
 }
 
 /// <summary>The type of a calculation (CSS Values 4 §10.9), as far as the engine uses them.</summary>
-public enum CalcType
+internal enum CalcType
 {
     /// <summary>&lt;number&gt;.</summary>
     Number,
@@ -73,14 +73,14 @@ public enum CalcType
 /// <param name="Points">The length part in points.</param>
 /// <param name="Percent">The percentage part.</param>
 /// <param name="IsNumber">Whether this is a number.</param>
-public readonly record struct CalcResult(double Number, double Points, double Percent, bool IsNumber);
+internal readonly record struct CalcResult(double Number, double Points, double Percent, bool IsNumber);
 
 /// <summary>
 /// Math functions: <c>calc()</c>, <c>min()</c>, <c>max()</c>, <c>clamp()</c> over numbers, lengths and percentages
 /// (CSS Values 4 §10). Other math functions, other types (angles, times …), a product of two lengths and the
 /// keywords infinity and NaN are refused; e and pi are numbers.
 /// </summary>
-public static class Calc
+internal static class Calc
 {
     /// <summary>The math function names CSS defines (for "valid but unsupported").</summary>
     internal static readonly HashSet<string> OtherMathFunctions =
@@ -89,7 +89,7 @@ public static class Calc
     /// <summary>Whether a function is a math function (supported or not).</summary>
     public static bool IsMathFunction(FunctionValue function)
     {
-        var name = Ascii.ToLower(function.Name);
+        var name = InfraAscii.ToLower(function.Name);
         return name is "calc" or "min" or "max" or "clamp" || OtherMathFunctions.Contains(name);
     }
 
@@ -98,7 +98,7 @@ public static class Calc
     public static CalcNode? Parse(FunctionValue function, out string? problem)
     {
         problem = null;
-        var name = Ascii.ToLower(function.Name);
+        var name = InfraAscii.ToLower(function.Name);
         if (OtherMathFunctions.Contains(name))
         {
             problem = $"unsupported:the math function {name}() is not supported";
@@ -259,7 +259,7 @@ public static class Calc
             case CssToken { Kind: CssTokenKind.Percentage } percentage:
                 return new CalcLeaf(percentage.Number, "%");
             case CssToken { Kind: CssTokenKind.Dimension } dimension:
-                var unit = Ascii.ToLower(dimension.Text);
+                var unit = InfraAscii.ToLower(dimension.Text);
                 if (Units.PointsPer(unit) is not null || Units.IsResolvedRelative(unit))
                 {
                     return new CalcLeaf(dimension.Number, unit);

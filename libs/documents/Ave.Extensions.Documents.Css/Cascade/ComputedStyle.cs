@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Css.Properties;
@@ -14,6 +15,8 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
 {
     private readonly CssValue[] _values;
 
+    /// <summary>Makes a style from the computed value of every longhand, by <see cref="PropertyDefinition.Index"/>, the
+    /// custom properties and where the font size came from.</summary>
     internal ComputedStyle(CssValue[] values, IReadOnlyDictionary<string, CssTokens> custom, FontSizeSource fontSizeSource)
     {
         _values = values;
@@ -22,7 +25,7 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
     }
 
     /// <summary>The initial style: every property at its initial value, no custom properties.</summary>
-    public static ComputedStyle Initial { get; } = new([.. PropertyRegistry.Longhands.Select(property => property.Initial)], new Dictionary<string, CssTokens>(), Properties.FontSizeSource.Medium);
+    public static ComputedStyle Initial { get; } = new([.. PropertyRegistry.Longhands.Select(property => property.Initial)], FrozenDictionary<string, CssTokens>.Empty, Properties.FontSizeSource.Medium);
 
     /// <summary>Where the font size comes from (<see cref="Properties.FontSizeSource"/>), for the children's sizes.</summary>
     internal FontSizeSource FontSizeSource { get; }
@@ -33,10 +36,12 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
     /// <summary>The computed value of a longhand.</summary>
     public CssValue this[PropertyDefinition property] => _values[property.Index];
 
-    /// <summary>The computed value of a longhand by name; throws for a name that is not a registered longhand.</summary>
-    public CssValue this[string name] => PropertyRegistry.Find(name) is { } property
-        ? _values[property.Index]
-        : throw new ArgumentException($"'{name}' is not a registered longhand.", nameof(name));
+    /// <summary>The computed value of a longhand by name (ASCII case-insensitive), or null for a name that is not a
+    /// registered longhand: a shorthand, a property ignored by rule, a custom property (see
+    /// <see cref="CustomProperties"/>).</summary>
+    /// <param name="name">The property name.</param>
+    /// <returns>The value, or null.</returns>
+    public CssValue? Find(string name) => PropertyRegistry.Find(name) is { } property ? _values[property.Index] : null;
 
     /// <inheritdoc/>
     public bool Equals(ComputedStyle? other) =>

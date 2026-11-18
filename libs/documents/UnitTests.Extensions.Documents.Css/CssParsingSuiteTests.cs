@@ -5,6 +5,7 @@ using System.Text.Json;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css;
 using Ave.Extensions.Documents.Css.Syntax;
+using Ave.Extensions.Functional;
 using Xunit.Abstractions;
 
 namespace UnitTests.Extensions.Documents.Css;
@@ -34,8 +35,10 @@ namespace UnitTests.Extensions.Documents.Css;
 /// special there (a style sheet discards them), which are skipped.</item>
 /// </list>
 /// Two parse errors are shown by the suite as values: <c>["error","eof-in-string"]</c> and <c>["error","eof-in-url"]</c>
-/// after the token that the end of the input cut off; the runner adds them where this tokenizer reports those errors.
-/// A number that is -0 is compared as 0 (JSON has one zero).
+/// after the token that the end of the input cut off; the runner adds them where this tokenizer reports those errors
+/// (<b>end-of-input errors as values</b>). A number that is -0 is compared as 0, as JSON has one zero (<b>-0 as 0</b>). A
+/// rule's block is shown as its component values (<b>blocks as values</b>). These are counted and pinned too, and so is
+/// the number of cases of every file.
 /// </summary>
 public class CssParsingSuiteTests(ITestOutputHelper output)
 {
@@ -66,7 +69,30 @@ public class CssParsingSuiteTests(ITestOutputHelper output)
             ["a declaration's value is trimmed"] = 6,
             ["unicode-range tokens only in the descriptor"] = 9,
             ["no list of rules (skipped)"] = 2,
+            ["end-of-input errors as values"] = 11,
+            ["-0 as 0"] = 4,
+            ["blocks as values"] = 28,
         });
+    }
+
+    /// <summary>The number of cases of each syntax file (149 in all at 203ce36).</summary>
+    private static readonly Dictionary<string, int> CaseCounts = new()
+    {
+        ["component_value_list.json"] = 50, ["one_component_value.json"] = 10, ["declaration_list.json"] = 10,
+        ["one_declaration.json"] = 21, ["blocks_contents.json"] = 13, ["one_rule.json"] = 14, ["rule_list.json"] = 15,
+        ["stylesheet.json"] = 16,
+    };
+
+    [Fact]
+    public void Every_file_has_all_its_cases()
+    {
+        foreach (var file in FileNames)
+        {
+            using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(Suites.CssParsingTests, file)));
+            (json.RootElement.GetArrayLength() / 2).Should().Be(CaseCounts[file], file);
+        }
+
+        CaseCounts.Values.Sum().Should().Be(149);
     }
 
     [Theory]
@@ -107,11 +133,20 @@ public class CssParsingSuiteTests(ITestOutputHelper output)
                 continue;
             }
 
-            if (CssDecoding.Decode(bytes, encoding) is not { } text)
+            // By rule, from the data: an encoding other than UTF-8 and UTF-16 with bytes outside ASCII is refused.
+            var byRule = expectedEncoding.ToLowerInvariant() is not ("utf-8" or "utf-16be" or "utf-16le") && bytes.Any(b => b >= 0x80);
+            var decoded = CssDecoding.Decode(bytes, encoding);
+            if ((decoded is null) != byRule)
+            {
+                failures.Add($"#{i / 2}: decoded {(decoded is null ? "not" : "yes")}, the rule says {(byRule ? "refuse" : "decode")}");
+                continue;
+            }
+
+            if (decoded is not { } text)
             {
                 refused++;
                 CssParser.ParseStyleSheet(bytes, new CssSourceOptions("bytes.css") { ProtocolEncoding = Label("protocol_encoding"), EnvironmentEncoding = Label("environment_encoding") })
-                    .Diagnostics.Should().ContainSingle(error => error.Code == CssErrorCodes.Unsupported.Encoding);
+                    .Match(_ => CssErrorCodes.Parse.Syntax, error => error.Code).Should().Be(CssErrorCodes.Unsupported.Encoding);
                 continue;
             }
 
@@ -126,6 +161,7 @@ public class CssParsingSuiteTests(ITestOutputHelper output)
         output.WriteLine($"stylesheet_bytes.json: {items.Count / 2} cases, {items.Count / 2 - refused} decoded and compared, {refused} refused by rule (encoding not decoded, bytes outside ASCII), {failures.Count} failed");
         failures.ForEach(output.WriteLine);
         failures.Should().BeEmpty();
+        (items.Count / 2, refused).Should().Be((28, 11));
     }
 
     /// <summary>Runs every case of a file; returns the failures and counts the adaptations used.</summary>
@@ -145,7 +181,18 @@ public class CssParsingSuiteTests(ITestOutputHelper output)
             }
 
             var expected = Canonical(Adapt(file, input, items[i + 1], Count));
-            var actual = Canonical(Run(file, input));
+            var result = Run(file, input, Count);
+            if (HasNegativeZero(result))
+            {
+                Count("-0 as 0");
+            }
+
+            if (HasBlock(result))
+            {
+                Count("blocks as values");
+            }
+
+            var actual = Canonical(result);
             if (actual != expected)
             {
                 failures.Add($"{file} #{i / 2}: {Canonical(items[i])}\n  expected: {expected}\n  actual:   {actual}");
@@ -244,7 +291,7 @@ public class CssParsingSuiteTests(ITestOutputHelper output)
 
     // ---- running one case ----
 
-    private static JsonElement Run(string file, string input)
+    private static JsonElement Run(string file, string input, Action<string> Count)
     {
         var source = CssSource.Of(input);
         var endErrors = new List<string>();
@@ -280,6 +327,11 @@ public class CssParsingSuiteTests(ITestOutputHelper output)
         foreach (var name in endErrors)
         {
             DeepestLastList(node)?.Add(new System.Text.Json.Nodes.JsonArray("error", name));
+        }
+
+        if (endErrors.Count > 0)
+        {
+            Count("end-of-input errors as values");
         }
 
         return JsonSerializer.SerializeToElement(node);
@@ -370,6 +422,20 @@ public class CssParsingSuiteTests(ITestOutputHelper output)
         CssTokenKind.CloseParen => new object[] { "error", ")" },
         _ => throw new InvalidOperationException(token.Kind.ToString()),
     };
+
+    private static bool HasNegativeZero(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.Array => element.EnumerateArray().Any(HasNegativeZero),
+        JsonValueKind.Number => element.GetDouble() == 0 && double.IsNegative(element.GetDouble()),
+        _ => false,
+    };
+
+    /// <summary>Whether the result holds a rule with a block (a qualified rule, or an at-rule whose block is not null).</summary>
+    private static bool HasBlock(JsonElement element) =>
+        element.ValueKind == JsonValueKind.Array
+        && ((element.GetArrayLength() > 0 && element[0].ValueKind == JsonValueKind.String
+                && (element[0].GetString() == "qualified rule" || (element[0].GetString() == "at-rule" && element.GetArrayLength() == 4 && element[3].ValueKind == JsonValueKind.Array)))
+            || element.EnumerateArray().Any(HasBlock));
 
     /// <summary>A canonical text of a JSON value: numbers by their double value, strings escaped one way.</summary>
     private static string Canonical(JsonElement element)

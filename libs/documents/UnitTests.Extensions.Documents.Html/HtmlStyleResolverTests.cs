@@ -3,6 +3,7 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css;
 using Ave.Extensions.Documents.Html;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 using static UnitTests.Extensions.Documents.Html.Styling;
 
 namespace UnitTests.Extensions.Documents.Html;
@@ -23,6 +24,14 @@ public class HtmlStyleResolverTests
         var styled = Styled(html, Warn);
         styled.ByName("p").Value("color").Should().Be("rgb(255, 0, 0)");
         styled.Diagnostics.Count(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal).Should().Be(2);
+    }
+
+    [Fact]
+    public void A_document_without_an_element_fails_instead_of_throwing()
+    {
+        var parsed = new Ave.Extensions.Documents.Html.Parsing.HtmlParseResult(new Ave.Extensions.Documents.Html.Parsing.HtmlDocument(Ave.Extensions.Documents.Html.Parsing.DocumentMode.NoQuirks, []), [], "made.html");
+
+        HtmlStyleResolver.Resolve(parsed, Warn).Match(_ => HtmlStyleErrorCodes._, error => error.Code).Should().Be(HtmlStyleErrorCodes.NoDocumentElement);
     }
 
     [Fact]
@@ -113,6 +122,16 @@ public class HtmlStyleResolverTests
         // Review 39 M16: the place of the character in the attribute value, through character references and line feeds.
         var diagnostic = styled.Diagnostics.First(error => error.Code != HtmlStyleErrorCodes.Ignored.StyleSheet);
         ((int)diagnostic.Metadata![ErrorMetadataKeys.SourceLine]!, (int)diagnostic.Metadata![ErrorMetadataKeys.SourceColumn]!).Should().Be((line, column));
+    }
+
+    [Fact]
+    public void Diagnostics_of_a_style_element_with_several_texts_point_into_each_text()
+    {
+        // Review 39 CR-10: the text after a child element of an svg style element keeps its own place.
+        var styled = Styled(Doctype + "\n<p id=t>x</p><svg><style>p{}<g/>\n#t{bogus:1}</style></svg>", Warn);
+
+        var diagnostic = styled.Diagnostics.Single(error => error.Message.Contains("bogus", StringComparison.Ordinal));
+        ((int)diagnostic.Metadata![ErrorMetadataKeys.SourceLine]!, (int)diagnostic.Metadata![ErrorMetadataKeys.SourceColumn]!).Should().Be((3, 4));
     }
 
     [Fact]

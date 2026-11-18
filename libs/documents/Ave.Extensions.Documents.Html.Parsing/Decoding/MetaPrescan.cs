@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,7 +18,7 @@ internal static class MetaPrescan
 
     /// <summary>What the prescan found.</summary>
     /// <param name="Label">The label as written in the meta element.</param>
-    /// <param name="Encoding">The encoding the parser would use (<see cref="EncodingLabels.ForMeta"/>).</param>
+    /// <param name="Encoding">The encoding the parser would use (<see cref="MetaEncodings.ForMeta"/>).</param>
     /// <param name="Offset">The byte offset of the meta element's <c>&lt;</c>.</param>
     public sealed record Found(string Label, string Encoding, int Offset);
 
@@ -49,7 +50,7 @@ internal static class MetaPrescan
                 continue;
             }
 
-            if (rest.Length >= 6 && rest[0] == '<' && IsWord(rest[1..5], "meta") && (Ascii.IsWhitespace(rest[5]) || rest[5] == '/'))
+            if (rest.Length >= 6 && rest[0] == '<' && IsWord(rest[1..5], "meta") && (InfraAscii.IsWhitespace(rest[5]) || rest[5] == '/'))
             {
                 var start = position;
                 position += 6;
@@ -64,10 +65,10 @@ internal static class MetaPrescan
                 continue;
             }
 
-            if (rest.Length >= 2 && rest[0] == '<' && (Ascii.IsAlpha(rest[1]) || (rest[1] == '/' && rest.Length >= 3 && Ascii.IsAlpha(rest[2]))))
+            if (rest.Length >= 2 && rest[0] == '<' && (InfraAscii.IsAlpha(rest[1]) || (rest[1] == '/' && rest.Length >= 3 && InfraAscii.IsAlpha(rest[2]))))
             {
                 // A tag: skip its name, then its attributes.
-                while (position < bytes.Length && !Ascii.IsWhitespace(bytes[position]) && bytes[position] != '>')
+                while (position < bytes.Length && !InfraAscii.IsWhitespace(bytes[position]) && bytes[position] != '>')
                 {
                     position++;
                 }
@@ -103,7 +104,7 @@ internal static class MetaPrescan
     /// the prescan of the standard does not; the parser refuses a non-UTF-8 one as it refuses a meta element.</summary>
     private static Found? XmlDeclaration(ReadOnlySpan<byte> bytes)
     {
-        if (!bytes.StartsWith("<?xml"u8) || bytes.Length < 6 || !(Ascii.IsWhitespace(bytes[5])))
+        if (!bytes.StartsWith("<?xml"u8) || bytes.Length < 6 || !(InfraAscii.IsWhitespace(bytes[5])))
         {
             return null;
         }
@@ -124,7 +125,7 @@ internal static class MetaPrescan
 
         var close = quoted.IndexOf(quoted[0], 1);
         var label = close < 0 ? null : quoted[1..close];
-        return label is not null && EncodingLabels.Resolve(label) is { } encoding ? new Found(label, EncodingLabels.ForMeta(encoding), 0) : null;
+        return label is not null && EncodingLabels.Resolve(label) is { } encoding ? new Found(label, MetaEncodings.ForMeta(encoding), 0) : null;
     }
 
     /// <summary>The attributes of one meta element, and what they say (the steps after "Let attribute list be an
@@ -169,14 +170,14 @@ internal static class MetaPrescan
             return null;
         }
 
-        return new Found(label!, EncodingLabels.ForMeta(charset), start);
+        return new Found(label!, MetaEncodings.ForMeta(charset), start);
     }
 
     /// <summary>"Get an attribute" (§13.2.3.2): one name and value, lowercased; null when there is none or the bytes
     /// end inside it.</summary>
     private static (string Name, string Value)? Attribute(ReadOnlySpan<byte> bytes, ref int position)
     {
-        while (position < bytes.Length && (Ascii.IsWhitespace(bytes[position]) || bytes[position] == '/'))
+        while (position < bytes.Length && (InfraAscii.IsWhitespace(bytes[position]) || bytes[position] == '/'))
         {
             position++;
         }
@@ -201,7 +202,7 @@ internal static class MetaPrescan
                 return AttributeValue(bytes, ref position) is { } value ? (name.ToString(), value) : null;
             }
 
-            if (Ascii.IsWhitespace(b))
+            if (InfraAscii.IsWhitespace(b))
             {
                 break;
             }
@@ -211,12 +212,12 @@ internal static class MetaPrescan
                 return (name.ToString(), string.Empty);
             }
 
-            name.Append((char)Ascii.ToLower(b));
+            name.Append((char)InfraAscii.ToLower(b));
             position++;
         }
 
         // Spaces after the name; anything but "=" ends the attribute without a value.
-        while (position < bytes.Length && Ascii.IsWhitespace(bytes[position]))
+        while (position < bytes.Length && InfraAscii.IsWhitespace(bytes[position]))
         {
             position++;
         }
@@ -233,7 +234,7 @@ internal static class MetaPrescan
     /// <summary>The value part of "get an attribute": after the "=", quoted or not; null when the bytes end in it.</summary>
     private static string? AttributeValue(ReadOnlySpan<byte> bytes, ref int position)
     {
-        while (position < bytes.Length && Ascii.IsWhitespace(bytes[position]))
+        while (position < bytes.Length && InfraAscii.IsWhitespace(bytes[position]))
         {
             position++;
         }
@@ -261,7 +262,7 @@ internal static class MetaPrescan
                     return value.ToString();
                 }
 
-                value.Append((char)Ascii.ToLower(bytes[position]));
+                value.Append((char)InfraAscii.ToLower(bytes[position]));
                 position++;
             }
         }
@@ -279,12 +280,12 @@ internal static class MetaPrescan
             }
 
             var b = bytes[position];
-            if (Ascii.IsWhitespace(b) || b == '>')
+            if (InfraAscii.IsWhitespace(b) || b == '>')
             {
                 return value.ToString();
             }
 
-            value.Append((char)Ascii.ToLower(b));
+            value.Append((char)InfraAscii.ToLower(b));
             position++;
         }
     }
@@ -305,7 +306,7 @@ internal static class MetaPrescan
             }
 
             position = found + "charset".Length;
-            while (position < content.Length && Ascii.IsWhitespace(content[position]))
+            while (position < content.Length && InfraAscii.IsWhitespace(content[position]))
             {
                 position++;
             }
@@ -316,7 +317,7 @@ internal static class MetaPrescan
             }
 
             position++;
-            while (position < content.Length && Ascii.IsWhitespace(content[position]))
+            while (position < content.Length && InfraAscii.IsWhitespace(content[position]))
             {
                 position++;
             }
@@ -334,7 +335,7 @@ internal static class MetaPrescan
             }
 
             var end = position;
-            while (end < content.Length && !Ascii.IsWhitespace(content[end]) && content[end] != ';')
+            while (end < content.Length && !InfraAscii.IsWhitespace(content[end]) && content[end] != ';')
             {
                 end++;
             }
@@ -347,7 +348,7 @@ internal static class MetaPrescan
     {
         for (var i = 0; i < lower.Length; i++)
         {
-            if (Ascii.ToLower(bytes[i]) != lower[i])
+            if (InfraAscii.ToLower(bytes[i]) != lower[i])
             {
                 return false;
             }

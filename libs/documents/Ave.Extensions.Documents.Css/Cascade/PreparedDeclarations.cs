@@ -18,8 +18,11 @@ namespace Ave.Extensions.Documents.Css.Cascade;
 /// <param name="Order">Its place in the order of appearance (CSS Cascade 5 §6.1, the last criterion).</param>
 internal sealed record PreparedDeclaration(Declaration Source, string SourceName, string Name, bool Important, int Order)
 {
+    /// <summary>Two declarations are equal only when they are the same one, so one written twice is reported twice.
+    /// </summary>
     public bool Equals(PreparedDeclaration? other) => ReferenceEquals(this, other);
 
+    /// <inheritdoc />
     public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
 }
 
@@ -49,10 +52,14 @@ internal readonly record struct Entry(PropertyDefinition? Longhand, string? Cust
 /// applies to an element (properties the engine ignores by rule, or does not know).</summary>
 internal sealed record PreparedBlock(ValueList<Entry> Entries, ValueList<Error> WhenApplied)
 {
+    /// <summary>A block with no declarations.</summary>
     public static PreparedBlock Empty { get; } = new([], []);
 
+    /// <summary>Two blocks are equal only when they are the same one: a block is reported once per rule, not once per
+    /// text.</summary>
     public bool Equals(PreparedBlock? other) => ReferenceEquals(this, other);
 
+    /// <inheritdoc />
     public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
 }
 
@@ -70,6 +77,9 @@ internal static class DeclarationPreparer
     /// supports: not supported here, so refused.</summary>
     private static readonly string[] UnsupportedSubstitutions = ["env", "attr", "if"];
 
+    /// <summary>Prepares a rule's declarations in order, each with the next place in the order of appearance (CSS
+    /// Cascade 5 §6.1). Invalid declarations are dropped and reported to <paramref name="diagnostics"/>; refused and
+    /// ignored ones are kept, to be reported when they apply.</summary>
     public static PreparedBlock Prepare(IEnumerable<Declaration> declarations, string sourceName, CascadeOrigin origin, ref int order, DiagnosticCollector diagnostics)
     {
         var entries = new List<Entry>();
@@ -84,7 +94,7 @@ internal static class DeclarationPreparer
 
     private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Error> whenApplied, DiagnosticCollector diagnostics)
     {
-        var name = declaration.IsCustomProperty ? declaration.Name : Ascii.ToLower(declaration.Name);
+        var name = declaration.IsCustomProperty ? declaration.Name : InfraAscii.ToLower(declaration.Name);
         var prepared = new PreparedDeclaration(declaration, sourceName, name, declaration.Important && origin != CascadeOrigin.PresentationalHint, order);
         var wide = WideKeyword(declaration.Value);
         if (declaration.Value.Any(value => value is CssToken token && token.IsDelim('!')))
@@ -249,8 +259,8 @@ internal static class DeclarationPreparer
             {
                 case CssToken { Kind: CssTokenKind.Whitespace }:
                     continue;
-                case CssToken { Kind: CssTokenKind.Ident } ident when keyword is null && WideKeywords.Contains(Ascii.ToLower(ident.Text)):
-                    keyword = Ascii.ToLower(ident.Text);
+                case CssToken { Kind: CssTokenKind.Ident } ident when keyword is null && WideKeywords.Contains(InfraAscii.ToLower(ident.Text)):
+                    keyword = InfraAscii.ToLower(ident.Text);
                     continue;
                 default:
                     return null;
@@ -340,9 +350,9 @@ internal static class DeclarationPreparer
         {
             switch (value)
             {
-                case CssToken { Kind: CssTokenKind.Ident } ident when Ascii.StartsWithIgnoreCase(ident.Text, "-internal-"):
+                case CssToken { Kind: CssTokenKind.Ident } ident when InfraAscii.StartsWithIgnoreCase(ident.Text, "-internal-"):
                     return true;
-                case FunctionValue function when Ascii.StartsWithIgnoreCase(function.Name, "-internal-") || ContainsInternalKeyword(function.Values):
+                case FunctionValue function when InfraAscii.StartsWithIgnoreCase(function.Name, "-internal-") || ContainsInternalKeyword(function.Values):
                     return true;
                 case SimpleBlock block when ContainsInternalKeyword(block.Values):
                     return true;

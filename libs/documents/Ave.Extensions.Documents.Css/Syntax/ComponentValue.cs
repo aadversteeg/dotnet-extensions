@@ -49,7 +49,7 @@ public sealed record CssToken(CssTokenKind Kind, string Text, TextPosition Posit
     public int RangeEnd { get; init; }
 
     /// <summary>Whether this is an ident whose value is <paramref name="name"/>, ASCII case-insensitively.</summary>
-    public bool IsIdent(string name) => Kind == CssTokenKind.Ident && Ascii.EqualsIgnoreCase(Text, name);
+    public bool IsIdent(string name) => Kind == CssTokenKind.Ident && InfraAscii.EqualsIgnoreCase(Text, name);
 
     /// <summary>Whether this is a delim with this code point.</summary>
     public bool IsDelim(char c) => Kind == CssTokenKind.Delim && Text.Length == 1 && Text[0] == c;
@@ -69,7 +69,7 @@ public sealed record SimpleBlock(CssTokenKind Opening, ValueList<ComponentValue>
 public sealed record FunctionValue(string Name, ValueList<ComponentValue> Values, TextPosition Position) : ComponentValue(Position)
 {
     /// <summary>Whether its name is <paramref name="name"/>, ASCII case-insensitively.</summary>
-    public bool IsNamed(string name) => Ascii.EqualsIgnoreCase(Name, name);
+    public bool IsNamed(string name) => InfraAscii.EqualsIgnoreCase(Name, name);
 }
 
 /// <summary>The kinds of token of CSS Syntax 3 §4.</summary>

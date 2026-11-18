@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -165,7 +166,7 @@ internal sealed partial class Tokenizer
             }
 
             var c = _text[start + i];
-            if (ignoreCase ? Ascii.ToLower(c) != Ascii.ToLower(word[i]) : c != word[i])
+            if (ignoreCase ? InfraAscii.ToLower(c) != InfraAscii.ToLower(word[i]) : c != word[i])
             {
                 return false;
             }
@@ -208,7 +209,7 @@ internal sealed partial class Tokenizer
         {
             _error("noncharacter-in-input-stream", index);
         }
-        else if (IsControl(c) && !Ascii.IsWhitespace(c) && c != 0)
+        else if (IsControl(c) && !InfraAscii.IsWhitespace(c) && c != 0)
         {
             _error("control-character-in-input-stream", index);
         }

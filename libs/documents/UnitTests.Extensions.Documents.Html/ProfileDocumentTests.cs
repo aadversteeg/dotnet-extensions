@@ -54,7 +54,9 @@ public class ProfileDocumentTests
 
         Line("# HTML and CSS profile (v0)");
         Line();
-        Line("Generated from the code by `UnitTests.Extensions.Documents.Html/ProfileDocumentTests.cs`; do not edit. What the HTML");
+        Line("The tables are generated from the code by `UnitTests.Extensions.Documents.Html/ProfileDocumentTests.cs`; do not edit.");
+        Line("The prose around them and the table of presentational attributes are written by hand in that test and in");
+        Line("`Html/PresentationalHints.cs` (`Documented`); the corpus checks the attributes against Chromium. What the HTML");
         Line("front-end supports, what it ignores by rule (no effect in a static paged document) and what it refuses. Valid input");
         Line("that is not listed as supported or ignored is refused: a diagnostic of class Refusal with its line and column");
         Line("(`HtmlStyleDiagnostics.ClassOf`), which fails the document unless the caller asked for warnings only. The");
@@ -81,14 +83,16 @@ public class ProfileDocumentTests
         Line();
         Line("### Supported at the initial value only");
         Line();
-        Line("What the layout always does: a declaration that sets one of these to its initial value is accepted (so resets and");
-        Line("the user-agent style sheet are not refused); any other value is refused.");
+        Line("What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and");
+        Line("the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,");
+        Line("which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and");
+        Line("on any other element stage 4 applies the ratio or refuses it. Any other value is refused.");
         Line();
-        Line("| Property | Initial | Defined in |");
-        Line("| --- | --- | --- |");
+        Line("| Property | Initial | Accepted | Defined in |");
+        Line("| --- | --- | --- | --- |");
         foreach (var property in PropertyRegistry.Longhands.Where(property => property.Support == PropertySupport.InitialOnly).OrderBy(property => property.Name, StringComparer.Ordinal))
         {
-            Line($"| `{property.Name}` | `{property.Initial}` | {Escape(property.Specification)} |");
+            Line($"| `{property.Name}` | `{property.Initial}` | {Code(property.Supported)} | {Escape(property.Specification)} |");
         }
 
         Line();

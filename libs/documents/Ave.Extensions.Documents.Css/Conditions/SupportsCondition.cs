@@ -38,7 +38,7 @@ public sealed record SupportsSelector(SelectorParseResult Selector, TextPosition
 public sealed record SupportsOther(string Text, TextPosition Position) : SupportsCondition;
 
 /// <summary>Parsing and evaluating supports conditions.</summary>
-public static class SupportsConditions
+internal static class SupportsConditions
 {
     /// <summary>Parses a supports condition (the prelude of <c>@supports</c>, or the argument of <c>supports()</c> in
     /// <c>@import</c>); null when it does not match the grammar.</summary>
@@ -135,7 +135,7 @@ public static class SupportsConditions
             return null;
         }
 
-        var word = index < tokens.Count && tokens[index] is CssToken token && (token.IsIdent("and") || token.IsIdent("or")) ? Ascii.ToLower(token.Text) : null;
+        var word = index < tokens.Count && tokens[index] is CssToken token && (token.IsIdent("and") || token.IsIdent("or")) ? InfraAscii.ToLower(token.Text) : null;
         if (word is null)
         {
             return first;

@@ -5,6 +5,8 @@
 //   node computed-style/measure.mjs --step wpt                 Chromium's verdict on every extracted web-platform-tests
 //                                                              case (assets/test-suites/wpt/css/cases.json) →
 //                                                              out/wpt-css-verdicts.json
+//   node computed-style/measure.mjs --step colors              the computed colour of every named colour of the
+//                                                              css-parsing-tests keyword files → out/named-colors.txt
 //
 // Run from ../ (where node_modules is); measure.ps1 runs it in the pinned Playwright container. See README.md.
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -19,8 +21,8 @@ mkdirSync(out, { recursive: true });
 const args = process.argv.slice(2);
 const stepAt = args.indexOf('--step');
 const step = stepAt >= 0 ? args[stepAt + 1] : 'all';
-if (!['all', 'corpus', 'wpt'].includes(step)) {
-  throw new Error(`unknown step '${step}': use corpus or wpt, or no --step for both`);
+if (!['all', 'corpus', 'wpt', 'colors'].includes(step)) {
+  throw new Error(`unknown step '${step}': use corpus, wpt or colors, or no --step for all`);
 }
 const wanted = stepAt >= 0 ? args.filter((_, index) => index !== stepAt && index !== stepAt + 1) : args;
 
@@ -114,6 +116,31 @@ if (step === 'all' || step === 'wpt') {
   };
   writeFileSync(join(out, 'wpt-css-verdicts.json'), JSON.stringify(result, null, 1) + '\n');
   console.log(`wpt: ${values.length} validity verdicts, ${computed.length} computed values`);
+  await page.close();
+}
+
+if (step === 'all' || step === 'colors') {
+  // The named colours as the engine's table is generated (tools/generate-css-named-colors.py): the lowercase keywords
+  // of the css-parsing-tests keyword files that have an rgb() value.
+  const names = [];
+  for (const file of ['color_keywords_3.json', 'color_keywords_4.json']) {
+    const items = JSON.parse(readFileSync(join(family, 'assets/test-suites/css-parsing-tests', file), 'utf8'));
+    for (let i = 0; i < items.length; i += 2) {
+      if (/^[a-z]+$/.test(items[i]) && /^rgb\(/.test(items[i + 1] ?? '')) names.push(items[i]);
+    }
+  }
+  const page = await printPage();
+  await page.setContent('<!DOCTYPE html><body></body>');
+  const lines = await page.evaluate((names) => names.sort().map((name) => {
+    const div = document.createElement('div');
+    div.style.color = name;
+    document.body.append(div);
+    const value = getComputedStyle(div).color;
+    div.remove();
+    return `${name} ${value}`;
+  }), names);
+  writeFileSync(join(out, 'named-colors.txt'), lines.join('\n') + '\n');
+  console.log(`colors: ${lines.length} named colours`);
   await page.close();
 }
 

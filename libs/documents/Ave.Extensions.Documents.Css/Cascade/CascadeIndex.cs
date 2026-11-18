@@ -62,6 +62,8 @@ public sealed class CascadeIndex
     /// <summary>The media the conditions were evaluated for.</summary>
     public MediaContext Media { get; }
 
+    /// <summary>Every style rule of every origin, in order of appearance: the candidates in quirks mode, where the
+    /// buckets by ID and class do not hold (HTML Standard §4.16.2).</summary>
     internal List<IndexedRule> AllRules { get; }
 
     /// <summary>
@@ -91,7 +93,7 @@ public sealed class CascadeIndex
 
     /// <summary>The rules worth matching against an element: those whose rightmost compound names its ID, one of its
     /// classes or its type, and those that name none of these. In quirks mode IDs and classes compare
-    /// case-insensitively, so every rule is a candidate.</summary>
+    /// case-insensitively (HTML Standard §4.16.2), so every rule is a candidate.</summary>
     internal IEnumerable<IndexedRule> Candidates(IStyleElement element)
     {
         if (element.IsQuirksMode)
@@ -113,7 +115,7 @@ public sealed class CascadeIndex
             }
         }
 
-        if (_byType.TryGetValue(Ascii.ToLower(element.LocalName), out var byType))
+        if (_byType.TryGetValue(InfraAscii.ToLower(element.LocalName), out var byType))
         {
             candidates.AddRange(byType);
         }
@@ -128,26 +130,42 @@ public sealed class CascadeIndex
         private int _imported;
         private int _order;
 
+        /// <summary>The media <c>@media</c>, <c>@import</c> conditions and <c>media</c> attributes are evaluated
+        /// for.</summary>
         public MediaContext MediaContext { get; } = media;
 
+        /// <summary>The rules whose rightmost compound names an id, by that id.</summary>
         public Dictionary<string, List<IndexedRule>> ById { get; } = new(System.StringComparer.Ordinal);
 
+        /// <summary>The rules whose rightmost compound names a class and no id, by that class.</summary>
         public Dictionary<string, List<IndexedRule>> ByClass { get; } = new(System.StringComparer.Ordinal);
 
+        /// <summary>The rules whose rightmost compound names a type and no id or class, by the lowercase
+        /// type.</summary>
         public Dictionary<string, List<IndexedRule>> ByType { get; } = new(System.StringComparer.Ordinal);
 
+        /// <summary>The rules whose rightmost compound names no id, class or type: tried on every element.</summary>
         public List<IndexedRule> Universal { get; } = [];
 
+        /// <summary>Every rule, in order of appearance.</summary>
         public List<IndexedRule> All { get; } = [];
 
+        /// <summary>The <c>@font-face</c> rules that apply, in order of appearance.</summary>
         public List<FontFaceRule> FontFaces { get; } = [];
 
+        /// <summary>The <c>@page</c> rules that apply, in order of appearance.</summary>
         public List<CascadedPageRule> Pages { get; } = [];
 
+        /// <summary>The root of the layer tree of each origin (CSS Cascade 5 §6.4: layers order within an origin
+        /// only).</summary>
         public Dictionary<CascadeOrigin, LayerNode> Roots { get; } = [];
 
+        /// <summary>The diagnostics of building the index: conditions, imports and rules that are refused or
+        /// ignored.</summary>
         public DiagnosticCollector Diagnostics { get; } = new();
 
+        /// <summary>Adds one style sheet of an origin, with the sheets it imports, after the sheets added so
+        /// far.</summary>
         public void Sheet(CascadeSheet sheet)
         {
             if (!Roots.TryGetValue(sheet.Origin, out var root))
@@ -255,7 +273,7 @@ public sealed class CascadeIndex
                 return Get(ByClass, name.Name);
             }
 
-            return compound.OfType<TypeSelector>().FirstOrDefault(type => !type.IsUniversal) is { } type ? Get(ByType, Ascii.ToLower(type.LocalName)) : Universal;
+            return compound.OfType<TypeSelector>().FirstOrDefault(type => !type.IsUniversal) is { } type ? Get(ByType, InfraAscii.ToLower(type.LocalName)) : Universal;
         }
 
         private static List<IndexedRule> Get(Dictionary<string, List<IndexedRule>> buckets, string key)
@@ -338,7 +356,7 @@ public sealed class CascadeIndex
         /// refused).</summary>
         private bool? Holds(Declaration declaration)
         {
-            var name = Ascii.ToLower(declaration.Name);
+            var name = InfraAscii.ToLower(declaration.Name);
             if (declaration.IsCustomProperty)
             {
                 return name.Length > 2 && declaration.Value.All(value => value is not CssToken { Kind: CssTokenKind.CloseCurly or CssTokenKind.CloseSquare or CssTokenKind.CloseParen or CssTokenKind.BadString or CssTokenKind.BadUrl } and not CssToken { Kind: CssTokenKind.Delim, Text: "!" })

@@ -38,6 +38,13 @@ public static class HtmlStyleResolver
     /// <returns>The styled document; or, under <see cref="UnsupportedPolicy.Refuse"/>, the refusals.</returns>
     public static Result<StyledHtmlDocument, Error> Resolve(HtmlParseResult parsed, HtmlStyleOptions options)
     {
+        // The parser always makes the html element; a document made in code may have none, and nothing to style.
+        if (parsed.Document.DocumentElement is null)
+        {
+            return Result<StyledHtmlDocument, Error>.Failure(new Error(HtmlStyleErrorCodes.NoDocumentElement, "The document has no element to style.")
+                .With(ErrorMetadataKeys.SourceFile, parsed.SourceName));
+        }
+
         var run = new Run(parsed, options);
         var styled = run.Resolve();
         var refusals = styled.Diagnostics.Where(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal).ToList();
@@ -88,6 +95,8 @@ public static class HtmlStyleResolver
         private string? _documentBase;
         private HtmlElement? _body;
 
+        /// <summary>Collects the style sheets in tree order, builds the cascade index and computes every element's
+        /// style, parents first.</summary>
         public StyledHtmlDocument Resolve()
         {
             var document = parsed.Document;
@@ -136,6 +145,25 @@ public static class HtmlStyleResolver
             }
         }
 
+        /// <summary>What the CSS reader read, its diagnostics kept; or, when it failed (past its limits, an encoding
+        /// not decoded), the error kept, a refusal, and <paramref name="none"/> in its place.</summary>
+        private T Read<T>(Result<CssResult<T>, Error> result, T none) =>
+            result.Match(
+                read =>
+                {
+                    Keep(read.Diagnostics);
+                    return read.Value;
+                },
+                error =>
+                {
+                    Keep(error);
+                    return none;
+                });
+
+        private T? ReadOrNull<T>(Result<CssResult<T>, Error> result)
+            where T : class =>
+            Read<T?>(result.Match(read => Result<CssResult<T?>, Error>.Success(new CssResult<T?>(read.Value, read.Diagnostics)), Result<CssResult<T?>, Error>.Failure), null);
+
         /// <summary>The diagnostics kept, with one <see cref="DocumentErrorCodes.TooManyDiagnostics"/> for the rest.</summary>
         private ValueList<Error> Capped(List<Error> diagnostics) =>
             _suppressed == 0
@@ -169,7 +197,7 @@ public static class HtmlStyleResolver
             var own = OwnDeclarations(element);
             var mark = computer.DiagnosticCount;
             var style = computer.Compute(element, own);
-            hidden |= style["display"] is Css.Values.CssKeyword { Name: "none" };
+            hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
             var refused = RefuseElement(html, hidden);
             NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
 
@@ -243,7 +271,7 @@ public static class HtmlStyleResolver
             var type = script.Attribute("type") is { } given
                 ? given
                 : script.Attribute("language") is { Length: > 0 } language ? "text/" + language : string.Empty;
-            var essence = Ascii.ToLower(type.Split(';')[0].Trim(' ', '\t', '\n', '\f', '\r'));
+            var essence = InfraAscii.ToLower(type.Split(';')[0].Trim(' ', '\t', '\n', '\f', '\r'));
             return ScriptTypes.Contains(essence);
         }
 
@@ -281,9 +309,7 @@ public static class HtmlStyleResolver
             if (element.Element.Attributes.FirstOrDefault(attribute => attribute.Namespace == AttributeNamespace.None && attribute.LocalName == "style") is { } style
                 && element.Element.Namespace is ElementNamespace.Html or ElementNamespace.Svg)
             {
-                var declarations = CssParser.ParseDeclarations(style.Value, new CssSourceOptions(_sourceName) { Origin = style.PositionOf(0), Positions = style.PositionOf });
-                Keep(declarations.Diagnostics);
-                inline = declarations.Value;
+                inline = Read(CssParser.ParseDeclarations(style.Value, new CssSourceOptions(_sourceName) { Origin = style.PositionOf(0), Positions = style.PositionOf }), []);
             }
 
             var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
@@ -319,7 +345,7 @@ public static class HtmlStyleResolver
         {
             foreach (var element in elements.Select(item => item.Element))
             {
-                if (element.IsHtml("meta") && element.Attribute("http-equiv") is { } equiv && Ascii.EqualsIgnoreCase(equiv.Trim(), "content-language")
+                if (element.IsHtml("meta") && element.Attribute("http-equiv") is { } equiv && InfraAscii.EqualsIgnoreCase(equiv.Trim(), "content-language")
                     && element.Attribute("content") is { } content)
                 {
                     var language = content.Split(',')[0].Trim(' ', '\t', '\n', '\f', '\r');
@@ -377,7 +403,7 @@ public static class HtmlStyleResolver
             string? preferredTitle = null;
             foreach (var element in elements.Select(item => item.Element))
             {
-                if (element.IsHtml("meta") && element.Attribute("http-equiv") is { } equiv && Ascii.EqualsIgnoreCase(equiv, "default-style")
+                if (element.IsHtml("meta") && element.Attribute("http-equiv") is { } equiv && InfraAscii.EqualsIgnoreCase(equiv, "default-style")
                     && element.Attribute("content") is { Length: > 0 } preferred)
                 {
                     preferredTitle ??= preferred;
@@ -435,14 +461,16 @@ public static class HtmlStyleResolver
                 if (isStyle)
                 {
                     var texts = element.Children.OfType<HtmlText>().ToList();
-                    var sheet = CssParser.ParseStyleSheet(string.Concat(texts.Select(text => text.Data)), new CssSourceOptions(_sourceName)
+                    var sheet = ReadOrNull(CssParser.ParseStyleSheet(string.Concat(texts.Select(text => text.Data)), new CssSourceOptions(_sourceName)
                     {
                         Origin = texts.FirstOrDefault()?.Position ?? element.Position,
                         Positions = texts.Count > 1 ? TextPositions(texts) : null,
-                    });
-                    Keep(sheet.Diagnostics);
-                    _baseOf[sheet.Value] = _documentBase;
-                    sheets.Add(sheet.Value);
+                    }));
+                    if (sheet is not null)
+                    {
+                        _baseOf[sheet] = _documentBase;
+                        sheets.Add(sheet);
+                    }
                 }
                 else if (element.Attribute("href") is { } href && href.Trim().Length > 0)
                 {
@@ -473,11 +501,11 @@ public static class HtmlStyleResolver
         {
             if (!link)
             {
-                return type.Length == 0 || Ascii.EqualsIgnoreCase(type, "text/css");
+                return type.Length == 0 || InfraAscii.EqualsIgnoreCase(type, "text/css");
             }
 
             var essence = type.Split(';')[0].Trim(' ', '\t', '\n', '\f', '\r');
-            return type.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || Ascii.EqualsIgnoreCase(essence, "text/css");
+            return type.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || InfraAscii.EqualsIgnoreCase(essence, "text/css");
         }
 
         /// <summary>The places of the characters of several text nodes read as one text (a style element built in
@@ -521,13 +549,12 @@ public static class HtmlStyleResolver
         private bool MediaMatches(string media, HtmlElement element)
         {
             var attribute = element.Attributes.First(item => item.LocalName == "media");
-            var list = CssParser.ParseMediaQueryList(media, new CssSourceOptions(_sourceName) { Origin = attribute.PositionOf(0), Positions = attribute.PositionOf });
-            Keep(list.Diagnostics);
-            return MediaQueries.Matches(list.Value, options.Media);
+            var list = ReadOrNull(CssParser.ParseMediaQueryList(media, new CssSourceOptions(_sourceName) { Origin = attribute.PositionOf(0), Positions = attribute.PositionOf }));
+            return list is not null && MediaQueries.Matches(list, options.Media);
         }
 
         private static string[] Keywords(string value) =>
-            [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(Ascii.ToLower)];
+            [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(InfraAscii.ToLower)];
 
         /// <summary>An @import: its URL resolved against the importing sheet's URL.</summary>
         private StyleSheet? Import(ImportRule import, StyleSheet importer) =>
@@ -545,10 +572,11 @@ public static class HtmlStyleResolver
             StyleSheet? sheet = null;
             if (absolute is not null && options.Resources?.Invoke(absolute) is { } resource)
             {
-                var read = CssParser.ParseStyleSheet(resource.Bytes, new CssSourceOptions(absolute) { ProtocolEncoding = resource.Charset, EnvironmentEncoding = "utf-8" });
-                Keep(read.Diagnostics);
-                sheet = read.Value;
-                _baseOf[sheet] = absolute;
+                sheet = ReadOrNull(CssParser.ParseStyleSheet(resource.Bytes, new CssSourceOptions(absolute) { ProtocolEncoding = resource.Charset, EnvironmentEncoding = "utf-8" }));
+                if (sheet is not null)
+                {
+                    _baseOf[sheet] = absolute;
+                }
             }
             else
             {

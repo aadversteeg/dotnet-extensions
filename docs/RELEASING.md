@@ -139,7 +139,7 @@ its own; only a change across two packages needs the order described above.
 
 ## First release of the documents family
 
-The documents family (`libs/documents`) is new on nuget.org. Its first release is `0.1.0-preview.2` of all 14
+The documents family (`libs/documents`) is new on nuget.org. Its first release is `0.1.0-preview.2` of all 11
 packages. The minimum versions of its own packages in `Directory.Packages.props` are already `0.1.0-preview.2`, so
 nothing has to be raised between the steps; but in release mode a package restores the packages below it from
 nuget.org, so each step starts only when the packages of the step before are on nuget.org (indexing can take a few
@@ -161,16 +161,13 @@ The tag names are the package ids without `Ave.Extensions.`, as for every packag
 | `documents-render-pdf` | `Ave.Extensions.Documents.Render.Pdf` |
 | `documents-fluent` | `Ave.Extensions.Documents.Fluent` |
 | `documents` | `Ave.Extensions.Documents` |
-| `documents-html-parsing` | `Ave.Extensions.Documents.Html.Parsing` |
-| `documents-css` | `Ave.Extensions.Documents.Css` |
-| `documents-html` | `Ave.Extensions.Documents.Html` |
 
 Release order, lowest layer first (the packages of one step can go in any order):
 
 1. `documents-core` (it needs `Ave.Extensions.Functional` 0.1.0-preview.3 and `Ave.Extensions.ErrorPaths`
    0.0.3-preview.1, both on nuget.org);
-2. `documents-fonts`, `documents-images`, `documents-html-parsing`, `documents-css` (these two need only Core);
-3. `documents-page-model`, `documents-html` (it needs Html.Parsing and Css);
+2. `documents-fonts`, `documents-images`;
+3. `documents-page-model`;
 4. `documents-pdf`, `documents-typesetting`, `documents-document-model`: their tests use
    `Ave.Extensions.Documents.TestSupport`, which needs Fonts, Images and PageModel;
 5. `documents-layout`, `documents-render-pdf` (its tests also use Typesetting), `documents-fluent`;
@@ -182,6 +179,28 @@ For example, step 1:
 git tag documents-core/0.1.0-preview.2
 git push origin documents-core/0.1.0-preview.2
 ```
+
+## The HTML and CSS front-end of the documents family (M2)
+
+Milestone M2 adds three packages to the documents family:
+
+| Tag name | Package | Needs |
+|---|---|---|
+| `documents-html-parsing` | `Ave.Extensions.Documents.Html.Parsing` | Core |
+| `documents-css` | `Ave.Extensions.Documents.Css` | Core |
+| `documents-html` | `Ave.Extensions.Documents.Html` | Core, Html.Parsing, Css |
+
+They need a Core that has `TextPosition`, which M2 adds: `documents-core/0.1.0-preview.2` on nuget.org does not have
+it. So their first release is one wave of three steps:
+
+1. a new release of `documents-core`;
+2. once it is on nuget.org, a pull request that raises the minimum version of `Ave.Extensions.Documents.Core` in
+   `Directory.Packages.props` to it, then `documents-html-parsing` and `documents-css` (in any order);
+3. `documents-html`.
+
+The minimum is not raised before the new Core is on nuget.org: release mode would then restore a Core that does not
+exist. Until the wave is done, the CI job "Release mode (main only)" is red for the three new packages on `main`: in
+release mode they restore Core `0.1.0-preview.2` from nuget.org and do not compile.
 
 ## One-time setup
 

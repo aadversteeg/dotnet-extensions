@@ -617,7 +617,8 @@ internal sealed partial class TreeBuilder
         }
     }
 
-    /// <summary>"Insert an element at the adjusted insertion location".</summary>
+    /// <summary>"Insert an element at the adjusted insertion location" (HTML Standard §13.2.6.1), or at
+    /// <paramref name="place"/> when the caller has found it already.</summary>
     private void InsertAtPlace(MutableElement element, (MutableParent Parent, MutableNode? Before)? place = null)
     {
         var (parent, before) = place ?? AppropriatePlace();
