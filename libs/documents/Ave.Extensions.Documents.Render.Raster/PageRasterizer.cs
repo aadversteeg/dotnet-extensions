@@ -56,6 +56,24 @@ public static class PageRasterizer
                 return Result<ImmutableArray<RgbaImage>, Error>.Success(images.MoveToImmutable());
             });
 
+    /// <summary>
+    /// Draws one page of a document, after checking the whole document by the contract (so a page drawn alone is refused
+    /// for the same reasons as the document it belongs to).
+    /// </summary>
+    /// <param name="document">The page document.</param>
+    /// <param name="pageNumber">The page, counting from 1.</param>
+    /// <param name="options">The resolution and background.</param>
+    /// <returns>The page's pixels, <c>Documents.Raster.PageNotFound</c> for a number outside 1 to the page count, or an
+    /// error of <see cref="Render(Page, RasterOptions)"/>.</returns>
+    public static Result<RgbaImage, Error> Render(PageDocument document, int pageNumber, RasterOptions options) =>
+        CheckOptions(options)
+            .OnSuccessBind(_ => PageModelRules.Check(document, RasterErrorCodes.InvalidPageModel))
+            .OnSuccessBind(checkedDocument => pageNumber >= 1 && pageNumber <= checkedDocument.Pages.Count
+                ? Draw(checkedDocument.Pages[pageNumber - 1], options)
+                : Result<RgbaImage, Error>.Failure(
+                    new Error(RasterErrorCodes.PageNotFound, $"The document has {checkedDocument.Pages.Count} pages; there is no page {pageNumber}.")
+                        .With(ErrorMetadataKeys.Value, pageNumber.ToString(CultureInfo.InvariantCulture))));
+
     /// <summary>The size in pixels of a page at a resolution: ⌈points × resolution / 72⌉ each way.</summary>
     /// <param name="page">The page size in points.</param>
     /// <param name="resolution">Pixels per inch.</param>

@@ -69,6 +69,22 @@ public class PageRasterizerTests
         PageRasterizer.Render(new PageDocument(Metadata, []), new RasterOptions()).Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel);
     }
 
+    [Fact]
+    public void One_page_of_a_document_is_drawn_after_the_whole_document_is_checked()
+    {
+        var start = new StructureStart(new NodeId(1), SemanticRole.Paragraph, new SourceLocation("x.cs", 1));
+        var red = PageOf(2, 2, new FillRectangle(new Rect(new Point(0, 0), new Size(2, 2)), new Color(255, 0, 0)));
+        var document = new PageDocument(Metadata, [PageOf(2, 2), red]);
+
+        PageRasterizer.Render(document, 2, new RasterOptions(72)).Value.Pixels.Should().Equal(Draw(red).Pixels);
+        PageRasterizer.Render(document, 3, new RasterOptions(72)).Error.Code.Should().Be(RasterErrorCodes.PageNotFound);
+        PageRasterizer.Render(document, 0, new RasterOptions(72)).Error.Code.Should().Be(RasterErrorCodes.PageNotFound);
+
+        // One node with two roles on two pages: a breach of the document, so page 1 is refused too.
+        var broken = new PageDocument(Metadata, [PageOf(2, 2, start, new StructureEnd(new NodeId(1))), PageOf(2, 2, start with { Role = SemanticRole.Heading(1) }, new StructureEnd(new NodeId(1)))]);
+        PageRasterizer.Render(broken, 1, new RasterOptions(72)).Error.Code.Should().Be(RasterErrorCodes.InvalidPageModel);
+    }
+
     [Theory]
     [InlineData(595.2756, 841.8898, 96, 794, 1123)]
     [InlineData(612, 792, 72, 612, 792)]

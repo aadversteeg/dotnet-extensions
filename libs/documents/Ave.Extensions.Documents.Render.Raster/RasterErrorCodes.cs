@@ -20,6 +20,10 @@ public static class RasterErrorCodes
     /// Value.</summary>
     public static readonly ErrorCode InvalidOptions = _ / "InvalidOptions";
 
+    /// <summary>A page number that is not a page of the document: below 1 or above the page count. Metadata: Value (the
+    /// number asked for).</summary>
+    public static readonly ErrorCode PageNotFound = _ / "PageNotFound";
+
     /// <summary>A page that would have more pixels at the resolution asked for than the back-end draws (2^26, the
     /// limit of a canvas). Metadata: Value (width x height in pixels).</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";

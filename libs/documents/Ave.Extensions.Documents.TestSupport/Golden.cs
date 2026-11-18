@@ -54,4 +54,40 @@ public static class Golden
 
         return $"{name} differs (line endings only).";
     }
+
+    /// <summary>
+    /// Compares bytes (an image file) with a binary golden file in the <c>Golden</c> folder next to the test source:
+    /// equal byte for byte, or a message with the first differing offset. With UPDATE_GOLDEN=1 the file is (re)written.
+    /// </summary>
+    /// <param name="name">The golden file name, for example <c>letter.page1.96dpi.png</c>.</param>
+    /// <param name="actual">The bytes produced by the test.</param>
+    /// <param name="testFile">Filled in by the compiler: locates the Golden folder.</param>
+    /// <returns>Null when the bytes match, or a description of the first difference.</returns>
+    public static string? CompareBytes(string name, ReadOnlySpan<byte> actual, [CallerFilePath] string testFile = "")
+    {
+        var path = Path.Combine(Path.GetDirectoryName(testFile)!, "Golden", name);
+        if (Environment.GetEnvironmentVariable("UPDATE_GOLDEN") == "1")
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllBytes(path, actual.ToArray());
+            return null;
+        }
+
+        if (!File.Exists(path))
+        {
+            return $"Golden file {path} does not exist; run with UPDATE_GOLDEN=1 to create it.";
+        }
+
+        var expected = File.ReadAllBytes(path);
+        var common = Math.Min(expected.Length, actual.Length);
+        for (var index = 0; index < common; index++)
+        {
+            if (expected[index] != actual[index])
+            {
+                return $"{name} differs at byte {index} of {expected.Length} (actual {actual.Length} bytes).";
+            }
+        }
+
+        return expected.Length == actual.Length ? null : $"{name} has {expected.Length} bytes, the output {actual.Length}.";
+    }
 }
