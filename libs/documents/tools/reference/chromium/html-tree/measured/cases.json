@@ -1,0 +1,126 @@
+{
+ "chromium": "159.0.8154.6",
+ "image": "mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579",
+ "cases": [
+  {
+   "id": "hd1-doctype",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <p>\n|       \"x\"\n"
+  },
+  {
+   "id": "hd1-comment",
+   "tree": "| <!-- x -->\n| <html>\n|   <head>\n|   <body>\n"
+  },
+  {
+   "id": "hd1-space",
+   "tree": "| <html>\n|   <head>\n|   <body>\n"
+  },
+  {
+   "id": "hd1-after-html",
+   "tree": "| <html>\n|   <head>\n|   <body>\n| <!-- x -->\n"
+  },
+  {
+   "id": "hd1-cdata",
+   "tree": "| <html>\n|   <head>\n|   <body>\n|     <svg svg>\n|       <svg foreignObject>\n|         \"a�b\"\n"
+  },
+  {
+   "id": "hd2-text",
+   "tree": "| <html>\n|   <head>\n|   <body>\n|     <p>\n|       \"a<�b\"\n"
+  },
+  {
+   "id": "hd2-tag",
+   "tree": "| <html>\n|   <head>\n|   <body>\n|     <p>\n|       \"<�p>\"\n"
+  },
+  {
+   "id": "hd3-character",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <frameset>\n|     <frame>\n"
+  },
+  {
+   "id": "hd3-reference",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <frameset>\n|     <frame>\n"
+  },
+  {
+   "id": "hd3-svg",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <frameset>\n|     <frame>\n"
+  },
+  {
+   "id": "hd4-adoption",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <a>\n|       <search>\n|         \"x\"\n|     \"y\"\n"
+  },
+  {
+   "id": "hd4-li",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <li>\n|       \"a\"\n|       <search>\n|     <li>\n|       \"b\"\n"
+  },
+  {
+   "id": "hd4-dd",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <dd>\n|       \"a\"\n|       <search>\n|     <dt>\n|       \"b\"\n"
+  },
+  {
+   "id": "hd4-end-tag",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <x>\n|       <search>\n|     \"y\"\n"
+  },
+  {
+   "id": "hd5-reconstruct",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <p>\n|       <b>\n|         is=\"\"\n|         \"x\"\n|     <p>\n|       \"y\"\n"
+  },
+  {
+   "id": "hd5-adoption",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <b>\n|       is=\"q\"\n|       <div>\n|         \"xy\"\n"
+  },
+  {
+   "id": "hd5-nested-a",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <a>\n|       is=\"\"\n|       <a>\n"
+  },
+  {
+   "id": "hd5-table",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <b>\n|       is=\"\"\n|     <table>\n|       <tbody>\n|         <tr>\n|           <td>\n|             \"x\"\n|     \"y\"\n"
+  },
+  {
+   "id": "hd8-form",
+   "tree": ""
+  },
+  {
+   "id": "hd9-pi",
+   "tree": "| <!DOCTYPE html>\n| <?pi a�b?>\n| <html>\n|   <head>\n|   <body>\n"
+  },
+  {
+   "id": "hd9-pi-body",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <p>\n|       <?pi �?>\n"
+  },
+  {
+   "id": "hd12-clone",
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <select>\n|       <button>\n|         <selectedcontent>\n|           \"a\"\n|           <object>\n|             \"b\"\n|           <script>\n|             \"c\"\n|           <iframe>\n|             \"d\"\n|           <embed>\n|           \"e\"\n|       <option>\n|         \"a\"\n|         <object>\n|           \"b\"\n|         <script>\n|           \"c\"\n|         <iframe>\n|           \"d\"\n|         <embed>\n|         \"e\"\n"
+  },
+  {
+   "id": "limit-hd6-base",
+   "tree": "| <html>\n|   <head>\n|     <template>\n|       content\n|         <base>\n|   <body>\n"
+  },
+  {
+   "id": "limit-hd6-title",
+   "tree": "| <html>\n|   <head>\n|     <template>\n|       content\n|         <title>\n|   <body>\n"
+  },
+  {
+   "id": "limit-hd7-clippath",
+   "tree": "| <html>\n|   <head>\n|   <body>\n|     <clippath>\n|       <svg svg>\n|         \"x\"\n"
+  },
+  {
+   "id": "limit-hd8-template-form",
+   "tree": "| <form>\n"
+  },
+  {
+   "id": "limit-hd8-textarea",
+   "tree": "| \"fillertext\"\n"
+  },
+  {
+   "id": "limit-hd8-select",
+   "tree": "| <input>\n"
+  },
+  {
+   "id": "limit-hd10-selectedcontent",
+   "tree": "| <html>\n|   <head>\n|   <body>\n|     <select>\n|       <selectedcontent>\n"
+  },
+  {
+   "id": "limit-hd11-template-row",
+   "tree": "| <html>\n|   <head>\n|     <template>\n|       content\n|         <tr>\n|         <b>\n|         <b>\n|           \" \"\n|   <body>\n"
+  }
+ ]
+}

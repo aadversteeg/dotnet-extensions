@@ -73,7 +73,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Task.FromResult(Result<bool, Error>.Failure(
-                    FileSystemErrors.FromException(ex, path.Value)));
+                    FromException(ex, path.Value)));
             }
         }
 
@@ -100,7 +100,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Task.FromResult(Result<bool, Error>.Failure(
-                    FileSystemErrors.FromException(ex, path.Value)));
+                    FromException(ex, path.Value)));
             }
         }
 
@@ -221,7 +221,7 @@ namespace Ave.Extensions.FileSystem.Local
                     
                     // Create EntryInfo
                     var entryInfo = new Models.EntryInfo(
-                        directoryInfo.Name,
+                        WindowsLongPath.GetName(directoryInfo),
                         directoryInfo.CreationTimeUtc,
                         directoryInfo.LastWriteTimeUtc,
                         directoryInfo.LastAccessTimeUtc,
@@ -245,7 +245,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Result<TEntry, Error>.Failure(
-                    FileSystemErrors.FromException(ex, path.Value));
+                    FromException(ex, path.Value));
             }
         }
 
@@ -545,7 +545,7 @@ namespace Ave.Extensions.FileSystem.Local
                 {
                     var directoryInfo = new System.IO.DirectoryInfo(systemPath);
                     var entryInfo = new Models.EntryInfo(
-                        directoryInfo.Name,
+                        WindowsLongPath.GetName(directoryInfo),
                         directoryInfo.CreationTimeUtc,
                         directoryInfo.LastWriteTimeUtc,
                         directoryInfo.LastAccessTimeUtc,
@@ -566,7 +566,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Task.FromResult(Result<IFileSystemEntry, Error>.Failure(
-                    FileSystemErrors.FromException(ex, path.Value)));
+                    FromException(ex, path.Value)));
             }
         }
 
@@ -645,7 +645,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Task.FromResult(Result<IEnumerable<IFileSystemEntry>, Error>.Failure(
-                    FileSystemErrors.FromException(ex, path.Value)));
+                    FromException(ex, path.Value)));
             }
         }
 
@@ -658,7 +658,7 @@ namespace Ave.Extensions.FileSystem.Local
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var mapResult = _pathMapper.MapToSystemPath(directory);
+                var mapResult = GetSystemPath(directory);
                 if (mapResult.IsFailure)
                     return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(mapResult.Error));
 
@@ -675,7 +675,7 @@ namespace Ave.Extensions.FileSystem.Local
 
                 foreach (var file in files)
                 {
-                    var canonicalResult = _pathMapper.MapToCanonicalPath(file);
+                    var canonicalResult = MapPathToCanonical(file);
                     if (canonicalResult.IsFailure)
                         return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(canonicalResult.Error));
                     result.Add(canonicalResult.Value);
@@ -686,7 +686,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 return Task.FromResult(Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
-                    FileSystemErrors.FromException(ex, directory.Value)));
+                    FromException(ex, directory.Value)));
             }
         }
 
@@ -730,7 +730,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Task.FromResult(Result<IMonitoringSession, Error>.Failure(
-                    FileSystemErrors.FromException(ex, options?.Path.Value)));
+                    FromException(ex, options?.Path.Value)));
             }
         }
 
@@ -747,19 +747,38 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 _logger.LogError(ex, "File system operation failed: {Path}", path ?? "unknown");
-                return Result<T, Error>.Failure(FileSystemErrors.FromException(ex, path));
+                return Result<T, Error>.Failure(FromException(ex, path));
             }
         }
 
 
         /// <summary>
-        /// Gets the system path from a canonical path using the path mapper.
+        /// Gets the system path from a canonical path using the path mapper, in the form that is passed to the
+        /// framework (on .NET Framework with the long path prefix, see <see cref="WindowsLongPath"/>).
         /// </summary>
         /// <param name="canonicalPath">The canonical path to map.</param>
         /// <returns>A result containing the system path or an error.</returns>
         private Result<string, Error> GetSystemPath(CanonicalPath canonicalPath)
         {
-            return _pathMapper.MapToSystemPath(canonicalPath);
+            var result = _pathMapper.MapToSystemPath(canonicalPath);
+            if (result.IsFailure)
+                return result;
+
+            return Result<string, Error>.Success(WindowsLongPath.ToSystemPath(result.Value));
+        }
+
+        /// <summary>
+        /// Creates the error for an exception. The system path in an exception message can carry the long path
+        /// prefix; it is removed so the caller never sees it.
+        /// </summary>
+        internal static Error FromException(Exception exception, string? path)
+        {
+            var error = FileSystemErrors.FromException(exception, path);
+            var message = WindowsLongPath.RemovePrefixes(error.Message);
+            if (string.Equals(message, error.Message, StringComparison.Ordinal))
+                return error;
+
+            return new Error(error.Code, message, error.Metadata, error.Inner);
         }
         
         /// <summary>
@@ -782,7 +801,7 @@ namespace Ave.Extensions.FileSystem.Local
                 {
                     // Path mapping failure is an error - don't skip silently
                     return Result<IReadOnlyList<CanonicalPath>, Error>.Failure(
-                        new Error(FileSystemErrorCodes.IO.InvalidPath, $"Failed to map system path to canonical: {result.Error.Message}").With("path", systemPath));
+                        new Error(FileSystemErrorCodes.IO.InvalidPath, $"Failed to map system path to canonical: {result.Error.Message}").With("path", WindowsLongPath.RemovePrefix(systemPath)));
                 }
             }
             
@@ -790,13 +809,14 @@ namespace Ave.Extensions.FileSystem.Local
         }
         
         /// <summary>
-        /// Maps a system path back to canonical format using the path mapper.
+        /// Maps a system path that came from the framework back to canonical format using the path mapper, without
+        /// the long path prefix.
         /// </summary>
         /// <param name="systemPath">The system path to map.</param>
         /// <returns>Result containing the canonical path or an error.</returns>
         private Result<CanonicalPath, Error> MapPathToCanonical(string systemPath)
         {
-            return _pathMapper.MapToCanonicalPath(systemPath);
+            return _pathMapper.MapToCanonicalPath(WindowsLongPath.RemovePrefix(systemPath));
         }
 
         /// <summary>
@@ -908,17 +928,17 @@ namespace Ave.Extensions.FileSystem.Local
             catch (UnauthorizedAccessException ex)
             {
                 return Task.FromResult(Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value)));
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value)));
             }
             catch (DirectoryNotFoundException ex)
             {
                 return Task.FromResult(Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.NotFound.Directory, ex.Message).With("path", source.Value)));
+                    new Error(FileSystemErrorCodes.NotFound.Directory, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value)));
             }
             catch (IOException ex) when (ex.HResult == -2147024891) // ERROR_ACCESS_DENIED on Windows
             {
                 return Task.FromResult(Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value)));
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value)));
             }
             catch (IOException ex)
             {
@@ -930,12 +950,12 @@ namespace Ave.Extensions.FileSystem.Local
                 }
 
                 return Task.FromResult(Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.General, ex.Message).With("path", source.Value)));
+                    new Error(FileSystemErrorCodes.IO.General, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value)));
             }
             catch (Exception ex)
             {
                 return Task.FromResult(Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, source.Value)));
+                    FromException(ex, source.Value)));
             }
         }
 
@@ -1041,7 +1061,7 @@ namespace Ave.Extensions.FileSystem.Local
                         }
                         
                         return Result<Unit, Error>.Failure(
-                            FileSystemErrors.FromException(deleteEx, source.Value));
+                            FromException(deleteEx, source.Value));
                     }
                 }
             }
@@ -1052,17 +1072,17 @@ namespace Ave.Extensions.FileSystem.Local
             catch (UnauthorizedAccessException ex)
             {
                 return Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value));
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value));
             }
             catch (IOException ex)
             {
                 return Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.General, ex.Message).With("path", source.Value));
+                    new Error(FileSystemErrorCodes.IO.General, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value));
             }
             catch (Exception ex)
             {
                 return Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, source.Value));
+                    FromException(ex, source.Value));
             }
         }
 
@@ -1147,12 +1167,12 @@ namespace Ave.Extensions.FileSystem.Local
             catch (UnauthorizedAccessException ex)
             {
                 return Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value));
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value));
             }
             catch (DirectoryNotFoundException ex)
             {
                 return Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.NotFound.Directory, ex.Message).With("path", source.Value));
+                    new Error(FileSystemErrorCodes.NotFound.Directory, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value));
             }
             catch (IOException ex) when (ex.HResult == -2147024784) // ERROR_DISK_FULL
             {
@@ -1176,7 +1196,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (IOException ex)
             {
                 return Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.General, ex.Message).With("path", source.Value));
+                    new Error(FileSystemErrorCodes.IO.General, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value));
             }
             catch (Exception ex)
             {
@@ -1195,7 +1215,7 @@ namespace Ave.Extensions.FileSystem.Local
                 }
                 
                 return Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, source.Value));
+                    FromException(ex, source.Value));
             }
         }
 
@@ -1267,12 +1287,12 @@ namespace Ave.Extensions.FileSystem.Local
             catch (UnauthorizedAccessException ex)
             {
                 return Result<Unit, Error>.Failure(
-                    new Error(FileSystemErrorCodes.IO.AccessDenied, ex.Message).With("path", source.Value));
+                    new Error(FileSystemErrorCodes.IO.AccessDenied, WindowsLongPath.RemovePrefixes(ex.Message)).With("path", source.Value));
             }
             catch (Exception ex)
             {
                 return Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, source.Value));
+                    FromException(ex, source.Value));
             }
         }
 
@@ -1324,7 +1344,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, source.Value));
+                    FromException(ex, source.Value));
             }
         }
 
@@ -1376,7 +1396,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, source.Value));
+                    FromException(ex, source.Value));
             }
         }
 
@@ -1448,7 +1468,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, systemPath));
+                    FromException(ex, WindowsLongPath.RemovePrefix(systemPath)));
             }
         }
 
@@ -1561,7 +1581,7 @@ namespace Ave.Extensions.FileSystem.Local
             catch (Exception ex)
             {
                 return Result<Unit, Error>.Failure(
-                    FileSystemErrors.FromException(ex, sourceDirPath));
+                    FromException(ex, WindowsLongPath.RemovePrefix(sourceDirPath)));
             }
         }
 
@@ -1609,7 +1629,7 @@ namespace Ave.Extensions.FileSystem.Local
             }
             catch (Exception ex)
             {
-                return Result<byte[], Error>.Failure(FileSystemErrors.FromException(ex, _filePath.Value));
+                return Result<byte[], Error>.Failure(LocalFileSystem.FromException(ex, _filePath.Value));
             }
         }
     }

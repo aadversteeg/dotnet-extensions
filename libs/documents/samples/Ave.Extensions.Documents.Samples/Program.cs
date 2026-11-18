@@ -14,7 +14,7 @@ using Ave.Extensions.Functional;
 // Writes the samples to the folder given as the first argument (default: ./out), each as a PDF plus the three text
 // serialisations of its intermediate models: <name>.model.txt, <name>.fragments.txt, <name>.page.txt, and every
 // embedded file as <name>.attachment.<file name>.
-// Samples: the letter (A), the long text (B), and the timesheet for the PoC's three data sets in Dutch and English.
+// Samples: the letter (A), the long text (B), content taller than a page (C), and the timesheet for the PoC's three data sets in Dutch and English.
 // With "time <data set> <culture> [warm runs]" it measures one timesheet instead (see Timing).
 
 var regular = LoadFont("Lato-Regular.ttf");
@@ -38,6 +38,7 @@ var failures = new (string Name, Document Document)[]
     {
         ("sample-a-letter", SampleDocuments.Letter()),
         ("sample-b-long", SampleDocuments.LongText()),
+        ("sample-c-sliced", SampleDocuments.Sliced(brand.Logo)),
     }
     .Concat(timesheets)
     .Select(sample => Write(sample.Item1, sample.Item2))

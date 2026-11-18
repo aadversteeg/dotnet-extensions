@@ -39,6 +39,19 @@ public static class ContentOperators
     public static ContentOperation Fill() => new("f", []);
 
     /// <summary>
+    /// <c>W</c>: intersect the current clipping path with the current path, by the non-zero winding rule (§8.5.4,
+    /// Table 61). It comes between the path and the painting operator that ends it, and takes effect once that operator
+    /// has run (§8.5.4); <c>n</c> ends the path without painting anything.
+    /// </summary>
+    /// <returns>The operation.</returns>
+    public static ContentOperation Clip() => new("W", []);
+
+    /// <summary><c>n</c>: end the current path without filling or stroking it (§8.5.3.1, Table 60): the painting operator
+    /// that ends a clipping path (<see cref="Clip"/>) without drawing it.</summary>
+    /// <returns>The operation.</returns>
+    public static ContentOperation EndPath() => new("n", []);
+
+    /// <summary>
     /// <c>cm</c>: concatenate a matrix to the current transformation matrix (§8.4.4, Table 57; §8.3.4). With
     /// <c>w 0 0 h x y</c> an image, which fills the unit square of user space (§8.9.4), lands on the rectangle
     /// (x, y, w, h).

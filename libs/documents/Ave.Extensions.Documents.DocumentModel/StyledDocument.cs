@@ -10,4 +10,9 @@ namespace Ave.Extensions.Documents.DocumentModel;
 /// <param name="Metadata">Title, author, language and attachments.</param>
 /// <param name="Page">The size and margins of every page.</param>
 /// <param name="Root">The root box; laid out in the page area of each page.</param>
-public sealed record StyledDocument(DocumentMetadata Metadata, PageStyle Page, Box Root);
+public sealed record StyledDocument(DocumentMetadata Metadata, PageStyle Page, Box Root)
+{
+    /// <summary>The layout policies the front-end chose for the document (<see cref="LayoutProfile.Default"/> unless it
+    /// chose others).</summary>
+    public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
+}

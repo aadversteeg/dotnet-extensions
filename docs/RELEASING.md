@@ -43,8 +43,9 @@ release mode the tests run against the published minimum versions. Some test pro
 `UnitTests.Extensions.FileSystem` uses `Ave.Extensions.FileSystem.InMemory`, and both helpers depend on the
 package under test. In release mode the helper would bring the published version of the package under test next to
 the one being built (error CS1704). These projects set `<TestInHeadMode>true</TestInHeadMode>`, and a release runs
-them in head mode. In the documents family the same holds for `UnitTests.Extensions.Documents.Fonts` and
-`.PageModel` (their test helper `Ave.Extensions.Documents.TestSupport` depends on Fonts and PageModel),
+them in head mode. In the documents family the same holds for `UnitTests.Extensions.Documents.Fonts`, `.Images`,
+`.PageModel` and `.Render.Raster` (their test helper `Ave.Extensions.Documents.TestSupport` depends on Fonts, Images
+and PageModel),
 `UnitTests.Extensions.Documents.Fluent` (it renders through `Ave.Extensions.Documents`, which depends on Fluent) and
 `UnitTests.Extensions.Documents.Architecture` (the family's rules, checked on the head build of every library
 together).
@@ -64,6 +65,8 @@ The workflow starts when a tag `*/*` is pushed. It has three jobs.
      target frameworks, the minimum versions of our own packages it depends on, and its test projects;
    - builds the package in release mode, runs its test projects in release mode (head mode for the two projects
      above), leaving out the tests with the trait `Category=Network`;
+   - for `Ave.Extensions.FileSystem.AzureFileStorage` only: runs its integration tests against a real Azure
+     storage account on the release-mode build (see "The Azure integration tests in a release" below);
    - packs it from a clean tree in release mode with the version from the tag;
    - verifies the package (`eng/PackageCheck`): file name, id, version, one dependency group per target
      framework, the dependencies on our own packages at exactly their minimum versions, no development version,
@@ -77,6 +80,21 @@ The workflow starts when a tag `*/*` is pushed. It has three jobs.
 
 The GitHub release comes last on purpose. Until the approval is given and the package is on nuget.org, only the tag
 exists: there is no GitHub release for a version that is not on nuget.org.
+
+### The Azure integration tests in a release
+
+A release of `Ave.Extensions.FileSystem.AzureFileStorage` (tag `file-system-azure-file-storage/<version>`) also runs
+`IntegrationTests.AzureFileStorage` against a real Azure storage account, as the CI job "Azure integration tests"
+does on `main`. The difference is what is tested: CI tests the head build in three modes, the release tests the
+release-mode build, which is what goes into the package.
+
+- The build job fails when a repository secret (`AZURE_STORAGE_ACCOUNT_NAME`, `AZURE_STORAGE_ACCOUNT_KEY`) is
+  missing, when a test fails or when a test is skipped. Then nothing is published.
+- Only the steps that run these tests get the secrets, and only for this package. The publish job never gets them.
+- The tests empty the file share they use. A release uses the share `integration-tests-release`, CI uses
+  `integration-tests`, so a release and a CI run on `main` can run at the same time. The tests create the share
+  when it does not exist.
+- A release of any other package does not run these tests and gets no secret.
 
 What to do when a job fails:
 
@@ -120,6 +138,14 @@ A change that spans two packages is one pull request. Then:
 Raise the minimum only after the lower package is on nuget.org: until then a release-mode build cannot restore it,
 and the CI job "Release mode (main only)" shows that as an error. nuget.org lists a new version some time after the
 publish job is done; in the first releases from this repository that took between 6 and 26 minutes.
+
+So the CI job "Release mode (main only)" is red on `main` from the merge of a change that adds packages or gives a
+package new API another package uses, until the release wave of that change is done. This is expected. In release
+mode every package and test project gets the packages it uses from nuget.org, at the minimum version in
+`Directory.Packages.props`; until the lower package is released, that version does not have the new API (or a new
+package is not on nuget.org at all), so the upper package does not compile there. Each step of the wave turns some of
+it green. The job is one job for every family of the repository: while it is red for this reason, read its log to see
+that only the expected packages fail, because a new break elsewhere has the same colour.
 
 ## The first file-system releases from this repository
 
@@ -179,6 +205,79 @@ For example, step 1:
 git tag documents-core/0.1.0-preview.2
 git push origin documents-core/0.1.0-preview.2
 ```
+
+## The documents raster back-end (milestone M2, stage 2)
+
+Stage 2 adds two packages and changes five:
+
+| Tag name | Package | What changed |
+|---|---|---|
+| `documents-graphics` | `Ave.Extensions.Documents.Graphics` | new |
+| `documents-render-raster` | `Ave.Extensions.Documents.Render.Raster` | new |
+| `documents-fonts` | `Ave.Extensions.Documents.Fonts` | glyph outlines (`TrueTypeFont.Shape`) |
+| `documents-images` | `Ave.Extensions.Documents.Images` | PNG encoder, JPEG decoder |
+| `documents-page-model` | `Ave.Extensions.Documents.PageModel` | the page-model contract (`PageModelRules`), moved here from Render.Pdf |
+| `documents-render-pdf` | `Ave.Extensions.Documents.Render.Pdf` | uses `PageModelRules` from PageModel |
+| `documents` | `Ave.Extensions.Documents` | `ToPages`, `ToPng`, `ToPngPages`, `ToImages` |
+
+The new code of each upper package needs the new version of the lower ones, so this is a change across packages
+(see above): release a step, raise the minimums the next step needs in `Directory.Packages.props` once the step is
+on nuget.org, then release the next step. The two new packages are in `Directory.Packages.props` with a placeholder
+minimum (`0.1.0-preview.2`, a version they never had); set it to their first version when they are released.
+
+1. `documents-fonts`, `documents-images`, `documents-graphics`;
+2. `documents-page-model` (its tests run in head mode);
+3. `documents-render-pdf` (needs the new PageModel), `documents-render-raster` (needs the new Fonts, Images, PageModel
+   and Graphics);
+4. `documents`.
+
+From the merge of this stage until step 4 is done, the documents rows of "Release mode (main only)" that are red are
+these, and only these (measured with the job's steps on the branch): the libraries `Ave.Extensions.Documents.Render.Pdf`
+(it needs `PageModelRules` from the new PageModel), `Ave.Extensions.Documents.Render.Raster` (Graphics is not on
+nuget.org) and `Ave.Extensions.Documents` (Render.Raster is not), and the test projects
+`UnitTests.Extensions.Documents.Render.Pdf` and `UnitTests.Extensions.Documents.Samples`, for the same reasons. The
+release-mode tests of Core, DocumentModel, Graphics, Layout, Pdf and Typesetting stay green: the shared test helper
+`Ave.Extensions.Documents.TestSupport` uses only API that is already on nuget.org, so the packages this stage does not
+change can still be released in between.
+
+## The HTML and CSS front-end of the documents family (M2)
+
+Milestone M2 adds three packages to the documents family:
+
+| Tag name | Package | Needs |
+|---|---|---|
+| `documents-html-parsing` | `Ave.Extensions.Documents.Html.Parsing` | Core |
+| `documents-css` | `Ave.Extensions.Documents.Css` | Core |
+| `documents-html` | `Ave.Extensions.Documents.Html` | Core, Html.Parsing, Css |
+
+They need a Core that has `TextPosition`, which M2 adds: `documents-core/0.1.0-preview.2` on nuget.org does not have
+it. So their first release is one wave of three steps:
+
+1. a new release of `documents-core`;
+2. once it is on nuget.org, a pull request that raises the minimum version of `Ave.Extensions.Documents.Core` in
+   `Directory.Packages.props` to it, then `documents-html-parsing` and `documents-css` (in any order);
+3. `documents-html`.
+
+The minimum is not raised before the new Core is on nuget.org: release mode would then restore a Core that does not
+exist. Until the wave is done, the CI job "Release mode (main only)" is red for the three new packages on `main`: in
+release mode they restore Core `0.1.0-preview.2` from nuget.org and do not compile.
+
+## Both parts of M2 in one release wave
+
+The two sections above each give the order for their own packages. When both are released in one wave, this order
+is true for both (the packages of one step can go in any order):
+
+1. `documents-core`;
+2. once it is on nuget.org, a pull request that raises the minimum version of `Ave.Extensions.Documents.Core` in
+   `Directory.Packages.props` to it, then `documents-fonts`, `documents-images`, `documents-graphics`,
+   `documents-html-parsing` and `documents-css`;
+3. `documents-page-model` (its tests run in head mode), `documents-html`;
+4. `documents-render-pdf` (needs the new PageModel), `documents-render-raster` (needs the new Fonts, Images, PageModel
+   and Graphics);
+5. `documents`.
+
+Between the steps, raise the minimums the next step needs in `Directory.Packages.props` once the step is on
+nuget.org, as both sections say.
 
 ## One-time setup
 

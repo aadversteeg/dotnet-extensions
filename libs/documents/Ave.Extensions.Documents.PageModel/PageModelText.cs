@@ -52,6 +52,8 @@ public static class PageModelText
         StructureEnd end => $"end {end.Node}",
         ArtifactStart artifact => $"artifact {artifact.Kind}",
         ArtifactEnd => "end artifact",
+        ClipStart clip => $"clip {clip.Area}",
+        ClipEnd => "end clip",
         _ => $"unknown {item.GetType().Name}",
     };
 

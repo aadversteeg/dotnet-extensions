@@ -45,7 +45,7 @@ public static class TracksLayout
         var preparation = token?.Prepared is { } prepared && prepared.AvailableWidth == space.AvailableWidth
             ? Result<TablePreparation, Error>.Success(prepared)
             : TableGrid.Build(box).OnSuccessBind(grid => Prepare(environment, box, grid, space.AvailableWidth));
-        return preparation.OnSuccessBind(table => TablePage.LayOut(new TableGeometry(environment, box, table), space, token)
+        return preparation.OnSuccessBind(table => TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets }, space, token)
             .OnSuccessMap(result => result is LayoutResult.Placed { Continuation: TracksBreakToken next } placed
                 ? placed with { Continuation = next with { Prepared = table } }
                 : result));
@@ -151,6 +151,20 @@ internal sealed record TablePreparation(TableGrid Grid, ImmutableArray<double> L
 /// <param name="Prepared">The grid and the columns.</param>
 internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, TablePreparation Prepared)
 {
+    /// <summary>True when the table starts the page (<see cref="ConstraintSpace.IsAtPageStart"/>): then a cell in the
+    /// page's first row with nothing placed above it starts the page too, and content of it that is taller than the page
+    /// is sliced or refused (<see cref="MonolithicSlices"/>) instead of moving on.</summary>
+    public bool IsAtPageStart { get; init; }
+
+    /// <summary>True when only the top insets of boxes that start the page lie above the table
+    /// (<see cref="ConstraintSpace.IsBelowStartInsets"/>): the cells of the page's first row are below start insets too.</summary>
+    public bool IsBelowStartInsets { get; init; }
+
+    /// <summary>True on a later page where content taller than the page area starts the page right below the repeated
+    /// header rows (<see cref="TablePage"/>, remarks): the cells of the page's first body row are laid out as starting
+    /// the page.</summary>
+    public bool SlicesBelowHeader { get; init; }
+
     /// <summary>The grid.</summary>
     public TableGrid Grid => Prepared.Grid;
 

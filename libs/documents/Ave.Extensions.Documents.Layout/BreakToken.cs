@@ -1,5 +1,6 @@
 using System;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 
 namespace Ave.Extensions.Documents.Layout;
 
@@ -37,18 +38,41 @@ public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : Br
 
 /// <summary>The break token of <see cref="InlineLayout"/>: the first line of the next fragment.</summary>
 /// <param name="LineIndex">The index of the line that starts the next page.</param>
-public sealed record InlineBreakToken(int LineIndex) : BreakToken;
+public sealed record InlineBreakToken(int LineIndex) : BreakToken
+{
+    /// <summary>How much of the line's height earlier pages showed, when the line is taller than the page area and is
+    /// sliced (<see cref="MonolithicOverflow.Slice"/>, <see cref="SliceFragment"/>); 0 when the line starts on the next
+    /// page.</summary>
+    public double Shown { get; init; }
+
+    /// <summary>How many slices of the line earlier pages showed (at most <see cref="MonolithicSlices.MaxSlices"/>); 0 when
+    /// the line starts on the next page.</summary>
+    public int Slices { get; init; }
+}
 
 /// <summary>The break token of <see cref="ImageLayout"/>: the image is still to be placed, on the next page, after a
-/// last-resort break before it left only the box's top padding and border on this one.</summary>
+/// last-resort break before it left only the box's top padding and border on this one; or the image is taller than the
+/// page area and sliced, and the next page shows the next part of it (<see cref="Shown"/>).</summary>
 public sealed record ImageBreakToken : BreakToken
 {
-    private ImageBreakToken()
-    {
-    }
+    private ImageBreakToken(double shown, int slices) => (Shown, Slices) = (shown, slices);
 
-    /// <summary>The one value.</summary>
-    public static ImageBreakToken Instance { get; } = new();
+    /// <summary>The image is still to be placed from its top.</summary>
+    public static ImageBreakToken Instance { get; } = new(0, 0);
+
+    /// <summary>How much of the image's height earlier pages showed as slices (<see cref="MonolithicOverflow.Slice"/>,
+    /// <see cref="SliceFragment"/>); 0 when the image is still to be placed from its top.</summary>
+    public double Shown { get; }
+
+    /// <summary>How many slices of the image earlier pages showed (at most <see cref="MonolithicSlices.MaxSlices"/>); 0
+    /// when the image is still to be placed from its top.</summary>
+    public int Slices { get; }
+
+    /// <summary>The token after the <paramref name="slices"/> slices that showed <paramref name="shown"/> of the image.</summary>
+    /// <param name="shown">The height shown so far, more than 0.</param>
+    /// <param name="slices">The slices shown so far, 1 or more.</param>
+    /// <returns>The token.</returns>
+    internal static ImageBreakToken After(double shown, int slices) => new(shown, slices);
 }
 
 /// <summary>The break token of <see cref="TracksLayout"/>: the first body row of the next fragment, and the cells that
@@ -68,15 +92,24 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// </summary>
     internal TablePreparation? Prepared { get; init; }
 
+    /// <summary>
+    /// True when the page this token ends showed body content other than slices of a piece taller than the page (a
+    /// body cell that draws something outside a <see cref="SliceFragment"/>). Under <see cref="MonolithicOverflow.Slice"/>
+    /// a piece that does not fit below a repeated header row is sliced there only after a page that showed no such body
+    /// content (<see cref="TablePage"/>, remarks): the row moved once, and the page with only the header shows that
+    /// moving gains nothing. Part of the position.
+    /// </summary>
+    public bool BodyShown { get; init; } = true;
+
     /// <summary>Equal when the positions are equal (<see cref="Prepared"/> is not compared).</summary>
     /// <param name="other">The other token.</param>
     /// <returns>True for the same position.</returns>
     public bool Equals(TracksBreakToken? other) =>
-        other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit;
+        other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown;
 
     /// <summary>The hash of the position.</summary>
     /// <returns>The hash code.</returns>
-    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit);
+    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown);
 }
 
 /// <summary>Where one cut cell continues.</summary>

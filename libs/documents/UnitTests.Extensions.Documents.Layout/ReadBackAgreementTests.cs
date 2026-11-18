@@ -11,7 +11,8 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// poppler's <c>pdftotext -bbox</c> finds (<c>words.txt</c>) are the words PyMuPDF finds (<c>print.txt</c>), page by
 /// page (pdftotext writes them as HTML text, so <c>&amp;apos;</c> is an apostrophe); the filled rectangles of <c>rectangles.py</c> (<c>lines.txt</c>) are the rectangles of <c>positions.py</c>; and
 /// every box measured in the page (<c>boxes.txt</c>) has a size, and a cell that holds a word holds a word the print
-/// shows. A file damaged in an edit, or measured from another print, fails here.
+/// shows. A file damaged in an edit, or measured from another print, fails here. pdftotext leaves out a word that passes the
+/// page's edge, which only content taller than the page does.
 /// </summary>
 public class ReadBackAgreementTests
 {
@@ -40,8 +41,12 @@ public class ReadBackAgreementTests
 
         foreach (var page in print.Pages)
         {
-            var poppler = lines.Where(fields => int.Parse(fields[0], CultureInfo.InvariantCulture) == page.Number).Select(fields => System.Net.WebUtility.HtmlDecode(fields[5])).Order(StringComparer.Ordinal);
-            poppler.Should().Equal(page.Words.Select(word => word.Text).Order(StringComparer.Ordinal), $"{caseName}, page {page.Number}: the words of pdftotext and PyMuPDF");
+            // pdftotext leaves out a word whose glyphs pass the page's edge (a slice of a line taller than the page, cases
+            // a4-*): it finds every word inside the page, and no word PyMuPDF does not.
+            var poppler = lines.Where(fields => int.Parse(fields[0], CultureInfo.InvariantCulture) == page.Number).Select(fields => System.Net.WebUtility.HtmlDecode(fields[5])).Order(StringComparer.Ordinal).ToList();
+            var inside = page.Words.Where(word => word.Baseline <= page.Height && word.Baseline - word.FontSize >= 0).Select(word => word.Text).Order(StringComparer.Ordinal);
+            poppler.Should().Equal(inside, $"{caseName}, page {page.Number}: the words of pdftotext and PyMuPDF inside the page");
+            poppler.Except(page.Words.Select(word => word.Text), StringComparer.Ordinal).Should().BeEmpty($"{caseName}, page {page.Number}: pdftotext finds no word PyMuPDF does not");
         }
 
         lines.Select(fields => int.Parse(fields[0], CultureInfo.InvariantCulture)).Should().OnlyContain(number => number >= 1 && number <= print.Pages.Length, caseName);

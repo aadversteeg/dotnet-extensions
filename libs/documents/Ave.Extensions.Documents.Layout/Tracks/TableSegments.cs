@@ -61,22 +61,34 @@ internal static class TableSegments
     /// case <c>fr-f9-cell-orphans3</c>); a last resort for a cell whose lines all fit the slice and only its bottom padding
     /// or its share of the grid line below it does not, where its last row is the one the cut is in
     /// (<paramref name="endsAtTheCut"/>; Chromium never breaks a cell before its bottom padding: the row moves whole when
-    /// it can, cases <c>fr-f4-*</c>).
+    /// it can, cases <c>fr-f4-*</c>). A cell is laid out as starting the page (<see cref="ConstraintSpace.IsAtPageStart"/>)
+    /// only when <paramref name="startsPage"/> says nothing lies above it on the page; every other cell may always leave
+    /// its content for the next page.
     /// </summary>
+    /// <remarks>A fresh cell whose content starts the page below a repeated header row (<paramref name="belowHeader"/>,
+    /// see <see cref="TablePage"/>) is laid out without the half of the line above it and lowered by it afterwards, as a
+    /// reopened cell is: its content starts the page, so content taller than the page area is sliced from right below
+    /// that line, where a whole cell's content starts.</remarks>
     internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal, bool KeepsItsBreak), Error> Slice(
-        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool endsAtTheCut = false)
+        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool endsAtTheCut = false,
+        bool startsPage = false, bool belowHeader = false, bool belowStartInsets = false)
     {
         var info = table.Grid.Cells[cell.Cell];
-        var box = CellLayoutBox(table, segment, cell);
+        var lineAbove = belowHeader && cell.Token is null;
+        var box = CellLayoutBox(table, segment, cell, withoutLineAbove: lineAbove);
         var width = table.CellWidth(info);
         if (cell.IsComplete)
         {
             return Result<(BoxFragment, CellBreak, BreakAppeal, bool), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true), BreakAppeal.Perfect, false));
         }
 
-        var inset = ReopenedInset(table, segment, cell);
+        var inset = ReopenedInset(table, segment, cell) + (lineAbove ? LineAboveInside(table, segment, cell) : 0);
         Result<LayoutResult, Error> LayOutIn(double height) =>
-            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: false, IsNewFormattingContext: true) { KeepsBottomInset = true }, cell.Token);
+            table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: startsPage || belowHeader, IsNewFormattingContext: true)
+            {
+                KeepsBottomInset = true,
+                IsBelowStartInsets = belowStartInsets && !(startsPage || belowHeader),
+            }, cell.Token);
         var measured = segment.Natural.TryGetValue(cell.Cell, out var natural);
         var endsInSlice = clearance <= 0 || (measured && Fitting.Fits(natural!.Size.Height, sliceHeight));
         var endsInItsBottomEdge = endsAtTheCut && measured && !Fitting.Fits(natural!.Size.Height, sliceHeight)
@@ -216,17 +228,23 @@ internal static class TableSegments
     /// of its rows), and half of the line below its last row. A cell that continues from an earlier page has no top
     /// inset (slice); its token already tells its algorithm so.
     /// </summary>
-    internal static Box CellLayoutBox(TableGeometry table, Segment segment, ActiveCell cell)
+    internal static Box CellLayoutBox(TableGeometry table, Segment segment, ActiveCell cell, bool withoutLineAbove = false)
     {
         var grid = table.Grid;
         var info = grid.Cells[cell.Cell];
-        var startsSegment = cell.StartRow == segment.FirstRow;
-        var above = startsSegment ? segment.Above.Above : cell.StartRow - 1;
-        var context = startsSegment ? segment.Above.Context : CollapsedBorders.LineContext.Interior;
-        var top = cell.Token is null ? table.HorizontalWidth(above, cell.StartRow, context) / 2 : 0;
+        var top = cell.Token is null && !withoutLineAbove ? LineAboveInside(table, segment, cell) : 0;
         var bottom = table.HorizontalWidth(info.LastRow, TablePage.Next(grid, info.LastRow), TablePage.EdgeContext(grid, info.LastRow)) / 2;
         var halves = new Edges(top.Pt(), (table.LineWidths[info.Column + info.ColumnSpan] / 2).Pt(), bottom.Pt(), (table.LineWidths[info.Column] / 2).Pt());
         return TracksLayout.CellBox(info, halves);
+    }
+
+    /// <summary>The half of the line above a cell that lies inside the cell when it starts on this page.</summary>
+    private static double LineAboveInside(TableGeometry table, Segment segment, ActiveCell cell)
+    {
+        var startsSegment = cell.StartRow == segment.FirstRow;
+        var above = startsSegment ? segment.Above.Above : cell.StartRow - 1;
+        var context = startsSegment ? segment.Above.Context : CollapsedBorders.LineContext.Interior;
+        return table.HorizontalWidth(above, cell.StartRow, context) / 2;
     }
 
     internal static BoxFragment EmptyCell(Box box, double width, double height) => new(box, new Size(width, height), []);

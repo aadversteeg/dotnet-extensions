@@ -4,7 +4,8 @@ name: Release
 # functional-core/0.1.0-preview.4 (dotnet msbuild eng/release-tags.proj prints every tag name).
 #
 #   build           resolve the tag, build and test the package in release mode, pack it with the tag version,
-#                   verify the package
+#                   verify the package; for Ave.Extensions.FileSystem.AzureFileStorage also its integration tests
+#                   against a real Azure storage account (the only steps that get a secret)
 #   publish         push the package to nuget.org; runs in the GitHub environment "nuget" (approval) and uses
 #                   nuget.org trusted publishing, so there is no API key anywhere
 #   github-release  create the GitHub release for the tag, with the package attached
@@ -90,6 +91,50 @@ jobs:
           for project in $TESTS; do
             dotnet test "$project" -c Release -p:UseRepoProjectReferences=false --filter "Category!=Network"
           done
+
+      # The three steps below are for Ave.Extensions.FileSystem.AzureFileStorage only: its integration tests
+      # against a real Azure storage account, on the release-mode build. In the step above these tests skipped
+      # themselves, because no storage account is configured there. Only the steps that need them get the
+      # secrets; the publish job, which holds the nuget.org login, never does. The tests empty the file share they
+      # use, so a release has a share of its own: a CI run on main at the same time (job azure-integration of
+      # ci.yml, share integration-tests) is not in its way. The test results are not kept as an artifact: secrets
+      # are masked in the log, not in a file.
+      - name: The storage account secrets are set
+        if: steps.resolve.outputs.package-id == 'Ave.Extensions.FileSystem.AzureFileStorage'
+        env:
+          ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+          ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+        run: |
+          if [ -z "$ACCOUNT_NAME" ] || [ -z "$ACCOUNT_KEY" ]; then
+            echo "::error title=Azure integration tests::The repository secrets AZURE_STORAGE_ACCOUNT_NAME and AZURE_STORAGE_ACCOUNT_KEY are not set. See libs/file-system/README.md."
+            exit 1
+          fi
+
+      - name: Azure integration tests in release mode
+        if: steps.resolve.outputs.package-id == 'Ave.Extensions.FileSystem.AzureFileStorage'
+        # --no-build: the step "Test in release mode" built this project, so nothing is built while the account
+        # key is in the environment. The other settings come from appsettings.test.json in the test project.
+        env:
+          PROJECT: libs/file-system/integration-tests/IntegrationTests.AzureFileStorage/IntegrationTests.AzureFileStorage.csproj
+          AZURE_FILESTORAGE_AzureFileStorage__AccountName: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+          AZURE_FILESTORAGE_AzureFileStorage__AccountKey: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+          AZURE_FILESTORAGE_AzureFileStorage__ShareName: integration-tests-release
+        run: |
+          dotnet test "$PROJECT" -c Release --no-build -p:UseRepoProjectReferences=false \
+            --logger "trx;LogFileName=azure-integration.trx" --results-directory "$RUNNER_TEMP/test-results"
+
+      - name: Every Azure integration test ran
+        if: steps.resolve.outputs.package-id == 'Ave.Extensions.FileSystem.AzureFileStorage'
+        # A test that cannot use the storage account skips itself, and a skipped test proves nothing.
+        run: |
+          counters=$(grep -o '<Counters [^>]*>' "$RUNNER_TEMP/test-results/azure-integration.trx")
+          total=$(sed -E 's/.* total="([0-9]+)".*/\1/' <<< "$counters")
+          executed=$(sed -E 's/.* executed="([0-9]+)".*/\1/' <<< "$counters")
+          echo "Tests: $total, executed: $executed"
+          if [ "$total" -eq 0 ] || [ "$executed" -ne "$total" ]; then
+            echo "::error title=Azure integration tests::$((total - executed)) of $total tests did not run"
+            exit 1
+          fi
 
       - name: Test in head mode
         if: steps.resolve.outputs.head-mode-tests != ''

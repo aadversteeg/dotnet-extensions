@@ -88,6 +88,9 @@ internal static class RowParts
             LineFragment line => line.Children.SelectMany(child => Drawn(child.Fragment, top + child.Offset.Y)),
             TextFragment text when text.Glyphs.Any(Shows) => [(top, top + text.Size.Height)],
             ImageFragment or RuleFragment when fragment.Size.Width > Epsilon => [(top, top + fragment.Size.Height)],
+            // A slice of content taller than a page draws its content clipped to its own band.
+            SliceFragment slice => Drawn(slice.Content.Fragment, top + slice.Content.Offset.Y)
+                .Select(area => (Math.Max(area.Top, top), Math.Min(area.Bottom, top + slice.Size.Height))),
             _ => [],
         };
         return areas.Where(area => area.Bottom - area.Top > Epsilon);

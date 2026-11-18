@@ -16,6 +16,16 @@ internal static class FontParseErrors
                 .With(ErrorMetadataKeys.Table, table)
                 .With(ErrorMetadataKeys.Offset, available));
 
+    /// <summary>A glyph's data in 'glyf' is shorter than a structure it announces (its flags, coordinates or
+    /// components); <paramref name="needed"/> and <paramref name="available"/> count bytes of that glyph.</summary>
+    public static Result<T, Error> TruncatedGlyph<T>(int glyph, long needed, int available) =>
+        Result<T, Error>.Failure(
+            new Error(
+                    FontErrorCodes.Parse.Truncated,
+                    $"Glyph {glyph} in font table 'glyf' needs {needed} bytes but has {available}.")
+                .With(ErrorMetadataKeys.Table, "glyf")
+                .With(ErrorMetadataKeys.Offset, available));
+
     /// <summary>The table holds a value the OpenType specification does not allow.</summary>
     public static Result<T, Error> InvalidValue<T>(string table, string message, object value) =>
         Result<T, Error>.Failure(

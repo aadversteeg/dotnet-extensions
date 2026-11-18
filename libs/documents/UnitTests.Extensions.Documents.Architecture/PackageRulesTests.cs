@@ -77,7 +77,7 @@ public class PackageRulesTests
             .Where(name => !ProjectFile(name).Descendants("IsPackable").Any(element => element.Value == "false"));
 
     [Fact]
-    public void The_packed_projects_are_the_eleven_libraries_of_the_layer_list() =>
+    public void The_packed_projects_are_the_libraries_of_the_layer_list() =>
         PackedProjectNames().Should().BeEquivalentTo(AssemblyRulesTests.LibraryNames);
 
     [Theory]
@@ -91,6 +91,17 @@ public class PackageRulesTests
         inputs.Dependencies.Where(dependency => dependency.StartsWith("Ave.Extensions.Documents", StringComparison.Ordinal))
             .Should().BeSubsetOf(PackedProjectNames(), "a dependency on a project that is not packed is a dependency nobody can restore");
     }
+
+    /// <summary>
+    /// The layer rule for what a package will depend on, not only for the compiled references: the compiler drops a
+    /// reference no type of which is used, so a forbidden project or package reference would pass the assembly rule and
+    /// still become a dependency of the package (review 39 A-1).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(AssemblyRulesTests.Libraries), MemberType = typeof(AssemblyRulesTests))]
+    public void Library_package_depends_only_on_the_engine_libraries_of_its_layers(string library) =>
+        InputsOf(library).Dependencies.Where(dependency => dependency.StartsWith("Ave.Extensions.Documents", StringComparison.Ordinal))
+            .Should().BeSubsetOf(AssemblyRulesTests.AllowedFor(library));
 
     [Theory]
     [MemberData(nameof(AssemblyRulesTests.Libraries), MemberType = typeof(AssemblyRulesTests))]

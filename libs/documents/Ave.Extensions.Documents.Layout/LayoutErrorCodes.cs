@@ -15,6 +15,12 @@ public static class LayoutErrorCodes
     /// (the room it had, in points), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode DoesNotFit = _ / "DoesNotFit";
 
+    /// <summary>Monolithic content (an image, a line box) taller than the page area that the document's profile slices
+    /// (<c>MonolithicOverflow.Slice</c>) and that would need more than 100 slices, one per page: a piece of content
+    /// shows on at most 100 pages, so the number of pages stays bounded by the size of the input. Metadata: Node, Value
+    /// (the content's height and the height shown in 100 slices, in points), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode TooManySlices = _ / "TooManySlices";
+
     /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.
     /// Metadata: Node, Value, SourceFile, SourceLine.</summary>
     public static readonly ErrorCode InvalidContent = _ / "InvalidContent";

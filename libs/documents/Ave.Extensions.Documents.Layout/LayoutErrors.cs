@@ -50,6 +50,20 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, contract)
             .WithSource(box.Source);
 
+    /// <summary>Content taller than the page area that would need more than <see cref="MonolithicSlices.MaxSlices"/>
+    /// slices.</summary>
+    /// <param name="box">The box the content belongs to.</param>
+    /// <param name="height">The content's height.</param>
+    /// <param name="shown">The height the slices so far showed.</param>
+    public static Error TooManySlices(Box box, double height, double shown) =>
+        new Error(
+                LayoutErrorCodes.TooManySlices,
+                $"{Describe(box)} is {InvariantNumber.Format(height)}pt tall and would need more than {MonolithicSlices.MaxSlices} slices, one per page; "
+                + $"{MonolithicSlices.MaxSlices} slices showed {InvariantNumber.Format(shown)}pt of it.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, $"{InvariantNumber.Format(height)}>{InvariantNumber.Format(shown)}")
+            .WithSource(box.Source);
+
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
 

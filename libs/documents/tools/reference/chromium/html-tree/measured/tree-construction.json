@@ -1,0 +1,92 @@
+{
+ "chromium": "159.0.8154.6",
+ "image": "mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579",
+ "measured": 1959,
+ "differ": [
+  {
+   "case": "plain-text-unsafe.dat:361",
+   "fragment": null,
+   "tree": "| <html>\n|   <head>\n|   <frameset>\n"
+  },
+  {
+   "case": "plain-text-unsafe.dat:379",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     \"a<�b\"\n"
+  },
+  {
+   "case": "plain-text-unsafe.dat:397",
+   "fragment": null,
+   "tree": "| <html>\n|   <head>\n|   <body>\n|     <svg svg>\n|       <svg foreignObject>\n|         \"a�b\"\n"
+  },
+  {
+   "case": "plain-text-unsafe.dat:712",
+   "fragment": "textarea",
+   "tree": "| \"fillertext\"\n"
+  },
+  {
+   "case": "plain-text-unsafe.dat:723",
+   "fragment": "title",
+   "tree": "| \"fillertext\"\n"
+  },
+  {
+   "case": "search-element.dat:50",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <a>\n|       <search>\n|         \"x\"\n|     \"y\"\n"
+  },
+  {
+   "case": "search-element.dat:66",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <a>\n|       <search>\n|         \"x\"\n|     <p>\n|       <a>\n|         \"y\"\n|       <a>\n|         \"z\"\n"
+  },
+  {
+   "case": "search-element.dat:86",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <li>\n|       \"a\"\n|       <search>\n|     <li>\n|       \"b\"\n"
+  },
+  {
+   "case": "search-element.dat:103",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <dd>\n|       \"a\"\n|       <search>\n|     <dt>\n|       \"b\"\n"
+  },
+  {
+   "case": "search-element.dat:120",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <body>\n|     <x>\n|       <search>\n|     \"y\"\n"
+  },
+  {
+   "case": "template.dat:1764",
+   "fragment": "template",
+   "tree": "| <form>\n"
+  },
+  {
+   "case": "template.dat:1817",
+   "fragment": "template",
+   "tree": "| <br>\n| \"BC\"\n| <form>\n|   \"D\"\n|   <div>\n|     \"EF\"\n| \"G\"\n"
+  },
+  {
+   "case": "tests19.dat:608",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <frameset>\n|     <frame>\n"
+  },
+  {
+   "case": "tests19.dat:622",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <frameset>\n|     <frame>\n"
+  },
+  {
+   "case": "tests19.dat:636",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <frameset>\n|     <frame>\n"
+  },
+  {
+   "case": "tests19.dat:651",
+   "fragment": null,
+   "tree": "| <!DOCTYPE html>\n| <html>\n|   <head>\n|   <frameset>\n|     <frame>\n"
+  },
+  {
+   "case": "tests_innerHTML_1.dat:790",
+   "fragment": "select",
+   "tree": "| <input>\n| <option>\n"
+  }
+ ]
+}

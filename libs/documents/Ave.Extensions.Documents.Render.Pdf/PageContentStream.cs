@@ -19,14 +19,58 @@ internal static class PageContentStream
 {
     /// <summary>
     /// Builds the content stream of one page from its events (<see cref="PageEvents"/>): each content run is drawn in
-    /// order, inside its marked-content sequence when the run is marked (tagged PDF, ISO 32000-1 §14.6 and §14.8).
+    /// order, inside its marked-content sequence when the run is marked (tagged PDF, ISO 32000-1 §14.6 and §14.8), and
+    /// inside the clips open around it (<see cref="Clips"/>).
     /// </summary>
     /// <param name="page">The page.</param>
     /// <param name="runs">The page's content runs, each with its mark, in order.</param>
     /// <param name="resources">The used fonts and images, to find each one's resource name.</param>
     /// <returns>The stream data, or an error for a number that is not finite.</returns>
     public static Result<ImmutableArray<byte>, Error> Build(Page page, ImmutableArray<MarkedRun> runs, ResourceNames resources) =>
-        ContentStream.Serialize(runs.SelectMany(marked => Marked(marked.Mark, marked.Run.Items.SelectMany(item => Operations(item, page, resources)))));
+        ContentStream.Serialize(Clips(runs, page.Size.Height, marked => Marked(marked.Mark, marked.Run.Items.SelectMany(item => Operations(item, page, resources)))));
+
+    /// <summary>
+    /// The runs' operations with their clips (<see cref="ClipStart"/>): a clip is opened with <c>q x y w h re W n</c> —
+    /// save the graphics state (§8.4.2), add the rectangle, whose y is its BOTTOM edge in PDF space, intersect the clipping
+    /// path with it and end the path without painting it (§8.5.4) — and closed with <c>Q</c>, which restores the clipping
+    /// path the clip found. Between two runs the clips the next run is not under are closed, innermost first, and its new
+    /// ones opened, outermost first; after the last run all are closed. Clips change only BETWEEN runs, and every run is
+    /// one marked-content sequence, so each <c>q</c>…<c>Q</c> pair holds whole marked-content sequences and never
+    /// straddles a <c>BDC</c>…<c>EMC</c> (the nesting rule of the page model, <see cref="DrawItem"/>). Two clips of the
+    /// same rectangle one after the other draw as one.
+    /// </summary>
+    private static IEnumerable<ContentOperation> Clips(ImmutableArray<MarkedRun> runs, double pageHeight, Func<MarkedRun, IEnumerable<ContentOperation>> operations)
+    {
+        var open = ImmutableArray<Rect>.Empty;
+        foreach (var marked in runs)
+        {
+            var wanted = marked.Run.Clips;
+            var kept = open.Zip(wanted).TakeWhile(pair => pair.First == pair.Second).Count();
+            for (var closing = open.Length; closing > kept; closing--)
+            {
+                yield return ContentOperators.RestoreState();
+            }
+
+            foreach (var area in wanted.Skip(kept))
+            {
+                yield return ContentOperators.SaveState();
+                yield return ContentOperators.Rectangle(area.Origin.X, pageHeight - area.Origin.Y - area.Size.Height, area.Size.Width, area.Size.Height);
+                yield return ContentOperators.Clip();
+                yield return ContentOperators.EndPath();
+            }
+
+            open = wanted;
+            foreach (var operation in operations(marked))
+            {
+                yield return operation;
+            }
+        }
+
+        for (var closing = open.Length; closing > 0; closing--)
+        {
+            yield return ContentOperators.RestoreState();
+        }
+    }
 
     private static IEnumerable<ContentOperation> Marked(ContentMark mark, IEnumerable<ContentOperation> operations) =>
         mark.Begin() is { } begin ? [begin, .. operations, ContentOperators.EndMarkedContent()] : operations;

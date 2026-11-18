@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- An application: one TargetFramework (see the other sample's project file for why TargetFrameworks is cleared). -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- A sample application: never packed, no XML documentation required -->
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Ave.Extensions.Documents.Html\Ave.Extensions.Documents.Html.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="data/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

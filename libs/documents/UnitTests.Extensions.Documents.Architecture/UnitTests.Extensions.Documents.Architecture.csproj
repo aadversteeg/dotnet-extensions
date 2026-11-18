@@ -37,6 +37,9 @@
     <ProjectReference Include="..\Ave.Extensions.Documents\Ave.Extensions.Documents.csproj" />
     <ProjectReference Include="..\Ave.Extensions.Documents.Typesetting\Ave.Extensions.Documents.Typesetting.csproj" />
     <ProjectReference Include="..\Ave.Extensions.Documents.Pdf\Ave.Extensions.Documents.Pdf.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Html.Parsing\Ave.Extensions.Documents.Html.Parsing.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Css\Ave.Extensions.Documents.Css.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.Html\Ave.Extensions.Documents.Html.csproj" />
     <!-- Build order only: the positive control of the test-only-package rule reads the reference shaper's test
          assembly from that project's output folder, so that project is built first (neither its assembly nor its files
          are copied here). -->

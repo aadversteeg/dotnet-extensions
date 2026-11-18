@@ -10,7 +10,8 @@ namespace Ave.Extensions.Documents.Layout;
 /// Lays out a box that holds one image: a replaced element (CSS 2.1 §10.3.2), a leaf producer that only takes part
 /// in layout through its size. It is monolithic: an image never breaks across pages (CSS
 /// Fragmentation 3 §4.1 lists no breakpoint inside replaced content). One that does not fit moves to the next page;
-/// one taller than an empty page is <c>Documents.Layout.DoesNotFit</c>.
+/// one taller than an empty page is <c>Documents.Layout.DoesNotFit</c>, or sliced over the pages it needs, as the
+/// document's profile says (<see cref="MonolithicSlices"/>).
 /// </summary>
 public static class ImageLayout
 {
@@ -19,22 +20,38 @@ public static class ImageLayout
     public const double PointsPerPixel = 0.75;
 
     /// <summary>The Image algorithm; see <see cref="LayoutAlgorithm"/> for the contract.</summary>
-    /// <param name="environment">Not used: an image needs no fonts or other algorithms.</param>
+    /// <param name="environment">For the document's profile (an image needs no fonts or other algorithms).</param>
     /// <param name="box">A box whose only child is an <see cref="ImageNode"/>.</param>
     /// <param name="space">The space on the current page.</param>
-    /// <param name="incoming">Null, or an <see cref="ImageBreakToken"/> when the box's top padding and border were placed
-    /// on an earlier page by a last-resort break before the image (<see cref="SlicedBox"/>); an image itself is never
-    /// broken.</param>
+    /// <param name="incoming">Null, or an <see cref="ImageBreakToken"/>: when the box's top padding and border were placed
+    /// on an earlier page by a last-resort break before the image (<see cref="SlicedBox"/>), or when earlier pages
+    /// showed slices of the image (<see cref="ImageBreakToken.Shown"/>).</param>
     /// <returns>The fragment, NoRoom, or an error.</returns>
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming) =>
         incoming is not (null or ImageBreakToken)
             ? throw new ArgumentException($"Image received a {incoming.GetType().Name} it did not produce.", nameof(incoming))
-            : TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, ImageBreakToken.Instance, (width, height, _) =>
+            : TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, (incoming as ImageBreakToken) ?? ImageBreakToken.Instance, (width, height, _) =>
         {
             var size = UsedSize(image, width);
-            return Fitting.Fits(size.Height, height)
-                ? SlicedBox.Placed([new PlacedFragment(new Point(0, 0), new ImageFragment(image, size))], size.Height, null)
-                : SlicedBox.NothingFits;
+            var (shown, slices) = incoming is ImageBreakToken token ? (token.Shown, token.Slices) : (0, 0);
+            if (shown == 0 && Fitting.Fits(size.Height, height))
+            {
+                return SlicedBox.Placed([new PlacedFragment(new Point(0, 0), new ImageFragment(image, size))], size.Height, null);
+            }
+
+            // Taller than the room it has: moved on (None), refused at the start of a page, or sliced (MonolithicSlices).
+            // Once sliced, the image goes on slicing, wherever its next part lands.
+            if (shown == 0 && !MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming)))
+            {
+                return SlicedBox.NothingFits;
+            }
+
+            return MonolithicSlices.Next(box, new ImageFragment(image, size), shown, slices, height).OnSuccessBind(next => next.HasNoValue
+                ? SlicedBox.NothingFits
+                : SlicedBox.Placed(
+                    [new PlacedFragment(new Point(0, 0), next.Value.Slice)],
+                    next.Value.Slice.Size.Height,
+                    next.Value.ShownAfter is { } after ? ImageBreakToken.After(after, slices + 1) : null));
         }));
 
     /// <summary>The intrinsic widths of an image box: min-content and max-content are both its used width when no

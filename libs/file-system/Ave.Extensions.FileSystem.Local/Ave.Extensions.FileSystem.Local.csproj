@@ -20,4 +20,8 @@
     <PackageReference Include="System.Reactive" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests.Extensions.FileSystem.Local" />
+  </ItemGroup>
+
 </Project>

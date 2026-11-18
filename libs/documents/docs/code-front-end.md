@@ -73,6 +73,36 @@ else
 Every step returns `Result<T, Error>`; an error carries a path code such as `Documents.Input.Invalid.FontSize`
 or `Documents.Font.GlyphMissing` and the source file and line of the element.
 
+## Pages, PDF and preview images
+
+`ToPdf` is two steps in one: `ToPages` translates the document and lays it out into pages (the page model), and the PDF
+back-end writes the pages. A caller that wants a preview and the PDF takes the two steps itself, so the document is laid
+out once:
+
+```csharp
+using Ave.Extensions.Documents.Render.Raster;   // RasterOptions
+
+var pages = invoice.ToPages(fonts);
+if (pages.IsSuccess)
+{
+    var pdf = pages.Value.ToPdf(options);                                     // the same bytes as invoice.ToPdf(fonts, options)
+    var preview = pages.Value.ToPng(1, new RasterOptions(96));                // page 1 as a PNG file
+    var all = pages.Value.ToPngPages(new RasterOptions(150) { Background = null });   // every page, transparent paper
+    var pixels = pages.Value.ToImages(new RasterOptions(72));                 // every page as 8-bit RGBA pixels
+}
+```
+
+| Call | On a document | On its pages | Gives |
+| --- | --- | --- | --- |
+| `ToPages` | `document.ToPages(fonts)` | — | the pages (`PageDocument`) |
+| `ToPdf` | `document.ToPdf(fonts, options)` | `pages.ToPdf(options)` | the PDF file |
+| `ToPng` | `document.ToPng(fonts, pageNumber, options)` | `pages.ToPng(pageNumber, options)` | one page as a PNG file; pages count from 1 |
+| `ToPngPages` | `document.ToPngPages(fonts, options)` | `pages.ToPngPages(options)` | every page as a PNG file |
+| `ToImages` | `document.ToImages(fonts, options)` | `pages.ToImages(options)` | every page as pixels (`RgbaImage`) |
+
+`RasterOptions(Resolution)` gives the pixels per inch (96 by default) and `Background` the paper colour (white by
+default, `null` for transparent). A page number the document does not have is `Documents.Raster.PageNotFound`.
+
 ## Elements
 
 | Function | Makes |
@@ -129,7 +159,7 @@ properties give the same element in any order, and setting the same property twi
 | `.GridLines(Length, Color)` | tables | a border on every cell that sets none (one shared line between cells) |
 | `.CellPadding(Length)`, `.CellPadding(vertical, horizontal)` | tables | padding of every cell that sets none |
 | `.RepeatLinesAtBreaks()` (the default) | tables | at a page break between rows the page ends with the whole grid line and the next page starts with it again; a row that is cut inside itself ends the page with the whole line below it and goes on under the whole line above it, so the table is closed on both pages, as word processors print tables; modelled on `box-decoration-break: clone` |
-| `.SplitLinesAtBreaks()` | tables | at a page break between rows the grid line is split along its centre, half on each page; a row cut inside itself gets no line at the cut; as browsers print tables (`box-decoration-break: slice`) |
+| `.SplitLinesAtBreaks()` | tables | at a page break between rows the grid line is split along its centre, half on each page; a row cut inside itself gets no line at the cut (`box-decoration-break: slice`). Chromium splits a line of several pixels the same way; a one-pixel line it draws whole on both pages, so its next page starts 0.375 pt lower |
 | `.ColumnSpan(n)`, `.RowSpan(n)` | cells | `colspan`, `rowspan` |
 | `.VerticalAlign(VerticalAlign)` | cells, rows of blocks | `vertical-align`: `Top` (default), `Middle`, `Bottom` |
 | `.Columns(sizes…)` | rows of blocks | one size per item |
@@ -189,6 +219,29 @@ groups move to the next page whole when they fit on one, and break anyway when t
 
 The page count is known only after layout, so layout runs again until the count it shows is the count it produces,
 at most five times; otherwise the error is `Documents.Layout.NotConverging` at the `PageCount()` call.
+
+## Layout policies
+
+Where layout has a choice, the document says which one it takes (`Document.Profile`, a `LayoutProfile` of the
+document model). Each policy has a document modifier; the defaults suit reports, the other values follow how a
+browser (Chromium) prints, with the differences listed in `docs/architecture.md` (Known limits):
+
+| Modifier | Default | Other value |
+| --- | --- | --- |
+| `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next page-area height of it; what follows starts below its end; in tagged PDF every slice of an image is content of its figure and the later slices of a line are artifacts, so text and alternative text are read once; a piece is cut into at most 100 slices, a taller one is the error `Documents.Layout.TooManySlices` |
+| `.FontMetricRounding(…)`: a font's ascent, descent and line gap | `Exact`: as the font gives them, scaled to the size | `WholePixels`: each rounded to a whole CSS pixel (0.75 pt), as Chromium does, so a `normal` line is a whole number of pixels (Lato 12 pt: 14.25 pt instead of 14.4) |
+| `.EmptyRowParts(…)`: a table row whose part on a page would show nothing | `Avoid`: the row moves to the next page whole where that avoids the empty strip | `Allow`: the row is cut wherever its cells can break |
+
+```csharp
+var poster = Document([Image(photo).Alt("The team").Width(18.Cm())], PageSetup.A4.Margin(2.Cm()), title: "Poster", language: "en")
+    .FontFamily("Lato")
+    .MonolithicOverflow(MonolithicOverflow.Slice);
+```
+
+Content in a table cell is sliced the same way when its row starts the page, also right below a repeated header row;
+the row after it starts below the last slice (Chromium does so in some table shapes and draws that row over the slice
+in others), and the other cells of its row go on beside the slices. Padding and borders taller than a page are
+refused under either value.
 
 ## PDF/A, PDF/UA and attachments
 

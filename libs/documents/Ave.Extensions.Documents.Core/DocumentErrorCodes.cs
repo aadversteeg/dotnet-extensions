@@ -21,6 +21,12 @@ public static class DocumentErrorCodes
     /// <summary>The root of every engine error: <c>Documents</c>.</summary>
     public static readonly ErrorCode _ = new("Documents");
 
+    /// <summary>The last diagnostic of a reader (a parser, a style resolution) that found more than its limit of
+    /// diagnostics: the rest are counted, not kept, since each costs memory and a hostile text can make one per
+    /// character. A refusal for the front-ends that classify diagnostics. Metadata: Value (the number left out),
+    /// SourceFile.</summary>
+    public static readonly ErrorCode TooManyDiagnostics = _ / "TooManyDiagnostics";
+
     /// <summary>Errors in the input a front-end received from its caller.</summary>
     public static class Input
     {
@@ -57,6 +63,10 @@ public static class DocumentErrorCodes
             /// <summary>A <c>widows</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3). Metadata:
             /// Value, Property.</summary>
             public static readonly ErrorCode Widows = _ / "Widows";
+
+            /// <summary>A document without a layout profile, or with a policy value its enum does not have.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode LayoutProfile = _ / "LayoutProfile";
 
             /// <summary>A heading level outside 1–6. Metadata: Value.</summary>
             public static readonly ErrorCode HeadingLevel = _ / "HeadingLevel";

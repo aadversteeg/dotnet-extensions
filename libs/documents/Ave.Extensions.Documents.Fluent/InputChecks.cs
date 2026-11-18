@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -84,6 +85,34 @@ internal static class InputChecks
         if (format.Widows is int widows and < 1)
         {
             yield return Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", widows.ToString(System.Globalization.CultureInfo.InvariantCulture), "widows", source);
+        }
+    }
+
+    /// <summary>A document has a layout profile, and each of its policies is a value of its enum.</summary>
+    public static IEnumerable<Error> Profile(DocumentModel.LayoutProfile? profile, SourceLocation source)
+    {
+        if (profile is null)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The document has no layout profile.", "null", "profile", source);
+            yield break;
+        }
+
+        if (!Enum.IsDefined(profile.MonolithicOverflow))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The monolithic overflow policy must be Refuse or Slice.",
+                ((int)profile.MonolithicOverflow).ToString(System.Globalization.CultureInfo.InvariantCulture), "monolithic-overflow", source);
+        }
+
+        if (!Enum.IsDefined(profile.EmptyRowParts))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The empty row parts policy must be Avoid or Allow.",
+                ((int)profile.EmptyRowParts).ToString(System.Globalization.CultureInfo.InvariantCulture), "empty-row-parts", source);
+        }
+
+        if (!Enum.IsDefined(profile.FontMetricRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font metric rounding policy must be Exact or WholePixels.",
+                ((int)profile.FontMetricRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-metric-rounding", source);
         }
     }
 

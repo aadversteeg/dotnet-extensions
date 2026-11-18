@@ -1,4 +1,6 @@
+using System.IO;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.TestSupport;
@@ -91,10 +93,12 @@ public class PageStartSweepTests(ITestOutputHelper output)
         _ => [],
     };
 
-    /// <summary>The words of a fragment tree; a repeated header row is a copy, not words of its own.</summary>
+    /// <summary>The words of a fragment tree; a repeated header row and every slice after the first of content taller
+    /// than a page are copies, not words of their own.</summary>
     private static IEnumerable<string> Words(Fragment fragment) => fragment switch
     {
         BoxFragment { IsRepeated: true } => [],
+        SliceFragment slice => slice.IsContinuation ? [] : Words(slice.Content.Fragment),
         BoxFragment box => box.Children.SelectMany(child => Words(child.Fragment)),
         LineFragment line => line.Children.SelectMany(child => Words(child.Fragment)),
         TextFragment text => string.Concat(text.Glyphs.Select(glyph => glyph.Text)).Split(' ', StringSplitOptions.RemoveEmptyEntries)
@@ -168,6 +172,129 @@ public class PageStartSweepTests(ITestOutputHelper output)
         pages.Should().Be(PagesPinned, "the pages of the sweep, pinned: a change of the generator or of the layout is a deliberate edit");
     }
 
+    /// <summary>The kinds of piece taller than the page area (180 pt here: 204 pt pages), each with its words.</summary>
+    private static readonly (string Name, Func<Element> Make)[] TallPieces =
+    [
+        ("a 408 pt image", () => Block([TallImage(), Paragraph("after")])),
+        ("a 240 pt line between two lines", () => Paragraph([Text("one "), Text("W").FontSize(200.Pt()), LineBreak(), Text("two")])),
+        ("a 240 pt line in a block with a background", () => Block([Paragraph("W").FontSize(200.Pt()), Paragraph("tail")]).Background(Grey)),
+        ("a 408 pt image in a cell beside text", () => Lined(Table(Columns(Fill(1), Fill(1)),
+            [TableRow([Cell("left"), Cell([TallImage()])]), TableRow([Cell("after"), Cell("z")])]))),
+        ("a 240 pt line in a cell under a header row", () => Lined(Table(Columns(Fill(1)),
+            [HeaderRow([Cell("head")]), TableRow([Cell([Paragraph("W").FontSize(200.Pt())])]), TableRow([Cell("next")])]))),
+    ];
+
+    private static readonly byte[] Tall = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "chromium", "tall.png"));
+
+    private static ImageElement TallImage() => Image(Tall).Alt("tall").Width(102.Pt()).Height(408.Pt());
+
+    [Fact]
+    public void Generated_documents_with_content_taller_than_a_page_are_sliced_without_refusal_lost_words_or_overflow()
+    {
+        // MonolithicOverflow.Slice under both row-part policies: every kind of leading space before every tall piece, at
+        // 51 offsets, on 204 pt pages (a 180 pt page area). Every word is on some page exactly once (a later slice is a
+        // copy), no slice reaches past the end of the page area, and the slices of each piece show it whole and once:
+        // their heights add up to its height, and each shows the piece moved up by the heights of the slices before it.
+        var (documents, pages) = (0, 0);
+        var problems = new List<string>();
+        foreach (var parts in new[] { EmptyRowParts.Avoid, EmptyRowParts.Allow })
+        {
+            foreach (var (leadingName, leading) in Leading)
+            {
+                foreach (var (pieceName, piece) in TallPieces)
+                {
+                    var expected = Paginate([.. leading(0, piece())], TallArea, parts).Value.SelectMany(page => Words(page.Root.Fragment))
+                        .OrderBy(word => word, StringComparer.Ordinal).ToList();
+                    if (expected.Distinct().Count() != expected.Count || !expected.Contains("W", StringComparer.Ordinal) && !expected.Contains("after", StringComparer.Ordinal))
+                    {
+                        problems.Add($"{parts}, {leadingName}, {pieceName}: the words without leading space are [{string.Join(" ", expected)}]; every word once");
+                    }
+                    for (var step = 0; step <= 50; step++)
+                    {
+                        var offset = step * 3.0;
+                        var because = $"{parts}, {leadingName}, {pieceName}, offset {offset}";
+                        documents++;
+                        var result = Paginate([.. leading(offset, piece())], TallArea, parts);
+                        if (result.IsFailure)
+                        {
+                            problems.Add($"{because}: refused {result.Error.Code}: {result.Error.Message}");
+                            continue;
+                        }
+
+                        var laid = result.Value;
+                        pages += laid.Count;
+                        var words = laid.SelectMany(page => Words(page.Root.Fragment)).OrderBy(word => word, StringComparer.Ordinal).ToList();
+                        if (!words.SequenceEqual(expected))
+                        {
+                            problems.Add($"{because}: words [{string.Join(" ", words)}] where [{string.Join(" ", expected)}]");
+                        }
+
+                        problems.AddRange(SliceProblems(laid).Select(problem => $"{because}: {problem}"));
+                        if (laid.Select(page => Bottom(page.Root.Fragment, 0)).Max() is var over && over > TallAreaHeight + 1e-6)
+                        {
+                            problems.Add($"{because}: content reaches {over:0.###} pt, past the page area");
+                        }
+                    }
+                }
+            }
+        }
+
+        output.WriteLine($"{documents} documents (2 row-part policies × {Leading.Length} kinds of leading space × {TallPieces.Length} tall pieces × 51 offsets), "
+            + $"{pages} pages, {problems.Count} problems.");
+        foreach (var problem in problems.Take(20))
+        {
+            output.WriteLine(problem);
+        }
+
+        problems.Should().BeEmpty();
+        documents.Should().Be(2 * Leading.Length * TallPieces.Length * 51);
+    }
+
+    /// <summary>Where the slices of the pieces in <paramref name="pages"/> do not show each piece whole and once: a piece's
+    /// slices, in page order, from its first slice on.</summary>
+    private static IEnumerable<string> SliceProblems(IReadOnlyList<PageFragment> pages)
+    {
+        var slices = pages.SelectMany(page => Slices(page.Root.Fragment)).ToList();
+        var shown = 0.0;
+        double? whole = null;
+        foreach (var slice in slices)
+        {
+            if (!slice.IsContinuation)
+            {
+                if (whole is { } height && Math.Abs(shown - height) > 1e-6)
+                {
+                    yield return $"slices show {shown:0.###} pt of a {height:0.###} pt piece";
+                }
+
+                (shown, whole) = (0, slice.Content.Fragment.Size.Height);
+            }
+
+            if (Math.Abs(slice.Content.Offset.Y + shown) > 1e-6)
+            {
+                yield return $"a slice shows its piece from {-slice.Content.Offset.Y:0.###} pt where {shown:0.###} pt were shown before";
+            }
+
+            shown += slice.Size.Height;
+        }
+
+        if (whole is { } last && Math.Abs(shown - last) > 1e-6)
+        {
+            yield return $"slices show {shown:0.###} pt of a {last:0.###} pt piece";
+        }
+    }
+
+    private static IEnumerable<SliceFragment> Slices(Fragment fragment) => fragment switch
+    {
+        SliceFragment slice => [slice],
+        BoxFragment box => box.Children.SelectMany(child => Slices(child.Fragment)),
+        LineFragment line => line.Children.SelectMany(child => Slices(child.Fragment)),
+        _ => [],
+    };
+
+    private const double TallAreaHeight = 180;
+
+    private static PageSetup TallArea => Page(300.Pt(), 204.Pt()).Margin(12.Pt());
+
     /// <summary>A part of a row that shows nothing which no layout can avoid: the row shows nothing on any of its pages
     /// (twenty padded empty blocks), or the part fills the page it is on (a blank stretch of a page's height).</summary>
     private static bool Unavoidable(IReadOnlyList<PageFragment> pages, RowParts.EmptyStrip strip) =>
@@ -178,5 +305,10 @@ public class PageStartSweepTests(ITestOutputHelper output)
 
     private static Result<ValueList<PageFragment>, global::Ave.Extensions.ErrorPaths.Error> Paginate(Element[] body) =>
         DocumentTranslator.ToModel(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato"))
+            .OnSuccessBind(model => Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model));
+
+    private static Result<ValueList<PageFragment>, global::Ave.Extensions.ErrorPaths.Error> Paginate(Element[] body, PageSetup area, EmptyRowParts parts) =>
+        DocumentTranslator.ToModel(Document([.. body], area, title: "Title", language: "en").FontFamily("Lato")
+                .MonolithicOverflow(MonolithicOverflow.Slice).EmptyRowParts(parts))
             .OnSuccessBind(model => Paginator.Paginate(LayoutEnvironment.Create(TestFonts.SetWithItalic), model));
 }

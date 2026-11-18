@@ -36,8 +36,19 @@ Written from the specifications:
   CSS Box Model 3, CSS Sizing 3 (§5), the HTML Standard's rendering section (heading sizes) and table model (slot
   filling).
 - Images: the PNG Specification, Second Edition (ISO/IEC 15948:2004) — chunks §5, filtering §9, IHDR/PLTE/IDAT/IEND
-  §11.2, tRNS §11.3.2.1; JPEG: ITU-T T.81 (ISO/IEC 10918-1) Annex B, marker and frame header syntax; PDF image
-  XObjects and soft masks: ISO 32000-1 §8.9, §11.6.5.3.
+  §11.2, tRNS §11.3.2.1, sRGB §11.3.3.5, filter selection §12.8; JPEG: ITU-T T.81 (ISO/IEC 10918-1) Annex A (DCT,
+  zig-zag order), Annex B (syntax), Annex C (Huffman tables), Annex F.2 (sequential decoding), Annex G.1.2 (progressive
+  decoding), and ITU-T T.871 (JFIF) §7 for the YCbCr transform; PDF image XObjects and soft masks: ISO 32000-1 §8.9,
+  §11.6.5.3, DCTDecode §7.4.8. No code of libjpeg, libjpeg-turbo, stb_image or another decoder was read or used.
+  The ITU-T T.83 compliance test data (© ITU & ISO/IEC 1994) is downloaded by a test on first use and is not part of
+  this repository.
+- Graphics (`Ave.Extensions.Documents.Graphics`): paths, fill rules and image space as ISO 32000-1 §8.3.3, §8.5.2,
+  §8.5.3.3 and §8.9.5.3 define them; exact-area anti-aliasing by signed-area accumulation as described (in words, not
+  code) by S. Barrett, "How the stb_truetype Anti-Aliased Software Rasterizer v2 Works" (2015) and R. Levien, "Inside
+  the fastest font renderer in the world" (2016), an idea credited to Raph Levien's LibArt; polygon clipping after
+  I. E. Sutherland and G. W. Hodgman, "Reentrant polygon clipping" (CACM 17(1), 1974); source-over compositing after
+  T. Porter and T. Duff, "Compositing Digital Images" (SIGGRAPH 1984). No code of stb_truetype, font-rs, FreeType,
+  AGG, vello, MuPDF, poppler or PDFium was read or used.
 - Chromium (159) was also used through Playwright to measure reference layouts that the tests pin as numbers
   (`tools/reference/chromium`).
 
@@ -241,6 +252,76 @@ The Unicode License v3 asks for its copyright and permission notice "with all co
 or ... in associated Documentation": the notice is `assets/unicode/18.0.0/LICENSE.txt`, and it applies to the data
 files and to the two generated tables.
 
+## HTML Standard and Encoding Standard data
+
+`Ave.Extensions.Documents.Html.Parsing/Tokenizing/named-character-references.txt` is generated from the HTML Standard's
+table of named character references (§13.5, https://html.spec.whatwg.org/entities.json, SHA-256
+`d741d877ac77c4194c4ad526b5b4a19aef8dfe411ab840a466891cdbb9f362e6`, downloaded 2026-11-18) by
+`tools/generate-html-entities.py`; `Ave.Extensions.Documents.Core/EncodingLabels.g.cs`, the one table the HTML parser
+and the CSS reader share, is generated from the Encoding Standard's table of labels (§4.2,
+https://encoding.spec.whatwg.org/encodings.json, SHA-256
+`078212b3697f60b81225b6671bd9da2604497abff0aa8e96e4d46605c02ac9e7`) by `tools/generate-encoding-labels.py`. Both
+standards are Copyright © WHATWG (Apple, Google, Mozilla, Microsoft), licensed under the Creative Commons Attribution
+4.0 International License; "to the extent portions of it are incorporated into source code, such portions in the source
+code are licensed under the BSD 3-Clause License instead". The parsing algorithm itself is written from the HTML
+Standard's text (§13.2, read 2026-11-18); no code was copied or ported.
+
+`Ave.Extensions.Documents.Html/UserAgent/html.css`, the user-agent style sheet of the HTML front-end, holds the CSS of
+the HTML Standard's rendering section (§15.3 and §15.4, read 2026-11-18): its rules, written element by element as CSS
+the engine supports, with the values Chromium 159 computes where it differs from the standard (measured, and marked in
+the file). It is CSS incorporated into source code, so it is under the same BSD 3-Clause License, Copyright © WHATWG.
+It is not taken from Chromium's or WebKit's style sheet.
+
+The BSD 3-Clause License, for the WHATWG data above (the named character references, the encoding labels, the
+user-agent style sheet):
+
+> Copyright © WHATWG (Apple, Google, Mozilla, Microsoft).
+>
+> Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+> following conditions are met:
+>
+> 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+>    disclaimer.
+> 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+>    disclaimer in the documentation and/or other materials provided with the distribution.
+> 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+>    products derived from this software without specific prior written permission.
+>
+> THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+> INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+> DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+> SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+> SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+> WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+> OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+## CSS specification data
+
+`Ave.Extensions.Documents.Css/Values/NamedColors.g.cs` is generated by `tools/generate-css-named-colors.py` from the
+colour keyword files of css-parsing-tests (`assets/test-suites/css-parsing-tests/color_keywords_3.json` and
+`color_keywords_4.json`, CC0 1.0, see Test suites), and every name is checked against the colour Chromium 159 computes
+for it (`tools/reference/chromium/computed-style/measured/named-colors.txt`); no W3C material is in it. The CSS reader
+reads the encoding labels from Core's table (see above). It is written from the text of CSS Syntax 3, Selectors 4, CSS
+Cascade 5, CSS Nesting 1, CSS Variables 1, CSS Values 4, CSS Color 4, Media Queries 4, CSS Conditional 3, CSS Fonts 4
+and CSS Paged Media 3 (editor's drafts read 2026-11-18); no code was copied or ported. The conversion from HSL to RGB
+(`Css/Values/Colors.cs`, `HslToRgb`) is the textbook formula with the chroma (C = (1 − |2L − 1|) · S, the hue's sector,
+the match value m = L − C / 2), not the sample code of CSS Color 4. Where the engine follows Chromium 159 rather than a
+draft (which names are identifiers, which pseudo-classes may follow a pseudo-element), Chromium was measured through
+Playwright (`tools/reference/chromium/computed-style`); no Chromium code was read or used.
+
+## Test suites
+
+Vendored in `assets/test-suites/` (see the README there), used by the tests only:
+
+- html5lib-tests, tokenizer tests, commit `c5495c539ca8a79c3c5107f5f14010bcff9a35d5`: Copyright (c) 2006-2013 James
+  Graham, Geoffrey Sneddon, and other contributors; MIT licence (`assets/test-suites/html5lib-tests/LICENSE`).
+- web-platform-tests, the tree-construction tests in `html/syntax/parsing/resources/` and the CSS cases extracted
+  into `css/cases.json` (from `css/css-syntax`, `css/selectors`, `css/css-cascade`, `css/css-variables`,
+  `css/css-values`), commit `93494ff9dfc26c59245941548bb7da799e8baaef`: Copyright © web-platform-tests contributors;
+  3-Clause BSD License (`assets/test-suites/wpt/LICENSE.md`).
+- css-parsing-tests by Simon Sapin, commit `203ce36bffd617db7f118c551e32794561fb273d`: dedicated to the public domain
+  under CC0 1.0 (`assets/test-suites/css-parsing-tests/LICENSE`).
+
 ## Fonts
 
 `assets/fonts/lato/` contains Lato 2.015 Regular, Bold and Italic by Łukasz Dziedzic (tyPoland), licensed under the
@@ -253,6 +334,12 @@ Copyright (c) 2006-2008 Alexey Kryukov (the notice in the author's OFL.txt), lic
 `6d8d8ead05960cd6fcb61a36f045091bfa57ff4f6bcce8b6d9c3b1108b327c3f`). Used by the tests only, for what Lato lacks: a
 GDEF table, a `mkmk` feature, an old-style 'kern' table, a combining mark with a non-zero advance and a non-zero line
 gap.
+
+`assets/fonts/roboto/Roboto-Regular-subset.ttf` is a subset of Roboto Regular 2.138, "Copyright 2011 Google Inc. All
+Rights Reserved." (the font's own copyright line), licensed under the Apache License, Version 2.0
+(`assets/fonts/roboto/LICENSE-2.0.txt`). Modified: it is a subset with the glyphs of two characters (`I` and `Ɨ`),
+made by `tools/make-roboto-subset.sh` from the Debian package fonts-roboto-unhinted 2:0~20170802-4
+(`assets/fonts/roboto/README.md` has the SHA-256 values). Used by the tests only, for a glyph whose contours overlap.
 
 ## Dependencies
 
@@ -267,7 +354,10 @@ gap.
 
 Tools used outside the build, in `tools/verify-samples.ps1` and in the reference tests, inside throw-away
 containers: veraPDF 1.30.4 (`verapdf/cli`, GPL-3.0-or-later / MPL-2.0), qpdf (Apache-2.0), poppler-utils (GPL-2.0),
-MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets). They are run, not linked or distributed. `tools/generate-test-images.py` uses Pillow to write the image test files.
+MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets), fontTools (MIT, the outline reference),
+libjpeg-turbo's cjpeg and djpeg (IJG, BSD-3-Clause and zlib licences; the JPEG reference). They are run, not linked or
+distributed. `tools/generate-test-images.py` uses Pillow to write the image test files (and writes `tools/reference/chromium/cases/tall.png` without it), `tools/generate-test-jpegs.py`
+cjpeg to write the JPEG test files (`UnitTests.Extensions.Documents.Images/Assets/jpeg-*.jpg`).
 
 ## Sample data
 

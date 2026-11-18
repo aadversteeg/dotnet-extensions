@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Presentational attributes of the v0 elements</title>
+<style>#author-wins { background-color: rgb(1, 2, 3) }</style>
+</head>
+<body bgcolor="#fafafa" text="#333" link="#c00" marginwidth="20" marginheight="10">
+<a href="#x">link colour</a>
+<table width="80%" height="50" bgcolor="lightblue" border="2" cellspacing="5" cellpadding="3" bordercolor="navy" align="center">
+  <caption align="top">caption</caption>
+  <colgroup><col width="100"><col width="20%"></colgroup>
+  <thead align="center" valign="top" bgcolor="yellow" height="20"><tr><th>h</th><th>h</th></tr></thead>
+  <tbody><tr align="right" valign="bottom" height="30"><td width="50" height="40" align="left" valign="middle" bgcolor="pink" nowrap>a</td>
+    <td align="justify" valign="baseline">b</td></tr>
+  <tr><td align="center">c</td><td align="middle">d</td></tr></tbody>
+  <tfoot><tr><td width="0" height="0">e</td><td>f</td></tr></tfoot>
+</table>
+<table border="0"><tr><td>no border</td></tr></table>
+<table border="1"><tr><td>border 1, no colour</td></tr><thead><tr><th>h</th></tr></thead></table>
+<table border="3" bordercolor="#0a0"><tbody><tr><td>colour</td></tr></tbody><tr><td>row in table</td></tr></table>
+<table border="x"><tr><td>bad border</td></tr></table>
+<table><tr><td><table cellpadding="7"><tr><td>nested cell</td></tr></table></td></tr></table>
+<div align="center">div center</div><div align="left">div left</div><div align="right">div right</div><div align="justify">div justify</div>
+<p align="center">p center</p><p align="left">p left</p><p align="right">p right</p><p align="middle">p middle</p><p align="justify">p justify</p>
+<h1 align="right">h1 right</h1><h2 align="justify">h2 justify</h2><h3 align="center">h3 center</h3><h4 align="left">h4 left</h4>
+<div align="middle">div middle</div>
+<hr align="left" width="50%"><hr align="right"><hr align="center" width="100"><hr color="blue"><hr noshade><hr size="0"><hr color="red" size="4"><hr noshade size="6"><hr size="1"><hr size="10"><hr width="200">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" width="100" height="50" border="2" hspace="5" vspace="6" align="top">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" align="absmiddle"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" align="bottom"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" align="baseline"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" width="20%" border="0">
+<ol type="a"><li>a</li><li type="I">I</li></ol><ol type="A"><li>A</li></ol><ol type="i"><li>i</li></ol><ol type="1"><li>1</li></ol>
+<ul type="square"><li>s</li><li type="circle">c</li><li type="DISC">d</li></ul><ul type="none"><li>n</li></ul>
+<pre wrap>pre wrap</pre>
+<font color="green" face="Courier New" size="5">font</font><font size="+1">plus</font><font size="-2">minus</font><font color="chucknorris">legacy</font>
+<p bgcolor="red" id="ignored">p bgcolor is not a hint</p>
+<div id="author-wins"><table bgcolor="red" id="author-table"><tr><td>a</td></tr></table></div>
+<table id="author-table-2" bgcolor="red" style="background-color: rgb(4, 5, 6)"><tr><td>style wins</td></tr></table>
+</body>
+</html>

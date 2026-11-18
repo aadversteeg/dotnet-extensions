@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Presentational attributes the hints case does not contain</title>
+</head>
+<body topmargin="7" leftmargin="9" marginwidth="x" bgcolor="fafafa" text="rgb(1,2,3)" link="red" vlink="blue" alink="green">
+<a href="#x">link</a><map><area href="#y" alt="a"></map>
+<table border bordercolor="" cellspacing="-1" cellpadding="x" width="0" height="0%" bgcolor="" align="CENTER">
+  <colgroup width="30" span="2"></colgroup><colgroup width="40%"><col></colgroup>
+  <tbody align="center" valign="top" bgcolor="#123" height="25"><tr bgcolor="yellow" align="justify" valign="MIDDLE"><th width="10" height="12" align="right" valign="bottom" bgcolor="#abc" nowrap>th</th><td width="1.5" height="2.5%">td</td></tr></tbody>
+  <tfoot align="left" valign="baseline" bgcolor="silver" height="15%"><tr><td align="char">a</td><td align="absmiddle" valign="center">b</td></tr></tfoot>
+</table>
+<table border="2" cellpadding="0" cellspacing="0"><tr><td>a</td><th>b</th></tr></table>
+<table border="1" bordercolor="red"><caption>cap</caption><thead><tr><th>h</th></tr></thead><tr><td>a</td></tr></table>
+<table cellspacing="3"><tr><td><table><tr><td>inner inherits spacing?</td></tr></table></td></tr></table>
+<h5 align="center">h5</h5><h6 align="right">h6</h6><h1 align="middle">h1 middle</h1><h2 align="absmiddle">h2</h2>
+<div align="absmiddle">div absmiddle</div><p align="CENTER ">p CENTER</p><div align="char">div char</div><div align="">div empty</div>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" align="abscenter"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" align="absbottom" border="x" hspace="1.9" vspace="-3" width="12.7" height="0">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="x" border width="50%" height="+5">
+<hr width="0"><hr size="-1"><hr size="2"><hr size="3" noshade color="#0f0"><hr align="middle"><hr width="1.5%"><hr color="">
+<ol type="x"><li type="a">a</li><li type="1">1</li><li type="disc">disc in ol</li></ol><ul type="1"><li>ul type 1</li><li type="A">A</li></ul><ul type="CIRCLE"><li type="Square">sq</li></ul>
+<font size="7">7</font><font size="8">8</font><font size="0">0</font><font size="+9">+9</font><font size="-9">-9</font><font size="x">x</font><font size="3.9">3.9</font><font face="">empty face</font><font face="Arial, 'Foo Bar', serif">faces</font><font color="">empty colour</font><font color="#abc">abc</font><font color="transparent">transparent</font>
+<p><font size="5"><font size="+1">nested +1</font></font></p>
+<pre wrap="">pre wrap empty</pre><pre width="20">pre width</pre>
+<td>stray td</td>
+<div bgcolor="red" width="50" height="50">div with table attributes</div>
+<p align="right" style="text-align: left">style beats hint</p>
+</body>
+</html>

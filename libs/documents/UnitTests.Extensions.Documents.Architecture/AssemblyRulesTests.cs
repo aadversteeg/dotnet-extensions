@@ -19,20 +19,30 @@ public class AssemblyRulesTests
         ["Ave.Extensions.Documents.Core"] = [],
         ["Ave.Extensions.Documents.Fonts"] = ["Core"],
         ["Ave.Extensions.Documents.Images"] = ["Core"],
+        ["Ave.Extensions.Documents.Graphics"] = ["Core"],
         ["Ave.Extensions.Documents.Pdf"] = ["Core"],
         ["Ave.Extensions.Documents.Typesetting"] = ["Core", "Fonts"],
         ["Ave.Extensions.Documents.DocumentModel"] = ["Core", "Images"],
         ["Ave.Extensions.Documents.PageModel"] = ["Core", "Fonts", "Images"],
         ["Ave.Extensions.Documents.Layout"] = ["Core", "Fonts", "Images", "Typesetting", "DocumentModel", "PageModel"],
         ["Ave.Extensions.Documents.Render.Pdf"] = ["Core", "Fonts", "Images", "Pdf", "PageModel"],
+        ["Ave.Extensions.Documents.Render.Raster"] = ["Core", "Fonts", "Images", "Graphics", "PageModel"],
         ["Ave.Extensions.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel"],
+        ["Ave.Extensions.Documents.Html.Parsing"] = ["Core"],
+        ["Ave.Extensions.Documents.Css"] = ["Core"],
+        ["Ave.Extensions.Documents.Html"] = ["Core", "Html.Parsing", "Css"],
 
         // The composition package: the one place a front-end, the layout and a back-end meet.
-        ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Fluent"],
+        ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "Graphics", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Render.Raster", "Fluent"],
     };
 
     /// <summary>The names of the product libraries (the layer list), for the rules on other things than assemblies.</summary>
     internal static IReadOnlyCollection<string> LibraryNames => AllowedReferences.Keys;
+
+    /// <summary>The engine libraries a library may depend on, by full name.</summary>
+    /// <param name="library">The library.</param>
+    /// <returns>The allowed names.</returns>
+    internal static IEnumerable<string> AllowedFor(string library) => AllowedReferences[library].Select(name => "Ave.Extensions.Documents." + name);
 
     public static TheoryData<string> Libraries => [.. AllowedReferences.Keys];
 

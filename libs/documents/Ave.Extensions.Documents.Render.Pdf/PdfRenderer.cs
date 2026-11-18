@@ -35,7 +35,7 @@ public static class PdfRenderer
     /// or a <see cref="PdfErrorCodes.Write"/> error.</returns>
     public static Result<ImmutableArray<byte>, Error> Render(PageDocument document, PdfRenderOptions options) =>
         CheckOptions(options)
-            .OnSuccessBind(_ => PageModelRules.Check(document))
+            .OnSuccessBind(_ => PageModelRules.Check(document, PdfRenderErrorCodes.Write.InvalidPageModel))
             .OnSuccessBind(validDocument => ConformanceRules.Check(validDocument, options.Profile))
             .OnSuccessBind(ReadEvents)
             .OnSuccessCombine(pages => Structure(pages, options.Profile))
@@ -50,11 +50,10 @@ public static class PdfRenderer
                     .With(ErrorMetadataKeys.Value, ((int)level).ToString(System.Globalization.CultureInfo.InvariantCulture)))
                 : Result<PdfRenderOptions, Error>.Success(options);
 
-    /// <summary>Every page's markers read into events (<see cref="PageEvents"/>), which also checks that they nest.</summary>
+    /// <summary>Every page's markers read into events (<see cref="PageEvents"/>); they nest, as the page-model rules
+    /// checked.</summary>
     private static Result<ImmutableArray<ImmutableArray<PageEvent>>, Error> ReadEvents(PageDocument document) =>
-        document.Pages.Select((page, index) => (page, index))
-            .TraverseAll(page => PageEvents.Read(page.page, page.index + 1))
-            .OnSuccessMap(pages => pages.ToImmutableArray());
+        Result<ImmutableArray<ImmutableArray<PageEvent>>, Error>.Success([.. document.Pages.Select(PageEvents.Read)]);
 
     /// <summary>For a tagged profile, the structure tree built from the events and checked against the profile's
     /// structure rules; for an untagged one, none.</summary>
