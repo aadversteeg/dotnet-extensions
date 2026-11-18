@@ -60,6 +60,9 @@ public class FaithfulSubsetTests
     // @supports is false for a declaration Chromium does not accept.
     [InlineData("<style>@supports (--x: var()){.a{margin-top:5px}}</style><p class=a id=a>a</p>", "a", "margin-top", "16px")]
     [InlineData("<style>@supports (text-align: -internal-center){.a{margin-top:5px}}</style><p class=a id=a>a</p>", "a", "margin-top", "16px")]
+    // A listed limit: aspect-ratio auto with a ratio on an element that is not replaced is accepted with Chromium's
+    // computed value; what it does to the layout is stage 4's.
+    [InlineData("<div id=a style=\"aspect-ratio: auto 2/1\">a</div>", "a", "aspect-ratio", "auto 2 / 1")]
     [InlineData("<style>@supports not (--x: var()){.a{margin-top:5px}}</style><p class=a id=a>a</p>", "a", "margin-top", "5px")]
     // & at the top level matches the root with no specificity.
     [InlineData("<style>& { min-width:101px } html { min-width:100px }</style><p>a</p>", "html", "min-width", "100px")]
@@ -196,6 +199,11 @@ public class FaithfulSubsetTests
     [InlineData("<meta name=color-scheme content=dark><p>a", "Documents.Html.Unsupported.Attribute", "color scheme")]
     [InlineData("<meta name=color-scheme content=\"light dark\"><p>a", "Documents.Html.Unsupported.Attribute", "color scheme")]
     [InlineData("<p>a</p><meta name=color-scheme content=dark>", "Documents.Html.Unsupported.Attribute", "color scheme")]
+    // A declarative shadow root: Chromium 159 draws the template's content and not the host's light children (measured:
+    // 144 of 863 values differ on this input).
+    [InlineData("<div id=h><template shadowrootmode=\"open\"><style>p{color:red}</style><p>shadow</p></template><span>light</span></div>", "Documents.Html.Unsupported.Attribute", "shadowrootmode")]
+    // A listed limit: a subtree that is not drawn is still cascaded, so its refusals count.
+    [InlineData("<div style=\"display:none\"><p style=\"zoom:2\">x</p></div><p>y</p>", "Documents.Css.Unsupported.Value", "zoom")]
     // autofocus: Chromium focuses the element.
     [InlineData("<a href=\"#y\" autofocus>l</a>", "Documents.Html.Unsupported.Attribute", "autofocus")]
     [InlineData("<style>div:focus{color:red}</style><div tabindex=0 autofocus>x</div>", "Documents.Html.Unsupported.Attribute", "autofocus")]

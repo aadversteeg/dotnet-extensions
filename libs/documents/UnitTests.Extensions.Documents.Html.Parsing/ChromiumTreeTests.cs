@@ -7,13 +7,13 @@ using Ave.Extensions.Functional;
 namespace UnitTests.Extensions.Documents.Html.Parsing;
 
 /// <summary>
-/// The parser against Chromium 159 on the cases of review 39 beyond the vendored suite
+/// The parser against Chromium 159 on its own cases beyond the vendored suite
 /// (<c>tools/reference/chromium/html-tree/cases.tsv</c>, Chromium's trees measured into <c>measured/cases.json</c>):
 /// where Chromium differs from the standard, the parser builds Chromium's tree (a NUL in the data state, after
 /// <c>&lt;</c> and in CDATA; U+FFFD and frameset-ok; search not special; formatting elements with <c>is</c>; a NUL in a
 /// processing instruction; script, object, iframe and embed cloned into selectedcontent; a form context of a fragment).
 /// The cases named <c>limit-…</c> are listed limits (docs/architecture.md): the parser keeps the standard, and the test
-/// pins that the tree still differs, so a change that removes a limit is seen.
+/// pins the engine's tree by value and that it still differs from Chromium's, so any change of the tree there is seen.
 /// </summary>
 public class ChromiumTreeTests
 {
@@ -30,6 +30,21 @@ public class ChromiumTreeTests
 
     public static TheoryData<string> Ids => [.. Cases.Value.Select(item => item.Id)];
 
+    /// <summary>The engine's own tree in each listed limit (the standard's, where the standard and Chromium differ):
+    /// pinned by value, so a change of the tree there is seen, not only a change towards Chromium's.</summary>
+    private static readonly Dictionary<string, string> EngineTrees = new(StringComparer.Ordinal)
+    {
+        ["limit-hd6-base"] = "| <html>\n|   <head>\n|     <template>\n|       content\n|         <base>\n|         <thead>\n|   <body>\n",
+        ["limit-hd6-title"] = "| <html>\n|   <head>\n|     <template>\n|       content\n|         <title>\n|         <tbody>\n|   <body>\n",
+        ["limit-hd7-clippath"] = "| <html>\n|   <head>\n|   <body>\n|     <clippath>\n|       <svg svg>\n|     \"x\"\n",
+        ["limit-hd8-template-form"] = "| <form>\n|   <form>\n",
+        ["limit-hd8-textarea"] = "| \"\uFFFDfiller\uFFFDtext\"\n",
+        ["limit-hd8-select"] = "",
+        ["limit-hd10-selectedcontent"] = "| <html>\n|   <head>\n|   <body>\n|     <select>\n|       <selectedcontent>\n|         \"X\"\n",
+        ["limit-hd11-template-row"] = "| <html>\n|   <head>\n|     <template>\n|       content\n|         <tr>\n|         <b>\n|         \" \"\n|   <body>\n",
+    };
+
+
     [Theory]
     [MemberData(nameof(Ids))]
     public void The_tree_is_Chromiums_except_in_a_listed_limit(string id)
@@ -41,6 +56,7 @@ public class ChromiumTreeTests
 
         if (id.StartsWith("limit-", StringComparison.Ordinal))
         {
+            tree.Should().Be(EngineTrees[id], "a listed limit: the engine's own tree");
             tree.Should().NotBe(item.Chromium, "a listed limit: when the parser builds Chromium's tree here, remove the limit");
         }
         else
@@ -59,7 +75,7 @@ public class ChromiumTreeTests
     [Fact]
     public void A_nul_before_the_doctype_keeps_the_doctype_and_the_mode()
     {
-        // Review 39 HD-1: one stray NUL byte turned an accepted document into a quirks-mode one.
+        // HD-1: before the fix one stray NUL byte turned an accepted document into a quirks-mode one.
         var parsed = HtmlParser.Parse("\0<!DOCTYPE html><p>x").Match(result => result, error => throw new InvalidOperationException(error.ToString()));
 
         parsed.Document.Mode.Should().Be(DocumentMode.NoQuirks);

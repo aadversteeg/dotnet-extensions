@@ -204,7 +204,7 @@ td, th { padding: 1px; }
 th { font-weight: bold; }
 
 /* §15.3.8: th is centred when its parent's text-align is the initial value. */
-th { text-align: -internal-center; }
+th { text-align: -internal-ave-th-center; }
 
 caption { text-align: -webkit-center; }
 thead, tbody, tfoot, table > tr { vertical-align: middle; }

@@ -63,7 +63,7 @@ names nothing.
 | `margin-top` | no | `0pt` | `<length-percentage [0,∞]> \| auto` | CSS Box Model 3 §5.1 |
 | `max-width` | no | `none` | `none \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
 | `min-width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
-| `orphans` | yes | `2` | `<integer [1,∞]>` | CSS Fragmentation 3 §3.3 |
+| `orphans` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `outline-color` | no | `currentcolor` | `<color> (nothing is drawn: outline-style is only none; Chromium 159 does not take auto)` | CSS UI 4 §3.4 |
 | `outline-offset` | no | `0pt` | `<length> (nothing is drawn: outline-style is only none)` | CSS UI 4 §3.5 |
 | `outline-width` | no | `2.25pt` | `<line-width> (nothing is drawn: outline-style is only none)` | CSS UI 4 §3.2 |
@@ -83,15 +83,20 @@ names nothing.
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
 | `vertical-align` | no | `baseline` | `baseline \| top \| middle \| bottom` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
 | `white-space-collapse` | yes | `collapse` | `collapse \| preserve` | CSS Text 4 §3.1 |
-| `widows` | yes | `2` | `<integer [1,∞]>` | CSS Fragmentation 3 §3.3 |
+| `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+
+`overflow-x` and `overflow-y`: `hidden` or `clip` on one axis while the other stays `visible` is refused, since
+Chromium computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does.
 
 ### Supported at the initial value only
 
 What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and
 the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,
 which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and
-on any other element stage 4 applies the ratio or refuses it. Any other value is refused.
+on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or
+a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`
+and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.
 
 | Property | Initial | Accepted | Defined in |
 | --- | --- | --- | --- |
@@ -427,7 +432,9 @@ Pseudo-elements never draw in an accepted document and are ignored by rule: `::p
   refused), @supports (answered as Chromium 159 would where the engine can tell, refused where it cannot), @import (through the caller's resolver, with layer() and supports()), @layer, @font-face and
   @page (read as values for the layout), CSS Nesting 1 inside style rules.
 - Ignored by rule: @-webkit-keyframes, @keyframes.
-- Refused: @color-profile, @container, @counter-style, @document, @font-feature-values, @font-palette-values, @function, @namespace, @position-try, @property, @scope, @starting-style, @view-transition.
+- Refused: @color-profile, @container, @counter-style, @document, @font-feature-values, @font-palette-values, @function, @namespace, @position-try, @property, @scope, @starting-style, @view-transition, and every
+  other at-rule the engine does not know, a vendor-prefixed one too (`@-moz-document`); Chromium drops those.
+- Read without effect: @charset (the encoding is decided before the sheet is parsed).
 
 ## HTML
 

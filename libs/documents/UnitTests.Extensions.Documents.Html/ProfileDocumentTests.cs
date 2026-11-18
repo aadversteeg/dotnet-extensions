@@ -81,12 +81,17 @@ public class ProfileDocumentTests
         }
 
         Line();
+        Line("`overflow-x` and `overflow-y`: `hidden` or `clip` on one axis while the other stays `visible` is refused, since");
+        Line("Chromium computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does.");
+        Line();
         Line("### Supported at the initial value only");
         Line();
         Line("What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and");
         Line("the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,");
         Line("which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and");
-        Line("on any other element stage 4 applies the ratio or refuses it. Any other value is refused.");
+        Line("on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or");
+        Line("a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`");
+        Line("and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.");
         Line();
         Line("| Property | Initial | Accepted | Defined in |");
         Line("| --- | --- | --- | --- |");
@@ -152,7 +157,9 @@ public class ProfileDocumentTests
         Line("  refused), @supports (answered as Chromium 159 would where the engine can tell, refused where it cannot), @import (through the caller's resolver, with layer() and supports()), @layer, @font-face and");
         Line("  @page (read as values for the layout), CSS Nesting 1 inside style rules.");
         Line("- Ignored by rule: " + string.Join(", ", RuleBuilder.IgnoredAtRules.Order(StringComparer.Ordinal).Select(name => "@" + name)) + ".");
-        Line("- Refused: " + string.Join(", ", RuleBuilder.UnsupportedAtRules.Order(StringComparer.Ordinal).Select(name => "@" + name)) + ".");
+        Line("- Refused: " + string.Join(", ", RuleBuilder.UnsupportedAtRules.Order(StringComparer.Ordinal).Select(name => "@" + name)) + ", and every");
+        Line("  other at-rule the engine does not know, a vendor-prefixed one too (`@-moz-document`); Chromium drops those.");
+        Line("- Read without effect: @charset (the encoding is decided before the sheet is parsed).");
         Line();
         Line("## HTML");
         Line();

@@ -20,7 +20,8 @@ internal static class MetaPrescan
     /// <param name="Label">The label as written in the meta element.</param>
     /// <param name="Encoding">The encoding the parser would use (<see cref="MetaEncodings.ForMeta"/>).</param>
     /// <param name="Offset">The byte offset of the meta element's <c>&lt;</c>.</param>
-    public sealed record Found(string Label, string Encoding, int Offset);
+    /// <param name="Xml">Whether an XML declaration names the encoding, not a meta element.</param>
+    public sealed record Found(string Label, string Encoding, int Offset, bool Xml = false);
 
     /// <summary>Runs the prescan.</summary>
     /// <param name="bytes">The bytes (without a byte order mark: with one, there is no prescan).</param>
@@ -100,7 +101,7 @@ internal static class MetaPrescan
     }
 
     /// <summary>An XML declaration that starts the bytes and names an encoding (<c>&lt;?xml version="1.0"
-    /// encoding="iso-8859-2"?&gt;</c>): Chromium 159 decodes an HTML document by it (review 39 HD-13, measured), which
+    /// encoding="iso-8859-2"?&gt;</c>): Chromium 159 decodes an HTML document by it (HD-13, measured), which
     /// the prescan of the standard does not; the parser refuses a non-UTF-8 one as it refuses a meta element.</summary>
     private static Found? XmlDeclaration(ReadOnlySpan<byte> bytes)
     {
@@ -125,7 +126,7 @@ internal static class MetaPrescan
 
         var close = quoted.IndexOf(quoted[0], 1);
         var label = close < 0 ? null : quoted[1..close];
-        return label is not null && EncodingLabels.Resolve(label) is { } encoding ? new Found(label, MetaEncodings.ForMeta(encoding), 0) : null;
+        return label is not null && EncodingLabels.Resolve(label) is { } encoding ? new Found(label, MetaEncodings.ForMeta(encoding), 0, Xml: true) : null;
     }
 
     /// <summary>The attributes of one meta element, and what they say (the steps after "Let attribute list be an
@@ -139,8 +140,8 @@ internal static class MetaPrescan
         string? label = null;
         while (Attribute(bytes, ref position) is { } attribute)
         {
-            // A repeated attribute is skipped (§13.2.3.2), except charset: Chromium 159 takes the last one (review 39
-            // HD-14, measured).
+            // A repeated attribute is skipped (§13.2.3.2), except charset: Chromium 159 takes the last one (HD-14,
+            // measured).
             if (!names.Add(attribute.Name) && attribute.Name != "charset")
             {
                 continue;

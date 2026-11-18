@@ -262,30 +262,38 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | nesting of arrays and dictionaries in one PDF object | 64 levels | `Pdf/PdfSerializer.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | nesting of arrays and structures in one XMP property | 64 levels | `Pdf/Xmp/XmpPacket.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
-| an HTML document | 2^24 UTF-16 code units (bytes are checked against the same number); nesting 512 elements, the depth at which Chromium stops nesting; selectedcontent clones 4 nodes and characters per input character; 10 000 diagnostics kept | `Html.Parsing/HtmlInputLimits.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic; the style resolution refuses) |
-| a style sheet | 2^24 UTF-16 code units; nesting of blocks, functions and rules 64 (the readers recurse once per level: 252 nested `@media` overflowed a 256 KB thread at the old limit of 256, 64 fit with room) | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (a refusal; the sheet is empty) |
-| nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels: the only recursion of selector matching and specificity, kept well inside the stack of a 256 KB thread | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the rule is refused) |
-| selector matching and collecting of one cascade | 2^26 units (a simple selector tested, a fact remembered, a matched rule or declaration collected): about 3 s on the development machine for 1 000 rules matching each of 10 000 elements; 2^22 facts remembered (a bound on the memory) | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
-| imported style sheets of one cascade | 1 024, counted over every import followed | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
-| one var() substitution | 2 097 152 characters of text, Chromium 159's limit (measured) | `Css/CssInputLimits.cs` | past it: invalid at computed-value time, as in Chromium (`Documents.Css.Invalid.ComputedValue`); where the engine's measure cannot tell (within 8 characters per substitution of the limit): `Documents.Css.TooLarge` |
-| all var() substitutions of one cascade | 2^26 characters | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge` |
-| diagnostics of one style sheet, one cascade, one resolution | 10 000 kept | `Css/CssInputLimits.cs`, `Html.Parsing/HtmlInputLimits.cs` | `Documents.TooManyDiagnostics` (a refusal) |
+| an HTML document | 2^24 UTF-16 code units (bytes are checked against the same number); nesting 512 elements, the depth at which Chromium stops nesting; 2^18 elements and 2^20 nodes made, the elements the parser opens again or clones included; selectedcontent clones 4 nodes and characters per input character, at least 65 536; 10 000 diagnostics kept | `Html.Parsing/HtmlInputLimits.cs`, `Html.Parsing/TreeBuilding/TreeBuilder.Select.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic) |
+| a style sheet | 2^24 UTF-16 code units; as bytes, 3 × 2^24 before decoding (UTF-8 takes at most 3 bytes per code unit), then 2^24 code units; nesting of blocks, functions and rules 64 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (the reading fails; a style resolution fails with it) |
+| nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the style resolution fails) |
+| work of one cascade | 2^26 units: a matching fact computed, a simple selector tested, 64 characters compared, a sibling counted, a rule or declaration collected, a candidate looked at, a comparison of a sort, a var() reference followed | `Css/CssInputLimits.cs` (`MaxCascadeWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
+| entries one cascade remembers | 2^22: matching facts, parent-rule matches, sibling tables, var() substitutions, custom-property tables; past it they are computed again, inside the work limit | `Css/CssInputLimits.cs` (`MaxCascadeMemo`) | none |
+| entries of one cascade's index | 2^21: a selector of a style rule or a declaration, counted each time a sheet is taken in | `Css/CssInputLimits.cs` (`MaxCascadeEntries`) | `Documents.Css.TooLarge` (the style resolution fails) |
+| style sheets of one cascade | 1 024: the user-agent sheet, style elements, linked and imported sheets; a sheet taken in twice counts twice | `Css/CssInputLimits.cs` (`MaxStyleSheets`) | `Documents.Css.TooLarge` (the style resolution fails) |
+| one var() substitution | 2 097 152 characters of text, Chromium 159's limit (measured); the value it makes nests at most 64 levels | `Css/CssInputLimits.cs` (`MaxSubstitutionLength`, `MaxDepth`) | past the length: invalid at computed-value time, as in Chromium (`Documents.Css.Invalid.ComputedValue`); within 8 characters per substitution of it, where the engine's measure cannot tell: refused (`Documents.Css.Unsupported.Value`); deeper: `Documents.Css.TooDeep` (the style resolution fails) |
+| all var() substitutions of one cascade | 2^26 characters | `Css/CssInputLimits.cs` (`MaxSubstitutionWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
+| diagnostics of one style sheet, one cascade, one resolution | 10 000 kept | `Css/CssInputLimits.cs`, `Html.Parsing/HtmlInputLimits.cs` | `Documents.TooManyDiagnostics`: how many were left out, and how many of those refuse the document |
 | points of one glyph outline, components included | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | component references one glyph outline visits | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | nesting of composite glyphs | 64 levels | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 
-Selector matching is linear in the selector's steps times the elements (`Css/Selectors/SelectorMatcher.cs`): per step
-and element it computes whether the steps up to it match, whether some ancestor's or earlier sibling's does, each
-once per cascade, with an explicit stack; a subject reached through `+` or `~` must have as many earlier siblings,
-which rejects long sibling chains at once. A nested rule refers to its parent's selector list instead of copying it,
-so selectors and specificity do not grow with the nesting. Class, ID and attribute-word tests use sets built once per
-element. An element is matched only against the rules bucketed under its ID, its classes, its type, and the rules
-that name none of these (`Css/Cascade/CascadeIndex.cs`); the rest of the matching work counts against the limit
-above. Custom properties are resolved in dependency order by an iterative walk, so a chain of any length costs its
-length; every substitution is measured as Chromium measures it and stops at its limit; results are shared by the
-elements that inherit the same custom properties. No reader recurses on the input deeper than the nesting limits
-above, and each of them runs on a 256 KB stack at the deepest allowed input (`CssBoundedWorkTests`,
-`BoundedWorkTests`).
+In stage 3 a limit that is reached ends the work where it is reached: the style resolution fails with the limit's
+error, in both modes of `HtmlStyleOptions.Unsupported`, and returns no partly styled tree. Selector matching
+(`Css/Selectors/SelectorMatcher.cs`) computes, per step of a selector and element, whether the steps up to it match
+and whether some ancestor's or earlier sibling's do, with an explicit stack, each once per cascade while the memo has
+room; a subject reached through `+` or `~` must have as many earlier siblings, which rejects long sibling chains at
+once. A run of one compound through `+` (`p + p + … + p`) is matched by the number of consecutive siblings that match
+it, so it is linear in the elements; a chain of different compounds through `+` costs its steps times the elements,
+and is charged that. A nested rule refers to its parent's selector list instead of copying it. An element is matched
+only against the rules bucketed under its ID, its classes, its type, and the rules that name none of these
+(`Css/Cascade/CascadeIndex.cs`). A custom property is resolved when it is first needed, by an iterative walk; a cycle
+is refused. Elements with the same parent table and the same winning custom properties share one table. The tests
+count this work instead of timing it: at twice the size of each shape that once grew faster than its input, the work
+is at most 2.2 times the work plus a constant, and the places that charge are pinned by value (`CascadeWorkTests`).
+No reader recurses on the input deeper than the nesting limits above, and each runs on a 256 KB stack at the deepest
+allowed input: parsing, the tree text, the style resolution, the import chain and the nesting that substitution makes
+(`DeepInputTests`, `CssBoundedWorkTests`, `BoundedWorkTests`). Memory, measured on a Linux development machine
+(.NET 10, Release): parse and style resolution of 2^18 elements, each with a style of its own and three more nodes
+(2^20 nodes), take about 0.88 GB resident.
 
 One reader is bounded by a constant rather than by its input: the `cmap` formats 4 and 12 are expanded into one entry
 per mapped code point, so a few groups of 12 bytes can fill all 1 114 112 code points of Unicode (tens of MiB). The
@@ -355,7 +363,7 @@ win, a rule with an unknown property that matches an element), once per declarat
 sheet, so the element is named). Refusal is decided by the diagnostic's code alone; `HtmlStyleOptions.Unsupported`
 chooses whether refusals fail the document (the default) or are only reported.
 
-The policy for each refusal (review 39, ruling D-b): input above CSS Syntax 3 that the engine cannot read is either
+The policy for each refusal: input above CSS Syntax 3 that the engine cannot read is either
 invalid, which a browser drops, or valid CSS beyond this profile, which a browser uses, and the engine cannot tell
 which. Its one answer to both is a refusal, "not valid or not supported in this profile": a value that does not match
 its grammar of a known property (`vertical-align: 5px`, `color: 12px`), also after `var()` substitution; a selector or
@@ -381,7 +389,8 @@ Known limits of stage 3 (also in the profile document):
   `textarea` its user-agent border and background, pinned in `FaithfulSubsetTests`); `noscript` (the parser runs with scripting off,
   Chromium with it on, so their trees differ); a script a browser would run and every event handler attribute, since
   the engine runs no scripts (a data block is accepted).
-- Template contents are not styled; `<template shadowrootmode>` stays a template (no declarative shadow DOM).
+- Template contents are not styled. The parser keeps `<template shadowrootmode>` a template; the style resolution
+  refuses it, since Chromium 159 attaches a declarative shadow root there.
 - Encodings: the HTML parser decodes UTF-8 and UTF-16. It refuses a `meta` element or an XML declaration that names
   another encoding, and bytes that are not UTF-8 with nothing declaring an encoding, which a browser would decode by a
   detected legacy encoding. Valid UTF-8 with no declaration is read as UTF-8, as Chromium 159 reads a local file; over
@@ -406,8 +415,9 @@ Known limits of stage 3 (also in the profile document):
   them); typed arithmetic and the math functions other than calc, min, max and clamp are refused; ex and ch need the
   caller's font metrics.
 - A value of a feature outside v0 is refused without its grammar being checked, so input Chromium drops as invalid
-  can be refused (never accepted), as can any value the grammar does not read (ruling D-b above).
-- Declarations in a subtree that is not drawn (inside display: none) are still cascaded, so their refusals count.
+  can be refused (never accepted), as can any value the grammar does not read (the refusal policy above).
+- Declarations in a subtree that is not drawn (inside display: none) are still cascaded, so their refusals count
+  (pinned in `FaithfulSubsetTests`).
 - Values the engine refuses because Chromium computes them by a rule it does not keep: a font size from a relative
   value below 6px (Chromium's minimum logical font size) and above 10 000px; a length past 2^24 px; orphans and
   widows past 32 767; a hue past 2^24 degrees; a `none` colour component; `overflow` visible beside a scrolling axis
@@ -419,7 +429,8 @@ Known limits of stage 3 (also in the profile document):
 - HTML Chromium styles by a rule the engine does not keep (each measured): a Content-Security-Policy `meta` in head; a
   color-scheme `meta` other than normal or light; `autofocus`; the `charset` of a link; `align` on html, head and body;
   an img with alt text and a size whose image is not there (Chromium shows the alt text inline, and the size computes
-  to auto); `fencedframe` and `geolocation`.
+  to auto); `fencedframe` and `geolocation`. Whether an image is there, stage 3 decides by its signature only: the
+  bytes start as a PNG or a JPEG file. Whether they decode is checked where the image is read, in stage 4.
 - `-webkit-left`, `-webkit-right`, `-webkit-center` (from align attributes and the caption) must align descendant
   blocks as well as text; `border-style: inset` and `outset` (hr, table border) are drawn in two shades by Chromium;
   `overflow: hidden | clip` (hr, img) clips; `aspect-ratio: auto` with a ratio (the width and height attributes of

@@ -197,7 +197,7 @@ public class CascadeTests
         computed.Value(root["x"], "color").Should().Be("rgb(0, 0, 255)");
         computed.Value(root["x"], "margin-top").Should().Be("0pt");
         // A missing custom property is invalid in every browser; a value the grammar does not read is the one answer
-        // "not valid or not supported in this profile", a refusal (review 39, ruling D-b).
+        // "not valid or not supported in this profile", a refusal (the refusal policy in docs/architecture.md).
         computed.Coded(CssErrorCodes.Invalid.ComputedValue).Should().ContainSingle().Which.Message.Should().Contain("'margin-top'");
         computed.Coded(CssErrorCodes.Unsupported.Value).Should().ContainSingle().Which.Message.Should().Contain("not valid or not supported in this profile");
     }
@@ -291,14 +291,54 @@ public class CascadeTests
         computed.Coded(CssErrorCodes.Invalid.Property).Should().ContainSingle();
     }
 
+    [Theory]
+    // The notes of the profile document beside its Accepted column.
+    [InlineData("letter-spacing: 0", "letter-spacing", "normal")]
+    [InlineData("letter-spacing: 0px", "letter-spacing", "normal")]
+    // (This helper writes lengths in pt; getComputedStyle writes the same zero as 0px.)
+    [InlineData("background-position-x: 0", "background-position-x", "0pt")]
+    [InlineData("background-position-y: 0px", "background-position-y", "0pt")]
+    [InlineData("orphans: 32767", "orphans", "32767")]
+    [InlineData("widows: 32768", "widows", null)]
+    [InlineData("overflow: hidden", "overflow-x", "hidden")]
+    [InlineData("overflow-x: hidden", "overflow-x", null)]
+    public void Values_the_profile_notes_beside_its_columns_are_accepted_or_refused_as_it_says(string declaration, string property, string? computed)
+    {
+        var root = Doc(E("p", A("id", "x")));
+        var result = Compute(root, $"p {{ {declaration} }}");
+
+        if (computed is null)
+        {
+            result.Coded(CssErrorCodes.Unsupported.Value).Should().ContainSingle();
+        }
+        else
+        {
+            result.Value(root["x"], property).Should().Be(computed);
+            result.Coded(CssErrorCodes.Unsupported.Value).Should().BeEmpty();
+        }
+    }
+
     [Fact]
     public void Internal_values_are_accepted_from_the_user_agent()
     {
         var root = Doc(E("div", A("style", ""), E("th", A("id", "x"))), E("table", E("th", A("id", "y"))));
-        var computed = Compute(root, "div { text-align: right }", userAgent: "th { text-align: -internal-center }");
+        var computed = Compute(root, "div { text-align: right }", userAgent: "th { text-align: -internal-ave-th-center }");
 
         computed.Value(root["x"], "text-align").Should().Be("right");
         computed.Value(root["y"], "text-align").Should().Be("center");
+    }
+
+    [Theory]
+    [InlineData("-internal-ave-th-center")]
+    [InlineData("-internal-center")]
+    public void The_user_agents_own_keyword_and_Chromiums_are_dropped_from_an_author_sheet(string keyword)
+    {
+        var root = Doc(E("table", E("th", A("id", "y"))));
+        var computed = Compute(root, $"th {{ text-align: {keyword} }}", userAgent: "th { text-align: -internal-ave-th-center }");
+
+        // The author's declaration is dropped (a warning), so the user agent's applies.
+        computed.Value(root["y"], "text-align").Should().Be("center");
+        computed.Coded(CssErrorCodes.Invalid.Value).Should().ContainSingle().Which.Message.Should().Contain("-internal-");
     }
 
     [Fact]
@@ -329,7 +369,7 @@ public class CascadeTests
     [Fact]
     public void A_style_by_name_is_null_for_what_is_not_a_longhand()
     {
-        // Review 39 API-2: the string indexer threw for a shorthand, an ignored property and a custom property.
+        // Before the fix the string indexer threw for a shorthand, an ignored property and a custom property.
         var style = ComputedStyle.Initial;
 
         style.Find("margin-top").Should().NotBeNull();
@@ -342,7 +382,7 @@ public class CascadeTests
     [Fact]
     public void A_child_computed_before_its_parent_is_a_programming_error()
     {
-        // Review 39 API-4: the child silently inherited nothing.
+        // Before the fix the child silently inherited nothing.
         var root = Doc(E("p", A("id", "x")));
         var computer = new StyleComputer(CascadeIndex.Build([new CascadeSheet(Sheet("p { color: red }"), CascadeOrigin.Author)], MediaContext.PrintA4, null).Value.Value, ValueContext.A4);
 

@@ -63,7 +63,7 @@ public static class HtmlStyleResolver
     internal static readonly string[] FormControls = ["input", "button", "select", "textarea", "meter", "progress"];
 
     /// <summary>The HTML elements outside v0 that Chromium 159 styles with rules or a layout of their own the engine does
-    /// not have (measured, review 39 F3): refused wherever they are, with the reason.</summary>
+    /// not have (measured): refused wherever they are, with the reason.</summary>
     internal static readonly IReadOnlyDictionary<string, string> OutsideProfile = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["details"] = "a disclosure widget (its marker and its closed content)",
@@ -94,8 +94,10 @@ public static class HtmlStyleResolver
     /// <summary>One resolution: the diagnostics, the base URLs of the style sheets, the resources fetched.</summary>
     private sealed class Run(HtmlParseResult parsed, HtmlStyleOptions options)
     {
-        private readonly List<Error> _diagnostics = [.. parsed.Diagnostics];
+        private readonly List<Error> _diagnostics = [];
         private int _suppressed;
+        private int _suppressedRefusals;
+        private Error? _firstSuppressedRefusal;
         private readonly HashSet<int> _renamed = [];
         private readonly Dictionary<StyleSheet, string?> _baseOf = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, StyleSheet?> _fetched = new(StringComparer.Ordinal);
@@ -110,6 +112,7 @@ public static class HtmlStyleResolver
         /// style, parents first.</summary>
         public StyledHtmlDocument? Resolve()
         {
+            Keep(parsed.Diagnostics);
             var document = parsed.Document;
             if (document.Mode == DocumentMode.Quirks)
             {
@@ -150,15 +153,30 @@ public static class HtmlStyleResolver
         /// each, their sum is capped here); the rest are counted.</summary>
         private void Keep(Error error)
         {
+            if (error.Code == DocumentErrorCodes.TooManyDiagnostics)
+            {
+                // A part's own summary: its counts join these, so the last summary counts everything left out.
+                _suppressed += Count(error, ErrorMetadataKeys.Value, 1);
+                _suppressedRefusals += Count(error, ErrorMetadataKeys.Refusals, 0);
+                return;
+            }
+
             if (_diagnostics.Count < HtmlInputLimits.MaxDiagnostics)
             {
                 _diagnostics.Add(error);
+                return;
             }
-            else
+
+            _suppressed++;
+            if (HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal)
             {
-                _suppressed++;
+                _suppressedRefusals++;
+                _firstSuppressedRefusal ??= error;
             }
         }
+
+        private static int Count(Error error, string key, int otherwise) =>
+            error.Metadata is { } metadata && metadata.TryGetValue(key, out var value) && value is int count ? count : otherwise;
 
         private void Keep(IEnumerable<Error> errors)
         {
@@ -197,9 +215,25 @@ public static class HtmlStyleResolver
         private ValueList<Error> Capped(List<Error> diagnostics) =>
             _suppressed == 0
                 ? [.. diagnostics]
-                : [.. diagnostics, new Error(DocumentErrorCodes.TooManyDiagnostics, $"{_suppressed} more diagnostics are left out: {HtmlInputLimits.MaxDiagnostics} are kept.")
+                : [.. diagnostics, new Error(DocumentErrorCodes.TooManyDiagnostics,
+                        $"{_suppressed} more diagnostics are left out, {_suppressedRefusals} of them refusals{(_firstSuppressedRefusal is { } first ? $" (the first: {first.Message})" : string.Empty)}; {HtmlInputLimits.MaxDiagnostics} are kept.")
                     .With(ErrorMetadataKeys.Value, _suppressed)
+                    .With(ErrorMetadataKeys.Refusals, _suppressedRefusals)
                     .With(ErrorMetadataKeys.SourceFile, _sourceName)];
+
+        /// <summary>The start tag as the author wrote it, with its first attributes (a user-agent rule may select the
+        /// element by one of them, as <c>[dir=rtl]</c> does): at most four, each value cut at 40 characters.</summary>
+        private static string StartTag(HtmlElement html)
+        {
+            var tag = new System.Text.StringBuilder("<").Append(html.LocalName);
+            foreach (var attribute in html.Attributes.Take(4))
+            {
+                var value = attribute.Value.Length > 40 ? attribute.Value[..40] + "…" : attribute.Value;
+                tag.Append(' ').Append(attribute.LocalName).Append("=\"").Append(value).Append('"');
+            }
+
+            return tag.Append(html.Attributes.Count > 4 ? " …>" : ">").ToString();
+        }
 
         private static IEnumerable<StyleElement> Descendants(StyleElement root)
         {
@@ -354,6 +388,7 @@ public static class HtmlStyleResolver
             {
                 // Past the cap only the number counts: an element made again for a token with many handlers costs one step.
                 _suppressed += handlers.Count;
+                _suppressedRefusals += handlers.Count;
                 return refused;
             }
 
@@ -394,6 +429,13 @@ public static class HtmlStyleResolver
                 && html.Attribute("content") is { } scheme && Keywords(scheme) is not ([] or ["normal"] or ["light"] or ["only", "light"] or ["light", "only"]))
             {
                 Refuse("content", "sets the page's color scheme");
+            }
+
+            if (html.LocalName == "template" && html.Attribute("shadowrootmode") is not null)
+            {
+                // Chromium 159 attaches a declarative shadow root (HTML Standard §13.2.6.4.1, "allow declarative shadow
+                // roots"): the template's content is drawn in place of the host's children. The parser keeps a template.
+                Refuse("shadowrootmode", "makes a declarative shadow root, whose content Chromium draws in place of the host's children");
             }
 
             if (html.Attribute("autofocus") is not null)
@@ -475,7 +517,7 @@ public static class HtmlStyleResolver
                 if (!refused)
                 {
                     var declaration = $"{error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Property)}: {error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Value)}";
-                    Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element, $"The element <{html.LocalName}> is not supported: its user-agent style '{declaration}' is outside this profile.")
+                    Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element, $"The element {StartTag(html)} is not supported: its user-agent style '{declaration}' is outside this profile.")
                         .With(ErrorMetadataKeys.Value, html.LocalName)
                         .WithSource(_sourceName, html.Position));
                 }
@@ -507,7 +549,7 @@ public static class HtmlStyleResolver
             var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
             Keep(refused);
             // Chromium 159's style adjuster: an HTML table does not take -webkit-left, -center or -right from around it
-            // or from its own rules; they compute to start (measured, review 39 F4).
+            // or from its own rules; they compute to start (measured).
             var table = element.Element.IsHtml("table");
             return inline.IsEmpty && hints.IsEmpty && !table
                 ? ElementDeclarations.None
@@ -581,7 +623,7 @@ public static class HtmlStyleResolver
         {
             var sheets = new List<StyleSheet>();
             // The preferred style sheet set (§4.6.7.20, §4.2.5.3 default-style): named by whichever comes first in tree
-            // order, a default-style pragma or a style sheet with a title (Chromium 159, measured, review 39 F19).
+            // order, a default-style pragma or a style sheet with a title (Chromium 159, measured).
             string? preferredTitle = null;
             foreach (var element in elements.Select(item => item.Element))
             {
@@ -665,7 +707,7 @@ public static class HtmlStyleResolver
                     if (element.Attributes.FirstOrDefault(attribute => attribute.LocalName == "integrity" && attribute.Value.Trim().Length > 0) is { } integrity)
                     {
                         // A browser checks the hash and blocks a sheet that does not match (Chromium 159 blocks a sheet
-                        // whose integrity does not match, measured, review 39 F19); the engine does not check it.
+                        // whose integrity does not match, measured); the engine does not check it.
                         Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute integrity=\"{integrity.Value}\" on link asks for a check of the style sheet's hash, which is not supported.")
                             .With(ErrorMetadataKeys.Value, "integrity")
                             .WithSource(_sourceName, integrity.Position));
@@ -683,7 +725,7 @@ public static class HtmlStyleResolver
 
         /// <summary>Whether a type attribute names CSS: for style, empty or text/css exactly (ASCII case-insensitive, no
         /// white space trimmed, §4.2.6); for link, a MIME type whose essence is text/css (parameters and the white space
-        /// around it allowed, as Chromium 159 takes <c>text/css; charset=utf-8</c>, measured, review 39 F19).</summary>
+        /// around it allowed, as Chromium 159 takes <c>text/css; charset=utf-8</c>, measured).</summary>
         private static bool IsCss(string type, bool link)
         {
             if (!link)

@@ -194,10 +194,12 @@ public static partial class PropertyRegistry
             var values = new List<CssValue>();
             foreach (var item in reader.Remaining)
             {
-                var one = parse(new ValueReader([item]), longhand(Sides[Math.Min(values.Count, 3)]));
+                var side = longhand(Sides[Math.Min(values.Count, 3)]);
+                var one = parse(new ValueReader([item]), side);
                 if (!one.IsValid)
                 {
-                    return ShorthandParse.Failed(one, $"not a value of {name}");
+                    // Named as the author wrote it: the shorthand, not the longhand it expands to.
+                    return ShorthandParse.Failed(one with { Problem = one.Problem?.Replace($"'{side}'", $"'{name}'", StringComparison.Ordinal) }, $"not a value of {name}");
                 }
 
                 values.Add(one.Value!);

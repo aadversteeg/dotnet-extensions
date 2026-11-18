@@ -13,6 +13,8 @@ internal sealed class DiagnosticCollector
 {
     private readonly List<Error> _kept = [];
     private int _suppressed;
+    private int _refusals;
+    private Error? _firstRefusal;
 
     /// <summary>The number kept so far.</summary>
     public int Count => _kept.Count;
@@ -21,16 +23,28 @@ internal sealed class DiagnosticCollector
     /// <param name="index">The place, below <see cref="Count"/>.</param>
     public Error this[int index] => _kept[index];
 
-    /// <summary>Adds a diagnostic, or counts it past the limit.</summary>
+    /// <summary>Adds a diagnostic, or counts it past the limit (and whether it refuses the document). The summary of
+    /// another collector adds its counts.</summary>
     public void Add(Error error)
     {
+        if (error.Code == DocumentErrorCodes.TooManyDiagnostics)
+        {
+            _suppressed += MetadataCount(error, ErrorMetadataKeys.Value, 1);
+            _refusals += MetadataCount(error, ErrorMetadataKeys.Refusals, 0);
+            return;
+        }
+
         if (_kept.Count < CssInputLimits.MaxDiagnostics)
         {
             _kept.Add(error);
+            return;
         }
-        else
+
+        _suppressed++;
+        if (CssDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal)
         {
-            _suppressed++;
+            _refusals++;
+            _firstRefusal ??= error;
         }
     }
 
@@ -51,7 +65,17 @@ internal sealed class DiagnosticCollector
             return [.. _kept];
         }
 
-        return [.. _kept, new Error(DocumentErrorCodes.TooManyDiagnostics, $"{_suppressed} more diagnostics are left out: {CssInputLimits.MaxDiagnostics} are kept.")
-            .With(ErrorMetadataKeys.Value, _suppressed)];
+        return [.. _kept, LeftOut(_suppressed, _refusals, _firstRefusal, CssInputLimits.MaxDiagnostics)];
     }
+
+    /// <summary>The summary of the diagnostics left out: how many, how many of them refuse the document, and the first
+    /// of those (the reason a refusal would otherwise not show).</summary>
+    internal static Error LeftOut(int suppressed, int refusals, Error? firstRefusal, int kept) =>
+        new Error(DocumentErrorCodes.TooManyDiagnostics,
+                $"{suppressed} more diagnostics are left out, {refusals} of them refusals{(firstRefusal is { } first ? $" (the first: {first.Message})" : string.Empty)}; {kept} are kept.")
+            .With(ErrorMetadataKeys.Value, suppressed)
+            .With(ErrorMetadataKeys.Refusals, refusals);
+
+    private static int MetadataCount(Error error, string key, int otherwise) =>
+        error.Metadata is { } metadata && metadata.TryGetValue(key, out var value) && value is int count ? count : otherwise;
 }

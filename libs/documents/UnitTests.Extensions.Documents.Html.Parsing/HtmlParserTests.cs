@@ -48,7 +48,7 @@ public class HtmlParserTests
     [Fact]
     public void A_null_text_is_a_programming_error_not_a_parse()
     {
-        // Review 39 HR-9: it was a NullReferenceException from inside the parser.
+        // Before the fix it was a NullReferenceException from inside the parser.
         FluentActions.Invoking(() => HtmlParser.Parse((string)null!)).Should().Throw<ArgumentNullException>();
         FluentActions.Invoking(() => HtmlParser.ParseFragment(null!, HtmlFragmentContext.Body)).Should().Throw<ArgumentNullException>();
     }
@@ -56,7 +56,7 @@ public class HtmlParserTests
     [Fact]
     public void Bytes_past_the_limit_are_reported_as_bytes()
     {
-        // Review 39 HR-10: the message said characters for a limit counted in bytes.
+        // Before the fix the message said characters for a limit counted in bytes.
         var error = HtmlParser.Parse(new byte[HtmlInputLimits.MaxCharacters + 1]).Match(_ => throw new InvalidOperationException(), failure => failure);
 
         error.Message.Should().Contain("bytes");
@@ -65,7 +65,7 @@ public class HtmlParserTests
     [Fact]
     public void A_reopened_or_cloned_formatting_element_takes_the_position_of_the_token_that_reopened_it()
     {
-        // Review 39 HR-P1: the second b is made for the line feed that ends line 1 (it holds "\ny"), not at the <b>.
+        // The second b is made for the line feed that ends line 1 (it holds "\ny"), not at the <b>.
         var body = Body(Parsed("<p><b>x</p>\ny").Document);
         var reopened = body.Children.OfType<HtmlElement>().Single(element => element.IsHtml("b"));
         reopened.Position.Should().Be(new TextPosition(1, 12));
@@ -189,7 +189,7 @@ public class HtmlParserTests
     [Fact]
     public void The_selected_options_content_is_cloned_into_selectedcontent_scripts_and_frames_too()
     {
-        // Chromium 159 clones every element (review 39 HD-12, measured): tools/reference/chromium/html-tree, hd12-clone.
+        // Chromium 159 clones every element (HD-12, measured): tools/reference/chromium/html-tree, hd12-clone.
         var text = "<select><button><selectedcontent></selectedcontent></button><option>a<script>s</script><b>b</b><option selected>c<iframe></iframe>d</select>";
 
         var select = (HtmlElement)Body(Parsed(text).Document).Children[0];
@@ -206,5 +206,7 @@ public class HtmlParserTests
         var error = Failed(HtmlParser.Parse(text));
 
         error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+        // 1 000 clones of 1 001 nodes and characters: past the budget of a short input, which the message names.
+        error.Message.Should().Contain("4 nodes and characters per character of input (65536 for a shorter input)");
     }
 }

@@ -72,13 +72,54 @@ public class CascadeWorkTests
         var plain = Work(Doc("x{color:red}", "<p id=last>x"));
         var matched = Work(Doc("p{color:red}", "<p id=last>x"));
         var two = Work(Doc("p{color:red} #last{color:blue}", "<p id=last>x"));
+        var descendant = Work(Doc("div p{color:red}", "<div><p id=last>x</div>"));
 
-        // One more rule that matches the p: one fact, one simple selector, one rule and one declaration collected, and
-        // the candidate for color looked at once more.
-        (matched - plain).Should().BeInRange(3, 8);
-        (two - matched).Should().BeInRange(3, 8);
-        plain.Should().BeGreaterThan(0);
+        // One more rule that matches the p: one fact, one simple selector, the rule and its declaration collected
+        // (1 + 1) and one more candidate for color looked at: 5. The second rule the same: the highest candidate is
+        // taken by one scan, without a sort. A descendant combinator adds the facts of the ancestor walk (and the div's
+        // own matching and cascade).
+        (plain, matched - plain, two - matched, descendant).Should().Be((PlainDocument, MatchedRule, MatchedRule, DescendantDocument));
     }
+
+    // The work of the documents above, counted on this engine (the user agent's sheet included); a change of what is
+    // charged where changes them.
+    private const long PlainDocument = 268;
+    private const long MatchedRule = 5;
+    private const long DescendantDocument = 330;
+
+    [Fact]
+    public void Every_size_of_the_memo_gives_the_same_result()
+    {
+        // The memo fills at any point of the cascade: a fact computed and not remembered is computed again, and the
+        // facts of one step and element (matched here, or by an ancestor or an earlier sibling) never stand for each
+        // other.
+        var html = Doc(
+            "section p{--v:1} section div p{margin-top:2px} div > .a + .b ~ .c{color:red} div{& .x{margin-left:4px}} p+p+p{padding-top:1px}",
+            Repeat("<section><div><p class='a x'><p class='b x'><p class='c x'></div></section><div><p class=c></div>", 3));
+        var (full, budget) = Counted(html);
+        var expected = Text(full.Value);
+        expected.Should().Contain("--v=1").And.Contain("rgb(255, 0, 0)").And.Contain("2px").And.Contain("4px").And.Contain("1px");
+
+        for (var memo = 0L; memo <= budget.Memo; memo++)
+        {
+            Text(Counted(html, new CascadeBudget { MaxMemo = memo }).Result.Value).Should().Be(expected, $"memo {memo} of {budget.Memo}");
+        }
+    }
+
+    [Fact]
+    public void A_nested_rule_matches_its_own_parent_on_an_element_that_two_parents_match()
+    {
+        // Two parent rules whose nested rules both ask about the same elements: each nested rule asks its own parent.
+        var styled = Styled(Doc(
+            ".a{ & {margin-top:1px} & u{margin-left:1px} } .b{ & {margin-top:5px; margin-bottom:5px} & u{margin-right:5px} }",
+            "<p class=a id=t1><u id=t2>x</u></p>"));
+
+        (styled.ById("t1").Value("margin-top"), styled.ById("t1").Value("margin-bottom")).Should().Be(("1px", "16px"));
+        (styled.ById("t2").Value("margin-left"), styled.ById("t2").Value("margin-right")).Should().Be(("1px", "0px"));
+    }
+
+    private static string Text(StyledHtmlDocument document) => string.Join("\n", document.Root.Elements().Select(element =>
+        string.Join(";", new[] { "color", "margin-top", "margin-left", "padding-top" }.Select(element.Value)) + " " + string.Join(",", element.Style.CustomProperties.OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => pair.Key + "=" + pair.Value.Text))));
 
     [Fact]
     public void The_resolution_fails_at_exactly_the_work_limit()
@@ -266,8 +307,6 @@ public class CascadeWorkTests
         var full = Counted(html).Result.Value;
         var empty = Counted(html, new CascadeBudget { MaxMemo = 0 }).Result.Value;
 
-        string Text(StyledHtmlDocument document) => string.Join("\n", document.Root.Elements().Select(element =>
-            string.Join(";", new[] { "color", "margin-top", "margin-left", "padding-top" }.Select(element.Value)) + " " + string.Join(",", element.Style.CustomProperties.OrderBy(pair => pair.Key, StringComparer.Ordinal).Select(pair => pair.Key + "=" + pair.Value.Text))));
         Text(empty).Should().Be(Text(full));
         Text(full).Should().Contain("rgb(255, 0, 0)").And.Contain("3px").And.Contain("4px").And.Contain("1px").And.Contain("--w=1 2");
     }

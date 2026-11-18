@@ -24,6 +24,9 @@ internal sealed partial class TreeBuilder
     /// <summary>The clone budget: nodes plus characters cloned, per character of input (at least 65 536 in all).</summary>
     public const int CloneWorkPerCharacter = 4;
 
+    /// <summary>The clone budget of a short input: 65 536 nodes and characters.</summary>
+    public const int MinimumCloneWork = 65_536;
+
     private sealed class SelectState
     {
         /// <summary>The last option with a <c>selected</c> attribute: the selected option of a select that is not
@@ -304,7 +307,7 @@ internal sealed partial class TreeBuilder
         switch (node)
         {
             case MutableElement element:
-                // Chromium 159 clones every element, script, object, iframe and embed too (review 39 HD-12, measured).
+                // Chromium 159 clones every element, script, object, iframe and embed too (HD-12, measured).
                 var copy = new MutableElement
                 {
                     Namespace = element.Namespace,
@@ -334,7 +337,7 @@ internal sealed partial class TreeBuilder
 
     private bool Charge(long work)
     {
-        _cloneBudget ??= System.Math.Max(65_536L, (long)CloneWorkPerCharacter * InputLength);
+        _cloneBudget ??= System.Math.Max(MinimumCloneWork, (long)CloneWorkPerCharacter * InputLength);
         _cloneBudget -= work;
         if (_cloneBudget < 0)
         {

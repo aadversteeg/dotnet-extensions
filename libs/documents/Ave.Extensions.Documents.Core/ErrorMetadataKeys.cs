@@ -40,4 +40,8 @@ public static class ErrorMetadataKeys
 
     /// <summary>The property or parameter the value was given for (string).</summary>
     public const string Property = "Property";
+
+    /// <summary>Of the diagnostics a <see cref="DocumentErrorCodes.TooManyDiagnostics"/> leaves out, how many refuse the
+    /// document (int).</summary>
+    public const string Refusals = "Refusals";
 }
