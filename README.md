@@ -80,6 +80,10 @@ runs the file-system tests with `-p:UseNs21=true`. The documents family runs on 
 `net10.0` build only; its reference tests need Docker with Linux containers and are skipped where there is none
 (see the documents README).
 
+Nobody pushes to `main` directly: every change is a pull request, and it can be merged when the job `CI result`
+is green. That job fails when any other pull request job failed. The rules are in
+[docs/RELEASING.md](docs/RELEASING.md), "Rulesets for `main` and the release tags".
+
 ## References between the packages
 
 A library references another package of this repository as a NuGet package:
