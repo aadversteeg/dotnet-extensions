@@ -393,10 +393,12 @@ Known limits of stage 3 (also in the profile document):
   `is`; a NUL in a processing instruction; the selectedcontent clone of script, object, iframe and embed; a UTF-16
   tail). It keeps the standard, a listed limit, where the input is rare and the tree is not styled: head elements
   inside `template` (HD-6); an HTML element named like a camel-case SVG element closed from inside SVG (HD-7);
-  fragment parsing in a `template`, `textarea`, `title` or `select` context (HD-8); an `<option>` opened inside an open
-  `<selectedcontent>` (HD-10, behind the refused `select`); white space after a row with an open formatting element
-  in a template (HD-11). Each is a case of `tools/reference/chromium/html-tree/cases.tsv`, pinned as still
-  different.
+  fragment parsing in a `template`, `textarea`, `title` or `select` context, or in a foreign context (`math`, `mi`,
+  svg `title` and `desc`; HD-8); an `<option>` opened inside an open `<selectedcontent>` (HD-10, behind the refused
+  `select`; the clones the engine makes there are its own, neither the standard's nor Chromium's); white space after a
+  row with an open formatting element in a template (HD-11). Each is a case of
+  `tools/reference/chromium/html-tree/cases.tsv`, pinned as still different; the foreign contexts and the HD-10
+  clones are pinned by the engine's own tree (`ChromiumTreeTests`).
 - No pseudo-elements, no `:has()`, `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
   attribute modifier, `:heading`).
 - A computed `calc()` that keeps a length and a percentage is refused (the document model's length holds one of

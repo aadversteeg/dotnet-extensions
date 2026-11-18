@@ -212,7 +212,9 @@ internal sealed partial class TreeBuilder
 
             var source = token.SourceIndexOf(offset);
             offset += length;
-            if (_skipNextLineFeed)
+            // A NUL of the data state is dropped before the content rules see it (see Process), so the line feed after
+            // it is still the first character after <pre> or <listing> (Chromium 159, measured: <pre>\0\ny is "y").
+            if (_skipNextLineFeed && c != 0)
             {
                 _skipNextLineFeed = false;
                 if (c == '\n')
