@@ -73,7 +73,9 @@ public static class TextModifiers
     /// its strut, so no line is lower (CSS 2.1 §10.8.1).</summary>
     /// <typeparam name="T">The element or style type.</typeparam>
     /// <param name="element">The element or style.</param>
-    /// <param name="factor">The multiple, for example 1.5; not negative.</param>
+    /// <param name="factor">The multiple, for example 1.5; not negative. A plain number is a multiple, also when it is
+    /// written as an integer: <c>LineHeight(14)</c> is 14 times the font size; a length of 14 points is
+    /// <c>LineHeight(14.Pt())</c>.</param>
     /// <returns>A copy with the line height set.</returns>
     public static T LineHeight<T>(this T element, double factor) where T : IFormatted<T> =>
         element.WithText(element.Format.Text with { LineHeight = new LineHeightValue.Number(factor) });

@@ -14,23 +14,27 @@ namespace Ave.Extensions.Documents.Fluent;
 /// <param name="TextAlign">How lines are aligned (CSS <c>text-align</c>, inherited). Set only on elements with a box
 /// and on styles: a span has no lines of its own.</param>
 /// <param name="FontStyle">Upright or italic (CSS <c>font-style</c>).</param>
-/// <param name="Orphans">The fewest lines of a paragraph before a page break inside it (CSS <c>orphans</c>, inherited).
-/// Set only on elements with a box and on styles, as <paramref name="TextAlign"/>.</param>
-/// <param name="Widows">The fewest lines of a paragraph after a page break inside it (CSS <c>widows</c>, inherited).
-/// Set only on elements with a box and on styles.</param>
-/// <param name="LineHeight">The line height (CSS <c>line-height</c>, inherited): on a paragraph also the height of its
-/// strut, the least height of its lines.</param>
 public sealed record TextFormat(
     string? FontFamily = null,
     Length? FontSize = null,
     FontWeight? FontWeight = null,
     Color? Color = null,
     TextAlign? TextAlign = null,
-    FontStyle? FontStyle = null,
-    int? Orphans = null,
-    int? Widows = null,
-    LineHeightValue? LineHeight = null)
+    FontStyle? FontStyle = null)
 {
     /// <summary>No formatting: everything inherits.</summary>
     public static TextFormat Inherit { get; } = new();
+
+    /// <summary>The fewest lines of a paragraph before a page break inside it (CSS <c>orphans</c>, inherited). Set only
+    /// on elements with a box and on styles, as <see cref="TextAlign"/>. A property of the body, not of the positional
+    /// record, so the record keeps the shape of 0.1.0-preview.2.</summary>
+    public int? Orphans { get; init; }
+
+    /// <summary>The fewest lines of a paragraph after a page break inside it (CSS <c>widows</c>, inherited). Set only on
+    /// elements with a box and on styles.</summary>
+    public int? Widows { get; init; }
+
+    /// <summary>The line height (CSS <c>line-height</c>, inherited): on a paragraph also the height of its strut, the least
+    /// height of its lines.</summary>
+    public LineHeightValue? LineHeight { get; init; }
 }

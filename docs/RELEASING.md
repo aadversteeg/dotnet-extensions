@@ -256,3 +256,39 @@ it. Check the scopes again after editing a policy; editing it in the nuget.org w
 While the repository is private, nuget.org cannot read the repository and owner ids from GitHub. The policy is then
 temporary for 7 days, and becomes permanent at the first successful login from the workflow. For a public
 repository it is permanent at once. Renaming or transferring the repository breaks the policy.
+
+## The documents layout backlog (milestone M2, stage 1)
+
+Nothing is released per stage: stage 1's packages go out with the M2 release of the documents family. Stage 1 changes
+six packages and adds none:
+
+| Tag name | Package | What changed |
+|---|---|---|
+| `documents-core` | `Ave.Extensions.Documents.Core` | the input codes `Invalid.Orphans`, `Invalid.Widows`, `Invalid.LineHeight` |
+| `documents-fonts` | `Ave.Extensions.Documents.Fonts` | line metrics as Chromium reads them (`FontMetrics.Line`, USE_TYPO_METRICS) |
+| `documents-typesetting` | `Ave.Extensions.Documents.Typesetting` | shaping again at a line break, normalization before shaping |
+| `documents-document-model` | `Ave.Extensions.Documents.DocumentModel` | line heights, the strut, orphans and widows; `ModelLimits`, `ModelCheck` |
+| `documents-layout` | `Ave.Extensions.Documents.Layout` | page starts and cuts, early breaks, orphans and widows, line heights, the error `EngineDefect` |
+| `documents-fluent` | `Ave.Extensions.Documents.Fluent` | `.Orphans()`, `.Widows()`, `.LineHeight…()` |
+
+Release order within this stage, lowest layer first: `documents-core`; `documents-fonts`; `documents-typesetting`,
+`documents-document-model`; `documents-layout`; `documents-fluent`; then `documents` (unchanged code, released with
+the new minimums). Each step raises the minimums the next step needs in `Directory.Packages.props` once it is on
+nuget.org (a change across packages, see above). From the merge of this stage until the M2 release, the CI job
+"Release mode (main only)" is red: Layout and Fluent do not compile against the released `0.1.0-preview.2` packages
+(`DocumentModel.LineHeight` is not in them), and the sample goldens that show the strut or the orphans rule differ.
+
+Binary breaks against `0.1.0-preview.2` (allowed on the `0.1.0-preview` line; the release note names them):
+
+- `Layout.BreakAppeal` has two more values, `LastResort` before `ViolatesAvoid` and `ViolatesOrphansWidows` between
+  `ViolatesAvoid` and `Perfect`, so the numbers of the old values moved (`Perfect` was 1, is 3); code compiled against
+  the old values must be compiled again.
+- `Layout.LayoutResult.Place(BoxFragment, BreakToken?, BreakAppeal)` is replaced by the overload with a fourth, optional
+  parameter (the early break); a caller compiled against the old one must be compiled again.
+- The default of `LayoutResult.Placed`'s `Appeal` parameter is `Perfect` as before, but the number behind it changed
+  with the enumeration (see the first point), so a caller compiled against the old default passes `ViolatesAvoid`.
+
+Pages change without a code change: paragraphs get orphans and widows of 2 (CSS's initial values; `Document.Orphans(1)`
+and `.Widows(1)` give the old pages back), every line starts with its paragraph's strut (a line of small text is as
+high as the paragraph's own line height), decomposed text is shown with composed glyphs, and bottom padding that does
+not fit below a box's content moves to the next page.
