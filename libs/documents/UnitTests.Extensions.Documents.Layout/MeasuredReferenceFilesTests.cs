@@ -83,6 +83,10 @@ public class MeasuredReferenceFilesTests
         ["a2-cells-end-header.lines.txt"] = 41,
         ["a2-cells-end-header.print.txt"] = 53,
         ["a2-cells-end-header.words.txt"] = 10,
+        ["a2-cells-end-page-top.boxes.txt"] = 4,
+        ["a2-cells-end-page-top.lines.txt"] = 14,
+        ["a2-cells-end-page-top.print.txt"] = 21,
+        ["a2-cells-end-page-top.words.txt"] = 4,
         ["a2-cells-end-text.boxes.txt"] = 12,
         ["a2-cells-end-text.lines.txt"] = 34,
         ["a2-cells-end-text.print.txt"] = 49,
@@ -755,7 +759,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(182);
+        cases.Should().HaveCount(183);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Order(StringComparer.Ordinal), "four files per case and the versions");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

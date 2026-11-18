@@ -256,9 +256,10 @@ public class RowPartTests
         // Where the row cannot move whole, the last resort is taken: a table at the top of the first page, its first row
         // "t" beside a cell of two 85.6 pt paddings and the line "u" (6 pt on 8 pt), so the cells end 0.05 pt above the
         // page end and only the half of the line below the row passes it. The cells keep their half line on the page and
-        // break earlier: the row is cut, "t" on page 1, "u" at the top of page 2, nothing past the page area. Chromium's
-        // print of this document is not measured; at the top of a page Chromium leaves a blank first page for a row whose
-        // bottom padding does not fit (TableBreakReferenceTests, case fr-f4-padding-page-start, listed).
+        // break earlier: the row is cut, "t" on page 1, "u" at the top of page 2, nothing past the page area. A listed
+        // difference (docs/architecture.md, as case fr-f4-padding-page-start): Chromium's print of this document (case
+        // a2-cells-end-page-top) leaves page 1 blank, prints the row whole on page 2 (its cells 179.941 pt high, the line
+        // below it at 191.25 to 192 pt) and "after a" on page 3.
         CellElement Second() => Cell([Block([]).PaddingTop(85.6.Pt()).PaddingBottom(85.6.Pt()), Paragraph("u").FontSize(6.Pt()).LineHeight(8.Pt())]);
         var table = Table(Columns(Fill(1), Fill(1)), [TableRow([Cell("t"), Second()]), TableRow([Cell("after"), Cell("a")])])
             .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
@@ -268,6 +269,7 @@ public class RowPartTests
         engine.PageTexts.Should().Equal("t", "u after a");
         engine.Pages[1].Words.Select(word => word.Text).Should().StartWith(["u"]);
         engine.Pages[0].Rectangles.Should().AllSatisfy(box => box.Y1.Should().BeLessThanOrEqualTo(192 + 1e-9, "the page area ends at 192 pt"));
+        PrintedPages.Chromium("a2-cells-end-page-top").PageTexts.Should().Equal(string.Empty, "t u", "after a");
     }
 
     [Theory]

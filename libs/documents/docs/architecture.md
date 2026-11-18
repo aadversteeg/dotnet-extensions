@@ -552,7 +552,7 @@ Each is documented next to its code as well.
   in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
   (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
   the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
-  row whole on the next (case `fr-f4-padding-page-start`).
+  row whole on the next (cases `fr-f4-padding-page-start`, `a2-cells-end-page-top`).
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
