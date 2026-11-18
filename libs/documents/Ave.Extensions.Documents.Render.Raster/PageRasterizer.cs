@@ -77,9 +77,16 @@ public static class PageRasterizer
     /// <param name="page">The page size in points.</param>
     /// <param name="resolution">Pixels per inch.</param>
     /// <returns>Width and height in pixels (as 64-bit numbers, since a large page at a high resolution may not fit 32
-    /// bits).</returns>
+    /// bits). A positive side at a positive resolution is at least 1 pixel, as the formula says, also where the product
+    /// is too small for a double and rounds to 0 (a resolution near 5e-324).</returns>
     public static (long Width, long Height) PixelSize(Size page, double resolution) =>
-        ((long)Math.Ceiling(page.Width * resolution / 72), (long)Math.Ceiling(page.Height * resolution / 72));
+        (Pixels(page.Width, resolution), Pixels(page.Height, resolution));
+
+    private static long Pixels(double points, double resolution)
+    {
+        var pixels = (long)Math.Ceiling(points * resolution / 72);
+        return pixels == 0 && points > 0 && resolution > 0 ? 1 : pixels;
+    }
 
     /// <summary>The one check every entry point makes: the options, then the page model's contract (by the shared
     /// <see cref="PageModelRules"/>, reported under <c>Documents.Raster.InvalidPageModel</c>).</summary>

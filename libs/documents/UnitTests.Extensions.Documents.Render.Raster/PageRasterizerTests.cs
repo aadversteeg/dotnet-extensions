@@ -166,6 +166,9 @@ public class PageRasterizerTests
     [InlineData(612, 792, 72, 612, 792)]
     [InlineData(612, 792, 300, 2550, 3300)]
     [InlineData(0.0001, 0.0001, 96, 1, 1)]
+    [InlineData(0.0001, 85.38173927570774, 5e-324, 1, 1)]
+    [InlineData(2.23421391529693, 1, 5e-324, 1, 1)]
+    [InlineData(3.403e38, 3.403e38, 5e-324, 1, 1)]
     public void The_image_is_the_page_size_times_the_resolution_rounded_up(double width, double height, double resolution, int pixelsAcross, int pixelsDown)
     {
         PageRasterizer.PixelSize(new Size(width, height), resolution).Should().Be((pixelsAcross, pixelsDown));
