@@ -61,7 +61,17 @@ public static class CssParser
         }
 
         var built = new RuleBuilder(options.SourceName, diagnostics).StyleSheet(rules);
-        return Result<CssResult<StyleSheet>, Error>.Success(new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), diagnostics.ToValueList()));
+        var found = diagnostics.ToValueList();
+        // A selector nested past the limit is a limit, not a diagnostic: the sheet is not read (as for blocks).
+        foreach (var diagnostic in found)
+        {
+            if (diagnostic.Code == CssErrorCodes.TooDeep)
+            {
+                return Fail<StyleSheet>(diagnostic);
+            }
+        }
+
+        return Result<CssResult<StyleSheet>, Error>.Success(new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), found));
     }
 
     /// <summary>

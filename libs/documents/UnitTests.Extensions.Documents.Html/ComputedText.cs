@@ -27,16 +27,17 @@ internal static class ComputedText
             Of(property, first, style) == Of(property, second, style) ? Of(property, first, style) : $"{Of(property, first, style)} {Of(property, second, style)}",
         CssList list => string.Join(list.CommaSeparated ? ", " : " ", list.Items.Select(item => Of(property, item, style))),
         CssString family when property == "font-family" => FamilyName(family.Value),
+        CssRatio ratio => $"{Number(ratio.Width)} / {Number(ratio.Height)}",
         _ => value.ToString()!,
     };
 
     /// <summary>A family name as Chromium writes it: without quotes when it is one identifier that is not a generic
-    /// family or a CSS-wide keyword, else quoted.</summary>
+    /// family, a CSS-wide keyword or a dashed identifier (<c>--a</c> is written <c>"--a"</c>, measured), else quoted.</summary>
     private static string FamilyName(string name)
     {
         string[] reserved = ["serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "math", "emoji", "fangsong", "ui-serif", "ui-sans-serif", "ui-monospace", "ui-rounded", "initial", "inherit", "unset", "revert", "revert-layer", "default"];
         var identifier = name.Length > 0 && !char.IsAsciiDigit(name[0]) && !(name.StartsWith('-') && name.Length > 1 && char.IsAsciiDigit(name[1]))
-            && name.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' || c >= 0x80) && name != "-";
+            && name.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' || c >= 0x80) && name != "-" && !name.StartsWith("--", StringComparison.Ordinal);
         return identifier && !reserved.Contains(name.ToLowerInvariant()) ? name : "\"" + name.Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
     }
 

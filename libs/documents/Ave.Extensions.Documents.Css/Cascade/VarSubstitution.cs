@@ -197,40 +197,6 @@ internal static class VarSubstitution
         return deepest;
     }
 
-    /// <summary>The names every var() in the values refers to, fallbacks included (the edges of the dependency graph of
-    /// CSS Variables 1 §2.3), without recursion.</summary>
-    public static List<string> References(IReadOnlyList<ComponentValue> values)
-    {
-        var names = new List<string>();
-        var stack = new Stack<IReadOnlyList<ComponentValue>>();
-        stack.Push(values);
-        while (stack.Count > 0)
-        {
-            foreach (var value in stack.Pop())
-            {
-                switch (value)
-                {
-                    case FunctionValue function when function.IsNamed("var") && Arguments(function) is { } arguments:
-                        names.Add(arguments.Name);
-                        if (arguments.Fallback is { } fallback)
-                        {
-                            stack.Push(fallback);
-                        }
-
-                        break;
-                    case FunctionValue function:
-                        stack.Push(function.Values);
-                        break;
-                    case SimpleBlock block:
-                        stack.Push(block.Values);
-                        break;
-                }
-            }
-        }
-
-        return names;
-    }
-
     /// <summary>One list being substituted: its source values, where it is, its output, and for a function or block
     /// the value to rebuild and the list it goes into, and how deeply its output is nested in the result.</summary>
     private sealed class Frame(IReadOnlyList<ComponentValue> source, List<ComponentValue> output, ComponentValue? owner, List<ComponentValue>? into, int depth)
@@ -255,6 +221,9 @@ internal static class VarSubstitution
         public int Depth { get; } = depth;
     }
 
+    /// <summary>The name and fallback of a well-formed var() (see <see cref="Arguments"/>), or null.</summary>
+    public static (string Name, IReadOnlyList<ComponentValue>? Fallback)? ArgumentsOf(FunctionValue function) => Arguments(function);
+
     /// <summary>The arguments of var(): the name, and the fallback after the first comma (null when there is no comma;
     /// it may be empty). The fallback is a view of the function's values, not a copy: a fallback that is not used costs
     /// nothing however long it is.</summary>
@@ -267,7 +236,8 @@ internal static class VarSubstitution
             index++;
         }
 
-        if (index >= values.Count || values[index] is not CssToken { Kind: CssTokenKind.Ident } name || !name.Text.StartsWith("--", StringComparison.Ordinal))
+        // A custom property name is a dashed identifier other than '--' alone, which CSS Variables 1 §2 reserves.
+        if (index >= values.Count || values[index] is not CssToken { Kind: CssTokenKind.Ident } name || !name.Text.StartsWith("--", StringComparison.Ordinal) || name.Text.Length == 2)
         {
             return null;
         }

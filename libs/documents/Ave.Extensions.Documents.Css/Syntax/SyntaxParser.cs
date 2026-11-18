@@ -260,10 +260,52 @@ internal sealed class SyntaxParser
             if (input.Next is SimpleBlock { Opening: CssTokenKind.OpenCurly } block)
             {
                 input.Discard();
-                return new SyntaxAtRule(keyword.Text, [.. prelude], block, ConsumeBlockContents(new ComponentStream([.. block.Values])), keyword.Position);
+                var contents = !nested && IsGroupRule(keyword.Text)
+                    ? ConsumeRuleList(new ComponentStream([.. block.Values]))
+                    : ConsumeBlockContents(new ComponentStream([.. block.Values]));
+                return new SyntaxAtRule(keyword.Text, [.. prelude], block, contents, keyword.Position);
             }
 
             prelude.Add(input.Consume());
+        }
+    }
+
+    /// <summary>The group rules the engine reads whose block, outside a style rule, holds rules only (CSS Conditional 3
+    /// §2, CSS Cascade 5 §6.4.2): Chromium 159 reads that block as a list of rules, where a semicolon is no separator
+    /// but part of the next rule's prelude (measured: <c>@media print{ .a{…}; .b{…} }</c> drops the rule of
+    /// <c>.b</c>). Inside a style rule the same at-rules hold declarations too and are read as block contents. The
+    /// other group rules (@container, @scope, @starting-style) are refused whole, so how their block is read does not
+    /// matter.</summary>
+    private static bool IsGroupRule(string name) =>
+        InfraAscii.EqualsIgnoreCase(name, "media") || InfraAscii.EqualsIgnoreCase(name, "supports") || InfraAscii.EqualsIgnoreCase(name, "layer");
+
+    /// <summary>"Consume a list of rules" with the top-level flag unset (CSS Syntax 3, 2021 Candidate Recommendation
+    /// §5.4.1, the reading Chromium 159 keeps for the blocks of group rules): at-rules and qualified rules; white space is
+    /// skipped, and anything else, a semicolon or a declaration included, starts a qualified rule's prelude.</summary>
+    private ValueList<SyntaxBlockItem> ConsumeRuleList(ComponentStream input)
+    {
+        var rules = new List<SyntaxBlockItem>();
+        while (true)
+        {
+            if (input.IsEmpty)
+            {
+                return [.. rules];
+            }
+
+            if (input.NextIs(CssTokenKind.Whitespace))
+            {
+                input.Discard();
+            }
+            else if (input.NextIs(CssTokenKind.AtKeyword))
+            {
+                rules.Add(new SyntaxBlockItem(ConsumeAtRule(input, nested: false), []));
+            }
+            else
+            {
+                var start = input.Next!;
+                var rule = ConsumeQualifiedRule(input, stopAtSemicolon: false, nested: false);
+                rules.Add(new SyntaxBlockItem((SyntaxRule?)rule ?? new SyntaxInvalid(start.Position), []));
+            }
         }
     }
 

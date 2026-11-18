@@ -21,11 +21,16 @@ public static partial class PropertyRegistry
     private const string Scrolling = "scrolling; a paged document does not scroll";
     private const string Screen = "screen rendering hints; they do not change what is drawn on a page";
 
-    private static readonly string[] AnimationKeywords =
-    [
-        "none", "infinite", "linear", "ease", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end", "normal", "reverse",
-        "alternate", "alternate-reverse", "forwards", "backwards", "both", "running", "paused", "replace", "add", "accumulate", "auto",
-    ];
+    /// <summary>The keywords of the animation shorthand other than a name, each with the longhand it sets (CSS
+    /// Animations 1 §3.10). Chromium 159 takes a keyword whose longhand is already set as the name (measured:
+    /// <c>100s ease ease</c> runs @keyframes ease), and add, replace, accumulate and auto are names there too.</summary>
+    private static readonly Dictionary<string, string> AnimationKeywords = new(StringComparer.Ordinal)
+    {
+        ["linear"] = "timing", ["ease"] = "timing", ["ease-in"] = "timing", ["ease-out"] = "timing", ["ease-in-out"] = "timing",
+        ["step-start"] = "timing", ["step-end"] = "timing", ["infinite"] = "count", ["normal"] = "direction", ["reverse"] = "direction",
+        ["alternate"] = "direction", ["alternate-reverse"] = "direction", ["none"] = "fill", ["forwards"] = "fill",
+        ["backwards"] = "fill", ["both"] = "fill", ["running"] = "state", ["paused"] = "state",
+    };
 
     private static IReadOnlyList<IgnoredProperty> IgnoredProperties()
     {
@@ -44,7 +49,9 @@ public static partial class PropertyRegistry
         Add(Interaction,
             "cursor", "pointer-events", "user-select", "-webkit-user-select", "touch-action", "caret", "caret-color",
             "caret-shape", "caret-animation", "accent-color", "appearance", "-webkit-appearance", "-webkit-tap-highlight-color",
-            "-webkit-touch-callout", "-webkit-user-drag", "-webkit-user-modify", "field-sizing", "interactivity");
+            "-webkit-touch-callout", "-webkit-user-drag", "field-sizing", "interactivity");
+        AddRefusing("-webkit-user-modify", Interaction, "any value but read-only: Chromium 159 wraps and keeps the text as it does editable text (measured: read-write-plaintext-only makes white-space-collapse preserve)",
+            values => !OnlyKeywords(values, "read-only"));
         AddRefusing("resize", Interaction, "any value but none: Chromium 159 prints the resize handle",
             values => !OnlyKeywords(values, "none"));
         Add(Motion,
@@ -86,13 +93,50 @@ public static partial class PropertyRegistry
             || (value is CssToken { Kind: CssTokenKind.Ident } word
                 && (keywords.Contains(InfraAscii.ToLower(word.Text)) || InfraAscii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer")));
 
-    /// <summary>Whether an animation shorthand names an animation: an identifier that is not one of the other
-    /// longhands' keywords, or a string.</summary>
-    private static bool NamesAnimation(IReadOnlyList<ComponentValue> values) =>
-        Meaningful(values).Any(value => value is CssToken { Kind: CssTokenKind.String }
-            || (value is CssToken { Kind: CssTokenKind.Ident } word
-                && !AnimationKeywords.Contains(InfraAscii.ToLower(word.Text))
-                && InfraAscii.ToLower(word.Text) is not ("initial" or "inherit" or "unset" or "revert" or "revert-layer")));
+    /// <summary>Whether an animation shorthand names an animation, or may: in one of its comma-separated layers a
+    /// string, an identifier that is not one of the other longhands' keywords, a keyword whose longhand that layer has
+    /// already set (see <see cref="AnimationKeywords"/>), or a function other than the timing functions cubic-bezier(),
+    /// steps() and linear() (a var() or env() can hold a name: Chromium 159, measured, runs <c>--a: k; animation:
+    /// var(--a) 100s</c>).</summary>
+    private static bool NamesAnimation(IReadOnlyList<ComponentValue> values)
+    {
+        var set = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var value in Meaningful(values))
+        {
+            switch (value)
+            {
+                case CssToken { Kind: CssTokenKind.Comma }:
+                    set.Clear();
+                    break;
+                case CssToken { Kind: CssTokenKind.String }:
+                    return true;
+                case CssToken { Kind: CssTokenKind.Ident } word:
+                    var keyword = InfraAscii.ToLower(word.Text);
+                    if (keyword is "initial" or "inherit" or "unset" or "revert" or "revert-layer")
+                    {
+                        break;
+                    }
+
+                    if (!AnimationKeywords.TryGetValue(keyword, out var longhand) || !set.Add(longhand))
+                    {
+                        return true;
+                    }
+
+                    break;
+                case FunctionValue function when function.IsNamed("cubic-bezier") || function.IsNamed("steps") || function.IsNamed("linear"):
+                    if (!set.Add("timing"))
+                    {
+                        return true;
+                    }
+
+                    break;
+                case FunctionValue or SimpleBlock:
+                    return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>zoom: normal, 1 or 100%, or a CSS-wide keyword.</summary>
     private static bool IsUnitZoom(IReadOnlyList<ComponentValue> values) =>

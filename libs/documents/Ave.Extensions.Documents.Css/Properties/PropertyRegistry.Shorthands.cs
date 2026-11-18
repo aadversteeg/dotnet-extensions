@@ -375,7 +375,9 @@ public static partial class PropertyRegistry
     }
 
     /// <summary>background (CSS Backgrounds 3 §2.10): one layer with a colour and no image. An image, a position, a size
-    /// or several layers are refused.</summary>
+    /// or several layers are refused. One box sets both background-origin and background-clip, two set them in that
+    /// order (§2.10; Chromium 159, measured: <c>background: red padding-box</c> clips to the padding box); each
+    /// component comes at most once, so a third box or a second attachment is invalid.</summary>
     private static ShorthandParse ParseBackground(ValueReader reader)
     {
         var values = new Dictionary<string, CssValue>();
@@ -414,11 +416,22 @@ public static partial class PropertyRegistry
                     "scroll" => "background-attachment",
                     _ => values.ContainsKey("background-origin") ? "background-clip" : "background-origin",
                 };
+                // <repeat-style> takes one or two keywords (repeat repeat is repeat); the rest come once.
+                if (values.ContainsKey(longhand) && longhand != "background-repeat")
+                {
+                    return ShorthandParse.Invalid("not a value of background");
+                }
+
                 values[longhand] = new CssKeyword(initialKeyword);
                 continue;
             }
 
             return ShorthandParse.Refused("a background image, position, size or repeat is not supported; only a colour");
+        }
+
+        if (values.TryGetValue("background-origin", out var origin) && !values.ContainsKey("background-clip"))
+        {
+            values["background-clip"] = origin;
         }
 
         return reader.Count == 0 ? ShorthandParse.Invalid("background needs a value") : Expand(BackgroundLonghands, values);
@@ -527,7 +540,8 @@ public static partial class PropertyRegistry
     }
 
     /// <summary>font-synthesis = none | [ weight || style || small-caps ] (CSS Fonts 4 §7.3): each named longhand
-    /// auto, the others none.</summary>
+    /// auto, the others none; a keyword named twice is invalid (Chromium 159, measured: <c>weight weight</c> is
+    /// dropped).</summary>
     private static ShorthandParse ParseFontSynthesis(ValueReader reader)
     {
         if (reader.Count == 1 && reader.Keyword("none") is not null)
@@ -546,9 +560,16 @@ public static partial class PropertyRegistry
             ["font-synthesis-style"] = new CssKeyword("none"),
             ["font-synthesis-small-caps"] = new CssKeyword("none"),
         };
+        var named = new HashSet<string>(StringComparer.Ordinal);
         while (!reader.AtEnd)
         {
-            switch (reader.Keyword("weight", "style", "small-caps"))
+            var keyword = reader.Keyword("weight", "style", "small-caps");
+            if (keyword is not null && !named.Add(keyword))
+            {
+                return ShorthandParse.Invalid("not a value of font-synthesis");
+            }
+
+            switch (keyword)
             {
                 case "weight":
                     values["font-synthesis-weight"] = new CssKeyword("auto");

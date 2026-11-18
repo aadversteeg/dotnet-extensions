@@ -129,7 +129,7 @@ public class WptCssSuiteTests(ITestOutputHelper output)
             + $"{failures.Count} different; {outside} outside the registry; Chromium disagrees with the test in {testDiffers}");
         failures.ForEach(output.WriteLine);
         failures.Should().BeEmpty();
-        (equal, refusedTaken, refusedDropped, outside, testDiffers).Should().Be((17, 144, 253, 45, 52));
+        (equal, refusedTaken, refusedDropped, outside, testDiffers).Should().Be((32, 144, 238, 45, 52));
     }
 
     /// <summary>What the engine makes of a selector: taken (it parses, and every part is supported or never matches in a

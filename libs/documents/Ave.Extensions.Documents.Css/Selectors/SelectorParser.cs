@@ -353,6 +353,17 @@ internal static class SelectorParser
         static bool IsName(CssToken? token) => token is { Kind: CssTokenKind.Ident } || (token is not null && token.IsDelim('*'));
         static string NameOf(CssToken token) => token.Kind == CssTokenKind.Ident ? token.Text : "*";
 
+        // An escaped asterisk ('\*') is an identifier: a type selector for elements named '*', which match nothing in
+        // Chromium 159 (measured), while the engine's TypeSelector takes '*' for the universal selector: refused.
+        foreach (var token in new[] { first, second, third })
+        {
+            if (token is { Kind: CssTokenKind.Ident, Text: "*" })
+            {
+                context.Fail<TypeSelector>("a type selector written as an escaped '*' (the name of an element called '*')", token.Position);
+                return false;
+            }
+        }
+
         if (first is not null && first.IsDelim('|') && IsName(second))
         {
             cursor.Next();
@@ -586,7 +597,9 @@ internal static class SelectorParser
                 var ofIndex = -1;
                 for (var i = 0; i < arguments.Count && name is "nth-child" or "nth-last-child"; i++)
                 {
-                    if (arguments[i] is CssToken token && token.IsIdent("of"))
+                    // Chromium 159 takes 'of' in lowercase only (measured: ':nth-child(1 OF .a)' drops the rule), where
+                    // Selectors 4 compares it ASCII case-insensitively; the other spellings are refused.
+                    if (arguments[i] is CssToken { Kind: CssTokenKind.Ident, Text: "of" })
                     {
                         ofIndex = i;
                         break;
@@ -594,9 +607,21 @@ internal static class SelectorParser
                 }
 
                 var anb = ofIndex < 0 ? arguments.Items : arguments.Items[..ofIndex];
+                if (ofIndex < 0 && name is "nth-child" or "nth-last-child" && arguments.Items.Any(value => value is CssToken { Kind: CssTokenKind.Ident } word && InfraAscii.EqualsIgnoreCase(word.Text, "of")))
+                {
+                    return context.Fail<PseudoClassSelector>($"':{name}()' has 'of' in capitals, which Chromium does not read", position);
+                }
+
                 if (AnPlusBParser.Parse(anb) is not { } nth)
                 {
                     return context.Fail<PseudoClassSelector>($"':{name}()' needs An+B", position);
+                }
+
+                // Chromium 159 matches nothing once A or B is 2^30 or more in size (measured: -n+1073741823 matches
+                // every element, -n+1073741824 none); the engine computes such values exactly, so it refuses them.
+                if (System.Int128.Abs(nth.A) > MaxAnPlusB || System.Int128.Abs(nth.B) > MaxAnPlusB)
+                {
+                    return context.Fail<PseudoClassSelector>($"':{name}()' has a step or an offset of 2^30 or more, where Chromium matches nothing", position);
                 }
 
                 if (ofIndex < 0)
@@ -613,6 +638,9 @@ internal static class SelectorParser
                     : context.Fail<PseudoClassSelector>($"':{name}()' needs an argument", position);
         }
     }
+
+    /// <summary>The largest A and B of An+B whose matching Chromium 159 computes: 2^30 - 1 (measured).</summary>
+    private const long MaxAnPlusB = (1L << 30) - 1;
 
     private static PseudoElementSelector? ParsePseudoElement(Cursor cursor, TextPosition position, Context context)
     {

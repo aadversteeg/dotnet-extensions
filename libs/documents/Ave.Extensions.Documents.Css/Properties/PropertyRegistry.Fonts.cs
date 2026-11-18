@@ -134,6 +134,12 @@ public static partial class PropertyRegistry
             return ComputedResult.Refused($"a font size above {MaxFontSizePixels}px (Chromium 159 clamps it to {MaxFontSizePixels}px)");
         }
 
+        // Chromium 159 computes 1e-7px as 0px and keeps 2e-7px (measured); between them the engine cannot tell.
+        if (pixels is > 0 and < MinKeptFontSizePixels)
+        {
+            return ComputedResult.Refused("a font size above 0 and below 2e-7px (Chromium 159 computes 1e-7px as 0px)");
+        }
+
         if (pixels is > 0 and < MinLogicalFontSizePixels && !context.FontSizeSource.Absolute)
         {
             return ComputedResult.Refused($"a font size below {MinLogicalFontSizePixels}px made from a relative size (Chromium 159 raises it to {MinLogicalFontSizePixels}px and lets children inherit the smaller size)");
@@ -144,6 +150,9 @@ public static partial class PropertyRegistry
 
     /// <summary>The largest computed font size of Chromium 159, in px.</summary>
     private const double MaxFontSizePixels = 10000;
+
+    /// <summary>The least font size above 0, in px, that Chromium 159 is measured to keep as it is.</summary>
+    private const double MinKeptFontSizePixels = 2e-7;
 
     /// <summary>Chromium 159's minimum logical font size, in px: the least it computes for a relative size.</summary>
     private const double MinLogicalFontSizePixels = 6;
@@ -180,7 +189,8 @@ public static partial class PropertyRegistry
 
     /// <summary>font-family (CSS Fonts 4 §2.1): a comma-separated list of family names (a string, or identifiers joined by
     /// single spaces) and generic families (keywords). The CSS-wide keywords and "default" cannot be a family name
-    /// written without quotes.</summary>
+    /// written without quotes, and a generic family keyword cannot start a name of several identifiers (Chromium 159
+    /// reads it as the generic family and then wants a comma; measured: <c>font: 12px sans-serif serif</c> is dropped).</summary>
     private static ParsedValue ParseFontFamily(ValueReader reader)
     {
         var families = new List<CssValue>();
@@ -212,6 +222,11 @@ public static partial class PropertyRegistry
                     if (words.Count == 0 && InfraAscii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default")
                     {
                         return ParsedValue.Invalid($"'{word.Text}' cannot be a font family name without quotes");
+                    }
+
+                    if (words.Count == 1 && GenericFamilies.Contains(InfraAscii.ToLower(words[0])))
+                    {
+                        return ParsedValue.Invalid($"the generic family '{words[0]}' cannot start a font family name");
                     }
 
                     words.Add(word.Text);

@@ -38,6 +38,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
     {
         var result = new List<CssRule>();
         var importsAllowed = true;
+        var imported = false;
         foreach (var rule in rules)
         {
             switch (rule)
@@ -52,6 +53,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     if (Import(at) is { } import)
                     {
                         result.Add(import);
+                        imported = true;
                     }
 
                     continue;
@@ -59,10 +61,12 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     // @charset is read when bytes are decoded (CSS Syntax 3 §3.2); as a rule it is nothing.
                     continue;
                 case SyntaxAtRule at when InfraAscii.EqualsIgnoreCase(at.Name, "layer") && at.Block is null:
-                    // Layer statements may come before @import (CSS Cascade 5 §2).
+                    // Layer statements may come before @import (CSS Cascade 5 §2); one after an @import ends the place
+                    // for imports, as in Chromium 159 (measured: '@import "a.css"; @layer x; @import "b.css";' drops b.css).
                     if (LayerStatement(at) is { } statement)
                     {
                         result.Add(statement);
+                        importsAllowed &= !imported;
                     }
 
                     continue;
@@ -78,13 +82,24 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
             // Only a valid rule closes the place for @import (CSS Cascade 5 §2): one the engine skips as unreadable
             // does not, as a browser drops it before it counts.
-            if (built is not null || (rule is SyntaxAtRule known && (UnsupportedAtRules.Contains(InfraAscii.ToLower(known.Name)) || IgnoredAtRules.Contains(InfraAscii.ToLower(known.Name)))))
+            if (built is not null || (rule is SyntaxAtRule known && (UnsupportedAtRules.Contains(InfraAscii.ToLower(known.Name)) || (IgnoredAtRules.Contains(InfraAscii.ToLower(known.Name)) && HasKeyframesName(known)))))
             {
                 importsAllowed = false;
             }
         }
 
         return [.. result];
+    }
+
+    /// <summary>Whether a @keyframes rule has a name (CSS Animations 1 §4: an identifier other than a CSS-wide keyword
+    /// and none, or a string): one without is invalid and, as in Chromium 159, does not end the place for @import
+    /// (measured: '@keyframes {} @import "b.css";' applies b.css).</summary>
+    private static bool HasKeyframesName(SyntaxAtRule rule)
+    {
+        var name = rule.Prelude.Where(value => value is not CssToken { Kind: CssTokenKind.Whitespace }).ToList();
+        return name is [CssToken { Kind: CssTokenKind.String }]
+            || (name is [CssToken { Kind: CssTokenKind.Ident } ident]
+                && InfraAscii.ToLower(ident.Text) is not ("none" or "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default"));
     }
 
     /// <summary>One rule, at the top level or nested in a style rule (where declarations become nested declarations
@@ -106,6 +121,15 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
     private StyleRule? Style(SyntaxQualifiedRule rule, bool nested)
     {
+        if (rule.Prelude.Any(value => value is CssToken { Kind: CssTokenKind.Semicolon }))
+        {
+            // No selector holds a ';': in the block of a group rule a stray ';' or a declaration becomes the start of the
+            // next rule's prelude, and every browser drops that rule (Chromium 159, measured: '@media print{ .a{…}; .b{…} }'
+            // drops the rule of .b).
+            Report(CssErrorCodes.Invalid.Rule, $"The rule after a ';' ('{CssSerializer.Shortened(rule.Prelude)}') is invalid; it is dropped.", rule.Position);
+            return null;
+        }
+
         var parsed = SelectorParser.Parse(rule.Prelude, relative: nested, rule.Position);
         if (parsed.List is not { } selectors)
         {
@@ -226,7 +250,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         }
         else if (IgnoredAtRules.Contains(name))
         {
-            Report(CssErrorCodes.Ignored.AtRule, $"@{at.Name} is read for nothing: it only drives animations, and an animation that names it is refused.", at.Position);
+            Report(CssErrorCodes.Ignored.AtRule, $"@{at.Name} is read for nothing: it only drives animations, and a value that names an animation, or may name one through var() or env(), is refused.", at.Position);
         }
         else
         {

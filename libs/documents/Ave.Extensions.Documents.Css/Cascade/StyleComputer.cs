@@ -70,7 +70,6 @@ public sealed class StyleComputer
 
     private readonly Dictionary<(object Parent, PreparedDeclaration?[] Winners), ImmutableDictionary<string, CssTokens>> _customTables = new(new CustomTableComparer());
 
-    private readonly Dictionary<CustomEntry, List<string>> _references = new(ReferenceEqualityComparer.Instance);
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Declaration[], PreparedBlock> _ownBlocks = new();
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Declaration[], PreparedBlock> _hintBlocks = new();
 
@@ -136,6 +135,7 @@ public sealed class StyleComputer
         var candidates = Collect(element, own ?? ElementDeclarations.None);
         var context = new ComputeContext(parent, _rootFontSize, _values, element.IsRoot);
         var custom = _failure is null ? CustomProperties(candidates.Custom, parent) : ImmutableDictionary<string, CssTokens>.Empty;
+        _custom = custom;
         var shorthands = new Dictionary<PreparedDeclaration, ShorthandParse>();
         foreach (var property in ComputeOrder)
         {
@@ -169,6 +169,30 @@ public sealed class StyleComputer
 
         _styles[element] = style;
         return Result<ComputedStyle, Error>.Success(style);
+    }
+
+    /// <summary>The custom properties of the element being computed, for <see cref="RollsBack"/>.</summary>
+    private IReadOnlyDictionary<string, CssTokens> _custom = ImmutableDictionary<string, CssTokens>.Empty;
+
+    /// <summary>The CSS-wide keyword that rolls back (<c>revert</c> or <c>revert-layer</c>) a candidate's value is
+    /// after var() substitution, or null: a var() that substitutes to one of them rolls the cascade back as the keyword
+    /// itself would (CSS Cascade 5 §7.3; Chromium 159, measured: <c>display: var(--nope, revert)</c> on a p is block,
+    /// <c>margin-top: var(--nope, revert-layer)</c> takes the previous layer's value).</summary>
+    private string? RollsBack(Candidate candidate)
+    {
+        if (candidate.Entry.Value is not PendingEntry)
+        {
+            return null;
+        }
+
+        var declaration = candidate.Entry.Declaration;
+        if (Substitute(declaration.Source.Value, _custom, declaration, out var values) != VarSubstitution.Outcome.Done)
+        {
+            return null;
+        }
+
+        var keyword = DeclarationPreparer.WideKeyword(values);
+        return keyword is "revert" or "revert-layer" ? keyword : null;
     }
 
     /// <summary>Ends the cascade at a limit: the error is kept, and every computation from now on returns it.</summary>
@@ -372,7 +396,7 @@ public sealed class StyleComputer
         // the cascade sort the candidates and walk them in order.
         var (ownHighest, sharedHighest) = (Highest(candidates), Highest(all));
         var highest = sharedHighest is null || (ownHighest is { } o && o.Priority.CompareTo(sharedHighest.Value.Priority) >= 0) ? ownHighest : sharedHighest;
-        if (highest is { Entry.Value: not (RefusedEntry or WideKeywordEntry { Keyword: "revert" or "revert-layer" }) } winner)
+        if (highest is { Entry.Value: not (RefusedEntry or WideKeywordEntry { Keyword: "revert" or "revert-layer" }) } winner && RollsBack(winner) is null)
         {
             return winner;
         }
@@ -407,7 +431,7 @@ public sealed class StyleComputer
                 continue;
             }
 
-            switch (candidate.Entry.Value)
+            switch (candidate.Entry.Value is WideKeywordEntry ? candidate.Entry.Value : RollsBack(candidate) is { } keyword ? new WideKeywordEntry(keyword) : candidate.Entry.Value)
             {
                 case RefusedEntry refused when candidate.Origin == CascadeOrigin.UserAgent:
                     if (_reportedFor.Add((candidate.Entry.Declaration, _element!)))
@@ -443,10 +467,10 @@ public sealed class StyleComputer
     // ---- custom properties (CSS Variables 1 §2, §3) ----
 
     /// <summary>The computed custom properties: inherited from the parent, overridden by the element's own, with var()
-    /// substituted in dependency order (CSS Variables 1 §2.3). The order and the cycles come from an iterative
-    /// strongly-connected-components walk (Tarjan) over the references of the element's declared values, so a chain of
-    /// any length costs its length and no stack; the members of a cycle, and the values whose substitution fails, have
-    /// the guaranteed-invalid value (they are absent). The tables are immutable maps that share their structure: an
+    /// substituted in dependency order (CSS Variables 1 §2.3). The order and the cycles come from an iterative walk over
+    /// the references substitution needs (<see cref="Resolve"/>), so a chain of any length costs its length and no stack;
+    /// a property in a cycle is refused, and it and the values whose substitution fails have the guaranteed-invalid value
+    /// (they are absent). The tables are immutable maps that share their structure: an
     /// element that declares none shares its parent's table, one that declares a few costs those few, and elements with
     /// the same parent table and the same winning declarations share one table, so the substitutions of their
     /// declarations can be remembered (<see cref="_substituted"/>).</summary>
@@ -504,35 +528,7 @@ public sealed class StyleComputer
             }
         }
 
-        foreach (var component in ResolutionOrder(pending))
-        {
-            if (_failure is not null)
-            {
-                return NoCustomProperties;
-            }
-
-            if (component.Cyclic)
-            {
-                foreach (var name in component.Names)
-                {
-                    Report(pending[name].Declaration, CssErrorCodes.Invalid.ComputedValue, $"The custom property '{name}' refers to itself through var(); it has no value.");
-                }
-
-                continue;
-            }
-
-            var name0 = component.Names[0];
-            var (entry, declaration) = pending[name0];
-            var outcome = Substitute(entry.Values, result, declaration, out var substituted);
-            if (outcome == VarSubstitution.Outcome.Done)
-            {
-                result[name0] = new CssTokens(substituted, CssSerializer.Serialize(substituted));
-            }
-            else
-            {
-                Failed(declaration, outcome);
-            }
-        }
+        Resolve(pending, result, inherited);
 
         // Immutable: a computed style's custom properties cannot change, also through a cast.
         var table = result.ToImmutable();
@@ -546,114 +542,139 @@ public sealed class StyleComputer
 
     private static readonly ImmutableDictionary<string, CssTokens> NoCustomProperties = ImmutableDictionary.Create<string, CssTokens>(StringComparer.Ordinal);
 
-    /// <summary>A strongly connected component of the dependency graph: one property, or the properties of a cycle.</summary>
-    private sealed record Component(List<string> Names, bool Cyclic);
-
-    /// <summary>The pending custom properties in an order where every property comes after those it refers to (Tarjan's
-    /// algorithm with an explicit stack: it emits the components dependencies first), with the cycles marked. Each
-    /// property's references are a set, so a value that names n properties costs n, and every reference and step is
-    /// charged to the work limit.</summary>
-    private List<Component> ResolutionOrder(Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending)
+    /// <summary>
+    /// Substitutes the pending custom properties of an element in an order where each comes after those it needs (CSS
+    /// Variables 1 §2.3), without recursion. What a property needs is found as substitution needs it: the property each
+    /// var() names, and the properties in a fallback only once the var()'s own property is known to have no value (a
+    /// fallback that is not used makes no dependency, as in Chromium 159: '--a: a1 var(--b, var(--c)); --b: b1; --c: c1
+    /// var(--a)' gives '--a' the value 'a1 b1', measured). A property found again while it waits for what it needs is
+    /// in a cycle: CSS Variables 1 makes every member invalid, Chromium 159 does not always (measured), so a cycle is
+    /// refused and its property left without a value. Each look at a value is charged to the work limit; a property is
+    /// looked at once more for each level of fallbacks that turns out to be used.
+    /// </summary>
+    private void Resolve(Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending, ImmutableDictionary<string, CssTokens>.Builder result, ImmutableDictionary<string, CssTokens> inherited)
     {
-        var edges = new Dictionary<string, (List<string> List, HashSet<string> Set)>(StringComparer.Ordinal);
-        foreach (var (name, (value, _)) in pending)
-        {
-            // The names a declared value refers to are found once per declaration (a walk of the whole value), not once
-            // per element.
-            if (!_references.TryGetValue(value, out var references))
-            {
-                references = VarSubstitution.References(value.Values);
-                if (_budget.Remember(1))
-                {
-                    _references[value] = references;
-                }
-            }
-
-            _budget.Charge(1 + references.Count);
-            var set = new HashSet<string>(StringComparer.Ordinal);
-            var list = new List<string>();
-            foreach (var reference in references)
-            {
-                if (pending.ContainsKey(reference) && set.Add(reference))
-                {
-                    list.Add(reference);
-                }
-            }
-
-            edges[name] = (list, set);
-        }
-
-        var order = new List<Component>();
-        var index = new Dictionary<string, int>(StringComparer.Ordinal);
-        var low = new Dictionary<string, int>(StringComparer.Ordinal);
-        var onStack = new HashSet<string>(StringComparer.Ordinal);
-        var path = new Stack<string>();
-        var work = new Stack<(string Name, int Edge)>();
-        var next = 0;
+        var state = new Dictionary<string, bool>(StringComparer.Ordinal);  // false: waiting for what it needs; true: done
+        var waiting = new Stack<string>();
+        var needed = new List<string>();
+        var neededSet = new HashSet<string>(StringComparer.Ordinal);
         foreach (var start in pending.Keys)
         {
-            if (index.ContainsKey(start))
+            if (state.ContainsKey(start))
             {
                 continue;
             }
 
-            work.Push((start, 0));
-            while (work.Count > 0)
+            waiting.Push(start);
+            while (waiting.Count > 0 && _failure is null && !_budget.Exhausted)
             {
-                if (!_budget.Charge(1))
+                var name = waiting.Peek();
+                state[name] = false;
+                var (entry, declaration) = pending[name];
+                needed.Clear();
+                neededSet.Clear();
+                var cycle = !Needs(entry.Values, pending, state, result, needed, neededSet);
+                if (cycle)
                 {
-                    return order;
+                    waiting.Pop();
+                    state[name] = true;
+                    result.Remove(name);
+                    Report(declaration, CssErrorCodes.Unsupported.Value, $"The custom property '{name}' is part of a cycle of var() references; Chromium does not resolve every such cycle as CSS Variables 1 says, so it is refused and has no value.");
+                    continue;
                 }
 
-                var (name, edge) = work.Pop();
-                if (edge == 0)
+                if (needed.Count > 0)
                 {
-                    index[name] = low[name] = next++;
-                    path.Push(name);
-                    onStack.Add(name);
-                }
-
-                var targets = edges[name].List;
-                if (edge < targets.Count)
-                {
-                    work.Push((name, edge + 1));
-                    var target = targets[edge];
-                    if (!index.ContainsKey(target))
+                    for (var i = needed.Count - 1; i >= 0; i--)
                     {
-                        work.Push((target, 0));
-                    }
-                    else if (onStack.Contains(target))
-                    {
-                        low[name] = Math.Min(low[name], index[target]);
+                        waiting.Push(needed[i]);
                     }
 
                     continue;
                 }
 
-                // All edges done: hand the low link to the caller, and emit a component at its root.
-                if (work.Count > 0 && work.Peek() is var (caller, _) && edges[caller].Set.Contains(name))
+                waiting.Pop();
+                state[name] = true;
+                var outcome = Substitute(entry.Values, result, declaration, out var substituted);
+                if (outcome != VarSubstitution.Outcome.Done)
                 {
-                    low[caller] = Math.Min(low[caller], low[name]);
+                    Failed(declaration, outcome);
+                    continue;
                 }
 
-                if (low[name] == index[name])
+                // A CSS-wide keyword that substitution makes is that keyword (CSS Variables 1 §3; Chromium 159,
+                // measured: 'var(--nope, initial)' makes the property guaranteed-invalid, 'var(--e) inherit' with --e
+                // empty inherits).
+                switch (DeclarationPreparer.WideKeyword(substituted))
                 {
-                    var names = new List<string>();
-                    string member;
-                    do
-                    {
-                        member = path.Pop();
-                        onStack.Remove(member);
-                        names.Add(member);
-                    }
-                    while (member != name);
+                    case null:
+                        result[name] = new CssTokens(substituted, CssSerializer.Serialize(substituted));
+                        break;
+                    case "inherit" or "unset":
+                        if (inherited.TryGetValue(name, out var parentValue))
+                        {
+                            result[name] = parentValue;
+                        }
 
-                    order.Add(new Component(names, names.Count > 1 || edges[name].Set.Contains(name)));
+                        break;
+                    case "initial":
+                        break;
+                    default:
+                        Report(declaration, CssErrorCodes.Unsupported.Value, $"'{name}' becomes '{DeclarationPreparer.WideKeyword(substituted)}' by var() substitution, which rolls the custom property back in the cascade; that is not supported, and it has no value.");
+                        break;
+                }
+            }
+        }
+    }
+
+    /// <summary>The pending properties a value needs before it can be substituted, in order (see <see cref="Resolve"/>);
+    /// false when it needs one that is itself waiting: a cycle.</summary>
+    private bool Needs(IReadOnlyList<ComponentValue> values, Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending, Dictionary<string, bool> state, ImmutableDictionary<string, CssTokens>.Builder result, List<string> needed, HashSet<string> neededSet)
+    {
+        var lists = new Stack<IReadOnlyList<ComponentValue>>();
+        lists.Push(values);
+        while (lists.Count > 0)
+        {
+            var list = lists.Pop();
+            _budget.Charge(1 + list.Count);
+            foreach (var value in list)
+            {
+                switch (value)
+                {
+                    case FunctionValue function when function.IsNamed("var") && VarSubstitution.ArgumentsOf(function) is var (name, fallback):
+                        if (pending.ContainsKey(name) && state.TryGetValue(name, out var done) && !done)
+                        {
+                            return false;
+                        }
+
+                        if (pending.ContainsKey(name) && !state.ContainsKey(name))
+                        {
+                            if (neededSet.Add(name))
+                            {
+                                needed.Add(name);
+                            }
+
+                            break;
+                        }
+
+                        // Known: the fallback is used only when the property has no value.
+                        if (!result.ContainsKey(name) && fallback is not null)
+                        {
+                            lists.Push(fallback);
+                        }
+
+                        break;
+                    case FunctionValue function:
+                        lists.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        lists.Push(block.Values);
+                        break;
                 }
             }
         }
 
-        return order;
+        return true;
     }
 
     /// <summary>A substitution, remembered per declaration and custom-property table (tables are shared, see

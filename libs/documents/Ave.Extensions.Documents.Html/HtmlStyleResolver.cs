@@ -77,6 +77,8 @@ public static class HtmlStyleResolver
         ["iframe"] = "an embedded document",
         ["object"] = "an embedded document or plug-in",
         ["noscript"] = "the engine runs no scripts, and a browser that does hides its content",
+        ["fencedframe"] = "an embedded document",
+        ["geolocation"] = "a permission control",
     };
 
     /// <summary>The script types a browser runs (HTML Standard §4.12.1.1: no type, a JavaScript MIME type, module,
@@ -286,6 +288,7 @@ public static class HtmlStyleResolver
             var style = computed.Value;
             hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
             var refused = RefuseElement(element, hidden);
+            RefuseBrokenImage(element, style);
             NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
             return new Open(element, style, Language(element) ?? inheritedLanguage, hidden);
         }
@@ -341,6 +344,11 @@ public static class HtmlStyleResolver
                     break;
             }
 
+            if (html.Namespace == ElementNamespace.Html)
+            {
+                RefuseAttributes(element);
+            }
+
             var handlers = html.Namespace == ElementNamespace.Html ? element.Attributes.EventHandlers : [];
             if (_diagnostics.Count >= HtmlInputLimits.MaxDiagnostics)
             {
@@ -357,6 +365,83 @@ public static class HtmlStyleResolver
             }
 
             return refused;
+        }
+
+        /// <summary>Refuses the attributes of an HTML element that make Chromium 159 style the document by a rule the
+        /// engine does not keep, each measured:
+        /// <list type="bullet">
+        /// <item>a Content-Security-Policy pragma in head (§4.2.5.3; CSP 3 §6.1.4): its style-src, style-src-elem,
+        /// style-src-attr and default-src directives drop style elements, style attributes and linked sheets;</item>
+        /// <item>a color-scheme meta (§4.2.5.1) other than normal or light: <c>dark</c> makes the text white;</item>
+        /// <item>autofocus (§6.6.7): the element is focused, so it draws a focus ring and :focus matches;</item>
+        /// <item>the charset of a style sheet link (§4.6.7.20, obsolete): Chromium decodes the sheet by it.</item>
+        /// </list></summary>
+        private void RefuseAttributes(StyleElement element)
+        {
+            var html = element.Element;
+            void Refuse(string attribute, string why) =>
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute {attribute}=\"{html.Attribute(attribute)}\" on {html.LocalName} {why}, which is not supported.")
+                    .With(ErrorMetadataKeys.Value, attribute)
+                    .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == attribute).Position));
+
+            if (html.LocalName == "meta" && html.Attribute("http-equiv") is { } equiv && InfraAscii.EqualsIgnoreCase(equiv.Trim(' ', '\t', '\n', '\f', '\r'), "content-security-policy")
+                && element.Parent?.Element.IsHtml("head") == true)
+            {
+                Refuse("http-equiv", "sets a Content-Security-Policy, which can drop style sheets and style attributes");
+            }
+
+            if (html.LocalName == "meta" && html.Attribute("name") is { } name && InfraAscii.EqualsIgnoreCase(name.Trim(' ', '\t', '\n', '\f', '\r'), "color-scheme")
+                && html.Attribute("content") is { } scheme && Keywords(scheme) is not ([] or ["normal"] or ["light"] or ["only", "light"] or ["light", "only"]))
+            {
+                Refuse("content", "sets the page's color scheme");
+            }
+
+            if (html.Attribute("autofocus") is not null)
+            {
+                Refuse("autofocus", "focuses the element (a focus ring, :focus and :focus-within match)");
+            }
+
+            if (html.LocalName == "link" && html.Attribute("charset") is { } charset && !InfraAscii.EqualsIgnoreCase(charset.Trim(' ', '\t', '\n', '\f', '\r'), "utf-8"))
+            {
+                Refuse("charset", "names the encoding of the linked style sheet");
+            }
+        }
+
+        /// <summary>The image signatures the engine decodes: PNG (8 bytes) and JPEG (the start-of-image marker).</summary>
+        private static readonly byte[][] ImageSignatures = [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], [0xFF, 0xD8, 0xFF]];
+
+        /// <summary>Refuses an img with alt text whose image is not there, when its style gives it a size: Chromium 159
+        /// then lays out the alt text inline, and width, height and aspect-ratio compute to auto (measured: a missing,
+        /// empty or unknown src, a resource that is not an image; with alt="", no alt, or display: block the values are
+        /// the engine's). An image is there when its bytes start as a PNG or a JPEG: the body of a <c>data:</c> URL, or
+        /// what the caller's resolver gives for its URL; whether they decode is checked when the image is read.</summary>
+        private void RefuseBrokenImage(StyleElement element, ComputedStyle style)
+        {
+            var html = element.Element;
+            if (!html.IsHtml("img") || html.Attribute("alt") is not { Length: > 0 } || style[Css.Properties.PropertyRegistry.Display] is not Css.Values.CssKeyword { Name: "inline" })
+            {
+                return;
+            }
+
+            static bool Auto(ComputedStyle style, string property) => style.Find(property) is Css.Values.CssKeyword { Name: "auto" };
+            if (Auto(style, "width") && Auto(style, "height") && Auto(style, "aspect-ratio"))
+            {
+                return;
+            }
+
+            var source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
+            var url = string.IsNullOrEmpty(source) ? null : Absolute(source, _documentBase);
+            ReadOnlyMemory<byte>? bytes = string.IsNullOrEmpty(source) ? null
+                : DataUrl.Body(source) is { } inline ? inline
+                : url is null ? null : options.Resources?.Invoke(url)?.Bytes;
+            if (bytes is { } found && ImageSignatures.Any(signature => found.Span.StartsWith(signature)))
+            {
+                return;
+            }
+
+            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{source}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
+                .With(ErrorMetadataKeys.Value, "alt")
+                .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == "alt").Position));
         }
 
         /// <summary>Whether a browser runs a script element (HTML Standard §4.12.1.1, "prepare the script element"):

@@ -177,10 +177,13 @@ public static partial class PropertyRegistry
             AsSpecified);
 
     /// <summary>aspect-ratio = auto || &lt;ratio&gt;, &lt;ratio&gt; = &lt;number [0,∞]&gt; [ / &lt;number [0,∞]&gt; ]? (CSS Values 4
-    /// §7.8). Only auto, alone or with a ratio, is supported.</summary>
+    /// §7.8). Only auto, alone or with a ratio, is supported. Each of the two comes at most once (Chromium 159, measured:
+    /// <c>auto 16/9 auto</c> is dropped); a number past the largest single-precision float is that float, as Chromium
+    /// keeps it (measured: <c>1e999/1</c> is <c>3.40282e+38 / 1</c>).</summary>
     private static ParsedValue ParseAspectRatio(ValueReader reader)
     {
-        var auto = reader.Keyword("auto") is not null;
+        var first = reader.Keyword("auto") is not null;
+        var auto = first;
         CssRatio? ratio = null;
         if (reader.Number() is { } width && width >= 0)
         {
@@ -195,10 +198,10 @@ public static partial class PropertyRegistry
                 height = second;
             }
 
-            ratio = new CssRatio(width, height);
+            ratio = new CssRatio(System.Math.Min(width, float.MaxValue), System.Math.Min(height, float.MaxValue));
         }
 
-        auto |= reader.Keyword("auto") is not null;
+        auto |= !first && reader.Keyword("auto") is not null;
         if (!reader.AtEnd || (!auto && ratio is null))
         {
             return ParsedValue.Invalid("not a value of aspect-ratio");

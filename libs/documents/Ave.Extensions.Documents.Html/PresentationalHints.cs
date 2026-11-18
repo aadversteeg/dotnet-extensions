@@ -32,7 +32,8 @@ internal static class PresentationalHints
     /// <see cref="For"/>, in words (a test generates the document from this table).</summary>
     internal static readonly (string Elements, string Mapped, string Refused)[] Documented =
     [
-        ("body", "bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag)", "background"),
+        ("html, head", "", "align"),
+        ("body", "bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag)", "align, background"),
         ("table", "width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center", "align=left/right (float), background, frame, rules"),
         ("caption", "align=top", "align=bottom/left/right"),
         ("col, colgroup", "width, align (-webkit-left/right/center, or one text-align value)", ""),
@@ -41,14 +42,16 @@ internal static class PresentationalHints
         ("div, p", "align (-webkit-left/right/center, or one text-align value)", ""),
         ("h1–h6", "align (middle as center, or one text-align value)", ""),
         ("hr", "align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width", ""),
-        ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center"),
+        ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG)"),
         ("ol, ul, li", "type", "ol start, ol reversed, li value"),
         ("pre", "wrap", ""),
         ("br", "", "clear"),
         ("font", "color, face (one font-family value), size", ""),
         ("legend", "", "align"),
         ("iframe, embed, object, video, canvas, input, marquee, applet, frame", "", "width, height, align, hspace, vspace, border"),
-        ("every element", "", "contenteditable (empty, true or plaintext-only)"),
+        ("meta", "", "http-equiv=Content-Security-Policy in head; name=color-scheme with a content other than normal or light"),
+        ("link", "", "charset other than utf-8 (on any link)"),
+        ("every element", "", "contenteditable (empty, true or plaintext-only), autofocus"),
     ];
 
     /// <summary>The hint declarations of one element, as CSS text, and the attributes refused.</summary>
@@ -165,7 +168,12 @@ internal static class PresentationalHints
 
         switch (html.LocalName)
         {
+            case "html" or "head":
+                // Chromium 159 aligns the text by the align of html, head and body (measured), which §15 does not map.
+                RefuseIfPresent("align", "aligns the text of the element and of what inherits from it");
+                break;
             case "body":
+                RefuseIfPresent("align", "aligns the text of the element and of what inherits from it");
                 Color("bgcolor", "background-color");
                 Color("text", "color");
                 RefuseIfPresent("background", "sets a background image");
@@ -403,13 +411,55 @@ internal static class PresentationalHints
     /// null otherwise, as Chromium 159 then makes no hint.</summary>
     private static Declaration? SingleValue(string property, string text, string sourceName, HtmlElement html)
     {
+        // Chromium 159 parses the text as a value, not as declarations: a ';' outside a string or comment makes it no
+        // value (measured: align="justify;" is no hint), and the end of the text ends a string or a comment (CSS Syntax 3
+        // §4.3.2, §4.3.5; measured: face="'unterminated" is the family unterminated).
+        if (HasSemicolon(text))
+        {
+            return null;
+        }
+
         var parsed = CssParser.ParseDeclarations($"{property}: {text}", new CssSourceOptions(sourceName) { Origin = html.Position })
             .Match(read => read, _ => new CssResult<ValueList<Declaration>>([], []));
-        return parsed.Value is [var only] && parsed.Diagnostics.IsEmpty && !only.Important && only.Name == property
+        var endedByText = parsed.Diagnostics.All(error => error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Value) is "eof-in-string" or "eof-in-comment");
+        return parsed.Value is [var only] && endedByText && !only.Important && only.Name == property
                && !only.Value.All(value => value is CssToken { Kind: CssTokenKind.Whitespace })
                && !IsWideKeyword(only)
             ? only
             : null;
+    }
+
+    /// <summary>Whether the text holds a ';' outside a string, a comment and an escape (CSS Syntax 3 §4.3).</summary>
+    private static bool HasSemicolon(string text)
+    {
+        for (var i = 0; i < text.Length; i++)
+        {
+            switch (text[i])
+            {
+                case '\\':
+                    i++;
+                    break;
+                case '"' or '\'':
+                    var quote = text[i];
+                    for (i++; i < text.Length && text[i] != quote && text[i] != '\n'; i++)
+                    {
+                        if (text[i] == '\\')
+                        {
+                            i++;
+                        }
+                    }
+
+                    break;
+                case '/' when i + 1 < text.Length && text[i + 1] == '*':
+                    var end = text.IndexOf("*/", i + 2, StringComparison.Ordinal);
+                    i = end < 0 ? text.Length : end + 1;
+                    break;
+                case ';':
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsWideKeyword(Declaration declaration) =>

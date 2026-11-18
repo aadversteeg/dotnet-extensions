@@ -419,6 +419,13 @@ public sealed class CascadeIndex
             var name = InfraAscii.ToLower(declaration.Name);
             if (declaration.IsCustomProperty)
             {
+                // A var() that does not match the grammar makes the declaration invalid (Chromium 159: '@supports (--x:
+                // var())' is false, measured); so is the name '--' alone.
+                if (name == "--" || (DeclarationPreparer.ContainsFunction(declaration.Value, "var") && !VarSubstitution.IsWellFormed(declaration.Value)))
+                {
+                    return false;
+                }
+
                 return name.Length > 2 && declaration.Value.All(value => value is not CssToken { Kind: CssTokenKind.CloseCurly or CssTokenKind.CloseSquare or CssTokenKind.CloseParen or CssTokenKind.BadString or CssTokenKind.BadUrl } and not CssToken { Kind: CssTokenKind.Delim, Text: "!" })
                     ? true
                     : null;
@@ -426,6 +433,12 @@ public sealed class CascadeIndex
 
             var longhand = PropertyRegistry.Find(name);
             var shorthand = longhand is null ? PropertyRegistry.FindShorthand(name) : null;
+            // Chromium keeps -internal- keywords for its own style sheet: an author's is not supported (measured).
+            if (name == "text-align" && DeclarationPreparer.ContainsInternalKeyword(declaration.Value))
+            {
+                return false;
+            }
+
             if (longhand is not null || shorthand is not null || name == "all")
             {
                 if (DeclarationPreparer.ContainsFunction(declaration.Value, "var") || DeclarationPreparer.WideKeyword(declaration.Value) is not null)

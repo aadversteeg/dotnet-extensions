@@ -138,9 +138,27 @@ internal static class DeclarationPreparer
             return;
         }
 
+        if (declaration.IsCustomProperty && name == "--")
+        {
+            // '--' alone is reserved (CSS Variables 1 §2): no custom property has that name; Chromium 159 drops it.
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Property, "'--' alone is not a custom property name (CSS Variables 1 §2); the declaration is dropped.", prepared));
+            return;
+        }
+
         if (ContainsFunction(declaration.Value, "var") && !VarSubstitution.IsWellFormed(declaration.Value))
         {
-            diagnostics.Add(Diagnostic(CssErrorCodes.Unsupported.Value, NotReadable(prepared, "a var() that does not match var( --name [, fallback]? )") + "; the declaration is skipped.", prepared));
+            // CSS Variables 1 §3: a var() that does not match its grammar makes the declaration invalid when it is
+            // parsed; Chromium 159 drops it (measured: 'var(--, yf)').
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A var() in '{declaration.Name}' does not match var( --name [, fallback]? ); the declaration is invalid and dropped (CSS Variables 1 §3).", prepared));
+            return;
+        }
+
+        if (ContainsFunction(declaration.Value, "var") && ContainsNestedBang(declaration.Value))
+        {
+            // A '!' inside a var() (in its fallback): Chromium 159 drops some such declarations and makes others invalid at
+            // computed-value time (measured: 'var(--x, a!b)' is dropped, 'var(--x, 5px !important)' unsets the property),
+            // by a rule the engine does not follow, so it is refused.
+            diagnostics.Add(Diagnostic(CssErrorCodes.Unsupported.Value, NotReadable(prepared, "a '!' inside a function") + "; the declaration is skipped.", prepared));
             return;
         }
 
@@ -385,7 +403,46 @@ internal static class DeclarationPreparer
         return null;
     }
 
-    private static bool ContainsInternalKeyword(IEnumerable<ComponentValue> values)
+    /// <summary>Whether a '!' delimiter is inside a function or block of the values (a top-level one is checked apart).</summary>
+    private static bool ContainsNestedBang(IReadOnlyList<ComponentValue> values)
+    {
+        var pending = new Stack<IReadOnlyList<ComponentValue>>();
+        foreach (var value in values)
+        {
+            switch (value)
+            {
+                case FunctionValue function:
+                    pending.Push(function.Values);
+                    break;
+                case SimpleBlock block:
+                    pending.Push(block.Values);
+                    break;
+            }
+        }
+
+        while (pending.Count > 0)
+        {
+            foreach (var value in pending.Pop())
+            {
+                switch (value)
+                {
+                    case CssToken token when token.IsDelim('!'):
+                        return true;
+                    case FunctionValue function:
+                        pending.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        pending.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether an identifier or function name starting with -internal- is anywhere in the values.</summary>
+    internal static bool ContainsInternalKeyword(IEnumerable<ComponentValue> values)
     {
         foreach (var value in values)
         {

@@ -105,7 +105,7 @@ public sealed record CssTokens(ValueList<ComponentValue> Tokens, string Text) : 
 /// <param name="Height">The second number (1 when only one was written).</param>
 public sealed record CssRatio(double Width, double Height) : CssValue
 {
-    /// <summary>Formats as <c>w / h</c>, as Chromium writes it.</summary>
+    /// <summary>Formats as <c>w / h</c>, each number with at most three decimals.</summary>
     public override string ToString() => $"{InvariantNumber.Format(Width)} / {InvariantNumber.Format(Height)}";
 }
 

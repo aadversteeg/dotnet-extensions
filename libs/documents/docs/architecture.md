@@ -349,7 +349,7 @@ Where each rule lives:
 Who checks what: the HTML parser reports parse errors (warnings: it recovers as the standard says, as a browser
 does) and fails only past its limits or on bytes it would decode differently from a browser. The CSS reader reports
 where it is written what CSS Syntax 3 recovers from and the few things it knows Chromium drops as well (warnings: a
-top-level `!` other than `!important`, a rule in the wrong place, another engine's prefix, a `var()` cycle); the
+top-level `!` other than `!important`, a rule in the wrong place, another engine's prefix); the
 cascade reports what it ignores by rule and what it refuses **when it applies** (a refused declaration that would
 win, a rule with an unknown property that matches an element), once per declaration (per element for the user-agent
 sheet, so the element is named). Refusal is decided by the diagnostic's code alone; `HtmlStyleOptions.Unsupported`
@@ -377,7 +377,8 @@ Known limits of stage 3 (also in the profile document):
 - Refused, not implemented: quirks-mode documents; form controls that are drawn; the elements Chromium gives rules or
   a layout of their own (details, summary, marquee, option, optgroup, audio, canvas, embed, iframe, object, svg, math)
   and every element whose user-agent style is outside the profile (sub, sup, del, s, ruby, dialog …), also when it is
-  not drawn (only a form control that is not drawn is accepted); `noscript` (the parser runs with scripting off,
+  not drawn (only a form control that is not drawn is accepted, with the engine's values: Chromium gives a hidden
+  `textarea` its user-agent border and background, pinned in `FaithfulSubsetTests`); `noscript` (the parser runs with scripting off,
   Chromium with it on, so their trees differ); a script a browser would run and every event handler attribute, since
   the engine runs no scripts (a data block is accepted).
 - Template contents are not styled; `<template shadowrootmode>` stays a template (no declarative shadow DOM).
@@ -410,8 +411,15 @@ Known limits of stage 3 (also in the profile document):
 - Values the engine refuses because Chromium computes them by a rule it does not keep: a font size from a relative
   value below 6px (Chromium's minimum logical font size) and above 10 000px; a length past 2^24 px; orphans and
   widows past 32 767; a hue past 2^24 degrees; a `none` colour component; `overflow` visible beside a scrolling axis
-  (it computes to auto); `zoom` other than 1, a named animation, `resize`, `scrollbar-gutter` and `will-change` that
-  makes a layer (each changes Chromium's printed rendering, measured).
+  (it computes to auto); `zoom` other than 1, a named animation (also a value that may name one: a `var()` or
+  `env()` in `animation`, a keyword named twice), `resize`, `scrollbar-gutter`, `-webkit-user-modify` other than
+  read-only and `will-change` that makes a layer (each changes Chromium's printed rendering, measured); a font size
+  above 0 and below 2e-7px (Chromium computes 1e-7px as 0px); a cycle of `var()` references and a `!` inside a
+  `var()`; selectors Chromium matches by its own rule (an upper-case `OF`, An+B of 2^30 or more, an escaped `*`).
+- HTML Chromium styles by a rule the engine does not keep (each measured): a Content-Security-Policy `meta` in head; a
+  color-scheme `meta` other than normal or light; `autofocus`; the `charset` of a link; `align` on html, head and body;
+  an img with alt text and a size whose image is not there (Chromium shows the alt text inline, and the size computes
+  to auto); `fencedframe` and `geolocation`.
 - `-webkit-left`, `-webkit-right`, `-webkit-center` (from align attributes and the caption) must align descendant
   blocks as well as text; `border-style: inset` and `outset` (hr, table border) are drawn in two shades by Chromium;
   `overflow: hidden | clip` (hr, img) clips; `aspect-ratio: auto` with a ratio (the width and height attributes of
