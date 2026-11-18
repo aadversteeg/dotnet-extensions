@@ -188,8 +188,16 @@ public sealed class RasterReferenceTests
                 var judged = toPoppler;
                 if ((name, resolution, index + 1) == (KnownException.Name, KnownException.Resolution, KnownException.Page))
                 {
-                    toPoppler.Over128.Should().BeLessThanOrEqualTo(KnownException.EngineToPoppler, "the known exception must not grow");
-                    between.Over128.Should().Be(KnownException.Viewers, "the known exception was measured against this count");
+                    if (toPoppler.Over128 > KnownException.EngineToPoppler)
+                    {
+                        breaches.Add(FormattableString.Invariant($"page {index + 1}: the known exception grew: {toPoppler.Over128} pixels over 128 steps from poppler, pinned {KnownException.EngineToPoppler}"));
+                    }
+
+                    if (between.Over128 != KnownException.Viewers)
+                    {
+                        breaches.Add(FormattableString.Invariant($"page {index + 1}: the viewers' count of the known exception changed: {between.Over128}, pinned {KnownException.Viewers}"));
+                    }
+
                     judged = toPoppler with { Over128 = between.Over128 };
                 }
 
@@ -206,8 +214,14 @@ public sealed class RasterReferenceTests
                 var named = NamedExceptions.Where(exception => (exception.Name, exception.Resolution, exception.Page) == (name, resolution, index + 1)).ToList();
                 if (named.Count == 1)
                 {
-                    // The row as measured, then the rule with its named causes removed.
-                    $"{toMupdf} | {toPoppler} | {between}".Should().Be(named[0].Raw, $"{name} page {index + 1} at {dpi} dpi is a named exception with these numbers");
+                    // The row as measured, then the rule with its named causes removed. A changed row is a breach, and the
+                    // comparison goes on, so one run reports every page that moved.
+                    var raw = $"{toMupdf} | {toPoppler} | {between}";
+                    if (raw != named[0].Raw)
+                    {
+                        breaches.Add($"page {index + 1}: a named exception with other numbers than pinned: {raw}, pinned {named[0].Raw}");
+                    }
+
                     var (m, p, b) = Adjusted(pages.Pages[index], resolution, named[0].Causes, mupdf[index], poppler[index], edges);
                     table.AppendLine(CultureInfo.InvariantCulture, $"| {name} | {dpi} | {index + 1} ({named[0].Causes} removed) | {m} | {p} | {b} |");
                     breaches.AddRange(RasterComparison.Breaches(m, p, b).Select(breach => $"page {index + 1} with {named[0].Causes} removed: {breach}"));
@@ -224,7 +238,8 @@ public sealed class RasterReferenceTests
                 File.AppendAllText(Path.Combine(outFolder, "distances.md"), table.ToString());
             }
 
-            breaches.Should().BeEmpty($"{name} at {dpi} dpi (first reference MuPDF, second poppler):\n{table}");
+            // Every breach in the message: the assertion itself names only the first.
+            breaches.Should().BeEmpty($"{name} at {dpi} dpi (first reference MuPDF, second poppler) has {breaches.Count} breaches:\n{string.Join("\n", breaches)}\n{table}");
         }
         finally
         {
