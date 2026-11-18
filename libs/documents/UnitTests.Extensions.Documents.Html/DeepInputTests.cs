@@ -70,7 +70,7 @@ public class DeepInputTests
     [Fact]
     public void The_work_limit_crossed_while_nth_child_of_S_counts_the_siblings_is_a_result_not_an_exception()
     {
-        // The second look's smallest input: an "of S" list of 9 001 selectors tried on 7 501 siblings crosses the
+        // The smallest input found: an "of S" list of 9 001 selectors tried on 7 501 siblings crosses the
         // matching work limit inside the count, where the element was missing from the table and a lookup threw.
         var of = string.Join(",", Enumerable.Range(0, 9_000).Select(i => "x" + i)) + ",.z";
         var html = Doc($".z:nth-child(1 of {of}){{margin-top:37px}}", Repeat("<p>", 7_500) + "<p id=last class=z>");
@@ -158,7 +158,7 @@ public class DeepInputTests
     [Fact]
     public void The_deepest_allowed_document_with_the_deepest_allowed_style_sheet_resolves_on_a_256_KB_stack()
     {
-        // The second look's deep-combo: every construct at its deepest, on an element at the parser's depth limit.
+        // Every construct at its deepest, on an element at the parser's depth limit.
         const int Deep = CssInputLimits.MaxDepth - 2;
         const int Nesting = CssInputLimits.MaxSelectorNesting - 1;
         var css = new StringBuilder();

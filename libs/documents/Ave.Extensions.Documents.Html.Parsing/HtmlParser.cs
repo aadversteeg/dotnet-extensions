@@ -61,7 +61,7 @@ public static class HtmlParser
         }
 
         // Bytes that are not UTF-8, with no byte order mark and nothing that declares UTF-8: a browser detects a legacy
-        // encoding for them (Chromium 159 reads caf\xe9 as windows-1252 café, HD-16), the parser would make
+        // encoding for them (Chromium 159 reads caf\xe9 as windows-1252 café), the parser would make
         // U+FFFD of them. Refused, as a declared legacy encoding is.
         if (!decoded.HasByteOrderMark && found is null && decoded.Replacements.Count > 0)
         {

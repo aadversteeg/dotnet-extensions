@@ -55,7 +55,7 @@ public class EncodingTests
     [Fact]
     public void Bytes_that_are_not_utf8_with_nothing_declared_are_refused()
     {
-        // Chromium 159 detects windows-1252 for these bytes and shows café (HD-16).
+        // Chromium 159 detects windows-1252 for these bytes and shows café.
         var error = Failed(Parse([.. Utf8("<!DOCTYPE html>\n<p>caf"), 0xE9, .. Utf8("</p>")]));
 
         error.Code.Should().Be(HtmlErrorCodes.Encoding);
@@ -68,7 +68,7 @@ public class EncodingTests
     [InlineData("<?xml version='1.0' encoding='windows-1251'?>", "windows-1251")]
     public void An_xml_declaration_that_names_another_encoding_is_refused(string declaration, string label)
     {
-        // Chromium 159 decodes an HTML document by an XML declaration at its start (HD-13).
+        // Chromium 159 decodes an HTML document by an XML declaration at its start.
         var error = Failed(Parse(Utf8(declaration + "<!DOCTYPE html><p>café")));
 
         error.Code.Should().Be(HtmlErrorCodes.Encoding);
@@ -84,14 +84,14 @@ public class EncodingTests
     [InlineData("<meta charset=utf-8 charset=latin1>", false)]
     public void Of_two_charset_attributes_the_last_one_counts(string meta, bool accepted)
     {
-        // Chromium 159 takes the last (HD-14); the prescan of the standard would take the first.
+        // Chromium 159 takes the last; the prescan of the standard would take the first.
         var result = Parse(Utf8("<head>" + meta + "</head><body>x"));
 
         result.Match(_ => true, error => error.Code != HtmlErrorCodes.Encoding).Should().Be(accepted);
     }
 
     [Theory]
-    // A listed limit (HD-14, docs/architecture.md): past the first 1024 bytes the prescan does not see the meta, and
+    // A listed limit (docs/architecture.md, stage 3, the encodings): past the first 1024 bytes the prescan does not see the meta, and
     // tree construction sees only the first of two charset attributes (the tokenizer drops a repeated attribute).
     [InlineData("<meta charset=utf-8 charset=shift_jis>", true)]
     [InlineData("<meta charset=shift_jis charset=utf-8>", false)]
@@ -103,7 +103,7 @@ public class EncodingTests
     }
 
     [Theory]
-    // E-2: two meta elements that name two encodings are refused in either order (stricter than Chromium, which
+    // Two meta elements that name two encodings are refused in either order (stricter than Chromium, which
     // reads the first: a refusal is allowed).
     [InlineData("<meta charset=utf-8><meta charset=shift_jis>")]
     [InlineData("<meta charset=shift_jis><meta charset=utf-8>")]
@@ -124,7 +124,7 @@ public class EncodingTests
     [InlineData(true)]
     public void Utf16_that_ends_inside_a_character_drops_the_rest(bool bigEndian)
     {
-        // Chromium 159 drops a last odd byte and a high surrogate without its pair (HD-15).
+        // Chromium 159 drops a last odd byte and a high surrogate without its pair.
         var encoding = new UnicodeEncoding(bigEndian, byteOrderMark: true);
         var whole = encoding.GetPreamble().Concat(encoding.GetBytes("<body>ab")).ToArray();
         byte[] surrogate = bigEndian ? [0xD8, 0x3D] : [0x3D, 0xD8];

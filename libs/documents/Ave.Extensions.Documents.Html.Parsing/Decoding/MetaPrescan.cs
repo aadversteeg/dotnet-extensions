@@ -101,7 +101,7 @@ internal static class MetaPrescan
     }
 
     /// <summary>An XML declaration that starts the bytes and names an encoding (<c>&lt;?xml version="1.0"
-    /// encoding="iso-8859-2"?&gt;</c>): Chromium 159 decodes an HTML document by it (HD-13, measured), which
+    /// encoding="iso-8859-2"?&gt;</c>): Chromium 159 decodes an HTML document by it (measured), which
     /// the prescan of the standard does not; the parser refuses a non-UTF-8 one as it refuses a meta element.</summary>
     private static Found? XmlDeclaration(ReadOnlySpan<byte> bytes)
     {
@@ -140,8 +140,8 @@ internal static class MetaPrescan
         string? label = null;
         while (Attribute(bytes, ref position) is { } attribute)
         {
-            // A repeated attribute is skipped (§13.2.3.2), except charset: Chromium 159 takes the last one (HD-14,
-            // measured).
+            // A repeated attribute is skipped (§13.2.3.2), except charset: Chromium 159 takes the last one
+            // (measured).
             if (!names.Add(attribute.Name) && attribute.Name != "charset")
             {
                 continue;
