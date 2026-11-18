@@ -97,6 +97,7 @@ the three places to open, with that front-end as their first user.
 | what is content and what is an artifact | `Layout/PagePainter.cs` | ISO 32000-1 §14.8.2.2 |
 | line breaking | `Typesetting/LineBreaking/UnicodeLineBreaking.cs`, `GreedyLineBreaker.cs` | UAX #14 rev. 57 |
 | shaping | `Typesetting/Shaper.cs`, `Shaping/` | OpenType GSUB/GPOS/GDEF, legacy kern |
+| Unicode normalization before shaping: decompose, reorder marks, recompose, as far as the font allows | `Typesetting/Unicode/Normalization.cs`, data `UnicodeNormalizationData.g.cs` | UAX #15; HarfBuzz's normalizer (hb-ot-shape-normalize.cc) |
 | shaping at a break: each line shaped as the line it is, its ends shaped again where the paragraph's shaping marked them unsafe to break | `Typesetting/GreedyLineBreaker.cs`, `ShapedGlyph.UnsafeToBreak`, `Shaper.ShapeLinePiece` | HarfBuzz's unsafe-to-break flag (hb-buffer.h) |
 | alignment and justification | `Typesetting/LineJustification.cs` | CSS Text 3 §6.1, §6.4 (inter-word) |
 | font parsing and subsetting | `Fonts/FontParser.cs`, `Tables/`, `OpenType/`, `FontSubsetter.cs` | OpenType specification per table |
@@ -223,8 +224,9 @@ Each is documented next to its code as well.
   page 2 is the blank part of the row, Chromium's page 1 ends with it). Reason: an empty strip of a row reads as a
   layout fault in a report, and the rule that avoids it costs nothing where the row can move. Pinned by `RowPartTests`
   (Fluent).
-- **Text:** no Unicode normalization before shaping (HarfBuzz composes a base and a mark into a precomposed glyph,
-  this engine does not); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
+- **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
+  precomposed, decompose what it lacks), except that enclosing marks (Me) do not count as marks and HarfBuzz's fallbacks
+  for a missing space or non-breaking hyphen are not made (`Typesetting/Unicode/Normalization.cs`); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
   (GPOS type 6); default language system only; complex scripts, bidi and hyphenation are not implemented. Only
   `white-space: normal` exists: a tab collapses to a space like every other white space, so there are no tab stops.
   A forced line break inside a paragraph is `LineBreak()` (U+2028; a line feed or carriage return in the text

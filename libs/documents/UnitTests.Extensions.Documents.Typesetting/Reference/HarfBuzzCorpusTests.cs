@@ -36,6 +36,7 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
     private static readonly string Cedilla = char.ConvertFromUtf32(0x0327);
     private static readonly string Acute = char.ConvertFromUtf32(0x0301);
     private static readonly string ReversedCommaAbove = char.ConvertFromUtf32(0x0314);
+    private static readonly string DotBelow = char.ConvertFromUtf32(0x0323);
 
     /// <summary>The corpus: (language, ISO 15924 script, text).</summary>
     public static readonly ImmutableArray<(string Language, string Script, string Text)> Corpus =
@@ -54,11 +55,16 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
         ("Russian", "Cyrl", "Съешь же ещё этих мягких французских булок, да выпей чаю."),
         ("Russian", "Cyrl", "ТАКСИ, ГЛАВА, Учитель, ЧУВСТВО, Тыква, Ёжик."),
         ("Marks", "Latn", $"x{Circumflex} q{Tilde} x{Circumflex}x{Tilde} q{Circumflex}"),
+        // Normalization before shaping (Unicode.Normalization): a base and a mark the font has precomposed; marks in
+        // non-canonical order; a precomposed character with one more mark; singleton decompositions (ANGSTROM SIGN,
+        // OHM SIGN); precomposed characters a font may lack but can show decomposed. OHM SIGN is Greek, so it comes last:
+        // the shaper shapes each script run on its own (as a browser itemizes text), the reference the whole line.
+        ("Normalization", "Latn", $"n{Cedilla} y{Diaeresis} A{Circumflex} o{Tilde} a{Circumflex}{DotBelow} a{DotBelow}{Circumflex} e{Acute}{Acute} \u00E9{DotBelow} \u212B \u01F5 \u1E43 \u1EAD \u2126"),
     ];
 
     /// <summary>More lines for Theano Didot only: U+0314 COMBINING REVERSED COMMA ABOVE has an advance of 420 units in
     /// it (HarfBuzz zeroes the advance of a mark), alone, after another mark and between letters — on letters without
-    /// a precomposed form, so Unicode composition (see <see cref="KnownDifferences"/>) plays no part; and its kerning
+    /// a precomposed form, so Unicode composition plays no part; and its kerning
     /// pairs. Not Greek with marks: there Theano's <c>ccmp</c> swaps the marks for Greek forms with contextual
     /// substitutions (GSUB type 5, lookups 1–4), a lookup type the shaper skips (documented on the Shaper).</summary>
     public static readonly ImmutableArray<(string Language, string Script, string Text)> TheanoCorpus =
@@ -66,36 +72,6 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
         ("Marks", "Latn", $"e{ReversedCommaAbove} a{ReversedCommaAbove}b x{Acute}{ReversedCommaAbove} v{ReversedCommaAbove}{Acute}w"),
         ("Kerning", "Latn", "AVATAR To Yo AT Ty VA LT Wo"),
     ];
-
-    /// <summary>
-    /// Known differences, each explained from a rule rather than hidden: HarfBuzz first applies Unicode canonical
-    /// composition (UAX #15) to a base and a combining mark when the font has a glyph for the composed character,
-    /// and then shapes ONE glyph; the shaper has no Unicode normalization and shapes the base and the mark, and
-    /// positions the mark with GPOS mark-to-base instead. Not part of the gate; pinned by
-    /// <see cref="Known_differences_are_unicode_composition_only"/> so a change in either shaper is noticed.
-    /// </summary>
-    public static readonly ImmutableArray<(string Text, string Composed)> KnownDifferences =
-    [
-        ("n" + Cedilla, char.ConvertFromUtf32(0x0146)),
-        ("y" + Diaeresis, char.ConvertFromUtf32(0x00FF)),
-        ("A" + Circumflex, char.ConvertFromUtf32(0x00C2)),
-        ("o" + Tilde, char.ConvertFromUtf32(0x00F5)),
-    ];
-
-    [Fact]
-    public void Known_differences_are_unicode_composition_only()
-    {
-        foreach (var (text, composed) in KnownDifferences)
-        {
-            var harfbuzz = HarfBuzzReference.Instance.Shape(TestFonts.Bytes("Lato-Regular.ttf"), text, "Latn", FeaturesNotImplemented);
-            var precomposed = Shaper.Shape(composed, TestFonts.Regular, 2000).Value;
-            var ours = Shaper.Shape(text, TestFonts.Regular, 2000).Value;
-
-            harfbuzz.Select(glyph => glyph.Glyph).Should().Equal([precomposed.Single().Glyph.Value], "HarfBuzz composes the pair");
-            ours.Should().HaveCount(2, "the shaper keeps base and mark as two glyphs");
-            output.WriteLine($"known difference: U+{char.ConvertToUtf32(text, 0):X4} U+{char.ConvertToUtf32(text, 1):X4} → HarfBuzz one glyph (U+{char.ConvertToUtf32(composed, 0):X4}), ours base + mark");
-        }
-    }
 
     private sealed record Line(string Font, string Language, string Text, IReadOnlyList<string> Differences, int Glyphs);
 

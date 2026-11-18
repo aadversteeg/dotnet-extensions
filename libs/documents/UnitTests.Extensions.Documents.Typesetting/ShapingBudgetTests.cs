@@ -268,8 +268,9 @@ public class ShapingBudgetTests
     {
         // An a, 1 000 combining marks and another a: a budget of 1 024 x 1 002 operations. Each of the 1 100 subtables
         // steps over the 1 000 marks after the first a before it finds an a, not the b of its ligature: 1.1 million
-        // operations, though the walk and the subtables tried cost only some 3 000.
-        var text = "a" + string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x0302), 1_000)) + "a";
+        // operations, though the walk and the subtables tried cost only some 3 000. The mark is U+0305 COMBINING OVERLINE,
+        // which composes with nothing, so normalization before shaping leaves the text as it is.
+        var text = "a" + string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x0305), 1_000)) + "a";
 
         Shaper.Shape(text, FontWithRepeatedLigatureSubtables(1), 10).IsSuccess.Should().BeTrue("one subtable steps over 1 000");
         var shaped = Shaper.Shape(text, FontWithRepeatedLigatureSubtables(1_100), 10);
