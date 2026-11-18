@@ -65,9 +65,14 @@ depends on the ascent and descent a PDF reader assumes for a font, as a bounding
 area an image is drawn into, which reaches past the page when the page shows only a slice of it.
 
 The tests read these files through `PrintedPages` in the test-support project, which gives the engine's page model the
-same form (`PrintedPages.Engine`), so a test compares the two page by page: the words of each page exactly, positions
-with the comparison rule below. The harness takes any HTML with an `@page` rule, so whole documents can be measured
-the same way as the small cases.
+same form (`PrintedPages.Engine`), so a test compares the two page by page. What the tests compare: the words of each
+page exactly, in every test that reads a print file; the distance between baselines in the line-height tests
+(`LineHeightTests`); word x positions and absolute baselines in `LineHeightTests.Words_are_where_Chromium_prints_them…`
+(case `fr-positions`) and the first baseline in `LineBoxReferenceTests`; the bottom padding's rectangle in
+`BottomPaddingTests`; the page-relative baseline in the page-start tests. Other positions in the print files (most
+rectangles, image areas, x positions in tables) are measured and kept, and pinned only by their line counts
+(`MeasuredReferenceFilesTests`) and by the agreement of the two read-backs (`ChromiumReferenceTests`). The harness takes any
+HTML with an `@page` rule, so whole documents can be measured the same way as the small cases.
 
 Chromium snaps more than layout units when it prints, which a case must allow for:
 

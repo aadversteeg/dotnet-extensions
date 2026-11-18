@@ -1,4 +1,4 @@
-# Architecture of Ave.Extensions.Documents (milestone M1)
+# Architecture of Ave.Extensions.Documents (milestone M1, and milestone M2 as far as it is merged)
 
 For a reviewer who has never seen the code. It says what each part is for, where the contracts are, where every
 policy and whole algorithm lives, what is known not to work, and how each claim is checked. Paths are relative to the
@@ -201,7 +201,11 @@ Each is documented next to its code as well.
   than the page area overflow the page they start (as in Chromium) when the box ends the document, and are refused
   (`Documents.Layout.DoesNotFit`) when content follows them; a table cell whose content does not fit under
   the repeated header and, on a page without the header, does not fit with its last child's bottom margin and the
-  cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a paragraph with a page counter that breaks across pages is re-broken with each page's
+  cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a table header taller than
+  the page is refused (`Documents.Layout.DoesNotFit`; Chromium cuts it like a body row); a table row taller than the page
+  only through its cells' padding is refused (Chromium prints it on a fresh page and lets the padding overflow); a table
+  row without cells is refused as input (`Documents.Input.Invalid.Table`; Chromium lays it out with no height) — each
+  pinned with Chromium's pages in `ListedDifferenceTests`; a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
 - **Work in nested tables:** a box inside k nested tables is laid out up to 2k + 1 times on a page (each table
@@ -237,6 +241,24 @@ Each is documented next to its code as well.
   inline box, not only lines of `normal` height. A line height smaller than its text (12 pt text on 7.5 pt lines, or 0)
   overflows its line; Chromium paints such overflowing glyphs again at the next page's edge and adds a page for the last
   line's overflow, the engine paints them once.
+  Page breaks, measured in Chromium's print and pinned with both results (`ListedDifferenceTests`, cases `fr-old-*`):
+  a forced break after only empty boxes is not taken (Chromium leaves a blank page first); a forced break inside a box
+  kept together moves the whole box to a fresh page first (Chromium breaks there at once: a break inside a box that
+  holds a forced break is perfect before the box's keep applies, `CalculateBreakAppealInside`); an empty box whose
+  margin carries it past the page end stays at the page end, so a keep before it holds (Chromium breaks before it); a
+  box kept together does not hide a better breakpoint before it (in Chromium it does, in one shape: `n0 n1 o0 o1 | p0`
+  where the engine prints `n0 | n1 o0 o1 p0`); an empty box past the end of the last page adds no blank page; a paragraph that moved to a new page whole counts only
+  its orphans before a break on that page, where Chromium counts its widows there too (it differs only where widows are
+  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`). A table header is repeated on every page whatever its height; Chromium repeats it only
+  while the header and its grid line are at most a quarter of the page area high (the fragmentainer block size divided by
+  4, the page area rounded up to whole pixels first; a header exactly a quarter high repeats: measured at 150, 180 and
+  240 pt, limits 37.5, 45 and 60 pt; it also repeats only when the header group is `break-inside: avoid`, which the
+  browser's own style sheet sets for print), and above that limit it is an ordinary row group. Whether the engine gets
+  that rule as a layout policy is a question for stage 4. The rest of a cut cell aligned `middle` or `bottom` is aligned
+  in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
+  (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
+  the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
+  row whole on the next (case `fr-f4-padding-page-start`).
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
@@ -252,8 +274,17 @@ Each is documented next to its code as well.
   layout fault in a report, and the rule that avoids it costs nothing where the row can move. Pinned by `RowPartTests`
   (Fluent).
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
-  precomposed, decompose what it lacks), except that enclosing marks (Me) do not count as marks and HarfBuzz's fallbacks
-  for a missing space or non-breaking hyphen are not made (`Typesetting/Unicode/Normalization.cs`); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
+  precomposed, decompose what it lacks), except: a base followed only by an enclosing mark (Me) is not decomposed
+  (HarfBuzz counts Me as a mark); a cluster with a variation selector (U+FE00–U+FE0F) is normalized, where HarfBuzz
+  leaves it alone (`handle_variation_selector_cluster`); the combining classes are the UCD's, not HarfBuzz's modified
+  ones (`hb-unicode.hh`, `_hb_modified_combining_class`: Hebrew, Arabic shadda, Telugu, Thai, Tibetan), so marks of
+  those scripts can come in another order; after a reorder that then composes, the clusters (which glyph carries which
+  characters) differ while glyphs and positions agree; Unicode variation sequences (cmap format 14) are not read, the
+  default glyph is drawn; the fallbacks for a missing space and for U+2011 are not made (the text is refused with
+  `GlyphMissing`) (`Typesetting/Unicode/Normalization.cs`). A zero width joiner between a base and a mark: the shaper
+  skips it and attaches the mark; HarfBuzz applies `mark` with manual joiners and leaves the mark unattached. In the
+  PDF text layer a soft hyphen outside a ligature is dropped and one inside a ligature kept; Chromium keeps every soft
+  hyphen and adds U+2010 at a shown hyphen. Contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
   (GPOS type 6); default language system only; complex scripts, bidi and hyphenation are not implemented. Only
   `white-space: normal` exists: a tab collapses to a space like every other white space, so there are no tab stops.
   A forced line break inside a paragraph is `LineBreak()` (U+2028; a line feed or carriage return in the text
@@ -360,7 +391,7 @@ Each is documented next to its code as well.
 
 ## Background
 
-Three ideas come from other engines, studied through their public documents, not their code. The layout contract —
+Some ideas come from other engines; where the engine follows their code expression for expression, `NOTICE.md` names the files, with their copyright and licence (Chromium's Blink layout, Skia and Fontations for font line metrics, HarfBuzz's normalizer). The layout contract —
 a pure function of a box, a constraint space (the space the box may use on the current page) and an incoming break
 token, returning a fragment and an outgoing break token, plus a second function for the intrinsic widths
 (`MinMax`) — follows Chromium's LayoutNG. Choosing among breakpoints by their appeal, and among the best the latest,

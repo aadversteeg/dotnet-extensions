@@ -5,7 +5,7 @@ native library, no P/Invoke and no external program at run time; the reference t
 qpdf, poppler, MuPDF, HarfBuzz, Chromium) run only in its tests and scripts. It writes PDF/A-3b, PDF/A-3a and PDF/UA-1:
 archivable, tagged and accessible files, as business documents such as invoices and timesheets need.
 
-Status: preview (milestone M1). The first release from this repository is `0.1.0-preview.2`. The packages target
+Status: preview (milestone M1 released; milestone M2 in progress). The first release from this repository is `0.1.0-preview.2`. The packages target
 `net10.0` only.
 
 ## Packages
@@ -121,7 +121,7 @@ timesheet with tables over several pages, in Dutch and English.
 | The PDFs conform to PDF/A-3b, PDF/A-3a and PDF/UA-1 | veraPDF 1.30.4 (Docker image pinned by digest) validates every sample against all three profiles (`ReferenceValidationTests`, `tools/verify-samples.ps1`), and 100 randomly generated documents per profile are either refused with a reason or pass (`GeneratedDocumentTests`, fixed seed). |
 | Every veraPDF rule is accounted for | `docs/conformance-matrix.md` lists all 261 rules of the three profiles: 42 checked by the engine with a named error code and test class, 109 met by construction (with the reason) and 110 about features the engine never writes; `ConformanceMatrixTests` checks that every code and test class it names exists. |
 | Line breaking follows UAX #14 | The official `LineBreakTest.txt` of Unicode 18.0.0: 19,346 cases, all pass (`LineBreakTestFileTests`). |
-| Shaping matches HarfBuzz | HarfBuzz 15.0.0, run as WebAssembly inside the tests: 44 lines in three fonts, 2,602 glyphs, all identical (`HarfBuzzCorpusTests`); the known differences are Unicode composition only. |
+| Shaping matches HarfBuzz | HarfBuzz 15.0.0, run as WebAssembly inside the tests: 47 lines in three fonts, 2,688 glyphs, all identical (`HarfBuzzCorpusTests`), Unicode composition included. |
 | Table layout matches a browser | Column widths, page breaks, repeated headers and split rows are compared with numbers measured in Chromium 159 (`ChromiumReferenceTests`, `TableBreakLineTests`; cases and measurements in `tools/reference/chromium`). |
 | The files are well-formed and readable by other tools | qpdf `--check`, poppler's `pdftotext` and `pdffonts`, every embedded font opened with fontTools, renderings by poppler and MuPDF, attachments extracted by qpdf and compared byte for byte (`tools/verify-samples.ps1`, reference tests). |
 | No native code | `UnitTests.Extensions.Documents.Architecture` reads every compiled library: no P/Invoke, no module references, IL only, no unsafe code; the samples' publish folder holds IL-only assemblies only. |
