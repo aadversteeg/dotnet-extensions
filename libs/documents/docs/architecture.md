@@ -155,24 +155,48 @@ painting order; markers draw nothing.
 | Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, images mapped onto their rectangle as PDF maps an image's unit square |
 | composition | `ToPng`, `ToPngPages`, `ToImages` on a document or on its pages (`ToPages`) |
 
-Choices, each stated at its code: coverage is exact for straight edges, curves are within 1/64 pixel; colours are
+Choices, each stated at its code: coverage is exact for straight edges where no two contours overlap or meet inside a
+pixel (where two contours wound the same way overlap, a pixel crossed by an edge of each is up to a quarter of a pixel
+too dark, measured 63.3 of 255 steps on a real glyph; where contours of opposite direction meet inside a pixel they
+cancel, up to the whole pixel; `Graphics/AreaRasterizer.cs`), curves are within 1/64 pixel; colours are
 blended on the encoded 8-bit values, as PDFium, MuPDF and poppler blend them — blending in linear light would be more
 correct in theory and visibly different from every PDF viewer, so it is not done; an image is a grid of uniformly
 coloured squares (PDF's `/Interpolate false`), each device pixel showing the mean of the image over the part it covers;
 a JPEG's three components are YCbCr unless an Adobe marker says otherwise, as DCTDecode reads them.
 
-**Determinism.** The pixel path uses only correctly rounded double arithmetic and square roots, in a fixed order, and
-no platform maths function; the PNG compression is the runtime's zlib-ng. The golden PNG files of the samples, the
-pinned pixels of a Graphics scene and the pinned bytes of a PNG are verified on x64 Linux and Windows; arm64 by CI
-(the documents leg on `ubuntu-24.04-arm`).
+**Arguments of the graphics library.** One rule for every public member of `Ave.Extensions.Documents.Graphics`
+(`Canvas`, `Path`, `PathBuilder` and the types they take): a value it cannot draw with — not finite, out of range, a size
+that does not fit — is answered with a `Result` error with a `GraphicsErrorCodes` code (`Documents.Graphics.InvalidValue`,
+`Documents.Graphics.TooLarge`), never with an exception; only a null reference (`ArgumentNullException`) and
+`PathBuilder` called out of order (`InvalidOperationException`, a segment before `MoveTo`) are the caller's bugs. Inside
+the ranges (table below) the work of a fill is bounded by the pixels it can touch, never by the size of the shape: a
+shape is clipped to the box in floating point before any number becomes an integer. `ArgumentRuleTests` in
+`UnitTests.Extensions.Documents.Graphics` holds it to that, hostile values included.
 
-**Compared with viewers.** `tools/reference/raster/README.md`: every sample page against MuPDF and poppler renders of
-the engine's PDF, by the rule in `UnitTests.Extensions.Documents.Samples/RasterComparison.cs` (no farther from either
-viewer than the viewers are from each other; for pixels over 32 and 64, no farther from the nearer one). The engine is
-closest to MuPDF; poppler draws glyph edges heavier and snaps thin rectangles to whole pixels. Images follow the PDF's
-definition, not a viewer: the image rule is proven exactly against analytic areas (`Graphics` tests, any scale, offset
-and affine map), and the viewers check only decoding and colour, on images at 1:1 on the pixel grid against MuPDF
-(poppler resamples every image drawn below 4×, also at 1:1).
+**Determinism.** The pixel path uses only correctly rounded double arithmetic and square roots, in a fixed order, and
+no platform maths function, so the pixels do not depend on the platform. The PNG bytes also depend on the runtime's
+zlib, whose output can differ with another .NET release or another zlib build (a Linux distribution may build .NET
+against its system zlib); so the golden tests compare decoded pixels, and one test pins the bytes of one PNG to show when
+the compression changes. Checked on x64 Linux, x64 Windows and arm64 Linux for .NET 10 (the documents legs of CI, arm64
+on `ubuntu-24.04-arm`).
+
+**Where correctness is shown.** By analytic tests: the Graphics tests prove coverage, compositing and the image rule
+against exact areas (any scale, offset and affine map), and the page-level tests
+(`UnitTests.Extensions.Documents.Render.Raster/PageGeometryTests.cs`) check whole pages pixel by pixel against the
+geometry: a glyph whose contours overlap, a glyph's offsets and size, an image in a box of another shape (the painter's
+mapping of an image onto its rectangle), a rule thinner than a pixel. The golden PNG files catch change over time, not
+error: they are the engine's own output.
+
+**Compared with viewers: a sanity check.** `tools/reference/raster/README.md`: every sample page against MuPDF and
+poppler renders of the engine's PDF, by the rule in `UnitTests.Extensions.Documents.Samples/RasterComparison.cs` (for
+the largest difference away from edges, the mean squared error and the pixels over 128 steps, no farther from either
+viewer than the viewers are from each other; for the pixels over 32 and 64 steps, no farther from the nearer one). It
+catches gross errors, not small ones. Measured by the review of 2026-11-18 with planted errors, it did not see text 1 %
+larger, curves drawn as coarse polygons, every rectangle one pixel to the right, an image snapped to whole pixels, or an
+image's transparency ignored; at 96 dpi body text has no pixel away from edges, so the strictest metric does not see
+text at all, which is why pages are also compared at 300 dpi. The engine is closest to MuPDF; poppler draws
+glyph edges heavier and snaps thin rectangles to whole pixels. The viewers check images only for decoding and colour, on
+images at 1:1 on the pixel grid against MuPDF (poppler resamples every image drawn below 4×, also at 1:1).
 
 **Known limits.** No hinting: small text is lighter than in a viewer that hints (PDFium). Two items that meet at a
 boundary inside a pixel each paint their exact coverage, so some of what is beneath shows through: two rectangles of
@@ -181,7 +205,11 @@ colour 51,102,153 on white meeting at half a pixel give 102,140,178 at the bound
 no such items (`tools/reference/raster/README.md`). An enlarged image shows its sample squares, as the PDF defines it
 (ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
 PDF embeds them. Encoding a PNG costs more than drawing the page (about 50 ms at 96 dpi, 500 ms at 300 dpi for an A4
-page); speed is stage 5's work.
+page); speed is stage 5's work. Memory and time not yet bounded beyond the limits below: `ToPngPages` draws and keeps
+every page before it returns (about 35 MB per A4 page at 300 dpi); a damaged JPEG can cost the decoder hundreds of MB and
+seconds before it reports its error (inside the limit of 2^26 pixels, so a cost, not a breach); and a page model has no
+work limit, so a hostile one (thousands of glyphs that each cover the page) can take many seconds. Each distinct image
+is decoded once per render call, however often it is drawn.
 
 ## Bounded work: the one rule every reader of input follows
 
@@ -207,10 +235,13 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | --- | --- | --- | --- |
 | work of a layout table parse | 8 units per byte, at least 16 384 | `Fonts/OpenType/TableReader.cs` | `Documents.Font.Parse.InvalidValue` |
 | decoded image (PNG, and JPEG decoded to samples) | 2^26 pixels | `Images/ImageLimits.cs` | `Documents.Image.TooLarge` |
-| blocks the scans of one JPEG visit together | 32 times the blocks of its frame | `Images/Jpeg/JpegDecoder.cs` | `Documents.Image.TooLarge` |
+| blocks the scans of one JPEG visit together | 32 times the blocks of its frame | `Images/Jpeg/JpegDecoder.cs` | `Documents.Image.TooMuchWork` |
 | glyphs of one text | 64 per input glyph, at least 16 384 | `Typesetting/Shaping/GlyphSubstitution.cs` | `Documents.Typesetting.TooManyGlyphs` |
 | shaping operations of one text | 1 024 per input glyph, at least 65 536 | `Typesetting/Shaping/ShapingBudget.cs` | `Documents.Typesetting.TooMuchWork` |
-| cell span | 1 000 columns, 65 534 rows | `Core/TableSlots.cs` | `Documents.Input.Invalid.Table`, `Documents.Pdf.Write.InvalidPageModel` |
+| cell span | 1 000 columns, 65 534 rows | `Core/TableSlots.cs` | `Documents.Input.Invalid.Table`; in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
+| every number of a page model (sizes, positions, font sizes, areas) | within ±3.403 × 10^38, the range of a PDF real (ISO 32000-1 Annex C, Table C.1) | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
+| pixels of one page drawn as an image | 2^26 | `Render.Raster/PageRasterizer.cs`, `Graphics/Canvas.cs` | `Documents.Raster.TooLarge`; `Documents.Graphics.TooLarge` |
+| coordinates the graphics library draws with | ±10^150 after the transform; a clip box within ±2^30 pixels | `Graphics/Canvas.cs` | `Documents.Graphics.InvalidValue` |
 | PDF/UA grid of one table | the first row's width; 4 194 304 slots | `Render.Pdf/Tagging/TableRegularity.cs` | `Documents.Pdf.Conformance.PdfUa1.TableTooLarge` |
 | nesting of elements | 64 levels | `Fluent/InputLimits.cs` | `Documents.Input.Invalid.TooDeep` |
 | nesting of arrays and dictionaries in one PDF object | 64 levels | `Pdf/PdfSerializer.cs` | `Documents.Pdf.Write.NestedTooDeep` |

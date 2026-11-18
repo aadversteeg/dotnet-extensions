@@ -104,7 +104,8 @@ timesheet with tables over several pages, in Dutch and English.
 ## Preview images
 
 The raster back-end draws the same pages the PDF has, as pixels: glyphs as their outlines at their exact positions,
-rectangles and images, every edge anti-aliased by the exact share of the pixel it covers. Lay the document out once
+rectangles and images, every edge anti-aliased by the exact share of the pixel it covers (exact where no two contours
+overlap inside a pixel; `docs/architecture.md` states the error where they do). Lay the document out once
 and give the pages to both back-ends (with `invoice`, `fonts` and `options` from the example above):
 
 ```csharp
@@ -120,8 +121,10 @@ if (pages.IsSuccess)
 ```
 
 `ToImages` gives the pixels instead (8-bit RGBA, sRGB). The output is deterministic: the same pages and options give
-the same pixels and the same PNG bytes on every platform (checked on x64 Linux and Windows; arm64 by CI). The pages
-are compared with MuPDF and poppler renders of the engine's own PDF (`tools/reference/raster/README.md`).
+the same pixels, checked on x64 Linux, x64 Windows and arm64 Linux for .NET 10. The PNG bytes were the same there too,
+but they come from the runtime's zlib, whose output can differ with another .NET release or zlib build; the pixels do
+not depend on it. As a sanity check, the pages are compared with MuPDF and poppler renders of the engine's own PDF
+(`tools/reference/raster/README.md`).
 
 ## What it does
 
@@ -149,7 +152,7 @@ are compared with MuPDF and poppler renders of the engine's own PDF (`tools/refe
 | Shaping matches HarfBuzz | HarfBuzz 15.0.0, run as WebAssembly inside the tests: 44 lines in three fonts, 2,602 glyphs, all identical (`HarfBuzzCorpusTests`); the known differences are Unicode composition only. |
 | Table layout matches a browser | Column widths, page breaks, repeated headers and split rows are compared with numbers measured in Chromium 159 (`ChromiumReferenceTests`, `TableBreakLineTests`; cases and measurements in `tools/reference/chromium`). |
 | The files are well-formed and readable by other tools | qpdf `--check`, poppler's `pdftotext` and `pdffonts`, every embedded font opened with fontTools, renderings by poppler and MuPDF, attachments extracted by qpdf and compared byte for byte (`tools/verify-samples.ps1`, reference tests). |
-| Preview images match PDF viewers | Every sample page drawn by the engine is compared with MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF at 96 and 300 dpi: by every metric the engine is no farther from either viewer than the viewers are from each other (`RasterReferenceTests`, `tools/reference/raster/README.md`); the samples' pages are also pinned as golden PNG files. |
+| Preview images are drawn right | Whole pages are checked pixel by pixel against the exact areas their geometry gives: glyphs (overlapping contours, offsets, size), an image in a box of another shape, a rule thinner than a pixel (`PageGeometryTests`); the Graphics tests prove coverage, compositing and the image rule the same way. As a sanity check, every sample page is compared with MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF at 96 and 300 dpi: for the largest difference away from edges, the mean squared error and the pixels over 128 steps the engine is no farther from either viewer than the viewers are from each other, and for the pixels over 32 and 64 steps no farther from the nearer viewer (`RasterReferenceTests`, `tools/reference/raster/README.md`); it catches gross errors, not small ones. The samples' pages are pinned as golden images, which catch change, not error. |
 | Glyph outlines and JPEG decoding are right | Every glyph of the test fonts decodes to the points fontTools 4.57.0 reads, exactly (`GlyphShapeReferenceTests`); the ITU-T T.83 compliance streams decode to the reference coefficients, exactly (`JpegConformanceTests`). |
 | No native code | `UnitTests.Extensions.Documents.Architecture` reads every compiled library: no P/Invoke, no module references, IL only, no unsafe code; the samples' publish folder holds IL-only assemblies only. |
 

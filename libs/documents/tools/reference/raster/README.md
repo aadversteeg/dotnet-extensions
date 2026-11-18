@@ -35,6 +35,18 @@ a known reason (heavier glyph edges, thin rectangles snapped to whole pixels), s
 outlier: its distance to the NEARER reference is not larger than the references' distance to each other. No other
 tolerance; the golden PNG files (`UnitTests.Extensions.Documents.Samples/Golden/*.png`) catch any change over time.
 
+## A sanity check, not the proof
+
+The comparison catches gross errors, not small ones; the proof that pages are drawn right is analytic
+(`UnitTests.Extensions.Documents.Render.Raster/PageGeometryTests.cs` for whole pages, the Graphics tests for coverage,
+compositing and images). The rule for over 32 and over 64 was chosen after the numbers were seen: the plain rule "to
+EACH reference" fails there on most page rows. The review of 2026-11-18 planted errors and ran the comparison alone. It
+caught a shift of all text by 0.3 pixel or more, text 6 % larger and a lighter text colour. It did not catch text 1 %
+larger, curves drawn as coarse polygons, every rectangle one pixel to the right, an image snapped to whole pixels or an
+image's transparency ignored. Letters with three or more contours missing and text 3 % larger were caught only at
+300 dpi: at 96 dpi body text has no pixel away from edges, so the strictest metric does not see text at all. That is why
+pages are compared at 300 dpi as well.
+
 Images: the image rule (a device pixel is the area-weighted mean of the sample squares it covers) is proven exactly in
 `UnitTests.Extensions.Documents.Graphics/ImageResamplingTests.cs`, against analytic areas, for enlargements and
 reductions by whole and fractional factors, offsets inside a pixel, mirrors, rotations and shears. The viewers are

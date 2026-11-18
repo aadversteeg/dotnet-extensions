@@ -15,7 +15,8 @@ namespace Ave.Extensions.Documents.Graphics;
 /// </summary>
 /// <remarks>
 /// <para><b>Anti-aliasing.</b> A pixel's coverage is the share of its square that the shape covers
-/// (<see cref="AreaRasterizer"/>: exact for outlines that do not overlap themselves), rounded to 8 bits; it is the alpha
+/// (<see cref="AreaRasterizer"/>: exact where no two contours overlap or meet inside the pixel; the error where they do
+/// is stated there), rounded to 8 bits; it is the alpha
 /// the colour is painted with.</para>
 /// <para><b>Compositing.</b> Source over (Porter and Duff, "Compositing Digital Images", 1984), with coverage α and the
 /// pixel's alpha β: alpha' = α + β(1 − α), colour' = (C·α + D·β(1 − α)) / alpha'. Computed on the encoded 8-bit sRGB

@@ -22,8 +22,10 @@ namespace Ave.Extensions.Documents.Images.Png;
 /// </list>
 /// </summary>
 /// <remarks>
-/// The zlib in .NET 10 is the zlib-ng the runtime ships on every platform, so its output depends on the runtime
-/// version only; the PDF writer relies on the same (docs/architecture.md, "Determinism").
+/// The compressed bytes come from the runtime's zlib (in .NET 10 the zlib-ng it ships), so they can differ with another
+/// .NET release or another zlib build (a Linux distribution may build .NET against its system zlib); the samples, and so
+/// the decoded pixels, cannot. Checked equal on x64 Linux, x64 Windows and arm64 Linux for .NET 10 (docs/architecture.md,
+/// "Determinism").
 /// </remarks>
 internal static class PngEncoder
 {
