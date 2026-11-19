@@ -128,6 +128,7 @@ under `third_party/blink/renderer/`):
   proportion to their maximums, or to its fixed columns in proportion to their widths when it has no auto column,
   each share truncated and the remainder to the last receiving column: the same function, case `kAboveMax`; under
   `table-layout: fixed`, `SynchronizeAssignableTableInlineSizeAndColumnsFixed` (a column of width 0 receives nothing);
+  CSS Tables 3 §3.9.3.2 says the same (Working Draft of 16 December 2025);
 - grid `fr` tracks get truncated shares, the fractions carried to the next track: `core/layout/grid/grid_track_sizing_algorithm.cc:1281–1309`;
 - printing scales the page by 0.75 (CSS px to points) and does not round coordinates in that transform:
   `components/printing/renderer/print_render_frame_helper.cc`, `printing/metafile_skia.cc`; but layout puts baselines at

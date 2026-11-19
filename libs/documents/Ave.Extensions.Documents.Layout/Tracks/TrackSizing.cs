@@ -128,8 +128,8 @@ internal static class TrackSizing
 
     /// <summary>
     /// The width left over the columns' maximum widths, for a table as wide as the width it is given and without fill
-    /// columns (CSS Tables 3, "Distributing width to columns", <c>#width-distribution-algorithm</c>: the step above the
-    /// max-content guess). The auto columns receive it, each in proportion to its maximum width; when the table has no
+    /// columns (CSS Tables 3 §3.9.3, "Distribution algorithm": "starting from the max-content sizing-guess and
+    /// distributing the excess width to the columns", by the rules of §3.9.3.2, "Distributing excess width to columns"). The auto columns receive it, each in proportion to its maximum width; when the table has no
     /// auto column the fixed columns do, each in proportion to its width; when those weights are all zero (empty
     /// columns without insets), in equal parts. A column whose weight is zero beside others that are not receives
     /// nothing. Chromium, <c>third_party/blink/renderer/core/layout/table/table_layout_utils.cc</c>: automatic layout in
@@ -190,8 +190,10 @@ internal static class TrackSizing
     }
 
     /// <summary>
-    /// What a cell spanning several columns asks of each of them: the width distribution of CSS Tables 3 ("Distributing
-    /// width to columns", <c>#width-distribution-algorithm</c>) over the spanned columns, as Chromium applies it to a
+    /// What a cell spanning several columns asks of each of them: the width distribution of CSS Tables 3 §3.9.3 over the
+    /// spanned columns (§3.8.3, "Computing Column Measures": "updated by taking into account cells spanning
+    /// incrementally more columns"; §3.9.3.2 uses its rules for "the excess max-content or min-content width of a cell
+    /// spanning more than one column"), as Chromium applies it to a
     /// spanning cell (<c>third_party/blink/renderer/core/layout/table/table_layout_utils.cc</c>,
     /// <c>DistributeColspanCellToColumnsAuto</c>, which calls <c>DistributeInlineSizeToComputedInlineSizeAuto</c> once
     /// for the cell's minimum and once for its maximum). When the spanned minimums hold the target, nothing changes;
@@ -232,7 +234,8 @@ internal static class TrackSizing
 
     /// <summary>Adds <paramref name="amount"/> to the receiving columns, each in proportion to its weight, or in equal
     /// parts when the weights are all zero: the step above the max-content guess of the width distribution of CSS
-    /// Tables 3, for a table (<see cref="GrowPastMaximum"/>) and for a spanning cell (<see cref="SpreadOverSpan"/>).</summary>
+    /// Tables 3 (§3.9.3.2: "increased in proportion to max-content width", or "by equal amounts" when every max-content
+    /// width is zero), for a table (<see cref="GrowPastMaximum"/>) and for a spanning cell (<see cref="SpreadOverSpan"/>).</summary>
     private static void Share(double[] sizes, ImmutableArray<int> receivers, double[] weights, double amount)
     {
         var total = receivers.Sum(index => weights[index]);

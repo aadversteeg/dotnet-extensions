@@ -120,8 +120,8 @@ public enum BoxWidth
     /// <summary>As wide as the width it is given (<c>width: stretch</c>, CSS Sizing 3 §3.2: the margin box matches the
     /// containing block; for a table without horizontal margins this is <c>width: 100%</c>). The width left over the
     /// columns' maximum widths is shared over the auto columns in proportion to their maximum widths, or over the fixed
-    /// columns in proportion to their widths when the table has no auto column (CSS Tables 3, "Distributing width to
-    /// columns", <c>#width-distribution-algorithm</c>, as Chromium implements it).</summary>
+    /// columns in proportion to their widths when the table has no auto column (CSS Tables 3 §3.9.3.2, "Distributing
+    /// excess width to columns": "increased in proportion to max-content width", as Chromium implements it).</summary>
     Stretch,
 }
 
