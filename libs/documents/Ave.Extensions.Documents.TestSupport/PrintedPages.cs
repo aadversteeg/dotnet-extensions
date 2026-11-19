@@ -56,10 +56,17 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
         [.. Words.GroupBy(word => Math.Round(word.Baseline, 3))
             .Select(line => (line.First().Baseline, string.Join(" ", line.Select(word => word.Text))))];
 
-    /// <summary>The words as a reader of the page sees them: the pieces that PyMuPDF (and the engine, one glyph run per run)
-    /// gives where a word's colour or font changes are joined again where nothing lies between them on one baseline at one
-    /// font size (a kerned pair overlaps; a space leaves 2.7 pt or more at the sizes of the cases), as pdftotext joins them. Each word
-    /// comes with the number of pieces it was made of.</summary>
+    /// <summary>The widest gap between two pieces of text on one baseline that still counts as no white space between
+    /// them, in points: a pair kerned across the border of two runs overlaps, and a space leaves 2.7 pt or more at the
+    /// sizes of the cases. Both rules that join pieces into words use it (<see cref="JoinedWords"/>, and the HTML case
+    /// comparison's join of PyMuPDF's words).</summary>
+    public const double WordGap = 0.5;
+
+    /// <summary>The words as poppler's pdftotext reads the page (<c>words.txt</c>): the pieces that PyMuPDF (and the engine,
+    /// one glyph run per run) gives where a word's colour or font changes are joined again where nothing lies between them
+    /// (<see cref="WordGap"/>) on one baseline at one font size; pdftotext starts a new word at a change of size, not of
+    /// face or colour. The joined word keeps its first piece's colour and face. Each word comes with the number of pieces
+    /// it was made of.</summary>
     public ImmutableArray<(PrintedWord Word, int Pieces)> JoinedWords
     {
         get
@@ -67,7 +74,7 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
             var words = ImmutableArray.CreateBuilder<(PrintedWord Word, int Pieces)>();
             foreach (var piece in Words)
             {
-                if (words.Count > 0 && words[^1] is var (last, pieces) && Math.Abs(last.Baseline - piece.Baseline) < 0.01 && last.FontSize == piece.FontSize && piece.X0 - last.X1 < 0.5)
+                if (words.Count > 0 && words[^1] is var (last, pieces) && Math.Abs(last.Baseline - piece.Baseline) < 0.01 && last.FontSize == piece.FontSize && piece.X0 - last.X1 < WordGap)
                 {
                     words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text }, pieces + 1);
                     continue;
