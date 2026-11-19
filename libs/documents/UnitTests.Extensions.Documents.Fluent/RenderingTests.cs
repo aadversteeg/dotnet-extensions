@@ -131,6 +131,40 @@ public class RenderingTests
         rectangle.ToPdf(Options).IsSuccess.Should().BeTrue();
     }
 
+    [Fact]
+    public void A_page_with_a_glyph_whose_exact_coverage_takes_too_much_work_is_refused_by_the_raster_back_end_and_written_to_pdf()
+    {
+        // Glyph 1: the star polygon {1001/500}, one contour of 1,001 points crossing itself, in design units around the
+        // glyph's origin; at 0.05625 pt and 72 dpi its radius of 16,000 units is 0.45 pixel, so the whole star lies in
+        // pixel (10, 10) and asks about 5.0 × 10^8 units of work there, above Canvas.MaxFillWork (2^27).
+        var points = Enumerable.Range(0, 1001)
+            .Select(index => 2 * Math.PI * (index * 500L % 1001) / 1001)
+            .Select(angle => ((int)Math.Round(16000 * Math.Cos(angle)), (int)Math.Round(16000 * Math.Sin(angle))))
+            .ToArray();
+        var star = new BigEndianBuilder().UInt16(1).UInt16(0).UInt16(0).UInt16(0).UInt16(0).UInt16(points.Length - 1).UInt16(0);
+        star.Bytes(points.Select(_ => (byte)0x01));
+        var previous = (X: 0, Y: 0);
+        foreach (var (x, _) in points)
+        {
+            star.UInt16((x - previous.X) & 0xFFFF);
+            previous.X = x;
+        }
+
+        foreach (var (_, y) in points)
+        {
+            star.UInt16((y - previous.Y) & 0xFFFF);
+            previous.Y = y;
+        }
+
+        var font = FontParser.Parse(FontFiles.WithGlyphs(TestFonts.Bytes("Lato-Regular.ttf"), [[], star.ToArray()])).Value;
+        var run = new GlyphRun(font, 0.05625, new Color(0, 0, 0), new Point(10.5, 10.5), [new PositionedGlyph(new GlyphId(1), 0, "x")]);
+        var page = new PageDocument(new DocumentMetadata("Heavy glyph", null), [new Page(new Size(21, 21), [run])]);
+
+        PageRasterizer.Render(page.Pages[0], new RasterOptions(72)).Error.Code.Should().Be(Ave.Extensions.Documents.Graphics.GraphicsErrorCodes.TooMuchWork);
+        page.ToPng(1, new RasterOptions(72)).Error.Code.Should().Be(Ave.Extensions.Documents.Graphics.GraphicsErrorCodes.TooMuchWork);
+        page.ToPdf(Options).IsSuccess.Should().BeTrue();
+    }
+
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 
     private static string ThisFile([CallerFilePath] string file = "") => file;
