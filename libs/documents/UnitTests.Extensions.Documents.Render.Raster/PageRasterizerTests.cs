@@ -472,4 +472,78 @@ public class PageRasterizerTests
         result.Error.Is(FontErrorCodes.Parse._).Should().BeTrue();
         result.Error.Metadata!.Should().ContainKey(ErrorMetadataKeys.FontName);
     }
+
+    /// <summary>A simple glyph of straight contours: one on-curve flag per point and 16-bit deltas, in design units.</summary>
+    private static byte[] Glyph(params (int X, int Y)[][] contours)
+    {
+        var builder = new BigEndianBuilder().UInt16(contours.Length).UInt16(0).UInt16(0).UInt16(0).UInt16(0);
+        var end = -1;
+        foreach (var contour in contours)
+        {
+            end += contour.Length;
+            builder.UInt16(end);
+        }
+
+        builder.UInt16(0);
+        var points = contours.SelectMany(contour => contour).ToArray();
+        builder.Bytes(points.Select(_ => (byte)0x01));
+        var previous = (X: 0, Y: 0);
+        foreach (var point in points)
+        {
+            builder.UInt16((point.X - previous.X) & 0xFFFF);
+            previous.X = point.X;
+        }
+
+        foreach (var point in points)
+        {
+            builder.UInt16((point.Y - previous.Y) & 0xFFFF);
+            previous.Y = point.Y;
+        }
+
+        return builder.ToArray();
+    }
+
+    /// <summary>A point of a glyph drawn at 31.25 points (2,000 units per em) at 72 dpi with its run's origin at
+    /// (0, 160): one design unit is 1/64 pixel, and (x, y) is the device pixel position.</summary>
+    private static (int X, int Y) Device(double x, double y) => ((int)(x * 64), (int)((160 - y) * 64));
+
+    private static (int X, int Y)[] DeviceRectangle(double left, double top, double right, double bottom) =>
+        [Device(left, top), Device(right, top), Device(right, bottom), Device(left, bottom)];
+
+    [Fact]
+    public void A_glyph_cut_by_the_page_s_right_edge_after_a_glyph_with_overlapping_pixels_is_drawn_as_alone()
+    {
+        // Glyph 1: two small triangles inside pixels (0, 5) and (10, 5), whose pixels the rasteriser flags. Glyph 2: three
+        // rectangles wound the same way, 25 pixels wide, put at x = 10 on a page 20 points wide, so the page's right edge
+        // cuts them on a whole column ten columns from their first. The page keeps one canvas for both glyphs; before the
+        // repair the second fill read what the first left in the canvas's rasteriser, and the render threw
+        // IndexOutOfRangeException.
+        byte[][] glyphs =
+        [
+            [],
+            Glyph(
+                [Device(0.25, 5.25), Device(0.75, 5.25), Device(0.5, 5.75)],
+                [Device(10.25, 5.25), Device(10.75, 5.25), Device(10.5, 5.75)]),
+            Glyph(DeviceRectangle(0, 0, 25, 150), DeviceRectangle(3.3125, 0, 5, 150), DeviceRectangle(3.625, 0, 5.5, 150)),
+        ];
+        var font = FontParser.Parse(FontFiles.WithGlyphs(TestFonts.Bytes("Lato-Regular.ttf"), glyphs)).Value;
+        GlyphRun Run(params (int Glyph, double X)[] placed) =>
+            new(font, 31.25, Color.Black, new Point(0, 160), [.. placed.Select(glyph => new PositionedGlyph(new GlyphId((ushort)glyph.Glyph), glyph.X, "x"))]);
+        var options = new RasterOptions(72) { Background = Color.White };
+        var both = PageOf(20, 200, Run((1, 0), (2, 10)));
+        var first = PageRasterizer.Render(PageOf(20, 200, Run((1, 0))), options).Value;
+        var second = PageRasterizer.Render(PageOf(20, 200, Run((2, 10))), options).Value;
+
+        foreach (var drawn in new[] { PageRasterizer.Render(both, options), PageRasterizer.Render(new PageDocument(Metadata, [both]), 1, options) })
+        {
+            drawn.IsSuccess.Should().BeTrue(drawn.IsFailure ? drawn.Error.Message : "");
+            var differ = Enumerable.Range(0, 20 * 200)
+                .Where(index => first.Pixels[index * 4] == 255 && drawn.Value.Pixels[index * 4] != second.Pixels[index * 4])
+                .Select(index => $"({index % 20},{index / 20})")
+                .ToList();
+            differ.Should().BeEmpty($"where the first glyph leaves white the page shows the second glyph alone; all that differ: {string.Join(" ", differ)}");
+        }
+
+        Red(second, 19, 100).Should().Be(0);
+    }
 }

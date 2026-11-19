@@ -199,13 +199,16 @@ internal sealed class AreaRasterizer
     /// The flagged cells of row <paramref name="y"/> (<see cref="_flagged"/>, and <see cref="_collecting"/> when there is
     /// one), from the row's flags; an error when they hold more than <see cref="MaxRowPieces"/> pieces.
     /// </summary>
+    /// <remarks>Every entry of <see cref="_flagged"/> a piece of this shape can name (the row's cells and the two kept
+    /// beyond them) is written here, false outside the cells reported, so no fill reads what an earlier one left there:
+    /// a piece on the shape's largest x names the cell beyond the row, and the arrays are kept from fill to fill.</remarks>
     private Error? Count(int y, int from, int to)
     {
         var pieces = 0L;
         _collecting = false;
-        for (var column = from; column < to; column++)
+        for (var column = 0; column < _width + 2; column++)
         {
-            _flagged[column] = _flags.IsFlagged(column);
+            _flagged[column] = column >= from && column < to && _flags.IsFlagged(column);
             if (_flagged[column])
             {
                 // Each flagged cell's pieces go to their own places, in the order they are kept: as many as its flags
@@ -698,7 +701,7 @@ internal sealed class AreaRasterizer
             var (low, high) = (double.Min(from, to), double.Max(from, to));
             for (var cell = (int)Math.Floor(low); cell < high; cell++)
             {
-                if ((uint)cell < (uint)_flagged.Length && _flagged[cell])
+                if ((uint)cell < (uint)(_width + 2) && _flagged[cell])
                 {
                     var (left, right) = (double.Max(low, cell), double.Min(high, cell + 1));
                     var (start, end) = to > from ? (left, right) : (right, left);
