@@ -319,6 +319,27 @@ public class BoxGenerationTests
         page.Margins.Bottom.Points.Should().BeGreaterThanOrEqualTo(0);
     }
 
+    [Theory]
+    [InlineData("\f", "U+000C")]
+    [InlineData("\u0085", "U+0085")]
+    [InlineData("\u0001", "U+0001")]
+    [InlineData("\uFFFE", "U+FFFE")]
+    [InlineData("\u2028", "U+2028")]
+    [InlineData("\u2029", "U+2029")]
+    public void A_character_that_is_not_drawn_is_refused_at_its_text_and_left_out_under_warn(string character, string codePoint)
+    {
+        var html = Doc($"<p>aa{character}bb</p>");
+        var refusal = Refusals(html).Single();
+        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Character);
+        refusal.Metadata![ErrorMetadataKeys.Value].Should().Be(codePoint);
+        refusal.Metadata[ErrorMetadataKeys.Offset].Should().Be(2);
+        refusal.Metadata.Should().ContainKey(ErrorMetadataKeys.SourceLine);
+
+        var warned = Boxes(html, UnsupportedPolicy.Warn);
+        warned.Value.Diagnostics.Select(error => error.Code).Should().Contain(HtmlStyleErrorCodes.Unsupported.Character);
+        Texts((Box)((Box)warned.Value.Document.Root.Children.Single()).Children.Single()).Should().Be("aabb");
+    }
+
     [Fact]
     public void A_root_with_display_none_is_one_empty_page_of_the_caller_s_paper_whatever_the_page_rules_say()
     {

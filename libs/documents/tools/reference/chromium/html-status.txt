@@ -251,6 +251,11 @@ fr-pad-top-and-bottom equal
 fr-positions equal
 fr-row-later-page-padding-overflows refused Documents.Html.Unsupported.Value display: table at 8:9
 fr-row-later-page-padding-overflows-two-cells refused Documents.Html.Unsupported.Value display: table at 8:9
+h-char-cr equal
+h-char-ff refused Documents.Html.Unsupported.Character U+000C at 3:4
+h-char-ls refused Documents.Html.Unsupported.Character U+2028 at 3:4
+h-char-ps refused Documents.Html.Unsupported.Character U+2029 at 3:4
+h-char-tab equal
 h-default-page equal
 h-kerning-auto equal
 h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none at 2:74

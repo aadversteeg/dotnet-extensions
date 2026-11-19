@@ -83,6 +83,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.PageRule.ToString(),
         HtmlStyleErrorCodes.Unsupported.Font.ToString(),
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Character.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>

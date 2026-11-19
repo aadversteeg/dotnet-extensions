@@ -610,7 +610,10 @@ Elements whose rendering no property says are refused by their own rule (`Docume
 `wbr`, `img`, `q`. The others are refused through their values: tables and lists by `display`, `pre` by
 `white-space-collapse`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
-`ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). Under `UnsupportedPolicy.Warn` a refused value is
+`ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
+at its text (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed
+and U+0085 as a missing glyph), the line and paragraph separators (Chromium prints a space that does not collapse), a
+noncharacter, half of a surrogate pair (cases `h-char-*`). Under `UnsupportedPolicy.Warn` a refused value is
 replaced by the model's initial value of what it sets, a refused display type is laid out as a block box, and an
 element refused by its own rule is left out (`HtmlBoxGenerator`, remarks).
 

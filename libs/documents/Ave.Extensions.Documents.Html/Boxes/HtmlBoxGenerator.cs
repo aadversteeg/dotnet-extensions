@@ -168,7 +168,45 @@ public static class HtmlBoxGenerator
             _ => "block",
         };
 
-        private static bool IsCollapsibleOnly(StyledNode node) => node is StyledText text && text.Text.Data.All(c => c is ' ' or '\t' or '\n' or '\r');
+        private static bool IsCollapsibleOnly(StyledNode node) => node is StyledText text && text.Text.Data.All(IsCollapsible);
+
+        /// <summary>The white space that collapses (CSS Text 3 §4.1.1: space, tab, segment breaks; the HTML parser turns a
+        /// CR LF pair into one line feed and keeps a lone CR from a character reference, which Chromium prints as a
+        /// space, case <c>h-char-cr</c>).</summary>
+        private static bool IsCollapsible(char c) => c is ' ' or '\t' or '\n' or '\r';
+
+        /// <summary>
+        /// The text of a run, with every character that is not drawn refused, and under <see cref="UnsupportedPolicy.Warn"/>
+        /// left out: a control character other than tab, line feed and carriage return, a noncharacter, half of a
+        /// surrogate pair, and the line and paragraph separators. Measured (cases <c>h-char-*</c>): Chromium draws form
+        /// feed and next line (U+0085) as a missing glyph one em wide, which the engine has no glyph for, and the
+        /// separators as a space that does not collapse with the spaces beside it, where layout would break the line
+        /// (UAX #14 class BK).
+        /// </summary>
+        private string Characters(HtmlText text)
+        {
+            var data = text.Data;
+            var removed = 0;
+            while (NotDrawn(data) is { } at)
+            {
+                var length = char.IsHighSurrogate(data[at]) && at + 1 < data.Length && char.IsLowSurrogate(data[at + 1]) ? 2 : 1;
+                var codePoint = length == 2 ? char.ConvertToUtf32(data[at], data[at + 1]) : data[at];
+                var error = new Error(HtmlStyleErrorCodes.Unsupported.Character, $"The character U+{codePoint:X4} is not drawn in this version: only text, tab, line feed and carriage return are.")
+                    .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, at + removed);
+                Refusals.Add(error.WithSource(_sourceName, text.Position));
+                data = data.Remove(at, length);
+                removed += length;
+            }
+
+            return data;
+
+            static int? NotDrawn(string data)
+            {
+                var forbidden = TextCharacters.IndexOfForbidden(data);
+                var index = data.AsSpan().IndexOfAny(['\v', '\f', '\u0085', '\u2028', '\u2029']);
+                return index >= 0 && (forbidden is null || index < forbidden) ? index : forbidden;
+            }
+        }
 
         /// <summary>
         /// Checks a rendered element once, the first time it is met: its own rule, then every computed value. True when
@@ -375,7 +413,7 @@ public static class HtmlBoxGenerator
 
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        frame.Target.Add(new TextRun(NewId(), text.Text.Data, style, Source(text.Text.Position)));
+                        frame.Target.Add(new TextRun(NewId(), Characters(text.Text), style, Source(text.Text.Position)));
                     }
 
                     break;
@@ -421,7 +459,7 @@ public static class HtmlBoxGenerator
 
         /// <summary>Lines for inline content with something to draw; else an empty block (white space only).</summary>
         private static (LayoutAlgorithmId Layout, ValueList<Node> Children) Content(List<Node> runs) =>
-            runs.All(run => run is TextRun text && text.Text.All(c => c is ' ' or '\t' or '\n' or '\r'))
+            runs.All(run => run is TextRun text && text.Text.All(IsCollapsible))
                 ? (LayoutAlgorithmId.Flow, [])
                 : (LayoutAlgorithmId.Inline, [.. runs]);
 

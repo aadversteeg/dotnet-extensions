@@ -1028,6 +1028,26 @@ public class MeasuredReferenceFilesTests
         ["fr-row-later-page-padding-overflows.lines.txt"] = 10,
         ["fr-row-later-page-padding-overflows.print.txt"] = 29,
         ["fr-row-later-page-padding-overflows.words.txt"] = 16,
+        ["h-char-cr.boxes.txt"] = 1,
+        ["h-char-cr.lines.txt"] = 0,
+        ["h-char-cr.print.txt"] = 6,
+        ["h-char-cr.words.txt"] = 5,
+        ["h-char-ff.boxes.txt"] = 1,
+        ["h-char-ff.lines.txt"] = 0,
+        ["h-char-ff.print.txt"] = 6,
+        ["h-char-ff.words.txt"] = 5,
+        ["h-char-ls.boxes.txt"] = 1,
+        ["h-char-ls.lines.txt"] = 0,
+        ["h-char-ls.print.txt"] = 6,
+        ["h-char-ls.words.txt"] = 5,
+        ["h-char-ps.boxes.txt"] = 1,
+        ["h-char-ps.lines.txt"] = 0,
+        ["h-char-ps.print.txt"] = 6,
+        ["h-char-ps.words.txt"] = 5,
+        ["h-char-tab.boxes.txt"] = 1,
+        ["h-char-tab.lines.txt"] = 0,
+        ["h-char-tab.print.txt"] = 6,
+        ["h-char-tab.words.txt"] = 5,
         ["h-default-page.boxes.txt"] = 1,
         ["h-default-page.lines.txt"] = 0,
         ["h-default-page.print.txt"] = 3,
@@ -1288,7 +1308,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(315);
+        cases.Should().HaveCount(320);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
