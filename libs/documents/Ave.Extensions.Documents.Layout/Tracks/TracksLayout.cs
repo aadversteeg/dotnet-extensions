@@ -205,8 +205,9 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     public bool SlicesBelowHeader { get; init; }
 
     /// <summary>The <see cref="ConstraintSpace.FragmentainerBlockSize"/> of the cells' content, on the page and in the
-    /// measurements with unlimited height alike: the table's, less its header rows when it repeats them
-    /// (<see cref="TablePage"/>, RepeatsHeader), never below zero.</summary>
+    /// measurements with unlimited height alike: the table's, less the room its repeated header rows take on this page
+    /// (<see cref="TablePage"/>, RepeatsHeader and Reserved: on a later page also the outer half of the table's top grid
+    /// line), never below zero.</summary>
     public double CellFragmentainerBlockSize { get; init; }
 
     /// <summary>The grid.</summary>

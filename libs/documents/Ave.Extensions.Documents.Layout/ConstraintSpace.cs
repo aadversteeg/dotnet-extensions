@@ -31,8 +31,10 @@ public sealed record ConstraintSpace(
 
     /// <summary>
     /// The height of the page area the box is laid out in (Chromium's "fragmentainer block size", beside its available
-    /// block size), less the header rows of the tables around the box that repeat them: Chromium reserves their room in
-    /// the fragmentainer for the content of the rows below them (<c>ConstraintSpaceBuilder::ReserveSpaceInFragmentainer</c>).
+    /// block size), less the room the repeated header rows of the tables around the box take on this page: Chromium
+    /// reserves it in the fragmentainer for the content of the rows below them
+    /// (<c>ConstraintSpaceBuilder::ReserveSpaceInFragmentainer</c>); on a table's later pages that room includes the outer
+    /// half of the table's top grid line, which the repeated header draws (<see cref="TablePage"/>, Reserved).
     /// Unlike <see cref="AvailableHeight"/> it does not depend on where the box starts on the page, and a layout with
     /// unlimited height (the measurement of a table cell) carries the value of the page it measures for. A table decides
     /// from it whether its header rows repeat (<see cref="TablePage"/>). Zero when not given: then no header row repeats.

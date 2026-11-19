@@ -676,11 +676,19 @@ Each is documented next to its code as well.
   (`ConstraintSpace.FragmentainerBlockSize`): it does not depend on where the table starts on its first page
   (`HeaderDecisionTests`), and the measurement of a cut table cell with unlimited height carries the value of the page
   it measures for, so a table inside a cell decides there as on the page. Under an outer table's repeated header the
-  page area is less by that header, as Chromium reserves its room for the rows below it
-  (`ConstraintSpaceBuilder::ReserveSpaceInFragmentainer`): on a page area of 180 pt below an outer header of one line a
-  nested header of 39.75 pt is repeated and one of 42.75 pt is not, in both (`a6-nested-under-header-h2400`,
+  page area is less by the room that header takes, as Chromium reserves it for the rows below it
+  (`ConstraintSpaceBuilder::ReserveSpaceInFragmentainer`): on the outer table's first page the header, on its later
+  pages the header and the outer half of the outer table's top grid line, which the repeated header draws whole there
+  (`TableLayoutAlgorithm::GenerateFragment`; `TablePage.Reserved`). On a page area of 180 pt below an outer header of
+  one line a nested header of 39.75 pt is repeated and one of 42.75 pt is not, in both (`a6-nested-under-header-h2400`,
   `a6-nested-under-header-h2700`, `a6-nested-under-header-h2700-n16`; 42.75 pt is less than a quarter of 180 pt and
-  more than a quarter of 180 pt less the outer header). A nested header of 45.0 pt in a cell with 12 pt padding is a
+  more than a quarter of 180 pt less the outer header). The limit is 41.0625 pt for a nested table that starts on the
+  outer table's first page (`a6-nested-first-h2525`, `-h253125`: 41.0 and 41.0625 pt, both repeated) and 40.96875 pt
+  for one that starts on its second page (`a6-nested-late-h2521875`, `-h2525`, `-h253125`, `-h2700`: 40.96875 pt
+  repeated, 41.0, 41.0625 and 42.75 pt not), also where the outer table clones its lines at a break
+  (`a6-nested-late-clone-h2525`); with 6 pt grid lines the later-page limit is 39.0 pt (`a6-nested-late6-h1800`,
+  `-h1850`), and below two outer headers each takes its share, 36.9375 pt (`a6-nested-late-d3-h2100`, `-h2125`; pages
+  and words equal to Chromium's under every profile, `HeaderRepeatTests`). A nested header of 45.0 pt in a cell with 12 pt padding is a
   quarter of the page area and is repeated on every page (`a6-nested-header-pad12-h2925`); one of 60 pt is shown on page
   1 only, whatever the last page holds (`a6-nested-header-h4425-n14`, `-n16`, `-n20`, `-n26`: 7, 9, 2 and 8 rows on the
   last page, where 7 fit below the header).

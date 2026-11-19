@@ -263,9 +263,11 @@ internal static class TablePage
     /// measurement (<c>tools/reference/chromium</c>, cases <c>a6-header-quarter-*</c>: on a page area of 180 pt a header of
     /// 45.0 pt is repeated and one of 45.75 pt is not; on 360 pt, 90.0 and 90.75). The header's height is that of its rows,
     /// from the centre of the line above them to the centre of the line below. Under an outer table's repeated header the
-    /// fragmentainer is less by that header, as Chromium reserves its room for the rows below it (cases
-    /// <c>a6-nested-under-header-h2400</c> and <c>-h2700</c>: on a page area of 180 pt below an outer header of one line, a
-    /// nested header of 39.75 pt is repeated and one of 42.75 pt is not).
+    /// fragmentainer is less by the room that header takes, as Chromium reserves it for the rows below it
+    /// (<see cref="Reserved"/>: the header on the outer table's first page, the header and the outer half of the outer
+    /// table's top grid line on its later pages; cases <c>a6-nested-under-header-h2400</c> and <c>-h2700</c>: on a page
+    /// area of 180 pt below an outer header of one line, a nested header of 39.75 pt is repeated and one of 42.75 pt is
+    /// not; cases <c>a6-nested-first-*</c> and <c>a6-nested-late-*</c> for the step on the first and on a later page).
     /// </summary>
     private static Result<(bool Repeats, double Height), Error> RepeatsHeader(TableGeometry table, ConstraintSpace space, TracksBreakToken? incoming)
     {
