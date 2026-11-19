@@ -42,7 +42,7 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <para>The tree is walked with an explicit stack, never by recursion, so the depth of the input costs heap, not call
 /// frames.</para>
 /// </remarks>
-public static class HtmlBoxGenerator
+public static partial class HtmlBoxGenerator
 {
     /// <summary>The elements whose rendering no property says, which box generation does not draw.</summary>
     internal static readonly IReadOnlyDictionary<string, string> RefusedRenderings = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -124,7 +124,7 @@ public static class HtmlBoxGenerator
         public int Next { get; set; }
     }
 
-    private sealed class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
+    private sealed partial class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
     {
         private readonly string _sourceName = styled.SourceName;
         private readonly Dictionary<StyledElement, HashSet<string>> _refused = new(ReferenceEqualityComparer.Instance);
@@ -305,7 +305,7 @@ public static class HtmlBoxGenerator
         private void Child(Stack<object> stack, BlockFrame block, int index)
         {
             var node = block.Element.Children[index];
-            if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none"))
+            if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none") || TableChild(stack, block, node))
             {
                 return;
             }
@@ -432,7 +432,7 @@ public static class HtmlBoxGenerator
 
             // CSS Fragmentation 3 §3.1: a forced break after the last child is a break after this box.
             var forcedAfter = block.ForcedBreakPending || Value(element, "break-after") is CssKeyword { Name: "page" };
-            return (new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position)), forcedAfter);
+            return (TablePartBox(block, new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position))), forcedAfter);
         }
 
         private SemanticRole RoleOf(StyledElement element)

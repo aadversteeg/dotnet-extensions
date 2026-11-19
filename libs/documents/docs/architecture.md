@@ -570,8 +570,8 @@ HTML text ──HtmlRendering.ToPages / ToPdf / ToPng (composition package)─�
 
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
-`FontMetricRounding.WholePixels`). In this first package it draws `display: block`, `inline` and `none`, text, the box
-properties of block boxes and the page size and margins; every other computed value is refused by name.
+`FontMetricRounding.WholePixels`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
 
@@ -583,6 +583,8 @@ Where each rule lives:
 | font matching: `@font-face` (TrueType, through the resolver, loaded when first needed), then the caller's fonts; first family with a face; exact weight and style | `Html/Boxes/FontMatcher.cs` |
 | `@page`: size and margins of rules without a selector, Chromium's rounding of the page | `Html/Boxes/PageRules.cs` |
 | line height in Chromium's layout unit (a length rounded to 1/64 px, a number times the font size floored to it) | `HtmlBoxGenerator.LineHeightOf` |
+| margins and padding in Chromium's layout unit (cut toward zero to 1/64 px) | `HtmlBoxGenerator.LayoutUnits` |
+| tables: the parts, their structure, column sizes, spans; what the model's table cannot show | `Html/Boxes/TableBoxes.cs`; the values in `Html/Boxes/TableProperties.cs` |
 
 **The refusal table.** `BoxProperties.Rows` holds one row per longhand of the property registry: what is drawn, and
 where a value has no effect, the condition. A value is refused (`Documents.Html.Unsupported.Value`, at the element's
@@ -590,13 +592,15 @@ start tag, with the property and the value) only where it would change the print
 
 | Properties | Drawn | Refused |
 | --- | --- | --- |
-| `display` | `block`, `inline`, `none` | every other type (lists, tables, …: the next packages) |
+| `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
+| `border-collapse` | `collapse` on a table | `separate` (the initial value, and HTML's) |
+| table width, column and cell widths | the table at `100%`; column lengths and percentages, first-row cell lengths in the fixed layout | see **Tables** |
 | margins | lengths of 0 or more; `auto` as 0 (width is auto); on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
 | `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply) | other values on a block box |
-| `box-sizing`, table and list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, no table or list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `box-sizing`, `border-spacing`, `empty-cells`, `caption-side`, `table-layout`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space-collapse`, `text-wrap-mode` | `collapse`, `wrap`; any on an element without text | `preserve`, `nowrap` where text is |
 | `text-decoration-line` | `none`; any on an element without content | underline (links: the next packages) |
@@ -607,12 +611,32 @@ start tag, with the property and the value) only where it would change the print
 | the properties supported only at their initial value | the initial value | any other (the registry already refuses it) |
 
 Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`): `br`,
-`wbr`, `img`, `q`. The others are refused through their values: tables and lists by `display`, `pre` by
+`wbr`, `img`, `q`. The others are refused through their values: lists by `display`, a table without collapsed borders
+by `border-collapse`, `pre` by
 `white-space-collapse`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). Under `UnsupportedPolicy.Warn` a refused value is
 replaced by the model's initial value of what it sets, a refused display type is laid out as a block box, and an
 element refused by its own rule is left out (`HtmlBoxGenerator`, remarks).
+
+**Tables.** A table element with collapsed borders (CSS 2.1 §17.6.2) becomes the model's table: a tracks box, its row
+groups (`thead` the header group, repeated as the model repeats it; `tbody` a row group), their rows and the cells, at
+one level of the model, with the structure roles of the elements (header rows without body rows are the table's
+body, for PDF/UA). Borders of the table, groups, rows and cells go to their boxes, and layout resolves the conflicts;
+cells keep padding, background and `vertical-align` `top`, `middle` or `bottom`; internal parts have no margins and
+rows and groups no padding (§17.5), the table no padding (§17.6.2); `colspan` and `rowspan` are read by the rules for
+non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); lines at a page break are sliced
+(`BoxDecorationBreak.Slice`, as Chromium paints them). Column sizes: in the fixed layout the widths of the column
+elements, then of the first row's cells, as fixed columns, and the columns without a width share what is left
+(fill columns of weight 1); percentages as fill columns of that weight, when no column has a length and they add up
+to 100% with the columns without a width. In the automatic layout only what does not depend on the content: column
+lengths and one column without a width. The table's width is `100%`. Refused (`Documents.Html.Unsupported.Table`,
+or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
+(§17.2.1); a table part on another element than its HTML element; captions, footer groups, a header group after a row
+group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
+column sizes outside the rules above; backgrounds of the table, groups, rows and columns; column borders. Under
+`Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
+and a table without cells is an empty block.
 
 **The page.** Without an `@page` rule the page is what Chromium prints with the reference tool's settings: US Letter,
 612 × 792 pt, no margins (case `h-default-page`). An `@page` rule without a selector gives `size` and the margins;

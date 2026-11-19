@@ -93,6 +93,7 @@ internal static class BoxProperties
                 0 => null,
                 _ when facts.IsCanvasElement => "a background on the root or body element is painted on the page canvas (CSS Backgrounds 3 §2.11.2), and the document model has no page background",
                 _ when !facts.IsBlock => "a background on an inline box is not drawn in this version",
+                _ when TableProperties.Background(facts) is { } table => table,
                 1 => null,
                 _ => "a colour with an alpha other than 0 or 1 is not drawn",
             });
@@ -102,8 +103,8 @@ internal static class BoxProperties
             // CSS Backgrounds 3 §3.1–3.3: a style of none or hidden computes the width to 0 (no line, no room).
             yield return new($"border-{side}-style", "none, hidden, solid; inset and outset only where the width is 0", (value, facts) =>
                 value is CssKeyword { Name: "none" or "hidden" or "solid" } || IsZero(facts.Style, $"border-{side}-width") ? null : "only solid borders are drawn");
-            yield return new($"border-{side}-width", "a length on a block box; 0 on an inline box",
-                (value, facts) => facts.IsBlock || IsZero(value) ? null : "borders on inline boxes are not drawn in this version");
+            yield return new($"border-{side}-width", "a length on a block box; 0 on an inline box, a column or a column group",
+                (value, facts) => TableProperties.BorderWidth(value, facts) ?? (facts.IsBlock || IsZero(value) ? null : "borders on inline boxes are not drawn in this version"));
             yield return new($"border-{side}-color", "a colour of alpha 1, or currentcolor; any colour where the width is 0", (value, facts) =>
                 IsZero(facts.Style, $"border-{side}-width") || Alpha(Resolved(value, facts.Style)) == 1 ? null : "a border colour with an alpha other than 1 is not drawn");
         }
@@ -112,9 +113,10 @@ internal static class BoxProperties
         foreach (var side in Sides)
         {
             var vertical = side is "top" or "bottom";
-            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1)" : "a length of 0 or more, auto (0) on a block box; 0 or auto on an inline box",
+            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1) or an internal table part (§17.5)" : "a length of 0 or more, auto (0) on a block box; 0 or auto on an inline box or a table; no effect on an internal table part (CSS 2.1 §17.5)",
                 (value, facts) => value switch
                 {
+                    _ when TableProperties.IsPart(facts) => TableProperties.Margin(side, value, facts),
                     CssKeyword { Name: "auto" } => null,
                     _ when !facts.IsBlock && vertical => null,
                     _ when IsZero(value) => null,
@@ -133,14 +135,15 @@ internal static class BoxProperties
         }
 
         // CSS Sizing 3 §3.1–3.2: the sizes do not apply to an inline box (CSS 2.1 §10.3.1, §10.6.1).
-        yield return new("width", "auto; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock ? null : "sizes are not drawn in this version");
+        yield return new("width", "auto; no effect on an inline box; on a table part what TableProperties.Width says", (value, facts) =>
+            TableProperties.IsPart(facts) ? TableProperties.Width(value, facts) : IsKeyword(value, "auto") || !facts.IsBlock ? null : "sizes are not drawn in this version");
         yield return new("height", "auto; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock ? null : "sizes are not drawn in this version");
         yield return new("min-width", "auto or 0; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null : "sizes are not drawn in this version");
         yield return new("max-width", "none; no effect on an inline box", (value, facts) => IsKeyword(value, "none") || !facts.IsBlock ? null : "sizes are not drawn in this version");
         yield return new("box-sizing", "both values: no effect while width and height are auto (every other width and height is refused)", (_, _) => null);
 
         // CSS Display 3 §2.
-        yield return new("display", "block, inline, none", (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" } ? null : "this display type is not drawn in this version");
+        yield return new("display", "block, inline, none, table and its parts but the caption", (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" } ? null : TableProperties.Display(value));
 
         // CSS Color 4 §3.1: the colour of the element's own text; a border in currentcolor is checked in its row.
         yield return new("color", "a colour of alpha 1; any colour on an element without text of its own",
@@ -171,8 +174,8 @@ internal static class BoxProperties
         yield return new("text-wrap-mode", "wrap; nowrap on an element without text of its own",
             (value, facts) => IsKeyword(value, "wrap") || !facts.DrawsText ? null : "text that does not wrap is not drawn in this version");
         yield return new("unicode-bidi", "both values: isolate has no effect in left-to-right text, the only direction", (_, _) => null);
-        yield return new("vertical-align", "baseline; any value on a block box (it applies to inline boxes and table cells)",
-            (value, facts) => IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version");
+        yield return new("vertical-align", "baseline; top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
+            (value, facts) => TableProperties.VerticalAlign(value, facts) ?? (IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version"));
 
         // CSS Text Decoration 3 §2.
         yield return new("text-decoration-line", "none; any value on an element without content",
@@ -199,12 +202,16 @@ internal static class BoxProperties
             yield return new(name, "every value: no effect while outline-style is none, its only value", (_, _) => null);
         }
 
-        // Tables and lists: no effect on a box that is not a table or a list item (those display types are refused).
-        foreach (var name in new[] { "border-collapse", "border-spacing", "caption-side", "empty-cells", "table-layout" })
+        // Tables (CSS 2.1 §17.6): collapsed borders only; the rest has no effect with them, or is read for the columns.
+        yield return new("border-collapse", "collapse on a table; no effect on another box", (value, facts) => TableProperties.TableProperty("border-collapse", value, facts));
+        foreach (var name in new[] { "border-spacing", "caption-side", "empty-cells" })
         {
-            yield return new(name, "every value: no effect on a box that is not a table or a table part (those display types are refused)", (_, _) => null);
+            yield return new(name, "every value: no effect with collapsed borders and no caption (separated borders and captions are refused)", (value, facts) => TableProperties.TableProperty(name, value, facts));
         }
 
+        yield return new("table-layout", "both values: read for the column widths of a table", (_, _) => null);
+
+        // Lists: no effect on a box that is not a list item (that display type is refused).
         foreach (var name in new[] { "list-style-position", "list-style-type" })
         {
             yield return new(name, "every value: no effect on a box that is not a list item (display: list-item is refused)", (_, _) => null);

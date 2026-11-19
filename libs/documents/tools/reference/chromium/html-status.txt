@@ -1,127 +1,127 @@
-a1-after-forced-break refused Documents.Html.Unsupported.Value display: table
+a1-after-forced-break equal
 a1-empty-block-then-paragraph equal
-a1-empty-block-then-table refused Documents.Html.Unsupported.Value display: table
+a1-empty-block-then-table equal
 a1-forced-break-keeps-margin equal
 a1-forced-break-without-content equal
-a1-header-row refused Documents.Html.Unsupported.Value display: table
-a1-kept-row refused Documents.Html.Unsupported.Value display: table
+a1-header-row equal
+a1-kept-row equal
 a1-margin-taller-than-page equal
 a1-margin-through-box equal
 a1-padding-at-page-start equal
 a1-padding-lower equal
 a1-paragraph-own-margin equal
 a1-paragraph-own-margin-fits equal
-a1-table-own-margin refused Documents.Html.Unsupported.Value display: table
-a1-text-before refused Documents.Html.Unsupported.Value display: table
-a2-blank-part refused Documents.Html.Unsupported.Value display: table
-a2-cells-end refused Documents.Html.Unsupported.Value display: table
-a2-cells-end-header refused Documents.Html.Unsupported.Value display: table
-a2-cells-end-page-top refused Documents.Html.Unsupported.Value display: table
-a2-cells-end-text refused Documents.Html.Unsupported.Value display: table
-a2-line-breaks refused Documents.Html.Unsupported.Value display: table
-a2-padded-blocks refused Documents.Html.Unsupported.Value display: table
-a2-padded-blocks-px refused Documents.Html.Unsupported.Value display: table
-a2-row-end refused Documents.Html.Unsupported.Value display: table
-a2-row-end-6pt refused Documents.Html.Unsupported.Value display: table
-a2-row-end-6pt-after refused Documents.Html.Unsupported.Value display: table
-a2-row-end-after refused Documents.Html.Unsupported.Value display: table
-a2-row-end-background refused Documents.Html.Unsupported.Value display: table
-a2-row-end-below-paragraph refused Documents.Html.Unsupported.Value display: table
+a1-table-own-margin equal
+a1-text-before equal
+a2-blank-part refused Documents.Html.Unsupported.Rendering br
+a2-cells-end equal
+a2-cells-end-header equal
+a2-cells-end-page-top failed Documents.Layout.DoesNotFit The table made at a2-cells-end-page-top.html:3 does not fit in the 180pt left for it on the page and cannot be broken; nothing before it on the page can move to a later page.
+a2-cells-end-text equal
+a2-line-breaks refused Documents.Html.Unsupported.Rendering br
+a2-padded-blocks refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
+a2-padded-blocks-px refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
+a2-row-end refused Documents.Html.Unsupported.Rendering br
+a2-row-end-6pt refused Documents.Html.Unsupported.Rendering br
+a2-row-end-6pt-after refused Documents.Html.Unsupported.Rendering br
+a2-row-end-after refused Documents.Html.Unsupported.Rendering br
+a2-row-end-background refused Documents.Html.Unsupported.Rendering br
+a2-row-end-below-paragraph refused Documents.Html.Unsupported.Rendering br
 a2-row-end-bottom-padding-30 refused Documents.Html.Unsupported.Rendering br
-a2-row-end-first-row refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-cut refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-half-2col refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-half-alone refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-half-block refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-half-break refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-half-emptyblock refused Documents.Html.Unsupported.Value display: table
+a2-row-end-first-row refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-cut refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-half-2col refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-half-alone refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-half-block refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-half-break refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-half-emptyblock refused Documents.Html.Unsupported.Rendering br
 a2-row-end-first-row-half-page2 refused Documents.Html.Unsupported.Rendering br
-a2-row-end-first-row-half-second-row refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-half-top refused Documents.Html.Unsupported.Value display: table
-a2-row-end-nested-under-header refused Documents.Html.Unsupported.Value display: table
-a2-row-end-nested-under-header-13875 refused Documents.Html.Unsupported.Value display: table
-a2-row-end-nested-under-header-end refused Documents.Html.Unsupported.Value display: table
-a2-row-end-span refused Documents.Html.Unsupported.Value display: table
-a2-row-end-span-after refused Documents.Html.Unsupported.Value display: table
-a2-rowspan-blocks refused Documents.Html.Unsupported.Value display: table
-a2-split-line-1px refused Documents.Html.Unsupported.Value display: table
-a3-mirror refused Documents.Html.Unsupported.Value display: table
-a3-mirror-px refused Documents.Html.Unsupported.Value display: table
+a2-row-end-first-row-half-second-row refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-half-top refused Documents.Html.Unsupported.Rendering br
+a2-row-end-nested-under-header refused Documents.Html.Unsupported.Rendering br
+a2-row-end-nested-under-header-13875 refused Documents.Html.Unsupported.Rendering br
+a2-row-end-nested-under-header-end refused Documents.Html.Unsupported.Rendering br
+a2-row-end-span refused Documents.Html.Unsupported.Rendering br
+a2-row-end-span-after refused Documents.Html.Unsupported.Rendering br
+a2-rowspan-blocks equal
+a2-split-line-1px refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
+a3-mirror refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
+a3-mirror-px refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
 a3-pad-kept refused Documents.Html.Unsupported.Rendering br
 a3-pad-kept-lower refused Documents.Html.Unsupported.Rendering br
 a3-pad-line equal
-a4-cell-image-179-5 refused Documents.Html.Unsupported.Value display: table
-a4-cell-pad3-image-177 refused Documents.Html.Unsupported.Value display: table
-a4-cell-pad3-line-177 refused Documents.Html.Unsupported.Value display: table
-a4-continued-cell-pad-bottom-30 refused Documents.Html.Unsupported.Value display: table
-a4-continued-cell-pad-bottom-30-under-header refused Documents.Html.Unsupported.Value display: table
-a4-header-cut-row-image-row refused Documents.Html.Unsupported.Value display: table
-a4-header-empty-rowspan-line-image refused Documents.Html.Unsupported.Value display: table
-a4-header-image-150-image refused Documents.Html.Unsupported.Value display: table
-a4-header-image-360-image refused Documents.Html.Unsupported.Value display: table
-a4-header-image-row refused Documents.Html.Unsupported.Value display: table
-a4-header-image-row-image refused Documents.Html.Unsupported.Value display: table
-a4-header-row-image-row refused Documents.Html.Unsupported.Value display: table
-a4-header-rows-fill-image-row refused Documents.Html.Unsupported.Value display: table
-a4-header-rows-image-row refused Documents.Html.Unsupported.Value display: table
-a4-header-tall-line refused Documents.Html.Unsupported.Value display: table
-a4-header-two-image-rows refused Documents.Html.Unsupported.Value display: table
+a4-cell-image-179-5 refused Documents.Html.Unsupported.Rendering img
+a4-cell-pad3-image-177 refused Documents.Html.Unsupported.Rendering img
+a4-cell-pad3-line-177 different page 2 'W' at (15.75, 105), Chromium (15.75, 104.25)
+a4-continued-cell-pad-bottom-30 refused Documents.Html.Unsupported.Rendering br
+a4-continued-cell-pad-bottom-30-under-header different 2 pages, Chromium 3
+a4-header-cut-row-image-row refused Documents.Html.Unsupported.Rendering br
+a4-header-empty-rowspan-line-image refused Documents.Html.Unsupported.Rendering img
+a4-header-image-150-image refused Documents.Html.Unsupported.Rendering img
+a4-header-image-360-image refused Documents.Html.Unsupported.Rendering img
+a4-header-image-row refused Documents.Html.Unsupported.Rendering img
+a4-header-image-row-image refused Documents.Html.Unsupported.Rendering img
+a4-header-row-image-row refused Documents.Html.Unsupported.Rendering img
+a4-header-rows-fill-image-row refused Documents.Html.Unsupported.Rendering img
+a4-header-rows-image-row refused Documents.Html.Unsupported.Rendering img
+a4-header-tall-line different page 3 reads 'H W after', Chromium 'W after'
+a4-header-two-image-rows refused Documents.Html.Unsupported.Rendering img
 a4-image-177-block-padding-3 refused Documents.Html.Unsupported.Rendering img
 a4-image-after-text refused Documents.Html.Unsupported.Rendering img
-a4-image-beside-lines refused Documents.Html.Unsupported.Value display: table
+a4-image-beside-lines refused Documents.Html.Unsupported.Rendering img
 a4-image-block-padding-133 refused Documents.Html.Unsupported.Rendering img
 a4-image-block-padding-60 refused Documents.Html.Unsupported.Rendering img
 a4-image-first refused Documents.Html.Unsupported.Rendering img
-a4-image-in-cell refused Documents.Html.Unsupported.Value display: table
-a4-image-nested-table refused Documents.Html.Unsupported.Value display: table
-a4-image-rowspan refused Documents.Html.Unsupported.Value display: table
-a4-image-single-cell refused Documents.Html.Unsupported.Value display: table
-a4-intro-header-image-row refused Documents.Html.Unsupported.Value display: table
+a4-image-in-cell refused Documents.Html.Unsupported.Rendering img
+a4-image-nested-table refused Documents.Html.Unsupported.Rendering img
+a4-image-rowspan refused Documents.Html.Unsupported.Rendering img
+a4-image-single-cell refused Documents.Html.Unsupported.Rendering img
+a4-intro-header-image-row refused Documents.Html.Unsupported.Rendering img
 a4-line-after-text equal
-a4-line-beside-lines refused Documents.Html.Unsupported.Value display: table
-a4-nested-padded-image-160 refused Documents.Html.Unsupported.Value display: table
-a4-row-image-row refused Documents.Html.Unsupported.Value display: table
-a4-two-image-rows refused Documents.Html.Unsupported.Value display: table
-a5-cell-in-row refused Documents.Html.Unsupported.Value display: table
-a5-kept-cell-by-box refused Documents.Html.Unsupported.Value display: table
-a5-kept-cell-in-row refused Documents.Html.Unsupported.Value display: table
-a5-kept-row refused Documents.Html.Unsupported.Value display: table
+a4-line-beside-lines refused Documents.Html.Unsupported.Rendering br
+a4-nested-padded-image-160 refused Documents.Html.Unsupported.Rendering img
+a4-row-image-row refused Documents.Html.Unsupported.Rendering img
+a4-two-image-rows refused Documents.Html.Unsupported.Rendering img
+a5-cell-in-row refused Documents.Html.Unsupported.Rendering br
+a5-kept-cell-by-box refused Documents.Html.Unsupported.Rendering br
+a5-kept-cell-in-row refused Documents.Html.Unsupported.Rendering br
+a5-kept-row refused Documents.Html.Unsupported.Rendering br
 a5-kept-taller-than-page refused Documents.Html.Unsupported.Rendering br
-a6-header-quarter-180-4500 refused Documents.Html.Unsupported.Value display: table
-a6-header-quarter-180-4575 refused Documents.Html.Unsupported.Value display: table
-a6-header-quarter-360-9000 refused Documents.Html.Unsupported.Value display: table
-a6-header-quarter-360-9075 refused Documents.Html.Unsupported.Value display: table
-a6-nested-first-h2525 refused Documents.Html.Unsupported.Value display: table
-a6-nested-first-h253125 refused Documents.Html.Unsupported.Value display: table
-a6-nested-header-h4425-n14 refused Documents.Html.Unsupported.Value display: table
-a6-nested-header-h4425-n16 refused Documents.Html.Unsupported.Value display: table
-a6-nested-header-h4425-n20 refused Documents.Html.Unsupported.Value display: table
-a6-nested-header-h4425-n26 refused Documents.Html.Unsupported.Value display: table
-a6-nested-header-pad12-h2925 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late-clone-h2525 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late-d3-h2100 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late-d3-h2125 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late-h2521875 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late-h2525 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late-h253125 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late-h2700 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late6-h1800 refused Documents.Html.Unsupported.Value display: table
-a6-nested-late6-h1850 refused Documents.Html.Unsupported.Value display: table
-a6-nested-under-header-h2400 refused Documents.Html.Unsupported.Value display: table
-a6-nested-under-header-h2700 refused Documents.Html.Unsupported.Value display: table
-a6-nested-under-header-h2700-n16 refused Documents.Html.Unsupported.Value display: table
+a6-header-quarter-180-4500 different page 1 'H0' at (12.75, 54), Chromium (12.75, 53.25)
+a6-header-quarter-180-4575 different page 1 'H0' at (12.75, 54.75), Chromium (12.75, 54)
+a6-header-quarter-360-9000 different page 1 'H0' at (12.75, 99), Chromium (12.75, 98.25)
+a6-header-quarter-360-9075 different page 1 'H0' at (12.75, 99.75), Chromium (12.75, 99)
+a6-nested-first-h2525 equal
+a6-nested-first-h253125 equal
+a6-nested-header-h4425-n14 equal
+a6-nested-header-h4425-n16 equal
+a6-nested-header-h4425-n20 equal
+a6-nested-header-h4425-n26 equal
+a6-nested-header-pad12-h2925 equal
+a6-nested-late-clone-h2525 equal
+a6-nested-late-d3-h2100 equal
+a6-nested-late-d3-h2125 equal
+a6-nested-late-h2521875 equal
+a6-nested-late-h2525 equal
+a6-nested-late-h253125 equal
+a6-nested-late-h2700 equal
+a6-nested-late6-h1800 equal
+a6-nested-late6-h1850 equal
+a6-nested-under-header-h2400 equal
+a6-nested-under-header-h2700 equal
+a6-nested-under-header-h2700-n16 equal
 b-into-block refused Documents.Html.Unsupported.Rendering br
 b-into-paragraph refused Documents.Html.Unsupported.Rendering br
-b-into-table refused Documents.Html.Unsupported.Value display: table
+b-into-table refused Documents.Html.Unsupported.Rendering br
 b-three-deep refused Documents.Html.Unsupported.Rendering br
-b1-repeat refused Documents.Html.Unsupported.Value display: table
-b2-split-row refused Documents.Html.Unsupported.Value display: table
-b3-keep-group refused Documents.Html.Unsupported.Value display: table
-b4-row-span refused Documents.Html.Unsupported.Value display: table
-b5-row-span-kept-cell refused Documents.Html.Unsupported.Value display: table
-c-cell-first-line refused Documents.Html.Unsupported.Value display: table
-c-cell-orphan refused Documents.Html.Unsupported.Value display: table
-c-cell-orphan-moves refused Documents.Html.Unsupported.Value display: table
+b1-repeat equal
+b2-split-row refused Documents.Html.Unsupported.Rendering br
+b3-keep-group equal
+b4-row-span equal
+b5-row-span-kept-cell equal
+c-cell-first-line refused Documents.Html.Unsupported.Table percent columns in the automatic table layout
+c-cell-orphan refused Documents.Html.Unsupported.Rendering br
+c-cell-orphan-moves refused Documents.Html.Unsupported.Rendering br
 c-custom refused Documents.Html.Unsupported.Rendering br
 c-few-lines refused Documents.Html.Unsupported.Rendering br
 c-orphan refused Documents.Html.Unsupported.Rendering br
@@ -163,45 +163,45 @@ f-tiny-038 refused Documents.Html.Unsupported.Rendering br
 font-sizes refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap
 fr-border-continued refused Documents.Html.Unsupported.Rendering br
 fr-border-top-and-bottom equal
-fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value display: table
+fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Table percent columns in the automatic table layout
 fr-empty-span equal
 fr-empty-span-trailing-space equal
-fr-f4-grid-line-second-row refused Documents.Html.Unsupported.Value display: table
-fr-f4-one-line-cell-beside-cut-cell refused Documents.Html.Unsupported.Value display: table
-fr-f4-one-line-cell-beside-cut-cell-control refused Documents.Html.Unsupported.Value display: table
-fr-f4-one-line-cell-widows3 refused Documents.Html.Unsupported.Value display: table
-fr-f4-padding-page-start refused Documents.Html.Unsupported.Value display: table
-fr-f4-padding-second-row refused Documents.Html.Unsupported.Value display: table
-fr-f4-padding-two-cells refused Documents.Html.Unsupported.Value display: table
-fr-f5-continued-box-table-padding refused Documents.Html.Unsupported.Value display: table
-fr-f5-continued-table refused Documents.Html.Unsupported.Value display: table
-fr-f6-kept-group-kept-row-fits-a-page refused Documents.Html.Unsupported.Value display: table
-fr-f6-kept-group-orphans3 refused Documents.Html.Unsupported.Value display: table
-fr-f6-kept-table-orphans3-control refused Documents.Html.Unsupported.Value display: table
-fr-f7-rows-of-spanning-cells refused Documents.Html.Unsupported.Value display: table
-fr-f7-span-cut-at-row-boundary refused Documents.Html.Unsupported.Value display: table
-fr-f7-span-fits-control refused Documents.Html.Unsupported.Value display: table
-fr-f7-span-orphans-moves-table refused Documents.Html.Unsupported.Value display: table
-fr-f8-kept-row-with-spanning-cell refused Documents.Html.Unsupported.Value display: table
-fr-f8-kept-spanning-cell-control refused Documents.Html.Unsupported.Value display: table
-fr-f8-row-not-kept-control refused Documents.Html.Unsupported.Value display: table
+fr-f4-grid-line-second-row refused Documents.Html.Unsupported.Rendering br
+fr-f4-one-line-cell-beside-cut-cell refused Documents.Html.Unsupported.Rendering br
+fr-f4-one-line-cell-beside-cut-cell-control refused Documents.Html.Unsupported.Rendering br
+fr-f4-one-line-cell-widows3 refused Documents.Html.Unsupported.Rendering br
+fr-f4-padding-page-start refused Documents.Html.Unsupported.Rendering br
+fr-f4-padding-second-row refused Documents.Html.Unsupported.Rendering br
+fr-f4-padding-two-cells refused Documents.Html.Unsupported.Rendering br
+fr-f5-continued-box-table-padding refused Documents.Html.Unsupported.Rendering br
+fr-f5-continued-table refused Documents.Html.Unsupported.Rendering br
+fr-f6-kept-group-kept-row-fits-a-page refused Documents.Html.Unsupported.Rendering br
+fr-f6-kept-group-orphans3 refused Documents.Html.Unsupported.Rendering br
+fr-f6-kept-table-orphans3-control refused Documents.Html.Unsupported.Rendering br
+fr-f7-rows-of-spanning-cells equal
+fr-f7-span-cut-at-row-boundary refused Documents.Html.Unsupported.Rendering br
+fr-f7-span-fits-control refused Documents.Html.Unsupported.Rendering br
+fr-f7-span-orphans-moves-table refused Documents.Html.Unsupported.Rendering br
+fr-f8-kept-row-with-spanning-cell refused Documents.Html.Unsupported.Rendering br
+fr-f8-kept-spanning-cell-control refused Documents.Html.Unsupported.Rendering br
+fr-f8-row-not-kept-control refused Documents.Html.Unsupported.Rendering br
 fr-f9-box-orphans3 refused Documents.Html.Unsupported.Rendering br
-fr-f9-cell-orphans3 refused Documents.Html.Unsupported.Value display: table
-fr-f9-cell-orphans3-second-row refused Documents.Html.Unsupported.Value display: table
-fr-f9-padded-box-in-cell-orphans3 refused Documents.Html.Unsupported.Value display: table
+fr-f9-cell-orphans3 refused Documents.Html.Unsupported.Rendering br
+fr-f9-cell-orphans3-second-row refused Documents.Html.Unsupported.Rendering br
+fr-f9-padded-box-in-cell-orphans3 refused Documents.Html.Unsupported.Rendering br
 fr-f9-padded-box-orphans3 refused Documents.Html.Unsupported.Rendering br
 fr-forced-margin equal
 fr-forced-margin-a4 equal
 fr-forced-padded equal
-fr-forced-table refused Documents.Html.Unsupported.Value display: table
-fr-header-cell-margin refused Documents.Html.Unsupported.Value display: table
-fr-header-pad-box-20 refused Documents.Html.Unsupported.Value display: table
-fr-header-pad-box-36 refused Documents.Html.Unsupported.Value display: table
-fr-header-pad-box-50 refused Documents.Html.Unsupported.Value display: table
-fr-header-pad-box-72 refused Documents.Html.Unsupported.Value display: table
-fr-header-pad-grid-36 refused Documents.Html.Unsupported.Value display: table
-fr-header-pad-none-36 refused Documents.Html.Unsupported.Value display: table
-fr-header-pad-top-36 refused Documents.Html.Unsupported.Value display: table
+fr-forced-table different page 3 'w' at (16.746, 26.742), Chromium (16.746, 24)
+fr-header-cell-margin failed Documents.Layout.DoesNotFit The table made at fr-header-cell-margin.html:3 does not fit in the 36pt left for it on the page and cannot be broken; nothing before it on the page can move to a later page.
+fr-header-pad-box-20 equal
+fr-header-pad-box-36 equal
+fr-header-pad-box-50 failed Documents.Layout.DoesNotFit The table made at fr-header-pad-box-50.html:8 does not fit in the 36pt left for it on the page and cannot be broken; nothing before it on the page can move to a later page.
+fr-header-pad-box-72 different 4 pages, Chromium 3
+fr-header-pad-grid-36 equal
+fr-header-pad-none-36 equal
+fr-header-pad-top-36 equal
 fr-keep-continued-box refused Documents.Html.Unsupported.Rendering br
 fr-keep-continued-paragraph refused Documents.Html.Unsupported.Rendering br
 fr-keep-inside-box refused Documents.Html.Unsupported.Rendering br
@@ -220,22 +220,22 @@ fr-lh-mixed-sizes refused Documents.Html.Unsupported.Rendering br
 fr-moved-para-widows-3-control refused Documents.Html.Unsupported.Rendering br
 fr-moved-para-widows-4 refused Documents.Html.Unsupported.Rendering br
 fr-old-blank-last-page listed An_empty_box_past_the_end_of_the_last_page_adds_no_page
-fr-old-cut-cell-bottom refused Documents.Html.Unsupported.Value display: table
-fr-old-cut-cell-middle refused Documents.Html.Unsupported.Value display: table
+fr-old-cut-cell-bottom refused Documents.Html.Unsupported.Rendering br
+fr-old-cut-cell-middle refused Documents.Html.Unsupported.Rendering br
 fr-old-empty-box-past-end listed An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page
 fr-old-forced-after-empty listed A_forced_break_after_only_empty_boxes_is_not_taken
 fr-old-forced-in-keep-together listed A_forced_break_inside_a_box_kept_together_moves_the_whole_box_first
-fr-old-header-quarter-150-at refused Documents.Html.Unsupported.Value display: table
-fr-old-header-quarter-150-over refused Documents.Html.Unsupported.Value display: table
-fr-old-header-quarter-180-at refused Documents.Html.Unsupported.Value display: table
-fr-old-header-quarter-180-over refused Documents.Html.Unsupported.Value display: table
-fr-old-header-quarter-240-at refused Documents.Html.Unsupported.Value display: table
-fr-old-header-quarter-240-over refused Documents.Html.Unsupported.Value display: table
-fr-old-header-taller-than-page refused Documents.Html.Unsupported.Value display: table
+fr-old-header-quarter-150-at equal
+fr-old-header-quarter-150-over equal
+fr-old-header-quarter-180-at equal
+fr-old-header-quarter-180-over equal
+fr-old-header-quarter-240-at equal
+fr-old-header-quarter-240-over equal
+fr-old-header-taller-than-page refused Documents.Html.Unsupported.Rendering br
 fr-old-keep-together-hides refused Documents.Html.Unsupported.Rendering br
-fr-old-margin-at-row-cut refused Documents.Html.Unsupported.Value display: table
-fr-old-row-taller-by-padding refused Documents.Html.Unsupported.Value display: table
-fr-old-row-without-cells refused Documents.Html.Unsupported.Value display: table
+fr-old-margin-at-row-cut refused Documents.Html.Unsupported.Rendering br
+fr-old-row-taller-by-padding different 4 pages, Chromium 3
+fr-old-row-without-cells equal
 fr-own-avoid-early-break refused Documents.Html.Unsupported.Rendering br
 fr-pad-after-content equal
 fr-pad-against-keep equal
@@ -249,8 +249,8 @@ fr-pad-own-break-paragraph refused Documents.Html.Unsupported.Rendering br
 fr-pad-three-lines refused Documents.Html.Unsupported.Rendering br
 fr-pad-top-and-bottom equal
 fr-positions equal
-fr-row-later-page-padding-overflows refused Documents.Html.Unsupported.Value display: table
-fr-row-later-page-padding-overflows-two-cells refused Documents.Html.Unsupported.Value display: table
+fr-row-later-page-padding-overflows refused Documents.Html.Unsupported.Rendering br
+fr-row-later-page-padding-overflows-two-cells refused Documents.Html.Unsupported.Rendering br
 h-default-page equal
 h-kerning-auto equal
 h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none
@@ -261,14 +261,14 @@ kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering
 kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br
 kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br
 kb-n10-kept-para-padding-bottom refused Documents.Html.Unsupported.Rendering br
-kb-n11-kept-table-in-padded-box refused Documents.Html.Unsupported.Value display: table
+kb-n11-kept-table-in-padded-box equal
 kb-n12-kept-box-orphans2-default refused Documents.Html.Unsupported.Rendering br
 kb-n1c-kept-box-padding-fits-control refused Documents.Html.Unsupported.Rendering br
 kb-n2-kept-para-in-padded-box refused Documents.Html.Unsupported.Rendering br
 kb-n3-kept-box-padding-bottom-3 refused Documents.Html.Unsupported.Rendering br
 kb-n4-kept-box-border-bottom-6 refused Documents.Html.Unsupported.Rendering br
-kb-n5-kept-padded-box-in-cell refused Documents.Html.Unsupported.Value display: table
-kb-n6-kept-para-in-padded-box-in-cell refused Documents.Html.Unsupported.Value display: table
+kb-n5-kept-padded-box-in-cell refused Documents.Html.Unsupported.Rendering br
+kb-n6-kept-para-in-padded-box-in-cell refused Documents.Html.Unsupported.Rendering br
 kb-n7-kept-box-three-paragraphs equal
 kb-n8-kept-box-around-padded-box refused Documents.Html.Unsupported.Rendering br
 kb-n9-padded-box-not-kept-control refused Documents.Html.Unsupported.Rendering br
@@ -281,14 +281,14 @@ kb-s5-perfect-break-two-before refused Documents.Html.Unsupported.Rendering br
 kb-s7-perfect-break-before-kept-box refused Documents.Html.Unsupported.Rendering br
 kb-s8-no-keeps-but-inner-keep-with-next refused Documents.Html.Unsupported.Rendering br
 kb-s9-a-orphans-no-kept-box refused Documents.Html.Unsupported.Rendering br
-kb-t1-kept-row-group-in-padded-box refused Documents.Html.Unsupported.Value display: table
-kb-t2-kept-row-group-after-a-row refused Documents.Html.Unsupported.Value display: table
-kb-t3-row-group-not-kept-control refused Documents.Html.Unsupported.Value display: table
+kb-t1-kept-row-group-in-padded-box equal
+kb-t2-kept-row-group-after-a-row equal
+kb-t3-row-group-not-kept-control equal
 kb-v8-padded-box-kept-para refused Documents.Html.Unsupported.Rendering br
-kb-v9-padded-box-kept-table-row refused Documents.Html.Unsupported.Value display: table
-mf4-line-0 refused Documents.Html.Unsupported.Value display: table
-mf4-line-075 refused Documents.Html.Unsupported.Value display: table
-mf4-line-150 refused Documents.Html.Unsupported.Value display: table
-mf4-line-225 refused Documents.Html.Unsupported.Value display: table
+kb-v9-padded-box-kept-table-row equal
+mf4-line-0 refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
+mf4-line-075 refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
+mf4-line-150 refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
+mf4-line-225 refused Documents.Html.Unsupported.Table automatic table layout, 2 columns without a width
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr
