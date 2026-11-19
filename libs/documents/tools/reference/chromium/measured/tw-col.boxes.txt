@@ -1,0 +1,26 @@
+div 300.000 18.234 w-col-auto
+table 300.000 18.234 col-auto
+td 60.000 17.484 fixed
+td 78.961 17.484 short
+td 160.289 17.484 a longer text
+div 300.000 18.234 w-col-all
+table 300.000 18.234 col-all
+td 119.695 17.484 short
+td 179.555 17.484 a longer text
+div 300.000 18.234 w-col-all-three
+table 300.000 18.234 col-all-three
+td 74.813 17.484 a
+td 99.750 17.484 b
+td 124.688 17.484 c
+div 300.000 18.234 w-col-narrow
+table 300.000 18.234 col-narrow
+td 92.098 17.484 Supercalifragilistic
+td 207.152 17.484 short
+div 300.000 18.234 w-col-narrow-auto
+table 125.543 18.234 col-narrow-auto
+td 92.098 17.484 Supercalifragilistic
+td 32.695 17.484 short
+div 300.000 18.234 w-col-wide-content
+table 300.000 18.234 col-wide-content
+td 106.301 17.484 one two three four
+td 192.949 17.484 short
