@@ -62,6 +62,10 @@ The layout follows these files of Chromium 159 (`chromium/src`, branch 8154, com
 `aa12292cc49e38a844763a7745c97fdfec2182db`), each "Copyright 20xx The Chromium Authors. Use of this source code is
 governed by a BSD-style license that can be found in the LICENSE file":
 
+- `third_party/blink/renderer/core/paint/text_painter.cc` (Copyright 2017 The Chromium Authors; `TextPainter::ClipDecorationLine`: the band inset by half a
+  pixel, each gap widened by min(thickness, 13 px)) and `text_decoration_painter.cc` (Copyright 2021 The Chromium Authors; `PaintUnderOrOverLineDecorations`,
+  `PaintExceptLineThrough`: the value of the text decides, and the clips of one text's lines stay in force for the lines
+  after them): the gaps an underline or overline leaves around a glyph's ink (`Layout/InkGaps.cs`, `Layout/TextDecorations.cs`);
 - `third_party/blink/renderer/core/layout/block_layout_algorithm.cc` (Copyright 2016 The Chromium Authors): where a
   paragraph breaks under orphans and widows, and its best early break (`Layout/InlineLayout.cs`, `BreakWhereFull`,
   `BestBreakInside`); a box that lays itself out again to its early break and records that break as perfect
@@ -131,6 +135,15 @@ metrics: Skia's `src/ports/SkFontHost_FreeType.cpp` (Skia revision `8a65fa27c104
 "Copyright 2006 The Android Open Source Project. Use of this source code is governed by a BSD-style license that can
 be found in the LICENSE file") and Fontations' `skrifa/src/metrics.rs` (tag `skrifa-v0.49.0`; skrifa is licensed
 "MIT OR Apache-2.0"; used here under MIT).
+
+`Layout/InkGaps.cs` (THE RULE FOR THE GAPS AROUND A GLYPH'S INK) follows how Skia finds where a glyph's outline crosses
+the band of an underline or overline (Skia revision `9c7b2dffb2433f5a0cc2b77f06025a09126807ed`, the one Chromium 150
+uses): `src/core/SkTextBlob.cpp` (Copyright 2014 Google Inc.; `get_glyph_run_intercepts`), `src/core/SkGlyph.cpp`
+(Copyright 2018 Google LLC; `SkGlyph::ensureIntercepts`, `calculate_path_gap`), `src/base/SkBezierCurves.cpp` (Copyright
+2012 Google Inc.; `SkBezierQuad::IntersectWithHorizontalLine`, `pinTRange`) and `src/base/SkQuads.cpp` (Copyright 2023
+Google LLC; `SkQuads::Roots`), each "Use of this source code is governed by a BSD-style license that can be found in the
+LICENSE file". The crossings of a segment with the band's edges, the points of a segment inside the band (control points
+included), the interval of one glyph and the roots of the quadratic are written after these functions.
 
 Skia's licence (`LICENSE`):
 
