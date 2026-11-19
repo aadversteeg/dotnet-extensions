@@ -69,8 +69,7 @@ public sealed class StyleComputer
     /// <summary>The element being computed.</summary>
     private IStyleElement? _element;
     private readonly Dictionary<IStyleElement, ComputedStyle> _styles = new(ReferenceEqualityComparer.Instance);
-    private readonly Dictionary<(PreparedDeclaration Declaration, object Custom), (VarSubstitution.Outcome Outcome, ValueList<ComponentValue> Values)> _substituted =
-        new(new SubstitutionComparer());
+    private readonly Dictionary<(PreparedDeclaration Declaration, object Custom), Substitution> _substituted = new(new SubstitutionComparer());
 
     private readonly Dictionary<(object Parent, PreparedDeclaration?[] Winners), ImmutableDictionary<string, CssTokens>> _customTables = new(new CustomTableComparer());
 
@@ -140,7 +139,7 @@ public sealed class StyleComputer
         var context = new ComputeContext(parent, _rootFontSize, _values, element.IsRoot);
         var custom = _failure is null ? CustomProperties(candidates.Custom, parent) : ImmutableDictionary<string, CssTokens>.Empty;
         _custom = custom;
-        var shorthands = new Dictionary<PreparedDeclaration, ShorthandParse>();
+        var readings = new Dictionary<PreparedDeclaration, Reading>();
         foreach (var property in ComputeOrder)
         {
             if (_failure is not null)
@@ -149,7 +148,7 @@ public sealed class StyleComputer
             }
 
             var all = property.Name is "direction" or "unicode-bidi" ? null : candidates.All;
-            context.Set(property, Value(property, candidates.Longhands[property.Index], all, context, custom, shorthands));
+            context.Set(property, Value(property, candidates.Longhands[property.Index], all, context, custom, readings));
         }
 
         if (_failure is null && _budget.Exhausted)
@@ -190,12 +189,13 @@ public sealed class StyleComputer
         }
 
         var declaration = candidate.Entry.Declaration;
-        if (Substitute(declaration.Source.Value, _custom, declaration, out var values) != VarSubstitution.Outcome.Done)
+        var substitution = Substitute(declaration.Source.Value, _custom, declaration);
+        if (substitution.Outcome != VarSubstitution.Outcome.Done)
         {
             return null;
         }
 
-        var keyword = DeclarationPreparer.WideKeyword(values);
+        var keyword = DeclarationPreparer.WideKeyword(substitution.Values);
         return keyword is "revert" or "revert-layer" ? keyword : null;
     }
 
@@ -621,13 +621,14 @@ public sealed class StyleComputer
 
                 waiting.Pop();
                 state[name] = true;
-                var outcome = Substitute(entry.Values, result, declaration, out var substituted);
-                if (outcome != VarSubstitution.Outcome.Done)
+                var substitution = Substitute(entry.Values, result, declaration);
+                if (substitution.Outcome != VarSubstitution.Outcome.Done)
                 {
-                    Failed(declaration, outcome);
+                    Failed(declaration, substitution.Outcome);
                     continue;
                 }
 
+                var substituted = substitution.Values;
                 // A CSS-wide keyword that substitution makes is that keyword (CSS Variables 1 §3; Chromium 159,
                 // measured: 'var(--nope, initial)' makes the property guaranteed-invalid, 'var(--e) inherit' with --e
                 // empty inherits).
@@ -703,33 +704,48 @@ public sealed class StyleComputer
         return true;
     }
 
+    /// <summary>One declaration's value with var() substituted from one custom-property table, and what it reads as
+    /// (<see cref="Reading"/>, found when a longhand first needs it): kept in <see cref="_substituted"/>, so the elements
+    /// that share the declaration and the table substitute and parse it once.</summary>
+    private sealed class Substitution(VarSubstitution.Outcome outcome, ValueList<ComponentValue> values)
+    {
+        public VarSubstitution.Outcome Outcome { get; } = outcome;
+
+        public ValueList<ComponentValue> Values { get; } = values;
+
+        public Reading? Reading { get; set; }
+    }
+
     /// <summary>A substitution, remembered per declaration and custom-property table (tables are shared, see
     /// <see cref="CustomProperties"/>), and charged to the cascade's substitution work; past that limit the cascade
-    /// stops.</summary>
-    private VarSubstitution.Outcome Substitute(IReadOnlyList<ComponentValue> values, IReadOnlyDictionary<string, CssTokens> custom, PreparedDeclaration declaration, out ValueList<ComponentValue> result)
+    /// stops. The key is complete: substitution reads only the declaration's value and the table, and the table is
+    /// immutable, so its identity stands for its content. What the result reads as (<see cref="Read"/>) depends besides on
+    /// the declaration alone (its property, origin and name), so it is kept with it. When the memo is full, each call
+    /// substitutes again and is charged again, so what is not remembered is still bounded by
+    /// <see cref="CssInputLimits.MaxSubstitutionWork"/>.</summary>
+    private Substitution Substitute(IReadOnlyList<ComponentValue> values, IReadOnlyDictionary<string, CssTokens> custom, PreparedDeclaration declaration)
     {
         var key = (declaration, (object)custom);
         if (_substituted.TryGetValue(key, out var known))
         {
-            result = known.Values;
-            return known.Outcome;
+            return known;
         }
 
-        var outcome = VarSubstitution.Substitute(values, name => custom.TryGetValue(name, out var value) ? value : null, out result, out var length);
+        var outcome = VarSubstitution.Substitute(values, name => custom.TryGetValue(name, out var value) ? value : null, out var result, out var length);
         if (!_budget.Substitute(length))
         {
             Fail(new Error(CssErrorCodes.TooLarge, $"The var() substitutions of the document make more than {_budget.MaxSubstitution} characters of text together.")
                 .With(ErrorMetadataKeys.Value, _budget.MaxSubstitution));
-            result = [];
-            return VarSubstitution.Outcome.Uncertain;
+            return new Substitution(VarSubstitution.Outcome.Uncertain, []);
         }
 
+        var substitution = new Substitution(outcome, result);
         if (_budget.Remember(1))
         {
-            _substituted[key] = (outcome, result);
+            _substituted[key] = substitution;
         }
 
-        return outcome;
+        return substitution;
     }
 
     private void Failed(PreparedDeclaration declaration, VarSubstitution.Outcome outcome)
@@ -758,7 +774,7 @@ public sealed class StyleComputer
 
     /// <summary>A longhand's computed value: the winner's value computed, the CSS-wide keywords applied, or the
     /// inherited or initial value when nothing is declared.</summary>
-    private CssValue Value(PropertyDefinition property, List<Candidate>? candidates, List<Candidate>? all, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
+    private CssValue Value(PropertyDefinition property, List<Candidate>? candidates, List<Candidate>? all, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, Reading> readings)
     {
         CssValue Unset() => property == PropertyRegistry.FontSize
             ? PropertyRegistry.InheritFontSize(context)
@@ -778,7 +794,7 @@ public sealed class StyleComputer
             case SpecifiedEntry specified:
                 return Computed(property, specified.Value, context, declaration) ?? Unset();
             case PendingEntry pending:
-                return Substituted(property, pending, declaration, winner.Origin, context, custom, shorthands) ?? Unset();
+                return Substituted(property, pending, declaration, winner.Origin, context, custom, readings) ?? Unset();
             default:
                 return Unset();
         }
@@ -846,72 +862,99 @@ public sealed class StyleComputer
     private static CssValue InitialOf(PropertyDefinition property, ComputeContext context) =>
         property.Compute(property.Initial, context).Value ?? property.Initial;
 
-    /// <summary>A pending value after var() substitution: parsed as the longhand, or as its shorthand (once per
-    /// declaration and element); invalid at computed-value time when it does not parse (CSS Variables 1 §3.1). A
-    /// -internal- keyword the substitution gives an author's text-align is invalid there too, as it is written directly
+    /// <summary>A pending value after var() substitution: parsed as the longhand, or as its shorthand, once per
+    /// declaration and custom-property table (<see cref="Substitute"/>; once per declaration and element when the memo
+    /// is full); invalid at computed-value time when it does not parse (CSS Variables 1 §3.1). A -internal- keyword the
+    /// substitution gives an author's text-align is invalid there too, as it is written directly
     /// (<see cref="DeclarationPreparer"/>; Chromium 159, measured: <c>text-align: var(--k)</c> with
     /// <c>--k: -internal-ave-th-center</c> is start).</summary>
-    private CssValue? Substituted(PropertyDefinition property, PendingEntry pending, PreparedDeclaration declaration, CascadeOrigin origin, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, ShorthandParse> shorthands)
+    private CssValue? Substituted(PropertyDefinition property, PendingEntry pending, PreparedDeclaration declaration, CascadeOrigin origin, ComputeContext context, IReadOnlyDictionary<string, CssTokens> custom, Dictionary<PreparedDeclaration, Reading> readings)
     {
-        var outcome = Substitute(declaration.Source.Value, custom, declaration, out var values);
-        if (outcome != VarSubstitution.Outcome.Done)
+        var substitution = Substitute(declaration.Source.Value, custom, declaration);
+        if (substitution.Outcome != VarSubstitution.Outcome.Done)
         {
-            Failed(declaration, outcome);
+            Failed(declaration, substitution.Outcome);
             return null;
         }
 
-        if (DeclarationPreparer.WideKeyword(values) is { } wide)
+        if (substitution.Reading is not { } reading)
+        {
+            if (!readings.TryGetValue(declaration, out reading))
+            {
+                reading = Read(property, pending, declaration, origin, substitution.Values);
+                readings[declaration] = reading;
+            }
+
+            substitution.Reading = reading;
+        }
+
+        if (reading.Code is { } code)
+        {
+            Report(declaration, code, reading.Message!);
+            return null;
+        }
+
+        if (reading.Keyword is { } wide)
         {
             return wide is "revert" or "revert-layer" ? null : Keyword(wide, property, context);
         }
 
+        var value = reading.Longhands is { } longhands
+            ? longhands.TryGetValue(property.Name, out var longhand) ? longhand : new CssKeyword("initial")
+            : reading.Value!;
+        return value is CssKeyword { Name: "initial" } ? Keyword("initial", property, context) : Computed(property, value, context, declaration);
+    }
+
+    /// <summary>What a substituted value reads as, before it is computed for an element: a CSS-wide keyword, a
+    /// longhand's value, a shorthand's longhands, or the diagnostic that unsets the property.</summary>
+    private sealed record Reading(string? Keyword = null, CssValue? Value = null, IReadOnlyDictionary<string, CssValue>? Longhands = null, ErrorCode? Code = null, string? Message = null);
+
+    /// <summary>Reads a substituted value (see <see cref="Substituted"/>). It depends on the values and on the declaration
+    /// alone: <paramref name="property"/> is the declaration's longhand (a shorthand's reading holds all its longhands,
+    /// and <c>all</c> reads the same for every property), and <paramref name="origin"/> is the origin of the declaration's
+    /// block.</summary>
+    private static Reading Read(PropertyDefinition property, PendingEntry pending, PreparedDeclaration declaration, CascadeOrigin origin, ValueList<ComponentValue> values)
+    {
+        if (DeclarationPreparer.WideKeyword(values) is { } wide)
+        {
+            return new Reading(Keyword: wide);
+        }
+
         if (pending.IsAll)
         {
-            Report(declaration, CssErrorCodes.Unsupported.Value, $"'all' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ('all' takes only a CSS-wide keyword); every property is unset.");
-            return null;
+            return new Reading(Code: CssErrorCodes.Unsupported.Value, Message: $"'all' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ('all' takes only a CSS-wide keyword); every property is unset.");
         }
 
         if (origin != CascadeOrigin.UserAgent && declaration.Name == "text-align" && DeclarationPreparer.ContainsInternalKeyword(values))
         {
-            Report(declaration, CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; '{declaration.Name}' after var() substitution is invalid and the property is unset.");
-            return null;
+            return new Reading(Code: CssErrorCodes.Invalid.Value, Message: $"A value starting with -internal- is for the user agent only; '{declaration.Name}' after var() substitution is invalid and the property is unset.");
         }
 
         ParsedValue parsed;
         if (pending.Shorthand is { } shorthand)
         {
-            if (!shorthands.TryGetValue(declaration, out var expanded))
+            var expanded = shorthand.Parse(new ValueReader(values));
+            if (expanded.Values is { } longhands)
             {
-                expanded = shorthand.Parse(new ValueReader(values));
-                shorthands[declaration] = expanded;
+                return new Reading(Longhands: longhands);
             }
 
-            parsed = expanded.Values is { } longhands
-                ? ParsedValue.Of(longhands.TryGetValue(property.Name, out var value) ? value : new CssKeyword("initial"))
-                : new ParsedValue(null, expanded.Problem, expanded.Unsupported) { Code = expanded.Code };
+            parsed = new ParsedValue(null, expanded.Problem, expanded.Unsupported) { Code = expanded.Code };
         }
         else
         {
             parsed = property.Parse(new ValueReader(values));
+            if (parsed.IsValid)
+            {
+                return new Reading(Value: parsed.Value);
+            }
         }
 
-        if (parsed.IsValid)
-        {
-            return parsed.Value is CssKeyword { Name: "initial" } ? Keyword("initial", property, context) : Computed(property, parsed.Value!, context, declaration);
-        }
-
-        if (parsed.Unsupported)
-        {
-            Report(declaration, parsed.Code ?? CssErrorCodes.Unsupported.Value, $"'{declaration.Name}' after var() substitution: {parsed.Problem}; the property is unset.");
-        }
-        else
-        {
-            // The engine cannot tell a value a browser finds invalid at computed-value time from a valid one beyond this
-            // profile (env(), a vendor keyword): the one answer for both is a refusal.
-            Report(declaration, CssErrorCodes.Unsupported.Value, $"'{declaration.Name}' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ({parsed.Problem}); the property is unset.");
-        }
-
-        return null;
+        // The engine cannot tell a value a browser finds invalid at computed-value time from a valid one beyond this
+        // profile (env(), a vendor keyword): the one answer for both is a refusal.
+        return parsed.Unsupported
+            ? new Reading(Code: parsed.Code ?? CssErrorCodes.Unsupported.Value, Message: $"'{declaration.Name}' after var() substitution: {parsed.Problem}; the property is unset.")
+            : new Reading(Code: CssErrorCodes.Unsupported.Value, Message: $"'{declaration.Name}' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ({parsed.Problem}); the property is unset.");
     }
 
     /// <summary>The computed value of a specified value; null (and reported) when the engine cannot compute it.</summary>

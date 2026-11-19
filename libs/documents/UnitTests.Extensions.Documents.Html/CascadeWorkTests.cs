@@ -1,6 +1,7 @@
 using System.Text;
 using Ave.Extensions.Documents.Css;
 using Ave.Extensions.Documents.Css.Cascade;
+using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Html;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -103,6 +104,48 @@ public class CascadeWorkTests
         for (var memo = 0L; memo <= budget.Memo; memo++)
         {
             Text(Counted(html, new CascadeBudget { MaxMemo = memo }).Result.Value).Should().Be(expected, $"memo {memo} of {budget.Memo}");
+        }
+    }
+
+    [Fact]
+    public void A_value_through_var_is_read_once_for_the_elements_that_share_its_declaration_and_custom_properties()
+    {
+        // 200 paragraphs share the root's custom properties: each declaration is substituted and parsed once, so they
+        // share one computed value (a family list of any length is kept once, not once per element). The paragraphs
+        // that declare their own --f have a table of their own and their own value.
+        var styled = Styled(Doc(
+            ":root{--f:a,b,c;--m:1px 2px} p{font-family:var(--f);margin:var(--m)} .own{--f:d}",
+            Repeat("<p>x</p>", 200) + Repeat("<p class=own>x</p>", 2)));
+        var paragraphs = styled.Root.Elements().Where(element => element.Element.LocalName == "p").ToList();
+        var shared = paragraphs.Take(200).ToList();
+        var own = paragraphs.Skip(200).ToList();
+
+        shared.Select(element => element.Style[PropertyRegistry.FontFamily]).Distinct(ReferenceEqualityComparer.Instance).Should().ContainSingle();
+        shared.Select(element => element.Style[PropertyRegistry.Find("margin-left")!]).Distinct(ReferenceEqualityComparer.Instance).Should().ContainSingle();
+        (shared[0].Value("font-family"), shared[0].Value("margin-left"), own[0].Value("font-family"), own[1].Value("font-family")).Should().Be(("a, b, c", "2px", "d", "d"));
+        own[0].Style[PropertyRegistry.FontFamily].Should().NotBeSameAs(shared[0].Style[PropertyRegistry.FontFamily]);
+    }
+
+    [Fact]
+    public void Every_size_of_the_memo_gives_the_same_result_through_var()
+    {
+        // The substitutions and what they read as are remembered per declaration and custom-property table; when the memo
+        // is full they are made again, with the same result: longhands, a shorthand, a refused and an invalid value,
+        // a keyword, revert-layer and a value that differs by table.
+        var html = Doc(
+            ":root{--f:a,b;--m:1px 2px;--bad:1px 2px 3px 4px 5px} @layer x{p{color:red}} p{font-family:var(--f);margin:var(--m);color:var(--nope, revert-layer);width:var(--bad);display:var(--nope, inherit)} .b{--f:c;--m:3px} .c{text-align:var(--nope)}",
+            Repeat("<p>x</p><p class=b>y</p><div><p class='b c'>z</p></div>", 3));
+        string Values(StyledHtmlDocument document) => string.Join("\n", document.Root.Elements().Select(element =>
+            string.Join(";", new[] { "font-family", "margin-top", "margin-left", "color", "width", "display", "text-align" }.Select(element.Value))));
+        var (full, budget) = Counted(html);
+        var expected = Values(full.Value);
+        expected.Should().Contain("a, b;1px;2px;rgb(255, 0, 0);auto;block;start").And.Contain("c;3px;3px;rgb(255, 0, 0);auto;block;start");
+
+        for (var memo = 0L; memo <= budget.Memo; memo++)
+        {
+            var result = Counted(html, new CascadeBudget { MaxMemo = memo }).Result;
+            Values(result.Value).Should().Be(expected, $"memo {memo} of {budget.Memo}");
+            result.Value.Diagnostics.Select(error => error.Message).Should().Equal(full.Value.Diagnostics.Select(error => error.Message), $"memo {memo} of {budget.Memo}");
         }
     }
 
