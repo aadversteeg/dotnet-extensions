@@ -365,4 +365,13 @@ public class TextDecorationTests
 
         error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.TextDecoration);
     }
+
+    [Fact]
+    public void A_line_set_in_a_style_decorates_as_one_set_on_the_element_and_the_element_s_own_lines_win()
+    {
+        var underlined = Style.Empty.Underline(Red);
+
+        DecorationsOf(Model(Paragraph("ab").With(underlined)).Value, 0).Should().ContainSingle().Which.Color.Should().Be(Red);
+        DecorationsOf(Model(Paragraph("ab").With(underlined).Overline()).Value, 0).Should().ContainSingle().Which.Line.Should().Be(TextDecorationLine.Overline);
+    }
 }
