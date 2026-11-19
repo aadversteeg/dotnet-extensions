@@ -81,8 +81,9 @@ public class ProfileDocumentTests
         }
 
         Line();
-        Line("`overflow-x` and `overflow-y`: `hidden` or `clip` on one axis while the other stays `visible` is refused, since");
-        Line("Chromium computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does.");
+        Line("`overflow-x` and `overflow-y`: `hidden` on one axis while the other stays `visible` is refused, since Chromium");
+        Line("computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,");
+        Line("so `clip` beside `visible` is accepted and kept, as in Chromium.");
         Line();
         Line("### Supported at the initial value only");
         Line();
@@ -134,6 +135,7 @@ public class ProfileDocumentTests
             + string.Join(", ", Colors.SystemColors.Keys.Order(StringComparer.Ordinal)) + ". Refused: "
             + string.Join(", ", Colors.OtherFunctions.Order(StringComparer.Ordinal).Select(name => name + "()")) + ", relative colour syntax.");
         Line("- Custom properties and var() (CSS Variables 1), with fallbacks; missing values make the property unset, as in a browser; revert and revert-layer made by substitution roll the cascade back. Refused: a cycle of var() references (Chromium does not make every member invalid), a '!' inside a var(), env(), attr(), if().");
+        Line("- CSS-wide keywords initial, inherit, unset, revert and revert-layer (CSS Cascade 5 §7.3). An important revert-layer rolls back to the normal declarations of its layer and below (§7.3.5); in the style attribute it also rolls back the attribute's normal declarations, as in Chromium 159.");
         Line();
         Line("## Selectors");
         Line();

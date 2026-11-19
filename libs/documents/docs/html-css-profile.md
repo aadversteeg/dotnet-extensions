@@ -86,8 +86,9 @@ names nothing.
 | `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
 
-`overflow-x` and `overflow-y`: `hidden` or `clip` on one axis while the other stays `visible` is refused, since
-Chromium computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does.
+`overflow-x` and `overflow-y`: `hidden` on one axis while the other stays `visible` is refused, since Chromium
+computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
+so `clip` beside `visible` is accepted and kept, as in Chromium.
 
 ### Supported at the initial value only
 
@@ -327,6 +328,7 @@ Each was checked against Chromium 159's print rendering; the values that change 
 - Math functions: calc(), min(), max(), clamp(); a result that still mixes a length and a percentage after computing is refused. Refused: abs(), acos(), asin(), atan(), atan2(), calc-size(), cos(), exp(), hypot(), log(), mod(), pow(), progress(), random(), rem(), round(), sibling-count(), sibling-index(), sign(), sin(), sqrt(), tan(), and typed arithmetic (multiplying or dividing dimensions).
 - Colours: the 148 named colours, transparent, currentcolor, #rgb, #rgba, #rrggbb, #rrggbbaa, rgb(), rgba(), hsl(), hsla(); system colours activetext, canvas, canvastext, linktext, visitedtext. Refused: -webkit-image-set(), color(), color-mix(), contrast-color(), device-cmyk(), hwb(), lab(), lch(), light-dark(), oklab(), oklch(), relative colour syntax.
 - Custom properties and var() (CSS Variables 1), with fallbacks; missing values make the property unset, as in a browser; revert and revert-layer made by substitution roll the cascade back. Refused: a cycle of var() references (Chromium does not make every member invalid), a '!' inside a var(), env(), attr(), if().
+- CSS-wide keywords initial, inherit, unset, revert and revert-layer (CSS Cascade 5 §7.3). An important revert-layer rolls back to the normal declarations of its layer and below (§7.3.5); in the style attribute it also rolls back the attribute's normal declarations, as in Chromium 159.
 
 ## Selectors
 

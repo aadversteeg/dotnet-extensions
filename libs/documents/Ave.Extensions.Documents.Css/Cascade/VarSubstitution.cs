@@ -48,6 +48,11 @@ internal static class VarSubstitution
         TooDeep,
     }
 
+    /// <summary>The characters per substitution by which the engine's measure of a substituted value may differ from
+    /// Chromium's (the comments Chromium writes between tokens): a value within that many characters per var() of
+    /// <see cref="CssInputLimits.MaxSubstitutionLength"/> is <see cref="Outcome.Uncertain"/>.</summary>
+    internal const int UncertainCharactersPerSubstitution = 8;
+
     /// <summary>Whether every var() in the values has the grammar of §3 (else the declaration is invalid when parsed,
     /// as Chromium reads it): a custom property name, and a fallback that is a &lt;declaration-value&gt;, so with no
     /// semicolon at its own top level (CSS Syntax 3 §8.2; Chromium 159 drops <c>color: var(--x, a;b)</c>, measured).</summary>
@@ -197,7 +202,7 @@ internal static class VarSubstitution
         }
 
         length = lower;
-        if (lower + (8 * substitutions) > CssInputLimits.MaxSubstitutionLength)
+        if (lower + (UncertainCharactersPerSubstitution * substitutions) > CssInputLimits.MaxSubstitutionLength)
         {
             return Outcome.Uncertain;
         }

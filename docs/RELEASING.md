@@ -259,6 +259,11 @@ it. So their first release is one wave of three steps:
    `Directory.Packages.props` to it, then `documents-html-parsing` and `documents-css` (in any order);
 3. `documents-html`.
 
+The three packages are in `Directory.Packages.props` with a placeholder minimum (`0.1.0-preview.2`, a version they
+never had); set it to their first version when they are released. They also need a Core that has
+`ErrorMetadataKeys.Refusals` (the count of refusals a summary diagnostic carries), which M2 adds as well, so the new
+release of `documents-core` in step 1 must be made from a commit that has it.
+
 The minimum is not raised before the new Core is on nuget.org: release mode would then restore a Core that does not
 exist. Until the wave is done, the CI job "Release mode (main only)" is red for the three new packages on `main`: in
 release mode they restore Core `0.1.0-preview.2` from nuget.org and do not compile.

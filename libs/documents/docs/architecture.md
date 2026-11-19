@@ -310,13 +310,14 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
 | an HTML document | 2^24 UTF-16 code units (bytes are checked against the same number); nesting 512 elements, the depth at which Chromium stops nesting; 2^18 elements and 2^20 nodes made, the elements the parser opens again or clones included; selectedcontent clones 4 nodes and characters per input character, at least 65 536; 10 000 diagnostics kept | `Html.Parsing/HtmlInputLimits.cs`, `Html.Parsing/TreeBuilding/TreeBuilder.Select.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic) |
 | a style sheet | 2^24 UTF-16 code units; as bytes, 3 × 2^24 before decoding (UTF-8 takes at most 3 bytes per code unit), then 2^24 code units; nesting of blocks, functions and rules 64 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (the reading fails; a style resolution fails with it) |
-| nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the style resolution fails) |
+| nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels below the top one (a style rule and 32 nested in it) | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the style resolution fails) |
 | work of one cascade | 2^26 units: a matching fact computed, a simple selector tested, 64 characters compared, a sibling counted, a rule or declaration collected, a candidate looked at, a comparison of a sort, a var() reference followed | `Css/CssInputLimits.cs` (`MaxCascadeWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
 | entries one cascade remembers | 2^22: matching facts, parent-rule matches, sibling tables, var() substitutions, custom-property tables; past it they are computed again, inside the work limit | `Css/CssInputLimits.cs` (`MaxCascadeMemo`) | none |
 | entries of one cascade's index | 2^21: a selector of a style rule or a declaration, counted each time a sheet is taken in | `Css/CssInputLimits.cs` (`MaxCascadeEntries`) | `Documents.Css.TooLarge` (the style resolution fails) |
 | style sheets of one cascade | 1 024: the user-agent sheet, style elements, linked and imported sheets; a sheet taken in twice counts twice | `Css/CssInputLimits.cs` (`MaxStyleSheets`) | `Documents.Css.TooLarge` (the style resolution fails) |
-| one var() substitution | 2 097 152 characters of text, Chromium 159's limit (measured); the value it makes nests at most 64 levels | `Css/CssInputLimits.cs` (`MaxSubstitutionLength`, `MaxDepth`) | past the length: invalid at computed-value time, as in Chromium (`Documents.Css.Invalid.ComputedValue`); within 8 characters per substitution of it, where the engine's measure cannot tell: refused (`Documents.Css.Unsupported.Value`); deeper: `Documents.Css.TooDeep` (the style resolution fails) |
+| one var() substitution | 2 097 152 characters of text, Chromium 159's limit (measured); within 8 characters per var() of it the engine cannot tell what Chromium keeps (refused); the value it makes nests at most 64 levels | `Css/CssInputLimits.cs` (`MaxSubstitutionLength`, `MaxDepth`) | past the length: invalid at computed-value time, as in Chromium (`Documents.Css.Invalid.ComputedValue`); within 8 characters per substitution of it, where the engine's measure cannot tell: refused (`Documents.Css.Unsupported.Value`); deeper: `Documents.Css.TooDeep` (the style resolution fails) |
 | all var() substitutions of one cascade | 2^23 characters | `Css/CssInputLimits.cs` (`MaxSubstitutionWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
+| a computed length or percentage | 2^24 px (or percent) either way; Chromium clamps near 3.36 × 10^7 px | `Css/CssInputLimits.cs` (`MaxLengthPixels`) | `Documents.Css.Unsupported.Value` (the declaration is refused) |
 | diagnostics of one style sheet, one cascade, one resolution | 10 000 kept; each quotes at most 100 characters of one name or value from the input, with `…` where it is cut | `Css/CssInputLimits.cs`, `Html.Parsing/HtmlInputLimits.cs`, `Css/Syntax/CssSerializer.cs`, `Html/InputQuote.cs`, `Html.Parsing/InputQuote.cs` | `Documents.TooManyDiagnostics`: how many were left out, and how many of those refuse the document |
 | points of one glyph outline, components included | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | component references one glyph outline visits | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
@@ -437,6 +438,11 @@ Known limits of stage 3 (also in the profile document):
   `textarea` its user-agent border and background, pinned in `FaithfulSubsetTests`); `noscript` (the parser runs with scripting off,
   Chromium with it on, so their trees differ); a script a browser would run and every event handler attribute, since
   the engine runs no scripts (a data block is accepted).
+- `svg` and `math` are refused as elements, and the selector matching rules of SVG and MathML content (their own
+  rules for names and attributes) are not built.
+- `StyleComputer.Compute`, public for a caller that styles its own tree, throws `InvalidOperationException` when an
+  element's parent was not computed first: a wrong order of calls, not input. `HtmlStyleResolver.Resolve` always
+  computes in tree order.
 - Template contents are not styled. The parser keeps `<template shadowrootmode>` a template; the style resolution
   refuses it, since Chromium 159 attaches a declarative shadow root there.
 - Encodings: the HTML parser decodes UTF-8 and UTF-16. It refuses a `meta` element or an XML declaration that names
@@ -479,7 +485,7 @@ Known limits of stage 3 (also in the profile document):
   above 0 and below 2e-7px (Chromium computes 1e-7px as 0px); a cycle of `var()` references and a `!` inside a
   `var()`; selectors Chromium matches by its own rule (an upper-case `OF`, An+B of 2^30 or more, an escaped `*`).
 - HTML Chromium styles by a rule the engine does not keep (each measured): a Content-Security-Policy `meta` in head; a
-  color-scheme `meta` other than normal or light; `autofocus`; the `charset` of a link; `align` on html, head and body;
+  color-scheme `meta` other than normal or light; `autofocus`; a `charset` other than utf-8 on a link; `align` on html, head and body;
   an img with alt text and a size whose image is not there (Chromium shows the alt text inline, and the size computes
   to auto); `fencedframe` and `geolocation`. An inline img whose image is not there and that has no alt text gets
   Chromium's values: its width, height and aspect-ratio compute to auto, unless it has both sizes, or an aspect-ratio

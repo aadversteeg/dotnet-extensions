@@ -13,14 +13,15 @@ namespace Ave.Extensions.Documents.Css;
 /// <list type="bullet">
 /// <item><see cref="Parse"/>: a syntax error CSS Syntax 3 recovers from; and <see cref="Invalid"/>: the few things
 /// above CSS Syntax 3 that the engine knows Chromium drops as well (a rule in the wrong place, another engine's
-/// property, a <c>var()</c> cycle). The result is the browser's, so these are warnings.</item>
+/// property). The result is the browser's, so these are warnings.</item>
 /// <item><see cref="Ignored"/>: something valid that has no effect in a static paged document (<c>cursor</c>, a
 /// transition, <c>:hover</c>); listed, not refused.</item>
 /// <item><see cref="Unsupported"/>: valid CSS this engine does not implement, and input above CSS Syntax 3 that the
 /// engine cannot read: a value that does not match its grammar of a known property, a selector or media query that
 /// does not parse, an unknown at-rule. That input is either invalid (a browser drops it) or valid CSS beyond this
 /// profile (a browser uses it); the engine cannot tell which, so its one answer is "not valid or not supported in
-/// this profile". And <see cref="TooLarge"/> and <see cref="TooDeep"/>: input past the reader's limits. A front-end
+/// this profile". Also a cycle of <c>var()</c> references, which Chromium does not resolve as CSS Variables 1 says
+/// (<see cref="Unsupported.Value"/>). And <see cref="TooLarge"/> and <see cref="TooDeep"/>: input past the reader's limits. A front-end
 /// refuses the document by default, because the result could differ from a browser's.</item>
 /// </list>
 /// </remarks>

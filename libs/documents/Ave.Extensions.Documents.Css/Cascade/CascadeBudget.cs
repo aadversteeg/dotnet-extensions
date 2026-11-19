@@ -85,6 +85,10 @@ internal sealed class CascadeBudget
         return Substituted <= MaxSubstitution;
     }
 
-    /// <summary>The units a comparison of <paramref name="characters"/> characters costs beyond its first: one per 64.</summary>
-    public static long CharactersCost(long characters) => characters >> 6;
+    /// <summary>The characters one unit of work compares.</summary>
+    internal const int CharactersPerUnit = 64;
+
+    /// <summary>The units a comparison of <paramref name="characters"/> characters costs beyond its first: one per
+    /// <see cref="CharactersPerUnit"/>.</summary>
+    public static long CharactersCost(long characters) => characters / CharactersPerUnit;
 }

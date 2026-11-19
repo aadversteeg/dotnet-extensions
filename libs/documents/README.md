@@ -151,7 +151,10 @@ A style sheet alone is read with `CssParser.ParseStyleSheet` (`Ave.Extensions.Do
 `HtmlParser.Parse`. The engine opens no file and no URL: linked style sheets and `@import` are read through
 `HtmlStyleOptions.Resources`, a function the caller gives. What is supported, refused and ignored is listed in
 `docs/html-css-profile.md`, generated from the code; `samples/Ave.Extensions.Documents.Samples.HtmlStyles` prints the
-styled tree and the diagnostics of a file.
+styled tree and the diagnostics of a file. Its limits are listed in `docs/architecture.md` (stage 3); two of them:
+`svg` and `math` are refused, so the matching rules of their content are not built, and `StyleComputer.Compute`,
+public for a caller that styles its own tree, throws `InvalidOperationException` when it is called for a child before
+its parent.
 
 ## What it does
 

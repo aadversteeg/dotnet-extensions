@@ -45,17 +45,18 @@ public class LimitsTableTests
              C("Html.Parsing", "Html.Parsing.TreeBuilding.TreeBuilder", "CloneWorkPerCharacter", 4), C("Html.Parsing", "Html.Parsing.TreeBuilding.TreeBuilder", "MinimumCloneWork", 65_536),
              C("Html.Parsing", "Html.Parsing.HtmlInputLimits", "MaxDiagnostics", 10_000)]),
         ["a style sheet"] = ("2^24 UTF-16 code units; as bytes, 3 × 2^24 before decoding (UTF-8 takes at most 3 bytes per code unit), then 2^24 code units; nesting of blocks, functions and rules 64",
-            [C("Css", "Css.CssInputLimits", "MaxCharacters", 1 << 24), C("Css", "Css.CssInputLimits", "MaxDepth", 64)]),
-        ["nesting of selectors (pseudo-class arguments and nested style rules together)"] = ("32 levels", [C("Css", "Css.CssInputLimits", "MaxSelectorNesting", 32)]),
+            [C("Css", "Css.CssInputLimits", "MaxCharacters", 1 << 24), C("Css", "Css.CssParser", "MaxBytesPerCharacter", 3), C("Css", "Css.CssInputLimits", "MaxDepth", 64)]),
+        ["nesting of selectors (pseudo-class arguments and nested style rules together)"] = ("32 levels below the top one (a style rule and 32 nested in it)", [C("Css", "Css.CssInputLimits", "MaxSelectorNesting", 32)]),
         ["work of one cascade"] = ("2^26 units: a matching fact computed, a simple selector tested, 64 characters compared, a sibling counted, a rule or declaration collected, a candidate looked at, a comparison of a sort, a var() reference followed",
-            [C("Css", "Css.CssInputLimits", "MaxCascadeWork", 1L << 26)]),
+            [C("Css", "Css.CssInputLimits", "MaxCascadeWork", 1L << 26), C("Css", "Css.Cascade.CascadeBudget", "CharactersPerUnit", 64)]),
         ["entries one cascade remembers"] = ("2^22: matching facts, parent-rule matches, sibling tables, var() substitutions, custom-property tables; past it they are computed again, inside the work limit",
             [C("Css", "Css.CssInputLimits", "MaxCascadeMemo", 1 << 22)]),
         ["entries of one cascade's index"] = ("2^21: a selector of a style rule or a declaration, counted each time a sheet is taken in", [C("Css", "Css.CssInputLimits", "MaxCascadeEntries", 1 << 21)]),
         ["style sheets of one cascade"] = ("1 024: the user-agent sheet, style elements, linked and imported sheets; a sheet taken in twice counts twice", [C("Css", "Css.CssInputLimits", "MaxStyleSheets", 1_024)]),
-        ["one var() substitution"] = ("2 097 152 characters of text, Chromium 159's limit (measured); the value it makes nests at most 64 levels",
-            [C("Css", "Css.CssInputLimits", "MaxSubstitutionLength", 2_097_152), C("Css", "Css.CssInputLimits", "MaxDepth", 64)]),
+        ["one var() substitution"] = ("2 097 152 characters of text, Chromium 159's limit (measured); within 8 characters per var() of it the engine cannot tell what Chromium keeps (refused); the value it makes nests at most 64 levels",
+            [C("Css", "Css.CssInputLimits", "MaxSubstitutionLength", 2_097_152), C("Css", "Css.Cascade.VarSubstitution", "UncertainCharactersPerSubstitution", 8), C("Css", "Css.CssInputLimits", "MaxDepth", 64)]),
         ["all var() substitutions of one cascade"] = ("2^23 characters", [C("Css", "Css.CssInputLimits", "MaxSubstitutionWork", 1L << 23)]),
+        ["a computed length or percentage"] = ("2^24 px (or percent) either way; Chromium clamps near 3.36 × 10^7 px", [C("Css", "Css.CssInputLimits", "MaxLengthPixels", 1 << 24)]),
         ["diagnostics of one style sheet, one cascade, one resolution"] = ("10 000 kept; each quotes at most 100 characters of one name or value from the input, with `…` where it is cut",
             [C("Css", "Css.CssInputLimits", "MaxDiagnostics", 10_000), C("Html.Parsing", "Html.Parsing.HtmlInputLimits", "MaxDiagnostics", 10_000),
              C("Css", "Css.Syntax.CssSerializer", "MaxQuotedCharacters", 100), C("Html", "Html.InputQuote", "MaxCharacters", 100),
@@ -65,15 +66,59 @@ public class LimitsTableTests
         ["nesting of composite glyphs"] = ("64 levels", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxDepth", 64)]),
     };
 
+    /// <summary>Per row, the "Where" and "Error" cells: where the limit is enforced and what reaching it gives.</summary>
+    private static readonly Dictionary<string, (string Where, string Error)> Places = new(StringComparer.Ordinal)
+    {
+        ["work of a layout table parse"] = ("`Fonts/OpenType/TableReader.cs`", "`Documents.Font.Parse.InvalidValue`"),
+        ["decoded image (PNG, and JPEG decoded to samples)"] = ("`Images/ImageLimits.cs`", "`Documents.Image.TooLarge`"),
+        ["blocks the scans of one JPEG visit together"] = ("`Images/Jpeg/JpegDecoder.cs`", "`Documents.Image.TooMuchWork`"),
+        ["glyphs of one text"] = ("`Typesetting/Shaping/GlyphSubstitution.cs`", "`Documents.Typesetting.TooManyGlyphs`"),
+        ["shaping operations of one text"] = ("`Typesetting/Shaping/ShapingBudget.cs`", "`Documents.Typesetting.TooMuchWork`"),
+        ["cell span"] = ("`Core/TableSlots.cs`", "`Documents.Input.Invalid.Table`; in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel`"),
+        ["every number of a page model (sizes, positions, font sizes, areas)"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel`"),
+        ["pixels of one page drawn as an image"] = ("`Render.Raster/PageRasterizer.cs`, `Graphics/Canvas.cs`", "`Documents.Raster.TooLarge`; `Documents.Graphics.TooLarge`"),
+        ["coordinates the graphics library draws with"] = ("`Graphics/Canvas.cs`", "`Documents.Graphics.InvalidValue`"),
+        ["PDF/UA grid of one table"] = ("`Render.Pdf/Tagging/TableRegularity.cs`", "`Documents.Pdf.Conformance.PdfUa1.TableTooLarge`"),
+        ["nesting of elements"] = ("`Fluent/InputLimits.cs`", "`Documents.Input.Invalid.TooDeep`"),
+        ["nesting of arrays and dictionaries in one PDF object"] = ("`Pdf/PdfSerializer.cs`", "`Documents.Pdf.Write.NestedTooDeep`"),
+        ["nesting of arrays and structures in one XMP property"] = ("`Pdf/Xmp/XmpPacket.cs`", "`Documents.Pdf.Write.NestedTooDeep`"),
+        ["a length in the front-end"] = ("`Fluent/InputLimits.cs`", "the property's `Documents.Input.Invalid.*` code"),
+        ["an HTML document"] = ("`Html.Parsing/HtmlInputLimits.cs`, `Html.Parsing/TreeBuilding/TreeBuilder.Select.cs`", "`Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic)"),
+        ["a style sheet"] = ("`Css/CssInputLimits.cs`", "`Documents.Css.TooLarge`, `TooDeep` (the reading fails; a style resolution fails with it)"),
+        ["nesting of selectors (pseudo-class arguments and nested style rules together)"] = ("`Css/CssInputLimits.cs`", "`Documents.Css.TooDeep` (the style resolution fails)"),
+        ["work of one cascade"] = ("`Css/CssInputLimits.cs` (`MaxCascadeWork`)", "`Documents.Css.TooLarge` (the style resolution fails)"),
+        ["entries one cascade remembers"] = ("`Css/CssInputLimits.cs` (`MaxCascadeMemo`)", "none"),
+        ["entries of one cascade's index"] = ("`Css/CssInputLimits.cs` (`MaxCascadeEntries`)", "`Documents.Css.TooLarge` (the style resolution fails)"),
+        ["style sheets of one cascade"] = ("`Css/CssInputLimits.cs` (`MaxStyleSheets`)", "`Documents.Css.TooLarge` (the style resolution fails)"),
+        ["one var() substitution"] = ("`Css/CssInputLimits.cs` (`MaxSubstitutionLength`, `MaxDepth`)", "past the length: invalid at computed-value time, as in Chromium (`Documents.Css.Invalid.ComputedValue`); within 8 characters per substitution of it, where the engine's measure cannot tell: refused (`Documents.Css.Unsupported.Value`); deeper: `Documents.Css.TooDeep` (the style resolution fails)"),
+        ["all var() substitutions of one cascade"] = ("`Css/CssInputLimits.cs` (`MaxSubstitutionWork`)", "`Documents.Css.TooLarge` (the style resolution fails)"),
+        ["a computed length or percentage"] = ("`Css/CssInputLimits.cs` (`MaxLengthPixels`)", "`Documents.Css.Unsupported.Value` (the declaration is refused)"),
+        ["diagnostics of one style sheet, one cascade, one resolution"] = ("`Css/CssInputLimits.cs`, `Html.Parsing/HtmlInputLimits.cs`, `Css/Syntax/CssSerializer.cs`, `Html/InputQuote.cs`, `Html.Parsing/InputQuote.cs`", "`Documents.TooManyDiagnostics`: how many were left out, and how many of those refuse the document"),
+        ["points of one glyph outline, components included"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
+        ["component references one glyph outline visits"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
+        ["nesting of composite glyphs"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
+        ["clips open one inside the other on a page, for both back-ends"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel`"),
+        ["slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`)"] = ("`Layout/MonolithicSlices.cs`", "`Documents.Layout.TooManySlices`"),
+    };
+
+    /// <summary>The types whose public constants are limits: each such constant has a row.</summary>
+    private static readonly (string Assembly, string Type)[] LimitTypes =
+    [
+        ("Ave.Extensions.Documents.Css", "Ave.Extensions.Documents.Css.CssInputLimits"),
+        ("Ave.Extensions.Documents.Html.Parsing", "Ave.Extensions.Documents.Html.Parsing.HtmlInputLimits"),
+        ("Ave.Extensions.Documents.Images", "Ave.Extensions.Documents.Images.ImageLimits"),
+        ("Ave.Extensions.Documents.Fluent", "Ave.Extensions.Documents.Fluent.InputLimits"),
+    ];
+
     /// <summary>The rows of the table: limit and value cell.</summary>
-    private static List<(string Limit, string Value)> Table()
+    private static List<(string Limit, string Value, string Where, string Error)> Table()
     {
         var lines = File.ReadAllLines(Path.Combine(ProjectRulesTests.FamilyRoot(), "docs", "architecture.md"));
         var start = Array.FindIndex(lines, line => line.StartsWith("## Bounded work", StringComparison.Ordinal));
         start.Should().BeGreaterThan(0);
         var header = Array.FindIndex(lines, start, line => line.StartsWith("| Limit | Value |", StringComparison.Ordinal));
         return [.. lines.Skip(header + 2).TakeWhile(line => line.StartsWith('|')).Select(line => line.Trim().Trim('|').Split(" | "))
-            .Select(cells => (cells[0].Trim(), cells[1].Trim()))];
+            .Select(cells => (cells[0].Trim(), cells[1].Trim(), cells[2].Trim(), cells[3].Trim()))];
     }
 
     [Fact]
@@ -82,9 +127,26 @@ public class LimitsTableTests
         var table = Table();
 
         table.Select(row => row.Limit).Should().BeEquivalentTo(Rows.Keys);
-        foreach (var (limit, value) in table)
+        table.Select(row => row.Limit).Should().BeEquivalentTo(Places.Keys);
+        foreach (var (limit, value, where, error) in table)
         {
             value.Should().Be(Rows[limit].Value, limit);
+            (where, error).Should().Be(Places[limit], limit);
+        }
+    }
+
+    [Fact]
+    public void Every_public_limit_constant_has_a_row()
+    {
+        var checkedConstants = Rows.Values.SelectMany(row => row.Constants).Select(constant => (constant.Type, constant.Member)).ToHashSet();
+        foreach (var (assembly, typeName) in LimitTypes)
+        {
+            var type = Assembly.Load(new AssemblyName(assembly)).GetType(typeName, throwOnError: true)!;
+            foreach (var member in type.GetFields(BindingFlags.Static | BindingFlags.Public).Where(field => field.IsLiteral || field.IsInitOnly)
+                .Select(field => field.Name).Concat(type.GetProperties(BindingFlags.Static | BindingFlags.Public).Select(property => property.Name)))
+            {
+                checkedConstants.Should().Contain((typeName, member), $"{typeName}.{member} is a public limit, so it has a row");
+            }
         }
     }
 

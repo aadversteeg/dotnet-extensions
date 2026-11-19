@@ -59,11 +59,13 @@ public class DeepInputTests
     [InlineData("p:nth-last-of-type(-n-9223372036854775807)")]
     [InlineData("p:is(:nth-child(-n-9223372036854775807))")]
     [InlineData("p:nth-child(-n-9223372036854775807 of p)")]
-    public void An_plus_B_at_the_edge_of_64_bits_matches_without_overflow(string selector)
+    public void An_plus_B_at_the_edge_of_64_bits_is_refused_when_parsed_and_matches_nothing(string selector)
     {
         var styled = StyledOnSmallStack(Doc(selector + "{color:red}", "<p id=last>x"));
 
-        // No index is -n-9223372036854775807 for an n >= 0; Chromium 159 matches nothing either.
+        // An A or B of 2^30 or more is refused when the selector is parsed (Chromium 159 reads it by a rule of its
+        // own), so the rule is dropped: no index is -n-9223372036854775807 for an n >= 0, and Chromium matches nothing
+        // either.
         Last(styled, "color").Should().Be("rgb(0, 0, 0)");
     }
 
