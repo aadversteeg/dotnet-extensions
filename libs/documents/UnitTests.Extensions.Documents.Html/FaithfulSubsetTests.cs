@@ -147,6 +147,48 @@ public class FaithfulSubsetTests
     }
 
     [Theory]
+    // An import of an empty URL or of the document's own address is an empty style sheet: Chromium 159 does not apply
+    // the HTML document as one (measured, with and without layer()), so layer b stays before layer a. The resolver
+    // here gives the document for its own address, as one over files does; it is not asked.
+    [InlineData("url()")]
+    [InlineData("url(\"\")")]
+    [InlineData("\"\"")]
+    [InlineData("\"#x\"")]
+    [InlineData("url(#x)")]
+    [InlineData("\"doc.html\"")]
+    [InlineData("\"./doc.html\"")]
+    [InlineData("\"doc.html#y\"")]
+    [InlineData("\"doc.html\" layer(z)")]
+    public void An_import_of_the_document_itself_is_an_empty_style_sheet(string address)
+    {
+        var document = Doctype + $"<style>@import {address}; @layer b {{ p {{ margin-left: 1px }} }} @layer a {{ p {{ margin-left: 7px }} }}</style><p id=a>a</p>";
+        var asked = new List<string>();
+        HtmlResource? Resolve(string url)
+        {
+            asked.Add(url);
+            return url.StartsWith("https://example.org/doc.html", StringComparison.Ordinal) ? new HtmlResource(System.Text.Encoding.UTF8.GetBytes(document)) : null;
+        }
+
+        var styled = Accepted(document, Refuse with { Resources = Resolve, BaseUrl = "https://example.org/doc.html" });
+
+        styled.ById("a").Value("margin-left").Should().Be("7px");
+        asked.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void What_the_resolver_gives_for_another_address_is_read_as_a_style_sheet()
+    {
+        // A listed limit (docs/architecture.md): the resolver names no content type, so what it gives for a style sheet
+        // is read as CSS. Chromium applies only a resource served as text/css; a resolver over files that gives the
+        // document for doc.html?q makes Chromium apply nothing (7px) and the engine read the HTML as CSS.
+        HtmlResource? Resolve(string url) => url == "https://example.org/doc.html?q" ? new HtmlResource("p { margin-left: 5px }"u8.ToArray()) : null;
+
+        var styled = Accepted(Doctype + "<style>@import \"?q\"; @layer b { p { margin-left: 1px } } @layer a { p { margin-left: 7px } }</style><p id=a>a</p>", Refuse with { Resources = Resolve, BaseUrl = "https://example.org/doc.html" });
+
+        styled.ById("a").Value("margin-left").Should().Be("5px");
+    }
+
+    [Theory]
     // A cycle of var() references: Chromium does not make every member invalid.
     [InlineData("<style>#t{--a: var(--b); --b: var(--a)}</style><p id=t>x", "Documents.Css.Unsupported.Value", "cycle")]
     // A '!' inside a var() fallback: Chromium drops some such declarations and unsets the property for others.

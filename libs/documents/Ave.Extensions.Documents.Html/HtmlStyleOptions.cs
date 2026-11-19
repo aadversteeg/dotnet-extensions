@@ -16,7 +16,9 @@ public sealed record HtmlResource(ReadOnlyMemory<byte> Bytes)
 /// Gives the resource at a URL, or null when there is none. The URL is absolute: resolved against the document's base
 /// URL (<see cref="HtmlStyleOptions.BaseUrl"/>, or a <c>base</c> element) or the style sheet that names it; without a
 /// base URL a relative URL is passed as written. The front-end calls it at most once per URL during one resolution,
-/// synchronously, and never opens a file or a socket itself.
+/// synchronously, and never opens a file or a socket itself. What it gives for a style sheet is read as CSS: give null
+/// for a resource that is not one, as Chromium applies only a resource served as text/css. An empty URL and the
+/// document's own address are not asked for a style sheet: both are an empty one.
 /// </summary>
 /// <param name="url">The URL.</param>
 /// <returns>The resource, or null.</returns>

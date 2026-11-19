@@ -464,6 +464,10 @@ Known limits of stage 3 (also in the profile document):
   caller's font metrics.
 - A value of a feature outside v0 is refused without its grammar being checked, so input Chromium drops as invalid
   can be refused (never accepted), as can any value the grammar does not read (the refusal policy above).
+- The caller's resolver gives bytes, no content type, so what it gives for a style sheet is read as CSS; Chromium
+  applies only a resource served as text/css. An empty URL and the document's own address are an empty style sheet
+  without asking the resolver, as in Chromium; for any other address a resolver gives null for what is not a style
+  sheet (pinned: `FaithfulSubsetTests.What_the_resolver_gives_for_another_address_is_read_as_a_style_sheet`).
 - Declarations in a subtree that is not drawn (inside display: none) are still cascaded, so their refusals count
   (pinned in `FaithfulSubsetTests`).
 - Values the engine refuses because Chromium computes them by a rule it does not keep: a font size from a relative

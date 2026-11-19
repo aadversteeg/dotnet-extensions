@@ -882,14 +882,28 @@ public static class HtmlStyleResolver
         private static string[] Keywords(string value) =>
             [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(InfraAscii.ToLower)];
 
+        /// <summary>The document's own address without its fragment, or null when it has none.</summary>
+        private string? DocumentAddress => options.BaseUrl is { } address && Absolute(address, null) is { } absolute ? WithoutFragment(absolute) : null;
+
+        private static string WithoutFragment(string url) => url.IndexOf('#') is var hash and >= 0 ? url[..hash] : url;
+
         /// <summary>An @import: its URL resolved against the importing sheet's URL.</summary>
         private StyleSheet? Import(ImportRule import, StyleSheet importer) =>
             Fetch(import.Url, _baseOf.GetValueOrDefault(importer), importer.SourceName, import.Position);
 
-        /// <summary>Fetches and reads a style sheet through the caller's resolver, once per URL.</summary>
+        /// <summary>Fetches and reads a style sheet through the caller's resolver, once per URL. An empty URL names no
+        /// resource (CSS Values 4 §4.5.1) and the document's own address (without its fragment) names the HTML document,
+        /// which Chromium 159 does not apply as a style sheet outside quirks mode (it is not text/css; measured:
+        /// <c>@import url()</c>, <c>""</c>, <c>"#x"</c> and the document's own name, with and without layer()): both are an
+        /// empty style sheet, and the resolver is not asked.</summary>
         private StyleSheet? Fetch(string url, string? baseUrl, string referrer, TextPosition position)
         {
             var absolute = Absolute(url, baseUrl);
+            if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && WithoutFragment(absolute) == DocumentAddress))
+            {
+                return ReadOrNull(CssParser.ParseStyleSheet(ReadOnlyMemory<byte>.Empty, new CssSourceOptions(absolute ?? referrer)));
+            }
+
             if (absolute is not null && _fetched.TryGetValue(absolute, out var known))
             {
                 return known;
