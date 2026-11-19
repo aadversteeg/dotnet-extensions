@@ -248,13 +248,16 @@ internal static class TablePage
 
     /// <summary>
     /// Whether the header rows are repeated on a later page: only when they are at most a quarter of the room the table
-    /// has there, as Chromium prints (<c>tools/reference/chromium</c>, cases <c>a6-header-quarter-*</c>:
-    /// on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not; on 360 pt, 90.0 and 90.75).
-    /// CSS Tables 3 leaves the repetition to the user agent ("user agents may repeat"), so this is Chromium's own rule; it
-    /// is measured here, not taken from its source. The header's height is that of its rows, from the centre of the line
-    /// above them to the centre of the line below. The room is the page area for a table that continues at the top of the
-    /// body; for a table inside a cell or a padded block that continues, it is that box's room, a little less than the
-    /// page area, where Chromium measures against the page area (docs/architecture.md, "Known limits").
+    /// has there. CSS Tables 3 §6.2 states the limit for repeated headers ("up to one quarter for header rows"), and
+    /// Chromium has it in <c>third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc</c>,
+    /// <c>TableLayoutAlgorithm::GenerateFragment</c> (no repeat when the header's block size is more than a quarter of the
+    /// fragmentainer's; read in the source of Chromium 150, the measured browser is Chromium 159). The check is the
+    /// measurement (<c>tools/reference/chromium</c>, cases <c>a6-header-quarter-*</c>: on a page area of 180 pt a header of
+    /// 45.0 pt is repeated and one of 45.75 pt is not; on 360 pt, 90.0 and 90.75). The header's height is that of its
+    /// rows, from the centre of the line above them to the centre of the line below. The room is the page area for a table
+    /// that continues at the top of the body or inside a cell that continues; under an outer table's repeated header it is
+    /// less by that header, as in Chromium. Unlike Chromium, which decides once, the rule is applied on every later page,
+    /// so a header not repeated before can be repeated on a page with more room (docs/architecture.md, "Known limits").
     /// </summary>
     private static Result<bool, Error> RepeatsHeader(TableGeometry table, ConstraintSpace space)
     {

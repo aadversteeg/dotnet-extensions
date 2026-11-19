@@ -587,11 +587,20 @@ Each is documented next to its code as well.
   `a6-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
   90.0 and 90.75; cases `fr-old-header-quarter-*`: on 150, 180 and 240 pt a header with bottom padding exactly a quarter
   high is repeated and one 0.75 pt higher is not). Chromium repeats a header only when the header group is
-  `break-inside: avoid`, which the browser's own style sheet sets for print. CSS Tables 3 leaves repetition to the user agent; the step is measured in Chromium, not read from
-  its source. The engine compares with the room the table has on the later page: the page area for a table that
-  continues at the top of the body. A table inside a cell or a padded block that continues compares with that box's
-  room, which is smaller by the box's insets, so its header can stop repeating a little earlier than in Chromium (not
-  measured).
+  `break-inside: avoid`, which the browser's own style sheet sets for print. The limit is the one CSS Tables 3 §6.2
+  states for repeated headers ("up to one quarter for header rows"), and Chromium's: in
+  `third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc`, `TableLayoutAlgorithm::GenerateFragment`, a
+  header is not repeated when its block size is more than a quarter of the fragmentainer's, and one that was not
+  repeated on a fragment does not start repeating on a later one (read in the source of Chromium 150; the measured
+  browser is Chromium 159). The cases above are the check. The engine compares with the room the table has on the
+  later page: the page area for a table that continues at the top of the body, and for a table inside a cell that
+  continues, since a continued cell gives its content the page's whole height (`a6-nested-header-pad12-h2925`, a header
+  of 45.0 pt in a cell with 12 pt padding: repeated on every page in both). Under an outer table's repeated header the
+  room is the page area less that header, and Chromium too does not repeat a header of 42.75 pt there, while one of
+  39.75 pt is repeated in both (`a6-nested-under-header-h2400`, `a6-nested-under-header-h2700`). **Listed difference:**
+  the engine decides on every later page, so on the last page, where the rest of the outer cell is laid out with
+  unlimited room, the inner header of 42.75 pt is repeated again; Chromium does not start repeating after the first
+  page (`HeaderRepeatTests`).
 - **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
   cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
   rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
