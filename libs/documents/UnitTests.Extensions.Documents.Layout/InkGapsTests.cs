@@ -1,3 +1,5 @@
+using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.Documents.Typesetting;
@@ -69,7 +71,7 @@ public class InkGapsTests
     [Fact]
     public void Gaps_are_joined_in_one_pass_after_sorting_and_leave_the_pieces_between_them()
     {
-        var pieces = InkGaps.Visible(0, 100, [(60, 70), (10, 20), (15, 30), (95, 120), (-5, 2)]);
+        var pieces = InkGaps.Visible(0, 100, [(60, 70), (10, 20), (15, 30), (95, 120), (-5, 2), (62, 65)]);
 
         pieces.Should().Equal([(2.0, 10.0), (30.0, 60.0), (70.0, 95.0)]);
     }
@@ -116,5 +118,47 @@ public class InkGapsTests
         moved[0].Left.Should().BeApproximately(plain[0].Left + 1, 1e-9);
         moved[1].Should().Be(plain[1]);
         outlines.Decoded.Should().Be(1, "one glyph of one font, used four times");
+    }
+
+    [Fact]
+    public void A_glyph_s_vertical_offset_from_shaping_moves_the_band_against_its_outline()
+    {
+        // The band is taken from the glyph's own origin: a glyph drawn 0.5 pt higher meets the band as a line 0.5 pt lower would.
+        var font = TestFonts.Regular;
+        var glyph = Shaper.Shape("j", font, 24).Value.Single();
+        var outlines = new InkOutlines();
+        var (raised, lower) = (new List<(double Left, double Right)>(), new List<(double Left, double Right)>());
+        InkGaps.Add(raised, outlines, font, 24, 0, [glyph with { YOffset = 0.5 }], 0, 1.5, 2.4).IsSuccess.Should().BeTrue();
+        InkGaps.Add(lower, outlines, font, 24, 0, [glyph], 0, 2.0, 2.4).IsSuccess.Should().BeTrue();
+        var plain = new List<(double Left, double Right)>();
+        InkGaps.Add(plain, outlines, font, 24, 0, [glyph], 0, 1.5, 2.4).IsSuccess.Should().BeTrue();
+
+        raised.Single().Left.Should().BeApproximately(lower.Single().Left, 1e-9);
+        raised.Single().Right.Should().BeApproximately(lower.Single().Right, 1e-9);
+        raised.Single().Should().NotBe(plain.Single(), "the offset changes where the descender meets the band");
+    }
+
+    [Fact]
+    public void A_later_line_is_cut_by_the_gaps_of_an_earlier_line_whose_clips_reach_it()
+    {
+        // Two underlines on one piece, a 24 pt and a 22 pt decorating box: both lie two pixels below the baseline and overlap,
+        // and their gaps differ. The second is painted under the clips of both (Blink keeps the first one's clips).
+        var font = TestFonts.Regular;
+        var glyphs = Shaper.Shape("gjpqy fy", font, 24).Value;
+        TextDecorations.Resolved Underline(double size) => new(new TextDecoration(TextDecorationLine.Underline, Color.Black, "Lato", size.Pt(), FontWeight.Regular), font);
+        var outlines = new InkOutlines();
+        var drawn = TextDecorations.Of([Underline(24), Underline(22)], 0, glyphs, 30, 22, FontMetricRounding.WholePixels,
+            new TextDecorations.Ink(font, 24, TextDecorationSkipInk.Auto, outlines)).Value.Before;
+        var width = glyphs.Sum(glyph => glyph.Advance);
+        var (first, second) = (new List<(double Left, double Right)>(), new List<(double Left, double Right)>());
+        var top = drawn[0].Offset.Y;
+        InkGaps.Add(first, outlines, font, 24, 0, glyphs, 30, top, 2.4).IsSuccess.Should().BeTrue();
+        InkGaps.Add(second, outlines, font, 24, 0, glyphs, 30, top, 2.2).IsSuccess.Should().BeTrue();
+        var alone = InkGaps.Visible(0, width, [.. second]);
+        var both = InkGaps.Visible(0, width, [.. first, .. second]);
+
+        both.Should().NotEqual(alone, "the earlier line's gaps are wider than the later one's");
+        drawn.Skip(InkGaps.Visible(0, width, [.. first]).Count).Select(piece => (piece.Offset.X, piece.Offset.X + ((RuleFragment)piece.Fragment).Size.Width))
+            .Should().Equal(both);
     }
 }
