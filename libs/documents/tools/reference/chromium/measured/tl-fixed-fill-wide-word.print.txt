@@ -1,6 +1,5 @@
 page 1 300.000 300.000
-word 1 16.746 165.053 25.500 10.500 Supercalifragilisticexpialidocious #000000 Lato-Regular
-word 1 108.492 114.372 25.500 10.500 b #000000 Lato-Regular
+word 1 16.746 142.236 25.500 10.500 Pneumonoultramicroscopic #000000 Lato-Regular
 word 1 200.238 205.257 25.500 10.500 c #000000 Lato-Regular
 word 1 16.746 21.965 42.750 10.500 a #000000 Lato-Regular
 word 1 108.492 126.384 42.750 10.500 two #000000 Lato-Regular

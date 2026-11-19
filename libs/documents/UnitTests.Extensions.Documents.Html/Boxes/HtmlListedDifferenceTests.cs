@@ -124,8 +124,8 @@ public class HtmlListedDifferenceTests
     public void A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow()
     {
         var (engine, chromium) = (Engine("tl-fixed-fill-wide-word").Pages.Single(), Chromium("tl-fixed-fill-wide-word").Pages.Single());
-        var word = chromium.Words.Single(word => word.Text == "Supercalifragilisticexpialidocious");
-        static double[] Starts(PrintedPage page) => [.. page.Words.Where(word => word.Text is "b" or "c").Select(word => word.X0)];
+        var word = chromium.Words.Single(word => word.Text == "Pneumonoultramicroscopic");
+        static double[] Starts(PrintedPage page) => [.. page.Words.Where(word => word.Text is "two" or "three").Select(word => word.X0)];
 
         static double[] Lines(PrintedPage page) => [.. page.Rectangles.Where(line => line.Height > line.X1 - line.X0).Select(line => line.X0).Distinct().Order()];
 
