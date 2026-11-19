@@ -120,7 +120,8 @@ and CSS Paged Media 3 (editor's drafts read 2026-11-18); no code was copied or p
 (`Css/Values/Colors.cs`, `HslToRgb`) is the textbook formula with the chroma (C = (1 − |2L − 1|) · S, the hue's sector,
 the match value m = L − C / 2), not the sample code of CSS Color 4. Where the engine follows Chromium 159 rather than a
 draft (which names are identifiers, which pseudo-classes may follow a pseudo-element), Chromium was measured through
-Playwright (`tools/reference/chromium/computed-style`); no Chromium code was read or used.
+Playwright (`tools/reference/chromium/computed-style`). For some rules Chromium's source (BSD-3-Clause) was read, and the
+code comments cite it by file and function; no Chromium code was copied or ported.
 
 ## Test suites
 
@@ -129,8 +130,8 @@ Vendored in `assets/test-suites/` (see the README there), used by the tests only
 - html5lib-tests, tokenizer tests, commit `c5495c539ca8a79c3c5107f5f14010bcff9a35d5`: Copyright (c) 2006-2013 James
   Graham, Geoffrey Sneddon, and other contributors; MIT licence (`assets/test-suites/html5lib-tests/LICENSE`).
 - web-platform-tests, the tree-construction tests in `html/syntax/parsing/resources/` and the CSS cases extracted
-  into `css/cases.json` (from `css/css-syntax`, `css/selectors`, `css/css-cascade`, `css/css-variables`,
-  `css/css-values`), commit `93494ff9dfc26c59245941548bb7da799e8baaef`: Copyright © web-platform-tests contributors;
+  into `css/cases.json` (from `css/css-values`, `css/selectors`, `css/css-variables` and `css/css-cascade`; the
+  extractor also reads `css/css-syntax`, which gives no case), commit `93494ff9dfc26c59245941548bb7da799e8baaef`: Copyright © web-platform-tests contributors;
   3-Clause BSD License (`assets/test-suites/wpt/LICENSE.md`).
 - css-parsing-tests by Simon Sapin, commit `203ce36bffd617db7f118c551e32794561fb273d`: dedicated to the public domain
   under CC0 1.0 (`assets/test-suites/css-parsing-tests/LICENSE`).
@@ -168,8 +169,9 @@ made by `tools/make-roboto-subset.sh` from the Debian package fonts-roboto-unhin
 Tools used outside the build, in `tools/verify-samples.ps1` and in the reference tests, inside throw-away
 containers: veraPDF 1.30.4 (`verapdf/cli`, GPL-3.0-or-later / MPL-2.0), qpdf (Apache-2.0), poppler-utils (GPL-2.0),
 MuPDF tools (AGPL-3.0), Pillow (MIT-CMU, for the side-by-side sheets), fontTools (MIT, the outline reference),
-libjpeg-turbo's cjpeg and djpeg (IJG, BSD-3-Clause and zlib licences; the JPEG reference). They are run, not linked or
-distributed. `tools/generate-test-images.py` uses Pillow to write the image test files (and writes `tools/reference/chromium/cases/tall.png` without it), `tools/generate-test-jpegs.py`
+libjpeg-turbo's cjpeg and djpeg (IJG, BSD-3-Clause and zlib licences; the JPEG reference), and Playwright 1.65.1
+(Apache-2.0) with its Chromium 159 in the container image `mcr.microsoft.com/playwright:v1.65.1-noble` (Chromium:
+BSD-3-Clause; the reference measurements in `tools/reference/chromium`). They are run, not linked or distributed. `tools/generate-test-images.py` uses Pillow to write the image test files (and writes `tools/reference/chromium/cases/tall.png` without it), `tools/generate-test-jpegs.py`
 cjpeg to write the JPEG test files (`UnitTests.Extensions.Documents.Images/Assets/jpeg-*.jpg`).
 
 ## Sample data
