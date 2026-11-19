@@ -213,7 +213,7 @@ public static class HtmlParser
         {
             var message = diagnostic.Detail is null
                 ? $"HTML parse error '{diagnostic.Name}'."
-                : $"HTML parse error '{diagnostic.Name}' at <{diagnostic.Detail}>.";
+                : $"HTML parse error '{diagnostic.Name}' at <{InputQuote.Of(diagnostic.Detail)}>.";
             errors.Add(new Error(HtmlErrorCodes.Parse.Syntax, message)
                 .With(ErrorMetadataKeys.Value, diagnostic.Name)
                 .WithSource(options.SourceName, source.PositionOf(diagnostic.Index)));
@@ -262,7 +262,7 @@ public static class HtmlParser
 
     private static Result<HtmlParseResult, Error> EncodingError(HtmlParseOptions options, string label, TextPosition position, string declaration) =>
         Result<HtmlParseResult, Error>.Failure(
-            new Error(HtmlErrorCodes.Encoding, $"{declaration} says the bytes are in the encoding '{label}'; the parser reads UTF-8 and UTF-16 only. Convert the document to UTF-8.")
-                .With(ErrorMetadataKeys.Value, label)
+            new Error(HtmlErrorCodes.Encoding, $"{declaration} says the bytes are in the encoding '{InputQuote.Of(label)}'; the parser reads UTF-8 and UTF-16 only. Convert the document to UTF-8.")
+                .With(ErrorMetadataKeys.Value, InputQuote.Of(label))
                 .WithSource(options.SourceName, position));
 }

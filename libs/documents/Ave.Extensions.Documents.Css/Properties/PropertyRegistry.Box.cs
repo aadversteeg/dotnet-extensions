@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
 namespace Ave.Extensions.Documents.Css.Properties;
@@ -167,7 +168,7 @@ public static partial class PropertyRegistry
 
         if (reader.Count == 1 && reader.Keyword("min-content", "max-content", "fit-content", "stretch", "-webkit-fill-available", "-webkit-min-content", "-webkit-max-content", "-webkit-fit-content") is { } sizing)
         {
-            return ParsedValue.Refused($"'{name}: {sizing}' is not supported");
+            return ParsedValue.Refused($"'{name}: {CssSerializer.Shortened(sizing)}' is not supported");
         }
 
         if (reader.Peek is Syntax.FunctionValue function && function.IsNamed("fit-content"))

@@ -7,7 +7,7 @@ namespace Ave.Extensions.Documents.Html;
 /// </summary>
 internal static class InputQuote
 {
-    /// <summary>The most characters of one input value a diagnostic quotes.</summary>
+    /// <summary>The most characters of one input name or value a diagnostic quotes.</summary>
     public const int MaxCharacters = 100;
 
     /// <summary>The value, or its first <see cref="MaxCharacters"/> characters followed by <c>…</c>; a cut never

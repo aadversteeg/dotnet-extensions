@@ -149,11 +149,11 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         {
             if (finding.Support == SelectorSupport.Unsupported)
             {
-                Report(CssErrorCodes.Unsupported.Selector, $"The selector '{finding.Name}' is not supported.", finding.Position);
+                Report(CssErrorCodes.Unsupported.Selector, $"The selector '{CssSerializer.Shortened(finding.Name)}' is not supported.", finding.Position);
             }
             else
             {
-                Report(CssErrorCodes.Ignored.Selector, $"The selector '{finding.Name}' never matches in a static document.", finding.Position);
+                Report(CssErrorCodes.Ignored.Selector, $"The selector '{CssSerializer.Shortened(finding.Name)}' never matches in a static document.", finding.Position);
             }
         }
 
@@ -188,7 +188,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             }
             else
             {
-                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{at.Name} are invalid; they are dropped.", declarations[0].Position);
+                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{CssSerializer.Shortened(at.Name)} are invalid; they are dropped.", declarations[0].Position);
             }
         }
 
@@ -196,7 +196,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         {
             if (rule is SyntaxNestedDeclarations && !nested)
             {
-                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{at.Name} are invalid; they are dropped.", rule.Position);
+                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{CssSerializer.Shortened(at.Name)} are invalid; they are dropped.", rule.Position);
                 continue;
             }
 
@@ -240,21 +240,21 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             case "page" when !nested && at.Block is not null:
                 return Page(at);
             case "import" or "charset":
-                Report(CssErrorCodes.Invalid.Rule, $"@{name} is invalid here.", at.Position);
+                Report(CssErrorCodes.Invalid.Rule, $"@{CssSerializer.Shortened(name)} is invalid here.", at.Position);
                 return null;
         }
 
         if (UnsupportedAtRules.Contains(name))
         {
-            Report(CssErrorCodes.Unsupported.AtRule, $"@{at.Name} is not supported.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, $"@{CssSerializer.Shortened(at.Name)} is not supported.", at.Position);
         }
         else if (IgnoredAtRules.Contains(name))
         {
-            Report(CssErrorCodes.Ignored.AtRule, $"@{at.Name} is read for nothing: it only drives animations, and a value that names an animation, or may name one through var() or env(), is refused.", at.Position);
+            Report(CssErrorCodes.Ignored.AtRule, $"@{CssSerializer.Shortened(at.Name)} is read for nothing: it only drives animations, and a value that names an animation, or may name one through var() or env(), is refused.", at.Position);
         }
         else
         {
-            Report(CssErrorCodes.Unsupported.AtRule, $"'@{at.Name}' is not valid or not supported in this profile" + (nested ? " inside a style rule" : string.Empty) + "; the rule is skipped.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, $"'@{CssSerializer.Shortened(at.Name)}' is not valid or not supported in this profile" + (nested ? " inside a style rule" : string.Empty) + "; the rule is skipped.", at.Position);
         }
 
         return null;
@@ -449,10 +449,10 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
                     break;
                 case "font-display" or "font-stretch" or "font-feature-settings" or "font-variation-settings" or "ascent-override" or "descent-override" or "line-gap-override" or "size-adjust" or "font-named-instance" or "font-language-override":
-                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{declaration.Name}' is not supported.", declaration.Position);
+                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{CssSerializer.Shortened(declaration.Name)}' is not supported.", declaration.Position);
                     break;
                 default:
-                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{declaration.Name}' is not valid or not supported in this profile.", declaration.Position);
+                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{CssSerializer.Shortened(declaration.Name)}' is not valid or not supported in this profile.", declaration.Position);
                     break;
             }
         }

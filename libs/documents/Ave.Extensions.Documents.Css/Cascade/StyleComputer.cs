@@ -605,7 +605,7 @@ public sealed class StyleComputer
                     waiting.Pop();
                     state[name] = true;
                     result.Remove(name);
-                    Report(declaration, CssErrorCodes.Unsupported.Value, $"The custom property '{name}' is part of a cycle of var() references; Chromium does not resolve every such cycle as CSS Variables 1 says, so it is refused and has no value.");
+                    Report(declaration, CssErrorCodes.Unsupported.Value, $"The custom property '{CssSerializer.Shortened(name)}' is part of a cycle of var() references; Chromium does not resolve every such cycle as CSS Variables 1 says, so it is refused and has no value.");
                     continue;
                 }
 
@@ -647,7 +647,7 @@ public sealed class StyleComputer
                     case "initial":
                         break;
                     default:
-                        Report(declaration, CssErrorCodes.Unsupported.Value, $"'{name}' becomes '{DeclarationPreparer.WideKeyword(substituted)}' by var() substitution, which rolls the custom property back in the cascade; that is not supported, and it has no value.");
+                        Report(declaration, CssErrorCodes.Unsupported.Value, $"'{CssSerializer.Shortened(name)}' becomes '{DeclarationPreparer.WideKeyword(substituted)}' by var() substitution, which rolls the custom property back in the cascade; that is not supported, and it has no value.");
                         break;
                 }
             }
@@ -753,19 +753,19 @@ public sealed class StyleComputer
         switch (outcome)
         {
             case VarSubstitution.Outcome.TooLong:
-                Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"The var() substitution in '{declaration.Name}' is longer than {CssInputLimits.MaxSubstitutionLength} characters, Chromium's limit; the property is unset, as in Chromium (CSS Variables 1 §3.1).");
+                Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"The var() substitution in '{CssSerializer.Shortened(declaration.Name)}' is longer than {CssInputLimits.MaxSubstitutionLength} characters, Chromium's limit; the property is unset, as in Chromium (CSS Variables 1 §3.1).");
                 break;
             case VarSubstitution.Outcome.TooDeep:
-                Fail(DeclarationPreparer.Diagnostic(CssErrorCodes.TooDeep, $"The var() substitution in '{declaration.Name}' nests blocks and functions deeper than {CssInputLimits.MaxDepth}.", declaration)
+                Fail(DeclarationPreparer.Diagnostic(CssErrorCodes.TooDeep, $"The var() substitution in '{CssSerializer.Shortened(declaration.Name)}' nests blocks and functions deeper than {CssInputLimits.MaxDepth}.", declaration)
                     .With(ErrorMetadataKeys.Value, CssInputLimits.MaxDepth));
                 break;
             case VarSubstitution.Outcome.Uncertain when _failure is not null:
                 break;
             case VarSubstitution.Outcome.Uncertain:
-                Report(declaration, CssErrorCodes.Unsupported.Value, $"The var() substitution in '{declaration.Name}' is within a few characters of {CssInputLimits.MaxSubstitutionLength}, Chromium's limit; whether Chromium keeps it cannot be told, so it is refused.");
+                Report(declaration, CssErrorCodes.Unsupported.Value, $"The var() substitution in '{CssSerializer.Shortened(declaration.Name)}' is within a few characters of {CssInputLimits.MaxSubstitutionLength}, Chromium's limit; whether Chromium keeps it cannot be told, so it is refused.");
                 break;
             default:
-                Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"A var() in '{declaration.Name}' names a custom property with no value and has no fallback; the property is unset (CSS Variables 1 §3.1).");
+                Report(declaration, CssErrorCodes.Invalid.ComputedValue, $"A var() in '{CssSerializer.Shortened(declaration.Name)}' names a custom property with no value and has no fallback; the property is unset (CSS Variables 1 §3.1).");
                 break;
         }
     }
@@ -927,7 +927,7 @@ public sealed class StyleComputer
 
         if (origin != CascadeOrigin.UserAgent && declaration.Name == "text-align" && DeclarationPreparer.ContainsInternalKeyword(values))
         {
-            return new Reading(Code: CssErrorCodes.Invalid.Value, Message: $"A value starting with -internal- is for the user agent only; '{declaration.Name}' after var() substitution is invalid and the property is unset.");
+            return new Reading(Code: CssErrorCodes.Invalid.Value, Message: $"A value starting with -internal- is for the user agent only; '{CssSerializer.Shortened(declaration.Name)}' after var() substitution is invalid and the property is unset.");
         }
 
         ParsedValue parsed;
@@ -953,8 +953,8 @@ public sealed class StyleComputer
         // The engine cannot tell a value a browser finds invalid at computed-value time from a valid one beyond this
         // profile (env(), a vendor keyword): the one answer for both is a refusal.
         return parsed.Unsupported
-            ? new Reading(Code: parsed.Code ?? CssErrorCodes.Unsupported.Value, Message: $"'{declaration.Name}' after var() substitution: {parsed.Problem}; the property is unset.")
-            : new Reading(Code: CssErrorCodes.Unsupported.Value, Message: $"'{declaration.Name}' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ({parsed.Problem}); the property is unset.");
+            ? new Reading(Code: parsed.Code ?? CssErrorCodes.Unsupported.Value, Message: $"'{CssSerializer.Shortened(declaration.Name)}' after var() substitution: {parsed.Problem}; the property is unset.")
+            : new Reading(Code: CssErrorCodes.Unsupported.Value, Message: $"'{CssSerializer.Shortened(declaration.Name)}' after var() substitution ('{CssSerializer.Shortened(values)}') is not valid or not supported in this profile ({parsed.Problem}); the property is unset.");
     }
 
     /// <summary>The computed value of a specified value; null (and reported) when the engine cannot compute it.</summary>

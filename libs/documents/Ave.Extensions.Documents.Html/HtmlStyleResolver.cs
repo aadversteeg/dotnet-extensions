@@ -394,8 +394,8 @@ public static class HtmlStyleResolver
 
             foreach (var attribute in handlers)
             {
-                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Script, $"The event handler attribute {attribute.LocalName} is not run: the engine runs no scripts, and a browser would run this one.")
-                    .With(ErrorMetadataKeys.Value, attribute.LocalName)
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Script, $"The event handler attribute {InputQuote.Of(attribute.LocalName)} is not run: the engine runs no scripts, and a browser would run this one.")
+                    .With(ErrorMetadataKeys.Value, InputQuote.Of(attribute.LocalName))
                     .WithSource(_sourceName, attribute.Position));
             }
 

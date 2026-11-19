@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
 namespace Ave.Extensions.Documents.Css.Properties;
@@ -45,7 +46,7 @@ public static partial class PropertyRegistry
                 }
 
                 return reader.AnyKeyword() is { } other
-                    ? ParsedValue.Refused($"the counter style '{other}' is not supported")
+                    ? ParsedValue.Refused($"the counter style '{CssSerializer.Shortened(other)}' is not supported")
                     : reader.String() is not null
                         ? ParsedValue.Refused("a string as list marker is not supported")
                         : ParsedValue.Invalid("not a value of list-style-type");

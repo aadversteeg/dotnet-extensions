@@ -124,7 +124,7 @@ public static partial class PropertyRegistry
                 name, [longhand], "auto | always | avoid", "CSS Fragmentation 3 §3.4 (legacy)",
                 reader => reader.Count == 1 && reader.Keyword("auto", "always", "avoid", "left", "right") is { } keyword
                     ? keyword is "left" or "right"
-                        ? ShorthandParse.Refused($"'{name}: {keyword}' is not supported")
+                        ? ShorthandParse.Refused($"'{name}: {CssSerializer.Shortened(keyword)}' is not supported")
                         : new ShorthandParse(new Dictionary<string, CssValue> { [longhand] = new CssKeyword(keyword == "always" ? "page" : keyword) }, null, false)
                     : ShorthandParse.Invalid($"not a value of {name}")));
         }
@@ -452,7 +452,7 @@ public static partial class PropertyRegistry
     {
         if (reader.Count == 1 && reader.Keyword("caption", "icon", "menu", "message-box", "small-caption", "status-bar") is { } system)
         {
-            return ShorthandParse.Refused($"the system font '{system}' is not supported");
+            return ShorthandParse.Refused($"the system font '{CssSerializer.Shortened(system)}' is not supported");
         }
 
         var values = new Dictionary<string, CssValue>();
@@ -670,7 +670,7 @@ public static partial class PropertyRegistry
                 "pre" => Pair("preserve", "nowrap"),
                 "nowrap" => Pair("collapse", "nowrap"),
                 "pre-wrap" => Pair("preserve", "wrap"),
-                _ => ShorthandParse.Refused($"'white-space: {keyword}' is not supported"),
+                _ => ShorthandParse.Refused($"'white-space: {CssSerializer.Shortened(keyword)}' is not supported"),
             };
         }
 

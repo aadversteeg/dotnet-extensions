@@ -299,7 +299,7 @@ internal static class SelectorParser
                     {
                         if (pseudoElement is not null && !PseudoClasses.AllowedAfterPseudoElement(pseudoElement, element.Name))
                         {
-                            return context.Fail<CompoundSelector>($"'::{element.Name}' cannot follow '::{pseudoElement}'", colon.Position);
+                            return context.Fail<CompoundSelector>($"'::{CssSerializer.Shortened(element.Name)}' cannot follow '::{CssSerializer.Shortened(pseudoElement)}'", colon.Position);
                         }
 
                         pseudoElement = element.Name;
@@ -320,7 +320,7 @@ internal static class SelectorParser
                     }
                     else if (next is PseudoClassSelector pseudoClass && pseudoElement is not null && !PseudoClasses.AllowedAfter(pseudoElement, pseudoClass.Name))
                     {
-                        return context.Fail<CompoundSelector>($"':{pseudoClass.Name}' cannot follow '::{pseudoElement}'", colon.Position);
+                        return context.Fail<CompoundSelector>($"':{CssSerializer.Shortened(pseudoClass.Name)}' cannot follow '::{CssSerializer.Shortened(pseudoElement)}'", colon.Position);
                     }
 
                     break;
@@ -376,7 +376,7 @@ internal static class SelectorParser
         {
             if (first!.Kind == CssTokenKind.Ident)
             {
-                context.Fail<TypeSelector>($"the namespace prefix '{first.Text}' is not declared", first.Position);
+                context.Fail<TypeSelector>($"the namespace prefix '{CssSerializer.Shortened(first.Text)}' is not declared", first.Position);
                 return false;
             }
 
@@ -416,7 +416,7 @@ internal static class SelectorParser
         {
             if (first.Kind == CssTokenKind.Ident)
             {
-                return context.Fail<AttributeSelector>($"the namespace prefix '{first.Text}' is not declared", first.Position);
+                return context.Fail<AttributeSelector>($"the namespace prefix '{CssSerializer.Shortened(first.Text)}' is not declared", first.Position);
             }
 
             ns = "*";
@@ -462,7 +462,7 @@ internal static class SelectorParser
                     break;
                 // Selectors 4 also has s (case-sensitive); Chromium 159 rejects it (measured), so it is invalid here too.
                 default:
-                    return context.Fail<AttributeSelector>($"an unknown attribute selector modifier '{flag.Text}'", flag.Position);
+                    return context.Fail<AttributeSelector>($"an unknown attribute selector modifier '{CssSerializer.Shortened(flag.Text)}'", flag.Position);
             }
 
             cursor.Next();
@@ -526,7 +526,7 @@ internal static class SelectorParser
 
                 if (PseudoClasses.FindClass(lower, functional: false) is not { } entry)
                 {
-                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{ident.Text}'", position);
+                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{CssSerializer.Shortened(ident.Text)}'", position);
                 }
 
                 Note(entry, ":" + lower, position, context);
@@ -536,7 +536,7 @@ internal static class SelectorParser
                 var name = InfraAscii.ToLower(function.Name);
                 if (PseudoClasses.FindClass(name, functional: true) is not { } known)
                 {
-                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{function.Name}()'", position);
+                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{CssSerializer.Shortened(function.Name)}()'", position);
                 }
 
                 Note(known, $":{name}()", position, context);
@@ -650,7 +650,7 @@ internal static class SelectorParser
                 cursor.Next();
                 if (PseudoClasses.FindElement(ident.Text, functional: false) is not { } entry)
                 {
-                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{ident.Text}'", position);
+                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{CssSerializer.Shortened(ident.Text)}'", position);
                 }
 
                 context.Findings.Add(new SelectorFinding(entry.Support, "::" + entry.Name, position));
@@ -659,7 +659,7 @@ internal static class SelectorParser
                 cursor.Next();
                 if (PseudoClasses.FindElement(function.Name, functional: true) is not { } known)
                 {
-                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{function.Name}()'", position);
+                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{CssSerializer.Shortened(function.Name)}()'", position);
                 }
 
                 var valid = known.Name switch

@@ -335,7 +335,7 @@ public static class MediaQueries
                     return Feature([.. inner], block.Position);
                 case FunctionValue function:
                     _index++;
-                    return Unknown($"'{function.Name}()'", function.Position);
+                    return Unknown($"'{CssSerializer.Shortened(function.Name)}()'", function.Position);
                 default:
                     return null;
             }
@@ -359,11 +359,11 @@ public static class MediaQueries
             {
                 if (OtherDiscreteFeatures.Contains(lower) || OtherRangeFeatures.Contains(name) || VendorRangeForms.Contains(lower))
                 {
-                    diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"The media feature '{nameToken.Text}' is not supported; only width and height are.", sourceName, nameToken.Position));
+                    diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"The media feature '{CssSerializer.Shortened(nameToken.Text)}' is not supported; only width and height are.", sourceName, nameToken.Position));
                     return new MediaUnknown(lower);
                 }
 
-                return Unknown($"the unknown media feature '{nameToken.Text}'", nameToken.Position);
+                return Unknown($"the unknown media feature '{CssSerializer.Shortened(nameToken.Text)}'", nameToken.Position);
             }
 
             // <mf-boolean>
@@ -377,7 +377,7 @@ public static class MediaQueries
             {
                 if (inner.Count != 3 || Length(inner[2]) is not { } value)
                 {
-                    return Unknown($"a value of '{nameToken.Text}' that is not a length", position);
+                    return Unknown($"a value of '{CssSerializer.Shortened(nameToken.Text)}' that is not a length", position);
                 }
 
                 return prefix switch
@@ -389,7 +389,7 @@ public static class MediaQueries
             }
 
             // <mf-range>: the range form takes no prefix.
-            return prefix.Length == 0 && Range(inner, nameIndex, name) is { } range ? range : Unknown($"a range of '{nameToken.Text}' that does not parse", position);
+            return prefix.Length == 0 && Range(inner, nameIndex, name) is { } range ? range : Unknown($"a range of '{CssSerializer.Shortened(nameToken.Text)}' that does not parse", position);
         }
 
         /// <summary>&lt;mf-range&gt; = name op value | value op name | value lt name lt value | value gt name gt value.</summary>
@@ -497,12 +497,12 @@ public static class MediaQueries
 
                     if (unit is "ex" or "ch" || Units.IsUnsupportedLength(unit))
                     {
-                        diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"The unit '{dimension.Text}' in a media feature is not supported.", sourceName, dimension.Position));
+                        diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"The unit '{CssSerializer.Shortened(dimension.Text)}' in a media feature is not supported.", sourceName, dimension.Position));
                     }
 
                     return null;
                 case FunctionValue function:
-                    diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"'{function.Name}()' in a media feature is not supported.", sourceName, function.Position));
+                    diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Unsupported.MediaFeature, $"'{CssSerializer.Shortened(function.Name)}()' in a media feature is not supported.", sourceName, function.Position));
                     return null;
                 default:
                     return null;

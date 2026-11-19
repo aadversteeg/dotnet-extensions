@@ -25,7 +25,7 @@ internal static class CssSerializer
         return text.ToString();
     }
 
-    /// <summary>The most characters of one input value a diagnostic quotes.</summary>
+    /// <summary>The most characters of one input name or value a diagnostic quotes.</summary>
     public const int MaxQuotedCharacters = 100;
 
     /// <summary>The text of component values for a message: trimmed, at most <see cref="MaxQuotedCharacters"/>

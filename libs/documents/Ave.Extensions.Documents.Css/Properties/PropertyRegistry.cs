@@ -2,6 +2,7 @@ using Ave.Extensions.Documents.Core;
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
 namespace Ave.Extensions.Documents.Css.Properties;
@@ -122,7 +123,7 @@ public static partial class PropertyRegistry
         }
 
         return reader.Keyword(refused) is { } other
-            ? ParsedValue.Refused($"'{name}: {other}' is not supported")
+            ? ParsedValue.Refused($"'{name}: {CssSerializer.Shortened(other)}' is not supported")
             : ParsedValue.Invalid($"not a value of {name}");
     }
 
@@ -140,7 +141,7 @@ public static partial class PropertyRegistry
 
                 if (reader.Count == 1 && reader.Keyword(others) is { } other)
                 {
-                    return ParsedValue.Refused($"'{name}: {other}' is not supported (only {initial} is)");
+                    return ParsedValue.Refused($"'{name}: {CssSerializer.Shortened(other)}' is not supported (only {initial} is)");
                 }
 
                 return otherValuesRefused ? ParsedValue.Refused($"'{name}' is supported only at its initial value, {initial}") : ParsedValue.Invalid($"not a value of {name}");

@@ -103,7 +103,7 @@ internal static partial class Colors
 
                 if (OtherSystem.Contains(name))
                 {
-                    message = $"the system colour '{ident.Text}' is not supported";
+                    message = $"the system colour '{CssSerializer.Shortened(ident.Text)}' is not supported";
                     return ColorOutcome.Unsupported;
                 }
 
@@ -122,7 +122,7 @@ internal static partial class Colors
 
                 if (OtherFunctions.Contains(functionName))
                 {
-                    message = $"the colour function {functionName}() is not supported";
+                    message = $"the colour function {CssSerializer.Shortened(functionName)}() is not supported";
                     return ColorOutcome.Unsupported;
                 }
 

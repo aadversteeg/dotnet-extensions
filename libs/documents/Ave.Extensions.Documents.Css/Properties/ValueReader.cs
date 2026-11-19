@@ -126,7 +126,7 @@ internal sealed class ValueReader
                 if (Units.IsUnsupportedLength(unit))
                 {
                     _index++;
-                    return ParsedValue.Refused($"the unit '{dimension.Text}' is not supported");
+                    return ParsedValue.Refused($"the unit '{CssSerializer.Shortened(dimension.Text)}' is not supported");
                 }
 
                 return null;
@@ -136,12 +136,12 @@ internal sealed class ValueReader
                 {
                     return problem is not null && problem.StartsWith("unsupported:", System.StringComparison.Ordinal)
                         ? ParsedValue.Refused(problem["unsupported:".Length..]) with { Code = CssErrorCodes.Unsupported.Calc }
-                        : ParsedValue.Invalid($"{function.Name}(): {problem}");
+                        : ParsedValue.Invalid($"{CssSerializer.Shortened(function.Name)}(): {problem}");
                 }
 
                 var type = Calc.TypeOf(node);
                 var allowed = type == CalcType.Length || (percentages && type is CalcType.Percentage or CalcType.LengthPercentage);
-                return allowed ? ParsedValue.Of(new CssCalc(node)) : ParsedValue.Invalid($"{function.Name}() is not a length here");
+                return allowed ? ParsedValue.Of(new CssCalc(node)) : ParsedValue.Invalid($"{CssSerializer.Shortened(function.Name)}() is not a length here");
             default:
                 return null;
         }

@@ -142,4 +142,28 @@ public class DiagnosticTextTests
         diagnostics.Where(error => error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Property) is "cursor")
             .Select(error => error.Metadata![ErrorMetadataKeys.SourceLine]).Should().Equal(1, 2);
     }
+    [Theory]
+    // A name of 500 000 characters where the CSS reader or the cascade names it: a property, a custom property in a
+    // cycle, a keyword, a unit, a unit in calc(), a pseudo-class, a pseudo-element, a namespace prefix, an at-rule, a
+    // media feature, a font-face descriptor, an event handler attribute.
+    [InlineData("<style>p{NAME:1}</style><p>x")]
+    [InlineData("<style>p{--NAME:var(--NAME)}</style><p>x")]
+    [InlineData("<style>p{display:NAME}</style><p>x")]
+    [InlineData("<style>p{width:1NAME}</style><p>x")]
+    [InlineData("<style>p{width:calc(1NAME + 1px)}</style><p>x")]
+    [InlineData("<style>p:NAME{color:red}</style><p>x")]
+    [InlineData("<style>p::NAME{color:red}</style><p>x")]
+    [InlineData("<style>NAME|p{color:red}</style><p>x")]
+    [InlineData("<style>@NAME{p{color:red}}</style><p>x")]
+    [InlineData("<style>@media (NAME: 1px){p{color:red}}</style><p>x")]
+    [InlineData("<style>@font-face{NAME:1}</style><p>x")]
+    [InlineData("<p onNAME=x>x")]
+    public void A_diagnostic_quotes_at_most_100_characters_of_a_name(string body)
+    {
+        var name = new string('n', 500_000);
+        var diagnostics = Diagnostics("<!DOCTYPE html><title>t</title>" + body.Replace("NAME", name, StringComparison.Ordinal));
+
+        diagnostics.Should().Contain(error => error.Message.Contains(new string('n', 90) + "…", StringComparison.Ordinal));
+        diagnostics.Should().OnlyContain(error => error.Message.Length < 400);
+    }
 }

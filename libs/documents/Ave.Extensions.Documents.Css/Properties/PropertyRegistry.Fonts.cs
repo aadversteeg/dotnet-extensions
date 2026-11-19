@@ -221,12 +221,12 @@ public static partial class PropertyRegistry
                 case CssToken { Kind: CssTokenKind.Ident } word when expectName:
                     if (words.Count == 0 && InfraAscii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default")
                     {
-                        return ParsedValue.Invalid($"'{word.Text}' cannot be a font family name without quotes");
+                        return ParsedValue.Invalid($"'{CssSerializer.Shortened(word.Text)}' cannot be a font family name without quotes");
                     }
 
                     if (words.Count == 1 && GenericFamilies.Contains(InfraAscii.ToLower(words[0])))
                     {
-                        return ParsedValue.Invalid($"the generic family '{words[0]}' cannot start a font family name");
+                        return ParsedValue.Invalid($"the generic family '{CssSerializer.Shortened(words[0])}' cannot start a font family name");
                     }
 
                     words.Add(word.Text);

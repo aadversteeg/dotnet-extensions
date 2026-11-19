@@ -139,7 +139,7 @@ internal static class DeclarationPreparer
         {
             // A top-level '!' other than !important is not a <declaration-value> (CSS Syntax 3 §8.2): no property's
             // grammar takes it, a custom property's included, so Chromium drops the declaration.
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A '!' that is not !important makes the declaration of '{declaration.Name}' invalid; it is dropped (CSS Syntax 3 §8.2).", prepared));
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A '!' that is not !important makes the declaration of '{CssSerializer.Shortened(declaration.Name)}' invalid; it is dropped (CSS Syntax 3 §8.2).", prepared));
             return;
         }
 
@@ -154,7 +154,7 @@ internal static class DeclarationPreparer
         {
             // CSS Variables 1 §3: a var() that does not match its grammar makes the declaration invalid when it is
             // parsed; Chromium 159 drops it (measured: 'var(--, yf)').
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A var() in '{declaration.Name}' does not match var( --name [, fallback]? ); the declaration is invalid and dropped (CSS Variables 1 §3).", prepared));
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A var() in '{CssSerializer.Shortened(declaration.Name)}' does not match var( --name [, fallback]? ); the declaration is invalid and dropped (CSS Variables 1 §3).", prepared));
             return;
         }
 
@@ -182,16 +182,16 @@ internal static class DeclarationPreparer
             if (PropertyRegistry.FindIgnored(name) is { } ignored)
             {
                 whenApplied.Add(new Notice(prepared, ignored.Refuses?.Invoke(declaration.Value) == true
-                    ? Diagnostic(CssErrorCodes.Unsupported.Value, $"'{declaration.Name}: {CssSerializer.Shortened(declaration.Value)}' is not supported: {ignored.RefusedValues}.", prepared)
-                    : Diagnostic(CssErrorCodes.Ignored.Property, $"'{declaration.Name}' is ignored: it concerns {ignored.Reason}.", prepared)));
+                    ? Diagnostic(CssErrorCodes.Unsupported.Value, $"'{CssSerializer.Shortened(declaration.Name)}: {CssSerializer.Shortened(declaration.Value)}' is not supported: {ignored.RefusedValues}.", prepared)
+                    : Diagnostic(CssErrorCodes.Ignored.Property, $"'{CssSerializer.Shortened(declaration.Name)}' is ignored: it concerns {ignored.Reason}.", prepared)));
             }
             else if (name.StartsWith("-moz-", StringComparison.Ordinal) || name.StartsWith("-ms-", StringComparison.Ordinal) || name.StartsWith("-o-", StringComparison.Ordinal))
             {
-                diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Property, $"'{declaration.Name}' is a property of another browser engine; the declaration is dropped.", prepared));
+                diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Property, $"'{CssSerializer.Shortened(declaration.Name)}' is a property of another browser engine; the declaration is dropped.", prepared));
             }
             else
             {
-                whenApplied.Add(new Notice(prepared, Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{declaration.Name}' is not supported.", prepared)));
+                whenApplied.Add(new Notice(prepared, Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{CssSerializer.Shortened(declaration.Name)}' is not supported.", prepared)));
             }
 
             return;
@@ -254,7 +254,7 @@ internal static class DeclarationPreparer
         // -internal-… as an ordinary name (measured), so that is left to the property's grammar.
         if (origin != CascadeOrigin.UserAgent && name == "text-align" && ContainsInternalKeyword(declaration.Value))
         {
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; the declaration of '{declaration.Name}' is dropped.", prepared));
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; the declaration of '{CssSerializer.Shortened(declaration.Name)}' is dropped.", prepared));
             return;
         }
 
@@ -303,13 +303,13 @@ internal static class DeclarationPreparer
     /// <param name="problem">What the grammar found, or null.</param>
     /// <returns>The message, without the consequence.</returns>
     public static string NotReadable(PreparedDeclaration declaration, string? problem) =>
-        $"'{declaration.Source.Name}: {CssSerializer.Shortened(Trim(declaration.Source.Value))}' is not valid or not supported in this profile"
+        $"'{CssSerializer.Shortened(declaration.Source.Name)}: {CssSerializer.Shortened(Trim(declaration.Source.Value))}' is not valid or not supported in this profile"
         + (problem is null ? string.Empty : $" ({problem})");
 
     /// <summary>A diagnostic about a declaration: at its place, with its property and value.</summary>
     public static Error Diagnostic(ErrorCode code, string message, PreparedDeclaration declaration) =>
         CssDiagnostics.At(code, message, declaration.SourceName, declaration.Source.Position)
-            .With(ErrorMetadataKeys.Property, declaration.Name)
+            .With(ErrorMetadataKeys.Property, CssSerializer.Shortened(declaration.Name))
             .With(ErrorMetadataKeys.Value, CssSerializer.Shortened(Trim(declaration.Source.Value)));
 
     /// <summary>The CSS-wide keyword the whole value is, or null (CSS Cascade 5 §7.3; white space around it does not

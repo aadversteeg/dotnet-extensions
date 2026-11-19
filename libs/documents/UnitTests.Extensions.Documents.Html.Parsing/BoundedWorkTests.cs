@@ -257,4 +257,20 @@ public class BoundedWorkTests
         // One unexpected-null-character per NUL (and a few for the missing doctype and elements), all counted.
         ((int)last.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value]! + HtmlInputLimits.MaxDiagnostics).Should().BeGreaterThanOrEqualTo(HtmlInputLimits.MaxCharacters);
     }
+    [Theory]
+    // A tag name of 500 000 characters in a parse error, and an encoding label padded to 500 000 characters by the
+    // white space its comparison ignores, in a meta element after the first 1 024 bytes.
+    [InlineData("<!DOCTYPE html><p><NAME>x")]
+    [InlineData("<!DOCTYPE html><head><!--PAD--><meta charset=\"NAMEwindows-1252\">")]
+    public void A_parse_diagnostic_quotes_at_most_100_characters_of_a_name(string text)
+    {
+        var name = text.Contains("charset", StringComparison.Ordinal) ? new string(' ', 500_000) : new string('n', 500_000);
+        var result = HtmlParser.Parse(Encoding.UTF8.GetBytes(text.Replace("PAD", new string('x', 2_000), StringComparison.Ordinal).Replace("NAME", name, StringComparison.Ordinal)));
+        var errors = result.Match(parsed => (IReadOnlyList<Error>)parsed.Diagnostics, error => [error]);
+
+        errors.Should().NotBeEmpty();
+        errors.Should().Contain(error => error.Message.Contains("…", StringComparison.Ordinal));
+        errors.Should().OnlyContain(error => error.Message.Length < 400);
+        errors.Should().OnlyContain(error => error.Metadata == null || error.Metadata.Values.All(value => (value.ToString() ?? string.Empty).Length <= 101));
+    }
 }
