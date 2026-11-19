@@ -12,9 +12,10 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// Under <see cref="EmptyRowParts.Allow"/>, a unit that starts its page area (a row that continues from the page before,
-/// or the first on the page), whose cells' content fits and whose grid line below does not, is placed whole, and that
-/// line passes the page end, as Chromium prints it (<c>TablePage.PassesOnlyByItsLineBelow</c>; the first row of such a
+/// Under <see cref="EmptyRowParts.Allow"/>, in a table that continues from the page before, a unit that starts its page
+/// area (a row that continues from the page before, or the first on the page), whose cells' content fits and whose grid
+/// line below does not, is placed whole, and that line passes the page end, as Chromium prints it; in a table that
+/// starts the page, a first row whose line below passes by its outer half only (<c>TablePage.PassesOnlyByItsLineBelow</c>; the first row of such a
 /// unit too, <c>TableBreaks.InsideUnit</c>). Against Chromium's print (<c>tools/reference/chromium</c>, cases
 /// <c>a2-row-end*</c>), and with the limits of docs/architecture.md, "Known limits", pinned. Page area 276 × 180 pt, Lato
 /// 12 pt, line height 15 pt, 0.75 pt grid lines split at breaks.
@@ -184,7 +185,7 @@ public class RowEndTests
     }
 
     [Fact]
-    public void The_95_documents_that_were_refused_print_the_words_of_Chromium_on_the_same_pages_at_the_same_places()
+    public void The_95_documents_that_were_refused_print_the_words_of_Chromium_on_the_same_pages_and_in_87_at_the_same_places()
     {
         // Same words on the same pages in all 95, at the same places in 87. In the 8 with a first row of 10 or 11 lines and
         // a second of 23 (in the four table shapes), page 2 starts below the line between the rows, which the engine splits at the break and Chromium
@@ -216,6 +217,196 @@ public class RowEndTests
             .Where(name => chromium.ContainsKey(name) && !name.StartsWith("paragraph", StringComparison.Ordinal) && (name.Contains("10 lines") || name.Contains("11 lines")) && name.Contains("23 lines"))
             .Select(name => $"{name}: page 2 0 0.375"));
         offsets.Should().HaveCount(8);
+    }
+
+    /// <summary>A one-column table that starts the page, whose first row's content is the page area exactly with the grid
+    /// line above it and whose line below does not fit, then a row "after": a cell of 11 lines below 14.25 pt top padding
+    /// (<c>a2-row-end-first-row</c>), or a cell of 12 lines of 14.9375 pt (<c>a2-row-end-first-row-cut</c>).</summary>
+    private static Element[] FirstRow(string caseName) => caseName switch
+    {
+        "a2-row-end-first-row" => [Grid(1, TableRow([Cell([Lines("x", 11)]).PaddingTop(14.25.Pt())]), TableRow([Cell("after")]))],
+        "a2-row-end-first-row-cut" => [Grid(1, TableRow([Cell([Lines("x", 12).LineHeight(14.9375.Pt())])]), TableRow([Cell("after")]))],
+        _ => throw new ArgumentException(caseName, nameof(caseName)),
+    };
+
+    [Theory]
+    [InlineData("a2-row-end-first-row", "", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "after")]
+    [InlineData("a2-row-end-first-row-cut", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "x10 x11 after")]
+    public void A_table_that_starts_the_page_with_a_first_row_that_fits_but_for_its_line_below_is_refused_under_Allow(string caseName, params string[] chromiumPages)
+    {
+        // Limit, docs/architecture.md: in a table that starts the page the rule places a first row whose line below passes
+        // the page end by its outer half only (the test below). Where the content ends at the page end, Chromium leaves the
+        // first page empty and prints the row whole on the next, or, where the 12 lines in its unit of 1/64 pixel are a hair
+        // taller than the page area, cuts the row before its last two lines. The engine prints neither and refuses the
+        // document under Allow; under Avoid it cuts the row as before.
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            var result = Run(FirstRow(caseName), EmptyRowParts.Allow, overflow);
+            result.IsFailure.Should().BeTrue($"{overflow}: {(result.IsSuccess ? string.Join(" | ", PrintedPages.Engine(result.Value).PageTexts) : string.Empty)}");
+            result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+            Run(FirstRow(caseName), EmptyRowParts.Avoid, overflow).IsSuccess.Should().BeTrue(overflow.ToString());
+        }
+
+        PrintedPages.Chromium(caseName).PageTexts.Should().Equal(chromiumPages);
+    }
+
+    /// <summary>A one-row table whose cell has 11 lines below 13.875 pt top padding, so that the row up to the middle of
+    /// its line below is the page area exactly and only the outer half of that line passes the page end, in the place
+    /// <paramref name="caseName"/> names, then a paragraph "below" (cases <c>a2-row-end-first-row-half-*</c>); in
+    /// <c>-second-row</c> a row "after" follows instead, in <c>-alone</c> nothing.</summary>
+    private static Element[] HalfLine(string caseName)
+    {
+        TableElement Table(params CellElement[] cells) => Grid(cells.Length + 1, TableRow([Cell([Lines("x", 11)]).PaddingTop(13.875.Pt()), .. cells]));
+        return caseName switch
+        {
+            "a2-row-end-first-row-half-top" => [Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-block" => [Block([Table()]), Paragraph("below")],
+            "a2-row-end-first-row-half-emptyblock" => [Block([]), Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-break" => [Paragraph("i0"), Block([]), PageBreak(), Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-page2" => [Lines("i", 12), Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-2col" => [Table(Cell("b")), Paragraph("below")],
+            "a2-row-end-first-row-half-second-row" => [Grid(1, TableRow([Cell([Lines("x", 11)]).PaddingTop(13.875.Pt())]), TableRow([Cell("after")]))],
+            "a2-row-end-first-row-half-alone" => [Table()],
+            _ => throw new ArgumentException(caseName, nameof(caseName)),
+        };
+    }
+
+    [Theory]
+    [InlineData("a2-row-end-first-row-half-top")]
+    [InlineData("a2-row-end-first-row-half-block")]
+    [InlineData("a2-row-end-first-row-half-emptyblock")]
+    [InlineData("a2-row-end-first-row-half-break")]
+    [InlineData("a2-row-end-first-row-half-page2")]
+    [InlineData("a2-row-end-first-row-half-2col")]
+    [InlineData("a2-row-end-first-row-half-second-row")]
+    public void A_table_that_starts_the_page_places_a_first_row_whole_whose_line_below_passes_the_page_end_by_its_outer_half_under_Allow_as_in_Chromium(string caseName)
+    {
+        // The row's content ends 0.375 pt above the page end and the middle of its line below is the page end. Chromium
+        // places the row whole on the page and lets the outer half of the line pass; what follows starts the next page.
+        // The engine does the same under Allow, in a table that starts the page wherever it stands; a first row whose
+        // content ends at the page end, or cut a hair lower, is still refused (the test above). With a second row the page
+        // breaks between the two rows, where the line is split and its upper half fits, so that shape had Chromium's pages
+        // without the rule as well.
+        var chromium = PrintedPages.Chromium(caseName);
+
+        chromium.PageTexts[^1].Should().Be(caseName.EndsWith("second-row", StringComparison.Ordinal) ? "after" : "below");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            Printed(HalfLine(caseName), overflow).PageTexts.Should().Equal(chromium.PageTexts, overflow.ToString());
+        }
+    }
+
+    [Fact]
+    public void A_table_that_starts_the_page_and_ends_the_document_with_such_a_first_row_has_a_page_less_than_in_Chromium()
+    {
+        // Limit, docs/architecture.md, row end (i): the same row with nothing after the table. Chromium ends the document
+        // with a second page that shows nothing; the engine has the one page.
+        PrintedPages.Chromium("a2-row-end-first-row-half-alone").PageTexts.Should().Equal("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            Printed(HalfLine("a2-row-end-first-row-half-alone"), overflow).PageTexts.Should().Equal(["x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10"], overflow.ToString());
+        }
+    }
+
+    [Fact]
+    public void A_table_below_a_paragraph_whose_first_row_fits_but_for_its_line_below_moves_to_the_next_page_as_in_Chromium()
+    {
+        // "i0", then the table: its first row's 10 lines below 14.25 pt top padding end at the page end, and the line below
+        // the row does not fit. The table does not start the page and does not continue, so the rule does not place the row
+        // there: the table moves to page 2 and "after" to page 3, under every profile.
+        Element[] body = [Paragraph("i0"), Grid(1, TableRow([Cell([Lines("x", 10)]).PaddingTop(14.25.Pt())]), TableRow([Cell("after")]))];
+        var chromium = PrintedPages.Chromium("a2-row-end-below-paragraph");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            foreach (var parts in Enum.GetValues<EmptyRowParts>())
+            {
+                var result = Run(body, parts, overflow);
+                result.IsSuccess.Should().BeTrue($"{overflow}/{parts}: {(result.IsFailure ? result.Error.ToString() : string.Empty)}");
+                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(chromium.PageTexts, $"{overflow}/{parts}");
+            }
+        }
+
+        chromium.PageTexts.Should().Equal("i0", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "after");
+    }
+
+    [Fact]
+    public void Under_an_outer_table_s_repeated_header_a_continued_row_that_fits_but_for_its_line_below_is_not_placed_whole_there()
+    {
+        // A table inside the one body cell of a table with a header row "H": its row of 10 lines fills page 1, and its
+        // second row, 10 lines below 14.25 pt top padding, starts page 2 below the repeated header. There the inner table
+        // continues but does not start the page, so the rule does not place the row whole below the header. Under Avoid
+        // the row is cut before "x8", as Chromium prints it. Under Allow the cut below the header is not taken: page 2
+        // goes on without the header, where the rule places the row whole (docs/architecture.md, "Known limits"); Chromium
+        // repeats the header and cuts the row.
+        Element[] body =
+        [
+            Grid(1, HeaderRow([Cell("H")]), TableRow([Cell([Grid(1,
+                TableRow([Cell([Lines("a", 10)])]),
+                TableRow([Cell([Lines("x", 10)]).PaddingTop(14.25.Pt())]),
+                TableRow([Cell("after")]))])])),
+        ];
+        var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header");
+        string[] withoutHeader = ["H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after"];
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            foreach (var parts in Enum.GetValues<EmptyRowParts>())
+            {
+                var result = Run(body, parts, overflow);
+                result.IsSuccess.Should().BeTrue($"{overflow}/{parts}: {(result.IsFailure ? result.Error.ToString() : string.Empty)}");
+                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(parts == EmptyRowParts.Avoid ? chromium.PageTexts : withoutHeader, $"{overflow}/{parts}");
+            }
+        }
+
+        chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7", "H x8 x9 after");
+    }
+
+    /// <summary>The shape of <c>a2-row-end-nested-under-header</c> with <paramref name="lines"/> lines below
+    /// <paramref name="padding"/> of top padding in the inner table's second row.</summary>
+    private static Element[] NestedUnderHeader(int lines, double padding) =>
+    [
+        Grid(1, HeaderRow([Cell("H")]), TableRow([Cell([Grid(1,
+            TableRow([Cell([Lines("a", 10)])]),
+            TableRow([Cell([Lines("x", lines)]).PaddingTop(padding.Pt())]),
+            TableRow([Cell("after")]))])])),
+    ];
+
+    [Fact]
+    public void Under_an_outer_table_s_repeated_header_a_table_whose_rest_fits_but_for_the_outer_table_s_bottom_line_goes_on_without_the_header()
+    {
+        // The shape above with 9 lines below 12 pt top padding: on page 2 the rest of the inner table, "x0" to "after",
+        // fits below the repeated header "H" but for the outer table's bottom line, which would pass the page end.
+        // Chromium repeats the header and lets the line pass (it draws the line again on a page 3 with nothing else). The
+        // engine goes on without the header there, under every profile (docs/architecture.md, "Known limits").
+        var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header-end");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            foreach (var parts in Enum.GetValues<EmptyRowParts>())
+            {
+                var result = Run(NestedUnderHeader(9, 12), parts, overflow);
+                result.IsSuccess.Should().BeTrue($"{overflow}/{parts}: {(result.IsFailure ? result.Error.ToString() : string.Empty)}");
+                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(["H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 after"], $"{overflow}/{parts}");
+            }
+        }
+
+        chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7 x8 after", "");
+    }
+
+    [Fact]
+    public void Under_an_outer_table_s_repeated_header_a_continued_row_below_13_875_pt_of_padding_is_cut_as_in_Chromium_under_Avoid_only()
+    {
+        // The shape above with 10 lines below 13.875 pt top padding. Under Avoid the row is cut below the repeated header
+        // as Chromium cuts it. Under Allow it is refused under Refuse, and under Slice page 2 goes on without the header,
+        // as in a2-row-end-nested-under-header (docs/architecture.md, "Known limits").
+        var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header-13875");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Avoid, overflow).OnSuccessMap(PrintedPages.Engine).Value.PageTexts.Should().Equal(chromium.PageTexts, $"{overflow}/Avoid");
+        }
+
+        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Refuse).Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Slice).OnSuccessMap(PrintedPages.Engine).Value.PageTexts
+            .Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after");
+        chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7", "H x8 x9 after");
     }
 
     /// <summary>The smallest of the 95: a paragraph, then a one-column table of a row of 22 lines; the row continues on

@@ -48,7 +48,7 @@ public static class TracksLayout
             : TableGrid.Build(box).OnSuccessBind(grid => Prepare(environment, box, grid, space.AvailableWidth));
         return preparation.OnSuccessBind(table => token is not null && InvalidToken(table.Grid, token) is { } reason
             ? Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, token, reason))
-            : TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets }, space, token)
+            : TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets, ContinuesFromPageBefore = token is not null }, space, token)
             .OnSuccessMap(result => result is LayoutResult.Placed { Continuation: TracksBreakToken next } placed
                 ? placed with { Continuation = next with { Prepared = table } }
                 : result));
@@ -196,10 +196,19 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     /// (<see cref="ConstraintSpace.IsBelowStartInsets"/>): the cells of the page's first row are below start insets too.</summary>
     public bool IsBelowStartInsets { get; init; }
 
+    /// <summary>True when the table continues from the page before: it is laid out from a break token.</summary>
+    public bool ContinuesFromPageBefore { get; init; }
+
     /// <summary>True on a later page where content taller than the page area starts the page right below the repeated
     /// header rows (<see cref="TablePage"/>, remarks): the cells of the page's first body row are laid out as starting
     /// the page.</summary>
     public bool SlicesBelowHeader { get; init; }
+
+    /// <summary>The <see cref="ConstraintSpace.FragmentainerBlockSize"/> of the cells' content, on the page and in the
+    /// measurements with unlimited height alike: the table's, less the room its repeated header rows take on this page
+    /// (<see cref="TablePage"/>, RepeatsHeader and Reserved: on a later page also the outer half of the table's top grid
+    /// line), never below zero.</summary>
+    public double CellFragmentainerBlockSize { get; init; }
 
     /// <summary>The grid.</summary>
     public TableGrid Grid => Prepared.Grid;

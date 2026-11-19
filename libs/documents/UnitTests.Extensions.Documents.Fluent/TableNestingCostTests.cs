@@ -1,4 +1,5 @@
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.TestSupport;
@@ -13,11 +14,12 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// 2^t layout calls, and a document of a few hundred bytes did not finish. A cut cell is now laid out once
 /// (<c>TableSegments.Slice</c>), so the count is the same with and without grid lines: 2 (t + 1)(t + 2) calls in all,
 /// and a box inside <c>k</c> tables is laid out at most 2k + 1 times on a page — each table around it measures it at
-/// unlimited height, its own table lays it out in the cut and once more for what is left of it. Counted, not timed.
+/// unlimited height, its own table lays it out in the cut and once more for what is left of it. The same counts under both
+/// <see cref="MonolithicOverflow"/> values. Counted, not timed.
 /// </summary>
 public class TableNestingCostTests
 {
-    private static (long Calls, int MostPerBox) Count(int tables, TableLines lines)
+    private static (long Calls, int MostPerBox) Count(int tables, TableLines lines, MonolithicOverflow overflow)
     {
         Element inner = Paragraph([.. Enumerable.Range(0, 12).SelectMany(index => index == 0 ? new[] { Text($"p{index}") } : [LineBreak(), Text($"p{index}")])]).Orphans(1).Widows(1);
         for (var level = 0; level < tables; level++)
@@ -31,7 +33,8 @@ public class TableNestingCostTests
             };
         }
 
-        var model = DocumentTranslator.ToModel(Document([inner], Page(300.Pt(), 174.Pt()).Margin(12.Pt()), title: "Title", language: "en").FontFamily("Lato").FontSize(12.Pt())).Value;
+        var model = DocumentTranslator.ToModel(Document([inner], Page(300.Pt(), 174.Pt()).Margin(12.Pt()), title: "Title", language: "en").FontFamily("Lato").FontSize(12.Pt())
+            .MonolithicOverflow(overflow)).Value;
         long calls = 0;
         var perBox = new Dictionary<(int Page, NodeId Box), int>();
         var environment = LayoutEnvironment.Create(TestFonts.SetWithItalic);
@@ -60,11 +63,15 @@ public class TableNestingCostTests
     }
 
     [Theory]
-    [InlineData(9, 220)]
-    [InlineData(11, 312)]
-    [InlineData(13, 420)]
-    [InlineData(15, 544)]
-    public void Nested_tables_that_break_cost_the_same_with_repeated_grid_lines_as_without(int tables, long calls)
+    [InlineData(9, 220, MonolithicOverflow.Refuse)]
+    [InlineData(11, 312, MonolithicOverflow.Refuse)]
+    [InlineData(13, 420, MonolithicOverflow.Refuse)]
+    [InlineData(15, 544, MonolithicOverflow.Refuse)]
+    [InlineData(9, 220, MonolithicOverflow.Slice)]
+    [InlineData(11, 312, MonolithicOverflow.Slice)]
+    [InlineData(13, 420, MonolithicOverflow.Slice)]
+    [InlineData(15, 544, MonolithicOverflow.Slice)]
+    public void Nested_tables_that_break_cost_the_same_with_repeated_grid_lines_as_without(int tables, long calls, MonolithicOverflow overflow)
     {
         // 2 (t + 1)(t + 2): the base before this rule counted 4,093 calls at 9 tables and 262,141 at 15, with repeated lines. The
         // count is quadratic in the depth, not exponential: each table measures every table inside it at unlimited height
@@ -73,16 +80,18 @@ public class TableNestingCostTests
         // for the next stage 1 pull request) is a deliberate edit of these numbers.
         var because = $"2 (t + 1)(t + 2) layout calls for t = {tables} nested tables that break across a page";
         calls.Should().Be(2L * (tables + 1) * (tables + 2), because);
-        Count(tables, TableLines.Repeated).Calls.Should().Be(calls, because + ", with repeated grid lines");
-        Count(tables, TableLines.Split).Calls.Should().Be(calls, because + ", with split grid lines");
-        Count(tables, TableLines.None).Calls.Should().Be(calls, because + ", without grid lines");
+        Count(tables, TableLines.Repeated, overflow).Calls.Should().Be(calls, because + ", with repeated grid lines");
+        Count(tables, TableLines.Split, overflow).Calls.Should().Be(calls, because + ", with split grid lines");
+        Count(tables, TableLines.None, overflow).Calls.Should().Be(calls, because + ", without grid lines");
     }
 
     [Theory]
-    [InlineData(9)]
-    [InlineData(15)]
-    public void A_box_inside_k_tables_is_laid_out_at_most_2k_plus_1_times_on_a_page(int tables)
+    [InlineData(9, MonolithicOverflow.Refuse)]
+    [InlineData(15, MonolithicOverflow.Refuse)]
+    [InlineData(9, MonolithicOverflow.Slice)]
+    [InlineData(15, MonolithicOverflow.Slice)]
+    public void A_box_inside_k_tables_is_laid_out_at_most_2k_plus_1_times_on_a_page(int tables, MonolithicOverflow overflow)
     {
-        Count(tables, TableLines.Repeated).MostPerBox.Should().Be((2 * tables) + 1, "2k + 1 layouts of a box inside k tables on one page");
+        Count(tables, TableLines.Repeated, overflow).MostPerBox.Should().Be((2 * tables) + 1, "2k + 1 layouts of a box inside k tables on one page");
     }
 }

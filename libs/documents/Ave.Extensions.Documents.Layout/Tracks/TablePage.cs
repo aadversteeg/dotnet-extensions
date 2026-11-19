@@ -72,8 +72,8 @@ namespace Ave.Extensions.Documents.Layout;
 /// the page by half the line's width, and every cell that continues starts its rest half the line's width below the line
 /// that starts the next page, as whole cells do.</para>
 /// <para><b>Header rows</b> (§17.2, <c>table-header-group</c>) start the table and are repeated at the top of every
-/// later fragment, when they are at most a quarter of the room the table has there, as Chromium prints
-/// (<see cref="RepeatsHeader"/>); a taller header is shown on the table's first page only. They never break. A break right after the header rows, with no body row on the page, is not a
+/// later fragment, when they are at most a quarter of the page area the table's first fragment is laid out in, as
+/// Chromium prints (<see cref="RepeatsHeader"/>, decided once); a taller header is shown on the table's first page only. They never break. A break right after the header rows, with no body row on the page, is not a
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
 /// would be gained by moving on. On a later page whose height cannot hold the header and some body content, the header
 /// is left out, so the table always makes progress.</para>
@@ -152,18 +152,20 @@ internal static class TablePage
     }
 
     /// <summary>Lays out one page of the table and builds its fragment.</summary>
-    public static Result<LayoutResult, Error> LayOut(TableGeometry table, ConstraintSpace space, TracksBreakToken? incoming)
+    public static Result<LayoutResult, Error> LayOut(TableGeometry geometry, ConstraintSpace space, TracksBreakToken? incoming)
     {
-        var grid = table.Grid;
+        var grid = geometry.Grid;
         var isFirst = incoming is null;
-        var resume = incoming ?? new TracksBreakToken(grid.HeaderRowCount, [], false);
-        var repeats = isFirst || grid.HeaderRowCount == 0 ? Result<bool, Error>.Success(grid.HeaderRowCount > 0) : RepeatsHeader(table, space);
-        if (repeats.IsFailure)
+        var decided = RepeatsHeader(geometry, space, incoming);
+        if (decided.IsFailure)
         {
-            return Result<LayoutResult, Error>.Failure(repeats.Error);
+            return Result<LayoutResult, Error>.Failure(decided.Error);
         }
 
-        var hasHeader = repeats.Value;
+        var (repeatsHeader, repeatedHeight) = decided.Value;
+        var table = geometry with { CellFragmentainerBlockSize = Math.Max(0, space.FragmentainerBlockSize - Reserved(geometry, repeatsHeader, repeatedHeight, isFirst)) };
+        var resume = incoming ?? new TracksBreakToken(grid.HeaderRowCount, [], false) { RepeatsHeader = repeatsHeader };
+        var hasHeader = isFirst ? grid.HeaderRowCount > 0 : repeatsHeader;
         var breakAt = space.BreakAt switch
         {
             null => null,
@@ -218,7 +220,7 @@ internal static class TablePage
         return outcome.Value.HasValue
             ? LayoutResult.Place(
                 WithinPageArea(table, TableFragments.Build(table, outcome.Value.Value), space),
-                outcome.Value.Value.Continuation is { } next ? next with { BodyShown = ShowsBody(table, outcome.Value.Value.Content) } : null,
+                outcome.Value.Value.Continuation is { } next ? next with { BodyShown = ShowsBody(table, outcome.Value.Value.Content), RepeatsHeader = repeatsHeader } : null,
                 outcome.Value.Value.Appeal,
                 outcome.Value.Value.BestBreak,
                 outcome.Value.Value.KeepsItsBreak,
@@ -247,27 +249,63 @@ internal static class TablePage
     };
 
     /// <summary>
-    /// Whether the header rows are repeated on a later page: only when they are at most a quarter of the room the table
-    /// has there. CSS Tables 3 §6.2 states the limit for repeated headers ("up to one quarter for header rows"), and
-    /// Chromium has it in <c>third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc</c>,
-    /// <c>TableLayoutAlgorithm::GenerateFragment</c> (no repeat when the header's block size is more than a quarter of the
-    /// fragmentainer's; read in the source of Chromium 150, the measured browser is Chromium 159). The check is the
+    /// Whether the table repeats its header rows at the top of its later fragments, and their height when it does (zero
+    /// when it does not). Decided once, for the table's first fragment, and carried to the later pages in the break token
+    /// (<see cref="TracksBreakToken.RepeatsHeader"/>), as Chromium decides (<c>third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc</c>,
+    /// <c>TableLayoutAlgorithm::GenerateFragment</c>: "If this isn't the first fragment for the table box, and the section
+    /// didn't repeat in the previous fragment, it doesn't make sense to start repeating now"; read in the source of
+    /// Chromium 150, the measured browser is Chromium 159). Chromium repeats a header group when two conditions hold: its
+    /// block size is at most a quarter of the fragmentainer's (<see cref="ConstraintSpace.FragmentainerBlockSize"/>, which
+    /// does not depend on where the table starts and is the same in a measurement with unlimited height), and its
+    /// <c>break-inside</c> has an applicable <c>avoid</c> value. The engine checks the first condition only: its header rows
+    /// have no <c>break-inside</c> of their own in this respect, and they are repeated as the header groups of the measured
+    /// cases, which carry no <c>break-inside</c> in their documents and which Chromium repeats. The check is the
     /// measurement (<c>tools/reference/chromium</c>, cases <c>a6-header-quarter-*</c>: on a page area of 180 pt a header of
-    /// 45.0 pt is repeated and one of 45.75 pt is not; on 360 pt, 90.0 and 90.75). The header's height is that of its
-    /// rows, from the centre of the line above them to the centre of the line below. The room is the page area for a table
-    /// that continues at the top of the body or inside a cell that continues; under an outer table's repeated header it is
-    /// less by that header, as in Chromium. Unlike Chromium, which decides once, the rule is applied on every later page,
-    /// so a header not repeated before can be repeated on a page with more room (docs/architecture.md, "Known limits").
+    /// 45.0 pt is repeated and one of 45.75 pt is not; on 360 pt, 90.0 and 90.75). The header's height is that of its rows,
+    /// from the centre of the line above them to the centre of the line below. Under an outer table's repeated header the
+    /// fragmentainer is less by the room that header takes, as Chromium reserves it for the rows below it
+    /// (<see cref="Reserved"/>: the header on the outer table's first page, the header and the outer half of the outer
+    /// table's top grid line on its later pages; cases <c>a6-nested-under-header-h2400</c> and <c>-h2700</c>: on a page
+    /// area of 180 pt below an outer header of one line, a nested header of 39.75 pt is repeated and one of 42.75 pt is
+    /// not; cases <c>a6-nested-first-*</c> and <c>a6-nested-late-*</c> for the step on the first and on a later page).
     /// </summary>
-    private static Result<bool, Error> RepeatsHeader(TableGeometry table, ConstraintSpace space)
+    private static Result<(bool Repeats, double Height), Error> RepeatsHeader(TableGeometry table, ConstraintSpace space, TracksBreakToken? incoming)
     {
         var grid = table.Grid;
+        if (grid.HeaderRowCount == 0 || incoming is { RepeatsHeader: false })
+        {
+            return Result<(bool, double), Error>.Success((false, 0));
+        }
+
         var cells = grid.CellsStartingInRows(0, grid.HeaderRowCount - 1)
             .Select(index => new TableSegments.ActiveCell(index, grid.Cells[index].Row, null, false)).ToImmutableArray();
         var top = new LineAt(null, 0, new CollapsedBorders.LineContext(true, false, new HashSet<int>()), 0);
         return TableSegments.Measure(table, 0, grid.HeaderRowCount - 1, cells, top)
-            .OnSuccessMap(header => Fitting.Fits(header.Height, space.AvailableHeight / 4));
+            .OnSuccessMap(header => incoming?.RepeatsHeader ?? Fitting.Fits(header.Height, space.FragmentainerBlockSize / 4)
+                ? (true, header.Height)
+                : (false, 0.0));
     }
+
+    /// <summary>
+    /// The room the repeated header rows take from the page area of the table's cells
+    /// (<see cref="TableGeometry.CellFragmentainerBlockSize"/>). On the table's first page that is the header's height. On a
+    /// later page the repeated header draws the table's whole top grid line, so the room is the header's height plus the
+    /// outer half of that line, as Chromium reserves it (<c>TableLayoutAlgorithm::GenerateFragment</c>: "when repeated it
+    /// will draw the whole border itself. We need to reserve additional space at the block-start for this additional
+    /// border space", <c>child_block_offset += border_padding.block_start</c> where the block-start border is not included
+    /// in the fragment, then <c>repeated_header_block_size = child_block_offset - *offset_before_repeated_header +
+    /// border_spacing.block_size</c>; read in the source of Chromium 150). The measurement: below an outer header of one
+    /// line on a page area of 180 pt, a nested table that starts on the outer table's second page repeats a header of
+    /// 40.96875 pt and not one of 41.0 pt (cases <c>a6-nested-late-*</c>), where on the first page it repeats one of
+    /// 41.0625 pt (<c>a6-nested-first-*</c>); with grid lines of 6 pt the second-page limit is 39.0 pt
+    /// (<c>a6-nested-late6-*</c>), and each outer level between takes its own share (<c>a6-nested-late-d3-*</c>). An outer
+    /// table with <c>box-decoration-break: clone</c> does not repeat a nested header of 41.0 pt either
+    /// (<c>a6-nested-late-clone-h2525</c>), so the half is reserved there too.
+    /// </summary>
+    private static double Reserved(TableGeometry table, bool repeatsHeader, double headerHeight, bool isFirst) =>
+        repeatsHeader && !isFirst
+            ? headerHeight + (table.HorizontalWidth(null, 0, new CollapsedBorders.LineContext(true, false, new HashSet<int>())) / 2)
+            : headerHeight;
 
     /// <summary>One try at the page, with or without the header rows on top. None when no body content fits.</summary>
     private static Result<Maybe<Outcome>, Error> Attempt(
@@ -417,12 +455,17 @@ internal static class TablePage
     }
 
     /// <summary>
-    /// Under <see cref="EmptyRowParts.Allow"/>, as Chromium prints it: a unit that starts its page area (nothing above it on
-    /// the page, not even a header row: a row that continues from the page before, or the first on the page), or the first
-    /// row of such a unit, whose cells' content fits and whose grid line below does not, is placed whole; the line passes
-    /// the page area, by at most its width. Moving the row would gain nothing, and cutting it would put words on other
-    /// pages than Chromium does (cases a2-row-end*). Chromium draws the overflowing line again at the top of the next page;
-    /// the engine does not slice borders (docs/architecture.md, Known limits).
+    /// Under <see cref="EmptyRowParts.Allow"/>, as Chromium prints it: in a table that continues from the page before, a
+    /// unit that starts its page area (nothing above it on the page, not even a header row: a row that continues from the
+    /// page before, or the first on the page), or the first row of such a unit, whose cells' content fits and whose grid
+    /// line below does not, is placed whole; the line passes the page area, by at most its width. Moving the row would gain
+    /// nothing, and cutting it would put words on other pages than Chromium does (cases a2-row-end*). Chromium draws the
+    /// overflowing line again at the top of the next page; the engine does not slice borders (docs/architecture.md, Known
+    /// limits). In a table that itself starts at the top of the page, the first row is placed so only when the row up to
+    /// the middle of its line below fits, so that only the outer half of the line passes: Chromium places that row whole
+    /// (cases a2-row-end-first-row-half-*). Where only the content fits, Chromium leaves that page empty or cuts the row
+    /// between its lines (cases a2-row-end-first-row, a2-row-end-first-row-cut), and the engine refuses the table
+    /// (docs/architecture.md, Known limits).
     /// </summary>
     /// <param name="table">The table.</param>
     /// <param name="content">The page up to the unit.</param>
@@ -434,7 +477,7 @@ internal static class TablePage
         table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
         && table.IsAtPageStart
         && content.Rows.IsEmpty
-        && Fitting.Fits(bottom - LineBelowShare(table, row), height);
+        && Fitting.Fits(table.ContinuesFromPageBefore ? bottom - LineBelowShare(table, row) : bottom, height);
 
     /// <summary>
     /// The table's fragment as tall as the page area where a unit placed whole lets its line below pass the page end

@@ -137,9 +137,9 @@ public class SliceUnderHeaderTests
         // Case a4-header-empty-rowspan-line-image: two columns, an empty repeated header row, then "t20" in a cell over two
         // rows beside an empty cell, and a 345 pt image in the second row. "t20" is printed whole on page 1, page 2 holds
         // only the header and the grid, and the image is sliced from page 3, as in Chromium: the same pages and words, "t20"
-        // at Chromium's baseline, the image on page 3 at Chromium's height (0.375 pt further left). On page 4 the engine shows the rest of the
-        // image, 166.5 pt, and Chromium moves the image up a whole page area (the listed deviation above). This line was
-        // once sliced 0.375 + 14.625 pt over pages 2 and 3.
+        // at Chromium's baseline, the image on page 3 at Chromium's height (0.375 pt further left). On page 4 the engine
+        // shows the rest of the image, 166.5 pt, and Chromium moves the image up a whole page area (the listed deviation
+        // above). This line was once sliced 0.375 + 14.625 pt over pages 2 and 3.
         var table = Elements.Table(Columns(Fill(1), Fill(1)), [HeaderRow([Cell(""), Cell("")]), TableRow([Cell("t20").RowSpan(2), Cell("")]), TableRow([Cell([TallImage(345)])])])
             .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
         var document = Run(Document([table], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")

@@ -137,7 +137,7 @@ public static class Paginator
             // Fragmentation 3 §5.4); on later pages the root continues at the top of the body area. Below its top margin
             // the root does not start the page, so content that does not fit there moves on (ConstraintSpace).
             var top = token is null ? document.Root.Style.Margin.Top.Points : 0;
-            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, isAtPageStart: !(top > 0), token, isPageRoot: true);
+            var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, bodyHeight, isAtPageStart: !(top > 0), token, isPageRoot: true);
             if (outcome.IsFailure)
             {
                 return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);

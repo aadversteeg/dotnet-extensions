@@ -16,7 +16,8 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// is sliced, not refused. Against Chromium's print (<c>tools/reference/chromium</c>, cases <c>a4-cell-*</c>), which does
 /// not slice it: Chromium places the piece whole at the top of the next page and lets the cell's bottom padding and grid
 /// line pass the page end. That is a listed difference (docs/architecture.md, "Known limits"), pinned here: the engine's
-/// pages are asserted, Chromium's are stated. Page area 276 × 180 pt, Lato 12 pt, line height 15 pt, 0.75 pt grid lines.
+/// pages are asserted, Chromium's are stated. The same piece in a block outside a table is printed as Chromium prints it
+/// (case <c>a4-image-177-block-padding-3</c>). Page area 276 × 180 pt, Lato 12 pt, line height 15 pt, 0.75 pt grid lines.
 /// </summary>
 public class SliceAboveInsetTests
 {
@@ -27,6 +28,8 @@ public class SliceAboveInsetTests
         "a4-cell-pad3-image-177" => [Table(Cell([Image(Tall).Alt("tall").Height(177.Pt())])).CellPadding(3.Pt()), Paragraph("after")],
         "a4-cell-pad3-line-177" => [Table(Cell([Paragraph("W").LineHeight(177.Pt())])).CellPadding(3.Pt()), Paragraph("after")],
         "a4-cell-image-179-5" => [Table(Cell([Image(Tall).Alt("tall").Height(179.5.Pt())])), Paragraph("after")],
+        "a4-image-177-block-padding-3" => [Block([Image(Tall).Alt("tall").Height(177.Pt())]).PaddingTop(3.Pt()).PaddingBottom(3.Pt()), Paragraph("after")],
+        "after" => [Paragraph("after")],
         _ => throw new ArgumentException(caseName, nameof(caseName)),
     };
 
@@ -93,6 +96,29 @@ public class SliceAboveInsetTests
         Slices(document).Select(page => page.Sum()).Should().Equal(0, 176.625, 0.375);
         engine.Pages[2].Words.Select(word => word.Text).Should().EndWith("after");
         Baseline(engine, "after").Should().BeGreaterThan(Baseline(chromium, "after"));
+    }
+
+    [Theory]
+    [InlineData(MonolithicOverflow.Refuse)]
+    [InlineData(MonolithicOverflow.Slice)]
+    public void A_block_outside_a_table_carries_its_bottom_padding_below_such_a_piece_to_the_next_page_as_Chromium_does(MonolithicOverflow overflow)
+    {
+        // A block with 3 pt padding above and below a 177 pt image, then "after": with the top padding the image is the
+        // page area exactly, so the box breaks before its bottom padding (SlicedBox), the image stays whole on page 1, and
+        // the padding starts page 2 with "after" below it, 3 pt lower than at the top of a page, in both.
+        var result = Laid("a4-image-177-block-padding-3", overflow);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        var engine = PrintedPages.Engine(result.Value);
+        var chromium = PrintedPages.Chromium("a4-image-177-block-padding-3");
+        var engineTop = Baseline(PrintedPages.Engine(Laid("after", overflow).Value), "after");
+        var chromiumTop = Baseline(PrintedPages.Chromium("a2-row-end-below-paragraph"), "i0");
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.PageTexts.Should().Equal("", "after");
+        Slices(result.Value).Should().AllSatisfy(page => page.Should().BeEmpty());
+        engine.Pages.SelectMany(page => page.Images).Should().Equal(chromium.Pages.SelectMany(page => page.Images));
+        Baseline(engine, "after").Should().BeApproximately(engineTop + 3, 1e-9);
+        Baseline(chromium, "after").Should().Be(chromiumTop + 3);
     }
 
     [Theory]

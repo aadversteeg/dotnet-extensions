@@ -90,6 +90,7 @@ internal static class TableSegments
         Result<LayoutResult, Error> LayOutIn(double height) =>
             table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: startsPage || belowHeader, IsNewFormattingContext: true)
             {
+                FragmentainerBlockSize = table.CellFragmentainerBlockSize,
                 KeepsBottomInset = true,
                 IsBelowStartInsets = belowStartInsets && !(startsPage || belowHeader),
             }, cell.Token);
@@ -121,7 +122,7 @@ internal static class TableSegments
     /// area". Taken only when the content then breaks; otherwise the cell is as before (and refused or placed as the
     /// table decides). Under <see cref="MonolithicOverflow.Refuse"/> nothing changes. Chromium does not slice here: it
     /// places the piece whole at the top of the page and lets the bottom padding and border pass the page end
-    /// (docs/architecture.md, "Known limits"; reference case <c>d1-img177-pad3</c>).
+    /// (docs/architecture.md, "Known limits"; reference case <c>a4-cell-pad3-image-177</c>).
     /// </summary>
     private static Result<LayoutResult, Error> SlicedAboveBottomInset(
         TableGeometry table, Box box, LayoutResult whole, double room, bool startsPage, Func<double, Result<LayoutResult, Error>> layOutIn, double sliceHeight)
@@ -148,9 +149,14 @@ internal static class TableSegments
     {
         var info = table.Grid.Cells[next.Cell];
         var box = CellLayoutBox(table, segment, new ActiveCell(next.Cell, info.Row, next.Token, false));
-        return table.Environment.Layout(box, new ConstraintSpace(table.CellWidth(info), double.PositiveInfinity, false, true), next.Token)
+        return table.Environment.Layout(box, Unlimited(table, table.CellWidth(info)), next.Token)
             .OnSuccessMap(result => result is LayoutResult.Placed placed ? placed.Fragment : EmptyCell(box, table.CellWidth(info), 0));
     }
+
+    /// <summary>The space of a cell's content measured with unlimited height: the cell's width, and the fragmentainer block
+    /// size of the page it measures for, so that a table inside decides on its header rows as on the page.</summary>
+    private static ConstraintSpace Unlimited(TableGeometry table, double width) =>
+        new(width, double.PositiveInfinity, false, true) { FragmentainerBlockSize = table.CellFragmentainerBlockSize };
 
     /// <summary>
     /// With clone, the rest of every cell that continues from the previous page — a cell cut inside its own row, or a
@@ -206,7 +212,7 @@ internal static class TableSegments
         var shell = new Segment(firstRow, lastRow, cells, [], ImmutableDictionary<int, BoxFragment>.Empty, above);
         return cells.Where(cell => !cell.IsComplete)
             .TraverseAll(cell => table.Environment
-                .Layout(CellLayoutBox(table, shell, cell), new ConstraintSpace(table.CellWidth(table.Grid.Cells[cell.Cell]), double.PositiveInfinity, false, true), cell.Token)
+                .Layout(CellLayoutBox(table, shell, cell), Unlimited(table, table.CellWidth(table.Grid.Cells[cell.Cell])), cell.Token)
                 .OnSuccessBind(result => result is LayoutResult.Placed { Continuation: null } placed
                     ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell))))
                     : Result<KeyValuePair<int, BoxFragment>, Error>.Failure(

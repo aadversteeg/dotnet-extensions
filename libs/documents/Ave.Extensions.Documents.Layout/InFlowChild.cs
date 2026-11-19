@@ -31,6 +31,8 @@ internal static class InFlowChild
     /// <param name="containerWidth">The width of the container's content area.</param>
     /// <param name="top">Where the child's border box starts, from the top of the content area.</param>
     /// <param name="containerHeight">The height of the content area available on this page.</param>
+    /// <param name="fragmentainerBlockSize">The height of the page area the child is laid out in, less the repeated header
+    /// rows around it (<see cref="ConstraintSpace.FragmentainerBlockSize"/>).</param>
     /// <param name="isAtPageStart">Whether the child's border box starts at the very top of the page area
     /// (<see cref="ConstraintSpace.IsAtPageStart"/>).</param>
     /// <param name="resume">Where to resume inside the child, or null to start it.</param>
@@ -48,6 +50,7 @@ internal static class InFlowChild
         double containerWidth,
         double top,
         double containerHeight,
+        double fragmentainerBlockSize,
         bool isAtPageStart,
         BreakToken? resume,
         bool isPageRoot = false,
@@ -62,6 +65,7 @@ internal static class InFlowChild
             IsAtPageStart: isAtPageStart,
             IsNewFormattingContext: isPageRoot)
         {
+            FragmentainerBlockSize = fragmentainerBlockSize,
             FollowsContent = followsContent,
             BreakAt = breakAt,
             IsBelowStartInsets = isBelowStartInsets,
