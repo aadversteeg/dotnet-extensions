@@ -34,4 +34,14 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// (<see cref="BoxStyle.Text"/>), else by its paragraph's: a front-end sets that text style to the computed values of the
     /// element the image lies in.</summary>
     public TextWrapMode TextWrapMode { get; init; } = TextWrapMode.Wrap;
+
+    /// <summary>
+    /// The decorations applied to the run (CSS Text Decoration 3 §2.1, the used value of <c>text-decoration-line</c> and
+    /// <c>text-decoration-color</c> on the run's decorating boxes; not inherited but passed on to the text inside): outermost
+    /// decorating box first, and within one box in the order underline, overline, line-through, as Chromium paints them (case
+    /// <c>dl-lines</c>). Empty, the initial value, unless set. At most <see cref="ModelLimits.MaxDecorations"/>
+    /// (<see cref="ModelCheck"/>). A line is drawn across each piece of the run on a line, never across an image among the
+    /// runs, and does not change the line's height or any break.
+    /// </summary>
+    public ValueList<TextDecoration> Decorations { get; init; } = [];
 }

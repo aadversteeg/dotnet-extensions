@@ -176,7 +176,7 @@ public static class ModelCheck
     }
 
     /// <summary>Text values: a family name that is not blank, a positive font size of at most
-    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, a white-space value of its enum, and a line height that is not negative, finite and at most
+    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, a white-space value of its enum, valid decorations (<see cref="Decorations"/>), and a line height that is not negative, finite and at most
     /// that long (as a number: at most that many times the font size).</summary>
     private static Error? Text(TextStyle style, Node node)
     {
@@ -205,6 +205,11 @@ public static class ModelCheck
             return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one the model has.", style.TextWrapMode.ToString(), "text-wrap-mode", node);
         }
 
+        if (Decorations(style, node) is { } decoration)
+        {
+            return decoration;
+        }
+
         var lineHeight = style.LineHeight switch
         {
             LineHeight.Factor factor => (double?)factor.Value,
@@ -214,6 +219,37 @@ public static class ModelCheck
         return lineHeight is { } value && !(double.IsFinite(value) && value >= 0 && value <= ModelLimits.MaxLength.Points)
             ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.LineHeight, $"The line height must not be negative, and at most {ModelLimits.MaxLength} (as a length, or a number of times the font size).", style.LineHeight.ToString()!, "line-height", node)
             : null;
+    }
+
+    /// <summary>At most <see cref="ModelLimits.MaxDecorations"/> decorations, each with a line of its enum and a decorating font
+    /// held to the rules of a run's own font: a family name that is not blank, a positive font size of at most
+    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000.</summary>
+    private static Error? Decorations(TextStyle style, Node node)
+    {
+        if (style.Decorations.Count > ModelLimits.MaxDecorations)
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, $"A run carries {style.Decorations.Count} text decorations; at most {ModelLimits.MaxDecorations} are allowed.",
+                style.Decorations.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), "text-decoration", node);
+        }
+
+        foreach (var decoration in style.Decorations)
+        {
+            var problem = decoration switch
+            {
+                null => "A text decoration is missing.",
+                _ when !System.Enum.IsDefined(decoration.Line) => "The text decoration line is not one the model has.",
+                _ when string.IsNullOrWhiteSpace(decoration.FontFamily) => "The font family of a text decoration is empty.",
+                _ when !IsPositiveAndBounded(decoration.FontSize) => $"The font size of a text decoration must be a positive number of at most {ModelLimits.MaxLength}.",
+                _ when !decoration.FontWeight.IsValid => "The font weight of a text decoration must be 1–1000.",
+                _ => null,
+            };
+            if (problem is not null)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, problem, decoration?.ToString() ?? "null", "text-decoration", node);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Only characters text may hold (<see cref="TextCharacters"/>).</summary>

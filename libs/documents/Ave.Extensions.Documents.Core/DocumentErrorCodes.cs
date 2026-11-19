@@ -61,6 +61,11 @@ public static class DocumentErrorCodes
             /// Property.</summary>
             public static readonly ErrorCode WhiteSpace = _ / "WhiteSpace";
 
+            /// <summary>A text decoration with a line its enum does not have, a decorating font that is not valid (as
+            /// <see cref="FontFamily"/>, <see cref="FontSize"/> and <see cref="FontWeight"/> say for a run's own font), or a run
+            /// with more decorations than <c>ModelLimits.MaxDecorations</c>. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode TextDecoration = _ / "TextDecoration";
+
             /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
             /// positive integers are allowed"). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Orphans = _ / "Orphans";
