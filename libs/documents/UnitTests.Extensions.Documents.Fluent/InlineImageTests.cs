@@ -226,18 +226,24 @@ public class InlineImageTests
     }
 
     [Fact]
-    public void An_image_and_its_margins_are_the_minimum_width_of_its_paragraph_like_Chromium()
+    public void An_image_and_its_margins_count_for_the_minimum_and_maximum_width_of_its_paragraph_like_Chromium()
     {
         // The third table of ii-table is 20 pt wide in Chromium, narrower than its content, so Chromium makes it as wide as
         // its minimum (the engine refuses a table narrower than its content): the first cell is 38.742 pt wide
         // (ii-table.boxes.txt, the first cell of the third table), the image (32 pt) and its margins (2 × 3 pt) plus 0.742 pt of grid lines, the halves
         // of two 0.75 pt lines each snapped to a layout unit.
-        var model = DocumentTranslator.ToModel(Document([Paragraph([Text("ab "), In(Wid(32).MarginLeft(3.Pt()).MarginRight(3.Pt())), Text(" cd")])], Area(400), title: "Title", language: "en")
-            .FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt())).Value;
-        var widths = LayoutEnvironment.Create(new FontSet([TestFonts.Regular])).Measure((Box)model.Root.Children[0]).Value;
+        IntrinsicWidths Measured(ImageElement image)
+        {
+            var model = DocumentTranslator.ToModel(Document([Paragraph([Text("ab "), In(image), Text(" cd")])], Area(400), title: "Title", language: "en")
+                .FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt())).Value;
+            return LayoutEnvironment.Create(new FontSet([TestFonts.Regular])).Measure((Box)model.Root.Children[0]).Value;
+        }
+
+        var widths = Measured(Wid(32).MarginLeft(3.Pt()).MarginRight(3.Pt()));
 
         ChromiumLayout.DifferenceInLayoutUnits(widths.MinContent + 0.75, 38.742).Should().BeLessThanOrEqualTo(2, "the image and the two halves of grid lines, each a layout unit");
-        widths.MaxContent.Should().BeGreaterThan(widths.MinContent);
+        // The maximum width is the line's: the margins count there too (the first table of the case has none).
+        widths.MaxContent.Should().BeApproximately(Measured(Wid(32)).MaxContent + 6, 1e-9);
     }
 
     [Fact]
