@@ -394,6 +394,43 @@ public sealed class CascadeIndex
             return (sheet.Rules, context with { Sheet = sheet, Layer = layer }, sheet);
         }
 
+        /// <summary>Whether a value holds, at any depth, a ), ] or } that closes nothing, a bad string or a bad URL, or an
+        /// env() or attr() without an argument, or at its top level a '!' (CSS Syntax 3 §8.2, &lt;declaration-value&gt;),
+        /// without recursion.</summary>
+        private static bool IsNoDeclaration(IReadOnlyList<ComponentValue> values)
+        {
+            if (values.Any(value => value is CssToken { Kind: CssTokenKind.Delim, Text: "!" }))
+            {
+                return true;
+            }
+
+            var pending = new Stack<IReadOnlyList<ComponentValue>>();
+            pending.Push(values);
+            while (pending.Count > 0)
+            {
+                foreach (var value in pending.Pop())
+                {
+                    switch (value)
+                    {
+                        case CssToken { Kind: CssTokenKind.CloseParen or CssTokenKind.CloseSquare or CssTokenKind.CloseCurly or CssTokenKind.BadString or CssTokenKind.BadUrl }:
+                            return true;
+                        // env() and attr() without an argument (measured: '@supports (--y: env())' and its negation false).
+                        case FunctionValue function when (function.IsNamed("env") || function.IsNamed("attr"))
+                                                         && function.Values.All(item => item is CssToken { Kind: CssTokenKind.Whitespace }):
+                            return true;
+                        case FunctionValue function:
+                            pending.Push(function.Values);
+                            break;
+                        case SimpleBlock block:
+                            pending.Push(block.Values);
+                            break;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Evaluates a supports condition as Chromium 159 would (<see cref="SupportsConditions.Evaluate"/>); where the
         /// engine cannot tell what Chromium answers, the condition is refused and taken as false.
@@ -416,6 +453,15 @@ public sealed class CascadeIndex
         /// refused).</summary>
         private bool? Holds(Declaration declaration)
         {
+            // Text with an unmatched ), ] or }, a bad string or URL, or a '!' outside !important is no declaration:
+            // Chromium 159 reads the parentheses as <general-enclosed>, which is unknown, so neither the condition nor
+            // its negation holds (CSS Conditional 4 §2; measured: '@supports (color: var(--x,]))' and
+            // '@supports not (color: var(--x,]))' are both false). The engine has no unknown answer: refused, false.
+            if (IsNoDeclaration(declaration.Value))
+            {
+                return null;
+            }
+
             var name = InfraAscii.ToLower(declaration.Name);
             if (declaration.IsCustomProperty)
             {

@@ -55,7 +55,8 @@ internal static class VarSubstitution
 
     /// <summary>Whether every var() in the values has the grammar of §3 (else the declaration is invalid when parsed,
     /// as Chromium reads it): a custom property name, and a fallback that is a &lt;declaration-value&gt;, so with no
-    /// semicolon at its own top level (CSS Syntax 3 §8.2; Chromium 159 drops <c>color: var(--x, a;b)</c>, measured).</summary>
+    /// semicolon at its own top level and no unmatched ), ] or } (CSS Syntax 3 §8.2; Chromium 159 drops
+    /// <c>color: var(--x, a;b)</c> and <c>color: var(--x, ])</c>, measured).</summary>
     public static bool IsWellFormed(IReadOnlyList<ComponentValue> values)
     {
         foreach (var value in values)
@@ -64,7 +65,7 @@ internal static class VarSubstitution
             {
                 case FunctionValue function when function.IsNamed("var"):
                     if (Arguments(function) is not { } arguments
-                        || (arguments.Fallback is { } fallback && (HasTopLevel(fallback, CssTokenKind.Semicolon) || !IsWellFormed(fallback))))
+                        || (arguments.Fallback is { } fallback && (HasTopLevel(fallback, CssTokenKind.Semicolon) || HasUnmatchedClosing(fallback) || !IsWellFormed(fallback))))
                     {
                         return false;
                     }
@@ -78,6 +79,33 @@ internal static class VarSubstitution
         }
 
         return true;
+    }
+
+    /// <summary>Whether the values hold a ), ] or } that closes nothing, at any depth (a block or function the parser
+    /// built is matched; a closing token left as a token is not), without recursion.</summary>
+    private static bool HasUnmatchedClosing(IReadOnlyList<ComponentValue> values)
+    {
+        var pending = new Stack<IReadOnlyList<ComponentValue>>();
+        pending.Push(values);
+        while (pending.Count > 0)
+        {
+            foreach (var value in pending.Pop())
+            {
+                switch (value)
+                {
+                    case CssToken { Kind: CssTokenKind.CloseParen or CssTokenKind.CloseSquare or CssTokenKind.CloseCurly }:
+                        return true;
+                    case FunctionValue function:
+                        pending.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        pending.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether a var() in the values has a '!' at the top level of its fallback, which no
