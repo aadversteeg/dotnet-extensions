@@ -127,6 +127,30 @@ public class CascadeWorkTests
     }
 
     [Fact]
+    public void The_presentational_hints_of_a_reopened_element_are_made_once_for_all_its_copies()
+    {
+        // The parser makes the font element again in each of 100 paragraphs, with the one token's attributes: its face is
+        // read once, so the copies share one computed family list; their colour and size are the hints' too.
+        var styled = Styled("<!DOCTYPE html><title>t</title><p><font face='a,b,c' color=red size=5>x" + Repeat("<p>x", 100));
+        var fonts = styled.Root.Elements().Where(element => element.Element.LocalName == "font").ToList();
+
+        fonts.Should().HaveCount(101);
+        fonts.Select(element => element.Style[PropertyRegistry.FontFamily]).Distinct(ReferenceEqualityComparer.Instance).Should().ContainSingle();
+        fonts.Select(element => (element.Value("font-family"), element.Value("color"), element.Value("font-size"))).Distinct()
+            .Should().Equal(("a, b, c", "rgb(255, 0, 0)", "24px"));
+    }
+
+    [Fact]
+    public void A_cell_takes_the_hints_of_its_own_table_when_the_cells_share_their_attributes()
+    {
+        // Cells without attributes share one attribute table; their hints also come from the table around them.
+        var styled = Styled("<!DOCTYPE html><title>t</title><table cellpadding=3><tr><td>x</table><table cellpadding=7><tr><td>y</table>");
+
+        styled.Root.Elements().Where(element => element.Element.LocalName == "td").Select(element => element.Value("padding-top"))
+            .Should().Equal("3px", "7px");
+    }
+
+    [Fact]
     public void Every_size_of_the_memo_gives_the_same_result_through_var()
     {
         // The substitutions and what they read as are remembered per declaration and custom-property table; when the memo

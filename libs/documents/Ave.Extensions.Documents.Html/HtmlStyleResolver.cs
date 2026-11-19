@@ -546,7 +546,7 @@ public static class HtmlStyleResolver
                 }
             }
 
-            var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
+            var (hints, refused) = HintsOf(element);
             Keep(refused);
             // Chromium 159's style adjuster: an HTML table does not take -webkit-left, -center or -right from around it
             // or from its own rules; they compute to start (measured).
@@ -554,6 +554,31 @@ public static class HtmlStyleResolver
             return inline.IsEmpty && hints.IsEmpty && !table
                 ? ElementDeclarations.None
                 : new ElementDeclarations(inline, hints, _sourceName) { ResetsLegacyAlignment = table };
+        }
+
+        /// <summary>The presentational hints of an element, made once for the elements the parser made again for one
+        /// token (a formatting element it reopens): they share the attribute table, and their namespace and name are
+        /// compared. Besides those, the hints read only the body's link attribute, the same for the whole document,
+        /// so they are those <see cref="PresentationalHints.For"/> makes for each of them; the declarations carry the
+        /// place of the first element, the start tag's, for diagnostics. The cells' hints also read the table around
+        /// them and are made per element (the parser does not reopen a cell). Kept once per attribute table: the memo
+        /// is at most one element's hints for each table, so it grows with the input, not with the copies; and the
+        /// shared declarations let the cascade prepare them once.</summary>
+        private (ValueList<Declaration> Declarations, List<Error> Refused) HintsOf(StyleElement element)
+        {
+            var html = element.Element;
+            if (element.Attributes.Hints is { } kept && kept.Namespace == html.Namespace && kept.LocalName == html.LocalName)
+            {
+                return (kept.Declarations, kept.Refused);
+            }
+
+            var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
+            if (element.Attributes.Uses > 1 && !html.IsHtml("td") && !html.IsHtml("th"))
+            {
+                element.Attributes.Hints = new SharedHints(html.Namespace, html.LocalName, hints, refused);
+            }
+
+            return (hints, refused);
         }
 
         // ---- language (§3.2.6.2) ----

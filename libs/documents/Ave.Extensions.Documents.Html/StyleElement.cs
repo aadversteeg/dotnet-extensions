@@ -161,6 +161,14 @@ internal sealed class StyleElement : IStyleElement
     }
 }
 
+/// <summary>The presentational hints of an element (<see cref="PresentationalHints.For"/>), with what they were made
+/// from besides the attributes: the element's namespace and name.</summary>
+/// <param name="Namespace">The element's namespace.</param>
+/// <param name="LocalName">The element's local name.</param>
+/// <param name="Declarations">The hint declarations.</param>
+/// <param name="Refused">The attributes refused.</param>
+internal sealed record SharedHints(ElementNamespace Namespace, string LocalName, ValueList<Css.Syntax.Declaration> Declarations, List<ErrorPaths.Error> Refused);
+
 /// <summary>
 /// The attributes of one or more elements, looked up by name in constant time, with what is read from them once: the
 /// classes, the words of a value, the event handler attributes, xml:lang. The parser shares one list of attributes
@@ -189,6 +197,10 @@ internal sealed class AttributeTable
     /// <summary>The declarations of the style attribute, kept when several elements share it (read once for all of
     /// them); null until read.</summary>
     public ValueList<Css.Syntax.Declaration>? StyleDeclarations { get; set; }
+
+    /// <summary>The presentational hints made for an element with these attributes, kept when several elements share
+    /// them (made once for all of them); null until made.</summary>
+    public SharedHints? Hints { get; set; }
 
     /// <summary>The attribute in no namespace with this local name (the first, as the parser keeps it), or null.</summary>
     public HtmlAttribute? Find(string localName)
