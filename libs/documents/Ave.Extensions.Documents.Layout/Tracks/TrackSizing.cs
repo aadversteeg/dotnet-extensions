@@ -27,9 +27,10 @@ namespace Ave.Extensions.Documents.Layout;
 /// shares the rest again.</item>
 /// </list>
 /// <para>The order is Grid's (§11.4–§11.7): fixed and min-content widths first; then auto columns grow towards their
-/// maximum; then fill columns share what is left. Without fill columns a table is only as wide as its columns need
-/// (CSS 2.1 §17.5.2.2: with <c>width: auto</c> "use max(MAX, CAPMIN)" when that is less than the containing block),
-/// so leftover space is not spread over auto columns.</para>
+/// maximum; then fill columns share what is left. Without fill columns the box's <see cref="BoxStyle.Width"/> decides:
+/// with <see cref="BoxWidth.Auto"/> a table is only as wide as its columns need (CSS 2.1 §17.5.2.2: with
+/// <c>width: auto</c> "use max(MAX, CAPMIN)" when that is less than the containing block), so leftover space is not
+/// spread; with <see cref="BoxWidth.Stretch"/> the columns past their maximum share it (<see cref="GrowPastMaximum"/>).</para>
 /// </remarks>
 internal static class TrackSizing
 {
@@ -75,8 +76,11 @@ internal static class TrackSizing
     /// <param name="columns">The column definitions.</param>
     /// <param name="ranges">The columns' ranges from <see cref="ColumnRanges"/>.</param>
     /// <param name="available">The width the columns may take together.</param>
+    /// <param name="width">Whether the columns stay at what they need or fill <paramref name="available"/> when no
+    /// column is a fill column.</param>
     /// <returns>The widths, or the width needed.</returns>
-    public static (ImmutableArray<double> Widths, double? Needed) Resolve(ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double available)
+    public static (ImmutableArray<double> Widths, double? Needed) Resolve(
+        ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double available, BoxWidth width = BoxWidth.Auto)
     {
         var widths = ranges.Select(range => range.MinContent).ToArray();
         var needed = widths.Sum();
@@ -86,6 +90,11 @@ internal static class TrackSizing
         }
 
         GrowAutoColumns(columns, ranges, widths, available - needed);
+        if (width == BoxWidth.Stretch)
+        {
+            GrowPastMaximum(columns, ranges, widths, available);
+        }
+
         ShareAmongFillColumns(columns, ranges, widths, available);
         return ([.. widths], null);
     }
@@ -103,6 +112,40 @@ internal static class TrackSizing
         foreach (var index in autos)
         {
             widths[index] = ranges[index].MinContent + fraction * (ranges[index].MaxContent - ranges[index].MinContent);
+        }
+    }
+
+    /// <summary>
+    /// The width left over the columns' maximum widths, for a table as wide as the width it is given and without fill
+    /// columns (CSS Tables 3, "Distributing width to columns", <c>#width-distribution-algorithm</c>: the step above the
+    /// max-content guess). The auto columns receive it, each in proportion to its maximum width; when the table has no
+    /// auto column the fixed columns do, each in proportion to its width; when those weights are all zero (empty
+    /// columns without insets), in equal parts. A column whose weight is zero beside others that are not receives
+    /// nothing. Chromium, <c>third_party/blink/renderer/core/layout/table/table_layout_utils.cc</c>: automatic layout in
+    /// <c>DistributeInlineSizeToComputedInlineSizeAuto</c>, case <c>kAboveMax</c> (auto columns first, fixed columns only
+    /// without them); fixed layout in <c>SynchronizeAssignableTableInlineSizeAndColumnsFixed</c> (fixed columns scaled up
+    /// when there is no auto column; a column of width 0 receives nothing). Chromium truncates every share to a layout
+    /// unit and gives the remainder to the last receiving column; the engine keeps the exact shares.
+    /// </summary>
+    private static void GrowPastMaximum(ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double[] widths, double available)
+    {
+        if (Enumerable.Range(0, columns.Count).Any(index => columns[index] is TrackSize.Fill))
+        {
+            return;
+        }
+
+        var leftover = available - widths.Sum();
+        var autos = Enumerable.Range(0, columns.Count).Where(index => columns[index] is TrackSize.Auto).ToImmutableArray();
+        var receivers = autos.IsEmpty ? Enumerable.Range(0, columns.Count).ToImmutableArray() : autos;
+        if (leftover <= 0 || receivers.IsEmpty)
+        {
+            return;
+        }
+
+        var weights = receivers.Sum(index => ranges[index].MaxContent);
+        foreach (var index in receivers)
+        {
+            widths[index] += weights > 0 ? leftover * ranges[index].MaxContent / weights : leftover / receivers.Length;
         }
     }
 

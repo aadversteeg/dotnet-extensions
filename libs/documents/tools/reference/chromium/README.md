@@ -124,6 +124,10 @@ under `third_party/blink/renderer/`):
   (`SnappedWidth()` = `LayoutUnit::FromFloatCeil(width_)`), `core/layout/inline/inline_node.cc:2099`;
 - a table's auto columns get truncated shares of the space to distribute, and the last column the remainder:
   `core/layout/table/table_layout_utils.cc:466` (`DistributeInlineSizeToComputedInlineSizeAuto`);
+- a table wider than its columns' maximums (`width: 100%`, cases `tw-*`) gives the width left over to its auto columns in
+  proportion to their maximums, or to its fixed columns in proportion to their widths when it has no auto column,
+  each share truncated and the remainder to the last receiving column: the same function, case `kAboveMax`; under
+  `table-layout: fixed`, `SynchronizeAssignableTableInlineSizeAndColumnsFixed` (a column of width 0 receives nothing);
 - grid `fr` tracks get truncated shares, the fractions carried to the next track: `core/layout/grid/grid_track_sizing_algorithm.cc:1281–1309`;
 - printing scales the page by 0.75 (CSS px to points) and does not round coordinates in that transform:
   `components/printing/renderer/print_render_frame_helper.cc`, `printing/metafile_skia.cc`; but layout puts baselines at

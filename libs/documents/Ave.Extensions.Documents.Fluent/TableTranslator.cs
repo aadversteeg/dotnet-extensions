@@ -58,7 +58,7 @@ internal static class TableTranslator
             id,
             SemanticRole.Table,
             LayoutAlgorithmId.Tracks,
-            DocumentTranslator.BoxStyleOf(box, pageBreakBefore, own) with { Columns = table.Columns, DecorationBreak = table.LinesAtBreaks },
+            DocumentTranslator.BoxStyleOf(box, pageBreakBefore, own) with { Columns = table.Columns, DecorationBreak = table.LinesAtBreaks, Width = table.Width },
             nodes,
             table.Source));
     }
