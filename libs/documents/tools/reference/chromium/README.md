@@ -50,6 +50,13 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
 `out/*.txt` over it after a deliberate re-measurement.
 
+The cases load their fonts from the family's `assets/fonts` by relative URL. Where a font file does not load, Chromium
+prints the case with a fallback font without a word (a copy of this folder without `assets/fonts` beside it printed
+seven cases in Liberation Serif, and their prints were committed so: `a4-cell-image-179-5`, `a4-cell-pad3-image-177`,
+`a4-cell-pad3-line-177` and the four `a6-header-quarter-*`, since measured again). So `measure.mjs` lays the case out,
+waits for `document.fonts.ready` and stops when a font face of the case failed to load. A copy of the tool needs the
+family's `assets/fonts` four folders above `cases/`.
+
 ## Print positions
 
 For rules about pages (where a page starts, where it breaks, what moves to the next page) the reference is Chromium's
