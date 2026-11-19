@@ -77,8 +77,10 @@ LATO = cmap(fonts / 'Lato-Regular.ttf')
 
 
 def clean(text):
-    """Keeps what Lato can show and all white space, replaces a few characters, drops the rest."""
-    return ''.join(c if c.isspace() or ord(c) in LATO else FALLBACKS.get(ord(c), '') for c in text or '')
+    """Keeps what Lato can show and all white space, replaces a few characters, drops the rest. A CR LF or a lone CR
+    becomes LF, as HTML's input stream does (HTML §13.2.3.5), so the file has one kind of line end."""
+    text = (text or '').replace('\r\n', '\n').replace('\r', '\n')
+    return ''.join(c if c.isspace() or ord(c) in LATO else FALLBACKS.get(ord(c), '') for c in text)
 
 
 def day(value):
