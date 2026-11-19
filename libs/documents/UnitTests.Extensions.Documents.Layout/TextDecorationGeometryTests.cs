@@ -50,4 +50,28 @@ public class TextDecorationGeometryTests
         line.Size.Height.Should().BeApproximately(0.75, 1e-9);
         line.Origin.Y.Should().BeApproximately(baseline + 0.75, 1e-9);
     }
+
+    /// <summary>The advance of the last glyph of each line of a left-aligned paragraph "AV AV" broken after the first space.</summary>
+    private static List<double> LastAdvances(ValueList<TextDecoration> decorations)
+    {
+        var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
+            [new TextRun(new NodeId(2), "AV AV", Text(20) with { Decorations = decorations }, At(0))], At(0));
+        var laid = (LayoutResult.Placed)LayoutEnvironment.Create(TestFonts.Set).Layout(paragraph, new ConstraintSpace(40, double.PositiveInfinity, IsAtPageStart: true), null).Value;
+        return [.. ((BoxFragment)laid.Fragment).Children.Select(line => ((LineFragment)line.Fragment).Children.Select(child => child.Fragment).OfType<TextFragment>().Single().Glyphs[^1].Advance)];
+    }
+
+    [Fact]
+    public void A_line_that_ends_in_a_decorated_run_is_shaped_again_before_its_trailing_space()
+    {
+        // Lato kerns "V" with the space after it. Left-aligned text keeps the paragraph's glyphs at a line end at a space, so
+        // the first line's "V" keeps that kerning; a decorated run needs its accurate end (Blink NeedsAccurateEndPosition), so
+        // its first line ends with the "V" shaped without the space, as the last line's "V" is.
+        var plain = LastAdvances([]);
+        var decorated = LastAdvances([Line(TextDecorationLine.Underline, 20)]);
+
+        plain.Should().HaveCount(2);
+        decorated.Should().HaveCount(2);
+        decorated[0].Should().BeApproximately(decorated[1], 1e-9, "both lines end with \"AV\" shaped alone");
+        plain[0].Should().NotBeApproximately(plain[1], 1e-6, "the plain first line keeps the kerning of \"V\" with the space");
+    }
 }
