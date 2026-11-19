@@ -45,9 +45,9 @@ internal enum TablePart
 
 /// <summary>
 /// Tables (CSS 2.1 §17) as the document model has them: a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> whose
-/// children are row groups (<see cref="TableDisplay.HeaderGroup"/>, <see cref="TableDisplay.RowGroup"/>), theirs rows
-/// (<see cref="TableDisplay.Row"/>), theirs the cells, in the collapsing border model (§17.6.2), whose conflicts layout
-/// resolves from the borders of the cells, rows, groups and the table.
+/// children are row groups (<see cref="TableDisplay.HeaderGroup"/>, <see cref="TableDisplay.RowGroup"/>), whose children
+/// are rows (<see cref="TableDisplay.Row"/>), whose children are the cells; in the collapsing border model (§17.6.2),
+/// whose conflicts layout resolves from the borders of the cells, rows, groups and the table.
 /// </summary>
 /// <remarks>
 /// <para>Only the form the model has is drawn; the rest is refused (<c>Documents.Html.Unsupported.Table</c>, or

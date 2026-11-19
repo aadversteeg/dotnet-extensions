@@ -141,6 +141,7 @@ public class TableBoxTests
         { "<div style=\"display:table-cell\">a</div>", "", "div outside a table" },
         { "<table><tbody><tr style=\"display:block\"><td>a</td></tr></tbody></table>", "", "tr in tbody" },
         { "<table><tr><td style=\"display:table-row\">a</td></tr></table>", "", "td in tr" },
+        { "<table><thead style=\"display:table-row-group\"><tr><td>a</td></tr></thead></table>", "", "display: table-row-group on thead" },
         { "<table><tr><span style=\"display:table-cell\">a</span></tr></table>", "", "span outside a table" },
         { "<table><tr><td rowspan=0>a</td></tr></table>", "", "rowspan=0" },
         { "<table><tbody></tbody><tr><td>a</td></tr></table>", "", "tbody without rows" },
