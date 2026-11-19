@@ -329,10 +329,10 @@ hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve a
 ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1
 ii-baseline equal
 ii-breaks refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ii-height open page 1 'ab' baseline 51.75 (laid out at 52), Chromium 51.996 (print.txt)
+ii-height equal
 ii-hyphen refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ii-joiners refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ii-page open page 2 'nine' baseline 51.75 (laid out at 52), Chromium 51.996 (print.txt)
+ii-page equal
 ii-table refused Documents.Html.Unsupported.Value display: table at 3:1
 ii-wrap refused Documents.Html.Unsupported.Value width: 100pt at 3:1
 kb-m1-kept-box-margin-in-padded-box equal

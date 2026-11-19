@@ -34,9 +34,9 @@ internal static class HtmlCases
     /// tests of the code front-end compare baselines within one Chromium layout unit (1/64 px, 0.0117 pt,
     /// <c>FontMetricRoundingTests</c>), and x positions differ by Chromium's own font-size rounding, which scales the
     /// advances of a 10 pt line by 0.99961 (<c>ChromiumLayout.FontSizeFactor</c>): 0.08 pt at the end of a 210 pt line.
-    /// The bound covers both and is no wider than 0.1 pt, the widest the reference rules of the family allow. Baselines and
-    /// the edges of rectangles and images are compared after the one snapping rule of <see cref="WholePixel"/>, which the
-    /// bound does not widen; the x positions of words, font sizes and box heights are compared as they are.
+    /// The bound covers both and is no wider than 0.1 pt, the widest the reference rules of the family allow. Baselines are
+    /// compared where Chromium paints them (<see cref="BaselineDifference"/>) and the edges of rectangles and images after
+    /// the snapping rule of <see cref="WholePixel"/>, which the bound does not widen; the x positions of words, font sizes and box heights are compared as they are.
     /// </summary>
     public const double Bound = 0.1;
 
@@ -207,9 +207,9 @@ internal static class HtmlCases
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
         var lines = Cut(Rows(name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
         var missed = unused.Count > 0 ? $"page {unused[0].Line.Page} the line clipped at y {Of(unused[0].Line.Y0)} is no rectangle of the print (ink.txt)" : null;
-        var difference = missed ?? Difference(engine, chromium)
+        var difference = missed ?? Difference(engine, chromium, LineTops(boxes.Value))
             ?? RectangleDifference(engine, chromium, lines)
-            ?? PopplerDifference(pages.Value, engine, Rows(name, "words"))
+            ?? PopplerDifference(pages.Value, engine, Rows(name, "words"), LineTops(boxes.Value))
             ?? BoxDifference(name, boxes.Value, Rows(name, "boxes"));
         return (difference, Listed.TryGetValue(name, out var listed)) switch
         {
@@ -286,13 +286,13 @@ internal static class HtmlCases
     /// The first difference between the engine's pages and Chromium's print as <c>print.txt</c> holds it, or null: the same
     /// number of pages of the same size (within 0.001 pt, the file's precision); on each page the same words in the same
     /// order, each with its start and end (<see cref="PrintedWord.X0"/>, <see cref="PrintedWord.X1"/>) and its font size
-    /// within <see cref="Bound"/>, its baseline after <see cref="WholePixel"/> within <see cref="Bound"/>, and the same
+    /// within <see cref="Bound"/>, its baseline where Chromium paints it (<see cref="BaselineDifference"/>) within <see cref="Bound"/>, and the same
     /// colour and face (<see cref="PrintedWord.Colour"/>, <see cref="PrintedWord.Face"/>: the PostScript name, which names
     /// the font file and with it the weight and the style); the same area painted in each colour by the rectangles,
     /// filled or stroked (<see cref="PaintedDifference"/>); the same image areas in drawing order, each edge after
     /// <see cref="WholePixel"/> within <see cref="Bound"/>.
     /// </summary>
-    public static string? Difference(PrintedPages engine, PrintedPages chromium)
+    public static string? Difference(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null)
     {
         if (engine.Pages.Length != chromium.Pages.Length)
         {
@@ -317,7 +317,7 @@ internal static class HtmlCases
             {
                 var at = $"page {ours.Number} '{word.Text}'";
                 var found = Far(at, "x0", word.X0, measured.X0) ?? Far(at, "x1", word.X1, measured.X1)
-                    ?? Snapped(at, "baseline", word.Baseline, measured.Baseline) ?? Far(at, "font size", word.FontSize, measured.FontSize)
+                    ?? BaselineDifference(at, word.Baseline, measured.Baseline, LineTop(lineTops, ours.Number, word.Baseline)) ?? Far(at, "font size", word.FontSize, measured.FontSize)
                     ?? Same(at, "colour", word.Colour, measured.Colour) ?? Same(at, "face", word.Face, measured.Face);
                 if (found is not null)
                 {
@@ -425,12 +425,12 @@ internal static class HtmlCases
     /// (<see cref="PrintedPage.JoinedWords"/>). Each is an engine word on the same page with the same text (matched by
     /// text and nearest place, its start and its baseline against <c>yMax</c>, since poppler writes them in its own reading
     /// order and the words of one text can start at one x on many lines) whose start and end are
-    /// within <see cref="Bound"/> of <c>xMin</c> and <c>xMax</c>, and whose line box, the snapped baseline less the
+    /// within <see cref="Bound"/> of <c>xMin</c> and <c>xMax</c>, and whose line box, the baseline where Chromium paints it less the
     /// ascender and plus the descender of the face's line metrics (<see cref="FontMetrics.Line"/>: the typographic ones
     /// where the face sets USE_TYPO_METRICS, as Chromium writes them into the PDF's font descriptor; measured with Theano
     /// Didot, case <c>f-theano-13-ab</c>) at the word's size, is within <see cref="Bound"/> of <c>yMin</c> and <c>yMax</c>.
     /// </summary>
-    private static string? PopplerDifference(PageDocument document, PrintedPages engine, List<string[]> rows)
+    private static string? PopplerDifference(PageDocument document, PrintedPages engine, List<string[]> rows, IReadOnlyDictionary<(int Page, double Baseline), double> lineTops)
     {
         foreach (var page in engine.Pages)
         {
@@ -453,7 +453,7 @@ internal static class HtmlCases
                 inside.Remove(word);
                 var at = $"page {page.Number} '{text}'";
                 var metrics = Face(document.Pages[page.Number - 1], word);
-                var baseline = WholePixel(word.Baseline);
+                var baseline = PaintedBaseline(word.Baseline, LineTop(lineTops, page.Number, word.Baseline));
                 var found = Far(at, "xMin", word.X0, Number(row[1])) ?? Far(at, "xMax", word.X1, Number(row[3]))
                     ?? Far(at, "yMin", baseline - metrics.ToPoints(metrics.Line.Ascender, word.FontSize), Number(row[2]))
                     ?? Far(at, "yMax", baseline - metrics.ToPoints(metrics.Line.Descender, word.FontSize), Number(row[4]));
@@ -587,6 +587,75 @@ internal static class HtmlCases
     private static string? Far(string at, string what, double ours, double chromium) =>
         Math.Abs(ours - chromium) > Bound ? $"{at} {what} {Of(ours)}, Chromium {Of(chromium)}" : null;
 
+    /// <summary>
+    /// A baseline compared where Chromium paints it: the top of its line at the nearest whole pixel (<see cref="WholePixel"/>),
+    /// and the baseline at its distance from that top as laid out; without the line's top, the baseline itself after
+    /// <see cref="WholePixel"/>. Chromium rounds the line's top to a whole pixel and keeps the text's place inside the line.
+    /// For a line of text alone the two rules agree, since its baseline lies a whole number of pixels below its top
+    /// (<see cref="FontMetricRounding.WholePixels"/>); beside an image in the line they do not: in cases <c>ii-height</c>
+    /// and <c>ii-page</c> the engine lays the baseline out at 52 pt and Chromium prints 51.996 pt: equal by this rule,
+    /// where the baseline alone at the nearest whole pixel would be 51.75 pt.
+    /// </summary>
+    private static string? BaselineDifference(string at, double ours, double chromium, double? top)
+    {
+        var painted = PaintedBaseline(ours, top);
+        return Math.Abs(painted - chromium) > Bound ? $"{at} baseline {Of(painted)} (laid out at {Of(ours)}), Chromium {Of(chromium)}" : null;
+    }
+
+    /// <summary>The top of the line a baseline of a page lies in (<see cref="LineTops"/>), or null.</summary>
+    private static double? LineTop(IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops, int page, double baseline) =>
+        lineTops is not null && lineTops.TryGetValue((page, Math.Round(baseline, 6)), out var top) ? top : null;
+
+    /// <summary>Where Chromium paints a baseline (<see cref="BaselineDifference"/>).</summary>
+    private static double PaintedBaseline(double baseline, double? top) => top is { } lineTop ? WholePixel(lineTop) + (baseline - lineTop) : WholePixel(baseline);
+
+    /// <summary>The top of the line each text of the engine's pages lies in, by page number and baseline (rounded to 1e-6
+    /// pt), from the fragments of the same layout: a line's offset, and a text's baseline its offset plus its ascent.</summary>
+    private static Dictionary<(int Page, double Baseline), double> LineTops(HtmlBoxes boxes)
+    {
+        var tops = new Dictionary<(int Page, double Baseline), double>();
+        var pages = Paginator.Paginate(LayoutEnvironment.Create(boxes.Fonts), boxes.Document);
+        if (pages.IsFailure)
+        {
+            return tops;
+        }
+
+        foreach (var (page, number) in pages.Value.Select((page, index) => (page, index + 1)))
+        {
+            var pending = new Stack<(PlacedFragment Placed, double X, double Y, double? LineTop)>([(page.Root, 0, 0, null)]);
+            while (pending.Count > 0)
+            {
+                var (placed, x, y, lineTop) = pending.Pop();
+                var (left, top) = (x + placed.Offset.X, y + placed.Offset.Y);
+                switch (placed.Fragment)
+                {
+                    case TextFragment text when lineTop is { } line:
+                        tops.TryAdd((number, Math.Round(top + text.Ascent, 6)), line);
+                        break;
+                    case LineFragment line:
+                        foreach (var child in line.Children)
+                        {
+                            pending.Push((child, left, top, top));
+                        }
+
+                        break;
+                    case BoxFragment box:
+                        foreach (var child in box.Children)
+                        {
+                            pending.Push((child, left, top, lineTop));
+                        }
+
+                        break;
+                    case SliceFragment slice:
+                        pending.Push((slice.Content, left, top, lineTop));
+                        break;
+                }
+            }
+        }
+
+        return tops;
+    }
+
     /// <summary>A length compared after <see cref="WholePixel"/>; the difference names the engine's value painted and as
     /// laid out.</summary>
     private static string? Snapped(string at, string what, double ours, double chromium) =>
@@ -601,7 +670,8 @@ internal static class HtmlCases
     /// <summary>
     /// A length down or across the page as Chromium paints it: at the nearest whole CSS pixel of the page (0.75 pt).
     /// Chromium paints a baseline at a whole pixel (docs/architecture.md, "Against Chromium"; <c>FontMetricRoundingTests</c>
-    /// compares the same way), and the edges of a filled rectangle and of an image area too. Measured: all 6,104 rectangle
+    /// compares the same way) where the line holds text only (beside an image: <see cref="BaselineDifference"/>), and the
+    /// edges of a filled rectangle and of an image area too. Measured: all 6,104 rectangle
     /// edges and all 83 image edges of the 294 committed prints are whole pixels, and all but 10 of the 4,349 baselines (the
     /// 10 are in case <c>font-sizes</c>, at 8.2 and 9.1 pt, which the HTML path refuses). The rule moves a value by up to
     /// 0.375 pt, so a difference that small in a baseline or an edge can stay inside one pixel; the x positions of words
