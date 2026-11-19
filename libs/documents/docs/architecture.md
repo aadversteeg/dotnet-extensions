@@ -607,7 +607,7 @@ start tag, with the property and the value) only where it would change the print
 | `vertical-align` | `baseline`; any on a block box | other values on an inline box |
 | `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
 | `font-kerning` | `auto`, `normal` (Chromium kerns with both: cases `h-kerning-*`) | `none` (refused by the registry) |
-| break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box) | `break-after: page` after the last box of the document; a family without a face (`Font`) |
+| break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box, none after the last box, as Chromium prints it) but a font size of 0 | a font size of 0; a family without a face (`Font`) |
 | the properties supported only at their initial value | the initial value | any other (the registry already refuses it) |
 
 Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`): `br`,

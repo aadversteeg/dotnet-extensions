@@ -18,7 +18,8 @@ public sealed record HtmlBoxOptions
     /// <summary>Gives the font files <c>@font-face</c> rules name; null for none (each one needed is then refused).</summary>
     public ResourceResolver? Resources { get; init; }
 
-    /// <summary>The document's URL, the base of the font URLs; null when it has none (URLs are then passed as written).</summary>
+    /// <summary>The document's URL, the base of the font URLs of an <c>@font-face</c> rule without a base of its own
+    /// (<see cref="Css.Rules.FontFaceRule.BaseUrl"/>); null when it has none (URLs are then passed as written).</summary>
     public string? BaseUrl { get; init; }
 
     /// <summary>Refuse (the default) or only warn; what <see cref="UnsupportedPolicy.Warn"/> does with a value that is not

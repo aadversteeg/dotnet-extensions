@@ -268,11 +268,9 @@ public static class HtmlBoxGenerator
                         var (box, forcedAfter) = Finish(block);
                         if (stack.Count == 0)
                         {
+                            // A forced break after the last box of the document has no page to start: Chromium prints no
+                            // empty page after it (measured, cases h-break-after-last, h-break-after-last-nested).
                             result = box;
-                            if (forcedAfter)
-                            {
-                                Refuse(HtmlStyleErrorCodes.Unsupported.Value, "'break-after: page' after the last box of the document is not drawn in this version.", "page", block.Element.Element.Position, "break-after");
-                            }
                         }
                         else
                         {

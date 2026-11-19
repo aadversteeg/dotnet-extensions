@@ -145,7 +145,7 @@ public class BoxGenerationTests
     }
 
     [Fact]
-    public void A_forced_break_after_a_box_is_a_forced_break_before_the_next_and_after_the_last_box_it_is_refused()
+    public void A_forced_break_after_a_box_is_a_forced_break_before_the_next_and_after_the_last_box_it_is_none()
     {
         var body = Body(Doc("<p style=\"break-after:page\">a</p><p>b</p>"));
         ((Box)body.Children[1]).Style.BreakBefore.Should().Be(BreakBetween.Page);
@@ -154,7 +154,8 @@ public class BoxGenerationTests
         var nested = Body(Doc("<div><p style=\"break-after:page\">a</p></div><p>b</p>"));
         ((Box)nested.Children[1]).Style.BreakBefore.Should().Be(BreakBetween.Page);
 
-        Refusals(Doc("<p>a</p><p style=\"break-after:page\">b</p>")).Select(Property).Should().Equal("break-after");
+        // Chromium prints no empty page after the last box (cases h-break-after-last, h-break-after-last-nested).
+        Refusals(Doc("<p>a</p><p style=\"break-after:page\">b</p>")).Should().BeEmpty();
     }
 
     [Theory]
@@ -397,5 +398,58 @@ public class BoxGenerationTests
 
         var missing = Boxes(Doc("<p>a</p>", "@font-face { font-family: Gone; src: url(gone.ttf) } p { font-family: Gone }"), resources: Resolver);
         missing.Error.Parts().Single().Code.Should().Be(HtmlStyleErrorCodes.Resource.NotFound);
+    }
+
+    [Fact]
+    public void Two_font_face_rules_with_one_url_fetch_the_file_once()
+    {
+        var asked = new List<string>();
+        HtmlResource? Resolver(string url)
+        {
+            asked.Add(url);
+            return url == "theano.ttf" ? new HtmlResource(TestFonts.Bytes("TheanoDidot-Regular.ttf")) : null;
+        }
+
+        var css = "@font-face { font-family: One; src: url(theano.ttf) } @font-face { font-family: Two; src: url(theano.ttf) } p { font-family: One } .two { font-family: Two }";
+        var result = Boxes(Doc("<p>a</p><p class=\"two\">b</p>", css), resources: Resolver);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        asked.Should().Equal("theano.ttf");
+    }
+
+    [Fact]
+    public void A_font_url_is_resolved_against_the_sheet_that_declares_it()
+    {
+        // The document is in /doc, its sheet in /doc/sheets: the font of the sheet is in /doc/fonts, the font of the
+        // document's own style element in /doc/own.
+        var asked = new List<string>();
+        HtmlResource? Resolver(string url)
+        {
+            asked.Add(url);
+            return url switch
+            {
+                "file:///doc/sheets/fonts.css" => new HtmlResource(Encoding.UTF8.GetBytes("@font-face { font-family: Sheet; src: url(../fonts/theano.ttf) }")),
+                "file:///doc/fonts/theano.ttf" => new HtmlResource(TestFonts.Bytes("TheanoDidot-Regular.ttf")),
+                "file:///doc/own/lato.ttf" => new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")),
+                _ => null,
+            };
+        }
+
+        var html = "<!doctype html><html><head><link rel=\"stylesheet\" href=\"sheets/fonts.css\"><style>@font-face { font-family: Own; src: url(own/lato.ttf) }" +
+                   " body { margin: 0; font-family: Own } .sheet { font-family: Sheet }</style></head><body><p>a</p><p class=\"sheet\">b</p></body></html>";
+        var result = HtmlParser.Parse(html, new HtmlParseOptions("doc.html"))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }));
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        asked.Should().Equal("file:///doc/sheets/fonts.css", "file:///doc/own/lato.ttf", "file:///doc/fonts/theano.ttf");
+    }
+
+    [Fact]
+    public void A_font_size_of_0_is_refused_at_its_element()
+    {
+        var refusal = Refusals(Doc("<p>a</p>\n<p style=\"font-size: 0\">b</p>")).Single();
+        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Value);
+        Property(refusal).Should().Be("font-size");
+        refusal.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(2);
     }
 }
