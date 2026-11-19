@@ -90,6 +90,37 @@ Chromium snaps more than layout units when it prints, which a case must allow fo
   keep every decision clear of that difference, and their tests compare which words are on which page exactly and
   positions only where the difference does not enter.
 
+## Whole documents
+
+The cases are small on purpose: each shows one rule. `documents/` holds whole documents, written the way an author
+writes HTML and CSS for print, that the HTML/CSS front-end is measured against as a whole: which parts of them it lays
+out as Chromium prints them, and which it refuses. They are measured with the same tool and kept the same way, in a
+folder of their own so that the case tests, which walk `cases/` and `measured/` and pin every case's files, stay apart
+from them:
+
+```
+pwsh -NoProfile -File measure.ps1 -CaseFolder documents
+pwsh -NoProfile -File measure.ps1 -CaseFolder ../../../samples/Ave.Extensions.Documents.Samples.HtmlStyles/data
+```
+
+and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`.
+
+| Document | What it is | Chromium's print |
+| --- | --- | --- |
+| `timesheet-one-page` | the samples' timesheet (`samples/Ave.Extensions.Documents.Samples`, `Timesheet/Timesheet.cs`) as HTML, in Dutch, with the edge-case data set (`data/sample-edge.json`) | 1 page |
+| `timesheet-pages` | the same with the long month (`data/sample-long.json`): the header row repeats, entries with a description stay together, a running header from page 2 | 5 pages |
+| `invoice` | the HtmlStyles sample's `data/invoice.html` as it is, with `invoice.css` and `theme.css` (measured from the samples folder, not copied) | 1 page |
+
+The timesheet HTML is made from the samples' synthetic data by `timesheet-html.py` (in this folder; `python3
+timesheet-html.py` writes both files): the engine takes finished HTML, and filling a template with data is the
+caller's job, so the script is that caller. It drops what Lato cannot show as the sample does (`FontCoverage`). The
+documents load their fonts with `@font-face` from `assets/fonts/lato` and the logo from the samples' `assets/`, by
+paths relative to this folder.
+
+The invoice names `"Lato", sans-serif` and `monospace` without an `@font-face` rule, and the container has no Lato:
+Chromium prints it in the container's fallback fonts (Liberation Sans, and WenQuanYi Zen Hei Mono for `monospace`),
+which its words and positions show.
+
 ## The reference
 
 The reference is Chromium of the pinned version (Playwright 1.65.1, Chromium 159.0.8154.6) in the pinned Playwright
