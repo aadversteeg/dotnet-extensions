@@ -676,8 +676,8 @@ Each is documented next to its code as well.
   piece taller than a page: under `Refuse` that cut is not taken. **Listed difference:** `a4-nested-padded-image-160`
   (a 160 pt image in a table inside a cell, each cell with 15 pt top padding) has 2 pages in Chromium and under `Slice`,
   and 3 under `Refuse`, the default (`PinnedDifferenceTests`). In 600 random documents whose pieces each fit a page
-  (each laid out under `Refuse` and under `Slice`, with both values of `EmptyRowParts`), 1 under `Avoid` and 2 under
-  `Allow` had other pages under `Slice` than under `Refuse`, and 86 under `Avoid` (64 under `Allow`) that `Refuse`
+  (each laid out under `Refuse` and under `Slice`, with both values of `EmptyRowParts`), 1 under `Avoid` and 1 under
+  `Allow` had other pages under `Slice` than under `Refuse`, and 85 under `Avoid` (66 under `Allow`) that `Refuse`
   refuses were laid out under `Slice` (the shape above, a piece that fits the page area but not with its cell's insets).
   Taking the cut under `Refuse` too is left to later layout work. **Deliberate deviation from Chromium:** beside a sliced
   piece, the other cells of its row go on page by page beside the slices (cases `a4-image-beside-lines`,
