@@ -55,7 +55,11 @@ public sealed class StyleComputer
     private readonly CascadeBudget _budget;
     private readonly SelectorMatcher _matcher;
     private readonly DiagnosticCollector _diagnostics = new();
-    private readonly HashSet<object> _reported = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>The declarations whose notice (<see cref="PreparedBlock.WhenApplied"/>) has been reported: a declaration,
+    /// not a message text, so a declaration written in two places is reported at both, and one declaration that applies
+    /// to many elements once.</summary>
+    private readonly HashSet<PreparedDeclaration> _reported = [];
     private readonly HashSet<(PreparedDeclaration, ErrorCode)> _reportedAt = [];
 
     /// <summary>The user-agent declarations refused, by element: each element they refuse is reported, so a front-end
@@ -366,14 +370,15 @@ public sealed class StyleComputer
         }
     }
 
-    /// <summary>A rule applies: what it says about properties the engine ignores or does not know is reported, once.</summary>
+    /// <summary>A rule applies: what it says about properties the engine ignores or does not know is reported, once per
+    /// declaration.</summary>
     private void Applied(PreparedBlock block)
     {
         foreach (var notice in block.WhenApplied)
         {
-            if (_reported.Add(notice))
+            if (_reported.Add(notice.Declaration))
             {
-                _diagnostics.Add(notice);
+                _diagnostics.Add(notice.Diagnostic);
             }
         }
     }

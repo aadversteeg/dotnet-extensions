@@ -113,4 +113,33 @@ public class DiagnosticTextTests
 
         error.Message.Should().Contain("border-radius").And.NotContain("border-top-left-radius");
     }
+    [Fact]
+    public void A_declaration_the_engine_ignores_is_reported_once_however_many_elements_it_applies_to()
+    {
+        // 10,001 paragraphs and one ignored declaration: one diagnostic, so the document is not refused for having
+        // more than 10,000 of them (the default mode refuses past the limit).
+        var styled = Styled("<!DOCTYPE html><title>t</title><style>p{-webkit-font-smoothing:antialiased;cursor:pointer}</style>" + Repeat("<p>x</p>", 10_001), new HtmlStyleOptions());
+
+        styled.Diagnostics.Count(error => error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Property) is "-webkit-font-smoothing").Should().Be(1);
+        styled.Diagnostics.Count(error => error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Property) is "cursor").Should().Be(1);
+    }
+
+    [Fact]
+    public void A_property_the_engine_refuses_is_one_error_at_its_place_however_many_elements_it_applies_to()
+    {
+        var error = Refused("<!DOCTYPE html><title>t</title><style>\np{-webkit-box-sizing:border-box}</style><p>x<p>x<p>x");
+
+        error.Code.Should().Be(CssErrorCodes.Unsupported.Property);
+        error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(2);
+        error.Metadata[ErrorMetadataKeys.Property].Should().Be("-webkit-box-sizing");
+    }
+
+    [Fact]
+    public void The_same_declaration_written_in_two_places_is_reported_at_each()
+    {
+        var diagnostics = Diagnostics("<!DOCTYPE html><title>t</title><style>p{cursor:pointer}\ndiv{cursor:pointer}</style><p>x<div>y</div><p>x<div>y</div>");
+
+        diagnostics.Where(error => error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Property) is "cursor")
+            .Select(error => error.Metadata![ErrorMetadataKeys.SourceLine]).Should().Equal(1, 2);
+    }
 }

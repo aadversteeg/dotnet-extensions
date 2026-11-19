@@ -48,9 +48,14 @@ internal sealed record CustomEntry(ValueList<ComponentValue> Values, string Text
 /// <summary>One property set by one declaration: a longhand, a custom property by name, or (neither) <c>all</c>.</summary>
 internal readonly record struct Entry(PropertyDefinition? Longhand, string? Custom, EntryValue Value, PreparedDeclaration Declaration);
 
-/// <summary>A rule's declarations, prepared once: the entries, and the diagnostics reported once when the rule first
-/// applies to an element (properties the engine ignores by rule, or does not know).</summary>
-internal sealed record PreparedBlock(ValueList<Entry> Entries, ValueList<Error> WhenApplied)
+/// <summary>A diagnostic reported when its declaration first applies to an element, once for that declaration.</summary>
+/// <param name="Declaration">The declaration it is about: what it is reported once for.</param>
+/// <param name="Diagnostic">The diagnostic.</param>
+internal readonly record struct Notice(PreparedDeclaration Declaration, Error Diagnostic);
+
+/// <summary>A rule's declarations, prepared once: the entries, and the diagnostics reported once per declaration when the
+/// rule first applies to an element (properties the engine ignores by rule, or does not know).</summary>
+internal sealed record PreparedBlock(ValueList<Entry> Entries, ValueList<Notice> WhenApplied)
 {
     /// <summary>A block with no declarations.</summary>
     public static PreparedBlock Empty { get; } = new([], []);
@@ -83,7 +88,7 @@ internal static class DeclarationPreparer
     public static PreparedBlock Prepare(IEnumerable<Declaration> declarations, string sourceName, CascadeOrigin origin, ref int order, DiagnosticCollector diagnostics)
     {
         var entries = new List<Entry>();
-        var whenApplied = new List<Error>();
+        var whenApplied = new List<Notice>();
         foreach (var declaration in declarations)
         {
             Prepare(declaration, sourceName, origin, order++, entries, whenApplied, diagnostics);
@@ -125,7 +130,7 @@ internal static class DeclarationPreparer
         return [.. kept];
     }
 
-    private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Error> whenApplied, DiagnosticCollector diagnostics)
+    private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Notice> whenApplied, DiagnosticCollector diagnostics)
     {
         var name = declaration.IsCustomProperty ? declaration.Name : InfraAscii.ToLower(declaration.Name);
         var prepared = new PreparedDeclaration(declaration, sourceName, name, declaration.Important && origin != CascadeOrigin.PresentationalHint, order);
@@ -176,9 +181,9 @@ internal static class DeclarationPreparer
         {
             if (PropertyRegistry.FindIgnored(name) is { } ignored)
             {
-                whenApplied.Add(ignored.Refuses?.Invoke(declaration.Value) == true
+                whenApplied.Add(new Notice(prepared, ignored.Refuses?.Invoke(declaration.Value) == true
                     ? Diagnostic(CssErrorCodes.Unsupported.Value, $"'{declaration.Name}: {CssSerializer.Shortened(declaration.Value)}' is not supported: {ignored.RefusedValues}.", prepared)
-                    : Diagnostic(CssErrorCodes.Ignored.Property, $"'{declaration.Name}' is ignored: it concerns {ignored.Reason}.", prepared));
+                    : Diagnostic(CssErrorCodes.Ignored.Property, $"'{declaration.Name}' is ignored: it concerns {ignored.Reason}.", prepared)));
             }
             else if (name.StartsWith("-moz-", StringComparison.Ordinal) || name.StartsWith("-ms-", StringComparison.Ordinal) || name.StartsWith("-o-", StringComparison.Ordinal))
             {
@@ -186,7 +191,7 @@ internal static class DeclarationPreparer
             }
             else
             {
-                whenApplied.Add(Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{declaration.Name}' is not supported.", prepared));
+                whenApplied.Add(new Notice(prepared, Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{declaration.Name}' is not supported.", prepared)));
             }
 
             return;
