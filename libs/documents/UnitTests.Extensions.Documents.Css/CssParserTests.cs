@@ -167,4 +167,18 @@ public class CssParserTests
             again.Count.Should().Be(values.Count, text);
         }
     }
+
+    [Fact]
+    public void Past_the_limit_the_summary_of_a_style_sheet_names_its_first_refusal()
+    {
+        // 10 000 rules with a declaration that has no colon (one syntax error each), then two unknown at-rules: both are
+        // left out, counted as refusals, and the summary names the first of them.
+        var text = string.Concat(Enumerable.Repeat("a{b}", CssInputLimits.MaxDiagnostics)) + "@first-unknown;@second-unknown;";
+
+        var diagnostics = CssParser.ParseStyleSheet(text, new CssSourceOptions("s.css")).Value.Diagnostics;
+
+        var summary = diagnostics[diagnostics.Count - 1];
+        summary.Code.Should().Be(Ave.Extensions.Documents.Core.DocumentErrorCodes.TooManyDiagnostics);
+        summary.Message.Should().StartWith("2 more diagnostics are left out, 2 of them refusals (the first: '@first-unknown'");
+    }
 }

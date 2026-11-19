@@ -36,6 +36,19 @@ public class DiagnosticTextTests
     }
 
     [Fact]
+    public void Past_the_limit_an_event_handler_is_counted_as_a_refusal()
+    {
+        // The event-handler attributes of an element are refused together; past the limit they are counted as
+        // diagnostics left out and as refusals.
+        var diagnostics = Diagnostics("<!DOCTYPE html><title>t</title>" + Repeat("</b>", 20_000) + "<p onclick=\"x()\">a</p>");
+
+        var summary = diagnostics[^1];
+        summary.Code.Should().Be(DocumentErrorCodes.TooManyDiagnostics);
+        (summary.Metadata![ErrorMetadataKeys.Value], summary.Metadata[ErrorMetadataKeys.Refusals]).Should().Be((10_001, 1));
+        HtmlStyleDiagnostics.ClassOf(summary.Code).Should().Be(DiagnosticClass.Refusal);
+    }
+
+    [Fact]
     public void Past_the_limit_harmless_diagnostics_still_refuse_the_document_and_say_that_none_of_them_refuses()
     {
         var error = Refused("<!DOCTYPE html><title>t</title>" + Repeat("</b>", 10_001) + "<p>x</p>");

@@ -257,6 +257,17 @@ public class BoundedWorkTests
         // One unexpected-null-character per NUL (and a few for the missing doctype and elements), all counted.
         ((int)last.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value]! + HtmlInputLimits.MaxDiagnostics).Should().BeGreaterThanOrEqualTo(HtmlInputLimits.MaxCharacters);
     }
+
+    [Fact]
+    public void Past_the_limit_the_first_diagnostics_are_kept()
+    {
+        // 20 000 stray end tags, one parse error each: the first 10 000 are kept, in the order of the input.
+        var parsed = ParsedWithin("<!DOCTYPE html><p id=a>x" + string.Concat(Enumerable.Repeat("</b>", 20_000)));
+
+        parsed.Diagnostics.Count.Should().Be(HtmlInputLimits.MaxDiagnostics + 1);
+        (parsed.Diagnostics[0].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceLine], parsed.Diagnostics[0].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceColumn]).Should().Be((1, 25));
+        parsed.Diagnostics[HtmlInputLimits.MaxDiagnostics - 1].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceColumn].Should().Be(25 + (4 * (HtmlInputLimits.MaxDiagnostics - 1)));
+    }
     [Theory]
     // A tag name of 500 000 characters in a parse error, and an encoding label padded to 500 000 characters by the
     // white space its comparison ignores, in a meta element after the first 1 024 bytes.

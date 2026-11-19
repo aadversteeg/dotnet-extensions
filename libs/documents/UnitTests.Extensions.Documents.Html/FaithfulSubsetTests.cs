@@ -117,6 +117,10 @@ public class FaithfulSubsetTests
     // A data: URL holds the image itself (measured in the corpus case hints).
     [InlineData("<img id=a src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=\" alt=x width=100 height=50>", "a", "width", "100px")]
     [InlineData("<img id=a src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=\" alt=x width=100 height=50>", "a", "height", "50px")]
+    // & has the specificity of the most specific selector of its parent's list (CSS Nesting 1 §3.1, as :is()), so
+    // "p, #x { & u }" is (1, 0, 1) and wins over "p u".
+    [InlineData("<style>p, #x { & u { color: red } } p u { color: blue }</style><p id=y><u id=a>x</u></p>", "a", "color", "rgb(255, 0, 0)")]
+    [InlineData("<style>#x, p { & u { color: red } } p u { color: blue }</style><p id=y><u id=a>x</u></p>", "a", "color", "rgb(255, 0, 0)")]
     public void The_value_is_Chromiums_and_the_document_is_accepted(string body, string id, string property, string chromium) =>
         Element(Accepted(Doctype + body), id).Value(property).Should().Be(chromium);
 
