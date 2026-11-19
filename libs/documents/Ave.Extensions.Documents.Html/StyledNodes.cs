@@ -1,6 +1,7 @@
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Cascade;
 using Ave.Extensions.Documents.Css.Rules;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html.Parsing;
 using Ave.Extensions.ErrorPaths;
 
@@ -35,4 +36,9 @@ public sealed record StyledHtmlDocument(
     ValueList<FontFaceRule> FontFaces,
     ValueList<CascadedPageRule> PageRules,
     ValueList<Error> Diagnostics,
-    string SourceName);
+    string SourceName)
+{
+    /// <summary>The page without <c>@page</c> rules that styles were resolved for (<see cref="HtmlStyleOptions.Page"/>):
+    /// box generation makes the document's page from it.</summary>
+    public PageStyle Page { get; init; } = HtmlStyleOptions.A4Page;
+}

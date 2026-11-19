@@ -118,7 +118,6 @@ public static partial class PropertyRegistry
                 : ParsedValue.Refused("'font-stretch' is supported only at its initial value, normal (100%)"),
             AsSpecified);
         yield return InitialKeyword("font-size-adjust", true, "none", [], true, "all elements and text", "CSS Fonts 5 §2.1");
-        yield return InitialKeyword("font-kerning", true, "auto", ["normal", "none"], false, "all elements and text", "CSS Fonts 4 §6.3");
         yield return InitialKeyword("font-optical-sizing", true, "auto", ["none"], false, "all elements and text", "CSS Fonts 4 §2.6");
         yield return InitialKeyword("font-language-override", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.4");
         yield return Keywords("font-synthesis-weight", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");

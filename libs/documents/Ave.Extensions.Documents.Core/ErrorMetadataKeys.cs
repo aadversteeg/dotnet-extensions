@@ -35,6 +35,9 @@ public static class ErrorMetadataKeys
     /// <summary>A byte offset in the input (int).</summary>
     public const string Offset = "Offset";
 
+    /// <summary>How many there are of what the error names, for example of the characters a text holds (int).</summary>
+    public const string Count = "Count";
+
     /// <summary>The offending value, as text (string).</summary>
     public const string Value = "Value";
 

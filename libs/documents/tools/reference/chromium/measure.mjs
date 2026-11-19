@@ -68,7 +68,18 @@ async function print() {
   const page = await browser.newPage();
   for (const name of names) {
     await page.goto(pathToFileURL(join(cases, `${name}.html`)).href);
-    await page.evaluate(() => document.fonts.ready);
+    // Chromium prints with a fallback font, without a word, when a font file of the case does not load (a copy of this
+    // folder without the family's assets/fonts beside it did that): document.fonts.ready settles for a failed face too.
+    // Layout first, so every face the text needs has been asked for, then stop on any face that failed.
+    const failed = await page.evaluate(async () => {
+      void document.body.offsetHeight;
+      await document.fonts.ready;
+      return [...document.fonts].filter((face) => face.status !== 'loaded' && face.status !== 'unloaded')
+        .map((face) => `${face.family} ${face.weight} ${face.style}: ${face.status}`);
+    });
+    if (failed.length > 0) {
+      throw new Error(`${name}: a font of the case did not load (${failed.join('; ')}); is assets/fonts beside this folder?`);
+    }
     await page.pdf({ path: join(out, `${name}.pdf`), preferCSSPageSize: true, printBackground: true });
     // Box sizes as laid out for print (1 CSS px = 0.75pt): every table cell, every element with an id, and every item
     // of a grid (the fr columns).
