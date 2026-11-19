@@ -29,6 +29,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ave.Extensions.Documents.Html\Ave.Extensions.Documents.Html.csproj" />
+    <!-- The reference cases are laid out through the whole HTML path and compared with Chromium's print. -->
+    <ProjectReference Include="..\Ave.Extensions.Documents.Layout\Ave.Extensions.Documents.Layout.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents\Ave.Extensions.Documents.csproj" />
+    <ProjectReference Include="..\Ave.Extensions.Documents.TestSupport\Ave.Extensions.Documents.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>

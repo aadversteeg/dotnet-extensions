@@ -4,11 +4,12 @@
     <!-- net10.0 only: the engine is written for .NET 10 and has no netstandard build (README.md, "Target framework") -->
     <TargetFrameworks>net10.0</TargetFrameworks>
     <PackageTags>pdf;pdf-a;pdf-ua;png;preview;document;layout;typesetting</PackageTags>
-    <Description>The Ave.Extensions.Documents engine in one package: the code front-end, layout and the PDF and raster back-ends, joined by one call (ToPdf, ToPng). Reference this to build a document in C# and get a PDF or preview images; reference the layer packages to use or replace one layer.</Description>
+    <Description>The Ave.Extensions.Documents engine in one package: the code front-end, the HTML front-end, layout and the PDF and raster back-ends, joined by one call (ToPdf, ToPng). Reference this to build a document in C# or write it in HTML and CSS and get a PDF or preview images; reference the layer packages to use or replace one layer.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Ave.Extensions.Documents.Fluent" />
+    <PackageReference Include="Ave.Extensions.Documents.Html" />
     <PackageReference Include="Ave.Extensions.Documents.Layout" />
     <PackageReference Include="Ave.Extensions.Documents.Render.Pdf" />
     <PackageReference Include="Ave.Extensions.Documents.Render.Raster" />

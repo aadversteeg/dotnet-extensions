@@ -11,6 +11,8 @@
     <PackageReference Include="Ave.Extensions.Documents.Core" />
     <PackageReference Include="Ave.Extensions.Documents.Html.Parsing" />
     <PackageReference Include="Ave.Extensions.Documents.Css" />
+    <PackageReference Include="Ave.Extensions.Documents.DocumentModel" />
+    <PackageReference Include="Ave.Extensions.Documents.Fonts" />
   </ItemGroup>
 
   <ItemGroup>
