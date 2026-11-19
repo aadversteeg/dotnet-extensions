@@ -260,13 +260,17 @@ h-page-area-continued equal
 h-page-area-half equal
 h-page-area-justify equal
 h-page-area-right equal
+h-page-default-media equal
+h-page-landscape equal
 h-page-margin-fraction equal
 h-page-margin-half equal
 h-page-margin-round equal
+h-page-portrait equal
 h-page-size-a3 equal
 h-page-size-a4 equal
 h-page-size-a4-landscape equal
 h-page-size-a5 equal
+h-page-size-auto equal
 h-page-size-b5 equal
 h-page-size-fraction equal
 h-page-size-hundred-px equal

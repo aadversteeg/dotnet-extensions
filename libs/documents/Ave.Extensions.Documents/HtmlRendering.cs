@@ -17,14 +17,16 @@ namespace Ave.Extensions.Documents;
 /// <summary>How to render an HTML document (<see cref="HtmlRendering"/>).</summary>
 public sealed record HtmlRenderOptions
 {
-    /// <summary>No fonts, no resources, print on A4 media, refuse what is not drawn.</summary>
+    /// <summary>No fonts, no resources, refuse what is not drawn; a document without <c>@page</c> rules is printed on A4
+    /// with no margins, and its media queries and viewport units see that page (<see cref="HtmlStyleOptions.Page"/>).</summary>
     public static HtmlRenderOptions Default { get; } = new();
 
     /// <summary>The fonts the document may use, besides those its <c>@font-face</c> rules name.</summary>
     public FontSet Fonts { get; init; } = new([]);
 
-    /// <summary>The style options: media, values, the resolver of style sheets and font files, the base URL and the policy
-    /// for what is not supported; one set for style resolution and for box generation.</summary>
+    /// <summary>The style options: the page without <c>@page</c> rules, media, values, the resolver of style sheets and
+    /// font files, the base URL and the policy for what is not supported; one set for style resolution and for box
+    /// generation.</summary>
     public HtmlStyleOptions Style { get; init; } = HtmlStyleOptions.Default;
 
     /// <summary>The document's name in every diagnostic (for example its file name).</summary>

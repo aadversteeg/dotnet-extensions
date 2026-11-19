@@ -1064,6 +1064,14 @@ public class MeasuredReferenceFilesTests
         ["h-page-area-right.lines.txt"] = 1,
         ["h-page-area-right.print.txt"] = 7,
         ["h-page-area-right.words.txt"] = 5,
+        ["h-page-default-media.boxes.txt"] = 1,
+        ["h-page-default-media.lines.txt"] = 0,
+        ["h-page-default-media.print.txt"] = 3,
+        ["h-page-default-media.words.txt"] = 2,
+        ["h-page-landscape.boxes.txt"] = 1,
+        ["h-page-landscape.lines.txt"] = 0,
+        ["h-page-landscape.print.txt"] = 3,
+        ["h-page-landscape.words.txt"] = 2,
         ["h-page-margin-fraction.boxes.txt"] = 1,
         ["h-page-margin-fraction.lines.txt"] = 0,
         ["h-page-margin-fraction.print.txt"] = 3,
@@ -1076,6 +1084,10 @@ public class MeasuredReferenceFilesTests
         ["h-page-margin-round.lines.txt"] = 1,
         ["h-page-margin-round.print.txt"] = 4,
         ["h-page-margin-round.words.txt"] = 2,
+        ["h-page-portrait.boxes.txt"] = 1,
+        ["h-page-portrait.lines.txt"] = 0,
+        ["h-page-portrait.print.txt"] = 3,
+        ["h-page-portrait.words.txt"] = 2,
         ["h-page-size-a3.boxes.txt"] = 1,
         ["h-page-size-a3.lines.txt"] = 0,
         ["h-page-size-a3.print.txt"] = 3,
@@ -1092,6 +1104,10 @@ public class MeasuredReferenceFilesTests
         ["h-page-size-a5.lines.txt"] = 0,
         ["h-page-size-a5.print.txt"] = 3,
         ["h-page-size-a5.words.txt"] = 2,
+        ["h-page-size-auto.boxes.txt"] = 1,
+        ["h-page-size-auto.lines.txt"] = 0,
+        ["h-page-size-auto.print.txt"] = 3,
+        ["h-page-size-auto.words.txt"] = 2,
         ["h-page-size-b5.boxes.txt"] = 1,
         ["h-page-size-b5.lines.txt"] = 0,
         ["h-page-size-b5.print.txt"] = 3,
@@ -1268,7 +1284,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(310);
+        cases.Should().HaveCount(314);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

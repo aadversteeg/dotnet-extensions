@@ -1,6 +1,8 @@
 using System;
 using Ave.Extensions.Documents.Css.Cascade;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Media;
+using Ave.Extensions.Documents.DocumentModel;
 
 namespace Ave.Extensions.Documents.Html;
 
@@ -38,15 +40,37 @@ public enum UnsupportedPolicy
 /// <summary>How to resolve the styles of an HTML document.</summary>
 public sealed record HtmlStyleOptions
 {
-    /// <summary>The default: print on A4, no fonts for ex and ch, no resources, refuse what is unsupported.</summary>
+    private readonly MediaContext? _media;
+    private readonly ValueContext? _values;
+
+    /// <summary>A4 with no margins, the default <see cref="Page"/> (as <see cref="MediaContext.PrintA4"/>).</summary>
+    public static PageStyle A4Page { get; } = new(Length.FromMillimetres(210), Length.FromMillimetres(297), default);
+
+    /// <summary>The default: print on A4 with no margins, no fonts for ex and ch, no resources, refuse what is
+    /// unsupported.</summary>
     public static HtmlStyleOptions Default { get; } = new();
 
-    /// <summary>The media @media rules and media attributes are evaluated for: print on A4 by default (in print,
-    /// Chromium evaluates them against the page area).</summary>
-    public MediaContext Media { get; init; } = MediaContext.PrintA4;
+    /// <summary>The page without <c>@page</c> rules: the paper of the print call. Chromium prints a document without an
+    /// <c>@page</c> rule on it, takes its size for <c>size: auto</c> and turns it for a bare <c>portrait</c> or
+    /// <c>landscape</c> (<c>DesiredPageContainingBlockSize</c>, pagination_utils.cc); <see cref="Media"/> and
+    /// <see cref="Values"/> follow it unless they are set. Its template is not used. Default: <see cref="A4Page"/>.</summary>
+    public PageStyle Page { get; init; } = A4Page;
 
-    /// <summary>The viewport and fonts relative units need.</summary>
-    public ValueContext Values { get; init; } = ValueContext.A4;
+    /// <summary>The media @media rules and media attributes are evaluated for: unless set, print on the page area of
+    /// <see cref="Page"/> (in print, Chromium evaluates them against the page area).</summary>
+    public MediaContext Media
+    {
+        get => _media ?? new MediaContext("print", Page.AreaWidth, Page.AreaHeight);
+        init => _media = value;
+    }
+
+    /// <summary>The viewport and fonts relative units need: unless set, the page area of <see cref="Page"/> as the
+    /// viewport and no fonts.</summary>
+    public ValueContext Values
+    {
+        get => _values ?? new ValueContext(Page.AreaWidth, Page.AreaHeight);
+        init => _values = value;
+    }
 
     /// <summary>Gives the style sheets link elements and @import name; null for none (each one named is then
     /// refused).</summary>

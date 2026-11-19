@@ -60,7 +60,7 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
             var values = declaration.Value.Where(value => value is not CssToken { Kind: CssTokenKind.Whitespace }).ToList();
             switch (declaration.Name)
             {
-                case "size" when Size(values) is { } size:
+                case "size" when Size(values, page) is { } size:
                     (width, height) = size;
                     break;
                 case "margin" when values.Count is >= 1 and <= 4 && values.Select(Points).ToList() is var sides && sides.All(side => side is not null):
@@ -152,12 +152,14 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
         || (Css.Properties.PropertyRegistry.FindShorthand(name) is { } shorthand && shorthand.Longhands.All(longhand => Css.Properties.PropertyRegistry.Find(longhand) is { Inherited: true }));
 
     /// <summary>The value of <c>size</c> (§7.1): auto, one or two lengths, a page size with or without an orientation, or
-    /// an orientation alone; null for anything else.</summary>
-    private static (Length Width, Length Height)? Size(List<ComponentValue> values)
+    /// an orientation alone; null for anything else. <c>auto</c> is the size of the page without rules, an orientation
+    /// alone turns that page if it has the other one (<c>DesiredPageContainingBlockSize</c>, pagination_utils.cc;
+    /// measured on US Letter, cases <c>h-page-size-auto</c>, <c>h-page-landscape</c>, <c>h-page-portrait</c>).</summary>
+    private static (Length Width, Length Height)? Size(List<ComponentValue> values, PageStyle page)
     {
         if (values is [CssToken { Kind: CssTokenKind.Ident } auto] && InfraAscii.EqualsIgnoreCase(auto.Text, "auto"))
         {
-            return (Length.FromPoints(612), Length.FromPoints(792));
+            return (page.Width, page.Height);
         }
 
         var lengths = values.Select(Points).ToList();
@@ -190,8 +192,13 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
             }
         }
 
-        var (width, height) = named ?? (612, 792);
-        return landscape == true ? (Length.FromPoints(height), Length.FromPoints(width)) : (Length.FromPoints(width), Length.FromPoints(height));
+        if (named is not { } paper)
+        {
+            var (shorter, longer) = page.Width.Points <= page.Height.Points ? (page.Width, page.Height) : (page.Height, page.Width);
+            return landscape == true ? (longer, shorter) : (shorter, longer);
+        }
+
+        return landscape == true ? (Length.FromPoints(paper.Height), Length.FromPoints(paper.Width)) : (Length.FromPoints(paper.Width), Length.FromPoints(paper.Height));
     }
 
     /// <summary>An absolute length of 0 or more (or the number 0), in points; null for anything else.</summary>

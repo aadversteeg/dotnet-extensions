@@ -614,8 +614,11 @@ Elements whose rendering no property says are refused by their own rule (`Docume
 replaced by the model's initial value of what it sets, a refused display type is laid out as a block box, and an
 element refused by its own rule is left out (`HtmlBoxGenerator`, remarks).
 
-**The page.** Without an `@page` rule the page is what Chromium prints with the reference tool's settings: US Letter,
-612 × 792 pt, no margins (case `h-default-page`). An `@page` rule without a selector gives `size` and the margins;
+**The page.** Without an `@page` rule the page is the caller's, as Chromium prints on the paper of the print call:
+`HtmlStyleOptions.Page`, by default A4 with no margins; media queries and viewport units see its page area, `size:
+auto` takes its size and a bare `portrait` or `landscape` turns it (the case test passes US Letter, 612 × 792 pt, no
+margins, which the reference tool prints on: cases `h-default-page`, `h-page-size-auto`, `h-page-landscape`,
+`h-page-portrait`, `h-page-default-media`). An `@page` rule without a selector gives `size` and the margins;
 declarations that reach only the page-margin boxes (inherited properties, the counters) have no effect; any other
 declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts

@@ -271,10 +271,12 @@ public class BoxGenerationTests
     }
 
     [Fact]
-    public void Without_a_page_rule_the_page_is_what_Chromium_prints_with_the_reference_settings()
+    public void Without_a_page_rule_the_page_is_the_caller_s_by_default_A4_with_no_margins()
     {
         var page = Model(Doc("<p>a</p>")).Page;
-        (page.Width.Points, page.Height.Points, page.Margins).Should().Be((612, 792, default(Edges)));
+        page.Width.Points.Should().BeApproximately(594.96, 1e-9);
+        page.Height.Points.Should().BeApproximately(841.92, 1e-9);
+        page.Margins.Should().Be(default(Edges), "the page area of 794 x 1123 px reaches past the sheet");
     }
 
     [Theory]
@@ -292,7 +294,8 @@ public class BoxGenerationTests
     [InlineData("size: 300pt 84pt; margin: 11.625pt", 300, 84, 12, 300 - 288.75)]
     [InlineData("size: 300.375pt 84pt; margin: 12pt", 300, 84, 12, 300 - 288.75)]
     [InlineData("size: 300pt 100pt; margin: 10pt 10.3pt", 300, 100.08, 9.75, 300 - 290.25)]
-    [InlineData("margin: 12pt; font-family: Lato; color: red; counter-reset: page", 612, 792, 12, 12)]
+    // On the default A4 page: the area starts at 16 px and is 793.7 - 32 px, rounded up: 762 px (583.5 pt).
+    [InlineData("margin: 12pt; font-family: Lato; color: red; counter-reset: page", 594.96, 841.92, 12, 594.96 - 12 - 571.5)]
     public void A_page_rule_without_a_selector_gives_the_size_rounded_as_Chromium_prints_it_and_the_margins(string declarations, double width, double height, double top, double right)
     {
         var page = Model(Doc("<p>a</p>", $"@page {{ {declarations} }}")).Page;

@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Html;
 using Ave.Extensions.Documents.Html.Boxes;
@@ -126,12 +127,15 @@ internal static class HtmlCases
     private static Result<HtmlParseResult, Error> Parsed(string name) =>
         HtmlParser.Parse(File.ReadAllText(Path.Combine(Folder(), name + ".html")), new HtmlParseOptions(name + ".html"));
 
-    /// <summary>The boxes of a case.</summary>
+    /// <summary>The paper the reference tool prints on (Playwright's default for a PDF): US Letter, no margins.</summary>
+    public static PageStyle Letter { get; } = new(Length.FromPoints(612), Length.FromPoints(792), default);
+
+    /// <summary>The boxes of a case, on the reference tool's paper (<see cref="Letter"/>).</summary>
     public static Result<HtmlBoxes, Error> Boxes(string name, UnsupportedPolicy policy = UnsupportedPolicy.Refuse)
     {
         var baseUrl = new Uri(Path.Combine(Folder(), name + ".html")).AbsoluteUri;
         return Parsed(name)
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }))
             .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }));
     }
 

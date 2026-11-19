@@ -146,7 +146,7 @@ public static class HtmlStyleResolver
             }
 
             Keep(computer.Diagnostics.Where((_, i) => !_renamed.Contains(i)));
-            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) : null;
+            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) { Page = options.Page } : null;
         }
 
         /// <summary>Keeps a diagnostic, at most <see cref="HtmlInputLimits.MaxDiagnostics"/> in all (the parts are capped

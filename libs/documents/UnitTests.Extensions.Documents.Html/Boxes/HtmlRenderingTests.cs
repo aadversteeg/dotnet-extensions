@@ -35,6 +35,33 @@ public class HtmlRenderingTests
         HtmlRendering.ToImages(Html, Options, new RasterOptions(72)).Value.Single().Width.Should().Be(300);
     }
 
+    [Theory]
+    // No option: A4 with no margins (210 x 297 mm print as 594.96 x 841.92 pt), portrait.
+    [InlineData("", false, 594.96, 841.92, 0)]
+    [InlineData("@page { size: auto }", false, 594.96, 841.92, 0)]
+    // Media queries see the page without rules (here A4), not the page the rules make.
+    [InlineData("@page { size: landscape }", false, 841.92, 594.96, 0)]
+    // The caller's page, 300 x 198 pt with 12 pt margins: its size, its margins, and media queries on its page area
+    // (276 x 174 pt).
+    [InlineData("", true, 300, 198, 12 + 30)]
+    [InlineData("@page { size: auto; margin: 0 }", true, 300, 198, 30)]
+    [InlineData("@page { size: portrait }", true, 198, 300, 12 + 30)]
+    [InlineData("@page { size: 96pt 150pt }", true, 96, 150, 12 + 30)]
+    public void Without_a_page_rule_the_page_is_the_caller_s_and_media_queries_see_it(string pageRule, bool callersPage, double width, double height, double firstWordX)
+    {
+        var html = "<!doctype html><html><head><style>@font-face { font-family: Body; src: url(lato.ttf) } body { font-family: Body; margin: 0 }" +
+                   $" @media (max-height: 200pt) {{ p {{ margin-left: 30pt }} }} {pageRule}</style></head><body><p>Hello</p></body></html>";
+        var options = callersPage
+            ? Options with { Style = Options.Style with { Page = new(300.Pt(), 198.Pt(), new Edges(12.Pt(), 12.Pt(), 12.Pt(), 12.Pt())) } }
+            : Options;
+
+        var page = PrintedPages.Engine(HtmlRendering.ToPages(html, options).Value).Pages.Single();
+
+        page.Width.Should().BeApproximately(width, 1e-6);
+        page.Height.Should().BeApproximately(height, 1e-6);
+        page.Words.Single().X0.Should().BeApproximately(firstWordX, 1e-6);
+    }
+
     [Fact]
     public void What_the_front_end_does_not_draw_is_refused_with_the_document_s_name_line_and_column()
     {

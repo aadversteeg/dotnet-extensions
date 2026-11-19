@@ -34,8 +34,9 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// left out with its content. A missing font face and boxes nested deeper than the model allows
 /// (<see cref="ModelLimits.MaxNestingDepth"/>) fail under both: there is nothing to draw them with.</para>
 /// <para>The page (CSS Paged Media 3 §3, §7): the <c>size</c> and margins of <c>@page</c> rules without a selector;
-/// without them, what Chromium 159 prints with the reference tool's settings: US Letter, 612 × 792 pt, no margins
-/// (measured: case <c>h-default-page</c> of <c>tools/reference/chromium</c>). The layout policies are Chromium's
+/// without them, the caller's page (<see cref="StyledHtmlDocument.Page"/>, from <see cref="HtmlStyleOptions.Page"/>), as
+/// Chromium prints on the paper of the print call (measured: case <c>h-default-page</c> of
+/// <c>tools/reference/chromium</c>, printed on US Letter, 612 × 792 pt, no margins). The layout policies are Chromium's
 /// (<see cref="LayoutProfile"/>: <see cref="MonolithicOverflow.Slice"/>, <see cref="EmptyRowParts.Allow"/>,
 /// <see cref="FontMetricRounding.WholePixels"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
 /// root element's language (§3.2.6.2).</para>
@@ -52,10 +53,6 @@ public static class HtmlBoxGenerator
         ["img"] = "a replaced element (an image)",
         ["q"] = "quotation marks generated before and after its content",
     };
-
-    /// <summary>The page Chromium 159 prints without an <c>@page</c> rule in the reference tool's settings: US Letter, no
-    /// margins (measured, case <c>h-default-page</c>).</summary>
-    internal static PageStyle DefaultPage { get; } = new(Length.FromPoints(612), Length.FromPoints(792), default);
 
     /// <summary>Chromium's layout policies, which the HTML front-end follows.</summary>
     public static LayoutProfile ChromiumProfile { get; } = new()
@@ -580,7 +577,7 @@ public static class HtmlBoxGenerator
         private PageStyle Page()
         {
             var page = new PageRules(_sourceName, Refusals);
-            return page.Apply(styled.PageRules, DefaultPage);
+            return page.Apply(styled.PageRules, styled.Page);
         }
     }
 }
