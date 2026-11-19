@@ -1274,7 +1274,7 @@ public class MeasuredReferenceFilesTests
         ["ii-align.words.txt"] = 24,
         ["ii-baseline.boxes.txt"] = 1,
         ["ii-baseline.lines.txt"] = 0,
-        ["ii-baseline.print.txt"] = 25,
+        ["ii-baseline.print.txt"] = 29,
         ["ii-baseline.words.txt"] = 15,
         ["ii-breaks.boxes.txt"] = 1,
         ["ii-breaks.lines.txt"] = 0,
