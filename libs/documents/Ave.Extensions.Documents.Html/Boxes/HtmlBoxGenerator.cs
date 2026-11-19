@@ -462,7 +462,7 @@ public static class HtmlBoxGenerator
 
         private BoxStyle BoxStyleOf(StyledElement element)
         {
-            Length Side(string name) => Value(element, name) is CssLength length ? length.Value : Length.Zero;
+            Length Side(string name) => Value(element, name) is CssLength length ? LayoutUnits(length.Value) : Length.Zero;
             BorderSide Border(string side) =>
                 Value(element, $"border-{side}-style") is CssKeyword { Name: "solid" } && Value(element, $"border-{side}-width") is CssLength { Value.Points: > 0 } width
                 && Value(element, $"border-{side}-color") is { } color && ColorOf(BoxProperties.Resolved(color, element.Style)) is { } drawn
@@ -533,6 +533,18 @@ public static class HtmlBoxGenerator
 
             _text[element] = style;
             return style;
+        }
+
+        /// <summary>
+        /// A margin or padding in Chromium's layout unit of 1/64 CSS px: 25.313pt is laid out as 33.75 px, 25.3125pt
+        /// (measured: cases <c>a6-nested-first-h253125</c> and <c>a6-nested-late-h2521875</c>, whose headers repeat only at
+        /// the length so cut). Cut toward zero; the direction is not settled, as these cases give the same to the nearest
+        /// unit.
+        /// </summary>
+        private static Length LayoutUnits(Length length)
+        {
+            const double unit = 0.75 / 64;
+            return Length.FromPoints(Math.Truncate(length.Points / unit) * unit);
         }
 
         /// <summary>
