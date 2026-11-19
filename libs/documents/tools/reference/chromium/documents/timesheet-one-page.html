@@ -8,16 +8,18 @@
 @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; font-style: normal; }
 @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
 
-/* A4 with 1 cm side margins. Page 1 starts with the masthead in the flow; the later pages carry a running header
-   in the top margin. The footer is in the bottom margin of every page. The margin boxes inherit from the page, not
-   from the body, so the page names the font too. */
+/* A4 with 1 cm side margins. The header is in the top margin of every page: the logo with the title at the left, and
+   from page 2 on the customer, project and period at the right; page 1 shows those in the flow instead. The footer is
+   in the bottom margin of every page. The margin boxes inherit from the page, not from the body, so the page names the
+   font too. A margin box takes an image only as generated content, at the image's own size: the resolution in
+   image-set() sets that size. */
 @page {
   size: A4;
   margin: 4cm 1cm 2cm;
   font-family: Lato, sans-serif;
 
   @top-left {
-    content: "Urenstaat";
+    content: image-set(url(../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png) 160dpcm) "\2003Urenstaat";
     font-size: 24pt;
     font-weight: 700;
     margin: 1cm 0 0.4cm;
@@ -60,11 +62,9 @@
   }
 }
 
+/* On page 1 the right box stays, empty, so the orange line still runs over the whole width. */
 @page :first {
-  margin-top: 1cm;
-
-  @top-left { content: none; }
-  @top-right { content: none; }
+  @top-right { content: ""; }
 }
 
 body {
@@ -72,24 +72,6 @@ body {
   font-family: Lato, sans-serif;
   font-size: 10pt;
   color: #000;
-}
-
-.masthead {
-  margin: 0 0 0.4cm;
-  border-bottom: 3pt solid #ffa500;
-}
-
-.masthead h1 {
-  margin: 0;
-  font-size: 24pt;
-  font-weight: 700;
-}
-
-.masthead img {
-  width: 2.5cm;
-  height: 2.5cm;
-  margin-right: 1cm;
-  vertical-align: middle;
 }
 
 .parties {
@@ -160,9 +142,6 @@ body {
 </style>
 </head>
 <body>
-<header class="masthead">
-<h1><img src="../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png" alt="Logo">Urenstaat</h1>
-</header>
 <main>
 <table class="parties" role="presentation">
 <tr>

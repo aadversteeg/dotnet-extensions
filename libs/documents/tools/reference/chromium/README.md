@@ -100,7 +100,6 @@ from them:
 
 ```
 pwsh -NoProfile -File measure.ps1 -CaseFolder documents
-pwsh -NoProfile -File measure.ps1 -CaseFolder ../../../samples/Ave.Extensions.Documents.Samples.HtmlStyles/data
 ```
 
 and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`.
@@ -108,18 +107,29 @@ and then `out/*.txt` of those documents (and `versions.txt`) over `documents/mea
 | Document | What it is | Chromium's print |
 | --- | --- | --- |
 | `timesheet-one-page` | the samples' timesheet (`samples/Ave.Extensions.Documents.Samples`, `Timesheet/Timesheet.cs`) as HTML, in Dutch, with the edge-case data set (`data/sample-edge.json`) | 1 page |
-| `timesheet-pages` | the same with the long month (`data/sample-long.json`): the header row repeats, entries with a description stay together, a running header from page 2 | 5 pages |
-| `invoice` | the HtmlStyles sample's `data/invoice.html` as it is, with `invoice.css` and `theme.css` (measured from the samples folder, not copied) | 1 page |
+| `timesheet-normal` | the same with the normal month (`data/sample-normal.json`), the data set of the samples' golden pictures (`UnitTests.Extensions.Documents.Samples/Golden/timesheet-normal.nl.page*.png`), so the two can be laid side by side | 2 pages |
+| `timesheet-pages` | the same with the long month (`data/sample-long.json`): the header row repeats, entries with a description stay together | 5 pages |
+| `invoice` | the invoice of the HtmlStyles sample (`samples/Ave.Extensions.Documents.Samples.HtmlStyles/data/invoice.html`) as an author keeps it for print: `invoice.html` with `invoice.css` and `invoice-theme.css` | 1 page |
 
 The timesheet HTML is made from the samples' synthetic data by `timesheet-html.py` (in this folder; `python3
-timesheet-html.py` writes both files): the engine takes finished HTML, and filling a template with data is the
+timesheet-html.py` writes the three files): the engine takes finished HTML, and filling a template with data is the
 caller's job, so the script is that caller. It drops what Lato cannot show as the sample does (`FontCoverage`). The
 documents load their fonts with `@font-face` from `assets/fonts/lato` and the logo from the samples' `assets/`, by
 paths relative to this folder.
 
-The invoice names `"Lato", sans-serif` and `monospace` without an `@font-face` rule, and the container has no Lato:
-Chromium prints it in the container's fallback fonts (Liberation Sans, and WenQuanYi Zen Hei Mono for `monospace`),
-which its words and positions show.
+The timesheet's header is page furniture, in the `@page` margin boxes of every page, as in the sample. A margin box
+holds no element, so the logo is generated content, and generated content shows an image at its own size (the
+400 x 400 pixel logo would be 300pt square; `width` and `height` on the margin box do not change it). The resolution in
+`image-set(url(…) 160dpcm)` gives the sample's 2.5 cm. The title follows the logo in the same box, after an em space;
+an image in a line sits on the baseline, so the title's baseline is at the logo's bottom edge, where the sample centres
+the title on the logo. A second margin box for the title would centre it vertically, but `@top-center` is centred on
+the page, which puts the title further right than the sample and leaves the right box too narrow for the customer's
+name.
+
+The yardstick invoice is a copy, not the sample: the sample shows diagnostics on purpose (`cursor`, `float`) and names
+its fonts without `@font-face`, so Chromium prints it in the container's fallback fonts. The copy loads Lato by
+`@font-face`; the repo has no fixed-width face, so the amounts use Lato too, right-aligned. The floated closing
+paragraph is a paragraph with `text-align: right`.
 
 ## The reference
 

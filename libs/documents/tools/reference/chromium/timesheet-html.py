@@ -3,11 +3,13 @@
 
 The document is the timesheet that samples/Ave.Extensions.Documents.Samples builds with the code front-end
 (Timesheet/Timesheet.cs), written the way an author writes HTML and CSS for print: semantic elements, one style sheet,
-the entries as a table with a repeated header row, the logo as an img, fonts by @font-face from the family's own
-font files, and the footer with "page x of y" in @page margin boxes. Filling a template with data is the caller's job;
+the entries as a table with a repeated header row, fonts by @font-face from the family's own font files, and the
+page furniture in @page margin boxes: the logo and the title on every page, the customer, project and period at the
+right from page 2 on, and the footer with "page x of y". Filling a template with data is the caller's job;
 this script is that caller, so the engine and Chromium both get the same finished HTML.
 
-    python3 timesheet-html.py               writes documents/timesheet-one-page.html and documents/timesheet-pages.html
+    python3 timesheet-html.py               writes documents/timesheet-one-page.html, documents/timesheet-normal.html
+                                            and documents/timesheet-pages.html
 
 The texts are Dutch (nl-NL), as in the samples' golden files. As the sample does (FontCoverage.Displayable), every
 character Lato Regular has no glyph for is dropped or replaced by a plain equivalent before it goes into the HTML.
@@ -23,9 +25,14 @@ family = here.parents[2]
 data = family / 'samples' / 'Ave.Extensions.Documents.Samples' / 'data'
 fonts = family / 'assets' / 'fonts' / 'lato'
 
-# The documents written, and the data set each one shows: the edge-case set fits one page, the long month runs over
-# several.
-DOCUMENTS = {'timesheet-one-page': 'sample-edge.json', 'timesheet-pages': 'sample-long.json'}
+# The documents written, and the data set each one shows: the edge-case set fits one page, the normal month is the set
+# of the samples' golden pictures, the long month runs over several pages.
+DOCUMENTS = {'timesheet-one-page': 'sample-edge.json', 'timesheet-normal': 'sample-normal.json',
+             'timesheet-pages': 'sample-long.json'}
+
+# The logo, relative to the documents folder, and its resolution: the 400 x 400 pixel PNG shows at 160 dots per cm, so
+# 2.5 cm square, the sample's size.
+LOGO = '../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png'
 
 # The sample's labels for a Dutch culture (Timesheet/TimesheetLabels.cs) and its brand (Timesheet/Brand.cs).
 LABELS = dict(title='Urenstaat', period='Periode', executed='Uitgevoerd op', task='Taak', item='Titel',
@@ -97,16 +104,18 @@ STYLE = """\
 @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; font-style: normal; }
 @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
 
-/* A4 with 1 cm side margins. Page 1 starts with the masthead in the flow; the later pages carry a running header
-   in the top margin. The footer is in the bottom margin of every page. The margin boxes inherit from the page, not
-   from the body, so the page names the font too. */
+/* A4 with 1 cm side margins. The header is in the top margin of every page: the logo with the title at the left, and
+   from page 2 on the customer, project and period at the right; page 1 shows those in the flow instead. The footer is
+   in the bottom margin of every page. The margin boxes inherit from the page, not from the body, so the page names the
+   font too. A margin box takes an image only as generated content, at the image's own size: the resolution in
+   image-set() sets that size. */
 @page {
   size: A4;
   margin: 4cm 1cm 2cm;
   font-family: Lato, sans-serif;
 
   @top-left {
-    content: "__TITLE__";
+    content: image-set(url(__LOGO__) 160dpcm) "\\2003__TITLE__";
     font-size: 24pt;
     font-weight: 700;
     margin: 1cm 0 0.4cm;
@@ -149,11 +158,9 @@ STYLE = """\
   }
 }
 
+/* On page 1 the right box stays, empty, so the orange line still runs over the whole width. */
 @page :first {
-  margin-top: 1cm;
-
-  @top-left { content: none; }
-  @top-right { content: none; }
+  @top-right { content: ""; }
 }
 
 body {
@@ -161,24 +168,6 @@ body {
   font-family: Lato, sans-serif;
   font-size: 10pt;
   color: #000;
-}
-
-.masthead {
-  margin: 0 0 0.4cm;
-  border-bottom: 3pt solid #ffa500;
-}
-
-.masthead h1 {
-  margin: 0;
-  font-size: 24pt;
-  font-weight: 700;
-}
-
-.masthead img {
-  width: 2.5cm;
-  height: 2.5cm;
-  margin-right: 1cm;
-  vertical-align: middle;
 }
 
 .parties {
@@ -263,6 +252,7 @@ def document(source):
     e = html.escape
 
     style = (STYLE
+             .replace('__LOGO__', LOGO)
              .replace('__TITLE__', css_string(LABELS['title']))
              .replace('__RIGHT__', css_string(f'{customer}\n{project}\n{period}'))
              .replace('__IBAN__', css_string(f"{LABELS['iban']}: {COMPANY['iban']}"))
@@ -291,9 +281,6 @@ def document(source):
 {style}</style>
 </head>
 <body>
-<header class="masthead">
-<h1><img src="../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png" alt="Logo">{e(LABELS['title'])}</h1>
-</header>
 <main>
 <table class="parties" role="presentation">
 <tr>
