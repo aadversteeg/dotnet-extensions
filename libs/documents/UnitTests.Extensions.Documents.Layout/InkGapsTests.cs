@@ -161,4 +161,16 @@ public class InkGapsTests
         drawn.Skip(InkGaps.Visible(0, width, [.. first]).Count).Select(piece => (piece.Offset.X, piece.Offset.X + ((RuleFragment)piece.Fragment).Size.Width))
             .Should().Equal(both);
     }
+
+    [Fact]
+    public void An_earlier_line_s_gaps_cut_only_the_rows_its_clip_reaches_and_columns_of_equal_rows_are_one_rectangle()
+    {
+        // A line 0–100 × 0–10. Its own clip (reaching past its height) cuts 20–30 over the whole height; an earlier line's clip
+        // reaching rows 5–20 cuts 25–40 and 40–50 and 50–60 over rows 5–10 only, so 30–60 keeps rows 0–5 as one rectangle; a clip
+        // that does not reach the line cuts nothing.
+        var rectangles = InkGaps.Cut(0, 100, 0, 10,
+            [(-1, 11, [(20, 30)]), (5, 20, [(25, 40), (40, 50), (50, 60)]), (12, 20, [(70, 80)])], new InkOutlines());
+
+        rectangles.Should().Equal([(0.0, 0.0, 20.0, 10.0), (30.0, 0.0, 60.0, 5.0), (60.0, 0.0, 100.0, 10.0)]);
+    }
 }

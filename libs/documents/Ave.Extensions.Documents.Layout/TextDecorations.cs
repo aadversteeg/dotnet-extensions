@@ -126,21 +126,12 @@ internal static class TextDecorations
                 return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Failure(added.Error);
             }
 
-            // The clips of the lines painted before this one stay in force where they reach it.
+            // The clips of the lines painted before this one stay in force over the rows they reach; its own over its height.
             var (clipTop, clipBottom) = InkGaps.ClipExtent(top, thickness);
             cut.Add((clipTop, clipBottom, own));
-            var gaps = new List<(double Left, double Right)>();
-            foreach (var (earlierTop, earlierBottom, earlier) in cut)
+            foreach (var (left, rowTop, right, rowBottom) in InkGaps.Cut(x, x + width, top, top + shown, cut, ink.Outlines))
             {
-                if (earlierTop < top + shown && top < earlierBottom)
-                {
-                    gaps.AddRange(earlier);
-                }
-            }
-
-            foreach (var (left, right) in InkGaps.Visible(x, x + width, gaps))
-            {
-                before.Add(new PlacedFragment(new Point(left, top), new RuleFragment(color, new Size(right - left, shown))));
+                before.Add(new PlacedFragment(new Point(left, rowTop), new RuleFragment(color, new Size(right - left, rowBottom - rowTop))));
             }
         }
 

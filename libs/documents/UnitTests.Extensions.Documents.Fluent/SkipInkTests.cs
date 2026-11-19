@@ -90,6 +90,9 @@ public class SkipInkTests(ITestOutputHelper output)
                 case "piece":
                     pieces.Add(fill! with { X0 = At(2), X1 = At(3) });
                     break;
+                case "part":
+                    pieces.Add(new PrintedBox(1, At(2), At(3), At(4), At(5)));
+                    break;
                 case "gap":
                     break;
                 default:
@@ -131,14 +134,9 @@ public class SkipInkTests(ITestOutputHelper output)
             Words = [.. page.Words.Select(word => word with { Text = string.Concat(word.Text.Where(character => character is not ('\u00AD' or '\u2010'))) })],
         })]);
 
-    /// <summary>The pages without their images: Chromium paints an image at whole pixels of the page (case <c>sk-misc</c>: 16.8 pt
-    /// wide at 42.408 pt is painted 16.5 pt wide at 42.75 pt), which is not what these cases measure.</summary>
-    private static PrintedPages WithoutImages(PrintedPages pages) => new([.. pages.Pages.Select(page => page with { Images = [] })]);
-
-    private List<string> Breaches(PageDocument engine, string caseName, bool aligned = false, bool images = true)
+    private List<string> Breaches(PageDocument engine, string caseName, bool aligned = false)
     {
         var (mine, theirs) = (WithoutInvisibles(PrintedPages.Engine(engine)), WithoutInvisibles(PrintedPages.Chromium(caseName)));
-        (mine, theirs) = images ? (mine, theirs) : (WithoutImages(mine), WithoutImages(theirs));
         var breaches = InlineImageTests.Breaches(mine, theirs, halfPixelBaselines: false, extraUnits: aligned ? 2 : 0);
         var (engineLines, chromiumLines) = (Joined(mine.Pages[0].Rectangles), Joined(ChromiumPieces(caseName)));
         if (engineLines.Count != chromiumLines.Count)
@@ -165,9 +163,9 @@ public class SkipInkTests(ITestOutputHelper output)
         return breaches;
     }
 
-    private void ShouldMatch(PageDocument engine, string caseName, bool aligned = false, bool images = true)
+    private void ShouldMatch(PageDocument engine, string caseName, bool aligned = false)
     {
-        var breaches = Breaches(engine, caseName, aligned, images);
+        var breaches = Breaches(engine, caseName, aligned);
         breaches.Should().BeEmpty(string.Join("\n", breaches));
     }
 
@@ -191,7 +189,7 @@ public class SkipInkTests(ITestOutputHelper output)
         return document with { Root = document.Root with { Children = [.. body] } };
     };
 
-    private static TextDecoration Line(TextDecorationLine line, double size) => new(line, Color.Black, "Lato", size.Pt(), FontWeight.Regular);
+    private static TextDecoration Line(TextDecorationLine line, double size, string family = "Lato") => new(line, Color.Black, family, size.Pt(), FontWeight.Regular);
 
     private static ParagraphElement Big(ValueList<Span> spans) => Paragraph(spans).FontSize(24.Pt()).LineHeight(48.Pt());
 
@@ -300,7 +298,7 @@ public class SkipInkTests(ITestOutputHelper output)
             Big([Text("fi fj ffi fly gy").Underline()]),
             Big([Text("figure fjord").Underline()]).FontFamily("Theano Didot"));
 
-        ShouldMatch(page, "sk-misc", images: false);
+        ShouldMatch(page, "sk-misc");
     }
 
     [Fact]
@@ -328,6 +326,29 @@ public class SkipInkTests(ITestOutputHelper output)
             Big([Text("gy "), Text("ÅÉgjpqy"), Text(" gy")]));
 
         ShouldMatch(page, "sk-nest");
+    }
+
+    [Fact]
+    public void A_later_line_is_cut_by_an_earlier_line_s_gaps_only_over_the_rows_its_clip_reaches_like_Chromium()
+    {
+        // Case sk-part: (a) an 8 pt underline around a 24 pt one, (b) the other order: the 8 pt line keeps its upper rows where
+        // the 24 pt clips reach its lower half, (c) 24 pt around 20 pt: the later line wholly inside the earlier clip, (d) the
+        // pair of (a) as overlines in Theano Didot (Lato's overlines are never cut), (e) underline and line-through of one box:
+        // the line-through whole, (f) "g" with a combining dot below, placed by the font's marks.
+        var (u8, u20, u24) = (Line(TextDecorationLine.Underline, 8), Line(TextDecorationLine.Underline, 20), Line(TextDecorationLine.Underline, 24));
+        var (o8, o24) = (Line(TextDecorationLine.Overline, 8, "Theano Didot"), Line(TextDecorationLine.Overline, 24, "Theano Didot"));
+        var page = Painted(400,
+            Runs((0, [(8, []), (24, [u8, u24])]), (1, [(8, []), (24, [u24, u8])]), (2, [(20, []), (24, [u24, u20])]), (3, [(8, []), (24, [o8, o24])])),
+            Big([Text(""), Text("gjpqy Qx")]),
+            Big([Text(""), Text("gjpqy Qx")]),
+            Big([Text(""), Text("gjpqy Qx")]),
+            Big([Text(""), Text("ÅÉÎ Qx")]).FontFamily("Theano Didot"),
+            Big([Text("gjpqy Qx")]).Underline().LineThrough(),
+            Big([Text("g\u0323g g\u0323y").Underline()]));
+
+        ShouldMatch(page, "sk-part");
+        page.Pages[0].Items.OfType<FillRectangle>().Select(fill => fill.Area).Where(area => Math.Abs(area.Origin.Y - 99.75) < 0.001 && area.Size.Height < 0.5)
+            .Should().NotBeEmpty("row b: the 8 pt line keeps only its upper rows (99.75–100.125) under the 24 pt gaps");
     }
 
     private static Result<StyledDocument, Error> Model(params Element[] body) =>

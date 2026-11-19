@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
@@ -30,11 +31,13 @@ namespace Ave.Extensions.Documents.Layout;
 /// <para>Widening: each gap is widened on both sides by min(T, 13 px) ("kDecorationClipMaxDilation = 13"), and the line is
 /// not painted inside it (Chromium's <c>ClipOut</c>; vertically the clip reaches a pixel past the band, so it covers the
 /// line's whole height).</para>
-/// <para>Joining: the visible pieces of a line are its rectangle minus the union of the widened gaps, joined in one pass over
-/// the gaps sorted by their left end. Within one piece of text Chromium keeps the clips of an earlier underline or overline
-/// while it paints the next one (one <c>GraphicsContextStateSaver</c> around all of them,
-/// <c>TextDecorationPainter::PaintExceptLineThrough</c>), so a line is also cut by the gaps of the lines painted before it
-/// where their clips reach it (case <c>sk-nest</c>: two equal underlines, the second under both sets of clips). Each piece of
+/// <para>Joining: the visible ink of a line is its rectangle minus its own widened gaps over its whole height, and minus the
+/// gaps of each underline or overline painted before it on the same piece over the rows that earlier line's clip reaches
+/// (<see cref="ClipExtent"/>): within one piece of text Chromium keeps the clips of an earlier line while it paints the next
+/// one (one <c>GraphicsContextStateSaver</c> around all of them, <c>TextDecorationPainter::PaintExceptLineThrough</c>; case
+/// <c>sk-nest</c>: two equal underlines, the second under both sets of clips; case <c>sk-part</c>: an 8 pt underline inside a
+/// 24 pt one keeps its upper rows where the 24 pt clips reach its lower half). It is written as rectangles, one per column of
+/// equal rows (<see cref="Cut"/>). Each piece of
 /// text is cut by its own glyphs only: a glyph of one piece never cuts the line of its neighbour (Blink clips per text
 /// fragment; case <c>sk-touch</c>).</para>
 /// <para>Whose glyphs and whose value: the glyphs of the piece the line is drawn across, in the piece's own font and size, while
@@ -104,34 +107,141 @@ internal static class InkGaps
     }
 
     /// <summary>
-    /// What stays visible of a line from <paramref name="left"/> to <paramref name="right"/> once the gaps are cut out of it:
-    /// one pass over the gaps sorted by their left end.
+    /// What stays visible of a line from <paramref name="left"/> to <paramref name="right"/> once the gaps are cut out of it
+    /// across its whole height (<see cref="Cut"/> with one clip).
     /// </summary>
     /// <param name="left">The line's start.</param>
     /// <param name="right">The line's end.</param>
-    /// <param name="gaps">The gaps, in any order; sorted here.</param>
+    /// <param name="gaps">The gaps, in any order.</param>
     /// <returns>The visible pieces, left to right, each of positive width.</returns>
-    public static IReadOnlyList<(double Left, double Right)> Visible(double left, double right, List<(double Left, double Right)> gaps)
+    public static IReadOnlyList<(double Left, double Right)> Visible(double left, double right, List<(double Left, double Right)> gaps) =>
+        [.. Cut(left, right, 0, 1, [(0, 1, gaps)], new InkOutlines()).Select(piece => (piece.Left, piece.Right))];
+
+    /// <summary>
+    /// The visible rectangles of a line from (<paramref name="left"/>, <paramref name="top"/>) to (<paramref name="right"/>,
+    /// <paramref name="bottom"/>) under the clips in force: each clip leaves out its gaps over the rows it reaches, the clip
+    /// of the line itself its whole height, the clip of an earlier line of the same piece only the rows of its own extent
+    /// (<see cref="ClipExtent"/>; case <c>sk-part</c>). The line is split along x at every gap end; in each column the visible
+    /// rows are the line's rows minus the rows of the clips whose gaps cover that column; neighbouring columns with the same
+    /// rows are one rectangle, so no rectangle has a seam along the line. One ordered pass over the gap ends after one sort;
+    /// per column at most one row interval per clip is taken away.
+    /// </summary>
+    /// <param name="left">The line's start.</param>
+    /// <param name="right">The line's end.</param>
+    /// <param name="top">The line's top, as painted.</param>
+    /// <param name="bottom">The line's bottom, as painted.</param>
+    /// <param name="clips">The clips in force: each with the rows it reaches and its gaps.</param>
+    /// <param name="work">Counts the columns and row cuts made (<see cref="InkOutlines.Cuts"/>).</param>
+    /// <returns>The visible rectangles, column by column left to right and top to bottom within a column.</returns>
+    public static IReadOnlyList<(double Left, double Top, double Right, double Bottom)> Cut(
+        double left, double right, double top, double bottom, IReadOnlyList<(double Top, double Bottom, List<(double Left, double Right)> Gaps)> clips, InkOutlines work)
     {
-        gaps.Sort((a, b) => a.Left.CompareTo(b.Left));
-        var pieces = new List<(double Left, double Right)>();
-        var x = left;
-        foreach (var (gapLeft, gapRight) in gaps)
+        var ends = new List<(double X, int Change, int Clip)>();
+        for (var clip = 0; clip < clips.Count; clip++)
         {
-            if (gapLeft > x && x < right)
+            if (clips[clip].Top < bottom && top < clips[clip].Bottom)
             {
-                pieces.Add((x, System.Math.Min(gapLeft, right)));
+                foreach (var (gapLeft, gapRight) in clips[clip].Gaps)
+                {
+                    ends.Add((gapLeft, 1, clip));
+                    ends.Add((gapRight, -1, clip));
+                }
+            }
+        }
+
+        ends.Sort((a, b) => a.X.CompareTo(b.X));
+        var open = new int[clips.Count];
+        var rectangles = new List<(double Left, double Top, double Right, double Bottom)>();
+        var columnStart = left;
+        List<(double Top, double Bottom)>? columnRows = null;
+        var x = left;
+        var next = 0;
+        while (x < right)
+        {
+            while (next < ends.Count && ends[next].X <= x)
+            {
+                open[ends[next].Clip] += ends[next].Change;
+                next++;
             }
 
-            x = System.Math.Max(x, gapRight);
+            var end = next < ends.Count ? System.Math.Min(ends[next].X, right) : right;
+            var rows = Rows(top, bottom, clips, open, work);
+            if (columnRows is null || !SameRows(columnRows, rows))
+            {
+                Close(rectangles, columnStart, x, columnRows);
+                (columnStart, columnRows) = (x, rows);
+            }
+
+            x = end;
         }
 
-        if (x < right)
+        Close(rectangles, columnStart, right, columnRows);
+        return rectangles;
+    }
+
+    /// <summary>The rows of a column left visible: the line's rows minus the rows of each clip with a gap open there.</summary>
+    private static List<(double Top, double Bottom)> Rows(double top, double bottom, IReadOnlyList<(double Top, double Bottom, List<(double Left, double Right)> Gaps)> clips, int[] open, InkOutlines work)
+    {
+        var rows = new List<(double Top, double Bottom)> { (top, bottom) };
+        work.Cuts++;
+        for (var clip = 0; clip < clips.Count && rows.Count > 0; clip++)
         {
-            pieces.Add((x, right));
+            if (open[clip] <= 0)
+            {
+                continue;
+            }
+
+            var (cutTop, cutBottom) = (clips[clip].Top, clips[clip].Bottom);
+            var kept = new List<(double Top, double Bottom)>(rows.Count + 1);
+            foreach (var (rowTop, rowBottom) in rows)
+            {
+                work.Cuts++;
+                if (System.Math.Min(rowBottom, cutTop) > rowTop)
+                {
+                    kept.Add((rowTop, System.Math.Min(rowBottom, cutTop)));
+                }
+
+                if (rowBottom > System.Math.Max(rowTop, cutBottom))
+                {
+                    kept.Add((System.Math.Max(rowTop, cutBottom), rowBottom));
+                }
+            }
+
+            rows = kept;
         }
 
-        return pieces;
+        return rows;
+    }
+
+    private static bool SameRows(List<(double Top, double Bottom)> a, List<(double Top, double Bottom)> b)
+    {
+        if (a.Count != b.Count)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < a.Count; index++)
+        {
+            if (a[index] != b[index])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void Close(List<(double Left, double Top, double Right, double Bottom)> rectangles, double left, double right, List<(double Top, double Bottom)>? rows)
+    {
+        if (rows is null || right <= left)
+        {
+            return;
+        }
+
+        foreach (var (top, bottom) in rows)
+        {
+            rectangles.Add((left, top, right, bottom));
+        }
     }
 
     /// <summary>The leftmost and rightmost x of an outline inside the band from <paramref name="top"/> to
@@ -288,6 +398,9 @@ internal sealed class InkOutlines
 
     /// <summary>The number of outline segments visited.</summary>
     public long Visited { get; set; }
+
+    /// <summary>The number of columns and row cuts made in cutting lines (<see cref="InkGaps.Cut"/>).</summary>
+    public long Cuts { get; set; }
 
     /// <summary>A glyph's outline as segments with y down, decoded on first use.</summary>
     /// <param name="font">The font.</param>
