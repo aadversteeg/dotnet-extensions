@@ -326,6 +326,23 @@ public class CascadeWorkTests
     }
 
     [Fact]
+    public void The_members_of_a_cycle_are_marked_once_and_charged_so_the_work_limit_ends_their_reporting()
+    {
+        // One name that reads n others, each of which reads it back: n cycles through one name. Each further leaf costs
+        // the same 9 steps whatever n, 2 of them for reporting it (its mark and the step over the member below it), as
+        // the members already marked are stepped over, not walked again; and a budget without those 2 steps ends the
+        // resolution with the work limit's error.
+        static string Fan(int n) => Doc(":root{--a0:" + string.Join(" ", Enumerable.Range(0, n).Select(i => $"var(--l{i})")) + ";"
+            + string.Concat(Enumerable.Range(0, n).Select(i => $"--l{i}:var(--a0);")) + "} p{width:var(--a0, 7px)}", "<p id=last>x");
+        var (small, large) = (Work(Fan(1_000)), Work(Fan(2_000)));
+
+        (large - small).Should().Be(9 * 1_000);
+        var (result, budget) = Counted(Fan(2_000), new CascadeBudget { MaxWork = small + 7 * 1_000 });
+        result.Error.Code.Should().Be(CssErrorCodes.TooLarge);
+        budget.Work.Should().BeLessThanOrEqualTo(large);
+    }
+
+    [Fact]
     public void A_chain_of_one_compound_through_next_sibling_is_linear_in_the_siblings()
     {
         // p + p + … + p (2 000 steps) on twice and four times as many siblings: a run length per element.

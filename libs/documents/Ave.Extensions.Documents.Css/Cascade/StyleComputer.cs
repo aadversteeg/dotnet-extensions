@@ -579,7 +579,10 @@ public sealed class StyleComputer
     /// var(--a)' gives '--a' the value 'a1 b1', measured). A property found again while it waits for what it needs is
     /// in a cycle: CSS Variables 1 makes every member invalid, Chromium 159 does not always (measured), so a cycle is
     /// refused and its property left without a value. Each look at a value is charged to the work limit; a property is
-    /// looked at once more for each level of fallbacks that turns out to be used.
+    /// looked at once more for each level of fallbacks that turns out to be used. The members of a cycle are found on
+    /// the path of the search (the waiting properties, kept apart from the ones still to be looked at), past the ones
+    /// already found by a link to the next one below that is not; so each member is marked once, and each step is
+    /// charged to the work limit too.
     /// </summary>
     private void Resolve(Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending, ImmutableDictionary<string, CssTokens>.Builder result, ImmutableDictionary<string, CssTokens> inherited)
     {
@@ -588,6 +591,43 @@ public sealed class StyleComputer
         var needed = new List<string>();
         var neededSet = new HashSet<string>(StringComparer.Ordinal);
         var cyclic = new HashSet<string>(StringComparer.Ordinal);
+        // The path of the search: the waiting properties (state false), bottom first, with where each is on it; and for
+        // each place the place at or below it that is not yet a member of a cycle (itself when it is not one; -1 when
+        // there is none), so a walk down the path steps over the members already found.
+        var path = new List<string>();
+        var placeOnPath = new Dictionary<string, int>(StringComparer.Ordinal);
+        var notMember = new List<int>();
+
+        void Done(string name)
+        {
+            state[name] = true;
+            if (placeOnPath.Remove(name, out var place))
+            {
+                path.RemoveRange(place, path.Count - place);
+                notMember.RemoveRange(place, notMember.Count - place);
+            }
+        }
+
+        // The nearest place at or below this one that is not a member of a cycle; the links walked are shortened to it.
+        int NotMemberAtOrBelow(int place)
+        {
+            var found = place;
+            while (found >= 0 && notMember[found] != found)
+            {
+                _budget.Charge(1);
+                found = notMember[found];
+            }
+
+            while (place >= 0 && notMember[place] != place)
+            {
+                var next = notMember[place];
+                notMember[place] = found;
+                place = next;
+            }
+
+            return found;
+        }
+
         foreach (var start in pending.Keys)
         {
             if (state.ContainsKey(start))
@@ -602,35 +642,41 @@ public sealed class StyleComputer
                 if (cyclic.Contains(name))
                 {
                     waiting.Pop();
-                    state[name] = true;
+                    Done(name);
                     continue;
                 }
 
                 state[name] = false;
+                if (!placeOnPath.ContainsKey(name))
+                {
+                    placeOnPath[name] = path.Count;
+                    notMember.Add(path.Count);
+                    path.Add(name);
+                }
+
                 var (entry, declaration) = pending[name];
                 needed.Clear();
                 neededSet.Clear();
                 if (!Needs(entry.Values, pending, state, result, needed, neededSet, out var cycleWith))
                 {
-                    // Every property that waits, from the one this value needs back to this one, is a member of the
-                    // cycle (the waiting ones are the path of the search; Chromium 159 leaves each member without a
-                    // value, measured: '--a: var(--b); --b: var(--a)' falls back for both).
-                    foreach (var member in waiting)
+                    // Every property on the path from the one this value needs up to this one is a member of the cycle
+                    // (Chromium 159 leaves each member without a value, measured: '--a: var(--b); --b: var(--a)' falls
+                    // back for both). Each is marked once: the walk steps over the members already marked.
+                    var bottom = placeOnPath[cycleWith!];
+                    for (var place = NotMemberAtOrBelow(path.Count - 1); place >= bottom; place = NotMemberAtOrBelow(place - 1))
                     {
-                        if (state.TryGetValue(member, out var memberDone) && !memberDone && cyclic.Add(member))
+                        _budget.Charge(1);
+                        var member = path[place];
+                        notMember[place] = place - 1;
+                        if (cyclic.Add(member))
                         {
                             result.Remove(member);
                             Report(pending[member].Declaration, CssErrorCodes.Unsupported.Value, $"The custom property '{CssSerializer.Shortened(member)}' is part of a cycle of var() references; Chromium does not resolve every such cycle as CSS Variables 1 says, so it is refused and has no value.");
                         }
-
-                        if (member == cycleWith)
-                        {
-                            break;
-                        }
                     }
 
                     waiting.Pop();
-                    state[name] = true;
+                    Done(name);
                     continue;
                 }
 
@@ -645,7 +691,7 @@ public sealed class StyleComputer
                 }
 
                 waiting.Pop();
-                state[name] = true;
+                Done(name);
                 var substitution = Substitute(entry.Values, result, declaration);
                 if (substitution.Outcome != VarSubstitution.Outcome.Done)
                 {
