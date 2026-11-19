@@ -20,9 +20,9 @@ public class OverlapCoverageTests(ITestOutputHelper output)
     /// <summary>A shape for the comparison: contours in 1/64 pixel and an optional clip box, also in 1/64 pixel.</summary>
     internal sealed record Shape(string Name, (long X, long Y)[][] Contours, (long Left, long Top, long Right, long Bottom)? Box = null);
 
-    /// <summary>The rasteriser's coverage per cell and its flagged cells, for one fill rule, as the canvas computes them:
-    /// the polygons clipped to the box first.</summary>
-    private static (Dictionary<(int X, int Y), double> Coverage, HashSet<(int X, int Y)> Flagged) Rasterize(Shape shape, FillRule rule)
+    /// <summary>The rasteriser's coverage per cell and its flagged cells (true for a two-sided one, which keeps its
+    /// integral), for one fill rule, as the canvas computes them: the polygons clipped to the box first.</summary>
+    private static (Dictionary<(int X, int Y), double> Coverage, Dictionary<(int X, int Y), bool> Flagged) Rasterize(Shape shape, FillRule rule)
     {
         var box = shape.Box is { } b ? new PixelBox(b.Left / 64.0, b.Top / 64.0, b.Right / 64.0, b.Bottom / 64.0) : Whole;
         var polygons = shape.Contours
@@ -32,7 +32,7 @@ public class OverlapCoverageTests(ITestOutputHelper output)
         var clipped = Clipping.ToBox(polygons, box);
         var rasterizer = new AreaRasterizer();
         var coverage = new Dictionary<(int X, int Y), double>();
-        var flagged = rasterizer.FlaggedCells(clipped, box).ToHashSet();
+        var flagged = rasterizer.FlaggedCells(clipped, box).ToDictionary(cell => (cell.Column, cell.Row), cell => cell.TwoSided);
         var result = rasterizer.Rasterize(clipped, rule, box, (row, first, values) =>
         {
             for (var index = 0; index < values.Length; index++)
@@ -58,10 +58,16 @@ public class OverlapCoverageTests(ITestOutputHelper output)
 
         public long CutFlagged { get; set; }
 
+        public long TwoSided { get; set; }
+
+        public double LargestTwoSided { get; set; }
+
+        public long CutTwoSided { get; set; }
+
         public List<string> Breaches { get; } = [];
 
         public override string ToString() =>
-            $"{Unflagged} cells not flagged (largest difference {LargestUnflagged:E2}), {Flagged} flagged (largest difference {LargestFlagged:E2}), {CutFlagged} flagged cells cut by the box";
+            $"{Unflagged} cells not flagged (largest difference {LargestUnflagged:E2}), {Flagged} flagged (largest difference {LargestFlagged:E2}), {CutFlagged} flagged cells cut by the box; of the flagged, {TwoSided} two-sided (largest difference {LargestTwoSided:E2}, {CutTwoSided} cut by the box)";
     }
 
     /// <summary>Compares every cell of the shape's extent, under both rules, and adds to the tally; a cell that differs
@@ -77,14 +83,22 @@ public class OverlapCoverageTests(ITestOutputHelper output)
                 var expected = exact.TryGetValue(cell, out var areas) ? (rule == FillRule.NonZero ? areas.NonZero : areas.EvenOdd) : 0;
                 var actual = coverage.TryGetValue(cell, out var value) ? value : 0;
                 var difference = Math.Abs(actual - expected);
-                if (flagged.Contains(cell))
+                if (flagged.TryGetValue(cell, out var twoSided))
                 {
+                    var cut = shape.Box is { } box && Cut(cell, box);
                     tally.Flagged++;
                     tally.LargestFlagged = Math.Max(tally.LargestFlagged, difference);
-                    tally.CutFlagged += shape.Box is { } cut && Cut(cell, cut) ? 1 : 0;
+                    tally.CutFlagged += cut ? 1 : 0;
+                    if (twoSided)
+                    {
+                        tally.TwoSided++;
+                        tally.LargestTwoSided = Math.Max(tally.LargestTwoSided, difference);
+                        tally.CutTwoSided += cut ? 1 : 0;
+                    }
+
                     if (!(difference <= Rounding))
                     {
-                        tally.Breaches.Add($"{shape.Name} {rule} flagged cell {cell}: {actual:R} instead of {expected:R}");
+                        tally.Breaches.Add($"{shape.Name} {rule} flagged{(twoSided ? " two-sided" : "")} cell {cell}: {actual:R} instead of {expected:R}");
                     }
                 }
                 else
@@ -355,6 +369,131 @@ public class OverlapCoverageTests(ITestOutputHelper output)
             var (x0, x1, y0, y1) = (Inside(), Inside(), Inside(), Inside());
             yield return new Shape($"three {seed}/{index}", contours, (long.Min(x0, x1), long.Min(y0, y1), long.Max(x0, x1) + 1, long.Max(y0, y1) + 1));
         }
+    }
+
+    /// <summary>
+    /// Thin strokes as text has them, 1/64 to 1.5 pixels wide and 3 to 7 long, vertical, horizontal or at any angle, wound
+    /// either way, each one contour of four corners: one stroke alone, two parallel strokes with a gap of 1/64 to 1.5
+    /// pixels between them (wound the same way or not), or two strokes that cross; every third shape under a clip box with
+    /// sides inside pixels. Most flagged pixels hold the two sides of one stroke or of the gap between two.
+    /// </summary>
+    internal static IEnumerable<Shape> Strokes(int seed, int count)
+    {
+        var random = new Random(seed);
+        for (var index = 0; index < count; index++)
+        {
+            var (cx, cy) = (3 + (random.NextDouble() * 2), 3 + (random.NextDouble() * 2));
+            var (length, width) = (3 + (random.NextDouble() * 4), random.Next(1, 97) / 64.0);
+            var angle = random.Next(4) switch { 0 => 0, 1 => Math.PI / 2, _ => random.NextDouble() * Math.PI };
+            var kind = index % 3;
+            var contours = new List<(long X, long Y)[]> { Stroke(cx, cy, length, width, angle, random.Next(2) == 0) };
+            if (kind == 1)
+            {
+                // A parallel stroke beyond a gap, across the first.
+                var offset = (width / 2) + (random.Next(1, 97) / 64.0) + (width / 2);
+                contours.Add(Stroke(cx - (Math.Sin(angle) * offset), cy + (Math.Cos(angle) * offset), length, width, angle, random.Next(2) == 0));
+            }
+            else if (kind == 2)
+            {
+                contours.Add(Stroke(cx, cy, length, random.Next(1, 97) / 64.0, angle + 0.3 + (random.NextDouble() * 2.5), random.Next(2) == 0));
+            }
+
+            yield return new Shape($"strokes {seed}/{index}", [.. contours], index % 4 == 3 ? Box(1.40625, 1.734375, 6.21875, 5.890625) : null);
+        }
+    }
+
+    /// <summary>A straight stroke around (cx, cy): four corners on the 1/64 grid, in one direction or the other.</summary>
+    private static (long X, long Y)[] Stroke(double cx, double cy, double length, double width, double angle, bool reversed)
+    {
+        var (ux, uy, nx, ny) = (Math.Cos(angle) * length / 2, Math.Sin(angle) * length / 2, -Math.Sin(angle) * width / 2, Math.Cos(angle) * width / 2);
+        (double X, double Y)[] corners = [(cx - ux - nx, cy - uy - ny), (cx + ux - nx, cy + uy - ny), (cx + ux + nx, cy + uy + ny), (cx - ux + nx, cy - uy + ny)];
+        return Points(reversed ? [.. corners.Reverse()] : corners);
+    }
+
+    /// <summary>
+    /// The borders of the two-sided rule (<see cref="CellFlags.IsTwoSided"/>), each made so that a pixel sits on one side
+    /// of a border, with the classification the rule must give it: two sides that run parallel, cross inside the pixel,
+    /// touch in one point, meet on a pixel side or corner; two sides of the same direction (winding 0, 1 and 2); two sides
+    /// inside another contour (winding 1 and 2, and −1 and 0); three sides; a stem cut by a clip side; a stem of zero
+    /// width; a horizontal edge or a vertical edge of a third contour between two sides; the same for horizontal strokes;
+    /// a side through the polygon's start.
+    /// </summary>
+    internal static IEnumerable<(Shape Shape, (int X, int Y) Pixel, bool TwoSided)> TwoSidedBorders()
+    {
+        var stem = Rectangle(2.25, 0.5, 2.75, 7.5);
+        yield return (new Shape("stem, parallel sides", [stem]), (2, 3), true);
+        yield return (new Shape("stem, parallel sides, reversed", [Rectangle(2.25, 0.5, 2.75, 7.5, reversed: true)]), (2, 3), true);
+        yield return (new Shape("stem, slanted sides", [Points((2.125, 0.5), (2.5, 0.5), (2.875, 7.5), (2.5, 7.5))]), (2, 3), true);
+        yield return (new Shape("gap between two stems", [Rectangle(0.5, 0.5, 2.25, 7.5), Rectangle(2.75, 0.5, 5, 7.5)]), (2, 3), true);
+        yield return (new Shape("gap between two stems, wound against each other", [Rectangle(0.5, 0.5, 2.25, 7.5), Rectangle(2.75, 0.5, 5, 7.5, reversed: true)]), (2, 3), false);
+        yield return (new Shape("stem inside a contour of the same direction", [Rectangle(0.5, 0.5, 6, 7.5), stem]), (2, 3), true);
+        yield return (new Shape("stem inside a contour of the other direction", [Rectangle(0.5, 0.5, 6, 7.5, reversed: true), stem]), (2, 3), true);
+        yield return (new Shape("stem whose sides cross in the pixel", [Points((2.125, 0.5), (2.875, 0.5), (2.125, 7), (2.875, 7))]), (2, 3), false);
+        yield return (new Shape("stem whose sides touch in one point", [Points((2.125, 0.5), (2.875, 0.5), (2.5, 3.5), (2.875, 7.5), (2.125, 7.5), (2.5, 3.5))]), (2, 3), false);
+        yield return (new Shape("sides of two contours that meet on the pixel's bottom side", [Points((0.5, 0.5), (2.25, 0.5), (2.5, 4), (0.5, 6)), Points((2.75, 0.5), (6, 0.5), (6, 6), (2.5, 4))]), (2, 3), false);
+        yield return (new Shape("sides of two contours that meet on the pixel's corner", [Points((0.5, 0.5), (2.375, 0.5), (3, 4), (0.5, 6)), Points((2.875, 0.5), (6, 0.5), (6, 6), (3, 4))]), (2, 3), false);
+        yield return (new Shape("slanted stem whose sides overlap in x, apart along its slope", [Points((0.875, 0.5), (1.125, 0.5), (4.625, 7.5), (4.375, 7.5))]), (2, 3), true);
+        yield return (new Shape("slanted bar whose sides overlap in y, apart along its slope", [Points((0.5, 0.875), (0.5, 1.125), (7.5, 4.625), (7.5, 4.375))]), (3, 2), true);
+
+        // Apart along a slope only by a line that leaves the pixel through its left side: the corners they cut off wind
+        // −1 and +1 around a middle of 0.
+        yield return (new Shape("two sides that cut off two corners of the pixel's left side, wound against each other", [Points((2.5, 2.5), (1.5, 4), (0.5, 2.5)), Points((2.5, 4.5), (1.5, 3), (0.5, 4.5))]), (2, 3), false);
+        yield return (new Shape("two sides of the same direction (winding 0, 1, 2)", [Rectangle(2.25, 0.5, 4.5, 7.5), Rectangle(2.625, 0.5, 2.875, 7.5)]), (2, 3), false);
+        yield return (new Shape("two sides going down, one going up (winding 0, 1, 2, 1)", [Rectangle(2.125, 0.5, 2.75, 7.5), Rectangle(2.375, 0.5, 5, 7.5)]), (2, 3), false);
+        yield return (new Shape("three sides, down, up, down", [Rectangle(2.125, 0.5, 2.375, 7.5), Rectangle(2.625, 0.5, 5, 7.5)]), (2, 3), false);
+        yield return (new Shape("stem cut by a vertical clip side", [stem], Box(0, 0, 2.5, 8)), (2, 3), true);
+        yield return (new Shape("stem cut by a horizontal clip side", [stem], Box(0, 0, 8, 3.375)), (2, 3), false);
+        yield return (new Shape("stem of zero width", [Points((2.5, 0.5), (2.5, 7.5), (2.5, 7.5), (2.5, 0.5)), Rectangle(2.25, 0.5, 2.375, 7.5)]), (2, 3), false);
+        yield return (new Shape("stem with a horizontal edge of a third contour across", [stem, Rectangle(0.5, 3.5, 6, 6)]), (2, 3), false);
+        yield return (new Shape("stem with a vertical edge of a third contour inside", [stem, Rectangle(2.5, 2.25, 6, 3.75)]), (2, 3), false);
+        var bar = Rectangle(0.5, 3.25, 7.5, 3.75);
+        yield return (new Shape("bar, parallel sides", [bar]), (3, 3), true);
+        yield return (new Shape("bar, sloped sides", [Points((0.5, 3.125), (7.5, 3.25), (7.5, 3.75), (0.5, 3.625))]), (3, 3), true);
+        yield return (new Shape("bar with a vertical edge of a third contour across", [bar, Rectangle(3.5, 0.5, 6, 6)]), (3, 3), false);
+        yield return (new Shape("bar with a horizontal edge of a third contour inside", [bar, Rectangle(0.5, 3.5, 6, 6)]), (3, 3), false);
+        yield return (new Shape("bar whose sides cross in the pixel", [Points((0.5, 3.125), (7, 3.875), (7, 3.125), (0.5, 3.875))]), (3, 3), false);
+        yield return (new Shape("two bars of the same direction", [Rectangle(0.5, 3.125, 7.5, 3.875), Rectangle(0.5, 3.375, 7.5, 3.625)]), (3, 3), false);
+        yield return (new Shape("bar cut by a horizontal clip side", [bar], Box(0, 0, 8, 3.5)), (3, 3), true);
+
+        // The stem's left side is the polygon's last and first edge: one run in the numbering counted from half way round.
+        yield return (new Shape("stem whose side runs through the polygon's start", [Points((2.25, 4.5), (2.25, 7.5), (2.75, 7.5), (2.75, 0.5), (2.25, 0.5))]), (2, 4), true);
+    }
+
+    [Fact]
+    public void Thin_strokes_are_exact_in_every_cell_and_many_of_their_flagged_cells_are_two_sided()
+    {
+        var tally = new Tally();
+        foreach (var shape in Strokes(20261120, 3000))
+        {
+            Compare(shape, tally);
+        }
+
+        output.WriteLine(tally.ToString());
+        tally.Breaches.Should().BeEmpty($"every cell must be exact; the first breaches: {string.Join("; ", tally.Breaches.Take(20))}");
+        tally.Flagged.Should().BeGreaterThan(20_000);
+        tally.TwoSided.Should().BeGreaterThan(10_000).And.BeGreaterThan(tally.Flagged / 3, "the strokes are made so that many flagged pixels hold two sides apart (the others: their ends and crossings)");
+        tally.CutTwoSided.Should().BeGreaterThan(300, "two-sided pixels the clip box cuts");
+    }
+
+    [Fact]
+    public void The_borders_of_the_two_sided_rule_are_exact_and_classified_as_the_rule_says()
+    {
+        var tally = new Tally();
+        var classified = new List<string>();
+        foreach (var (shape, pixel, twoSided) in TwoSidedBorders())
+        {
+            Compare(shape, tally);
+            var (_, flagged) = Rasterize(shape, FillRule.NonZero);
+            var actual = flagged.TryGetValue(pixel, out var kind) ? (kind ? "two-sided" : "arranged") : "not flagged";
+            if (actual != (twoSided ? "two-sided" : "arranged"))
+            {
+                classified.Add($"{shape.Name}: pixel {pixel} {actual}, expected {(twoSided ? "two-sided" : "arranged")}");
+            }
+        }
+
+        output.WriteLine(tally.ToString());
+        tally.Breaches.Should().BeEmpty($"every cell must be exact; all breaches: {string.Join("; ", tally.Breaches)}");
+        classified.Should().BeEmpty($"each shape's pixel lies on a known side of a border of the rule; all that do not: {string.Join("; ", classified)}");
     }
 
     [Fact]

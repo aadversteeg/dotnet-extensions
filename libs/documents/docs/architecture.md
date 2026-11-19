@@ -194,7 +194,11 @@ wherever the winding number takes at most two values there, 0 and one other or t
 more is flagged from the pieces of edges in it (`Graphics/CellFlags.cs`: one run of consecutive edges of one polygon,
 at most two pieces or monotone, is clean; everything else is flagged), and a flagged pixel gets the exact area of the
 arrangement of its pieces (`Graphics/CellArrangement.cs`), keeping the integral's value where the two differ by at most
-10^-9. `OverlapCoverageTests` holds every pixel, flagged or not, to exact rational areas computed another way (vertical
+10^-9. A flagged pixel whose pieces are two sides apart keeps the integral, which is exact there: the sides of a thin
+stroke or of the gap between two, the pieces going down one run and those going up one run with a straight line
+between them that crosses the pixel from its top to its bottom (or the same turned a quarter), so the winding number
+takes two neighbouring values (`CellFlags.IsTwoSided`, the argument at the code). Measured: 41 to 71 % of the flagged
+pixels of seven whole fonts at 12 pixels per em, 76 to 93 % on the sample pages at 96 dpi. `OverlapCoverageTests` holds every pixel, flagged or not, to exact rational areas computed another way (vertical
 slabs instead of rows) on degenerate and random shapes, with and without a clip box. The fill rule of a pixel the clip
 box cuts is taken over the part inside it, so a thin part does not blow up a value (`ClipBoxCoverageTests`); curves are
 within 1/64 pixel; colours are
@@ -266,10 +270,11 @@ more work than a limit is refused the same way, before any of it is painted: the
 overlap grows with the cube of the pieces of edges in it, so `Canvas.MaxFillWork` (2^27 units for one fill),
 `Canvas.MaxCanvasWork` (2^28 units for all fills of one canvas, so of one page) and `Canvas.MaxRowPieces` (2^18
 pieces in the flagged pixels of one row) bound it; `Documents.Graphics.TooMuchWork` from the canvas and from the raster
-back-end, which reports a glyph's refused fill for its page. Measured on the development host: the largest glyph of
-eight fonts at 12 pixels per em takes 252,044 units (532 times under the fill limit), the largest sample page 2.35 ×
-10^6 units at 96 dpi (114 times under the canvas limit); a fill at its limit takes about 1.7 s, a page at the canvas
-limit about 3.6 s; a thousand thin bars through one pixel ask 7.4 × 10^9 units and are refused in 25 ms. The PDF back-end writes such
+back-end, which reports a glyph's refused fill for its page. A two-sided pixel costs no units. Measured on the
+development host: the largest glyph of eight fonts at 12 pixels per em takes 248,985 units (539 times under the fill
+limit), the largest sample page 6.83 × 10^5 units at 96 dpi (393 times under the canvas limit); a fill at its limit
+takes about 1.7 s, a page at the canvas limit about 3.6 s; a thousand thin bars through one pixel ask 7.4 × 10^9 units
+and are refused in about 50 ms. The PDF back-end writes such
 a page as the page model says, and a viewer draws it with its own rasteriser. The bound is the arithmetic of
 placing the image's pixel edges: each is computed from terms as large as the reach, each product and sum rounds by
 2^-53 of its size, so an edge lies at most 6 · 2^-53 · reach from its exact place, within the bound 2^-10.4 pixel (under

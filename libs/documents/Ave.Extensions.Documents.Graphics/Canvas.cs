@@ -70,15 +70,16 @@ public sealed class Canvas
     /// <summary>
     /// The most work the exact coverage of one fill may take: 2^27 units. A pixel where the winding number may take more
     /// than two values (contours that overlap or cross in it, see <see cref="AreaRasterizer"/>) with m pieces of edges in
-    /// it costs m·(2m + m(m − 1)/2) + m² units; a shape whose pixels together cost more is refused with
-    /// <c>Documents.Graphics.TooMuchWork</c>, before any of it is painted.
+    /// it costs m·(2m + m(m − 1)/2) + m² units, unless its pieces are two sides apart (the sides of a thin stroke, which
+    /// cost nothing); a shape whose pixels together cost more is refused with <c>Documents.Graphics.TooMuchWork</c>,
+    /// before any of it is painted.
     /// </summary>
     /// <remarks>
     /// The exact area of such a pixel takes its pieces' crossings, so the work grows with the cube of the pieces in it, and
     /// a few kilobytes of path can put thousands of edges through one pixel. Text and drawings use far less. Measured on
     /// the development host (2026-11-19): of eight fonts at 12 pixels per em, every glyph filled on its own, the largest
-    /// glyph takes 252,044 units (DejaVu Sans 2.37), 532 times under this limit; of the engine's samples the largest page
-    /// takes 2.35 × 10^6 units at 96 dpi (<see cref="MaxCanvasWork"/> is 114 times that). About 11 ns a unit there: a fill
+    /// glyph takes 248,985 units (DejaVu Sans 2.37), 539 times under this limit; of the engine's samples the largest page
+    /// takes 6.83 × 10^5 units at 96 dpi (<see cref="MaxCanvasWork"/> is 393 times that). About 11 ns a unit there: a fill
     /// at this limit takes about 1.7 s, a canvas at its limit about 3.6 s. Refused, for example: a thousand thin bars
     /// through one pixel (7.4 × 10^9 units), one contour crossing itself in one pixel with 1,001 edges (5.0 × 10^8); a
     /// refusal comes before the work, in milliseconds. The PDF back-end writes such a page; a viewer draws it with its
