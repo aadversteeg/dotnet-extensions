@@ -625,14 +625,31 @@ measured yet: those margins are kept as given.
 
 **The status file.** `tools/reference/chromium/html-status.txt` has one line per reference case, written by
 `UnitTests.Extensions.Documents.Html/Boxes/CaseStatusTests.cs` (with `DOCUMENTS_UPDATE_HTML_STATUS=1`): the case runs
-through the whole HTML path unchanged and its pages are compared with Chromium's print (`measured/<case>.print.txt`):
-the same pages of the same size, the same words on each page in the same order, each word's start within 0.1 pt and
-its baseline, taken at the whole pixel where Chromium paints it, within 0.1 pt (`HtmlCases.Bound`). A line reads
-`<case> equal`; `<case> refused <code> <property: value or element>` (the first refusal: the next packages' work
-list); or `<case> listed <test>` for a difference of layout already listed and pinned by that test of the code
-front-end. A case that lays out and differs fails the test, and so does a status that changes without the file.
-To read it: `cut -d' ' -f2 html-status.txt | sort | uniq -c` gives the picture; grep a code or a property for the
-cases it holds back.
+through the whole HTML path unchanged and its pages are compared with every file measured for the case
+(`HtmlCases`, where each comparison names its file and bound; `HtmlCases.Bound` is 0.1 pt):
+
+- `measured/<case>.print.txt`, the print read back from the PDF: the same pages of the same size, the same words on
+  each page in the same order, each word's start, end and font size within 0.1 pt and its baseline within 0.1 pt; the
+  same filled rectangles in drawing order and the same image areas, each edge within 0.1 pt;
+- `<case>.lines.txt`, the rectangles read back by a second script: each edge and height within 0.1 pt;
+- `<case>.words.txt`, the words read back by poppler: the same words inside the page, each start and end within
+  0.1 pt, and the line box poppler gives it (the baseline less the face's ascender, plus its descender) within 0.1 pt;
+- `<case>.boxes.txt`, the boxes measured in the page: the height of each box named by an element id within 0.1 pt.
+  Not the width: the tool measures the boxes in the 1280 px browser window, not in the printed page.
+
+Baselines and the edges of rectangles and images are compared at the whole pixel where Chromium paints them (every
+rectangle and image edge in the committed prints is a whole pixel), so a difference smaller than half a pixel there
+can stay hidden; x positions, font sizes and box heights are compared as they are. Colours and faces (font, weight,
+style) are not in the measured files and are not compared yet.
+
+A line reads `<case> equal`; `<case> refused <code> <property: value or element> at <line>:<column>` (the first
+refusal, counted as one by its exact code: the next packages' work list); `<case> listed <test>: <difference>` for a
+difference of layout already listed and pinned by that test of the code front-end, which must stay the same
+difference; or `<case> open <difference>` for a known difference, engine against Chromium, that is not fixed yet (no
+pull request while one is open). The status is the line's second field. A case that lays out and differs otherwise
+fails the test, and so does a status that changes without the file; writing the file anew makes no case `open` that
+the committed file does not already name. To read it: `cut -d' ' -f2 html-status.txt | sort | uniq -c` gives the
+picture; grep a code or a property for the cases it holds back.
 
 ## Known limits (all stages)
 
