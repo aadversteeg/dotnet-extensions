@@ -59,19 +59,72 @@ public class LayoutRuleTests
     }
 
     [Fact]
-    public void A_cell_spanning_auto_columns_widens_each_by_an_equal_share()
+    public void A_cell_spanning_auto_columns_widens_them_as_Chromium_distributes_a_table_s_width()
     {
-        // CSS 2.1 §17.5.2.2 (a non-normative algorithm): "If possible, widen all spanned columns by approximately the same
-        // amount"; the engine widens the spanned flexible columns equally.
+        // CSS 2.1 §17.5.2.2 (a non-normative algorithm) says "If possible, widen all spanned columns by approximately the
+        // same amount"; the engine follows Chromium (DistributeColspanCellToColumnsAuto, case tw-span): the cell's
+        // minimum is shared first, then its maximum, each with the width distribution of CSS Tables 3.
         var columns = new ValueList<TrackSize>([TrackSize.Auto.Instance, TrackSize.Auto.Instance]);
-        var ranges = TrackSizing.ColumnRanges(columns,
+
+        // Equal columns: equal shares.
+        TrackSizing.ColumnRanges(columns,
         [
             new TrackSizing.Contribution(0, 1, new IntrinsicWidths(10, 20)),
             new TrackSizing.Contribution(1, 1, new IntrinsicWidths(10, 20)),
             new TrackSizing.Contribution(0, 2, new IntrinsicWidths(100, 200)),
+        ]).Select(range => (range.MinContent, range.MaxContent)).Should().Equal((50, 100), (50, 100));
+
+        // Unequal columns, the cell above both maximums: each column starts at its maximum and the rest goes in
+        // proportion to the maximums (min: 10 + 70 × 10/40 = 27.5, 30 + 70 × 30/40 = 82.5; max: the same from 27.5 and
+        // 82.5 towards 200 in proportion to the maximums 10 and 30, so 10 + 160 × 10/40 = 50, 30 + 160 × 30/40 = 150).
+        TrackSizing.ColumnRanges(columns,
+        [
+            new TrackSizing.Contribution(0, 1, new IntrinsicWidths(10, 10)),
+            new TrackSizing.Contribution(1, 1, new IntrinsicWidths(10, 30)),
+            new TrackSizing.Contribution(0, 2, new IntrinsicWidths(110, 200)),
+        ]).Select(range => (range.MinContent, range.MaxContent)).Should().Equal((27.5, 50), (82.5, 150));
+
+        // The cell between the columns' minimums and maximums: they grow from their minimum in proportion to max − min
+        // (only the second column has room: 10 + (30 − 20) × 20/20 = 20).
+        TrackSizing.ColumnRanges(columns,
+        [
+            new TrackSizing.Contribution(0, 1, new IntrinsicWidths(10, 10)),
+            new TrackSizing.Contribution(1, 1, new IntrinsicWidths(10, 30)),
+            new TrackSizing.Contribution(0, 2, new IntrinsicWidths(30, 30)),
+        ]).Select(range => (range.MinContent, range.MaxContent)).Should().Equal((10, 10), (20, 30));
+    }
+
+    [Fact]
+    public void Spanning_cells_of_one_span_widen_the_columns_from_the_first_column_on()
+    {
+        // Chromium sorts the spanning cells by span and then by first column (ApplyCellConstraintsToColumnConstraints,
+        // colspan_cell_less_than), whatever row they are in. Here the cell over columns 1–2 comes first in the grid, the
+        // one over 0–1 is shared first: 0–1 → 30 and 30; then 1–2 from 30 and 10 towards 60 in proportion to them → 45, 15.
+        var columns = new ValueList<TrackSize>([TrackSize.Auto.Instance, TrackSize.Auto.Instance, TrackSize.Auto.Instance]);
+        var ranges = TrackSizing.ColumnRanges(columns,
+        [
+            new TrackSizing.Contribution(1, 2, new IntrinsicWidths(60, 60)),
+            new TrackSizing.Contribution(0, 1, new IntrinsicWidths(10, 10)),
+            new TrackSizing.Contribution(1, 1, new IntrinsicWidths(10, 10)),
+            new TrackSizing.Contribution(2, 1, new IntrinsicWidths(10, 10)),
+            new TrackSizing.Contribution(0, 2, new IntrinsicWidths(60, 60)),
         ]);
 
-        ranges.Select(range => (range.MinContent, range.MaxContent)).Should().Equal((50, 100), (50, 100));
+        ranges.Select(range => (range.MinContent, range.MaxContent)).Should().Equal((30, 30), (45, 45), (15, 15));
+    }
+
+    [Fact]
+    public void A_spanning_cell_never_widens_a_fixed_column()
+    {
+        // Fixed means fixed (TrackSize.Fixed, the fixed table layout's column width): the auto column takes all of it.
+        var columns = new ValueList<TrackSize>([new TrackSize.Fixed(20.Pt()), TrackSize.Auto.Instance]);
+        var ranges = TrackSizing.ColumnRanges(columns,
+        [
+            new TrackSizing.Contribution(1, 1, new IntrinsicWidths(10, 10)),
+            new TrackSizing.Contribution(0, 2, new IntrinsicWidths(100, 100)),
+        ]);
+
+        ranges.Select(range => (range.MinContent, range.MaxContent)).Should().Equal((20, 20), (80, 80));
     }
 
     [Fact]

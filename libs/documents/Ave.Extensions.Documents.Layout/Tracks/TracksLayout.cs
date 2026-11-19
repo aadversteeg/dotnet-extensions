@@ -151,7 +151,7 @@ public static class TracksLayout
         var outer = (lines[0] + lines[^1]) / 2;
         return ColumnRanges(environment, box, grid, lines).OnSuccessBind(ranges =>
         {
-            var (widths, needed) = TrackSizing.Resolve(box.Style.Columns, ranges, availableWidth - outer);
+            var (widths, needed) = TrackSizing.Resolve(box.Style.Columns, ranges, availableWidth - outer, box.Style.Width);
             if (needed is { } width)
             {
                 return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, width + outer, availableWidth));

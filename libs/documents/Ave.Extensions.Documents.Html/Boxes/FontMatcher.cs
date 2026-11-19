@@ -25,6 +25,7 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions options, string sourceName)
 {
     private readonly Dictionary<FontFaceRule, Result<TrueTypeFont, Error>> _loaded = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<string, Result<TrueTypeFont, Error>> _files = new(StringComparer.Ordinal);
     private readonly Dictionary<(string Families, int Weight, bool Italic), Result<TrueTypeFont, Error>?> _matched = [];
     private readonly List<TrueTypeFont> _used = [];
 
@@ -97,7 +98,9 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         return null;
     }
 
-    /// <summary>The font of a rule's first TrueType source (a format hint of truetype, or none), loaded once.</summary>
+    /// <summary>The font of a rule's first TrueType source (a format hint of truetype, or none), its URL resolved against
+    /// the base of the rule's style sheet; loaded once per rule, and a file once per URL, also for two rules that name
+    /// it.</summary>
     private Result<TrueTypeFont, Error> Load(FontFaceRule rule)
     {
         if (_loaded.TryGetValue(rule, out var loaded))
@@ -106,7 +109,13 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         }
 
         var source = rule.Sources.FirstOrDefault(candidate => candidate.Format is null or "truetype");
-        var url = source is null ? null : Absolute(source.Url);
+        var url = source is null ? null : Urls.Absolute(source.Url, rule.BaseUrl ?? options.BaseUrl) ?? source.Url;
+        if (url is not null && _files.TryGetValue(url, out var file))
+        {
+            _loaded[rule] = file;
+            return file;
+        }
+
         var resource = url is null ? null : options.Resources?.Invoke(url);
         loaded = resource is null
             ? Result<TrueTypeFont, Error>.Failure(new Error(HtmlStyleErrorCodes.Resource.NotFound,
@@ -114,13 +123,13 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
                 .With(ErrorMetadataKeys.Value, url ?? rule.Family).WithSource(sourceName, rule.Position))
             : FontParser.Parse(resource.Bytes).MapError(error => error.WithSource(sourceName, rule.Position));
         _loaded[rule] = loaded;
+        if (url is not null && loaded.IsSuccess)
+        {
+            _files[url] = loaded;
+        }
+
         return loaded;
     }
-
-    private string Absolute(string url) =>
-        options.BaseUrl is { } baseUrl && Uri.TryCreate(baseUrl, UriKind.Absolute, out var root) && Uri.TryCreate(root, url, out var absolute)
-            ? absolute.AbsoluteUri
-            : url;
 
     private static string Name(CssValue family) => family switch
     {

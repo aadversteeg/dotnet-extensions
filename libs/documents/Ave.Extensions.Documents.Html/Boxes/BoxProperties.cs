@@ -153,7 +153,8 @@ internal static class BoxProperties
 
         // CSS Fonts 4: the family, size, weight and style are matched to a face (FontMatcher); a missing face is refused there.
         yield return new("font-family", "the first family of the list that a @font-face rule or the caller's fonts give", (_, _) => null);
-        yield return new("font-size", "every value", (_, _) => null);
+        // The model holds no text of size 0 (layout would refuse it late, without the element's place).
+        yield return new("font-size", "every size above 0", (value, _) => value is CssLength { Value.Points: <= 0 } ? "a font size of 0 is not drawn in this version" : null);
         yield return new("font-weight", "every value, matched exactly", (_, _) => null);
         yield return new("font-style", "normal, italic", (_, _) => null);
         yield return new("font-kerning", "auto, normal (both kern, measured)", (value, _) => IsKeyword(value, "auto") || IsKeyword(value, "normal") ? null : "only kerned text is drawn");

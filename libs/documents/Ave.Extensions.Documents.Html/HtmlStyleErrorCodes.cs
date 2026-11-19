@@ -79,6 +79,13 @@ public static class HtmlStyleErrorCodes
         /// <summary>Boxes nested deeper than the document model allows (<c>ModelLimits.MaxNestingDepth</c>). Metadata:
         /// Value (the limit), SourceFile, SourceLine, SourceColumn (the first element too deep).</summary>
         public static readonly ErrorCode TooDeep = _ / "TooDeep";
+
+        /// <summary>A character in the text that is not drawn: a control character other than tab, line feed and carriage
+        /// return (Chromium draws form feed and next line, U+0085, as a missing glyph one em wide), the line and
+        /// paragraph separators (a space that does not collapse), a noncharacter or half of a surrogate pair. One
+        /// per text that holds any: Value (the first such code point), Offset (its place in the text), Count (how many
+        /// the text holds), SourceFile, SourceLine, SourceColumn (where the text starts).</summary>
+        public static readonly ErrorCode Character = _ / "Character";
     }
 
     /// <summary>A document with no element (made in code; the parser always makes the html element): there is nothing to

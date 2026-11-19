@@ -146,7 +146,7 @@ public class BoxGenerationTests
     }
 
     [Fact]
-    public void A_forced_break_after_a_box_is_a_forced_break_before_the_next_and_after_the_last_box_it_is_refused()
+    public void A_forced_break_after_a_box_is_a_forced_break_before_the_next_and_after_the_last_box_it_is_none()
     {
         var body = Body(Doc("<p style=\"break-after:page\">a</p><p>b</p>"));
         ((Box)body.Children[1]).Style.BreakBefore.Should().Be(BreakBetween.Page);
@@ -155,7 +155,8 @@ public class BoxGenerationTests
         var nested = Body(Doc("<div><p style=\"break-after:page\">a</p></div><p>b</p>"));
         ((Box)nested.Children[1]).Style.BreakBefore.Should().Be(BreakBetween.Page);
 
-        Refusals(Doc("<p>a</p><p style=\"break-after:page\">b</p>")).Select(Property).Should().Equal("break-after");
+        // Chromium prints no empty page after the last box (cases h-break-after-last, h-break-after-last-nested).
+        Refusals(Doc("<p>a</p><p style=\"break-after:page\">b</p>")).Should().BeEmpty();
     }
 
     [Theory]
@@ -272,18 +273,31 @@ public class BoxGenerationTests
     }
 
     [Fact]
-    public void Without_a_page_rule_the_page_is_what_Chromium_prints_with_the_reference_settings()
+    public void Without_a_page_rule_the_page_is_the_caller_s_by_default_A4_with_no_margins()
     {
         var page = Model(Doc("<p>a</p>")).Page;
-        (page.Width.Points, page.Height.Points, page.Margins).Should().Be((612, 792, default(Edges)));
+        page.Width.Points.Should().BeApproximately(594.96, 1e-9);
+        page.Height.Points.Should().BeApproximately(841.92, 1e-9);
+        page.Margins.Should().Be(default(Edges), "the page area of 794 x 1123 px reaches past the sheet");
     }
 
     [Theory]
     [InlineData("size: 300pt 174pt; margin: 12pt", 300, 174, 12, 12)]
-    // A4 landscape is 841.89 x 595.28 pt, printed 841.92 x 595.2; a top margin of 10 mm (37.8 px) is laid out at 38 px.
-    [InlineData("size: A4 landscape; margin: 10mm 20mm", 841.92, 595.2, 28.5, 72 / 25.4 * 20)]
+    // A4 landscape is 841.89 x 595.28 pt: whole points (842 x 595), then 1/300 inch. A top margin of 10 mm (37.8 px) is
+    // laid out at 38 px; the left one of 20 mm (75.6 px) at 76 px, and the area, 1122.52 - 151.16 px, is 972 px wide.
+    [InlineData("size: A4 landscape; margin: 10mm 20mm", 841.92, 594.96, 28.5, 841.92 - 786)]
     [InlineData("size: 200pt 100pt; margin-top: 6pt", 199.92, 100.08, 6, 0)]
-    [InlineData("margin: 12pt; font-family: Lato; color: red; counter-reset: page", 612, 792, 12, 12)]
+    [InlineData("size: A5", 420, 594.96, 0, 0)]
+    [InlineData("size: 595.5pt 842.25pt", 595.92, 841.92, 0, 595.92 - 595.5)]
+    [InlineData("size: 133.5px 100.5px", 100.08, 75.12, 0, 0)]
+    // 11.75 pt is 15.67 px: the area starts at 16 px and is 400 - 31.31 px, rounded up: 369 px, so it ends at 385 px.
+    [InlineData("size: 300pt 84pt; margin: 11.75pt", 300, 84, 12, 300 - 288.75)]
+    // Half a pixel: a 15.5 px margin starts the area at 16 px; 400.5 - 32 px leaves 368.5 px, an area of 369 px.
+    [InlineData("size: 300pt 84pt; margin: 11.625pt", 300, 84, 12, 300 - 288.75)]
+    [InlineData("size: 300.375pt 84pt; margin: 12pt", 300, 84, 12, 300 - 288.75)]
+    [InlineData("size: 300pt 100pt; margin: 10pt 10.3pt", 300, 100.08, 9.75, 300 - 290.25)]
+    // On the default A4 page: the area starts at 16 px and is 793.7 - 32 px, rounded up: 762 px (583.5 pt).
+    [InlineData("margin: 12pt; font-family: Lato; color: red; counter-reset: page", 594.96, 841.92, 12, 594.96 - 12 - 571.5)]
     public void A_page_rule_without_a_selector_gives_the_size_rounded_as_Chromium_prints_it_and_the_margins(string declarations, double width, double height, double top, double right)
     {
         var page = Model(Doc("<p>a</p>", $"@page {{ {declarations} }}")).Page;
@@ -291,6 +305,65 @@ public class BoxGenerationTests
         page.Height.Points.Should().BeApproximately(height, 1e-9);
         page.Margins.Top.Points.Should().BeApproximately(top, 1e-9);
         page.Margins.Right.Points.Should().BeApproximately(right, 1e-9);
+    }
+
+    [Theory]
+    // 300 pt (400 px) with 10 pt margins (13.33 px): the area is 373.34 px, rounded up to 374 px (case h-page-area-bottom).
+    [InlineData("size: 300pt 300pt; margin: 10pt", 280.5)]
+    // 68 pt (90.67 px) with 12 pt margins: 58.67 px, rounded up to 59 px (case h-page-area-continued).
+    [InlineData("size: 300pt 68pt; margin: 12pt", 44.25)]
+    // A sheet smaller than the area: 1123 px (842.25 pt) on a sheet of 841.92 pt; the bottom margin is 0, not negative.
+    [InlineData("size: A4; margin: 0", 841.92)]
+    public void The_page_area_is_whole_pixels_rounded_up_from_what_the_margins_leave(string declarations, double areaHeight)
+    {
+        var page = Model(Doc("<p>a</p>", $"@page {{ {declarations} }}")).Page;
+        page.AreaHeight.Points.Should().BeApproximately(areaHeight, 1e-9);
+        page.Margins.Bottom.Points.Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    [Theory]
+    [InlineData("\f", "U+000C")]
+    [InlineData("\u0085", "U+0085")]
+    [InlineData("\u0001", "U+0001")]
+    [InlineData("\uFFFE", "U+FFFE")]
+    [InlineData("\u2028", "U+2028")]
+    [InlineData("\u2029", "U+2029")]
+    public void A_character_that_is_not_drawn_is_refused_at_its_text_and_left_out_under_warn(string character, string codePoint)
+    {
+        var html = Doc($"<p>aa{character}bb</p>");
+        var refusal = Refusals(html).Single();
+        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Character);
+        refusal.Metadata![ErrorMetadataKeys.Value].Should().Be(codePoint);
+        refusal.Metadata[ErrorMetadataKeys.Offset].Should().Be(2);
+        refusal.Metadata[ErrorMetadataKeys.Count].Should().Be(1);
+        refusal.Metadata.Should().ContainKey(ErrorMetadataKeys.SourceLine);
+
+        var warned = Boxes(html, UnsupportedPolicy.Warn);
+        warned.Value.Diagnostics.Select(error => error.Code).Should().Contain(HtmlStyleErrorCodes.Unsupported.Character);
+        Texts((Box)((Box)warned.Value.Document.Root.Children.Single()).Children.Single()).Should().Be("aabb");
+    }
+
+    [Fact]
+    public void A_text_with_many_characters_that_are_not_drawn_gives_one_refusal_with_their_count()
+    {
+        var html = Doc($"<p>aa{new string('\f', 100_000)}bb</p>");
+        var refusal = Refusals(html).Single();
+        refusal.Metadata![ErrorMetadataKeys.Value].Should().Be("U+000C");
+        refusal.Metadata[ErrorMetadataKeys.Offset].Should().Be(2);
+        refusal.Metadata[ErrorMetadataKeys.Count].Should().Be(100_000);
+
+        var warned = Boxes(html, UnsupportedPolicy.Warn);
+        warned.Value.Diagnostics.Count(error => error.Code == HtmlStyleErrorCodes.Unsupported.Character).Should().Be(1);
+        Texts((Box)((Box)warned.Value.Document.Root.Children.Single()).Children.Single()).Should().Be("aabb");
+    }
+
+    [Fact]
+    public void A_root_with_display_none_is_one_empty_page_of_the_caller_s_paper_whatever_the_page_rules_say()
+    {
+        var model = Model(Doc("<p>before</p><p><q>after</q></p>", "html { display: none } @page { size: 300pt 100pt; margin: 10pt }"));
+        model.Root.Children.Should().BeEmpty();
+        model.Page.Width.Points.Should().BeApproximately(594.96, 1e-9, "the default page, A4, not the 300 pt of the @page rule");
+        model.Page.Margins.Should().Be(default(Edges));
     }
 
     [Theory]
@@ -341,5 +414,58 @@ public class BoxGenerationTests
 
         var missing = Boxes(Doc("<p>a</p>", "@font-face { font-family: Gone; src: url(gone.ttf) } p { font-family: Gone }"), resources: Resolver);
         missing.Error.Parts().Single().Code.Should().Be(HtmlStyleErrorCodes.Resource.NotFound);
+    }
+
+    [Fact]
+    public void Two_font_face_rules_with_one_url_fetch_the_file_once()
+    {
+        var asked = new List<string>();
+        HtmlResource? Resolver(string url)
+        {
+            asked.Add(url);
+            return url == "theano.ttf" ? new HtmlResource(TestFonts.Bytes("TheanoDidot-Regular.ttf")) : null;
+        }
+
+        var css = "@font-face { font-family: One; src: url(theano.ttf) } @font-face { font-family: Two; src: url(theano.ttf) } p { font-family: One } .two { font-family: Two }";
+        var result = Boxes(Doc("<p>a</p><p class=\"two\">b</p>", css), resources: Resolver);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        asked.Should().Equal("theano.ttf");
+    }
+
+    [Fact]
+    public void A_font_url_is_resolved_against_the_sheet_that_declares_it()
+    {
+        // The document is in /doc, its sheet in /doc/sheets: the font of the sheet is in /doc/fonts, the font of the
+        // document's own style element in /doc/own.
+        var asked = new List<string>();
+        HtmlResource? Resolver(string url)
+        {
+            asked.Add(url);
+            return url switch
+            {
+                "file:///doc/sheets/fonts.css" => new HtmlResource(Encoding.UTF8.GetBytes("@font-face { font-family: Sheet; src: url(../fonts/theano.ttf) }")),
+                "file:///doc/fonts/theano.ttf" => new HtmlResource(TestFonts.Bytes("TheanoDidot-Regular.ttf")),
+                "file:///doc/own/lato.ttf" => new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")),
+                _ => null,
+            };
+        }
+
+        var html = "<!doctype html><html><head><link rel=\"stylesheet\" href=\"sheets/fonts.css\"><style>@font-face { font-family: Own; src: url(own/lato.ttf) }" +
+                   " body { margin: 0; font-family: Own } .sheet { font-family: Sheet }</style></head><body><p>a</p><p class=\"sheet\">b</p></body></html>";
+        var result = HtmlParser.Parse(html, new HtmlParseOptions("doc.html"))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }));
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        asked.Should().Equal("file:///doc/sheets/fonts.css", "file:///doc/own/lato.ttf", "file:///doc/fonts/theano.ttf");
+    }
+
+    [Fact]
+    public void A_font_size_of_0_is_refused_at_its_element()
+    {
+        var refusal = Refusals(Doc("<p>a</p>\n<p style=\"font-size: 0\">b</p>")).Single();
+        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Value);
+        Property(refusal).Should().Be("font-size");
+        refusal.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(2);
     }
 }

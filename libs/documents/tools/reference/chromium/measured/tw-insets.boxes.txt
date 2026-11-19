@@ -1,0 +1,9 @@
+div 300.000 17.250 w-pad
+table 300.000 17.250 pad
+td 119.344 16.500 short
+td 179.906 16.500 a longer text
+div 300.000 18.234 w-border
+table 300.000 18.234 border
+td 76.840 17.484 short
+td 156.738 17.484 a longer text
+td 64.547 17.484 mid
