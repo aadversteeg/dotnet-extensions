@@ -443,8 +443,7 @@ public static partial class HtmlBoxGenerator
                 return Equal(count);
             }
 
-            // The sum of the percentages as written: 100 within the rounding of their binary form (14.29% + 17.14% +
-            // 57.14% + 11.43% is 100.00000000000001).
+            // The sum of the percentages as written: 100 within the rounding of their binary form.
             var percents = widths.OfType<CssPercentage>().Sum(width => width.Value);
             const double tolerance = 1e-9;
             var open = widths.Count(width => width is null);
