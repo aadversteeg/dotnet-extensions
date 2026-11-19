@@ -29,10 +29,32 @@ namespace Ave.Extensions.Documents.Graphics;
 /// </remarks>
 internal sealed class CellArrangement
 {
-    /// <summary>The farthest a − J may lie from a whole number: 2^-10. The rounding of both is many orders smaller (the
-    /// integral's is about 2^-52 of the sum of the row's pieces before the cell): measured over every glyph of eight fonts
-    /// at 12, 16 and 32 pixels per em, the engine's samples at 96 and 300 dpi and 210,200 random shapes, at most
-    /// 1.2 × 10^-13.</summary>
+    /// <summary>The farthest a − J may lie from a whole number: 2^-10.</summary>
+    /// <remarks>
+    /// <para>What a − J can round by, from the limits, each rounding taken at its largest and all of one sign (2^-53 is
+    /// the rounding of one operation, relative to its result). (1) The integral a is the running sum along the row up to
+    /// the cell. Each piece of an edge in the row adds two terms of at most its height, at most 1, to its cells, and the
+    /// running sum adds each cell that received any (an addition of 0 is exact); each addition rounds by at most 2^-53 of
+    /// the sum it makes, which is at most the pieces in that cell or the winding number there, at most the edges that
+    /// cross the row. With P pieces in the row up to the cell that is at most about 2^-53 · 4P²: 4.4 × 10^-4 at
+    /// P = 10^6, and 2^-10 itself near P = 1.5 × 10^6. No limit bounds P: <see cref="AreaRasterizer.MaxRowPieces"/>
+    /// counts the pieces of flagged cells only, and a path has no limit on its edges. (2) J is a sum over the cell's own
+    /// pieces, at most 643 within <see cref="Canvas.MaxFillWork"/>: at most 2m + 1 + m(m − 1)/2 bands of at most m + 1
+    /// parts, about 1.3 × 10^8 areas, each added into its winding number's sum and weighted by that number, at most m
+    /// plus the side steps, at most 3m: below 10^-4. (3) An end of a piece that is the edge's own end point is kept at
+    /// that point, and the integral interpolates it; the two differ by the interpolation's rounding, a few times 2^-53 of
+    /// the larger of the edge's x and its width, at most about 2^-21 with coordinates up to
+    /// <see cref="Canvas.MaxPixelCoordinate"/> (a coverage box far out) and 2^-25 on a canvas (at most
+    /// <see cref="Canvas.MaxPixels"/> on a side). Such an end moves the area by half that at most: for 643 pieces
+    /// 1.5 × 10^-4, and 10^-5 on a canvas.</para>
+    /// <para>So the limits give no bound well below 2^-10, and no smaller tolerance can be shown never to refuse a right
+    /// pixel: 2^-10 stays. Nor do they show that 2^-10 never does: by (1), in a row of more than about 10^6 pieces before
+    /// a flagged cell, with the winding number about as large, the worst case reaches it, and the fill would be refused
+    /// with <c>Documents.Graphics.InexactCoverage</c>, never drawn wrong. Measured, the roundings are many orders smaller
+    /// and of both signs: over every glyph of eight fonts at 12, 16 and 32 pixels per em, the engine's samples at 96 and
+    /// 300 dpi and 210,200 random shapes, a − J was at most 1.2 × 10^-13 from a whole number. A pixel is right because
+    /// its pieces are made right, not because of this guard (<see cref="AreaRasterizer"/>).</para>
+    /// </remarks>
     public const double Tolerance = 1.0 / 1024;
 
     private readonly BandOrder _bandOrder = new();
