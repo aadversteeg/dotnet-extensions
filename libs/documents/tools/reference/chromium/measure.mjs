@@ -77,7 +77,8 @@ async function print() {
       .filter((element) => element.matches('td, th, [id]') || getComputedStyle(element.parentElement ?? element).display === 'grid')
       .map((element) => {
       const box = element.getBoundingClientRect();
-      const label = element.id || (element.textContent ?? '').trim().slice(0, 24);
+      // A line feed in the text (preserved by white-space: pre) would end the file's line: it becomes a space.
+      const label = element.id || (element.textContent ?? '').trim().slice(0, 24).replaceAll('\n', ' ');
       return `${element.tagName.toLowerCase()} ${(box.width * 0.75).toFixed(3)} ${(box.height * 0.75).toFixed(3)} ${label}`;
       }));
     writeFileSync(join(out, `${name}.boxes.txt`), boxes.join('\n') + '\n');
