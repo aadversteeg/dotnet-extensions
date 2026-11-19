@@ -22,7 +22,8 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// boxes, lay out; then the engine's pages beside every file measured for the case in <c>measured/</c> (README of
 /// <c>tools/reference/chromium</c>): the print read back from Chromium's PDF (<c>&lt;case&gt;.print.txt</c>: pages,
 /// words with their colour and face, painted rectangles with their colour, images), its filled rectangles read back by a
-/// second script (<c>&lt;case&gt;.lines.txt</c>), its words read back by poppler (<c>&lt;case&gt;.words.txt</c>), and the
+/// second script (<c>&lt;case&gt;.lines.txt</c>), the lines it clips around the glyphs' ink (<c>&lt;case&gt;.ink.txt</c>,
+/// <see cref="Clips"/>: both files hold such a line whole), its words read back by poppler (<c>&lt;case&gt;.words.txt</c>), and the
 /// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>). Each comparison below names its file and its
 /// bound.
 /// </summary>
@@ -200,8 +201,14 @@ internal static class HtmlCases
         }
 
         var engine = PrintedPages.Engine(pages.Value);
-        var difference = Difference(engine, PrintedPages.Parse(File.ReadAllText(Measured(name) + ".print.txt")))
-            ?? RectangleDifference(engine, PrintedPages.Parse(File.ReadAllText(Measured(name) + ".print.txt")), Rows(name, "lines"))
+        var clips = Clips(name);
+        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(name) + ".print.txt"));
+        var unused = clips.ToList();
+        chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
+        var lines = Cut(Rows(name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
+        var missed = unused.Count > 0 ? $"page {unused[0].Line.Page} the line clipped at y {Of(unused[0].Line.Y0)} is no rectangle of the print (ink.txt)" : null;
+        var difference = missed ?? Difference(engine, chromium)
+            ?? RectangleDifference(engine, chromium, lines)
             ?? PopplerDifference(pages.Value, engine, Rows(name, "words"))
             ?? BoxDifference(name, boxes.Value, Rows(name, "boxes"));
         return (difference, Listed.TryGetValue(name, out var listed)) switch
@@ -211,6 +218,60 @@ internal static class HtmlCases
             ({ } found, true) => $"listed {listed}: {found}",
             ({ } found, false) => committed == "open" ? $"open {found}" : $"different {found}",
         };
+    }
+
+    /// <summary>
+    /// The lines Chromium cuts around the glyphs' ink (<c>text-decoration-skip-ink: auto</c>), from <c>&lt;case&gt;.ink.txt</c>
+    /// (README of <c>tools/reference/chromium</c>, read back by <c>ink.py</c>): Chromium paints such a line whole inside clips,
+    /// so <c>print.txt</c> and <c>lines.txt</c> hold the whole line; what the page shows are its pieces (<c>piece</c>: the
+    /// line's rows between two gaps; <c>part</c>: a rectangle of its own, where a clip cuts only part of the line's height).
+    /// Each clipped line with the pieces it leaves; none for a case without the file.
+    /// </summary>
+    private static List<(PrintedBox Line, List<PrintedBox> Pieces)> Clips(string name)
+    {
+        var path = Measured(name) + ".ink.txt";
+        var clips = new List<(PrintedBox Line, List<PrintedBox> Pieces)>();
+        foreach (var parts in File.Exists(path) ? File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ')) : [])
+        {
+            var page = int.Parse(parts[1], CultureInfo.InvariantCulture);
+            switch (parts[0])
+            {
+                case "fill":
+                    clips.Add((new PrintedBox(page, Number(parts[2]), Number(parts[3]), Number(parts[4]), Number(parts[5])), []));
+                    break;
+                case "piece":
+                    clips[^1].Pieces.Add(clips[^1].Line with { X0 = Number(parts[2]), X1 = Number(parts[3]) });
+                    break;
+                case "part":
+                    clips[^1].Pieces.Add(new PrintedBox(page, Number(parts[2]), Number(parts[3]), Number(parts[4]), Number(parts[5])));
+                    break;
+            }
+        }
+
+        return clips;
+    }
+
+    /// <summary>The rectangles with each clipped line (<see cref="Clips"/>; the same page and edges within 0.002 pt, the
+    /// files' precision) replaced by its pieces, in its place in drawing order and in its colour; each clip is used once and
+    /// taken out of <paramref name="clips"/>.</summary>
+    private static List<PrintedBox> Cut(IEnumerable<PrintedBox> boxes, List<(PrintedBox Line, List<PrintedBox> Pieces)> clips)
+    {
+        var cut = new List<PrintedBox>();
+        foreach (var box in boxes)
+        {
+            var index = clips.FindIndex(clip => clip.Line.Page == box.Page && Math.Abs(clip.Line.X0 - box.X0) < 0.002 && Math.Abs(clip.Line.Y0 - box.Y0) < 0.002
+                && Math.Abs(clip.Line.X1 - box.X1) < 0.002 && Math.Abs(clip.Line.Y1 - box.Y1) < 0.002);
+            if (index < 0)
+            {
+                cut.Add(box);
+                continue;
+            }
+
+            cut.AddRange(clips[index].Pieces.Select(piece => piece with { Colour = box.Colour, Stroked = box.Stroked }));
+            clips.RemoveAt(index);
+        }
+
+        return cut;
     }
 
     /// <summary>The non-empty lines of a measured file of a case, split at spaces.</summary>
@@ -279,9 +340,8 @@ internal static class HtmlCases
     /// holds no colour, so the area is one for every colour; and it holds fills only, so the bands that Chromium's strokes
     /// paint (<c>print.txt</c>, <see cref="PrintedBox.Stroked"/>: Chromium strokes a border of one colour and style on
     /// all four sides as one rectangle) are added to it.</summary>
-    private static string? RectangleDifference(PrintedPages engine, PrintedPages chromium, List<string[]> rows)
+    private static string? RectangleDifference(PrintedPages engine, PrintedPages chromium, List<PrintedBox> measured)
     {
-        var measured = rows.Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))).ToList();
         if (measured.FirstOrDefault(box => box.Page < 1 || box.Page > engine.Pages.Length) is { } beyond)
         {
             return $"a rectangle on page {beyond.Page}, the engine has {engine.Pages.Length} pages (lines.txt)";
@@ -363,7 +423,8 @@ internal static class HtmlCases
     /// <see cref="WholePixel"/> on the page, and a font size above it), as <c>ReadBackAgreementTests</c> finds for
     /// Chromium's: their number per page is the engine's, its words joined as poppler joins them
     /// (<see cref="PrintedPage.JoinedWords"/>). Each is an engine word on the same page with the same text (matched by
-    /// text and nearest start, since poppler writes them in its own reading order) whose start and end are
+    /// text and nearest place, its start and its baseline against <c>yMax</c>, since poppler writes them in its own reading
+    /// order and the words of one text can start at one x on many lines) whose start and end are
     /// within <see cref="Bound"/> of <c>xMin</c> and <c>xMax</c>, and whose line box, the snapped baseline less the
     /// ascender and plus the descender of the face's line metrics (<see cref="FontMetrics.Line"/>: the typographic ones
     /// where the face sets USE_TYPO_METRICS, as Chromium writes them into the PDF's font descriptor; measured with Theano
@@ -383,7 +444,7 @@ internal static class HtmlCases
             foreach (var row in poppler)
             {
                 var text = System.Net.WebUtility.HtmlDecode(row[5]);
-                var word = inside.Where(word => word.Text == text).OrderBy(word => Math.Abs(word.X0 - Number(row[1]))).FirstOrDefault();
+                var word = inside.Where(word => word.Text == text).OrderBy(word => Math.Abs(word.X0 - Number(row[1])) + Math.Abs(WholePixel(word.Baseline) - Number(row[4]))).FirstOrDefault();
                 if (word is null)
                 {
                     return $"page {page.Number} has no word '{text}' (words.txt)";
