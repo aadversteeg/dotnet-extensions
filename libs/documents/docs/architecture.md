@@ -604,13 +604,13 @@ start tag, with the property and the value) only where it would change the print
 | --- | --- | --- |
 | `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
 | `border-collapse` | `collapse` on a table | `separate` (the initial value, and HTML's) |
-| table width, column and cell widths | the table at `100%`; column lengths and percentages, first-row cell lengths in the fixed layout | see **Tables** |
+| table width, column widths, `table-layout` | the table at `auto` and `100%`; lengths of column elements; `table-layout: fixed` at width `100%` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, any width on a cell or a column group, other table widths: see **Tables** |
 | margins | lengths of 0 or more; `auto` as 0 (width is auto); on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
 | `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply) | other values on a block box |
-| `box-sizing`, `border-spacing`, `empty-cells`, `caption-side`, `table-layout`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `box-sizing`, `border-spacing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space-collapse`, `text-wrap-mode` | `collapse`, `wrap`; any on an element without text | `preserve`, `nowrap` where text is |
 | `text-decoration-line` | `none`; any on an element without content | underline (links: the next packages) |
@@ -638,15 +638,19 @@ one level of the model, with the structure roles of the elements (header rows wi
 body, for PDF/UA). Borders of the table, groups, rows and cells go to their boxes, and layout resolves the conflicts;
 cells keep padding, background and `vertical-align` `top`, `middle` or `bottom`; internal parts have no margins and
 rows and groups no padding (§17.5), the table no padding (§17.6.2); `colspan` and `rowspan` are read by the rules for
-non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); lines at a page break are sliced
-(`BoxDecorationBreak.Slice`, as Chromium paints them). Column sizes, as Chromium lays them out: in the automatic layout a
+non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); at a page break between rows the
+engine splits the grid line there at its centre, its upper half ending one page and its lower half starting the next
+(`BoxDecorationBreak.Slice`), where Chromium paints that line whole on one page: not yet equal. Column sizes, as Chromium lays them out: in the automatic layout a
 column element's length is the column's preferred width (`TrackSize.Preferred`) and a column without one is sized by
 its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only for a table whose width is not `auto`
-(`ComputedStyle::IsFixedTableLayout`), a column element's length is an exact width (`TrackSize.Fixed`) and the
+(`ComputedStyle::IsFixedTableLayout`; case `tl-fixed-width-auto`, where a 30 pt column element under
+`table-layout: fixed` and width `auto` gets its content's width), a column element's length is an exact width
+(`TrackSize.Fixed`) and the
 columns without one share what is left (fill columns of weight 1). A table of width `auto` is as wide as its columns
 need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
-it; the two agree while the content fits its column. Refused (`Documents.Html.Unsupported.Table`,
+it; the two agree while the content fits its column (case `tl-fixed-fill-wide-word`, listed;
+`HtmlListedDifferenceTests`). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
 (§17.2.1); a table part on another element than its HTML element; captions, footer groups, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
@@ -695,7 +699,9 @@ font file the case loads fails `MeasuredFaceTests`: Chromium prints with a fallb
 file does not load.
 
 A line reads `<case> equal`; `<case> refused <code> <property: value or element> at <line>:<column>` (the first
-refusal, counted as one by its exact code: the next packages' work list); `<case> listed <test>: <difference>` for a
+refusal, counted as one by its exact code: the next packages' work list; for content layout cannot place on any page,
+`Documents.Layout.DoesNotFit`, the value is the room it had in points and the place only the line, the one a box
+keeps); `<case> listed <test>: <difference>` for a
 difference of layout already listed and pinned by that test of the code front-end, which must stay the same
 difference; or `<case> open <difference>` for a known difference, engine against Chromium, that is not fixed yet (no
 pull request while one is open). The status is the line's second field. A case that lays out and differs otherwise
@@ -731,13 +737,18 @@ Each is documented next to its code as well.
   the repeated header and, on a page without the header, does not fit with its last child's bottom margin and the
   cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a table header taller than
   the page is refused (`Documents.Layout.DoesNotFit`; Chromium cuts it like a body row); a table row taller than the page
-  only through its cells' padding is refused (Chromium prints it on a fresh page and lets the padding overflow); a table
+  only through its cells' padding is refused (Chromium prints it on a fresh page and lets the padding overflow; case
+  `fr-old-row-taller-by-padding`); a table
   row without cells is refused as input (`Documents.Input.Invalid.Table`; Chromium lays it out with no height) — each
   pinned with Chromium's pages in `ListedDifferenceTests`; under `EmptyRowParts.Avoid` and `MonolithicOverflow.Refuse`,
   the defaults, a table row that continues from the page before, whose rest fills the page area with only the half of
   its grid line below past the page end, is refused (`Documents.Layout.DoesNotFit`) when another row follows it (under
   `Allow` the line passes the page end, as Chromium prints it; under `Slice` the rest is cut at the deepest place;
-  `RowEndTests`, `A_continued_row_whose_lines_fill_the_next_page_is_refused_under_Avoid`); a paragraph with a page counter that breaks across pages is re-broken with each page's
+  `RowEndTests`, `A_continued_row_whose_lines_fill_the_next_page_is_refused_under_Avoid`); through the HTML path, a
+  table part that does not fit the page and cannot be broken is refused (`Documents.Layout.DoesNotFit`, with the room
+  it had and the line of its element) where Chromium prints it (cases `a2-cells-end-page-top`, where Chromium leaves
+  the first page blank and prints the row whole on the next, `fr-header-cell-margin` and `fr-header-pad-box-50`; the
+  status file pins each as refused); a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
 - **Work in nested tables:** a box inside k nested tables is laid out up to 2k + 1 times on a page (each table

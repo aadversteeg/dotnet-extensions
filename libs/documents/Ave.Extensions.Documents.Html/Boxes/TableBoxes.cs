@@ -55,16 +55,17 @@ internal enum TablePart
 /// wraps in anonymous table boxes (§17.2.1), as text or an inline box directly in a row; a part made by another element
 /// than the HTML element of its display type (HTML Standard §15.3.8), which would have no structure role of its own; a
 /// caption, a footer group, a header group after a row group; a table, group or row group without rows.</para>
-/// <para>Column widths (§17.5.2): in the fixed table layout (<c>table-layout: fixed</c>) the widths of the column
-/// elements, then of the cells of the first row, as fixed columns, and the width left shared equally over the columns
-/// without one (fill columns of weight 1); columns in percent of the table's width as fill columns of that weight, the
-/// columns without a width sharing the percent left. In the automatic table layout only what does not depend on the
-/// content: fixed columns from column elements and one column without a width, which takes the rest. The table's width
-/// is <c>100%</c>, the model's only table width.</para>
+/// <para>Column widths (§17.5.2), as Chromium lays them out: in the fixed table layout (<c>table-layout: fixed</c> on a
+/// table of width <c>100%</c>; at width <c>auto</c> Chromium lays the table out automatically) the lengths of the column
+/// elements as fixed columns, and the width left shared equally over the columns without one (fill columns of weight
+/// 1). In the automatic table layout a column element's length is the column's preferred width and a column without
+/// one is sized by its content. The table's width is <c>auto</c> (as wide as its columns need) or <c>100%</c> (its
+/// container's width). Percent columns and widths on cells and column groups are refused.</para>
 /// <para>The parts follow CSS 2.1 §17.5: internal table elements have no margins; rows and row groups no padding; the
 /// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A row span ends with its row
-/// group (HTML Standard §4.9.12.1). Chromium paints half of a collapsed line on each side of a page break
-/// (<see cref="BoxDecorationBreak.Slice"/>).</para>
+/// group (HTML Standard §4.9.12.1). The table breaks with <see cref="BoxDecorationBreak.Slice"/>: layout splits a grid
+/// line at a page break between rows at its centre, half on each page, where Chromium paints the line whole on one
+/// page.</para>
 /// </remarks>
 public static partial class HtmlBoxGenerator
 {
@@ -111,7 +112,7 @@ public static partial class HtmlBoxGenerator
     private sealed partial class Run
     {
         /// <summary>Per table: per column, the width its column element gives, or null for none (auto).</summary>
-        private readonly Dictionary<StyledElement, List<CssValue?>> _columns = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span)>> _columns = new(ReferenceEqualityComparer.Instance);
 
         private static TablePart PartOf(StyledElement element) => HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]);
 
@@ -203,7 +204,9 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The columns of a column element, or of a column group: its column elements, or as many columns as its
-        /// span (HTML Standard §4.9.3, §4.9.4), each with the width that applies to it.</summary>
+        /// span (HTML Standard §4.9.3, §4.9.4), each with the width that applies to it. Each element is kept as one entry
+        /// with its span, so the work is one step per element whatever its span; the columns are counted out only against
+        /// the table's grid (<see cref="Columns"/>).</summary>
         private void AddColumns(StyledElement table, StyledElement element, TablePart part)
         {
             if (!_columns.TryGetValue(table, out var columns))
@@ -218,14 +221,14 @@ public static partial class HtmlBoxGenerator
                 : [];
             if (children.Count == 0)
             {
-                columns.AddRange(Enumerable.Repeat(Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
+                columns.Add((Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
                 return;
             }
 
             foreach (var column in children)
             {
                 Check(column, isBlock: true);
-                columns.AddRange(Enumerable.Repeat(Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
+                columns.Add((Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
             }
         }
 
@@ -406,20 +409,34 @@ public static partial class HtmlBoxGenerator
             var stretch = Value(table, "width") is CssPercentage { Value: 100 };
             var width = stretch ? BoxWidth.Stretch : BoxWidth.Auto;
             var given = _columns.TryGetValue(table, out var columns) ? columns : [];
-            if (given.Count > count)
+            var elements = given.Sum(column => (long)column.Span);
+            if (elements > count)
             {
-                RefuseTable($"The table <{html.LocalName}> has {given.Count} column elements for {count} columns of cells, which is not drawn in this version.", $"{given.Count} column elements for {count} columns", html.Position);
+                RefuseTable($"The table <{html.LocalName}> has {elements} column elements for {count} columns of cells, which is not drawn in this version.", $"{elements} column elements for {count} columns", html.Position);
                 return (Equal(count), width);
             }
 
-            var empty = Enumerable.Range(0, count).FirstOrDefault(column => !grid.Cells.Any(cell => cell.Column == column), -1);
+            var starts = new bool[count];
+            foreach (var cell in grid.Cells)
+            {
+                starts[cell.Column] = true;
+            }
+
+            var empty = Array.IndexOf(starts, false);
             if (empty >= 0)
             {
                 RefuseTable($"Column {empty + 1} of <{html.LocalName}>, in which no cell starts, is not drawn in this version: only spanning cells give it a width.", $"column {empty + 1} without a cell that starts in it", html.Position);
                 return (Equal(count), width);
             }
 
-            var lengths = Enumerable.Range(0, count).Select(column => column < given.Count ? given[column] as CssLength : null).ToArray();
+            var lengths = new CssLength?[count];
+            var next = 0;
+            foreach (var (length, span) in given)
+            {
+                Array.Fill(lengths, length as CssLength, next, span);
+                next += span;
+            }
+
             if (stretch && Value(table, "table-layout") is CssKeyword { Name: "fixed" })
             {
                 // §17.5.2.1: the widths of the column elements, exact, and the width left over shared equally by the

@@ -71,6 +71,18 @@ public class TableBoxTests
         pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
     }
 
+    [Fact]
+    public void Fixed_columns_wider_than_the_table_are_refused_by_layout()
+    {
+        // The fixed layout with column lengths that add up to more than the 595.28 pt page: the columns are the model's
+        // fixed sizes as given, and layout refuses the table, which needs more than its container's width.
+        var result = Boxes(Doc("<table><col style=\"width:400pt\"><col style=\"width:300pt\"><tr><td>a</td><td>b</td></tr></table>"));
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        var pages = DocumentLayout.Run(result.Value.Document, result.Value.Fonts);
+        pages.IsFailure.Should().BeTrue();
+        pages.Error.Code.Should().Be(LayoutErrorCodes.ColumnsDoNotFit);
+    }
+
     [Theory]
     // Fixed layout (a table of width 100%): a column element's length is exact, the rest shares what is left equally
     // (CSS 2.1 §17.5.2.1); with every column of a length the table's width left over goes to them (Stretch).
@@ -157,6 +169,8 @@ public class TableBoxTests
         // Column sizes the model cannot give.
         { "<col><col><col><table><tr><td>a</td><td>b</td></tr></table>", "", null },
         { "<table><col><col><col><tr><td>a</td><td>b</td></tr></table>", "", "3 column elements for 2 columns" },
+        { "<table><col span=1000><colgroup span=1000></colgroup><tr><td>a</td></tr></table>", "", "2000 column elements for 1 columns" },
+        { "<table><colgroup><col span=2><col span=99999></colgroup><tr><td>a</td><td>b</td></tr></table>", "", "1002 column elements for 2 columns" },
         { "<table><tr><td colspan=2>a</td></tr></table>", "", "column 2 without a cell that starts in it" },
         { "<table><tr><td>a</td><td colspan=2>b</td></tr></table>", "table { table-layout: auto }", "column 3 without a cell that starts in it" },
     };
