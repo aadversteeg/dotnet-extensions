@@ -12,9 +12,9 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// Under <see cref="EmptyRowParts.Allow"/>, a unit that starts its page area (a row that continues from the page before,
-/// or the first on the page), whose cells' content fits and whose grid line below does not, is placed whole, and that
-/// line passes the page end, as Chromium prints it (<c>TablePage.PassesOnlyByItsLineBelow</c>; the first row of such a
+/// Under <see cref="EmptyRowParts.Allow"/>, in a table that continues from the page before, a unit that starts its page
+/// area (a row that continues from the page before, or the first on the page), whose cells' content fits and whose grid
+/// line below does not, is placed whole, and that line passes the page end, as Chromium prints it (<c>TablePage.PassesOnlyByItsLineBelow</c>; the first row of such a
 /// unit too, <c>TableBreaks.InsideUnit</c>). Against Chromium's print (<c>tools/reference/chromium</c>, cases
 /// <c>a2-row-end*</c>), and with the limits of docs/architecture.md, "Known limits", pinned. Page area 276 × 180 pt, Lato
 /// 12 pt, line height 15 pt, 0.75 pt grid lines split at breaks.
@@ -216,6 +216,36 @@ public class RowEndTests
             .Where(name => chromium.ContainsKey(name) && !name.StartsWith("paragraph", StringComparison.Ordinal) && (name.Contains("10 lines") || name.Contains("11 lines")) && name.Contains("23 lines"))
             .Select(name => $"{name}: page 2 0 0.375"));
         offsets.Should().HaveCount(8);
+    }
+
+    /// <summary>A one-column table that starts the page, whose first row's content is the page area exactly with the grid
+    /// line above it and whose line below does not fit, then a row "after": a cell of 11 lines below 14.25 pt top padding
+    /// (<c>a2-row-end-first-row</c>), or a cell of 12 lines of 14.9375 pt (<c>a2-row-end-first-row-cut</c>).</summary>
+    private static Element[] FirstRow(string caseName) => caseName switch
+    {
+        "a2-row-end-first-row" => [Grid(1, TableRow([Cell([Lines("x", 11)]).PaddingTop(14.25.Pt())]), TableRow([Cell("after")]))],
+        "a2-row-end-first-row-cut" => [Grid(1, TableRow([Cell([Lines("x", 12).LineHeight(14.9375.Pt())])]), TableRow([Cell("after")]))],
+        _ => throw new ArgumentException(caseName, nameof(caseName)),
+    };
+
+    [Theory]
+    [InlineData("a2-row-end-first-row", "", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "after")]
+    [InlineData("a2-row-end-first-row-cut", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "x10 x11 after")]
+    public void A_table_that_starts_the_page_with_a_first_row_that_fits_but_for_its_line_below_is_refused_under_Allow(string caseName, params string[] chromiumPages)
+    {
+        // Limit, docs/architecture.md: the rule is for a table that continues from the page before. Chromium prints such a
+        // first row otherwise: it leaves the first page empty and prints the row whole on the next, or, where the 12 lines
+        // in its unit of 1/64 pixel are a hair taller than the page area, cuts the row before its last two lines. The
+        // engine prints neither and refuses the document under Allow; under Avoid it cuts the row as before.
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            var result = Run(FirstRow(caseName), EmptyRowParts.Allow, overflow);
+            result.IsFailure.Should().BeTrue($"{overflow}: {(result.IsSuccess ? string.Join(" | ", PrintedPages.Engine(result.Value).PageTexts) : string.Empty)}");
+            result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+            Run(FirstRow(caseName), EmptyRowParts.Avoid, overflow).IsSuccess.Should().BeTrue(overflow.ToString());
+        }
+
+        PrintedPages.Chromium(caseName).PageTexts.Should().Equal(chromiumPages);
     }
 
     /// <summary>The smallest of the 95: a paragraph, then a one-column table of a row of 22 lines; the row continues on

@@ -417,12 +417,15 @@ internal static class TablePage
     }
 
     /// <summary>
-    /// Under <see cref="EmptyRowParts.Allow"/>, as Chromium prints it: a unit that starts its page area (nothing above it on
-    /// the page, not even a header row: a row that continues from the page before, or the first on the page), or the first
-    /// row of such a unit, whose cells' content fits and whose grid line below does not, is placed whole; the line passes
-    /// the page area, by at most its width. Moving the row would gain nothing, and cutting it would put words on other
-    /// pages than Chromium does (cases a2-row-end*). Chromium draws the overflowing line again at the top of the next page;
-    /// the engine does not slice borders (docs/architecture.md, Known limits).
+    /// Under <see cref="EmptyRowParts.Allow"/>, as Chromium prints it: in a table that continues from the page before, a
+    /// unit that starts its page area (nothing above it on the page, not even a header row: a row that continues from the
+    /// page before, or the first on the page), or the first row of such a unit, whose cells' content fits and whose grid
+    /// line below does not, is placed whole; the line passes the page area, by at most its width. Moving the row would gain
+    /// nothing, and cutting it would put words on other pages than Chromium does (cases a2-row-end*). Chromium draws the
+    /// overflowing line again at the top of the next page; the engine does not slice borders (docs/architecture.md, Known
+    /// limits). A table that starts at the top of the page with such a first row is not placed so: Chromium leaves that
+    /// page empty or cuts the row between its lines there (cases a2-row-end-first-*), and the engine refuses it
+    /// (docs/architecture.md, Known limits).
     /// </summary>
     /// <param name="table">The table.</param>
     /// <param name="content">The page up to the unit.</param>
@@ -432,6 +435,7 @@ internal static class TablePage
     /// <returns>True when it is placed whole and its line below passes the page area.</returns>
     internal static bool PassesOnlyByItsLineBelow(TableGeometry table, Content content, double bottom, int row, double height) =>
         table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
+        && table.ContinuesFromPageBefore
         && table.IsAtPageStart
         && content.Rows.IsEmpty
         && Fitting.Fits(bottom - LineBelowShare(table, row), height);

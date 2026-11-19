@@ -128,6 +128,14 @@ public class MeasuredReferenceFilesTests
         ["a2-row-end-bottom-padding-30.print.txt"] = 18,
         ["a2-row-end-bottom-padding-30.words.txt"] = 12,
         ["a2-row-end-family.tsv"] = 3461,
+        ["a2-row-end-first-row-cut.boxes.txt"] = 2,
+        ["a2-row-end-first-row-cut.lines.txt"] = 9,
+        ["a2-row-end-first-row-cut.print.txt"] = 24,
+        ["a2-row-end-first-row-cut.words.txt"] = 13,
+        ["a2-row-end-first-row.boxes.txt"] = 2,
+        ["a2-row-end-first-row.lines.txt"] = 8,
+        ["a2-row-end-first-row.print.txt"] = 23,
+        ["a2-row-end-first-row.words.txt"] = 12,
         ["a2-row-end-span-after.boxes.txt"] = 3,
         ["a2-row-end-span-after.lines.txt"] = 18,
         ["a2-row-end-span-after.print.txt"] = 45,
@@ -1048,7 +1056,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(255);
+        cases.Should().HaveCount(257);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
