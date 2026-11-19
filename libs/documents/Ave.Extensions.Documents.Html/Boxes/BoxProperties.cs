@@ -15,7 +15,8 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <param name="HasText">A text child, also white space only.</param>
 /// <param name="DrawsText">A text child that is not white space only: the element's own text style is drawn.</param>
 /// <param name="HasChildren">An element or text child.</param>
-internal sealed record ElementFacts(ComputedStyle Style, bool IsBlock, bool IsCanvasElement, bool HasText, bool DrawsText, bool HasChildren);
+/// <param name="IsReplaced">An img: a replaced element, whose width and height size the image (CSS 2.1 §10.3.2, §10.6.2).</param>
+internal sealed record ElementFacts(ComputedStyle Style, bool IsBlock, bool IsCanvasElement, bool HasText, bool DrawsText, bool HasChildren, bool IsReplaced = false);
 
 /// <summary>One row of <see cref="BoxProperties.Rows"/>: a registered longhand, what this version draws of it, and the
 /// check that refuses every other value.</summary>
@@ -83,8 +84,10 @@ internal static class BoxProperties
             yield return new(name, "the initial value", (value, _) => Equals(value, initial) ? null : "only the initial value is drawn");
         }
 
-        yield return new("aspect-ratio", "auto; a ratio has no effect on an inline box",
-            (value, facts) => value is CssKeyword { Name: "auto" } || !facts.IsBlock ? null : "a preferred aspect ratio sizes the box, and sizes are not drawn in this version");
+        // CSS Sizing 4 §2.1: "auto && <ratio>" is the natural aspect ratio where the element has one, and every decoded
+        // image has one (the width and height attributes of an img map to it, HTML Standard §15.4.3).
+        yield return new("aspect-ratio", "auto; auto and a ratio on an image; a ratio has no effect on an inline box",
+            (value, facts) => value is CssKeyword { Name: "auto" } || !facts.IsBlock || (facts.IsReplaced && IsAutoAndRatio(value)) ? null : "a preferred aspect ratio sizes the box, and sizes are not drawn in this version");
 
         // CSS Backgrounds 3 §2.2 (background-color), §2.11.2 (the canvas background).
         yield return new("background-color", "a colour of alpha 1 on a block box; transparent everywhere", (value, facts) =>
@@ -133,8 +136,8 @@ internal static class BoxProperties
         }
 
         // CSS Sizing 3 §3.1–3.2: the sizes do not apply to an inline box (CSS 2.1 §10.3.1, §10.6.1).
-        yield return new("width", "auto; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock ? null : "sizes are not drawn in this version");
-        yield return new("height", "auto; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock ? null : "sizes are not drawn in this version");
+        yield return new("width", "auto; a positive length on an image; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "sizes are not drawn in this version");
+        yield return new("height", "auto; a positive length on an image; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "sizes are not drawn in this version");
         yield return new("min-width", "auto or 0; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null : "sizes are not drawn in this version");
         yield return new("max-width", "none; no effect on an inline box", (value, facts) => IsKeyword(value, "none") || !facts.IsBlock ? null : "sizes are not drawn in this version");
         yield return new("box-sizing", "both values: no effect while width and height are auto (every other width and height is refused)", (_, _) => null);
@@ -166,8 +169,8 @@ internal static class BoxProperties
         yield return new("widows", "every value", (_, _) => null);
 
         // CSS Text 3 §4.1.1 and CSS Text 4 §6.1: collapsing and wrapping, read where text is.
-        yield return new("white-space-collapse", "collapse; preserve on an element without text",
-            (value, facts) => IsKeyword(value, "collapse") || !facts.HasText ? null : "preserved white space is not drawn in this version");
+        yield return new("white-space-collapse", "collapse, preserve-breaks (segment breaks as forced line breaks); preserve on an element without text",
+            (value, facts) => IsKeyword(value, "collapse") || IsKeyword(value, "preserve-breaks") || !facts.HasText ? null : "preserved spaces and tabs are not drawn in this version");
         yield return new("text-wrap-mode", "wrap; nowrap on an element without text of its own",
             (value, facts) => IsKeyword(value, "wrap") || !facts.DrawsText ? null : "text that does not wrap is not drawn in this version");
         yield return new("unicode-bidi", "both values: isolate has no effect in left-to-right text, the only direction", (_, _) => null);
@@ -190,7 +193,8 @@ internal static class BoxProperties
         // CSS Overflow 3 §3.1: hidden and clip would clip content that passes a block box (a long word).
         foreach (var name in new[] { "overflow-x", "overflow-y" })
         {
-            yield return new(name, "visible; any value on an inline box", (value, facts) => IsKeyword(value, "visible") || !facts.IsBlock ? null : "clipped overflow is not drawn in this version");
+            yield return new(name, "visible; any value on an inline box or an image (its content fills its box: object-fit is fill)",
+                (value, facts) => IsKeyword(value, "visible") || !facts.IsBlock || facts.IsReplaced ? null : "clipped overflow is not drawn in this version");
         }
 
         // CSS UI 4 §3: outline-style is only none, so nothing is drawn.
@@ -216,6 +220,12 @@ internal static class BoxProperties
 
     /// <summary>A colour with currentcolor taken from the element's colour (CSS Color 4 §4.4).</summary>
     internal static CssValue Resolved(CssValue value, ComputedStyle style) => IsKeyword(value, "currentcolor") ? style[PropertyRegistry.Color] : value;
+
+    private static bool IsAutoAndRatio(CssValue value) =>
+        value is CssList { Items: [CssKeyword { Name: "auto" }, CssRatio] or [CssRatio, CssKeyword { Name: "auto" }] };
+
+    /// <summary>A size the image algorithm takes: a positive length on a replaced element.</summary>
+    private static bool IsImageSize(CssValue value, ElementFacts facts) => facts.IsReplaced && value is CssLength { Value.Points: > 0 };
 
     private static bool IsKeyword(CssValue value, string name) => value is CssKeyword keyword && string.Equals(keyword.Name, name, StringComparison.Ordinal);
 

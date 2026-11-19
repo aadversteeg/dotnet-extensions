@@ -595,10 +595,10 @@ start tag, with the property and the value) only where it would change the print
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
-| `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply) | other values on a block box |
+| `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
 | `box-sizing`, table and list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, no table or list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
-| `white-space-collapse`, `text-wrap-mode` | `collapse`, `wrap`; any on an element without text | `preserve`, `nowrap` where text is |
+| `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve-breaks` (each line feed a forced line break: case `hw-pre-line`), `wrap`; any on an element without text | `preserve`, `nowrap` where text is; a line feed between block boxes under `preserve-breaks` |
 | `text-decoration-line` | `none`; any on an element without content | underline (links: the next packages) |
 | `vertical-align` | `baseline`; any on a block box | other values on an inline box |
 | `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
@@ -606,8 +606,13 @@ start tag, with the property and the value) only where it would change the print
 | break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box) | `break-after: page` after the last box of the document; a family without a face (`Font`) |
 | the properties supported only at their initial value | the initial value | any other (the registry already refuses it) |
 
-Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`): `br`,
-`wbr`, `img`, `q`. The others are refused through their values: tables and lists by `display`, `pre` by
+Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`):
+`wbr`, `q`. A `br` is the model's forced line break, the line separator U+2028, in its own text style (a block-level
+`br` is refused); Chromium adds no line for a `br` that ends a block's content and an empty line for one that starts it
+(cases `hb-*`). A block-level `img` is a box of the image algorithm: its file from a `data:` URL or through the resource
+resolver against the document's base URL, its computed width and height (the attributes are presentational hints), its
+alt text as the figure's description and an empty alt as decorative (case `hi-attributes`); an image that does not come
+or does not decode, and an `img` inside a line of text, are refused (`Rendering`). The others are refused through their values: tables and lists by `display`, `pre` by
 `white-space-collapse`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). Under `UnsupportedPolicy.Warn` a refused value is

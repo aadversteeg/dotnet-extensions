@@ -180,9 +180,7 @@ public class BoxGenerationTests
         Refusals(Doc(body)).Select(Property).Should().Contain(property);
 
     [Theory]
-    [InlineData("br")]
     [InlineData("wbr")]
-    [InlineData("img")]
     [InlineData("q")]
         public void An_element_whose_rendering_no_property_says_is_refused_by_its_own_rule_at_its_start_tag(string element)
     {
@@ -255,7 +253,7 @@ public class BoxGenerationTests
     [Fact]
     public void Under_warn_a_refused_value_takes_the_model_s_initial_value_a_refused_display_is_a_block_and_an_element_refused_by_its_own_rule_is_left_out()
     {
-        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ul><li>b</li></ul><p>c<br>d</p>");
+        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ul><li>b</li></ul><p>c<wbr>d</p>");
         var warned = Boxes(html, UnsupportedPolicy.Warn);
         warned.IsSuccess.Should().BeTrue(warned.IsFailure ? warned.Error.ToString() : string.Empty);
         var body = (Box)warned.Value.Document.Root.Children.Single();

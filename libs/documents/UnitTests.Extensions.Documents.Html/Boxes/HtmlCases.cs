@@ -39,6 +39,24 @@ internal static class HtmlCases
         ["fr-old-forced-in-keep-together"] = "A_forced_break_inside_a_box_kept_together_moves_the_whole_box_first",
         ["fr-old-empty-box-past-end"] = "An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page",
         ["fr-old-blank-last-page"] = "An_empty_box_past_the_end_of_the_last_page_adds_no_page",
+        ["fr-old-keep-together-hides"] = "A_box_kept_together_does_not_hide_a_better_breakpoint_before_it",
+        ["fr-kwn-pad-on-inner-box"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
+        ["fr-kwn-pad-then-bordered-box-widows4"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
+        ["fr-kwn-pad-then-kept-para"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
+        ["fr-kwn-pad-then-para"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
+        ["fr-moved-para-widows-4"] = "A_paragraph_that_moved_to_a_new_page_whole_counts_only_its_orphans_before_a_break_there",
+
+        // LineBoxReferenceTests, FontMetricRoundingTests and BottomPaddingTests of the same project. The last pins only the
+        // words of each page: Chromium prints the continued box's bottom border on page 2, past the end of the page area
+        // the engine computes (43.92 pt), and the engine on page 3, so the word after it is 1.5 pt lower.
+        ["fr-border-continued"] = "A_box_that_continues_keeps_its_lines_and_moves_only_its_bottom_border",
+
+        // Not pinned by a test: the page size. Chromium prints this 595.5 x 842.25 pt page as 595.92 x 841.92 pt, which
+        // the page rounding of the HTML front-end (to 1/300 in) does not give; the words are where Chromium has them.
+        ["fr-pad-figure"] = "Page_size_rounding_of_595.5_x_842.25_pt_not_settled",
+        ["fr-lh-first-baseline"] = "Under_an_explicit_line_height_the_first_baseline_is_within_the_measured_difference_of_Chromium_s",
+        ["f-tiny"] = "At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does",
+        ["f-tiny-038"] = "At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does",
     };
 
     /// <summary>The cases folder in the source tree.</summary>

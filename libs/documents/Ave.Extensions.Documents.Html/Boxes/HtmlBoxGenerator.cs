@@ -25,7 +25,8 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// </summary>
 /// <remarks>
 /// <para>Every computed value is checked against <see cref="BoxProperties"/>, one row per property of the registry; an
-/// element whose rendering no property says is refused by its own rule (br, wbr, img, q). A refusal names the
+/// element whose rendering no property says is refused by its own rule (wbr, q); br is a forced line break and a
+/// block-level img an image box (<c>HtmlBoxGenerator.LineBreaks.cs</c>, <c>HtmlBoxGenerator.Images.cs</c>). A refusal names the
 /// property and the value and points at the element's start tag. Under <see cref="UnsupportedPolicy.Refuse"/> a document
 /// with any refusal fails with all of them. Under <see cref="UnsupportedPolicy.Warn"/> the refusals are diagnostics
 /// and the document is laid out with each refused value replaced by the document model's initial value of what it
@@ -42,14 +43,12 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <para>The tree is walked with an explicit stack, never by recursion, so the depth of the input costs heap, not call
 /// frames.</para>
 /// </remarks>
-public static class HtmlBoxGenerator
+public static partial class HtmlBoxGenerator
 {
     /// <summary>The elements whose rendering no property says, which box generation does not draw.</summary>
     internal static readonly IReadOnlyDictionary<string, string> RefusedRenderings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        ["br"] = "a forced line break",
         ["wbr"] = "a line break opportunity",
-        ["img"] = "a replaced element (an image)",
         ["q"] = "quotation marks generated before and after its content",
     };
 
@@ -124,7 +123,7 @@ public static class HtmlBoxGenerator
         public int Next { get; set; }
     }
 
-    private sealed class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
+    private sealed partial class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
     {
         private readonly string _sourceName = styled.SourceName;
         private readonly Dictionary<StyledElement, HashSet<string>> _refused = new(ReferenceEqualityComparer.Instance);
@@ -183,7 +182,8 @@ public static class HtmlBoxGenerator
                 ReferenceEquals(element, styled.Root) || (html.Namespace == ElementNamespace.Html && html.LocalName == "body"),
                 element.Children.Any(child => child is StyledText),
                 element.Children.Any(child => child is StyledText && !IsCollapsibleOnly(child)),
-                element.Children.Count > 0);
+                element.Children.Count > 0,
+                IsReplaced: IsHtml(element, "img"));
             var refused = new HashSet<string>(StringComparer.Ordinal);
             foreach (var (property, reason) in BoxProperties.Refusals(facts))
             {
@@ -307,6 +307,7 @@ public static class HtmlBoxGenerator
             var node = block.Element.Children[index];
             if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none"))
             {
+                RefuseBreakBetweenBlocks(block.Dropped[index] ? node : null);
                 return;
             }
 
@@ -314,6 +315,18 @@ public static class HtmlBoxGenerator
             {
                 var element = (StyledElement)node;
                 CloseAnonymous(block);
+                if (IsHtml(element, "img"))
+                {
+                    Image(block, element);
+                    return;
+                }
+
+                if (IsHtml(element, "br"))
+                {
+                    BlockLineBreak(element);
+                    return;
+                }
+
                 if (!Check(element, isBlock: true) || Deeper(block.Depth + 1, element.Element.Position))
                 {
                     return;
@@ -369,11 +382,17 @@ public static class HtmlBoxGenerator
 
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        frame.Target.Add(new TextRun(NewId(), text.Text.Data, style, Source(text.Text.Position)));
+                        frame.Target.Add(new TextRun(NewId(), WithPreservedBreaks(text.Style, text.Text.Data), style, Source(text.Text.Position)));
                     }
 
                     break;
                 case StyledElement element when Display(element) == "none":
+                    break;
+                case StyledElement element when IsHtml(element, "br") && Display(element) == "inline":
+                    LineBreak(frame, element);
+                    break;
+                case StyledElement element when IsHtml(element, "img"):
+                    InlineImage(element);
                     break;
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))

@@ -27,7 +27,7 @@ a2-row-end-6pt-after refused Documents.Html.Unsupported.Value display: table
 a2-row-end-after refused Documents.Html.Unsupported.Value display: table
 a2-row-end-background refused Documents.Html.Unsupported.Value display: table
 a2-row-end-below-paragraph refused Documents.Html.Unsupported.Value display: table
-a2-row-end-bottom-padding-30 refused Documents.Html.Unsupported.Rendering br
+a2-row-end-bottom-padding-30 refused Documents.Html.Unsupported.Value display: table
 a2-row-end-first-row refused Documents.Html.Unsupported.Value display: table
 a2-row-end-first-row-cut refused Documents.Html.Unsupported.Value display: table
 a2-row-end-first-row-half-2col refused Documents.Html.Unsupported.Value display: table
@@ -35,7 +35,7 @@ a2-row-end-first-row-half-alone refused Documents.Html.Unsupported.Value display
 a2-row-end-first-row-half-block refused Documents.Html.Unsupported.Value display: table
 a2-row-end-first-row-half-break refused Documents.Html.Unsupported.Value display: table
 a2-row-end-first-row-half-emptyblock refused Documents.Html.Unsupported.Value display: table
-a2-row-end-first-row-half-page2 refused Documents.Html.Unsupported.Rendering br
+a2-row-end-first-row-half-page2 refused Documents.Html.Unsupported.Value display: table
 a2-row-end-first-row-half-second-row refused Documents.Html.Unsupported.Value display: table
 a2-row-end-first-row-half-top refused Documents.Html.Unsupported.Value display: table
 a2-row-end-nested-under-header refused Documents.Html.Unsupported.Value display: table
@@ -47,8 +47,8 @@ a2-rowspan-blocks refused Documents.Html.Unsupported.Value display: table
 a2-split-line-1px refused Documents.Html.Unsupported.Value display: table
 a3-mirror refused Documents.Html.Unsupported.Value display: table
 a3-mirror-px refused Documents.Html.Unsupported.Value display: table
-a3-pad-kept refused Documents.Html.Unsupported.Rendering br
-a3-pad-kept-lower refused Documents.Html.Unsupported.Rendering br
+a3-pad-kept equal
+a3-pad-kept-lower equal
 a3-pad-line equal
 a4-cell-image-179-5 refused Documents.Html.Unsupported.Value display: table
 a4-cell-pad3-image-177 refused Documents.Html.Unsupported.Value display: table
@@ -66,12 +66,12 @@ a4-header-rows-fill-image-row refused Documents.Html.Unsupported.Value display: 
 a4-header-rows-image-row refused Documents.Html.Unsupported.Value display: table
 a4-header-tall-line refused Documents.Html.Unsupported.Value display: table
 a4-header-two-image-rows refused Documents.Html.Unsupported.Value display: table
-a4-image-177-block-padding-3 refused Documents.Html.Unsupported.Rendering img
-a4-image-after-text refused Documents.Html.Unsupported.Rendering img
+a4-image-177-block-padding-3 equal
+a4-image-after-text equal
 a4-image-beside-lines refused Documents.Html.Unsupported.Value display: table
-a4-image-block-padding-133 refused Documents.Html.Unsupported.Rendering img
-a4-image-block-padding-60 refused Documents.Html.Unsupported.Rendering img
-a4-image-first refused Documents.Html.Unsupported.Rendering img
+a4-image-block-padding-133 equal
+a4-image-block-padding-60 equal
+a4-image-first equal
 a4-image-in-cell refused Documents.Html.Unsupported.Value display: table
 a4-image-nested-table refused Documents.Html.Unsupported.Value display: table
 a4-image-rowspan refused Documents.Html.Unsupported.Value display: table
@@ -86,7 +86,7 @@ a5-cell-in-row refused Documents.Html.Unsupported.Value display: table
 a5-kept-cell-by-box refused Documents.Html.Unsupported.Value display: table
 a5-kept-cell-in-row refused Documents.Html.Unsupported.Value display: table
 a5-kept-row refused Documents.Html.Unsupported.Value display: table
-a5-kept-taller-than-page refused Documents.Html.Unsupported.Rendering br
+a5-kept-taller-than-page equal
 a6-header-quarter-180-4500 refused Documents.Html.Unsupported.Value display: table
 a6-header-quarter-180-4575 refused Documents.Html.Unsupported.Value display: table
 a6-header-quarter-360-9000 refused Documents.Html.Unsupported.Value display: table
@@ -110,10 +110,10 @@ a6-nested-late6-h1850 refused Documents.Html.Unsupported.Value display: table
 a6-nested-under-header-h2400 refused Documents.Html.Unsupported.Value display: table
 a6-nested-under-header-h2700 refused Documents.Html.Unsupported.Value display: table
 a6-nested-under-header-h2700-n16 refused Documents.Html.Unsupported.Value display: table
-b-into-block refused Documents.Html.Unsupported.Rendering br
-b-into-paragraph refused Documents.Html.Unsupported.Rendering br
+b-into-block equal
+b-into-paragraph equal
 b-into-table refused Documents.Html.Unsupported.Value display: table
-b-three-deep refused Documents.Html.Unsupported.Rendering br
+b-three-deep equal
 b1-repeat refused Documents.Html.Unsupported.Value display: table
 b2-split-row refused Documents.Html.Unsupported.Value display: table
 b3-keep-group refused Documents.Html.Unsupported.Value display: table
@@ -122,46 +122,46 @@ b5-row-span-kept-cell refused Documents.Html.Unsupported.Value display: table
 c-cell-first-line refused Documents.Html.Unsupported.Value display: table
 c-cell-orphan refused Documents.Html.Unsupported.Value display: table
 c-cell-orphan-moves refused Documents.Html.Unsupported.Value display: table
-c-custom refused Documents.Html.Unsupported.Rendering br
-c-few-lines refused Documents.Html.Unsupported.Rendering br
-c-orphan refused Documents.Html.Unsupported.Rendering br
-c-orphans-one refused Documents.Html.Unsupported.Rendering br
-c-widow refused Documents.Html.Unsupported.Rendering br
-d-length refused Documents.Html.Unsupported.Rendering br
-d-number refused Documents.Html.Unsupported.Rendering br
-d-number-inherits refused Documents.Html.Unsupported.Rendering br
-d-percent refused Documents.Html.Unsupported.Rendering br
-d-percent-inherits refused Documents.Html.Unsupported.Rendering br
-d-strut refused Documents.Html.Unsupported.Rendering br
-d-strut-normal refused Documents.Html.Unsupported.Rendering br
-d-typo-lato refused Documents.Html.Unsupported.Rendering br
-d-typo-theano refused Documents.Html.Unsupported.Rendering br
-f-lato-10 refused Documents.Html.Unsupported.Rendering br
-f-lato-11 refused Documents.Html.Unsupported.Rendering br
-f-lato-13 refused Documents.Html.Unsupported.Rendering br
-f-lato-9 refused Documents.Html.Unsupported.Rendering br
-f-length refused Documents.Html.Unsupported.Rendering br
-f-length-15004 refused Documents.Html.Unsupported.Rendering br
-f-length-floor refused Documents.Html.Unsupported.Rendering br
-f-length-nine refused Documents.Html.Unsupported.Rendering br
+c-custom equal
+c-few-lines equal
+c-orphan equal
+c-orphans-one equal
+c-widow equal
+d-length equal
+d-number equal
+d-number-inherits equal
+d-percent equal
+d-percent-inherits equal
+d-strut equal
+d-strut-normal equal
+d-typo-lato equal
+d-typo-theano equal
+f-lato-10 equal
+f-lato-11 equal
+f-lato-13 equal
+f-lato-9 equal
+f-length equal
+f-length-15004 equal
+f-length-floor equal
+f-length-nine equal
 f-length-three equal
-f-letter-length refused Documents.Html.Unsupported.Rendering br
-f-letter-number refused Documents.Html.Unsupported.Rendering br
-f-letter-percent refused Documents.Html.Unsupported.Rendering br
-f-mixed refused Documents.Html.Unsupported.Rendering br
-f-mixed-lato refused Documents.Html.Unsupported.Rendering br
-f-number refused Documents.Html.Unsupported.Rendering br
-f-number-1501 refused Documents.Html.Unsupported.Rendering br
-f-number-theano refused Documents.Html.Unsupported.Rendering br
-f-theano-10 refused Documents.Html.Unsupported.Rendering br
-f-theano-11 refused Documents.Html.Unsupported.Rendering br
-f-theano-13 refused Documents.Html.Unsupported.Rendering br
+f-letter-length equal
+f-letter-number equal
+f-letter-percent equal
+f-mixed equal
+f-mixed-lato equal
+f-number equal
+f-number-1501 equal
+f-number-theano equal
+f-theano-10 equal
+f-theano-11 equal
+f-theano-13 equal
 f-theano-13-ab equal
-f-theano-9 refused Documents.Html.Unsupported.Rendering br
-f-tiny refused Documents.Html.Unsupported.Rendering br
-f-tiny-038 refused Documents.Html.Unsupported.Rendering br
+f-theano-9 equal
+f-tiny listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does
+f-tiny-038 listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does
 font-sizes refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap
-fr-border-continued refused Documents.Html.Unsupported.Rendering br
+fr-border-continued listed A_box_that_continues_keeps_its_lines_and_moves_only_its_bottom_border
 fr-border-top-and-bottom equal
 fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value display: table
 fr-empty-span equal
@@ -185,11 +185,11 @@ fr-f7-span-orphans-moves-table refused Documents.Html.Unsupported.Value display:
 fr-f8-kept-row-with-spanning-cell refused Documents.Html.Unsupported.Value display: table
 fr-f8-kept-spanning-cell-control refused Documents.Html.Unsupported.Value display: table
 fr-f8-row-not-kept-control refused Documents.Html.Unsupported.Value display: table
-fr-f9-box-orphans3 refused Documents.Html.Unsupported.Rendering br
+fr-f9-box-orphans3 equal
 fr-f9-cell-orphans3 refused Documents.Html.Unsupported.Value display: table
 fr-f9-cell-orphans3-second-row refused Documents.Html.Unsupported.Value display: table
 fr-f9-padded-box-in-cell-orphans3 refused Documents.Html.Unsupported.Value display: table
-fr-f9-padded-box-orphans3 refused Documents.Html.Unsupported.Rendering br
+fr-f9-padded-box-orphans3 equal
 fr-forced-margin equal
 fr-forced-margin-a4 equal
 fr-forced-padded equal
@@ -202,23 +202,23 @@ fr-header-pad-box-72 refused Documents.Html.Unsupported.Value display: table
 fr-header-pad-grid-36 refused Documents.Html.Unsupported.Value display: table
 fr-header-pad-none-36 refused Documents.Html.Unsupported.Value display: table
 fr-header-pad-top-36 refused Documents.Html.Unsupported.Value display: table
-fr-keep-continued-box refused Documents.Html.Unsupported.Rendering br
-fr-keep-continued-paragraph refused Documents.Html.Unsupported.Rendering br
-fr-keep-inside-box refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-no-kwn-control refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-no-padding-control refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-on-inner-box refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-on-outer-box refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-on-outer-box-then-bordered-box refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-one-box refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-orphans1 refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-then-bordered-box-widows4 refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-then-kept-para refused Documents.Html.Unsupported.Rendering br
-fr-kwn-pad-then-para refused Documents.Html.Unsupported.Rendering br
-fr-lh-first-baseline refused Documents.Html.Unsupported.Rendering br
-fr-lh-mixed-sizes refused Documents.Html.Unsupported.Rendering br
-fr-moved-para-widows-3-control refused Documents.Html.Unsupported.Rendering br
-fr-moved-para-widows-4 refused Documents.Html.Unsupported.Rendering br
+fr-keep-continued-box equal
+fr-keep-continued-paragraph equal
+fr-keep-inside-box equal
+fr-kwn-pad-no-kwn-control equal
+fr-kwn-pad-no-padding-control equal
+fr-kwn-pad-on-inner-box listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own
+fr-kwn-pad-on-outer-box equal
+fr-kwn-pad-on-outer-box-then-bordered-box equal
+fr-kwn-pad-one-box equal
+fr-kwn-pad-orphans1 equal
+fr-kwn-pad-then-bordered-box-widows4 listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own
+fr-kwn-pad-then-kept-para listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own
+fr-kwn-pad-then-para listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own
+fr-lh-first-baseline listed Under_an_explicit_line_height_the_first_baseline_is_within_the_measured_difference_of_Chromium_s
+fr-lh-mixed-sizes equal
+fr-moved-para-widows-3-control equal
+fr-moved-para-widows-4 listed A_paragraph_that_moved_to_a_new_page_whole_counts_only_its_orphans_before_a_break_there
 fr-old-blank-last-page listed An_empty_box_past_the_end_of_the_last_page_adds_no_page
 fr-old-cut-cell-bottom refused Documents.Html.Unsupported.Value display: table
 fr-old-cut-cell-middle refused Documents.Html.Unsupported.Value display: table
@@ -232,21 +232,21 @@ fr-old-header-quarter-180-over refused Documents.Html.Unsupported.Value display:
 fr-old-header-quarter-240-at refused Documents.Html.Unsupported.Value display: table
 fr-old-header-quarter-240-over refused Documents.Html.Unsupported.Value display: table
 fr-old-header-taller-than-page refused Documents.Html.Unsupported.Value display: table
-fr-old-keep-together-hides refused Documents.Html.Unsupported.Rendering br
+fr-old-keep-together-hides listed A_box_kept_together_does_not_hide_a_better_breakpoint_before_it
 fr-old-margin-at-row-cut refused Documents.Html.Unsupported.Value display: table
 fr-old-row-taller-by-padding refused Documents.Html.Unsupported.Value display: table
 fr-old-row-without-cells refused Documents.Html.Unsupported.Value display: table
-fr-own-avoid-early-break refused Documents.Html.Unsupported.Rendering br
+fr-own-avoid-early-break equal
 fr-pad-after-content equal
 fr-pad-against-keep equal
-fr-pad-figure refused Documents.Html.Unsupported.Rendering img
+fr-pad-figure listed Page_size_rounding_of_595.5_x_842.25_pt_not_settled
 fr-pad-line equal
-fr-pad-line-does-not-fit refused Documents.Html.Unsupported.Rendering br
+fr-pad-line-does-not-fit equal
 fr-pad-line-in-block equal
 fr-pad-margin-inside equal
-fr-pad-own-break refused Documents.Html.Unsupported.Rendering br
-fr-pad-own-break-paragraph refused Documents.Html.Unsupported.Rendering br
-fr-pad-three-lines refused Documents.Html.Unsupported.Rendering br
+fr-pad-own-break equal
+fr-pad-own-break-paragraph equal
+fr-pad-three-lines equal
 fr-pad-top-and-bottom equal
 fr-positions equal
 fr-row-later-page-padding-overflows refused Documents.Html.Unsupported.Value display: table
@@ -257,34 +257,50 @@ h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none
 h-kerning-normal equal
 h-page-margin-fraction equal
 h-page-margin-round equal
-kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br
-kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br
-kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br
-kb-n10-kept-para-padding-bottom refused Documents.Html.Unsupported.Rendering br
+hb-anonymous equal
+hb-display-none equal
+hb-empty-block equal
+hb-first-last equal
+hb-justify equal
+hb-sizes-between equal
+hb-sizes-inside equal
+hb-two-three equal
+hb-white-space equal
+hi-attributes equal
+hi-inline refused Documents.Html.Unsupported.Rendering img
+hw-nowrap refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap
+hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve
+hw-pre-line equal
+hw-pre-wrap refused Documents.Html.Unsupported.Value white-space-collapse: preserve
+hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve
+kb-m1-kept-box-margin-in-padded-box equal
+kb-m2-kept-para-margin-in-padded-box equal
+kb-n1-kept-box-padding equal
+kb-n10-kept-para-padding-bottom equal
 kb-n11-kept-table-in-padded-box refused Documents.Html.Unsupported.Value display: table
-kb-n12-kept-box-orphans2-default refused Documents.Html.Unsupported.Rendering br
-kb-n1c-kept-box-padding-fits-control refused Documents.Html.Unsupported.Rendering br
-kb-n2-kept-para-in-padded-box refused Documents.Html.Unsupported.Rendering br
-kb-n3-kept-box-padding-bottom-3 refused Documents.Html.Unsupported.Rendering br
-kb-n4-kept-box-border-bottom-6 refused Documents.Html.Unsupported.Rendering br
+kb-n12-kept-box-orphans2-default equal
+kb-n1c-kept-box-padding-fits-control equal
+kb-n2-kept-para-in-padded-box equal
+kb-n3-kept-box-padding-bottom-3 equal
+kb-n4-kept-box-border-bottom-6 equal
 kb-n5-kept-padded-box-in-cell refused Documents.Html.Unsupported.Value display: table
 kb-n6-kept-para-in-padded-box-in-cell refused Documents.Html.Unsupported.Value display: table
 kb-n7-kept-box-three-paragraphs equal
-kb-n8-kept-box-around-padded-box refused Documents.Html.Unsupported.Rendering br
-kb-n9-padded-box-not-kept-control refused Documents.Html.Unsupported.Rendering br
-kb-s0-base refused Documents.Html.Unsupported.Rendering br
-kb-s1-outer-box-not-kept refused Documents.Html.Unsupported.Rendering br
-kb-s2-b-not-kept refused Documents.Html.Unsupported.Rendering br
-kb-s3-d-kept-only refused Documents.Html.Unsupported.Rendering br
-kb-s4-a-keep-with-next-only refused Documents.Html.Unsupported.Rendering br
-kb-s5-perfect-break-two-before refused Documents.Html.Unsupported.Rendering br
-kb-s7-perfect-break-before-kept-box refused Documents.Html.Unsupported.Rendering br
-kb-s8-no-keeps-but-inner-keep-with-next refused Documents.Html.Unsupported.Rendering br
-kb-s9-a-orphans-no-kept-box refused Documents.Html.Unsupported.Rendering br
+kb-n8-kept-box-around-padded-box equal
+kb-n9-padded-box-not-kept-control equal
+kb-s0-base equal
+kb-s1-outer-box-not-kept equal
+kb-s2-b-not-kept equal
+kb-s3-d-kept-only equal
+kb-s4-a-keep-with-next-only equal
+kb-s5-perfect-break-two-before equal
+kb-s7-perfect-break-before-kept-box equal
+kb-s8-no-keeps-but-inner-keep-with-next equal
+kb-s9-a-orphans-no-kept-box equal
 kb-t1-kept-row-group-in-padded-box refused Documents.Html.Unsupported.Value display: table
 kb-t2-kept-row-group-after-a-row refused Documents.Html.Unsupported.Value display: table
 kb-t3-row-group-not-kept-control refused Documents.Html.Unsupported.Value display: table
-kb-v8-padded-box-kept-para refused Documents.Html.Unsupported.Rendering br
+kb-v8-padded-box-kept-para equal
 kb-v9-padded-box-kept-table-row refused Documents.Html.Unsupported.Value display: table
 mf4-line-0 refused Documents.Html.Unsupported.Value display: table
 mf4-line-075 refused Documents.Html.Unsupported.Value display: table

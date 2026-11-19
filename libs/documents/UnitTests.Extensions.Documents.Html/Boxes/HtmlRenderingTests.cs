@@ -38,7 +38,7 @@ public class HtmlRenderingTests
     [Fact]
     public void What_the_front_end_does_not_draw_is_refused_with_the_document_s_name_line_and_column()
     {
-        var refused = HtmlRendering.ToPages(Html.Replace("<p>Hello</p>", "<p>Hello\n<br></p>", StringComparison.Ordinal), Options);
+        var refused = HtmlRendering.ToPages(Html.Replace("<p>Hello</p>", "<p>Hello\n<wbr></p>", StringComparison.Ordinal), Options);
         refused.IsFailure.Should().BeTrue();
         var error = refused.Error.Parts().Single();
         (error.Metadata![ErrorMetadataKeys.SourceFile], error.Metadata[ErrorMetadataKeys.SourceLine], error.Metadata[ErrorMetadataKeys.SourceColumn])
