@@ -1028,6 +1028,38 @@ public class MeasuredReferenceFilesTests
         ["fr-row-later-page-padding-overflows.lines.txt"] = 10,
         ["fr-row-later-page-padding-overflows.print.txt"] = 29,
         ["fr-row-later-page-padding-overflows.words.txt"] = 16,
+        ["ii-align.boxes.txt"] = 1,
+        ["ii-align.lines.txt"] = 0,
+        ["ii-align.print.txt"] = 29,
+        ["ii-align.words.txt"] = 24,
+        ["ii-baseline.boxes.txt"] = 1,
+        ["ii-baseline.lines.txt"] = 0,
+        ["ii-baseline.print.txt"] = 25,
+        ["ii-baseline.words.txt"] = 15,
+        ["ii-breaks.boxes.txt"] = 1,
+        ["ii-breaks.lines.txt"] = 0,
+        ["ii-breaks.print.txt"] = 21,
+        ["ii-breaks.words.txt"] = 10,
+        ["ii-height.boxes.txt"] = 1,
+        ["ii-height.lines.txt"] = 0,
+        ["ii-height.print.txt"] = 20,
+        ["ii-height.words.txt"] = 13,
+        ["ii-hyphen.boxes.txt"] = 1,
+        ["ii-hyphen.lines.txt"] = 0,
+        ["ii-hyphen.print.txt"] = 11,
+        ["ii-hyphen.words.txt"] = 9,
+        ["ii-page.boxes.txt"] = 1,
+        ["ii-page.lines.txt"] = 0,
+        ["ii-page.print.txt"] = 14,
+        ["ii-page.words.txt"] = 11,
+        ["ii-table.boxes.txt"] = 6,
+        ["ii-table.lines.txt"] = 21,
+        ["ii-table.print.txt"] = 34,
+        ["ii-table.words.txt"] = 9,
+        ["ii-wrap.boxes.txt"] = 1,
+        ["ii-wrap.lines.txt"] = 0,
+        ["ii-wrap.print.txt"] = 36,
+        ["ii-wrap.words.txt"] = 28,
         ["kb-m1-kept-box-margin-in-padded-box.boxes.txt"] = 1,
         ["kb-m1-kept-box-margin-in-padded-box.lines.txt"] = 0,
         ["kb-m1-kept-box-margin-in-padded-box.print.txt"] = 7,
@@ -1204,7 +1236,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(294);
+        cases.Should().HaveCount(302);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
