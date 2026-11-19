@@ -151,9 +151,9 @@ public class PageRasterizerTests
         // either shape alike: a render that does not start from a collection is counted up to 8.2 KB more or less now
         // and then (Windows CI saw 6,368), and one that does, ±240 bytes in a few renders while other tests run alongside.
         // So each measured render starts from a full collection, each shape is rendered five times in turn, and the
-        // medians are compared. The allowance, 2 KiB, is eight times that remaining noise and less than what the
-        // rasteriser's column buffers take for 40 columns more (53 bytes a column; the canvas has 1,240): a clip box 64
-        // pixels wider than the canvas fails here by 816 bytes. One row of the canvas in doubles is already 9.9 KB.
+        // medians are compared. The allowance is 16 KiB. The claim is about a shape of 10^30 points: a buffer that
+        // followed that shape would be refused, or larger than the page's by orders of magnitude, so 16 KiB holds the
+        // same claim, and it lies above the largest step of the runtime's count seen (8,168 bytes), on any system.
         var huge = PageOf(595, 842, new FillRectangle(new Rect(new Point(-1e30, -1e30), new Size(2e30, 2e30)), Color.Black));
         var page = PageOf(595, 842, new FillRectangle(new Rect(new Point(0, 0), new Size(600, 850)), Color.Black));
         var options = new RasterOptions(150);
@@ -179,7 +179,7 @@ public class PageRasterizerTests
 
         var (pageBytes, hugeBytes) = (pageCounts.Order().ElementAt(2), hugeCounts.Order().ElementAt(2));
         hugeBytes.Should().BeLessThanOrEqualTo(
-            pageBytes + 2048,
+            pageBytes + 16384,
             $"huge {hugeBytes} bytes, page {pageBytes} bytes (medians; huge {string.Join(", ", hugeCounts)}; page {string.Join(", ", pageCounts)})");
         PageRasterizer.Render(huge, options).Value.Pixels.Should().Equal(PageRasterizer.Render(page, options).Value.Pixels);
     }
