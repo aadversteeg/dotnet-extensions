@@ -68,4 +68,39 @@ public class PinnedDifferenceTests
         Printed(body, MonolithicOverflow.Refuse, EmptyRowParts.Avoid).PageTexts.Should().Equal("", "", "after");
         Printed(body, MonolithicOverflow.Refuse, EmptyRowParts.Allow).PageTexts.Should().Equal("", "", "after");
     }
+
+    [Theory]
+    [InlineData(EmptyRowParts.Avoid)]
+    [InlineData(EmptyRowParts.Allow)]
+    public void A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_is_refused_under_Refuse_and_breaks_earlier_under_Slice(EmptyRowParts parts)
+    {
+        // An outer one-cell table whose cell has 30 pt bottom padding, around a table with 6 pt cell padding: two header
+        // rows ("H27"; "H28", "H29": 70.5 pt, more than a quarter of the page area, so not repeated), a row of six lines
+        // below 24 pt top padding, a row of two lines and a row of four. Page 1 cuts the row of six lines after "t33". On
+        // page 2 the rest of the inner table fits the page area, but not with the outer cell's bottom padding below it.
+        // Chromium places all of it on page 2 and lets the padding pass the page end (page 3 shows only the outer cell's
+        // grid lines). The engine never lets a cell's bottom padding pass the page end, and it records no breakpoint
+        // inside content that continues from the page before: under Refuse the table is refused; under Slice the
+        // content is laid out again above the bottom padding and breaks before its last row (docs/architecture.md,
+        // "Known limits"; case a4-continued-cell-pad-bottom-30).
+        static ParagraphElement Words(params string[] words) => Paragraph([.. words.SelectMany((word, i) => i == 0 ? new[] { Text(word) } : [LineBreak(), Text(word)])]);
+        var inner = Elements.Table(Columns(Fill(1)),
+            [
+                HeaderRow([Cell([Words("H27")])]),
+                HeaderRow([Cell([Words("H28", "H29")])]),
+                TableRow([Cell([Words("t30", "t31", "t32", "t33", "t34", "t35")]).PaddingTop(24.Pt())]),
+                TableRow([Cell([Words("t36", "t37")])]),
+                TableRow([Cell([Words("t39", "t40", "t41", "t42")])]),
+            ]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks().CellPadding(6.Pt());
+        Element[] body = [Table(Cell([inner]).PaddingBottom(30.Pt())).CellPadding(0.Pt())];
+        var chromium = PrintedPages.Chromium("a4-continued-cell-pad-bottom-30");
+
+        chromium.PageTexts.Should().Equal("H27 H28 H29 t30 t31 t32 t33", "t34 t35 t36 t37 t39 t40 t41 t42", "");
+        var refused = DocumentTranslator.ToModel(Document([.. body], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+                .FontFamily("Lato").LineHeight(15.Pt()).EmptyRowParts(parts).FontMetricRounding(FontMetricRounding.WholePixels))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic));
+        refused.IsFailure.Should().BeTrue();
+        refused.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+        Printed(body, MonolithicOverflow.Slice, parts).PageTexts.Should().Equal("H27 H28 H29 t30 t31 t32 t33", "t34 t35 t36 t37", "t39 t40 t41 t42");
+    }
 }

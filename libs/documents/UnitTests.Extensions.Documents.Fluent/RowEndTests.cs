@@ -300,6 +300,55 @@ public class RowEndTests
         chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7", "H x8 x9 after");
     }
 
+    /// <summary>The shape of <c>a2-row-end-nested-under-header</c> with <paramref name="lines"/> lines below
+    /// <paramref name="padding"/> of top padding in the inner table's second row.</summary>
+    private static Element[] NestedUnderHeader(int lines, double padding) =>
+    [
+        Grid(1, HeaderRow([Cell("H")]), TableRow([Cell([Grid(1,
+            TableRow([Cell([Lines("a", 10)])]),
+            TableRow([Cell([Lines("x", lines)]).PaddingTop(padding.Pt())]),
+            TableRow([Cell("after")]))])])),
+    ];
+
+    [Fact]
+    public void Under_an_outer_table_s_repeated_header_a_table_whose_rest_fits_but_for_the_outer_table_s_bottom_line_goes_on_without_the_header()
+    {
+        // The shape above with 9 lines below 12 pt top padding: on page 2 the rest of the inner table, "x0" to "after",
+        // fits below the repeated header "H" but for the outer table's bottom line, which would pass the page end.
+        // Chromium repeats the header and lets the line pass (it draws the line again on a page 3 with nothing else). The
+        // engine goes on without the header there, under every profile (docs/architecture.md, "Known limits").
+        var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header-end");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            foreach (var parts in Enum.GetValues<EmptyRowParts>())
+            {
+                var result = Run(NestedUnderHeader(9, 12), parts, overflow);
+                result.IsSuccess.Should().BeTrue($"{overflow}/{parts}: {(result.IsFailure ? result.Error.ToString() : string.Empty)}");
+                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(["H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 after"], $"{overflow}/{parts}");
+            }
+        }
+
+        chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7 x8 after", "");
+    }
+
+    [Fact]
+    public void Under_an_outer_table_s_repeated_header_a_continued_row_below_13_875_pt_of_padding_is_cut_as_in_Chromium_under_Avoid_only()
+    {
+        // The shape above with 10 lines below 13.875 pt top padding. Under Avoid the row is cut below the repeated header
+        // as Chromium cuts it. Under Allow it is refused under Refuse, and under Slice page 2 goes on without the header,
+        // as in a2-row-end-nested-under-header (docs/architecture.md, "Known limits").
+        var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header-13875");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Avoid, overflow).OnSuccessMap(PrintedPages.Engine).Value.PageTexts.Should().Equal(chromium.PageTexts, $"{overflow}/Avoid");
+        }
+
+        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Refuse).Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Slice).OnSuccessMap(PrintedPages.Engine).Value.PageTexts
+            .Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after");
+        chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7", "H x8 x9 after");
+    }
+
     /// <summary>The smallest of the 95: a paragraph, then a one-column table of a row of 22 lines; the row continues on
     /// page 2 with 12 lines, which fill the page area, and the line below it passes the page end.</summary>
     private static Element[] Smallest(bool after = false) =>

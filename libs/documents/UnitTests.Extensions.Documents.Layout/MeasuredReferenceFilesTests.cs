@@ -140,6 +140,14 @@ public class MeasuredReferenceFilesTests
         ["a2-row-end-first-row.lines.txt"] = 8,
         ["a2-row-end-first-row.print.txt"] = 23,
         ["a2-row-end-first-row.words.txt"] = 12,
+        ["a2-row-end-nested-under-header-13875.boxes.txt"] = 5,
+        ["a2-row-end-nested-under-header-13875.lines.txt"] = 32,
+        ["a2-row-end-nested-under-header-13875.print.txt"] = 59,
+        ["a2-row-end-nested-under-header-13875.words.txt"] = 24,
+        ["a2-row-end-nested-under-header-end.boxes.txt"] = 5,
+        ["a2-row-end-nested-under-header-end.lines.txt"] = 27,
+        ["a2-row-end-nested-under-header-end.print.txt"] = 52,
+        ["a2-row-end-nested-under-header-end.words.txt"] = 22,
         ["a2-row-end-nested-under-header.boxes.txt"] = 5,
         ["a2-row-end-nested-under-header.lines.txt"] = 32,
         ["a2-row-end-nested-under-header.print.txt"] = 59,
@@ -196,6 +204,10 @@ public class MeasuredReferenceFilesTests
         ["a4-cell-pad3-line-177.lines.txt"] = 9,
         ["a4-cell-pad3-line-177.print.txt"] = 14,
         ["a4-cell-pad3-line-177.words.txt"] = 2,
+        ["a4-continued-cell-pad-bottom-30.boxes.txt"] = 6,
+        ["a4-continued-cell-pad-bottom-30.lines.txt"] = 26,
+        ["a4-continued-cell-pad-bottom-30.print.txt"] = 44,
+        ["a4-continued-cell-pad-bottom-30.words.txt"] = 15,
         ["a4-header-cut-row-image-row.boxes.txt"] = 3,
         ["a4-header-cut-row-image-row.lines.txt"] = 31,
         ["a4-header-cut-row-image-row.print.txt"] = 60,
@@ -1088,7 +1100,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(265);
+        cases.Should().HaveCount(268);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
