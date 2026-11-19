@@ -329,5 +329,11 @@ mf4-line-0 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-075 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-150 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-225 refused Documents.Html.Unsupported.Value display: table at 7:1
+tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
+tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
+tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1
+tw-insets refused Documents.Html.Unsupported.Value width: 300pt at 5:1
+tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
+tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48

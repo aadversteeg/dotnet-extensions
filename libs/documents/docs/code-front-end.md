@@ -210,8 +210,13 @@ var entries = Table(
 
 The full timesheet is `samples/Ave.Extensions.Documents.Samples/Timesheet/Timesheet.cs`.
 
-How tables lay out: fixed columns keep their width; auto columns get between their narrowest and widest content;
-fill columns share what is left, never narrower than their narrowest content. Columns that cannot fit are the
+How tables lay out: fixed columns keep their width; `Preferred(width)` columns take their width as a browser takes a
+`col` width (wider for a wider word, narrower down to their content when the table cannot give every such column its
+width); auto columns get between their narrowest and widest content;
+fill columns share what is left, never narrower than their narrowest content. Without a fill column a table is as
+wide as its columns need; `FullWidth()` makes it as wide as the space it is in, as a browser lays out an HTML table
+with `width: 100%`: the width left over goes to the auto columns in proportion to their widest content, or to the
+fixed columns in proportion to their widths when no column is auto. Columns that cannot fit are the
 error `Documents.Layout.ColumnsDoNotFit`. A row is as tall as its tallest cell. Between two cells there is one
 grid line; where two borders meet, the wider one wins, then a cell's over a row's, then the upper or left one (CSS
 2.1 §17.6.2.1). A page breaks between rows, or inside a row between the lines of its cells; kept-together rows and

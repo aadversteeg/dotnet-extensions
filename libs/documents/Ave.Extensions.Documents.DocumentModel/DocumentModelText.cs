@@ -94,6 +94,7 @@ public static class DocumentModelText
             style.Text is { } strut ? $"strut=({StyleText(strut)})" : null,
             style.VerticalAlign != initial.VerticalAlign ? $"vertical-align={style.VerticalAlign.ToString().ToLowerInvariant()}" : null,
             style.Columns.Count > 0 ? $"columns={string.Join(",", style.Columns)}" : null,
+            style.Width != initial.Width ? $"width={style.Width.ToString().ToLowerInvariant()}" : null,
             style.Span != initial.Span ? $"span={style.Span}" : null,
             $"@{box.Source}",
         ];
