@@ -1160,6 +1160,30 @@ public class MeasuredReferenceFilesTests
         ["mf4-line-225.lines.txt"] = 106,
         ["mf4-line-225.print.txt"] = 169,
         ["mf4-line-225.words.txt"] = 60,
+        ["sr-counter.boxes.txt"] = 1,
+        ["sr-counter.lines.txt"] = 0,
+        ["sr-counter.print.txt"] = 23,
+        ["sr-counter.words.txt"] = 22,
+        ["sr-font-changes.boxes.txt"] = 1,
+        ["sr-font-changes.lines.txt"] = 0,
+        ["sr-font-changes.print.txt"] = 14,
+        ["sr-font-changes.words.txt"] = 9,
+        ["sr-line-justify.boxes.txt"] = 1,
+        ["sr-line-justify.lines.txt"] = 0,
+        ["sr-line-justify.print.txt"] = 61,
+        ["sr-line-justify.words.txt"] = 40,
+        ["sr-line-left.boxes.txt"] = 1,
+        ["sr-line-left.lines.txt"] = 0,
+        ["sr-line-left.print.txt"] = 61,
+        ["sr-line-left.words.txt"] = 40,
+        ["sr-same-font.boxes.txt"] = 1,
+        ["sr-same-font.lines.txt"] = 0,
+        ["sr-same-font.print.txt"] = 34,
+        ["sr-same-font.words.txt"] = 25,
+        ["sr-zwnj.boxes.txt"] = 1,
+        ["sr-zwnj.lines.txt"] = 0,
+        ["sr-zwnj.print.txt"] = 7,
+        ["sr-zwnj.words.txt"] = 3,
         ["versions.txt"] = 5,
         ["widths-exact.boxes.txt"] = 19,
         ["widths-exact.lines.txt"] = 20,
@@ -1180,7 +1204,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(288);
+        cases.Should().HaveCount(294);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

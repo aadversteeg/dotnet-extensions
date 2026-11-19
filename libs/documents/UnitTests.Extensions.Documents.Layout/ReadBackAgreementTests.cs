@@ -44,9 +44,10 @@ public class ReadBackAgreementTests
             // pdftotext leaves out a word whose glyphs pass the page's edge (a slice of a line taller than the page, cases
             // a4-*): it finds every word inside the page, and no word PyMuPDF does not.
             var poppler = lines.Where(fields => int.Parse(fields[0], CultureInfo.InvariantCulture) == page.Number).Select(fields => System.Net.WebUtility.HtmlDecode(fields[5])).Order(StringComparer.Ordinal).ToList();
-            var inside = page.Words.Where(word => word.Baseline <= page.Height && word.Baseline - word.FontSize >= 0).Select(word => word.Text).Order(StringComparer.Ordinal);
+            // pdftotext joins the pieces of a word that PyMuPDF splits where its colour or font changes (cases sr-*).
+            var inside = page.JoinedWords.Select(joined => joined.Word).Where(word => word.Baseline <= page.Height && word.Baseline - word.FontSize >= 0).Select(word => word.Text).Order(StringComparer.Ordinal);
             poppler.Should().Equal(inside, $"{caseName}, page {page.Number}: the words of pdftotext and PyMuPDF inside the page");
-            poppler.Except(page.Words.Select(word => word.Text), StringComparer.Ordinal).Should().BeEmpty($"{caseName}, page {page.Number}: pdftotext finds no word PyMuPDF does not");
+            poppler.Except(page.JoinedWords.Select(joined => joined.Word.Text), StringComparer.Ordinal).Should().BeEmpty($"{caseName}, page {page.Number}: pdftotext finds no word PyMuPDF does not");
         }
 
         lines.Select(fields => int.Parse(fields[0], CultureInfo.InvariantCulture)).Should().OnlyContain(number => number >= 1 && number <= print.Pages.Length, caseName);

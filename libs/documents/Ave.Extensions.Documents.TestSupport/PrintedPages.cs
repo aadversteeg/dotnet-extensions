@@ -42,6 +42,30 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
     public ImmutableArray<(double Baseline, string Text)> Lines =>
         [.. Words.GroupBy(word => Math.Round(word.Baseline, 3))
             .Select(line => (line.First().Baseline, string.Join(" ", line.Select(word => word.Text))))];
+
+    /// <summary>The words as a reader of the page sees them: the pieces that PyMuPDF (and the engine, one glyph run per run)
+    /// gives where a word's colour or font changes are joined again where nothing lies between them on one baseline at one
+    /// font size (a kerned pair overlaps; a space leaves 2.7 pt or more at the sizes of the cases), as pdftotext joins them. Each word
+    /// comes with the number of pieces it was made of.</summary>
+    public ImmutableArray<(PrintedWord Word, int Pieces)> JoinedWords
+    {
+        get
+        {
+            var words = ImmutableArray.CreateBuilder<(PrintedWord Word, int Pieces)>();
+            foreach (var piece in Words)
+            {
+                if (words.Count > 0 && words[^1] is var (last, pieces) && Math.Abs(last.Baseline - piece.Baseline) < 0.01 && last.FontSize == piece.FontSize && piece.X0 - last.X1 < 0.5)
+                {
+                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text }, pieces + 1);
+                    continue;
+                }
+
+                words.Add((piece, 1));
+            }
+
+            return words.ToImmutable();
+        }
+    }
 }
 
 /// <summary>
