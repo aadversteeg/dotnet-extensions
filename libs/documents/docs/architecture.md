@@ -568,6 +568,10 @@ StyledHtmlDocument ──HtmlBoxGenerator.Generate──▶ HtmlBoxes (StyledDoc
 HTML text ──HtmlRendering.ToPages / ToPdf / ToPng (composition package)──▶ the same, in one call
 ```
 
+Every `HtmlRendering` entry returns its output beside the diagnostics of parsing, style resolution and box generation
+(`HtmlRendered<T>`), so under `UnsupportedPolicy.Warn` a caller sees each refusal and what was left out or changed for
+it.
+
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`). In this first package it draws `display: block`, `inline` and `none`, text, the box

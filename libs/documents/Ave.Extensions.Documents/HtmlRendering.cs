@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Graphics;
 using Ave.Extensions.Documents.Html;
@@ -33,21 +34,29 @@ public sealed record HtmlRenderOptions
     public string SourceName { get; init; } = string.Empty;
 }
 
+/// <summary>What an <see cref="HtmlRendering"/> call gives: its output and the diagnostics of every stage.</summary>
+/// <typeparam name="T">The output: the pages, a PDF file, PNG files or images.</typeparam>
+/// <param name="Output">The output.</param>
+/// <param name="Diagnostics">The diagnostics of parsing, style resolution and box generation, in order; under
+/// <see cref="UnsupportedPolicy.Warn"/> also every refusal, each with what was left out or changed for it.</param>
+public sealed record HtmlRendered<T>(T Output, ValueList<Error> Diagnostics);
+
 /// <summary>
 /// The HTML front-end's pipeline in one call, beside <see cref="DocumentRendering"/>: HTML text and its style sheets →
 /// parse (<see cref="HtmlParser"/>) → styles (<see cref="HtmlStyleResolver"/>) → boxes (<see cref="HtmlBoxGenerator"/>)
 /// → pages (<see cref="DocumentLayout"/>) → PDF or PNG. The engine takes finished HTML: filling a template with data is
 /// the caller's. What the front-end does not draw is refused with its line and column (or, with
 /// <see cref="UnsupportedPolicy.Warn"/>, reported in the diagnostics and left out as <see cref="HtmlBoxGenerator"/> says).
+/// Every entry returns the diagnostics beside its output (<see cref="HtmlRendered{T}"/>).
 /// </summary>
 public static class HtmlRendering
 {
     /// <summary>Lays an HTML document out into pages: what every back-end draws.</summary>
     /// <param name="html">The HTML text.</param>
     /// <param name="options">The fonts, the style options and the document's name.</param>
-    /// <returns>The pages, or the error with the document's line and column.</returns>
+    /// <returns>The pages and the diagnostics, or the error with the document's line and column.</returns>
     /// <exception cref="ArgumentNullException">The text or the options are null.</exception>
-    public static Result<PageDocument, Error> ToPages(string html, HtmlRenderOptions options)
+    public static Result<HtmlRendered<PageDocument>, Error> ToPages(string html, HtmlRenderOptions options)
     {
         ArgumentNullException.ThrowIfNull(html);
         ArgumentNullException.ThrowIfNull(options);
@@ -61,39 +70,43 @@ public static class HtmlRendering
                 BaseUrl = style.BaseUrl,
                 Unsupported = style.Unsupported,
             }))
-            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, boxes.Fonts));
+            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, boxes.Fonts).OnSuccessMap(pages => new HtmlRendered<PageDocument>(pages, boxes.Diagnostics)));
     }
 
     /// <summary>Renders an HTML document to PDF: <see cref="ToPages"/>, then the PDF back-end.</summary>
     /// <param name="html">The HTML text.</param>
     /// <param name="options">The fonts, the style options and the document's name.</param>
     /// <param name="pdf">The PDF file's creation date and identifier.</param>
-    /// <returns>The PDF bytes, or the first failing step's error.</returns>
-    public static Result<ImmutableArray<byte>, Error> ToPdf(string html, HtmlRenderOptions options, PdfRenderOptions pdf) =>
-        ToPages(html, options).OnSuccessBind(pages => pages.ToPdf(pdf));
+    /// <returns>The PDF bytes and the diagnostics, or the first failing step's error.</returns>
+    public static Result<HtmlRendered<ImmutableArray<byte>>, Error> ToPdf(string html, HtmlRenderOptions options, PdfRenderOptions pdf) =>
+        ToPages(html, options).OnSuccessBind(pages => Beside(pages, pages.Output.ToPdf(pdf)));
 
     /// <summary>Draws one page of an HTML document as a PNG file.</summary>
     /// <param name="html">The HTML text.</param>
     /// <param name="options">The fonts, the style options and the document's name.</param>
     /// <param name="pageNumber">The page, counting from 1.</param>
     /// <param name="raster">The resolution and background.</param>
-    /// <returns>The PNG file, or the error.</returns>
-    public static Result<ImmutableArray<byte>, Error> ToPng(string html, HtmlRenderOptions options, int pageNumber, RasterOptions raster) =>
-        ToPages(html, options).OnSuccessBind(pages => pages.ToPng(pageNumber, raster));
+    /// <returns>The PNG file and the diagnostics, or the error.</returns>
+    public static Result<HtmlRendered<ImmutableArray<byte>>, Error> ToPng(string html, HtmlRenderOptions options, int pageNumber, RasterOptions raster) =>
+        ToPages(html, options).OnSuccessBind(pages => Beside(pages, pages.Output.ToPng(pageNumber, raster)));
 
     /// <summary>Draws every page of an HTML document as a PNG file.</summary>
     /// <param name="html">The HTML text.</param>
     /// <param name="options">The fonts, the style options and the document's name.</param>
     /// <param name="raster">The resolution and background.</param>
-    /// <returns>One PNG file per page, in order, or the error.</returns>
-    public static Result<ImmutableArray<ImmutableArray<byte>>, Error> ToPngPages(string html, HtmlRenderOptions options, RasterOptions raster) =>
-        ToPages(html, options).OnSuccessBind(pages => pages.ToPngPages(raster));
+    /// <returns>One PNG file per page, in order, and the diagnostics, or the error.</returns>
+    public static Result<HtmlRendered<ImmutableArray<ImmutableArray<byte>>>, Error> ToPngPages(string html, HtmlRenderOptions options, RasterOptions raster) =>
+        ToPages(html, options).OnSuccessBind(pages => Beside(pages, pages.Output.ToPngPages(raster)));
 
     /// <summary>Draws every page of an HTML document as pixels.</summary>
     /// <param name="html">The HTML text.</param>
     /// <param name="options">The fonts, the style options and the document's name.</param>
     /// <param name="raster">The resolution and background.</param>
-    /// <returns>One image per page (8-bit RGBA, sRGB), in order, or the error.</returns>
-    public static Result<ImmutableArray<RgbaImage>, Error> ToImages(string html, HtmlRenderOptions options, RasterOptions raster) =>
-        ToPages(html, options).OnSuccessBind(pages => pages.ToImages(raster));
+    /// <returns>One image per page (8-bit RGBA, sRGB), in order, and the diagnostics, or the error.</returns>
+    public static Result<HtmlRendered<ImmutableArray<RgbaImage>>, Error> ToImages(string html, HtmlRenderOptions options, RasterOptions raster) =>
+        ToPages(html, options).OnSuccessBind(pages => Beside(pages, pages.Output.ToImages(raster)));
+
+    /// <summary>A back-end's output with the diagnostics of the pages it was made from.</summary>
+    private static Result<HtmlRendered<T>, Error> Beside<T>(HtmlRendered<PageDocument> pages, Result<T, Error> output) =>
+        output.OnSuccessMap(value => new HtmlRendered<T>(value, pages.Diagnostics));
 }
