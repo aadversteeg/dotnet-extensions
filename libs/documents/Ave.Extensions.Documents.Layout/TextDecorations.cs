@@ -45,8 +45,8 @@ namespace Ave.Extensions.Documents.Layout;
 /// Appendix E.2, step 7.2.1.4.1.1; Blink
 /// <c>TextFragmentPainter::Paint</c>: <c>PaintExceptLineThrough</c>, the text, <c>PaintOnlyLineThrough</c>; case
 /// <c>dl-lines</c>). Chromium paints the underline and the overline of one decorating box together, outermost box first;
-/// CSS 2.1 paints every underline before every overline. The two differ only where nested boxes draw both, and the order
-/// here is Chromium's.</para>
+/// CSS 2.1 paints every underline before every overline. The two differ only where nested boxes draw both; the order here
+/// is Chromium's, a deliberate deviation from CSS (docs/architecture.md).</para>
 /// <para>LIMIT: <c>text-decoration-skip-ink: auto</c>, Chromium's initial value, leaves gaps in an underline or overline where
 /// a glyph crosses it; here every line is whole (docs/architecture.md, "Known limits").</para>
 /// </remarks>

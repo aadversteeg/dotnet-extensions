@@ -46,7 +46,8 @@ public sealed record TextFormat(
 
     /// <summary>The lines the element draws across its text (CSS <c>text-decoration-line</c> and <c>text-decoration-color</c>,
     /// CSS Text Decoration 3 §2): not inherited, but passed on to all the text inside the element, in the element's own font.
-    /// Null when the element sets none.</summary>
+    /// A line set on the document's text format is passed on to every element, the page header and footer included. Null when
+    /// the element sets none.</summary>
     public ValueList<TextDecorationFormat>? Decorations { get; init; }
 }
 
