@@ -715,7 +715,7 @@ internal sealed class AreaRasterizer
     /// <summary>Keeps the horizontal edges of row <paramref name="y"/> in its flagged cells, those on its top and bottom
     /// lines included.</summary>
     /// <remarks>One on the row's top or bottom line lies on a side of its cells and changes no area: to the arrangement
-    /// it adds no height, only a step of the left side's winding number at height 0 or 1, which changes w′ in no band or
+    /// it adds no height, at most a step of the left side's winding number at height 0 or 1, which changes w′ in no band or
     /// in every band alike, a whole number that round(a − J) takes back (<see cref="CellArrangement"/>). It is kept for
     /// the two-sided rule (<see cref="CellFlags.IsTwoSided"/>): the cell of a horizontal bar whose side lies on the line
     /// has one side of each kind only with it, and so is two-sided, not arranged and charged.</remarks>

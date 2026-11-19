@@ -138,22 +138,25 @@ public class PageRasterizerTests
     }
 
     [Fact]
-    public void A_rectangle_of_10_to_the_30_points_costs_what_a_page_sized_one_costs()
+    public void A_rectangle_of_10_to_the_30_points_allocates_at_most_16_KiB_more_than_a_page_sized_one_and_paints_the_same_pixels()
     {
-        // The work of a fill is bounded by the canvas, not by the shape: the shape is clipped to the canvas before any
-        // number becomes an integer, so the huge rectangle is drawn from the same polygon as the page-sized one, with the
-        // same rows and buffers. Counted, not timed: the bytes allocated on this thread by a render (after one render of
-        // each, so that nothing is allocated once only), which the rasteriser's buffers would follow if its rows or
-        // columns followed the shape. A clock under a loaded host says nothing.
+        // The shape is clipped to the canvas before any number becomes an integer, so the huge rectangle is drawn from the
+        // same polygon as the page-sized one. Held here: a render of the huge one allocates at most 16 KiB more than a
+        // render of the page-sized one, and paints the same pixels. Counted, not timed: the bytes allocated on this thread
+        // by a render (after one render of each, so that nothing is allocated once only). A clock under a loaded host
+        // says nothing.
+        //
+        // What the bytes see: a buffer that grows with the shape's width by more than 16 KiB. What they do not see: rows
+        // that follow the shape without allocating, the time a render takes, and a cost both renders pay alike. A missing clip changes the pixels, and the comparison of the pixels at the end catches it; the bytes
+        // alone do not.
         //
         // Measured (Linux x64, 2026-11-19): both shapes clip to the same four vertices and a render of either allocates
         // the same bytes, 17,491,072; the difference made by the shape is 0. What varies is the runtime's count, for
         // either shape alike: a render that does not start from a collection is counted up to 8.2 KB more or less now
         // and then (Windows CI saw 6,368), and one that does, ±240 bytes in a few renders while other tests run alongside.
         // So each measured render starts from a full collection, each shape is rendered five times in turn, and the
-        // medians are compared. The allowance is 16 KiB. The claim is about a shape of 10^30 points: a buffer that
-        // followed that shape would be refused, or larger than the page's by orders of magnitude, so 16 KiB holds the
-        // same claim, and it lies above the largest step of the runtime's count seen (8,168 bytes), on any system.
+        // medians are compared. The allowance, 16 KiB, lies above the largest step of the runtime's count seen on Linux
+        // x64 and Windows x64 (8,168 bytes).
         var huge = PageOf(595, 842, new FillRectangle(new Rect(new Point(-1e30, -1e30), new Size(2e30, 2e30)), Color.Black));
         var page = PageOf(595, 842, new FillRectangle(new Rect(new Point(0, 0), new Size(600, 850)), Color.Black));
         var options = new RasterOptions(150);

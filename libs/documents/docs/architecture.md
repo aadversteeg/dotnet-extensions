@@ -223,8 +223,9 @@ the ranges (table below) the size of a coordinate makes no work: a shape is clip
 any number becomes an integer, so a point far outside costs what a point on the box's side costs. The work of a fill
 follows the shape inside the box: per row, the edges that cross it and the pixels from the shape's left to its right,
 plus the charged arrangement of the pixels where contours may overlap (the work limit). No limit bounds the edges of a
-path: a zigzag of 20,000 edges, each over all rows of a 4,096 × 4,096 canvas, is charged nothing (it flags no pixel) and
-took 2.8 s, work in proportion to the path. `ArgumentRuleTests` in
+path: a zigzag of 20,000 edges, each over all rows of a 4,096 × 4,096 canvas, is charged 818,051 units (it flags only
+the 4,094 pixels of row 0, where it closes along the canvas's top line) and took 2.9 to 3.8 s, work in proportion to the
+path, not to the charge. `ArgumentRuleTests` in
 `UnitTests.Extensions.Documents.Graphics` holds it to that, hostile values included.
 
 **Determinism.** The pixel path uses only correctly rounded double arithmetic and square roots, in a fixed order, and

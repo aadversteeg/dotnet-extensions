@@ -37,8 +37,9 @@ namespace Ave.Extensions.Documents.Graphics;
 /// any number becomes an integer, so a point far outside costs what a point on the box's side costs. The work of a fill
 /// follows the shape inside the box: per row, the edges that cross it and the pixels from the shape's left to its right,
 /// plus the charged arrangement of the pixels where contours may overlap (<see cref="MaxFillWork"/>). No limit bounds the
-/// edges of a path: a zigzag of 20,000 edges, each over all rows of a 4,096 × 4,096 canvas, is charged nothing (it flags
-/// no pixel) and took 2.8 s, work in proportion to the path.</para>
+/// edges of a path: a zigzag of 20,000 edges, each over all rows of a 4,096 × 4,096 canvas, is charged 818,051 units
+/// (it flags only the 4,094 pixels of row 0, where it closes along the canvas's top line) and took 2.9 to 3.8 s, work in
+/// proportion to the path, not to the charge.</para>
 /// </remarks>
 public sealed class Canvas
 {
@@ -93,7 +94,7 @@ public sealed class Canvas
     /// takes 6.83 × 10^5 units at 96 dpi (<see cref="MaxCanvasWork"/> is 393 times that). About 9 ns a unit there: a fill
     /// just inside this limit (1.34 × 10^8 units) took 1.23 s, a canvas filled to its limit (2.63 × 10^8 units) 2.38 s.
     /// Refused, for example: a thousand thin bars through one pixel (7.4 × 10^9 units), one contour crossing itself in
-    /// one pixel with 1,001 edges (5.0 × 10^8); a refusal comes before the work, in milliseconds. The PDF back-end writes
+    /// one pixel with 1,001 edges (5.0 × 10^8); a refusal comes before the work, in tens of milliseconds at most (measured 2 to 87 ms). The PDF back-end writes
     /// such a page; a viewer draws it with its own rasteriser.
     /// </remarks>
     public const long MaxFillWork = 1L << 27;
