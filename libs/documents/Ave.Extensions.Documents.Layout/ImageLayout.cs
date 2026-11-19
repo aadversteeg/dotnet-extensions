@@ -29,7 +29,7 @@ public static class ImageLayout
     /// <returns>The fragment, NoRoom, or an error.</returns>
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming) =>
         incoming is not (null or ImageBreakToken)
-            ? throw new ArgumentException($"Image received a {incoming.GetType().Name} it did not produce.", nameof(incoming))
+            ? Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, incoming, "it is the token of another layout algorithm"))
             : TheImage(box).OnSuccessBind(image => SlicedBox.Layout(box, space, incoming, (incoming as ImageBreakToken) ?? ImageBreakToken.Instance, (width, height, _) =>
         {
             var size = UsedSize(image, width);
@@ -46,7 +46,7 @@ public static class ImageLayout
                 return SlicedBox.NothingFits;
             }
 
-            return MonolithicSlices.Next(box, new ImageFragment(image, size), shown, slices, height).OnSuccessBind(next => next.HasNoValue
+            return MonolithicSlices.Next(box, incoming ?? ImageBreakToken.Instance, new ImageFragment(image, size), shown, slices, height).OnSuccessBind(next => next.HasNoValue
                 ? SlicedBox.NothingFits
                 : SlicedBox.Placed(
                     [new PlacedFragment(new Point(0, 0), next.Value.Slice)],

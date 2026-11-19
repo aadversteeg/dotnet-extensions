@@ -215,15 +215,17 @@ public class TrailingMarginTests
     };
 
     [Fact]
-    public void At_the_start_of_a_page_a_margin_that_cannot_fit_anywhere_is_truncated_at_the_page_end()
+    public void At_the_start_of_a_page_a_margin_that_cannot_fit_is_truncated_at_the_page_end_and_the_bottom_padding_moves_on()
     {
-        // Nothing else can go first on an empty page, so breaking earlier gains nothing: the margin that would pass
-        // the page end is cut off there, and the box still ends inside the page area.
+        // The box has no breakpoint inside: the margin adjoins the break before the box's bottom padding and is cut off
+        // at the page end, and the bottom padding starts the next page (SlicedBox, Chromium's FinishFragmentation). Every
+        // box still ends inside the page area.
         var block = Flow(50, [Paragraph(51, "inside", MarginBottom(500), size: 12)], Padded(6));
 
         var pages = Paginate(OnPage(100, block));
 
-        pages.Should().ContainSingle();
+        pages.Should().HaveCount(2);
         EveryBoxEndsInsideThePageArea(pages, 100, "a 500pt margin on a 100pt page");
+        ((BoxFragment)pages[1].Root.Fragment).Children.Single().Fragment.Size.Height.Should().Be(6, "page 2 holds the bottom padding only");
     }
 }

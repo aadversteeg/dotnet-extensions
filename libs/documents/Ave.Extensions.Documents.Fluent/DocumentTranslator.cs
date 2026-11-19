@@ -247,7 +247,9 @@ public static class DocumentTranslator
     private static Result<Node, Error> Image(ImageElement image, NodeId id, bool pageBreakBefore)
     {
         var box = Cascade.Box(image.Format, image.Style);
+        // An image takes text values too (they inherit to nothing, but are the author's input): checked as any element's.
         var problems = BoxProblems(box, image.Source)
+            .Concat(InputChecks.Text(image.Format.Text, image.Source))
             .Concat(InputChecks.ImageSize(image.SpecifiedWidth, image.SpecifiedHeight, image.Source))
             .Concat(InputChecks.ImageDescription(image))
             .Concat(InputChecks.Characters(image.AlternativeText, "alt", image.Source))

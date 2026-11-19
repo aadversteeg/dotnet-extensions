@@ -69,8 +69,7 @@ public enum MonolithicOverflow
 
     /// <summary>The content is sliced as Chromium prints it: placed whole at the top of the page, it shows there as far as
     /// the page area reaches, and each following page shows the next part of it, as tall as the room it has there, until
-    /// its end; what follows it starts right below that end (one known defect: after a block whose bottom padding does
-    /// not fit below the last slice, what follows is lost; docs/architecture.md, "Known limits"). Each slice is clipped
+    /// its end; what follows it starts right below that end. Each slice is clipped
     /// to its part of the page area (a page-model clip). In tagged
     /// PDF every slice of an image is content of its figure, whose alternative text is read once; the later slices of a
     /// line of text are pagination artifacts, so its text is read once. One piece is cut into at most 100 slices, one per page:
@@ -102,8 +101,7 @@ public enum EmptyRowParts
     /// <summary>A row is cut wherever its cells can break, also where a part shows nothing, as Chromium prints it
     /// (<c>tools/reference/chromium</c>, cases <c>a2-padded-blocks</c>, <c>a2-line-breaks</c> and <c>a3-mirror</c>); and a
     /// row whose cells all end on the page, with only the half of the grid line below it past the page end, is not cut
-    /// but moves to the next page whole, as Chromium does (cases <c>a2-cells-end*</c>). Not as Chromium: a row whose lines
-    /// all fit but whose bottom padding or border passes the page end is cut between its lines, where Chromium moves it
-    /// whole (case <c>a2-row-end-bottom-padding-30</c>; docs/architecture.md, "Known limits").</summary>
+    /// but moves to the next page whole, as Chromium does (cases <c>a2-cells-end*</c>); so does a row whose lines all fit
+    /// but whose bottom padding or border passes the page end (case <c>a2-row-end-bottom-padding-30</c>).</summary>
     Allow,
 }

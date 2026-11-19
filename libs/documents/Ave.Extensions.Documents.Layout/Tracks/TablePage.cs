@@ -143,7 +143,13 @@ internal static class TablePage
     /// <summary>The page's result: its content, the bottom line (null when the page end cuts the last row), the
     /// continuation, the appeal of the break, and for a complete page of the table the best breakpoint between its body
     /// units (its early break), or null.</summary>
-    public sealed record Outcome(Content Content, LineAt? BottomLine, TracksBreakToken? Continuation, BreakAppeal Appeal, TracksEarlyBreak? BestBreak = null);
+    public sealed record Outcome(Content Content, LineAt? BottomLine, TracksBreakToken? Continuation, BreakAppeal Appeal, TracksEarlyBreak? BestBreak = null)
+    {
+        /// <summary>True when the page ends in a cut whose cell keeps its break (<see cref="LayoutResult.Placed.KeepsItsBreak"/>):
+        /// the table keeps it too, at the cut's appeal, in which the cell's kept appeal stands
+        /// (<see cref="LayoutResult.Placed.KeptAppeal"/>).</summary>
+        public bool KeepsItsBreak { get; init; }
+    }
 
     /// <summary>Lays out one page of the table and builds its fragment.</summary>
     public static Result<LayoutResult, Error> LayOut(TableGeometry table, ConstraintSpace space, TracksBreakToken? incoming)
@@ -214,7 +220,9 @@ internal static class TablePage
                 WithinPageArea(table, TableFragments.Build(table, outcome.Value.Value), space),
                 outcome.Value.Value.Continuation is { } next ? next with { BodyShown = ShowsBody(table, outcome.Value.Value.Content) } : null,
                 outcome.Value.Value.Appeal,
-                outcome.Value.Value.BestBreak)
+                outcome.Value.Value.BestBreak,
+                outcome.Value.Value.KeepsItsBreak,
+                outcome.Value.Value.Appeal)
             : LayoutResult.NothingFits(table.Box, space);
     }
 
@@ -375,7 +383,7 @@ internal static class TablePage
                 var before = TableBreaks.BeforeUnit(grid, content, row);
                 if (breakAt is { } target && target.Row == row)
                 {
-                    return TableBreaks.TakeBest(table, [before with { Appeal = target.Appeal }], height);
+                    return TableBreaks.TakeBest(table, [before with { Appeal = target.Appeal, InKeptGroup = false }], height);
                 }
 
                 breakpoints.Add(before);
@@ -398,9 +406,9 @@ internal static class TablePage
 
         var best = breakpoints
             .Where(breakpoint => breakpoint.Kind == TableBreaks.BreakKind.BeforeUnit)
-            .OrderByDescending(breakpoint => breakpoint.Appeal)
+            .OrderByDescending(breakpoint => breakpoint.Overall)
             .ThenByDescending(breakpoint => breakpoint.Row)
-            .Select(breakpoint => new TracksEarlyBreak(breakpoint.Row, breakpoint.Appeal))
+            .Select(breakpoint => new TracksEarlyBreak(breakpoint.Row, breakpoint.Overall) { InKeptGroup = breakpoint.InKeptGroup })
             .FirstOrDefault();
         return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content) with { BestBreak = best }));
     }
@@ -465,19 +473,20 @@ internal static class TablePage
         : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, LinePart.UpperHalf);
 
     /// <summary>The line that starts a page after a break between rows, resolved from the row before the break and the
-    /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down. With
-    /// clone after a cut inside the table's first row there is no row before: the line is the table's top line.</summary>
+    /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down. When
+    /// the page starts at the table's first row there is no row before (with clone after a cut inside that row, or a
+    /// token for row 0 of a table without header rows): the line is the table's top line.</summary>
     private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context)
     {
-        if (!IsCloned(table))
+        if (firstRow == 0)
         {
-            return new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
+            var top = new CollapsedBorders.LineContext(true, false, new HashSet<int>());
+            return new LineAt(null, firstRow, top, table.HorizontalWidth(null, firstRow, top) / 2);
         }
 
-        var (above, lineContext) = firstRow == 0
-            ? ((int?)null, new CollapsedBorders.LineContext(true, false, new HashSet<int>()))
-            : (firstRow - 1, context);
-        return new LineAt(above, firstRow, lineContext, table.HorizontalWidth(above, firstRow, lineContext) / 2);
+        return IsCloned(table)
+            ? new LineAt(firstRow - 1, firstRow, context, table.HorizontalWidth(firstRow - 1, firstRow, context) / 2)
+            : new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
     }
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,

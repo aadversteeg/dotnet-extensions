@@ -341,7 +341,9 @@ public class RowEndTests
         After(chromiumAfter).Should().Be(24 + 1.5);
     }
 
-    /// <summary>Seeds 160, 245 and 255 of the reviewer's sweep (mode 0), which Allow refused or, under Slice, lost labels.</summary>
+    /// <summary>Seeds 160, 245 and 255 of the sweep of generated documents (mode 0), which Allow refused or, under Slice,
+    /// lost labels. Under Refuse and Avoid, 245 and 255 are refused (a listed limit, see
+    /// <see cref="A_continued_row_whose_lines_fill_the_next_page_is_refused_under_Avoid"/>).</summary>
     public static TheoryData<int> Seeds => [160, 245, 255];
 
     private static Element[] Seed(int seed)
@@ -411,11 +413,45 @@ public class RowEndTests
             foreach (var parts in Enum.GetValues<EmptyRowParts>())
             {
                 var result = Run(Seed(seed), parts, overflow, FontMetricRounding.Exact);
+                if (parts == EmptyRowParts.Avoid && overflow == MonolithicOverflow.Refuse && seed != 160)
+                {
+                    // Refused, not lost: the shape of A_continued_row_whose_lines_fill_the_next_page_is_refused_under_Avoid.
+                    result.IsFailure.Should().BeTrue($"{overflow}/{parts}");
+                    result.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+                    continue;
+                }
 
                 result.IsSuccess.Should().BeTrue($"{overflow}/{parts}: {(result.IsFailure ? result.Error.ToString() : string.Empty)}");
                 Words(result.Value).Order(StringComparer.Ordinal).Should().Equal(labels.Order(StringComparer.Ordinal), $"{overflow}/{parts}");
                 PastTheArea(result.Value, parts, 0.75).Should().BeEmpty($"{overflow}/{parts}");
             }
         }
+    }
+
+    [Fact]
+    public void A_continued_row_whose_lines_fill_the_next_page_is_refused_under_Avoid()
+    {
+        // A cell of 23 lines, then a second row: page 1 holds 11 lines, and the rest of the row, 12 lines, fills the page
+        // area of page 2 exactly, with only the half of the grid line below it past the page end. Under Allow the row ends
+        // there and its line passes the page end. Under Avoid and Refuse, the default, the document is refused
+        // (docs/architecture.md, "Known limits"); under Avoid and Slice the rest is cut at the deepest place, before its
+        // last two lines. Without the second row it is cut so under Refuse too.
+        Element[] body = [Grid(1, TableRow([Lines("x", 23, 1)]), TableRow([Empty]))];
+        string[] cut = ["x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "x11 x12 x13 x14 x15 x16 x17 x18 x19 x20", "x21 x22"];
+        string[] whole = ["x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22", ""];
+        string[] Pages(Element[] document, EmptyRowParts parts, MonolithicOverflow overflow)
+        {
+            var result = Run(document, parts, overflow, FontMetricRounding.Exact);
+            result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+            return [.. PrintedPages.Engine(result.Value).PageTexts];
+        }
+
+        var refused = Run(body, EmptyRowParts.Avoid, MonolithicOverflow.Refuse, FontMetricRounding.Exact);
+        refused.IsFailure.Should().BeTrue();
+        refused.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+        Pages(body, EmptyRowParts.Avoid, MonolithicOverflow.Slice).Should().Equal(cut);
+        Pages(body, EmptyRowParts.Allow, MonolithicOverflow.Refuse).Should().Equal(whole);
+        Pages(body, EmptyRowParts.Allow, MonolithicOverflow.Slice).Should().Equal(whole);
+        Pages([Grid(1, TableRow([Lines("x", 23, 1)]))], EmptyRowParts.Avoid, MonolithicOverflow.Refuse).Should().Equal(cut);
     }
 }

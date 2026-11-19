@@ -1,6 +1,10 @@
 # Citations audit
 
 Every citation and quotation in the code, tests and documentation, checked against the public text it names.
+
+The audit is a job per milestone, not per pull request: the citations a milestone's pull requests add or change are
+checked together before the milestone closes. Milestone M2's are not checked yet (stage 1 alone added or changed about
+150 citation blocks); this file is brought up to date before M2 closes.
 Date of the check: 2026-11-15, second check 2026-11-16, third check (quotations) 2026-11-16. Branch `m1-fixes`.
 
 ## How

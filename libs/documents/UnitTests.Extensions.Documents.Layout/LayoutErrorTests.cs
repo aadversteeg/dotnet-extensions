@@ -107,5 +107,47 @@ public class LayoutErrorTests
         root.Children[1].Offset.Y.Should().Be(30);
     }
 
+    [Fact]
+    public void An_algorithm_that_makes_no_progress_is_reported_as_a_defect_of_the_engine_not_thrown()
+    {
+        // A broken root algorithm: it always asks to resume at its first child, also when it was told to resume there.
+        LayoutAlgorithm stuck = (_, box, space, _) =>
+            LayoutResult.Place(new BoxFragment(box, new Size(space.AvailableWidth, 10), []), new FlowBreakToken(0, null));
+        var environment = LayoutEnvironment.Create(TestFonts.Set).WithAlgorithm(LayoutAlgorithmId.Flow, stuck);
+
+        var result = Paginator.Paginate(environment, Document(Paragraph(1, "x")));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(LayoutErrorCodes.EngineDefect);
+        result.Error.Metadata![ErrorMetadataKeys.Value].Should().Be("made no progress: it returned the break token it was given");
+    }
+
+    [Fact]
+    public void An_algorithm_that_has_no_room_at_the_start_of_a_page_is_reported_as_a_defect_of_the_engine_not_thrown()
+    {
+        LayoutAlgorithm noRoom = (_, _, _, _) => Ave.Extensions.Functional.Result<LayoutResult, Error>.Success(LayoutResult.NoRoom.Instance);
+        var environment = LayoutEnvironment.Create(TestFonts.Set).WithAlgorithm(LayoutAlgorithmId.Flow, noRoom);
+
+        var result = Paginator.Paginate(environment, Document(Paragraph(1, "x")));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be(LayoutErrorCodes.EngineDefect);
+        result.Error.Metadata![ErrorMetadataKeys.Value].Should().Be("reported no room at the start of a page");
+    }
+
+    [Fact]
+    public void A_root_whose_top_margin_leaves_no_room_says_so_and_reports_the_room_it_had()
+    {
+        // The wording "which has no room left for it" and the metadata value of DoesNotFit. A root box with a 90 pt top margin on an 80 pt page area has -10 pt left for its content.
+        var document = Document(Paragraph(1, "x"));
+        document = document with { Root = document.Root with { Style = BoxStyle.Initial with { Margin = new Edges(90.Pt(), 0.Pt(), 0.Pt(), 0.Pt()), Padding = Edges.All(1.Pt()) } } };
+
+        var error = Fail(document);
+
+        error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
+        error.Message.Should().Contain("does not fit in the page, which has no room left for it, and cannot be broken");
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be("-10");
+    }
+
     private static int CurrentLine([System.Runtime.CompilerServices.CallerLineNumber] int line = 0) => line;
 }

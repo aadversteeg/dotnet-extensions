@@ -39,7 +39,20 @@ internal static class TableBreaks
     /// <param name="Appeal">Its appeal.</param>
     /// <param name="Content">What the page holds before the unit the breakpoint is in.</param>
     /// <param name="Segment">The unit, measured; null for <see cref="BreakKind.BeforeUnit"/>.</param>
-    public sealed record Breakpoint(BreakKind Kind, int Row, BreakAppeal Appeal, Content Content, TableSegments.Segment? Segment);
+    /// <param name="InKeptGroup">True when the breakpoint lies inside a row group kept together (<c>break-inside:
+    /// avoid</c>): <paramref name="Appeal"/> is then its appeal inside the group, and <see cref="Overall"/> the group's
+    /// keep on top of it.</param>
+    public sealed record Breakpoint(BreakKind Kind, int Row, BreakAppeal Appeal, Content Content, TableSegments.Segment? Segment, bool InKeptGroup = false)
+    {
+        /// <summary>
+        /// The appeal against breakpoints outside the group: a break inside a kept group violates its keep. A group's
+        /// keep is applied from outside, as Chromium applies <c>break-inside: avoid</c> to a box's own break
+        /// (<c>CalculateBreakAppealInside</c>), so inside a group that must break anyway its rows break where breaking is
+        /// best by their own rules: between two rows rather than inside a kept row or against orphans (cases
+        /// <c>fr-f6-*</c>).
+        /// </summary>
+        public BreakAppeal Overall => InKeptGroup ? BreakAvoidance.Worst(BreakAppeal.ViolatesAvoid, Appeal) : Appeal;
+    }
 
     /// <summary>The class-A breakpoint before the unit that starts at <paramref name="row"/>.</summary>
     /// <param name="grid">The grid.</param>
@@ -47,7 +60,7 @@ internal static class TableBreaks
     /// <param name="row">The unit's first row.</param>
     /// <returns>The breakpoint.</returns>
     public static Breakpoint BeforeUnit(TableGrid grid, Content content, int row) =>
-        new(BreakKind.BeforeUnit, row, BeforeAppeal(grid, row), content, null);
+        new(BreakKind.BeforeUnit, row, BeforeAppeal(grid, row), content, null, InKeptGroup(grid, row, between: true));
 
     /// <summary>
     /// The breakpoints inside a unit that does not fit: between two of its rows whose upper part fits (a spanning
@@ -69,7 +82,7 @@ internal static class TableBreaks
             var top = segment.RowTop(row);
             if (row > segment.FirstRow)
             {
-                yield return new Breakpoint(BreakKind.BetweenRows, row, BetweenRowsAppeal(table.Grid, segment, row), content, segment);
+                yield return new Breakpoint(BreakKind.BetweenRows, row, BetweenRowsAppeal(table.Grid, segment, row), content, segment, InKeptGroup(table.Grid, row, between: true));
             }
 
             var bottom = top + segment.Heights[row - segment.FirstRow];
@@ -82,7 +95,7 @@ internal static class TableBreaks
                 // clone the cut also needs the half of the line below the row that lies under the cut (see Take).
                 if (Fitting.Fits(top + LineInside(table, segment, row) + CutLineBelow(table, row), height))
                 {
-                    yield return new Breakpoint(BreakKind.InsideRow, row, InsideAppeal(table.Grid, segment, row), content, segment);
+                    yield return new Breakpoint(BreakKind.InsideRow, row, InsideAppeal(table.Grid, segment, row), content, segment, InKeptGroup(table.Grid, row, between: false));
                 }
 
                 yield break;
@@ -121,21 +134,29 @@ internal static class TableBreaks
     public static Result<Maybe<Outcome>, Error> TakeBest(TableGeometry table, IEnumerable<Breakpoint> breakpoints, double height)
     {
         var ordered = breakpoints
-            .OrderByDescending(breakpoint => breakpoint.Appeal)
+            .OrderByDescending(breakpoint => breakpoint.Overall)
+            .ThenByDescending(breakpoint => breakpoint.Appeal)
             .ThenByDescending(breakpoint => breakpoint.Row)
             .ThenByDescending(breakpoint => breakpoint.Kind);
         Maybe<Outcome> fallback = Maybe<Outcome>.None;
         foreach (var breakpoint in ordered)
         {
-            var taken = Take(table, breakpoint, height);
-            if (taken.IsFailure || (taken.Value.HasValue && taken.Value.Value.Appeal == breakpoint.Appeal))
+            // Taken at the breakpoint's own appeal; the table's parent sees the overall one (Breakpoint.Overall).
+            var taken = Take(table, breakpoint, height).OnSuccessMap(outcome => outcome.OnSomeMap(placed =>
+                (Promised: placed.Appeal, Outcome: placed with { Appeal = breakpoint.InKeptGroup ? BreakAvoidance.Worst(BreakAppeal.ViolatesAvoid, placed.Appeal) : placed.Appeal })));
+            if (taken.IsFailure)
             {
-                return taken;
+                return Result<Maybe<Outcome>, Error>.Failure(taken.Error);
+            }
+
+            if (taken.Value.HasValue && taken.Value.Value.Promised == breakpoint.Appeal)
+            {
+                return Result<Maybe<Outcome>, Error>.Success(Maybe.From(taken.Value.Value.Outcome));
             }
 
             // Taken at a lower appeal than the breakpoint promised (a part that shows nothing, a cell's own break): kept in
             // case nothing keeps its promise; of such, the best, and of equal ones the first in page order from the end.
-            fallback = taken.Value.HasValue && (!fallback.HasValue || taken.Value.Value.Appeal > fallback.Value.Appeal) ? taken.Value : fallback;
+            fallback = taken.Value.HasValue && (!fallback.HasValue || taken.Value.Value.Outcome.Appeal > fallback.Value.Appeal) ? taken.Value.Value.Outcome : fallback;
         }
 
         return Result<Maybe<Outcome>, Error>.Success(fallback);
@@ -157,7 +178,7 @@ internal static class TableBreaks
         var row = breakpoint.Row;
         if (breakpoint.Kind == BreakKind.BetweenRows)
         {
-            return Cut(table, breakpoint.Content, segment, row, segment.RowTop(row), inside: false, breakpoint.Appeal);
+            return Cut(table, breakpoint.Content, segment, row, segment.RowTop(row), inside: false, breakpoint.Appeal, pageEnd: height);
         }
 
         // With clone the cut ends the page with the whole line below the row (see TablePage), so it lies that line's
@@ -166,20 +187,20 @@ internal static class TableBreaks
         {
             var cut = height - CutLineBelow(table, row);
             return Fitting.Fits(segment.RowTop(row) + LineInside(table, segment, row), cut)
-                ? Cut(table, breakpoint.Content, segment, row, cut, inside: true, breakpoint.Appeal)
+                ? Cut(table, breakpoint.Content, segment, row, cut, inside: true, breakpoint.Appeal, pageEnd: height)
                 : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
         }
 
         // Under EmptyRowParts.Allow, as Chromium cuts: a row whose cells' content all ends on this page, with only the
         // half of the line below the row (which each cell's box holds) past the page end, is not cut, and moves to the next
-        // page whole (cases a2-cells-end, a2-cells-end-header, a2-cells-end-text). Under Avoid, in a2-cells-end-text the
-        // cells keep their half line on the page and break earlier; in the other two the row moves whole there too, since
-        // its rest would show nothing.
+        // page whole (cases a2-cells-end, a2-cells-end-header, a2-cells-end-text). Under Avoid the cells keep their half
+        // line on the page and break earlier, which leaves the rest of a cell for the next page and is a last resort
+        // (Take), so the row moves whole there too (a2-cells-end-text), and is cut so only where it cannot move.
         if (table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow)
         {
             var lineBelow = table.HorizontalWidth(row, Next(table.Grid, row), TablePage.EdgeContext(table.Grid, row)) / 2;
             var withLine = lineBelow > 0
-                ? Cut(table, breakpoint.Content, segment, row, height + lineBelow, inside: true, breakpoint.Appeal)
+                ? Cut(table, breakpoint.Content, segment, row, height + lineBelow, inside: true, breakpoint.Appeal, pageEnd: height)
                 : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
             if (withLine.IsFailure || (lineBelow > 0 && withLine.Value.HasNoValue))
             {
@@ -190,25 +211,28 @@ internal static class TableBreaks
         // A break inside the row cuts its cells at the page end. When that cut completes every cell, the row ends on
         // this page after all, and then it needs its share of the line below it, which is what did not fit: so the cut
         // moves up by that share, which leaves the end of the row's content for the next page (still below the line
-        // above the row). Not under Allow (above): Chromium does not cut such a row.
+        // above the row). That is a last resort: every line of the row fits, only the line below it does not, and
+        // Chromium then moves the row whole (cases fr-f4-*). Not under Allow (above): Chromium does not cut such a row.
         var below = InsideBelow(table, row);
         var raised = height - below;
         var raises = table.Environment.Profile.EmptyRowParts != EmptyRowParts.Allow;
-        return Cut(table, breakpoint.Content, segment, row, height, inside: true, breakpoint.Appeal).OnSuccessBind(atPageEnd =>
+        return Cut(table, breakpoint.Content, segment, row, height, inside: true, breakpoint.Appeal, pageEnd: height).OnSuccessBind(atPageEnd =>
             atPageEnd.HasValue || !raises || below <= 0 || !Fitting.Fits(segment.RowTop(row) + LineInside(table, segment, row), raised)
                 ? Result<Maybe<Outcome>, Error>.Success(atPageEnd)
-                : Cut(table, breakpoint.Content, segment, row, raised, inside: true, breakpoint.Appeal));
+                : Cut(table, breakpoint.Content, segment, row, raised, inside: true, BreakAppeal.LastResort, pageEnd: height));
     }
 
     /// <summary>
     /// Takes a break inside a segment: the rows above <paramref name="cutRow"/> whole; the cells that reach past the
     /// cut laid out again in the height down to <paramref name="cutY"/> — the row's top for a break between rows, the
-    /// page end (or just above it, see <see cref="Take"/>) for a break inside the row, which then ends the page. None
-    /// when nothing of the row would be left (<see cref="LeavesSomething"/>); a last resort when a part of the row would
-    /// show nothing (<see cref="CutShows"/>).
+    /// page end (or just above it, see <see cref="Take"/>) for a break inside the row, which then ends the page. A cell
+    /// that spans across a break between rows is cut at the page end, not at the row boundary: it fills the page, as
+    /// Chromium lays a spanning cell out in the height of all its rows (cases <c>fr-f7-*</c>). None when nothing of the
+    /// row would be left (<see cref="LeavesSomething"/>); a last resort when a part of the row would show nothing
+    /// (<see cref="CutShows"/>).
     /// </summary>
     private static Result<Maybe<Outcome>, Error> Cut(
-        TableGeometry table, Content content, TableSegments.Segment segment, int cutRow, double cutY, bool inside, BreakAppeal appeal)
+        TableGeometry table, Content content, TableSegments.Segment segment, int cutRow, double cutY, bool inside, BreakAppeal appeal, double pageEnd)
     {
         var grid = table.Grid;
         var rows = content.Rows;
@@ -226,6 +250,7 @@ internal static class TableBreaks
         var continuing = ImmutableArray.CreateBuilder<CellBreak>();
         var cut = new List<(double Top, BoxFragment Fragment, CellBreak Next)>();
         var cellsAppeal = BreakAppeal.Perfect;
+        var keepsItsBreak = false;
         foreach (var cell in segment.Cells)
         {
             var info = grid.Cells[cell.Cell];
@@ -251,14 +276,17 @@ internal static class TableBreaks
             var startsPage = firstOnPage && content.Rows.IsEmpty;
             var belowHeader = firstOnPage && table.SlicesBelowHeader && content.Rows.All(placed => placed.IsRepeated);
             var belowStartInsets = table.IsBelowStartInsets && cell.StartRow <= segment.FirstRow && content.Rows.IsEmpty;
-            var sliced = TableSegments.Slice(table, segment, cell, cutY - top, clearance, startsPage, belowHeader, belowStartInsets);
+            var sliceEnd = inside || IsCloned(table) ? cutY : pageEnd;
+            var sliced = TableSegments.Slice(
+                table, segment, cell, sliceEnd - top, clearance, endsAtTheCut: inside && info.LastRow == cutRow, startsPage: startsPage, belowHeader: belowHeader, belowStartInsets: belowStartInsets);
             if (sliced.IsFailure)
             {
                 return Result<Maybe<Outcome>, Error>.Failure(sliced.Error);
             }
 
-            var (fragment, next, cellAppeal) = sliced.Value;
+            var (fragment, next, cellAppeal, cellKeeps) = sliced.Value;
             cellsAppeal = BreakAvoidance.Worst(cellsAppeal, cellAppeal);
+            keepsItsBreak |= cellKeeps;
             cut.Add((top, fragment, next));
             cells = cells.Add(new PlacedCell(cell.Cell, cell.StartRow, fragment));
             continuing.Add(next);
@@ -301,7 +329,10 @@ internal static class TableBreaks
         var taken = shows.Value || table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
             ? BreakAvoidance.Worst(appeal, cellsAppeal)
             : BreakAppeal.LastResort;
-        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), taken)));
+        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), taken)
+        {
+            KeepsItsBreak = keepsItsBreak && shows.Value,
+        }));
     }
 
     /// <summary>
@@ -354,17 +385,22 @@ internal static class TableBreaks
             .OnSuccessMap(rests => rests.Any(rest => DrawnContent.ChildrenDrawBelow(rest.Children, double.NegativeInfinity)));
     }
 
-    /// <summary>The appeal of a class-A break before a body row: lower inside a row group kept together, or where
-    /// the rows (or, at a group boundary, the groups) avoid a break between them.</summary>
+    /// <summary>The appeal of a class-A break before a body row: lower where the rows (or, at a group boundary, the
+    /// groups) avoid a break between them. Inside a row group kept together the group's keep comes on top
+    /// (<see cref="Breakpoint.Overall"/>).</summary>
     private static BreakAppeal BeforeAppeal(TableGrid grid, int row)
     {
         var (current, previous) = (grid.Rows[row], grid.Rows[row - 1]);
-        var withinKeptGroup = !current.IsFirstOfGroup && current.Group.Style.BreakInside == BreakInside.Avoid;
-        var between = BreakAvoidance.Worst(
+        return BreakAvoidance.Worst(
             BreakAvoidance.Between(previous.Box, current.Box),
             current.IsFirstOfGroup ? BreakAvoidance.Between(previous.Group, current.Group) : BreakAppeal.Perfect);
-        return withinKeptGroup ? BreakAppeal.ViolatesAvoid : between;
     }
+
+    /// <summary>Whether a breakpoint at <paramref name="row"/> lies inside a row group kept together: a break before the
+    /// row inside its group (<paramref name="between"/>; before the group's first row it lies outside), or a cut inside
+    /// the row.</summary>
+    private static bool InKeptGroup(TableGrid grid, int row, bool between) =>
+        grid.Rows[row].Group.Style.BreakInside == BreakInside.Avoid && (!between || !grid.Rows[row].IsFirstOfGroup);
 
     /// <summary>
     /// THE RULE FOR A BREAK BETWEEN TWO ROWS THAT A CELL SPANNING ROWS CROSSES: a row span does not keep its rows
@@ -392,16 +428,19 @@ internal static class TableBreaks
     private static BreakAppeal BetweenRowsAppeal(TableGrid grid, TableSegments.Segment segment, int row) =>
         WithKeptCells(grid, segment, cell => cell.Row < row && cell.LastRow >= row, BeforeAppeal(grid, row));
 
-    /// <summary>The appeal of a break inside a row: lower when the row or its group is kept together, or a cell it
-    /// cuts is (every cell of the row, and every cell from a row above that spans into it), as for a break between
-    /// rows (<see cref="BetweenRowsAppeal"/>).</summary>
+    /// <summary>The appeal of a break inside a row: lower when the row is kept together, or a cell it cuts is (every
+    /// cell of the row, and every cell from a row above that spans into it), as for a break between rows
+    /// (<see cref="BetweenRowsAppeal"/>). Inside a row group kept together the group's keep comes on top
+    /// (<see cref="Breakpoint.Overall"/>).</summary>
     private static BreakAppeal InsideAppeal(TableGrid grid, TableSegments.Segment segment, int row) =>
         WithKeptCells(grid, segment, cell => cell.Row <= row && cell.LastRow >= row,
-            BreakAvoidance.Inside(grid.Rows[row].Group, BreakAvoidance.Inside(grid.Rows[row].Box, BreakAppeal.Perfect)));
+            BreakAvoidance.Inside(grid.Rows[row].Box, BreakAppeal.Perfect));
 
     /// <summary>
     /// <paramref name="appeal"/>, lowered when a cell of the segment that the break cuts is kept together
-    /// (<c>break-inside: avoid</c>, <see cref="BreakAvoidance.Inside"/>): the break falls inside that cell.
+    /// (<c>break-inside: avoid</c>, <see cref="BreakAvoidance.Inside"/>): the break falls inside that cell; or when the
+    /// row such a cell starts in is: a row kept together keeps the rows its spanning cell reaches into, since a break
+    /// there breaks inside that row (Chromium: the row's own break token is a break inside it, cases <c>fr-f8-*</c>).
     /// </summary>
     /// <param name="grid">The grid.</param>
     /// <param name="segment">The unit the break is in, measured.</param>
@@ -412,5 +451,5 @@ internal static class TableBreaks
         segment.Cells
             .Select(cell => grid.Cells[cell.Cell])
             .Where(cuts)
-            .Aggregate(appeal, (lowered, cell) => BreakAvoidance.Inside(cell.Box, lowered));
+            .Aggregate(appeal, (lowered, cell) => BreakAvoidance.Inside(grid.Rows[cell.Row].Box, BreakAvoidance.Inside(cell.Box, lowered)));
 }

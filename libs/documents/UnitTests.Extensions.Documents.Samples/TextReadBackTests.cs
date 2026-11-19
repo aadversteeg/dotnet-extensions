@@ -17,7 +17,8 @@ namespace UnitTests.Extensions.Documents.Samples;
 /// map holds one text per glyph (ISO 32000-1 §9.10.3). So the map carries the glyph's most frequent text, and every
 /// occurrence whose text differs is wrapped in marked content with <c>/ActualText</c> (§14.9.4). The hyphen shown at a
 /// soft-hyphen break reads as the soft hyphen U+00AD it stands for. Characters that are not drawn (a soft hyphen where
-/// the line does not break, the space where a line wraps) are not in the read-back text.
+/// the line does not break, outside a ligature; the space where a line wraps) are not in the read-back text; a soft hyphen
+/// inside a ligature is part of the ligature glyph's text and is read back with it.
 /// </summary>
 public class TextReadBackTests
 {

@@ -37,12 +37,12 @@ public static class InlineLayout
     /// <returns>The fragment and continuation, NoRoom, or an error (missing font or glyph, with the run's location).</returns>
     public static Result<LayoutResult, Error> Layout(LayoutEnvironment environment, Box box, ConstraintSpace space, BreakToken? incoming)
     {
-        var start = incoming switch
+        if (incoming is not null && InvalidToken(incoming) is { } reason)
         {
-            null => new InlineBreakToken(0),
-            InlineBreakToken token => token,
-            _ => throw new ArgumentException($"Inline received a {incoming.GetType().Name} it did not produce.", nameof(incoming)),
-        };
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, incoming, reason));
+        }
+
+        var start = (InlineBreakToken?)incoming ?? new InlineBreakToken(0);
 
         // A first line taller than the page area that starts the page is sliced when the profile says so (MonolithicSlices).
         var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
@@ -55,6 +55,20 @@ public static class InlineLayout
                     _ => throw new ArgumentException($"Inline received a {breakAt.GetType().Name} it did not report.", nameof(space)),
                 }))));
     }
+
+    /// <summary>Why a paragraph cannot resume from <paramref name="token"/>, or null when it can: a token of another
+    /// algorithm, a negative line index, or a height shown that no slices can have shown (negative, not finite, or shown
+    /// without a slice). A line index past the last line is a position the paragraph can be given: the next page breaks
+    /// its lines again in that page's width, and the paragraph is then complete. A height shown that is the line's whole
+    /// height or more is refused where the line is known, by <see cref="MonolithicSlices.Next"/>.</summary>
+    private static string? InvalidToken(BreakToken token) => token switch
+    {
+        not InlineBreakToken => "it is the token of another layout algorithm",
+        InlineBreakToken { LineIndex: < 0 } line => $"line {line.LineIndex} is outside the paragraph",
+        InlineBreakToken line when !(line.Shown >= 0 && double.IsFinite(line.Shown)) || line.Slices < 0 || (line.Shown > 0) != (line.Slices > 0) =>
+            $"{line.Slices} slices cannot have shown {InvariantNumber.Format(line.Shown)}pt of a line",
+        _ => null,
+    };
 
     /// <summary>The paragraph's strut (CSS 2.1 §10.8.1), with its font resolved like a run's; null when the model gives
     /// the paragraph no text properties (<see cref="BoxStyle.Text"/>). A missing font is the error a run would get, at the
@@ -79,7 +93,7 @@ public static class InlineLayout
         ShapeRuns(environment, box).OnSuccessBind(runs =>
         {
             Result<double, Error> Widest(double width) =>
-                BreakLines(runs, width).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
+                BreakLines(runs, width, box.Style.TextAlign).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
             return Widest(0).OnSuccessBind(least => Widest(double.PositiveInfinity).OnSuccessMap(most =>
                 new IntrinsicWidths(least, most).Plus(SlicedBox.HorizontalInsets(box.Style))));
         });
@@ -87,9 +101,19 @@ public static class InlineLayout
     /// <summary>The paragraph's lines at a width, each shaped as the line it is: where a line ends or starts at a place
     /// that is not safe to break, its end is shaped again with the run's font (<see cref="GreedyLineBreaker"/>, THE RULE
     /// FOR SHAPING AT A BREAK). A shaping error names the run.</summary>
-    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.ShapedRun> runs, double width) =>
-        GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], width, (run, text, showsHyphen) =>
-            Shaper.ShapeLinePiece(text, runs[run].Font, runs[run].Run.Style.FontSize.Points, showsHyphen).MapError(error => error.WithSource(runs[run].Run.Source)));
+    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.ShapedRun> runs, double width, TextAlign align) =>
+        GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], width, (run, text, showsHyphen, budget) =>
+            Shaper.ShapeLinePiece(text, runs[run].Font, runs[run].Run.Style.FontSize.Points, showsHyphen, budget).MapError(error => error.WithSource(runs[run].Run.Source)),
+            LineEndAtSpace(align));
+
+    /// <summary>What the line breaker does at a line end at a collapsible space (<see cref="LineEndShaping"/>), from the
+    /// paragraph's alignment, as Chromium decides whether a line "needs an accurate end position" (Blink
+    /// <c>LineInfo::ComputeNeedsAccurateEndPosition</c>, core/layout/inline/line_info.cc): <c>start</c> does not, so the
+    /// paragraph's glyphs are kept; <c>end</c>, <c>center</c> and <c>justify</c> do. The engine lays out left-to-right text
+    /// only, so <see cref="TextAlign.Left"/> is <c>start</c> here; in right-to-left text it would be <c>end</c>. The model has
+    /// no text decoration, which needs an accurate end position too, when it comes.</summary>
+    private static LineEndShaping LineEndAtSpace(TextAlign align) =>
+        align == TextAlign.Left ? LineEndShaping.KeepParagraphGlyphs : LineEndShaping.ShapeAgainBeforeSpace;
 
     /// <summary>
     /// True when the box's text makes at least one line box: some text is left after white-space collapsing.
@@ -144,15 +168,16 @@ public static class InlineLayout
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
         IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
-        var broken = BreakLines(runs, contentWidth);
+        var style = box.Style;
+        var firstLine = start.LineIndex;
+        var broken = BreakLines(runs, contentWidth, style.TextAlign);
         if (broken.IsFailure)
         {
             return Result<Maybe<SlicedBox.Content>, Error>.Failure(broken.Error);
         }
 
         var lines = broken.Value;
-        var style = box.Style;
-        var firstLine = start.LineIndex;
+        var empty = LineBoxes.EmptyRunsByLine(lines, runs);
         var placed = ImmutableArray.CreateBuilder<PlacedFragment>();
         var bottom = 0.0;
         for (var index = firstLine; index < lines.Count; index++)
@@ -162,12 +187,12 @@ public static class InlineLayout
                 return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index), target.Appeal);
             }
 
-            var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, rounding);
+            var line = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, rounding, empty[index]);
             var shown = index == firstLine ? start.Shown : 0;
             if (shown > 0 || (placed.Count == 0 && slices && !Fitting.Fits(line.Size.Height, contentHeight)))
             {
                 var sliceCount = index == firstLine ? start.Slices : 0;
-                var next = MonolithicSlices.Next(box, line, shown, sliceCount, contentHeight);
+                var next = MonolithicSlices.Next(box, start, line, shown, sliceCount, contentHeight);
                 if (next.IsFailure || next.Value.HasNoValue)
                 {
                     return next.IsFailure ? Result<Maybe<SlicedBox.Content>, Error>.Failure(next.Error) : SlicedBox.NothingFits;
@@ -203,7 +228,7 @@ public static class InlineLayout
 
         // The best breakpoint of the complete fragment, reported for a parent that may have to break here instead (a
         // break before the fragment's first line is no breakpoint of the fragment).
-        return SlicedBox.Placed(placed.ToImmutable(), bottom, null, bestBreak: BestBreakInside(style, firstLine, lines.Count));
+        return SlicedBox.Placed(placed.ToImmutable(), bottom, null, bestBreak: BestBreakInside(style, firstLine, lines.Count), atEnd: new InlineBreakToken(lines.Count));
     }
 
     /// <summary>

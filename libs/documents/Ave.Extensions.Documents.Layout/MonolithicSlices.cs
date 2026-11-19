@@ -15,9 +15,7 @@ namespace Ave.Extensions.Documents.Layout;
 /// the contents of monolithic elements by slicing the element's graphical representation"), as Chromium prints it
 /// (<c>tools/reference/chromium</c>, cases <c>a4-*</c>): the content is placed whole at the top of the page and shows
 /// there down to the end of the page area; each later page shows the next part of it, one page-area height (the height
-/// it is given there) at a time; the last slice is as tall as what is left, and what follows starts right below it
-/// (one known defect: after a block whose bottom padding does not fit below the last slice, what follows is lost;
-/// docs/architecture.md, "Known limits").
+/// it is given there) at a time; the last slice is as tall as what is left, and what follows starts right below it.
 /// Each slice is a <see cref="SliceFragment"/>, clipped to its own top and bottom.
 /// </summary>
 internal static class MonolithicSlices
@@ -92,15 +90,27 @@ internal static class MonolithicSlices
     /// <summary>The slice of <paramref name="whole"/> this page shows, after the <paramref name="shown"/> height that
     /// <paramref name="slices"/> slices on earlier pages showed, in the <paramref name="height"/> the page has for it.</summary>
     /// <param name="box">The box the content belongs to, for the error.</param>
+    /// <param name="token">The break token the box resumes from, for the error.</param>
     /// <param name="whole">The whole content's fragment.</param>
     /// <param name="shown">The height shown on earlier pages; 0 for the first slice.</param>
     /// <param name="slices">The number of slices shown on earlier pages; 0 for the first slice.</param>
     /// <param name="height">The height available on this page.</param>
     /// <returns>The slice, and the height shown after it, or null when it is the last slice; None when the page has no
     /// height for a slice at all (a slice of nothing would make no progress); <c>Documents.Layout.TooManySlices</c> when
-    /// the content would need more than <see cref="MaxSlices"/> slices.</returns>
-    public static Result<Maybe<(SliceFragment Slice, double? ShownAfter)>, Error> Next(Box box, Fragment whole, double shown, int slices, double height)
+    /// the content would need more than <see cref="MaxSlices"/> slices; <c>Documents.Layout.InvalidBreakToken</c> when
+    /// <paramref name="shown"/> is the whole content's height or more (see remarks).</returns>
+    /// <remarks>A slice that is not the last returns the height shown after it only while more than the page's height is
+    /// left, so the height shown after it is always less than the content's height. A token that says the whole height
+    /// or more was shown cannot have been returned for this content (another box's token, or one built by a caller): it
+    /// would leave a last slice of no or negative height.</remarks>
+    public static Result<Maybe<(SliceFragment Slice, double? ShownAfter)>, Error> Next(Box box, BreakToken token, Fragment whole, double shown, int slices, double height)
     {
+        if (shown > 0 && !(shown < whole.Size.Height))
+        {
+            return Result<Maybe<(SliceFragment, double?)>, Error>.Failure(LayoutErrors.InvalidBreakToken(box, token,
+                $"it shows {InvariantNumber.Format(shown)}pt of content {InvariantNumber.Format(whole.Size.Height)}pt high"));
+        }
+
         if (!(height > Fitting.TolerancePoints))
         {
             return Result<Maybe<(SliceFragment, double?)>, Error>.Success(Maybe<(SliceFragment, double?)>.None);

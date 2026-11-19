@@ -23,7 +23,8 @@ internal static class LineBoxes
 
     /// <summary>
     /// The vertical extent of one inline box around the baseline (CSS 2.1 §10.8.1, "Leading and half-leading"; CSS
-    /// Inline 3 §5.3). A is the font's ascent and D its descent ('hhea'), at the box's font size; the leading L is added
+    /// Inline 3 §5.3). A is the font's ascent and D its descent, from its line metrics (<see cref="Fonts.FontMetrics.Line"/>:
+    /// 'OS/2' typographic or 'hhea', as Chromium chooses), at the box's font size; the leading L is added
     /// half above A and half below D. With <c>line-height: normal</c> (the initial value) L is the font's line gap, so
     /// the box is ascent + descent + line gap high (Inline 3 §5.3: "the font's line gap metric may also be incorporated
     /// into A and D by adding half to each side as half-leading"); with any other value "L = 'line-height' - AD" (CSS 2.1
@@ -41,9 +42,10 @@ internal static class LineBoxes
             var whole = rounding == FontMetricRounding.WholePixels;
             double Metric(int designUnits) =>
                 whole ? CssPixels.Round(font.Metrics.ToPoints(designUnits, fontSize)) : font.Metrics.ToPoints(designUnits, fontSize);
-            var ascent = Metric(font.Metrics.Ascender);
-            var descent = Metric(-font.Metrics.Descender);
-            var leading = lineHeight.HeightFor(fontSize) is { } height ? height - (ascent + descent) : Metric(font.Metrics.LineGap);
+            var metrics = font.Metrics.Line;
+            var ascent = Metric(metrics.Ascender);
+            var descent = Metric(-metrics.Descender);
+            var leading = lineHeight.HeightFor(fontSize) is { } height ? height - (ascent + descent) : Metric(metrics.LineGap);
             var above = whole ? CssPixels.Floor(leading / 2) : leading / 2;
             return new InlineExtent(ascent, descent, above, leading - above);
         }
@@ -67,8 +69,10 @@ internal static class LineBoxes
     /// <param name="isLastLine">True for the paragraph's last line, which is never justified.</param>
     /// <param name="strut">The paragraph's strut, or null when the model gives the paragraph no text properties.</param>
     /// <param name="rounding">How the fonts' metrics are taken (the document's profile).</param>
+    /// <param name="empty">The paragraph's runs that put no glyph on any line and lie on this one (<see cref="EmptyRunsByLine"/>):
+    /// their inline boxes count for the line's height all the same.</param>
     /// <returns>The line fragment with its text fragments.</returns>
-    public static LineFragment Build(TextLine broken, IReadOnlyList<ShapedRun> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding)
+    public static LineFragment Build(TextLine broken, IReadOnlyList<ShapedRun> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding, IReadOnlyList<ShapedRun>? empty = null)
     {
         var (line, offset) = LineJustification.Place(broken, width, align, isLastLine);
         var pieces = line.Segments
@@ -76,6 +80,7 @@ internal static class LineBoxes
             .Select(piece => (piece.Segment, piece.Run, Extent: InlineExtent.Of(piece.Run.Font, piece.Run.Run.Style.FontSize.Points, piece.Run.Run.Style.LineHeight, rounding)))
             .ToImmutableArray();
         ImmutableArray<InlineExtent> extents = [.. pieces.Select(piece => piece.Extent),
+            .. (empty ?? []).Select(run => InlineExtent.Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding)),
             .. strut is { } own ? [InlineExtent.Of(own.Font, own.Style.FontSize.Points, own.Style.LineHeight, rounding)] : Array.Empty<InlineExtent>()];
 
         var above = extents.Max(extent => extent.Above);
@@ -93,6 +98,45 @@ internal static class LineBoxes
         }
 
         return new LineFragment(new Size(x, above + below), children.MoveToImmutable());
+    }
+
+    /// <summary>
+    /// The runs that put no glyph on any line (an empty span, a span whose only space collapses at a line edge), each with
+    /// the line it lies on: the line of the last run before it that has glyphs, or the first line. "Empty inline elements
+    /// generate empty inline boxes, but these boxes still have margins, padding, borders and a line height, and thus
+    /// influence the line box height calculation just like elements with content" (CSS 2.1 §10.8), as Chromium counts
+    /// them (case <c>fr-empty-span</c>).
+    /// </summary>
+    /// <param name="lines">The paragraph's lines.</param>
+    /// <param name="runs">The paragraph's runs.</param>
+    /// <returns>Per line, the runs without glyphs that lie on it.</returns>
+    public static IReadOnlyList<IReadOnlyList<ShapedRun>> EmptyRunsByLine(IReadOnlyList<TextLine> lines, IReadOnlyList<ShapedRun> runs)
+    {
+        // One pass over the segments and one over the runs: linear in the paragraph.
+        var lastLineOf = new int?[runs.Count];
+        for (var line = 0; line < lines.Count; line++)
+        {
+            foreach (var segment in lines[line].Segments)
+            {
+                lastLineOf[segment.Run] = line;
+            }
+        }
+
+        var byLine = Enumerable.Range(0, lines.Count).Select(_ => new List<ShapedRun>()).ToList();
+        var current = 0;
+        for (var run = 0; run < runs.Count && lines.Count > 0; run++)
+        {
+            if (lastLineOf[run] is { } line)
+            {
+                // A run on several lines: an empty run after it lies on its last line.
+                current = line;
+                continue;
+            }
+
+            byLine[current].Add(runs[run]);
+        }
+
+        return byLine;
     }
 }
 

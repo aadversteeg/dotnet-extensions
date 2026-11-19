@@ -7,13 +7,15 @@ namespace Ave.Extensions.Documents.Layout;
 /// <summary>
 /// Where a box was broken at the end of a page, so its layout can continue on the next page. Break tokens are the
 /// only state pagination carries from page to page, so every layout call stays a pure function. Each of the four
-/// algorithms defines its own token type and only ever receives tokens it produced itself. Tokens are values: two
-/// tokens for the same position are equal.
+/// algorithms defines its own token type; pagination hands each box the token that box's own layout returned. A caller
+/// of an algorithm can build a token, or pass one box's token to another box: the algorithm checks the token it is
+/// given, and one it cannot have returned for the box (another algorithm's kind, a position the box does not have) is
+/// the error <c>Documents.Layout.InvalidBreakToken</c>, never an exception. Tokens are values: two tokens for the same
+/// position are equal.
 /// </summary>
 public abstract record BreakToken
 {
-    // Only the algorithms of this assembly define tokens (one type each); a token an algorithm did not produce is a
-    // programming error, never input.
+    // Only the algorithms of this assembly define token types (one each).
     private protected BreakToken()
     {
     }
@@ -23,7 +25,18 @@ public abstract record BreakToken
 /// <param name="ChildIndex">The index of the child that continues on the next page.</param>
 /// <param name="ChildToken">Where to resume inside that child, or null to lay it out from its start (the break
 /// fell before the child).</param>
-public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : BreakToken;
+public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : BreakToken
+{
+    /// <summary>
+    /// True when a forced break before the child ended the page (<see cref="ForcedBreaks"/>): then the margins after
+    /// the break take space on the next page ("adjoining margins before the break are truncated, but margins after the
+    /// break are preserved", CSS Fragmentation 3 §5.2). False after every unforced break, where the margins adjoining
+    /// it are truncated — also when the page after a forced break ends before the same child again, so its margin takes
+    /// space on one page only (Chromium <c>AdjustMarginsForFragmentation</c>: "Leading block margins are truncated if
+    /// they come right after an unforced break"). Part of the position: two tokens differ when only this differs.
+    /// </summary>
+    public bool IsForced { get; init; }
+}
 
 /// <summary>The break token of <see cref="InlineLayout"/>: the first line of the next fragment.</summary>
 /// <param name="LineIndex">The index of the line that starts the next page.</param>

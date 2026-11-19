@@ -1,4 +1,4 @@
-# Architecture of Ave.Extensions.Documents (milestone M1)
+# Architecture of Ave.Extensions.Documents (milestone M1, and milestone M2 as far as it is merged)
 
 For a reviewer who has never seen the code. It says what each part is for, where the contracts are, where every
 policy and whole algorithm lives, what is known not to work, and how each claim is checked. Paths are relative to the
@@ -84,6 +84,15 @@ paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with th
 is left. When the document shows its page count, it repeats the whole document until that count settles (at most 5
 passes); otherwise one pass is all.
 
+The four algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
+that another box's layout returned. Each algorithm checks the token it is given, and a token it cannot have returned for
+the box — another algorithm's kind, a child, line, row or cell the box does not have, a height shown that is negative,
+not finite, or the whole height of the sliced image or line or more — is the error `Documents.Layout.InvalidBreakToken`,
+never an exception; a token inside a child or a cell is checked by that child's algorithm, and a table's token does not
+carry its grid over to another table (`BreakTokenCheckTests`). The token types keep their public constructors: a check is needed in any case, because a
+caller can pass one box's token to another box, so closing the constructors would not close the hole. Pagination never
+meets the error: it hands each box the token that box's own layout returned.
+
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
 engine ships four algorithms (flow, inline, tracks, image) and registering another is internal
@@ -113,8 +122,10 @@ The whole algorithms and the other rules:
 | input validation | `Fluent/InputChecks.cs` | one function per rule, each cites its source |
 | block flow, keep rules, break choice | `Layout/FlowLayout.cs`, `BreakAvoidance.cs`, `ForcedBreaks.cs` | CSS 2.1 §9.4.1, CSS Fragmentation 3 §3–§4 |
 | line heights and the strut: `normal`, numbers, lengths and percentages; every line starts with its paragraph's strut | `DocumentModel/LineHeight.cs`, `Layout/LineBoxes.cs`, `Fluent/LineHeightValue.cs` (computed values) | CSS 2.1 §10.8, §10.8.1; CSS Inline 3 §5.1, §5.3; checked against Chromium's print |
+| a font's line metrics (ascent, descent, line gap for `normal` and the strut): OS/2 typographic when the font sets USE_TYPO_METRICS, otherwise 'hhea' (where 'hhea' has none: typographic, then Windows), as Chromium reads them on Linux; for every front-end, not a policy | `Fonts/FontParser.cs` (`LineMetricsOf`), `FontMetrics.Line` | Skia `SkFontHost_FreeType.cpp`, Fontations `skrifa` `metrics.rs`; checked against Chromium's print (cases `d-typo-*`) |
 | orphans and widows: where a paragraph breaks, the best breakpoint inside a complete paragraph; a cut of a table row is as good as the breaks it makes inside its cells | `Layout/InlineLayout.cs` (`BreakWhereFull`, `BestBreakInside`), `Tracks/TableBreaks.cs` (`Cut`) | CSS Fragmentation 3 §3.3, §4.4 rule 3; checked against Chromium's print |
-| early breaks: a keep rule that reaches back into an earlier box's content; a box whose bottom padding does not fit breaks at its best inner breakpoint | `Layout/EarlyBreak.cs`, `FlowLayout.cs`, `InlineLayout.cs`, `Tracks/TablePage.cs`, `SlicedBox.cs` | CSS Fragmentation 3 §4.4, §4.5; checked against Chromium's print |
+| early breaks: a keep rule that reaches back into an earlier box's content, never into a box that continues from the page before; a box that breaks at its own early break keeps it and reports it as perfect, lowered only by the `break-inside: avoid` of the boxes the break lies inside (a table's row group kept together included, when the break lies between two of its rows), and its parent compares that with its own breakpoints (a tie keeps the break inside): a break against orphans, widows or a keep-with-next stays inside the box, a break inside a box or paragraph kept together loses to a better break before the box | `Layout/EarlyBreak.cs`, `FlowLayout.cs`, `InlineLayout.cs`, `BreakAvoidance.cs` (`Kept`), `Tracks/TablePage.cs`, `LayoutResult.cs` (`KeepsItsBreak`, `KeptAppeal`) | CSS Fragmentation 3 §4.4, §4.5; Chromium `MovePastBreakpoint`, `CalculateBreakAppealInside`, `kNeedsEarlierBreak`; checked against Chromium's print (cases `b-*`, `fr-keep-*`, `kb-*`) |
+| bottom padding and border that do not fit below a box's complete content: the box breaks at its best inner breakpoint and keeps it, at the appeal of a kept break (above: a box or paragraph kept together then moves whole where a better break lies before it, cases `kb-n*`); without one it breaks before its bottom padding and border, which start the next page (a last resort, so a box lower on the page moves whole); not in table cells | `Layout/SlicedBox.cs`, `FlowLayout.cs` | CSS Fragmentation 3 §4.1, §5.4; Chromium `FinishFragmentation`; checked against Chromium's print in block flow (cases `fr-pad-*`, `fr-border-*`, `a3-pad-*`) |
 | where a page starts: a box that does not fit below margins, empty boxes or padding moves on; only content that starts the page is refused; the last-resort break | `Layout/ConstraintSpace.cs` (`IsAtPageStart`), `FlowLayout.cs`, `SlicedBox.cs`, `BreakAppeal.cs` (`LastResort`) | CSS Fragmentation 3 §4.1, §4.4, §5.2; checked against Chromium's print |
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
@@ -127,7 +138,7 @@ The whole algorithms and the other rules:
 | line breaking | `Typesetting/LineBreaking/UnicodeLineBreaking.cs`, `GreedyLineBreaker.cs` | UAX #14 rev. 57 |
 | shaping | `Typesetting/Shaper.cs`, `Shaping/` | OpenType GSUB/GPOS/GDEF, legacy kern |
 | Unicode normalization before shaping: decompose, reorder marks, recompose, as far as the font allows | `Typesetting/Unicode/Normalization.cs`, data `UnicodeNormalizationData.g.cs` | UAX #15; HarfBuzz's normalizer (hb-ot-shape-normalize.cc) |
-| shaping at a break: each line shaped as the line it is, its ends shaped again where the paragraph's shaping marked them unsafe to break | `Typesetting/GreedyLineBreaker.cs`, `ShapedGlyph.UnsafeToBreak`, `Shaper.ShapeLinePiece` | HarfBuzz's unsafe-to-break flag (hb-buffer.h) |
+| shaping at a break and where a line ends: Where a line ends and how wide it is follows Chromium 159 (Blink `ShapingLineBreaker::ShapeLine`, `LineBreaker`): the paragraph is shaped once and a line keeps the paragraph's glyphs; the start of a wrapped line and the end of a line are shaped again on their own from and to the nearest place that is safe to break, when that end is not safe (the shaper sets HarfBuzz's `HB_GLYPH_FLAG_UNSAFE_TO_BREAK` as HarfBuzz does: a pair whose values are all zero marks nothing, a lookup marks the clusters after its first glyph's own). The hyphen shown at a soft hyphen is shaped alone and never kerned with the letter before it. At a line end at a collapsible space, left-aligned text keeps the paragraph's glyphs (the last letter keeps its kerning with the space, and the line is measured with it); right-aligned, centred and justified text shape the end again before the space. Before a forced break and at the paragraph's end the end is shaped again in every alignment, as measured in Chromium 159's print, which is the reference for where lines end and wins over the reading of its source (that reading says start-aligned text keeps the end): `xx AV <br>To AV` fits "xx AV" on one line only from 252 px in all four alignments, and the right-aligned line shows the unkerned 5,037 units; `xx AV To AV ` at 254 px is `xx AV | To | AV` in all four. When a line, shaped as it is, does not fit, the break opportunity before it is taken. So a line can differ from shaping its text alone: a ligature cut by a break is shaped as its half alone, as measured: `ff` + U+200B + `fi` ends `f f` (1,402 units in Chromium's print), not the ff ligature HarfBuzz gives "ff" alone; each piece shaped again equals HarfBuzz for that piece. | `Typesetting/GreedyLineBreaker.cs`, `ShapedGlyph.UnsafeToBreak`, `Shaper.ShapeLinePiece`, `LineShapingBudget`, `Layout/InlineLayout.cs` (`LineEndAtSpace`) | Blink `ShapingLineBreaker::ShapeLine`, `LineBreaker`; HarfBuzz's unsafe-to-break flag (hb-buffer.h); checked against Chromium's print (`ChromiumLineEndTests`) |
 | alignment and justification | `Typesetting/LineJustification.cs` | CSS Text 3 §6.1, §6.4 (inter-word) |
 | font parsing and subsetting | `Fonts/FontParser.cs`, `Tables/`, `OpenType/`, `FontSubsetter.cs` | OpenType specification per table |
 | glyph outlines (simple and composite glyphs, no hinting) | `Fonts/Tables/GlyphOutlineDecoder.cs`, `GlyphShape.cs` | OpenType "glyf — Glyph data" |
@@ -283,8 +294,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
    charges it for every value read AND every record created (`TableReader.Records`, which `Count` calls): a record
    that reads nothing still costs memory. A structure that many offsets may point at is parsed once and shared
    (`TableReader.Shared`); walking parsed data again is charged too (`TableReader.Spend`). Shaping spends operations
-   the same way: every glyph a lookup looks at and every subtable it tries (`Shaping/ShapingBudget.cs`); every search
-   in the shaper is linear in the text, so the budget, a number per glyph, refuses only a font's work.
+   the same way: every glyph a lookup looks at and every subtable it tries (`Shaping/ShapingBudget.cs`). Breaking a paragraph costs a fixed number of steps per break opportunity and, per line, at most `GreedyLineBreaker.MaxEarlierBreaksTried` + 2 shapings of the line's ends, each at most the line's own text. All pieces of one paragraph share one `LineShapingBudget`: at most 16 characters shaped again per character of the paragraph (at least 4,096), and together the shaping limits of the paragraph itself (max(65,536, 1,024 × n) operations); past either the paragraph is refused with `Documents.Typesetting.TooMuchWork`. Marking glyphs unsafe to break skips what a lookup's walk marked already (a run of n marks on one base costs n steps) and is charged to the shaping budget; the normalizer finds every cluster's end in one pass and does not sort a run of more than 32 marks. Counted in `TextCostTests` (two sizes per input).
 2. **Check a count against the bytes that must hold it** before allocating for it (`TableReader.Count` and `Fits`; a
    PNG header's size against `ImageLimits` before anything is inflated; a JPEG frame's size before its coefficients are
    allocated — a JPEG that is only embedded is never decoded).
@@ -478,10 +488,31 @@ Each is documented next to its code as well.
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
   borders; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut
-  depends on where the page ends, so a table offers no early break there); padding that does not fit at the top of
-  an empty page overflows; a paragraph with a page counter that breaks across pages is re-broken with each page's
+  depends on where the page ends, so a table offers no early break there); bottom padding and a bottom border taller
+  than the page area overflow the page they start (as in Chromium) when the box ends the document, and are refused
+  (`Documents.Layout.DoesNotFit`) when content follows them; a table cell whose content does not fit under
+  the repeated header and, on a page without the header, does not fit with its last child's bottom margin and the
+  cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a table header taller than
+  the page is refused (`Documents.Layout.DoesNotFit`; Chromium cuts it like a body row); a table row taller than the page
+  only through its cells' padding is refused (Chromium prints it on a fresh page and lets the padding overflow); a table
+  row without cells is refused as input (`Documents.Input.Invalid.Table`; Chromium lays it out with no height) — each
+  pinned with Chromium's pages in `ListedDifferenceTests`; under `EmptyRowParts.Avoid` and `MonolithicOverflow.Refuse`,
+  the defaults, a table row that continues from the page before, whose rest fills the page area with only the half of
+  its grid line below past the page end, is refused (`Documents.Layout.DoesNotFit`) when another row follows it (under
+  `Allow` the line passes the page end, as Chromium prints it; under `Slice` the rest is cut at the deepest place;
+  `RowEndTests`, `A_continued_row_whose_lines_fill_the_next_page_is_refused_under_Avoid`); a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
+- **Work in nested tables:** a box inside k nested tables is laid out up to 2k + 1 times on a page (each table
+  measures every table inside it at unlimited height; a cut cell is laid out in the cut and once more for what is left
+  of it), so t nested tables that break across a page cost 2 (t + 1)(t + 2) layout calls: quadratic in the depth, not
+  exponential (`TableNestingCostTests`). At the nesting limit, measured on .NET 10 x64 on 2026-11-18: 63 nested one-cell
+  tables that break across 2 pages take 8,320 calls (24,704 with repeated grid lines, which make it 4 pages), 3 to 5 s,
+  1.5 to 1.8 GB allocated in all with about 111 MB of process memory at the peak, and 672 KB of stack; 64 nested blocks
+  take 130 calls, a quarter of a second, 10 MB and 304 KB of stack. The cost per page is not constant: the same nesting
+  over 20 pages takes 155,776 calls, 74 s and 68 GB allocated (peak about 150 MB), and over 200 pages it does not finish
+  in 30 minutes, because a paragraph and the boxes around it are laid out again on every page. A layout result kept
+  within the page and carried from page to page is the follow-up, in the next stage 1 pull request.
 - **Against Chromium:** at most font sizes Chromium's text is narrower than the font's advances, by a share that
   depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small sizes; none at 9, 10.5 and 12 pt), so a line
   that fits in Chromium by less than that share of its text width can break one word earlier in the engine. The
@@ -491,7 +522,12 @@ Each is documented next to its code as well.
   font's values give 14.4 pt), and it floors the half-leading above a line to a whole pixel; with the default
   `FontMetricRounding.Exact` the engine keeps the font's exact values, so a line of `normal` height and a baseline's
   place in its line differ by less than a pixel, and with `WholePixels` it rounds as Chromium does (every line of the
-  Lato cases `f-lato-*` and `f-mixed-lato` within 1/64 pixel; `FontMetricRoundingTests`). Chromium keeps every length
+  Lato cases `f-lato-*` and `f-mixed-lato` within 1/64 pixel; `FontMetricRoundingTests`). Under `Exact` and an explicit
+  line height a baseline's place in its line differs more: the largest measured difference is 1.16 px (0.87 pt, Lato
+  10 pt at `line-height: 1.5`, case `fr-lh-first-baseline`, `LineBoxReferenceTests`); and where a line mixes font sizes
+  under a line height given as a length, the boxes' rounded metrics decide the line's height, so the engine's line can
+  be up to about half a pixel taller or shorter per line: ten lines of 15 pt with a 20 pt word on two of them fill a
+  150 pt page in Chromium and need a second page in the engine (case `fr-lh-mixed-sizes`). Chromium keeps every length
   of its layout in its unit of 1/64 pixel: a line height given as a length or a percentage is rounded to it, a number
   times the font size is floored to it (Lato 11 pt × 1.3 = 19.0625 px, not 19.067). The engine takes a line height as
   it is given, under either policy, so pages can differ: three lines of 20 pt on a 60 pt page area are 2 + 1 lines in
@@ -504,12 +540,44 @@ Each is documented next to its code as well.
   hands the engine its line heights in that unit. The difference that remains: Chromium paints a text baseline at the
   nearest whole pixel while the line keeps its place, so a baseline's ink can lie up to half a pixel (0.375 pt) from
   the engine's; it never moves a line. Chromium also paints grid lines at whole pixels, up to 0.5 pt from where layout puts them (`a2-rowspan-blocks`, `RowPartTests`).
-  For `normal` Chromium also takes a font's OS/2 typographic metrics when the font sets USE_TYPO_METRICS, and the
-  'hhea' metrics otherwise; the engine always takes 'hhea' (the same values for Lato, not for Theano Didot). At 0.37
+  The font's line metrics come from the table Chromium reads on Linux (Fontations): OS/2 typographic metrics when the
+  font sets USE_TYPO_METRICS, whatever the table's version, otherwise 'hhea' (the same values for Lato, not for Theano
+  Didot); this is the reference — on Windows and macOS Chromium takes the metrics from the platform, and which table
+  that is, is not documented. These metrics move every inline box, not only lines of `normal` height. At 0.37
   and 0.38 pt (about half a pixel) Chromium's print shows no text at all and gives the lines no height (it floors the
   font size to 1/100 pixel first, so at 0.38 pt, 0.5067 px, Lato's ascent is 0.49 px and rounds to 0); the engine
   draws the text, and at 0.38 pt with `WholePixels` gives each line a pixel (cases `f-tiny`, `f-tiny-038`;
-  `FontMetricRoundingTests`).
+  `FontMetricRoundingTests`). A line height smaller than its text (12 pt text on 7.5 pt lines, or 0)
+  overflows its line; Chromium paints such overflowing glyphs again at the next page's edge and adds a page for the last
+  line's overflow, the engine paints them once. HarfBuzz gets up to 5 characters of context from Chromium when a piece is shaped again; the engine shapes the piece alone. None of the lookups the engine applies reads context, so no measured case differs. Chromium's 1/64 px positions: line extents differ by up to 0.056 pt at 75 pt.
+  Page breaks, measured in Chromium's print and pinned with both results (`ListedDifferenceTests`, cases `fr-old-*`):
+  a forced break after only empty boxes is not taken (Chromium leaves a blank page first); a forced break inside a box
+  kept together moves the whole box to a fresh page first (Chromium breaks there at once: a break inside a box that
+  holds a forced break is perfect before the box's keep applies, `CalculateBreakAppealInside`); an empty box whose
+  margin carries it past the page end stays at the page end, so a keep before it holds (Chromium breaks before it); a
+  box kept together does not hide a better breakpoint before it (in Chromium it does, in one shape: `n0 n1 o0 o1 | p0`
+  where the engine prints `n0 | n1 o0 o1 p0`); an empty box past the end of the last page adds no blank page; a paragraph that moved to a new page whole counts only
+  its orphans before a break on that page, where Chromium counts its widows there too (it differs only where widows are
+  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). The rest of a cut cell aligned `middle` or `bottom` is aligned
+  in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
+  (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
+  the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
+  row whole on the next (cases `fr-f4-padding-page-start`, `a2-cells-end-page-top`); a row that starts a later page,
+  after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
+  line, where Chromium prints all its lines on that page and lets the padding overflow (cases
+  `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`).
+  Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
+  the header is repeated, the engine leaves the header alone on the first page, where Chromium cuts the row below it
+  because its line fits and only its padding does not (`fr-header-pad-box-72`). Where the header is more than a quarter
+  of the page area, neither repeats it and both print the same pages (cases `fr-header-pad-box-20`,
+  `fr-header-pad-box-36`, `fr-header-pad-grid-36`, `fr-header-pad-top-36`), as they do without the header row
+  (`fr-header-pad-none-36`). Padding taller than the page area with content after it is refused (the limit above;
+  `fr-header-pad-box-50`).
+  A keep-with-next on the last paragraph inside boxes whose bottom padding goes to a page of its own holds across that
+  padding: the engine then breaks the next paragraph against its orphans, widows or keep (`a0 | a1 | j0 | j1 j2 z`),
+  where Chromium breaks before it and the page with the padding holds nothing else (`a0 | a1 | (blank) | j0 j1 j2 | z`).
+  Where the keep-with-next is on the outer box, with `orphans` 1, without the padding or without the keep, both print
+  the same pages (cases `fr-kwn-pad-*`).
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
@@ -517,7 +585,9 @@ Each is documented next to its code as well.
 - **Header rows are repeated only up to a quarter of the page area**, as Chromium prints them: a header taller than
   that is shown on the table's first page only (`TablePage.RepeatsHeader`; `HeaderRepeatTests`, cases
   `a6-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
-  90.0 and 90.75). CSS Tables 3 leaves repetition to the user agent; the step is measured in Chromium, not read from
+  90.0 and 90.75; cases `fr-old-header-quarter-*`: on 150, 180 and 240 pt a header with bottom padding exactly a quarter
+  high is repeated and one 0.75 pt higher is not). Chromium repeats a header only when the header group is
+  `break-inside: avoid`, which the browser's own style sheet sets for print. CSS Tables 3 leaves repetition to the user agent; the step is measured in Chromium, not read from
   its source. The engine compares with the room the table has on the later page: the page area for a table that
   continues at the top of the body. A table inside a cell or a padded block that continues compares with that box's
   room, which is smaller by the box's insets, so its header can stop repeating a little earlier than in Chromium (not
@@ -525,25 +595,23 @@ Each is documented next to its code as well.
 - **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
   cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
   rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
-  `EmptyRowParts.Allow` the engine cuts where Chromium cuts in the measured cases (one exception is listed below), also in
+  `EmptyRowParts.Allow` the engine cuts where Chromium cuts in the measured cases, also in
   one more respect: a row whose cells all end on the
   page, with only the half of the grid line below it past the page end, is not cut but moves to the next page whole
-  (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: in a series of 42 cases one pixel apart, with and
-  without a repeated header row, the one step where this decides; under `Avoid`, in `a2-cells-end-text` the cells keep
-  their half line on the page and the row is cut before its last block, and in the other two, whose last block is
-  empty, the row moves whole there too, since its rest would show nothing). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
+  (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: the one step of 42, one pixel apart with and
+  without a repeated header row, where this decides; under `Avoid` the row moves whole as well, and keeps its cells'
+  line on the page and is cut only where it cannot move, at the top of a page). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
   their whole-pixel forms `a2-padded-blocks-px`, `a3-mirror-px`, with `FontMetricRounding.WholePixels`; `RowPartTests`,
-  Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. **Listed
-  difference:** a row whose lines all fit on the page but whose bottom padding or border does not is cut between its
-  lines under both values, where Chromium moves it to the next page whole (`a2-row-end-bottom-padding-30`, a cell of five
-  lines with 30 pt bottom padding below six lines: Chromium `a0`..`a5` on page 1 and `b0`..`b4`, `after` on page 2; the
-  engine `a0`..`a5 b0 b1 b2` and `b3 b4 after`; `PinnedDifferenceTests`). Moving the row for its padding or border waits
-  for the slicing of borders and padding across pages (stage 4). Chromium paints grid
+  Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. A row whose lines all
+  fit on the page but whose bottom padding or border does not moves to the next page whole under both values, as
+  Chromium moves it (`a2-row-end-bottom-padding-30`, a cell of five lines with 30 pt bottom padding below six lines:
+  `a0`..`a5` on page 1 and `b0`..`b4`, `after` on page 2; `PinnedDifferenceTests`). Chromium paints grid
   lines at whole pixels, the engine where layout puts them; where lengths are not whole pixels they differ by up to
   0.5 pt (`a2-rowspan-blocks`, a cell over two rows beside 10 pt blocks; 0.25 pt in `a2-padded-blocks` and
   `a3-mirror`). Whether the engine paints grid lines at whole pixels is left to the HTML front-end's stage. With `Avoid`, the code front-end's default, a
   cut where a part shows nothing is a last resort: the row moves to the next page whole, and is cut there only where it
-  cannot move (at the top of a page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`); where a row
+  cannot move (at the top of a page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`; one refusal
+  of a row whose line below does not fit is listed under "Layout" above); where a row
   shows nothing over more than a page this needs a page more than Chromium. Reason for that default: an empty strip of
   a row reads as a layout fault in a report, and avoiding it costs nothing where the row can move.
 - **A row that starts its page area, under `EmptyRowParts.Allow`, lets its grid line below pass the page end**, as
@@ -630,13 +698,20 @@ Each is documented next to its code as well.
   is refused as before. A block outside a table whose bottom padding does not fit below such a piece at the top of a
   page keeps the piece whole and lets the padding pass, as Chromium does.
   Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
-  **Known defect, content lost:** a sliced piece in a block whose bottom padding does not fit below the last slice on
-  its page (a 408 pt image in a block with `padding-bottom` 133 pt, page area 180 pt): what follows the block is on no
-  page, and layout reports success. The repair is on the layout branch that is not merged yet; its test comes with
-  that merge.
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
-  precomposed, decompose what it lacks), except that enclosing marks (Me) do not count as marks and HarfBuzz's fallbacks
-  for a missing space or non-breaking hyphen are not made (`Typesetting/Unicode/Normalization.cs`); contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
+  precomposed, decompose what it lacks), except: a base followed only by an enclosing mark (Me) is not decomposed
+  (HarfBuzz counts Me as a mark); a cluster with a variation selector (U+FE00–U+FE0F) is normalized, where HarfBuzz
+  leaves it alone (`handle_variation_selector_cluster`); the combining classes are the UCD's, not HarfBuzz's modified
+  ones (`hb-unicode.hh`, `_hb_modified_combining_class`: Hebrew, Arabic shadda, Telugu, Thai, Tibetan), so marks of
+  those scripts can come in another order; after a reorder that then composes, the clusters (which glyph carries which
+  characters) differ while glyphs and positions agree; Unicode variation sequences (cmap format 14) are not read, the
+  default glyph is drawn; the fallbacks for a missing space and for U+2011 are not made (the text is refused with
+  `GlyphMissing`) (`Typesetting/Unicode/Normalization.cs`). The variation selector and the two fallbacks are pinned
+  against HarfBuzz (`NormalizationReferenceTests`); the enclosing mark, the combining classes, the clusters after a
+  reorder and the variation sequences need a font the family's tests do not have, and are not pinned. A zero width joiner between a base and a mark: the shaper
+  skips it and attaches the mark; HarfBuzz applies `mark` with manual joiners and leaves the mark unattached. In the
+  PDF text layer a soft hyphen outside a ligature is dropped and one inside a ligature kept; Chromium keeps every soft
+  hyphen and adds U+2010 at a shown hyphen. Contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
   (GPOS type 6); default language system only; complex scripts, bidi and hyphenation are not implemented. Only
   `white-space: normal` exists: a tab collapses to a space like every other white space, so there are no tab stops.
   A forced line break inside a paragraph is `LineBreak()` (U+2028; a line feed or carriage return in the text
@@ -680,10 +755,18 @@ Each is documented next to its code as well.
   padded blocks, nor under a thick line that hides the text reaching into the row. With `Clone` such a cut needs one line width more room than with `Slice`, so on a very small
   page area a table may not fit with `Clone` that fits with `Slice`. A row span does not keep its rows together: a
   break between two rows that a spanning cell crosses is an ordinary break between rows, with the appeal it would
-  have without the span, and the cell continues on the next page (`TableBreaks.BetweenRowsAppeal`). The author's keep
-  rules still apply: a row group kept together, a spanning cell kept together, `KeepWithNext`. So the rows under a
-  label fill their pages as rows without one do. A cell kept together is a keep rule at a break inside its row too:
-  the row is not cut there while a better break exists (`TableBreaks.InsideAppeal`).
+  have without the span, and the cell continues on the next page, filling this page down to its end, as Chromium lays
+  a spanning cell out in the height of all its rows (`TableBreaks.BetweenRowsAppeal`, `Cut`; cases `fr-f7-*`). The
+  author's keep rules still apply: a row group kept together, a spanning cell kept together, a row kept together (which
+  keeps the rows its spanning cell reaches into, `fr-f8-*`), `KeepWithNext`. So the rows under a label fill their pages
+  as rows without one do. A cell kept together is a keep rule at a break inside its row too: the row is not cut there
+  while a better break exists (`TableBreaks.InsideAppeal`). A row group's keep is applied from outside the group, as
+  Chromium applies `break-inside: avoid` to a box's own break: where a kept group taller than the page must break, it
+  breaks where its rows break best (between two rows rather than inside a kept row or against orphans, `fr-f6-*`;
+  `TableBreaks.Breakpoint.Overall`). A row is not cut where some cell's lines all fit and only its bottom padding or its
+  share of the grid line below it does not: the row moves whole, as Chromium never breaks a cell before its bottom
+  padding (`TableSegments.Slice`, cases `fr-f4-*`). A cell that breaks at a breakpoint it chose itself keeps it, and so
+  does its row (`fr-f9-cell-*`, see "early breaks" above).
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.
@@ -723,13 +806,14 @@ Each is documented next to its code as well.
 | --- | --- | --- |
 | layering, no native code, test packages stay out | `UnitTests.Extensions.Documents.Architecture` (compiled assemblies); `tools/verify-samples.ps1` step 2 (publish folder, PE headers) | `dotnet test`; the script |
 | line breaking | the official `LineBreakTest.txt`, Unicode 18.0.0, all 19,346 cases | `UnitTests.Extensions.Documents.Typesetting` |
-| shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph; broken paragraphs line by line (every line against HarfBuzz's shaping of that line alone) | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
+| shaping | HarfBuzz 15.0.0 as WebAssembly inside the test process, glyph for glyph | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
+| line ends | Line ends against Chromium's print: 3,667 paragraphs in Lato 75 pt, four alignments, widths around every change of Chromium's lines (`ChromiumLineEndTests`, data in the Typesetting tests' `Reference/Chromium`): every line break equal, every line extent within 0.06 pt. Each piece shaped again against HarfBuzz for that piece alone, the hyphen alone: 19,350 pieces, 0 differences (`LineReshapingReferenceTests`). The unsafe-to-break flags against HarfBuzz's: 3,046 clusters, 0 differences (`UnsafeToBreakReferenceTests`). | `UnitTests.Extensions.Documents.Typesetting/Reference/` |
 | preview images | every sample page against MuPDF 1.25.1 and poppler 25.03.0 renders of the engine's PDF, at 96 and 300 dpi, by the rule in `RasterComparison`; golden PNG files of the samples | `UnitTests.Extensions.Documents.Samples/RasterReferenceTests.cs`, `PreviewTests.cs`; `tools/reference/raster/README.md` |
 | glyph outlines | fontTools 4.57.0 in the reference tools image, every glyph of the test fonts and hand-made composites, point for point and exactly | `UnitTests.Extensions.Documents.Fonts/GlyphShapeReferenceTests.cs` |
 | JPEG decoding | the ITU-T T.83 compliance streams A1, C1, C2, G1, K1 (downloaded when the tests run, SHA-256 checked on every use, trait `Category=Network`: a failed download fails on CI and skips elsewhere): coefficients equal EREF, re-transformed samples equal DREF, exactly; libjpeg-turbo 2.1.5 `djpeg -dct int` on cjpeg-made files, within a stated difference per case | `UnitTests.Extensions.Documents.Images/JpegConformanceTests.cs`, `JpegDecoderReferenceTests.cs` |
 | PNG encoding | the engine's decoder and Pillow read every pixel back; bytes pinned | `UnitTests.Extensions.Documents.Images/PngEncoderTests.cs` |
 | table layout | numbers measured in Chromium 159 in the pinned Playwright container with font hinting off, and pinned; compared within n layout units (1/64 px), n counted from the structure of each case; the cases, the measuring script and the rule are in `tools/reference/chromium/` | `UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs` |
-| page starts and row cuts across shapes | a generated sweep: 8 kinds of leading space × 12 kinds of first piece × 51 start offsets (4 896 documents): no refusal, every word once, nothing past the page area, no part of a row that shows nothing where it can be avoided | `UnitTests.Extensions.Documents.Fluent/PageStartSweepTests.cs` |
+| page starts and row cuts across shapes | a generated sweep: 8 kinds of leading space × 16 kinds of first piece (4 of them with bottom padding or a bottom border in block flow) × 51 start offsets, a paragraph after each piece (6 528 documents, 13 964 pages, both asserted): no refusal, every word of the input document once (the expected words come from the document, not from a layout), nothing past the page area, no part of a row that shows nothing where it can be avoided | `UnitTests.Extensions.Documents.Fluent/PageStartSweepTests.cs` |
 | page starts and breaks | Chromium's print of the same cases read back from its PDF, page by page (`tools/reference/chromium`, "Print positions": `positions.py` → `measured/<case>.print.txt`), compared with the engine's page model in the same form (`TestSupport/PrintedPages.cs`): the words of each page exactly, positions within n layout units | `UnitTests.Extensions.Documents.Fluent/PageStartTests.cs`, `ChromiumReferenceTests.cs` |
 | text in the PDF | PdfPig reads every glyph back at the position the page model says | `TestSupport/PdfReadBack.cs` |
 | structure tree | PdfPig reads the structure tree and marked content back (roles, order, attributes, text per element; every glyph marked) | `TestSupport/PdfStructureReadBack.cs`, `UnitTests.Extensions.Documents.Samples/TaggedPdfTests.cs`, `UnitTests.Extensions.Documents.Render.Pdf/TaggingTests.cs` |
@@ -743,7 +827,7 @@ Each is documented next to its code as well.
 
 ## Background
 
-Three ideas come from other engines, studied through their public documents, not their code. The layout contract —
+Some ideas come from other engines; where the engine follows their code expression for expression, `NOTICE.md` names the files, with their copyright and licence (Chromium's Blink layout, Skia and Fontations for font line metrics, HarfBuzz's normalizer). The layout contract —
 a pure function of a box, a constraint space (the space the box may use on the current page) and an incoming break
 token, returning a fragment and an outgoing break token, plus a second function for the intrinsic widths
 (`MinMax`) — follows Chromium's LayoutNG. Choosing among breakpoints by their appeal, and among the best the latest,
