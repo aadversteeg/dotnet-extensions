@@ -200,7 +200,8 @@ public class TextDecorationMappingTests
         (refusal.Metadata[ErrorMetadataKeys.SourceLine], refusal.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((2, 31), "the innermost span, whose text has 18 lines");
 
         Runs(html, UnsupportedPolicy.Warn).Single(run => run.Text == "a").Style.Decorations.Should().HaveCount(ModelLimits.MaxDecorations, "under Warn the outermost lines are kept");
-        var five = string.Concat(Enumerable.Repeat("<span>", 5)) + "a" + string.Concat(Enumerable.Repeat("</span>", 5));
-        Runs(Doc($"<p>{five}<u>b</u></p>", "span { text-decoration: underline overline line-through }")).Select(run => run.Style.Decorations.Count).Should().Equal(15, 1);
+        var five = string.Concat(Enumerable.Repeat("<span>", 5)) + "a<u>b</u>" + string.Concat(Enumerable.Repeat("</span>", 5));
+        Runs(Doc($"<p>{five}</p>", "span { text-decoration: underline overline line-through }")).Select(run => run.Style.Decorations.Count)
+            .Should().Equal([15, ModelLimits.MaxDecorations], "a text with exactly as many lines as the model holds is drawn");
     }
 }
