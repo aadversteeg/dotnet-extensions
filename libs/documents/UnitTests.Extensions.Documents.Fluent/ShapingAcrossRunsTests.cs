@@ -195,4 +195,38 @@ public class ShapingAcrossRunsTests
         error.Parts().Select(part => (part.Code, part.Metadata![ErrorMetadataKeys.SourceLine])).Should().Equal(
             (FontErrorCodes.GlyphMissing, first), (FontErrorCodes.GlyphMissing, second));
     }
+
+    public static TheoryData<string> OtherFonts() => ["bold", "Theano", "9pt"];
+
+    private static Span InOtherFont(string font, string text) => font switch
+    {
+        "bold" => Bold(text),
+        "Theano" => Text(text).FontFamily("Theano Didot"),
+        _ => Text(text).FontSize(9.Pt()),
+    };
+
+    [Theory]
+    [MemberData(nameof(OtherFonts))]
+    public void A_run_without_text_that_opens_a_paragraph_does_not_set_the_font_of_the_text_after_it(string font)
+    {
+        // The empty run is in Lato regular 12 pt; the text after it is shaped and drawn in its own font, as without it.
+        static List<GlyphRun> Drawn(PageDocument document) => [.. document.Pages[0].Items.OfType<GlyphRun>().Where(run => run.Glyphs.Count > 0)];
+        var withEmpty = Drawn(Laid(Paragraph([Text(string.Empty), InOtherFont(font, "To")])));
+        var alone = Drawn(Laid(Paragraph([InOtherFont(font, "To")])));
+
+        withEmpty.Select(run => (run.Font, run.FontSize, string.Join(",", run.Glyphs.Select(glyph => $"{glyph.Glyph}@{glyph.X:0.000}"))))
+            .Should().Equal(alone.Select(run => (run.Font, run.FontSize, string.Join(",", run.Glyphs.Select(glyph => $"{glyph.Glyph}@{glyph.X:0.000}")))));
+    }
+
+    [Fact]
+    public void A_run_without_text_in_another_font_counts_for_the_line_height_with_its_own_font()
+    {
+        // Theano Didot's line at 12 pt is taller than Lato's. An empty inline box counts for the line's height as one with
+        // text does (CSS 2.1 10.8), so "x" + an empty Theano run makes the line of "x" + a Theano "x": the next line's
+        // baseline is as low.
+        static double SecondBaseline(Span theano) =>
+            PrintedPages.Engine(Laid(Paragraph([Text("x "), theano]), Paragraph("y"))).Pages[0].Words.Single(word => word.Text == "y").Baseline;
+
+        SecondBaseline(Text(" ").FontFamily("Theano Didot")).Should().BeApproximately(SecondBaseline(Text("x").FontFamily("Theano Didot")), 1e-9);
+    }
 }

@@ -204,23 +204,29 @@ public static class InlineLayout
         && one.FontSize == other.FontSize && one.FontWeight == other.FontWeight && one.FontStyle == other.FontStyle;
 
     /// <summary>
-    /// Shapes the runs of one group (<see cref="ShapingGroups"/>) as one text, and gives every run the glyphs whose cluster
-    /// starts in its text. A ligature across the border of two runs is kept, by the run with its first character, as
+    /// Shapes the runs of one group (<see cref="ShapingGroups"/>) as one text, in the font and size of its first run with
+    /// text, and gives every run the glyphs whose cluster starts in its text; every run keeps its own font. A ligature across the border of two runs is kept, by the run with its first character, as
     /// Chromium splits the shared result ("When multiple code units shape to one glyph, such as ligatures, the item that has
     /// its first code unit keeps the glyph", <c>InlineNode::ShapeText</c>): it is drawn in that run's colour, its text is
     /// every character it shows, and the next run puts no glyph there (case <c>sr-same-font</c>, "fix" with the i in another
     /// colour). When the group's text cannot be shaped, each run is shaped alone, so that every error names the run that
-    /// caused it; an error that only the whole group has (a shaping limit) names the group's first run.
+    /// caused it; an error that only the whole group has (a shaping limit) names the group's first run with text.
     /// </summary>
-    /// <param name="group">The runs of one group; the first has a font.</param>
+    /// <param name="group">The runs of one group; every run has a font.</param>
     /// <returns>Every run of the group with its glyphs, or the errors.</returns>
     private static Result<IEnumerable<LineBoxes.ShapedRun>, Error> ShapeGroup(IReadOnlyList<GroupMember> group)
     {
-        var font = group[0].Font.Value;
-        var size = group[0].Run.Style.FontSize.Points;
+        // The text is shaped in the font of the first run with text; a run without text keeps its own font, which its empty
+        // inline box counts for the line's height with (LineBoxes.Build). A group of runs without text shapes nothing.
+        if (group.FirstOrDefault(member => member.Text.Length > 0) is not { } shaping)
+        {
+            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success([.. group.Select(member => new LineBoxes.ShapedRun(member.Run, member.Font.Value, []))]);
+        }
+
+        var (font, size) = (shaping.Font.Value, shaping.Run.Style.FontSize.Points);
         Result<IEnumerable<LineBoxes.ShapedRun>, Error> Alone(GroupMember member) =>
-            Shaper.Shape(member.Text, font, size)
-                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, font, glyphs)])
+            Shaper.Shape(member.Text, member.Font.Value, member.Run.Style.FontSize.Points)
+                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, member.Font.Value, glyphs)])
                 .MapError(error => error.WithSource(member.Run.Source));
         if (group.Count == 1)
         {
@@ -231,7 +237,7 @@ public static class InlineLayout
         if (shaped.IsFailure)
         {
             var alone = group.TraverseAll(Alone);
-            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(alone.IsFailure ? alone.Error : shaped.Error.WithSource(group[0].Run.Source));
+            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(alone.IsFailure ? alone.Error : shaped.Error.WithSource(shaping.Run.Source));
         }
 
         // One pass over the glyphs. `offset` is where the next glyph's cluster starts; a glyph without text belongs to the
@@ -249,7 +255,7 @@ public static class InlineLayout
                 next++;
             }
 
-            runs.Add(new LineBoxes.ShapedRun(member.Run, font, [.. glyphs.Skip(start).Take(next - start)]));
+            runs.Add(new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. glyphs.Skip(start).Take(next - start)]));
         }
 
         return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success(runs);
