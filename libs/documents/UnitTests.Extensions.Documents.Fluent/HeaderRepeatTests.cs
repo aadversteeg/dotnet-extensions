@@ -179,4 +179,60 @@ public class HeaderRepeatTests
         chromium.PageTexts.Skip(1).Should().OnlyContain(page => !page.StartsWith("H ", StringComparison.Ordinal));
         chromium.PageTexts[^1].Should().Be(lastPage);
     }
+
+    /// <summary>A table of a header row "H" with top padding above 20 one-line rows, in the last body row of an outer table
+    /// with a header row "O" and <paramref name="rowsBefore"/> one-line rows "a" before it, so that the inner table starts
+    /// on the outer table's second page (on its first when there are none). With <paramref name="middle"/> a table with a
+    /// header row "M" and the rows before it, "b", lies between the two. Grid lines of <paramref name="line"/> pt (cases
+    /// <c>a6-nested-late-*</c>, <c>a6-nested-late6-*</c>, <c>a6-nested-first-*</c>); with <paramref name="clone"/> the
+    /// outer table repeats its grid lines at a break (<c>box-decoration-break: clone</c>).</summary>
+    private static PrintedPages Late(
+        double padding, int rowsBefore, double line, bool middle, bool clone, MonolithicOverflow overflow, EmptyRowParts parts)
+    {
+        TableElement Grid(TablePart[] rows) => Table(Columns(Fill(1)), [.. rows]).GridLines(line.Pt(), Color.Black).SplitLinesAtBreaks();
+        TablePart[] Rows(string prefix, int count) => [.. Enumerable.Range(0, count).Select(i => (TablePart)TableRow([Cell([Paragraph($"{prefix}{i}")])]))];
+        var inner = Grid([HeaderRow([Cell([Paragraph("H")]).PaddingTop(padding.Pt())]), .. Rows("r", 20)]);
+        var outer = middle
+            ? Grid([HeaderRow([Cell([Paragraph("O")])]), TableRow([Cell([Grid([HeaderRow([Cell([Paragraph("M")])]), .. Rows("b", rowsBefore), TableRow([Cell([inner])])])])])])
+            : Grid([HeaderRow([Cell([Paragraph("O")])]), .. Rows("a", rowsBefore), TableRow([Cell([inner])])]);
+        var document = Document([clone ? outer.RepeatLinesAtBreaks() : outer], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+            .FontFamily("Lato").LineHeight(15.Pt()).FontMetricRounding(FontMetricRounding.WholePixels).MonolithicOverflow(overflow).EmptyRowParts(parts);
+        var result = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        return result.Value;
+    }
+
+    [Theory]
+    [InlineData("a6-nested-late-h2521875", 25.21875, 14, 0.75, false, false, true)]
+    [InlineData("a6-nested-late-h2525", 25.25, 14, 0.75, false, false, false)]
+    [InlineData("a6-nested-late-h253125", 25.3125, 14, 0.75, false, false, false)]
+    [InlineData("a6-nested-late-h2700", 27, 14, 0.75, false, false, false)]
+    [InlineData("a6-nested-late6-h1800", 18, 10, 6, false, false, true)]
+    [InlineData("a6-nested-late6-h1850", 18.5, 10, 6, false, false, false)]
+    [InlineData("a6-nested-late-d3-h2100", 21, 12, 0.75, true, false, true)]
+    [InlineData("a6-nested-late-d3-h2125", 21.25, 12, 0.75, true, false, false)]
+    [InlineData("a6-nested-late-clone-h2525", 25.25, 14, 0.75, false, true, false)]
+    [InlineData("a6-nested-first-h2525", 25.25, 0, 0.75, false, false, true)]
+    [InlineData("a6-nested-first-h253125", 25.3125, 0, 0.75, false, false, true)]
+    public void A_nested_table_under_an_outer_repeated_header_has_the_room_Chromium_reserves_on_that_page_for_the_header(
+        string caseName, double padding, int rowsBefore, double line, bool middle, bool clone, bool repeated)
+    {
+        // The nested header compares with a quarter of the page area less the room the outer headers take. On the outer
+        // table's first page that is the header; on a later page the repeated header also draws the outer half of the
+        // table's top grid line. Below "O" of 15.75 pt on 180 pt the limit is 41.0625 pt on the first page and 40.96875 pt
+        // on the second: a header of 41.0 pt (top padding 25.25 pt) is repeated in a table that starts on the first page
+        // and not in one that starts on the second. With 6 pt lines the second-page limit is 39.0 pt, with a middle table
+        // of a one-line header "M" between the two it is 36.9375 pt. An outer table that clones its lines at a break
+        // reserves the same.
+        var chromium = PrintedPages.Chromium(caseName);
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            foreach (var parts in Enum.GetValues<EmptyRowParts>())
+            {
+                Late(padding, rowsBefore, line, middle, clone, overflow, parts).PageTexts.Should().Equal(chromium.PageTexts, $"{caseName}, {overflow}/{parts}");
+            }
+        }
+
+        chromium.PageTexts.Skip(2).Select(page => page.Contains(" H ", StringComparison.Ordinal)).Should().AllBeEquivalentTo(repeated);
+    }
 }

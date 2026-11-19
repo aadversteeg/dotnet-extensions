@@ -163,7 +163,7 @@ internal static class TablePage
         }
 
         var (repeatsHeader, repeatedHeight) = decided.Value;
-        var table = geometry with { CellFragmentainerBlockSize = Math.Max(0, space.FragmentainerBlockSize - repeatedHeight) };
+        var table = geometry with { CellFragmentainerBlockSize = Math.Max(0, space.FragmentainerBlockSize - Reserved(geometry, repeatsHeader, repeatedHeight, isFirst)) };
         var resume = incoming ?? new TracksBreakToken(grid.HeaderRowCount, [], false) { RepeatsHeader = repeatsHeader };
         var hasHeader = isFirst ? grid.HeaderRowCount > 0 : repeatsHeader;
         var breakAt = space.BreakAt switch
@@ -283,6 +283,27 @@ internal static class TablePage
                 ? (true, header.Height)
                 : (false, 0.0));
     }
+
+    /// <summary>
+    /// The room the repeated header rows take from the page area of the table's cells
+    /// (<see cref="TableGeometry.CellFragmentainerBlockSize"/>). On the table's first page that is the header's height. On a
+    /// later page the repeated header draws the table's whole top grid line, so the room is the header's height plus the
+    /// outer half of that line, as Chromium reserves it (<c>TableLayoutAlgorithm::GenerateFragment</c>: "when repeated it
+    /// will draw the whole border itself. We need to reserve additional space at the block-start for this additional
+    /// border space", <c>child_block_offset += border_padding.block_start</c> where the block-start border is not included
+    /// in the fragment, then <c>repeated_header_block_size = child_block_offset - *offset_before_repeated_header +
+    /// border_spacing.block_size</c>; read in the source of Chromium 150). The measurement: below an outer header of one
+    /// line on a page area of 180 pt, a nested table that starts on the outer table's second page repeats a header of
+    /// 40.96875 pt and not one of 41.0 pt (cases <c>a6-nested-late-*</c>), where on the first page it repeats one of
+    /// 41.0625 pt (<c>a6-nested-first-*</c>); with grid lines of 6 pt the second-page limit is 39.0 pt
+    /// (<c>a6-nested-late6-*</c>), and each outer level between takes its own share (<c>a6-nested-late-d3-*</c>). An outer
+    /// table with <c>box-decoration-break: clone</c> does not repeat a nested header of 41.0 pt either
+    /// (<c>a6-nested-late-clone-h2525</c>), so the half is reserved there too.
+    /// </summary>
+    private static double Reserved(TableGeometry table, bool repeatsHeader, double headerHeight, bool isFirst) =>
+        repeatsHeader && !isFirst
+            ? headerHeight + (table.HorizontalWidth(null, 0, new CollapsedBorders.LineContext(true, false, new HashSet<int>())) / 2)
+            : headerHeight;
 
     /// <summary>One try at the page, with or without the header rows on top. None when no body content fits.</summary>
     private static Result<Maybe<Outcome>, Error> Attempt(
