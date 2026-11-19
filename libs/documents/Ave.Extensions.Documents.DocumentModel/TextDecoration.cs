@@ -3,7 +3,7 @@ using Ave.Extensions.Documents.Core;
 namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
-/// One decoration applied to a run of text (CSS Text Decoration 3 §2.1): a line that a decorating box, the run's own
+/// One decoration applied to a run of text (CSS Text Decoration 3 §2, "Line Decoration"): a line that a decorating box, the run's own
 /// element or an ancestor, draws across its text. The font is the decorating box's, which gives the line its thickness
 /// and its position (Blink <c>TextDecorationInfo::ResolveDecorationAt</c>: "decoration.used_font =
 /// decorating_box->GetUsedFont()"; cases <c>dl-whose</c>, <c>dl-nest</c>); it is not a <see cref="TextStyle"/>, which would

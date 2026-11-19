@@ -27,6 +27,13 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// </summary>
     public bool Hangs { get; init; }
 
+    /// <summary>
+    /// For a glyph that hangs (<see cref="Hangs"/>), the part of its advance that lies past the line's end: its advance as
+    /// shaped minus <see cref="Advance"/>, the part it keeps; 0 for every other glyph. A text decoration is drawn across the
+    /// whole advance of a hanging space, inside the line and past its end (Chromium's print, case <c>dl-space</c>).
+    /// </summary>
+    public double Overhang { get; init; }
+
     /// <summary>True for a default-ignorable character (a soft hyphen, a joiner, a zero width space, …): its advance
     /// is 0 and it is not drawn, but it stays in the text for line breaking. The Unicode Standard §5.21.6, "Characters
     /// Ignored for Display": the characters to ignore for display are those with the Default_Ignorable_Code_Point

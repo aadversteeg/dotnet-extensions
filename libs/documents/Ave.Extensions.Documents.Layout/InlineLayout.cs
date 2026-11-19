@@ -47,7 +47,7 @@ public static class InlineLayout
 
         // A first line taller than the page area that starts the page is sliced when the profile says so (MonolithicSlices).
         var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
-        return ShapeRuns(environment, box).OnSuccessBind(items => StrutOf(environment, box).OnSuccessBind(strut =>
+        return ShapeRuns(environment, box).OnSuccessBind(shaped => WithDecorationFonts(environment, shaped)).OnSuccessBind(items => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
                 LaidOut(environment, items, width).OnSuccessBind(runs =>
                     StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, width, height, breakAt switch
@@ -71,6 +71,19 @@ public static class InlineLayout
             $"{line.Slices} slices cannot have shown {InvariantNumber.Format(line.Shown)}pt of a line",
         _ => null,
     };
+
+    /// <summary>The paragraph's runs with the fonts of their decorations resolved (<see cref="LineBoxes.ShapedRun.Decorations"/>),
+    /// each like a run's own font: a missing font is the error a run would get, at the run's source. Only layout draws the
+    /// lines, so measuring does not resolve them.</summary>
+    private static Result<IReadOnlyList<LineBoxes.Item>, Error> WithDecorationFonts(LayoutEnvironment environment, IReadOnlyList<LineBoxes.Item> items) =>
+        items.TraverseAll(item => item is LineBoxes.ShapedRun { Run.Style.Decorations.Count: > 0 } run
+                ? run.Run.Style.Decorations
+                    .TraverseAll(decoration => environment.Fonts.Find(decoration.FontFamily, decoration.FontWeight, decoration.FontStyle)
+                        .OnSuccessMap(font => new TextDecorations.Resolved(decoration, font))
+                        .MapError(error => error.WithSource(run.Run.Source)))
+                    .OnSuccessMap(resolved => (LineBoxes.Item)(run with { Decorations = [.. resolved] }))
+                : Result<LineBoxes.Item, Error>.Success(item))
+            .OnSuccessMap(resolved => (IReadOnlyList<LineBoxes.Item>)[.. resolved]);
 
     /// <summary>The paragraph's strut (CSS 2.1 §10.8.1), with its font resolved like a run's; null when the model gives
     /// the paragraph no text properties (<see cref="BoxStyle.Text"/>). A missing font is the error a run would get, at the
@@ -145,7 +158,7 @@ public static class InlineLayout
                 LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, shaped.Run.Style.FontSize.Points, showsHyphen, budget).MapError(error => error.WithSource(shaped.Run.Source)),
                 var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
             },
-            LineEndAtSpace(paragraph.TextAlign));
+            LineEndAtSpace(runs, paragraph.TextAlign));
 
     /// <summary>The white-space properties of each item for the line breaker, in one pass: a run's from its style. An atomic inline
     /// has no spaces, and wraps by the mode of the element it lies in, as in Chromium (Blink
@@ -164,14 +177,18 @@ public static class InlineLayout
         })];
     }
 
-    /// <summary>What the line breaker does at a line end at a collapsible space (<see cref="LineEndShaping"/>), from the
-    /// paragraph's alignment, as Chromium decides whether a line "needs an accurate end position" (Blink
+    /// <summary>What the line breaker does at a line end at a collapsible space (<see cref="LineEndShaping"/>), per item, as
+    /// Chromium decides whether a line "needs an accurate end position": from the paragraph's alignment (Blink
     /// <c>LineInfo::ComputeNeedsAccurateEndPosition</c>, core/layout/inline/line_info.cc): <c>start</c> does not, so the
-    /// paragraph's glyphs are kept; <c>end</c>, <c>center</c> and <c>justify</c> do. The engine lays out left-to-right text
-    /// only, so <see cref="TextAlign.Left"/> is <c>start</c> here; in right-to-left text it would be <c>end</c>. The model has
-    /// no text decoration, which needs an accurate end position too, when it comes.</summary>
-    private static LineEndShaping LineEndAtSpace(TextAlign align) =>
-        align == TextAlign.Left ? LineEndShaping.KeepParagraphGlyphs : LineEndShaping.ShapeAgainBeforeSpace;
+    /// paragraph's glyphs are kept; <c>end</c>, <c>center</c> and <c>justify</c> do; and from the item the line ends in (Blink
+    /// <c>NeedsAccurateEndPosition(const InlineItem&amp;)</c>, core/layout/inline/line_breaker.cc): a run with a text decoration
+    /// (<see cref="TextStyle.Decorations"/>) does, since its line ends where its last glyph ends. The engine lays out
+    /// left-to-right text only, so <see cref="TextAlign.Left"/> is <c>start</c> here; in right-to-left text it would be
+    /// <c>end</c>.</summary>
+    private static LineEndShaping[] LineEndAtSpace(IReadOnlyList<LineBoxes.Item> runs, TextAlign align) =>
+        [.. runs.Select(item => align == TextAlign.Left && item is not LineBoxes.ShapedRun { Run.Style.Decorations.Count: > 0 }
+            ? LineEndShaping.KeepParagraphGlyphs
+            : LineEndShaping.ShapeAgainBeforeSpace)];
 
     /// <summary>
     /// True when the box's text makes at least one line box: some text is left after white-space collapsing.

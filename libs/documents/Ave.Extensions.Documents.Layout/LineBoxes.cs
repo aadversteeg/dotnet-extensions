@@ -17,7 +17,12 @@ internal static class LineBoxes
     public abstract record Item;
 
     /// <summary>An inline run with its resolved font and shaped glyphs.</summary>
-    public sealed record ShapedRun(InlineRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs) : Item;
+    public sealed record ShapedRun(InlineRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs) : Item
+    {
+        /// <summary>The run's decorations with their decorating fonts resolved, in order (<see cref="TextStyle.Decorations"/>);
+        /// empty until layout resolves them.</summary>
+        public ValueList<TextDecorations.Resolved> Decorations { get; init; } = [];
+    }
 
     /// <summary>
     /// An atomic inline (CSS Display 3, Appendix A): a child box of the paragraph laid out by its own algorithm, one item of
@@ -111,6 +116,9 @@ internal static class LineBoxes
     /// <param name="isLastLine">True for the paragraph's last line, which is never justified.</param>
     /// <param name="strut">The paragraph's strut, or null when the model gives the paragraph no text properties.</param>
     /// <param name="rounding">How the fonts' metrics are taken (the document's profile).</param>
+    /// <para>A run's decorations are filled rectangles (<see cref="RuleFragment"/>) among the line's children, around the piece
+    /// they decorate in painting order (<see cref="TextDecorations"/>, THE RULE FOR TEXT DECORATION LINES); they change neither
+    /// the line's height nor its width.</para>
     /// <param name="empty">The paragraph's runs that put no glyph on any line and lie on this one (<see cref="EmptyRunsByLine"/>):
     /// their inline boxes count for the line's height all the same.</param>
     /// <returns>The line fragment with its text fragments.</returns>
@@ -146,10 +154,18 @@ internal static class LineBoxes
                     new Point(x, above - extent.Ascent), new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, new Size(segment.Width, extent.Ascent + extent.Descent))),
                 _ => throw new InvalidOperationException("An atomic inline is placed on a line only once it is laid out."),
             });
+            if (item is ShapedRun { Decorations.Count: > 0 } decorated)
+            {
+                // The piece's text was added last: its underlines and overlines go before it, its line-throughs after it.
+                var (before, after) = TextDecorations.Of(decorated.Decorations, x, segment.Glyphs, above, extent.Ascent, rounding);
+                children.InsertRange(children.Count - 1, before);
+                children.AddRange(after);
+            }
+
             x += segment.Width;
         }
 
-        return new LineFragment(new Size(x, above + below), children.MoveToImmutable());
+        return new LineFragment(new Size(x, above + below), children.ToImmutable());
     }
 
     /// <summary>
