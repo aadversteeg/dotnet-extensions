@@ -23,8 +23,8 @@ internal static class HtmlCases
     /// tests of the code front-end compare baselines within one Chromium layout unit (1/64 px, 0.0117 pt,
     /// <c>FontMetricRoundingTests</c>), and x positions differ by Chromium's own font-size rounding, which scales the
     /// advances of a 10 pt line by 0.99961 (<c>ChromiumLayout.FontSizeFactor</c>): 0.08 pt at the end of a 210 pt line.
-    /// The bound covers both and stays below the architect's limit of 0.1 pt; a case that needs more is listed as
-    /// different, not hidden.
+    /// The bound covers both and is no wider than 0.1 pt, the widest the reference rules of the family allow; a case
+    /// that needs more fails as different, it is not hidden.
     /// </summary>
     public const double Bound = 0.1;
 
