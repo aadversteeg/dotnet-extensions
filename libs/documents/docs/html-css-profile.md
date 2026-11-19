@@ -457,11 +457,11 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 | --- | --- | --- |
 | html, head |  | align |
 | body | bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag) | align, background |
-| table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right (float), background, frame, rules |
-| caption | align=top | align=bottom/left/right |
+| table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right/inline-start/inline-end (float), background, frame, rules |
+| caption | align=top | align=bottom |
 | col, colgroup | width, align (-webkit-left/right/center, or one text-align value) |  |
 | thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign | background |
-| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (the integer it starts with, at least 0) and border (1px inset, or solid with bordercolor) | background |
+| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535) and border (1px inset, or solid with bordercolor) | background |
 | div, p | align (-webkit-left/right/center, or one text-align value) |  |
 | hr | align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width |  |
 | img | width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom | align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG) |
@@ -474,4 +474,5 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 | meta |  | http-equiv=Content-Security-Policy in head; name=color-scheme with a content other than normal or light |
 | link |  | charset other than utf-8 (on any link) |
 | every other element (h1–h6, lists, sections, phrasing, custom and unknown elements) but button, select and textarea | align (middle as center, or one text-align value) |  |
+| every element but embed | hidden (display: none; until-found: content-visibility: hidden) |  |
 | every element |  | contenteditable (empty, true or plaintext-only), autofocus |

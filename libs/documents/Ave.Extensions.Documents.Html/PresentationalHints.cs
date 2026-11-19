@@ -38,11 +38,11 @@ internal static class PresentationalHints
     [
         ("html, head", "", "align"),
         ("body", "bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag)", "align, background"),
-        ("table", "width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center", "align=left/right (float), background, frame, rules"),
-        ("caption", "align=top", "align=bottom/left/right"),
+        ("table", "width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center", "align=left/right/inline-start/inline-end (float), background, frame, rules"),
+        ("caption", "align=top", "align=bottom"),
         ("col, colgroup", "width, align (-webkit-left/right/center, or one text-align value)", ""),
         ("thead, tbody, tfoot, tr", "height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign", "background"),
-        ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (the integer it starts with, at least 0) and border (1px inset, or solid with bordercolor)", "background"),
+        ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535) and border (1px inset, or solid with bordercolor)", "background"),
         ("div, p", "align (-webkit-left/right/center, or one text-align value)", ""),
         ("hr", "align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width", ""),
         ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG)"),
@@ -55,6 +55,7 @@ internal static class PresentationalHints
         ("meta", "", "http-equiv=Content-Security-Policy in head; name=color-scheme with a content other than normal or light"),
         ("link", "", "charset other than utf-8 (on any link)"),
         ("every other element (h1–h6, lists, sections, phrasing, custom and unknown elements) but button, select and textarea", "align (middle as center, or one text-align value)", ""),
+        ("every element but embed", "hidden (display: none; until-found: content-visibility: hidden)", ""),
         ("every element", "", "contenteditable (empty, true or plaintext-only), autofocus"),
     ];
 
@@ -116,12 +117,13 @@ internal static class PresentationalHints
             }
         }
 
-        // The attribute's text as the one value of one property, as Chromium 159 reads face and align: no hint when
-        // it is not one value (a ';' or '!important' in it, a CSS-wide keyword); the cascade refuses a value its grammar
-        // does not read.
-        void AsValue(string attribute, string property)
+        // The attribute's text as the one value of one property, as Chromium 159 reads face, align and valign: no hint
+        // when it is not one value (a ';' or '!important' in it); the cascade refuses a value its grammar does not read.
+        // initial, inherit and unset are values of align and valign, not of face; revert and revert-layer make no hint
+        // (measured; a hint is the lowest author declaration, so either rolls back to the user-agent value anyway).
+        void AsValue(string attribute, string property, bool wideKeywords = false)
         {
-            if (Attr(attribute) is { } text && SingleValue(property, text, sourceName, html) is { } declaration)
+            if (Attr(attribute) is { } text && SingleValue(property, text, sourceName, html, wideKeywords) is { } declaration)
             {
                 raw.Add(declaration);
             }
@@ -150,7 +152,7 @@ internal static class PresentationalHints
                     hints.Add(("text-align", "center"));
                     break;
                 default:
-                    AsValue("align", "text-align");
+                    AsValue("align", "text-align", wideKeywords: true);
                     break;
             }
         }
@@ -162,12 +164,34 @@ internal static class PresentationalHints
             Refuse("contenteditable", "makes the text wrap as editable text");
         }
 
+        // Chromium 159 (HTMLTablePartElement::CollectStyleForPresentationAttribute, html_table_part_element.cc): top,
+        // middle, bottom and baseline compared ASCII case-insensitively without trimming, any other value read as
+        // vertical-align (" top" is top, "sub" is sub; measured). An identifier that is none of vertical-align's
+        // keywords (VerticalAlign::ParseSingleValue, longhands_custom.cc: baseline to -webkit-baseline-middle of
+        // css_value_keywords.json5) nor a CSS-wide keyword is no value there, so no hint (valign=center; measured).
         void VerticalAlign()
         {
-            if (Attr("valign") is { } valign && InfraAscii.ToLower(valign.Trim()) is ("top" or "middle" or "bottom" or "baseline") and var value)
+            if (Attr("valign") is not { } valign)
+            {
+                return;
+            }
+
+            if (InfraAscii.ToLower(valign) is ("top" or "middle" or "bottom" or "baseline") and var value)
             {
                 hints.Add(("vertical-align", value));
             }
+            else if (!(IsIdentifier(CssTrim(valign)) && !VerticalAlignKeywords.Contains(InfraAscii.ToLower(CssTrim(valign)))))
+            {
+                AsValue("valign", "vertical-align", wideKeywords: true);
+            }
+        }
+
+        // Chromium 159 (HTMLElement::CollectStyleForPresentationAttribute, html_element.cc): hidden is display: none, or
+        // content-visibility: hidden when it is until-found (ASCII case-insensitive), on every HTML element but embed,
+        // which maps hidden itself (HTMLEmbedElement). As a hint, an author's revert rolls it back (measured).
+        if (Attr("hidden") is { } hiddenValue && html.LocalName != "embed")
+        {
+            hints.Add(InfraAscii.ToLower(hiddenValue) == "until-found" ? ("content-visibility", "hidden") : ("display", "none"));
         }
 
         switch (html.LocalName)
@@ -224,27 +248,27 @@ internal static class PresentationalHints
                     }
                 }
 
-                switch (Attr("align") is { } tableAlign ? InfraAscii.ToLower(tableAlign.Trim()) : null)
+                // Chromium 159 (HTMLTableElement::CollectStyleForPresentationAttribute, html_table_element.cc): center,
+                // compared ASCII case-insensitively without trimming, centres the table; any other value is read as
+                // float (" center" is no float, " left" floats; measured).
+                if (Attr("align") is { } tableAlign && InfraAscii.ToLower(tableAlign) == "center")
                 {
-                    case "left" or "right":
-                        Refuse("align", "makes the table float");
-                        break;
-                    case "center":
-                        hints.Add(("margin-left", "auto"));
-                        hints.Add(("margin-right", "auto"));
-                        break;
+                    hints.Add(("margin-left", "auto"));
+                    hints.Add(("margin-right", "auto"));
+                }
+                else if (Attr("align") is { } floatAlign && InfraAscii.ToLower(CssTrim(floatAlign)) is "left" or "right" or "inline-start" or "inline-end")
+                {
+                    Refuse("align", "makes the table float");
                 }
 
                 break;
             case "caption":
-                switch (Attr("align") is { } captionAlign ? InfraAscii.ToLower(captionAlign.Trim()) : null)
+                // Chromium 159 (HTMLTableCaptionElement::CollectStyleForPresentationAttribute,
+                // html_table_caption_element.cc) reads the value as caption-side: " bottom" is bottom, left, right and
+                // "\u3000bottom" are no value (measured).
+                if (Attr("align") is { } captionAlign && InfraAscii.ToLower(CssTrim(captionAlign)) == "bottom")
                 {
-                    case "bottom":
-                        Refuse("align", "puts the caption below the table");
-                        break;
-                    case "left" or "right":
-                        Refuse("align", "aligns the caption beside the table");
-                        break;
+                    Refuse("align", "puts the caption below the table");
                 }
 
                 break;
@@ -306,7 +330,8 @@ internal static class PresentationalHints
                     hints.Add(("border-style", "solid"));
                 }
 
-                var imageAlign = Attr("align") is { } imageAlignValue ? InfraAscii.ToLower(imageAlignValue.Trim()) : null;
+                // Compared ASCII case-insensitively without trimming (" top" is no hint; measured).
+                var imageAlign = Attr("align") is { } imageAlignValue ? InfraAscii.ToLower(imageAlignValue) : null;
                 switch (imageAlign)
                 {
                     case "left" or "right":
@@ -399,7 +424,7 @@ internal static class PresentationalHints
             }
             else
             {
-                AsValue("align", "text-align");
+                AsValue("align", "text-align", wideKeywords: true);
             }
         }
 
@@ -415,9 +440,10 @@ internal static class PresentationalHints
     }
 
     /// <summary>An attribute's text as the value of one property: the declaration when the text is one value (CSS
-    /// Syntax 3 finds one declaration of that property in it, not important, no CSS-wide keyword, no syntax error);
-    /// null otherwise, as Chromium 159 then makes no hint.</summary>
-    private static Declaration? SingleValue(string property, string text, string sourceName, HtmlElement html)
+    /// Syntax 3 finds one declaration of that property in it, not important, no syntax error, no CSS-wide keyword but
+    /// initial, inherit and unset where <paramref name="wideKeywords"/>); null otherwise, as Chromium 159 then makes no
+    /// hint.</summary>
+    private static Declaration? SingleValue(string property, string text, string sourceName, HtmlElement html, bool wideKeywords)
     {
         // Chromium 159 parses the text as a value, not as declarations: a ';' outside a string or comment makes it no
         // value (measured: align="justify;" is no hint), and the end of the text ends a string or a comment (CSS Syntax 3
@@ -432,7 +458,7 @@ internal static class PresentationalHints
         var endedByText = parsed.Diagnostics.All(error => error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Value) is "eof-in-string" or "eof-in-comment");
         return parsed.Value is [var only] && endedByText && !only.Important && only.Name == property
                && !only.Value.All(value => value is CssToken { Kind: CssTokenKind.Whitespace })
-               && !IsWideKeyword(only)
+               && (!IsWideKeyword(only) || (wideKeywords && WideKeyword(only) is "initial" or "inherit" or "unset"))
             ? only
             : null;
     }
@@ -471,8 +497,42 @@ internal static class PresentationalHints
     }
 
     private static bool IsWideKeyword(Declaration declaration) =>
+        WideKeyword(declaration) is "initial" or "inherit" or "unset" or "revert" or "revert-layer";
+
+    private static string? WideKeyword(Declaration declaration) =>
         declaration.Value.Where(value => value is not CssToken { Kind: CssTokenKind.Whitespace }).ToList() is [CssToken { Kind: CssTokenKind.Ident } word]
-        && InfraAscii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer";
+            ? InfraAscii.ToLower(word.Text)
+            : null;
+
+    /// <summary>The keywords Chromium 159 reads as a value of vertical-align, and the CSS-wide keywords.</summary>
+    private static readonly string[] VerticalAlignKeywords =
+        ["baseline", "middle", "sub", "super", "text-top", "text-bottom", "top", "bottom", "-webkit-baseline-middle", "initial", "inherit", "unset", "revert", "revert-layer"];
+
+    /// <summary>Whether the text is one CSS identifier without escapes (CSS Syntax 3 §4.3.9): an optional '-', then a
+    /// letter, '_' or a code point above U+007F (or a second '-'), then those, digits and '-'.</summary>
+    private static bool IsIdentifier(string text)
+    {
+        static bool Start(char c) => char.IsAsciiLetter(c) || c == '_' || c > '\u007F';
+        var i = text.StartsWith('-') ? 1 : 0;
+        if (i >= text.Length || !(Start(text[i]) || text[i] == '-'))
+        {
+            return false;
+        }
+
+        for (i++; i < text.Length; i++)
+        {
+            if (!(Start(text[i]) || char.IsAsciiDigit(text[i]) || text[i] == '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>The text without CSS white space at its ends (CSS Syntax 3 §4.2: space, tab, line feed, carriage return,
+    /// form feed), as Chromium's CSS parser trims a value.</summary>
+    private static string CssTrim(string text) => text.Trim(' ', '\t', '\n', '\r', '\f');
 
     /// <summary>The hints a cell gets from its table (§15.3.8): the cellpadding of the table it is a cell of (the
     /// nearest table around it) as padding; and, when that table has a border attribute that is not zero and the cell's
@@ -490,11 +550,15 @@ internal static class PresentationalHints
             return;
         }
 
-        // Chromium 159: a cellpadding that is not empty is the integer it starts with, at least 0, and 0 when it has
-        // none (-1 and abc are 0, 10% is 10; measured).
-        if (table.Element.Attribute("cellpadding") is { Length: > 0 } cellpadding)
+        // Chromium 159 (HTMLTableElement::ParseAttribute and CreateSharedCellStyle, html_table_element.cc): the padding of
+        // a cell in a table is the table's hint, 1px without a cellpadding or with an empty one; a cellpadding that is not
+        // empty is the integer it starts with, at least 0 and at most 65,535, and 0 when it has none (-1 and abc are 0,
+        // 10% is 10; measured); 0 is no hint. As a hint, an author's revert rolls it back to 0 (measured).
+        var pixels = table.Element.Attribute("cellpadding") is { Length: > 0 } cellpadding
+            ? Math.Min(ushort.MaxValue, Math.Max(0, AttributeValues.Integer(cellpadding) ?? 0))
+            : 1;
+        if (pixels != 0)
         {
-            var pixels = Math.Max(0, AttributeValues.Integer(cellpadding) ?? 0);
             hints.AddRange(new[] { "top", "right", "bottom", "left" }.Select(side => ($"padding-{side}", $"{pixels}px")));
         }
 
@@ -516,7 +580,8 @@ internal static class PresentationalHints
     /// a size of 1 or less removes the bottom border, a larger one sets the height to size − 2 pixels.</summary>
     private static void HorizontalRule(HtmlElement hr, List<(string, string)> hints)
     {
-        switch (hr.Attribute("align") is { } align ? InfraAscii.ToLower(align.Trim()) : null)
+        // Compared ASCII case-insensitively without trimming (" left" is no hint; measured).
+        switch (hr.Attribute("align") is { } align ? InfraAscii.ToLower(align) : null)
         {
             case "left":
                 hints.Add(("margin-left", "0"));

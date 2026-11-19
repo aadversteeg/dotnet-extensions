@@ -106,11 +106,36 @@ internal static class AttributeValues
     /// <summary>"Rules for parsing nonzero dimension values" (§2.3.4.5): a dimension, zero being an error.</summary>
     public static HtmlDimension? NonzeroDimension(string input) => Dimension(input) is { Value: > 0 } dimension ? dimension : null;
 
+    /// <summary>The text without the white space Chromium 159 strips from a colour attribute before the rules for parsing
+    /// a legacy colour value (HTML §2.3.6.4): ASCII white space and the code points whose bidirectional class is white
+    /// space (U+1680, U+2000 to U+200A, U+2028, U+205F, U+3000), as <c>String::StripWhiteSpace</c> does in
+    /// <c>HTMLElement::ParseColorWithLegacyRules</c> (html_element.cc, with <c>IsSpaceOrNewline</c> of wtf/text/unicode.h;
+    /// measured: bgcolor="&#x3000;red" is red).</summary>
+    private static string StripWhiteSpace(string value)
+    {
+        static bool IsSpace(char c) => c <= 0x7F
+            ? c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r'
+            : c is '\u1680' or (>= '\u2000' and <= '\u200A') or '\u2028' or '\u205F' or '\u3000';
+        var start = 0;
+        var end = value.Length;
+        while (start < end && IsSpace(value[start]))
+        {
+            start++;
+        }
+
+        while (end > start && IsSpace(value[end - 1]))
+        {
+            end--;
+        }
+
+        return value.Substring(start, end - start);
+    }
+
     /// <summary>"Rules for parsing a legacy color value" (§2.3.6): a named colour, <c>#rgb</c>, or any other text read
     /// as hex digits in the forgiving way browsers have always done; null for an error (empty, or transparent).</summary>
     public static CssColor? LegacyColor(string value)
     {
-        var input = value.Trim(' ', '\t', '\n', '\f', '\r');
+        var input = StripWhiteSpace(value);
         if (input.Length == 0 || InfraAscii.EqualsIgnoreCase(input, "transparent"))
         {
             return null;
