@@ -498,8 +498,8 @@ internal static class HtmlCases
     /// compares the same way), and the edges of a filled rectangle and of an image area too. Measured: all 6,104 rectangle
     /// edges and all 83 image edges of the 294 committed prints are whole pixels, and all but 10 of the 4,349 baselines (the
     /// 10 are in case <c>font-sizes</c>, at 8.2 and 9.1 pt, which the HTML path refuses). The rule moves a value by up to
-    /// 0.375 pt, so a difference that small in a baseline or an edge can stay inside one pixel; the x positions of words and the box heights of <c>boxes.txt</c> are
-    /// not snapped in Chromium's files and are compared as they are.
+    /// 0.375 pt, so a difference that small in a baseline or an edge can stay inside one pixel; the x positions of words
+    /// and the box heights of <c>boxes.txt</c> are not snapped in Chromium's files and are compared as they are.
     /// </summary>
     private static double WholePixel(double length) => Math.Round(length / 0.75, MidpointRounding.AwayFromZero) * 0.75;
 
