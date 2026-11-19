@@ -622,7 +622,10 @@ Elements whose rendering no property says are refused by their own rule (`Docume
 (cases `hb-*`). A block-level `img` is a box of the image algorithm: its file from a `data:` URL or through the resource
 resolver against the document's base URL, its computed width and height (the attributes are presentational hints), its
 alt text as the figure's description and an empty alt as decorative (case `hi-attributes`); an image that does not come
-or does not decode, and an `img` inside a line of text, are refused (`Rendering`). The others are refused through their values: tables and lists by `display`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
+or does not decode is refused (`Rendering`). An `img` inside a line of text (`display: inline`) is the same image box
+among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
+in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
+break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: tables and lists by `display`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
 at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed

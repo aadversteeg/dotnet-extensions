@@ -320,19 +320,19 @@ hb-sizes-inside equal
 hb-two-three equal
 hb-white-space equal
 hi-attributes equal
-hi-inline refused Documents.Html.Unsupported.Rendering img at 3:7
+hi-inline equal
 hw-nowrap open page 1 'aa' x1 23.928, Chromium 21.335 (print.txt)
 hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 hw-pre-line equal
 hw-pre-wrap equal
 hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1
-ii-baseline refused Documents.Html.Unsupported.Rendering img at 3:7
+ii-baseline equal
 ii-breaks refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ii-height refused Documents.Html.Unsupported.Rendering img at 3:7
+ii-height open page 1 'ab' baseline 51.75 (laid out at 52), Chromium 51.996 (print.txt)
 ii-hyphen refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ii-joiners refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ii-page refused Documents.Html.Unsupported.Rendering img at 4:9
+ii-page open page 2 'nine' baseline 51.75 (laid out at 52), Chromium 51.996 (print.txt)
 ii-table refused Documents.Html.Unsupported.Value display: table at 3:1
 ii-wrap refused Documents.Html.Unsupported.Value width: 100pt at 3:1
 kb-m1-kept-box-margin-in-padded-box equal
@@ -401,7 +401,7 @@ ws-hang-break-spaces refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-normal refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-pre refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-pre-wrap refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-image refused Documents.Html.Unsupported.Rendering img at 3:33
+ws-image refused Documents.Html.Unsupported.Value width: 6pt at 4:1
 ws-image-border refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ws-intrinsic refused Documents.Html.Unsupported.Value display: table at 3:1
 ws-justify refused Documents.Html.Unsupported.Value width: 60pt at 3:1

@@ -467,7 +467,7 @@ public static partial class HtmlBoxGenerator
                     LineBreak(frame, element);
                     break;
                 case StyledElement element when IsHtml(element, "img"):
-                    InlineImage(element);
+                    InlineImage(frame, element);
                     break;
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))

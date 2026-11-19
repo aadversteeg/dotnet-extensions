@@ -228,13 +228,46 @@ public class LineBreakAndImageTests
     }
 
     [Fact]
-    public void An_img_inside_a_line_of_text_is_refused()
+    public void An_img_inside_a_line_of_text_is_an_image_box_among_the_runs_with_the_text_style_of_the_element_it_lies_in()
     {
-        var refusal = Refusal(Doc("<p>a <img src=\"figure.png\" alt=\"a\" style=\"display:inline\"> b</p>"));
+        var p = (Box)Body(Doc("<p>a <img src=\"figure.png\" alt=\"F\" width=\"14\" style=\"display:inline;margin:1pt 2pt;padding:3pt;border:1pt solid red;background-color:blue\"> b" +
+            "<span style=\"white-space:nowrap\"> c<img src=\"figure.png\" alt=\"\" style=\"display:inline\"></span></p>")).Children.Single();
 
-        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Rendering);
-        refusal.Message.Should().Contain("inside a line");
+        p.Layout.Should().Be(LayoutAlgorithmId.Inline);
+        p.Children.Select(node => node is TextRun run ? run.Text : "[img]").Should().Equal("a ", "[img]", " b", string.Empty, " c", "[img]");
+        var images = p.Children.OfType<Box>().ToList();
+        images.Should().AllSatisfy(box => box.Layout.Should().Be(LayoutAlgorithmId.Image));
+        (images[0].Role, images[1].Role).Should().Be((SemanticRole.Figure("F"), SemanticRole.Decorative));
+
+        var style = images[0].Style;
+        (style.Margin.Top.Points, style.Margin.Right.Points, style.Padding.Left.Points, style.Border.Top.Width.Points).Should().Be((1, 2, 3, 0.75), "a border width is floored to whole pixels");
+        (style.Border.Top.Color, style.Background).Should().Be((new Color(255, 0, 0), new Color(0, 0, 255)));
+        ((ImageNode)images[0].Children.Single()).Width.Should().Be(Length.FromPoints(10.5), "the width attribute is a hint for width, 14 px");
+
+        style.Text.Should().Be(p.Style.Text, "the image lies in the paragraph");
+        images[1].Style.Text!.TextWrapMode.Should().Be(TextWrapMode.NoWrap, "the image lies in the span that does not wrap");
+        p.Style.Text!.TextWrapMode.Should().Be(TextWrapMode.Wrap);
     }
+
+    [Theory]
+    [InlineData("vertical-align:middle", "vertical-align", "middle", false)]
+    [InlineData("vertical-align:top", "vertical-align", "top", false)]
+    [InlineData("display:inline-block", "display", "inline-block", true)]
+    [InlineData("break-before:page", "break-before", "page", false)]
+    [InlineData("break-after:avoid", "break-after", "avoid", false)]
+    [InlineData("break-inside:avoid", "break-inside", "avoid", false)]
+    public void An_img_inside_a_line_of_text_refuses_what_is_not_built_with_its_value_and_start_tag(string style, string property, string value, bool byRegistry)
+    {
+        var refusal = Refusal(Doc($"<p>a\n<img src=\"figure.png\" alt=\"a\" style=\"display:inline;{style}\"> b</p>"));
+
+        (refusal.Code, Property(refusal), refusal.Metadata![ErrorMetadataKeys.Value]).Should().Be((byRegistry ? CssErrorCodes.Unsupported.Value : HtmlStyleErrorCodes.Unsupported.Value, property, value));
+        refusal.Metadata[ErrorMetadataKeys.SourceLine].Should().Be(2);
+    }
+
+    [Fact]
+    public void An_img_inside_a_line_of_text_with_the_initial_break_and_alignment_values_is_drawn() =>
+        ((Box)Body(Doc("<p>a <img src=\"figure.png\" alt=\"a\" style=\"display:inline;vertical-align:baseline;break-before:auto;break-after:auto;break-inside:auto\"> b</p>")).Children.Single())
+            .Children.OfType<Box>().Single().Style.BreakBefore.Should().Be(BreakBetween.Auto);
 
     [Theory]
     [InlineData("width:50%", "width")]
