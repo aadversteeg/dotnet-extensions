@@ -88,7 +88,9 @@ public static class GreedyLineBreaker
     /// paragraph's glyphs except at an end that is not safe to break — a place the shaper marked
     /// (<see cref="ShapedGlyph.UnsafeToBreak"/>: a kerning pair, a mark on its base, as HarfBuzz marks them,
     /// hb-buffer.h <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>) or a place inside a cluster (a ligature across a soft hyphen or a
-    /// zero width space). There the text from that end to the nearest safe place is shaped again on its own, with
+    /// zero width space); the start of a run that the paragraph shaped with the run before it is such a place when the
+    /// shaper marked it. There the text from that end to the nearest safe place, or to the run's own border, is shaped
+    /// again on its own, with
     /// <paramref name="reshape"/>: the start of a wrapped line without what went before, the end of a line without what
     /// follows. So a line can differ from shaping its text alone: the middle keeps the paragraph's glyphs, and the half of a
     /// ligature cut at the end is shaped without the rest. At a collapsible space the end is kept or shaped again before
@@ -481,9 +483,12 @@ public static class GreedyLineBreaker
             return glyphs;
         }
 
-        /// <summary>The text from <paramref name="from"/> to <paramref name="to"/> shaped again, one piece per run it crosses
-        /// (shaping never joins two runs); the last piece shows the hyphen when <paramref name="hyphen"/>. Every character
-        /// handed to the reshaper is charged to the paragraph's budget first.</summary>
+        /// <summary>The text from <paramref name="from"/> to <paramref name="to"/> shaped again, one piece per run it crosses:
+        /// the end of a line is shaped again within its run, also where the paragraph shaped that run with the run before or
+        /// after it, as Chromium shapes a line's end again within one item's result (<c>ShapingLineBreaker::ShapeLine</c>;
+        /// case <c>sr-line-left</c>: a wrapped line's first "T" is shaped without the "o" of the next run). The last piece
+        /// shows the hyphen when <paramref name="hyphen"/>. Every character handed to the reshaper is charged to the
+        /// paragraph's budget first.</summary>
         private Result<IEnumerable<BreakableSegments.RunGlyph>, Error> Pieces(int from, int to, bool hyphen)
         {
             if (!budget!.SpendCharacters(to - from))

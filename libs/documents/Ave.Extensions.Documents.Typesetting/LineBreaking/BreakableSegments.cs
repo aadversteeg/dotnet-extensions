@@ -115,8 +115,9 @@ internal static class BreakableSegments
                 _previousShowing[index + 1] = IsBlank(glyphs[index].Glyph) ? _previousShowing[index] : index;
             }
 
-            // A safe place: a run boundary, or the start of a cluster none of whose glyphs the shaper marked unsafe to break
-            // (HarfBuzz marks every glyph of a cluster alike; a lookup marks the clusters after its first glyph's own).
+            // A safe place: the start of a cluster none of whose glyphs the shaper marked unsafe to break (HarfBuzz marks
+            // every glyph of a cluster alike; a lookup marks the clusters after its first glyph's own). The start of a run
+            // that was shaped with the run before it is safe only so; that of a run shaped on its own is never marked.
             var safe = new bool[length + 1];
             for (var index = 0; index < count;)
             {
@@ -130,22 +131,27 @@ internal static class BreakableSegments
                 safe[start] = !marked;
             }
 
+            safe[0] = safe[length] = true;
+            _safe = safe;
+
+            // A stretch shaped again ends at a safe place or at a run boundary, whichever comes first: it never crosses into
+            // another run.
+            var stop = (bool[])safe.Clone();
             foreach (var start in runStarts)
             {
-                safe[start] = true;
+                stop[start] = true;
             }
 
-            _safe = safe;
             (_nextSafe, _previousSafe) = (new int[length + 1], new int[length + 1]);
             _nextSafe[length] = length;
             for (var offset = length - 1; offset >= 0; offset--)
             {
-                _nextSafe[offset] = safe[offset + 1] ? offset + 1 : _nextSafe[offset + 1];
+                _nextSafe[offset] = stop[offset + 1] ? offset + 1 : _nextSafe[offset + 1];
             }
 
             for (var offset = 1; offset <= length; offset++)
             {
-                _previousSafe[offset] = safe[offset - 1] ? offset - 1 : _previousSafe[offset - 1];
+                _previousSafe[offset] = stop[offset - 1] ? offset - 1 : _previousSafe[offset - 1];
             }
 
             _runOf = new int[length + 1];
@@ -203,14 +209,19 @@ internal static class BreakableSegments
         /// <summary>The last glyph before <paramref name="index"/> that is not blank, or -1.</summary>
         public int PreviousShowing(int index) => _previousShowing[index];
 
-        /// <summary>True when the text may be broken at <paramref name="offset"/> without shaping either side again: a run
-        /// boundary, or the start of a cluster none of whose glyphs the shaper marked <see cref="ShapedGlyph.UnsafeToBreak"/>.</summary>
+        /// <summary>True when the text may be broken at <paramref name="offset"/> without shaping either side again: the start
+        /// or end of the text, or the start of a cluster none of whose glyphs the shaper marked <see cref="ShapedGlyph.UnsafeToBreak"/>.
+        /// A run boundary is no exception: where two runs were shaped as one text, the glyph after the boundary carries the
+        /// shaper's mark like any other, as Chromium asks the item's own result whether its start is safe to break
+        /// (<c>ShapingLineBreaker::ShapeLine</c>, <c>IsStartSafeToBreak</c>).</summary>
         public bool IsSafe(int offset) => _safe[offset];
 
-        /// <summary>The first safe place after <paramref name="offset"/> (the text's length when there is none).</summary>
+        /// <summary>The first safe place or run boundary after <paramref name="offset"/> (the text's length when there is none):
+        /// where a stretch shaped again from <paramref name="offset"/> ends.</summary>
         public int NextSafe(int offset) => _nextSafe[offset];
 
-        /// <summary>The last safe place before <paramref name="offset"/> (0 is one).</summary>
+        /// <summary>The last safe place or run boundary before <paramref name="offset"/> (0 is one): where a stretch shaped
+        /// again up to <paramref name="offset"/> starts.</summary>
         public int PreviousSafe(int offset) => _previousSafe[offset];
 
         /// <summary>The hyphen a soft hyphen of <paramref name="run"/> shows (shaped alone), or null when the run has no soft

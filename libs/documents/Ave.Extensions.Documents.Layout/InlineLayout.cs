@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
@@ -22,7 +23,7 @@ public static class InlineLayout
     /// <remarks>
     /// Steps: resolve every run to text (a page counter becomes the number of the page being laid out, or the page
     /// count, from <see cref="LayoutEnvironment.Page"/>) → collapse white space (CSS Text 3 §4.1.1) → resolve each run's
-    /// font and shape it → break into lines (greedy, at UAX #14 opportunities) → stack line boxes from the line the
+    /// font and shape the runs that share a font as one text (<see cref="ShapingGroups"/>) → break into lines (greedy, at UAX #14 opportunities) → stack line boxes from the line the
     /// token names until the next one does not fit. A page break may fall between any two lines (class B
     /// breakpoints, CSS Fragmentation 3 §4.1), under <c>orphans</c> and <c>widows</c> (<see cref="BreakWhereFull"/>).
     /// The lines are recomputed on every call rather than carried in the token: the token stays a plain number,
@@ -126,8 +127,10 @@ public static class InlineLayout
         box.Children.Any(child => child is CounterRun || (child is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text)));
 
     /// <summary>
-    /// Resolves every run to its text, collapses white space over the whole paragraph, then finds each run's font
-    /// and shapes it. Errors from all runs are reported together, each with the location of the run that caused it.
+    /// Resolves every run to its text, collapses white space over the whole paragraph, finds each run's font, then shapes
+    /// the runs in groups (<see cref="ShapingGroups"/>): the runs of one group as one text, so a kerning pair or a ligature
+    /// across the border of two runs is kept, and every run gets its own glyphs back. Errors from all runs are reported
+    /// together, each with the location of the run that caused it.
     /// </summary>
     private static Result<IReadOnlyList<LineBoxes.ShapedRun>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
     {
@@ -139,14 +142,117 @@ public static class InlineLayout
 
         var runs = box.Children.Cast<InlineRun>().ToImmutableArray();
         var collapsed = WhiteSpaceCollapsing.Collapse([.. runs.Select(run => TextOf(run, environment.Page))]);
-        return runs.Zip(collapsed).TraverseAll(pair =>
+        var members = runs.Select((run, index) => new GroupMember(run, collapsed[index],
+            environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source))));
+        return ShapingGroups([.. members])
+            .TraverseAll(group => group[0].Font.IsFailure ? Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(group[0].Font.Error) : ShapeGroup(group))
+            .OnSuccessMap(shaped => (IReadOnlyList<LineBoxes.ShapedRun>)[.. shaped.SelectMany(group => group)]);
+    }
+
+    /// <summary>A run of the paragraph with its collapsed text and its font, or the error of a font that was not found.</summary>
+    private sealed record GroupMember(InlineRun Run, string Text, Result<TrueTypeFont, Error> Font);
+
+    /// <summary>
+    /// THE RULE FOR SHAPING ACROSS RUNS: the groups of the paragraph's runs that are shaped as one text each. A run joins the
+    /// group before it when it is set in the same font as the group's first run with text: the same family, size, weight and
+    /// style, which choose and size the font. Its colour and its line height do not matter. A run without text joins the
+    /// group it lies in. CSS Text 3 §7.3, "Shaping Across Element Boundaries": "Text shaping must not be broken across inline
+    /// box boundaries when there is no effective change in formatting, or if the only formatting changes do not affect the
+    /// glyphs"; it "should not be broken across inline box boundaries otherwise, if it is reasonable and possible", which
+    /// leaves a change of font to the user agent. As Chromium does it (Blink <c>InlineNode::ShapeText</c> and
+    /// <c>ShouldBreakShapingBeforeText</c>, core/layout/inline/inline_node.cc: adjacent text items are shaped together while
+    /// their fonts are equal, an item without text is passed over, and an item that starts with a zero width non-joiner
+    /// U+200C starts a new text). Cases <c>sr-same-font</c> and <c>sr-font-changes</c>. Chromium also breaks the text at an
+    /// inline box with inline padding, border or margin or another vertical alignment (<c>ShouldBreakShapingBeforeBox</c>);
+    /// the model's runs have none of these. A run whose font is not found is a group of its own.
+    /// </summary>
+    /// <param name="members">The paragraph's runs, in order.</param>
+    /// <returns>The groups, in order; together they hold every run once.</returns>
+    private static IReadOnlyList<IReadOnlyList<GroupMember>> ShapingGroups(ImmutableArray<GroupMember> members)
+    {
+        var groups = new List<IReadOnlyList<GroupMember>>();
+        var current = new List<GroupMember>();
+        GroupMember? first = null;
+        foreach (var member in members)
         {
-            var (run, text) = pair;
-            return environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle)
-                .OnSuccessBind(font => Shaper.Shape(text, font, run.Style.FontSize.Points)
-                    .OnSuccessMap(glyphs => new LineBoxes.ShapedRun(run, font, glyphs)))
-                .MapError(error => error.WithSource(run.Source));
-        });
+            var joins = current.Count > 0 && member.Font.IsSuccess && current[0].Font.IsSuccess
+                && (member.Text.Length == 0 || first is null || (SameFont(first.Run.Style, member.Run.Style) && member.Text[0] != ZeroWidthNonJoiner));
+            if (!joins && current.Count > 0)
+            {
+                groups.Add(current);
+                (current, first) = ([], null);
+            }
+
+            current.Add(member);
+            first ??= member.Text.Length > 0 ? member : null;
+        }
+
+        if (current.Count > 0)
+        {
+            groups.Add(current);
+        }
+
+        return groups;
+    }
+
+    /// <summary>The zero width non-joiner U+200C.</summary>
+    private const char ZeroWidthNonJoiner = '\u200C';
+
+    /// <summary>True when two runs' text is set in the same font at the same size (<see cref="ShapingGroups"/>).</summary>
+    private static bool SameFont(TextStyle one, TextStyle other) =>
+        string.Equals(one.FontFamily, other.FontFamily, StringComparison.Ordinal)
+        && one.FontSize == other.FontSize && one.FontWeight == other.FontWeight && one.FontStyle == other.FontStyle;
+
+    /// <summary>
+    /// Shapes the runs of one group (<see cref="ShapingGroups"/>) as one text, and gives every run the glyphs whose cluster
+    /// starts in its text. A ligature across the border of two runs is kept, by the run with its first character, as
+    /// Chromium splits the shared result ("When multiple code units shape to one glyph, such as ligatures, the item that has
+    /// its first code unit keeps the glyph", <c>InlineNode::ShapeText</c>): it is drawn in that run's colour, its text is
+    /// every character it shows, and the next run puts no glyph there (case <c>sr-same-font</c>, "fix" with the i in another
+    /// colour). When the group's text cannot be shaped, each run is shaped alone, so that every error names the run that
+    /// caused it; an error that only the whole group has (a shaping limit) names the group's first run.
+    /// </summary>
+    /// <param name="group">The runs of one group; the first has a font.</param>
+    /// <returns>Every run of the group with its glyphs, or the errors.</returns>
+    private static Result<IEnumerable<LineBoxes.ShapedRun>, Error> ShapeGroup(IReadOnlyList<GroupMember> group)
+    {
+        var font = group[0].Font.Value;
+        var size = group[0].Run.Style.FontSize.Points;
+        Result<IEnumerable<LineBoxes.ShapedRun>, Error> Alone(GroupMember member) =>
+            Shaper.Shape(member.Text, font, size)
+                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, font, glyphs)])
+                .MapError(error => error.WithSource(member.Run.Source));
+        if (group.Count == 1)
+        {
+            return Alone(group[0]);
+        }
+
+        var shaped = Shaper.Shape(string.Concat(group.Select(member => member.Text)), font, size);
+        if (shaped.IsFailure)
+        {
+            var alone = group.TraverseAll(Alone);
+            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(alone.IsFailure ? alone.Error : shaped.Error.WithSource(group[0].Run.Source));
+        }
+
+        // One pass over the glyphs. `offset` is where the next glyph's cluster starts; a glyph without text belongs to the
+        // cluster before it.
+        var glyphs = shaped.Value;
+        var runs = new List<LineBoxes.ShapedRun>(group.Count);
+        var (next, offset, end) = (0, 0, 0);
+        foreach (var member in group)
+        {
+            end += member.Text.Length;
+            var start = next;
+            while (next < glyphs.Length && (offset < end || (next > start && glyphs[next].Text.Length == 0)))
+            {
+                offset += glyphs[next].Text.Length;
+                next++;
+            }
+
+            runs.Add(new LineBoxes.ShapedRun(member.Run, font, [.. glyphs.Skip(start).Take(next - start)]));
+        }
+
+        return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success(runs);
     }
 
     /// <summary>The text a run shows on the given page.</summary>
