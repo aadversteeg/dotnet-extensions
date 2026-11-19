@@ -72,4 +72,17 @@ public class DocumentModelTextTests
         line.IndexOf("text-decoration=(underline", StringComparison.Ordinal).Should().BeLessThan(line.IndexOf("text-decoration=(line-through", StringComparison.Ordinal));
         line.Should().Contain("Theano 22pt w700 italic");
     }
+
+    [Fact]
+    public void A_run_that_draws_its_lines_whole_writes_its_skip_ink_value_and_one_with_the_initial_value_writes_none()
+    {
+        var text = new TextStyle("Lato", 11.Pt(), FontWeight.Regular, Color.Black);
+        var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
+            [new TextRun(new NodeId(2), "a", text with { DecorationSkipInk = TextDecorationSkipInk.None }, Here), new TextRun(new NodeId(3), "b", text, Here)], Here);
+        var written = DocumentModelText.Write(new StyledDocument(new DocumentMetadata("T", null), new PageStyle(210.Mm(), 297.Mm(), Edges.All(2.Cm())),
+            new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [paragraph], Here)));
+
+        written.Split('\n').Should().ContainSingle(line => line.Contains("text-decoration-skip-ink=none", StringComparison.Ordinal)).Which.Should().Contain("\"a\"");
+        written.Should().NotContain("text-decoration-skip-ink=auto");
+    }
 }

@@ -205,6 +205,11 @@ public static class ModelCheck
             return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one the model has.", style.TextWrapMode.ToString(), "text-wrap-mode", node);
         }
 
+        if (!System.Enum.IsDefined(style.DecorationSkipInk))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, "The text-decoration-skip-ink value is not one the model has.", style.DecorationSkipInk.ToString(), "text-decoration-skip-ink", node);
+        }
+
         if (Decorations(style, node) is { } decoration)
         {
             return decoration;

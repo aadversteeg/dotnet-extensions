@@ -44,4 +44,13 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// runs, and does not change the line's height or any break.
     /// </summary>
     public ValueList<TextDecoration> Decorations { get; init; } = [];
+
+    /// <summary>
+    /// Whether the underlines and overlines drawn across the run's text leave gaps around its glyphs' ink (CSS Text Decoration 4
+    /// §2.10.4, <c>text-decoration-skip-ink</c>, inherited); <see cref="TextDecorationSkipInk.Auto"/>, the initial value, unless
+    /// set. The value of the text decides, not that of the decorating box (Blink <c>TextDecorationPainter</c> reads it from the
+    /// style of the text it paints; case <c>sk-whose</c>): a front-end sets it to the computed value of the element the text lies
+    /// in. A line-through is never cut.
+    /// </summary>
+    public TextDecorationSkipInk DecorationSkipInk { get; init; } = TextDecorationSkipInk.Auto;
 }

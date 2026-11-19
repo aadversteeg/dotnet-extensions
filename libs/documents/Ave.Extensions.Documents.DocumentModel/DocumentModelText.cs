@@ -107,7 +107,8 @@ public static class DocumentModelText
         + (style.WhiteSpaceCollapse == WhiteSpaceCollapse.Collapse ? string.Empty : $" white-space-collapse={Kebab(style.WhiteSpaceCollapse)}")
         + (style.TextWrapMode == TextWrapMode.Wrap ? string.Empty : $" text-wrap-mode={Kebab(style.TextWrapMode).Replace("-", string.Empty, StringComparison.Ordinal)}")
         + string.Concat(style.Decorations.Select(decoration =>
-            $" text-decoration=({Kebab(decoration.Line)} {decoration.Color} {decoration.FontFamily} {decoration.FontSize} w{decoration.FontWeight}{(decoration.FontStyle == FontStyle.Italic ? " italic" : string.Empty)})"));
+            $" text-decoration=({Kebab(decoration.Line)} {decoration.Color} {decoration.FontFamily} {decoration.FontSize} w{decoration.FontWeight}{(decoration.FontStyle == FontStyle.Italic ? " italic" : string.Empty)})"))
+        + (style.DecorationSkipInk == TextDecorationSkipInk.Auto ? string.Empty : $" text-decoration-skip-ink={Kebab(style.DecorationSkipInk)}");
 
     /// <summary>A value's CSS keyword: <c>PreserveBreaks</c> is <c>preserve-breaks</c>.</summary>
     private static string Kebab<T>(T value)
