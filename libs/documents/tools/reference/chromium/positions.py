@@ -7,8 +7,9 @@
 # One line per item, in points, origin at the top left of the page (y grows downwards), three decimals:
 #
 #   page <page> <width> <height>
-#   word <page> <x0> <x1> <baseline> <font size> <text>
-#   rect <page> <x0> <y0> <x1> <y1>
+#   word <page> <x0> <x1> <baseline> <font size> <text> <colour> <face>
+#   rect <page> <x0> <y0> <x1> <y1> <colour>
+#   stroke <page> <x0> <y0> <x1> <y1> <colour>
 #   image <page> <x0> <y0> <x1> <y1>
 #
 # A word is a run of characters without white space on one baseline, in the order the PDF draws them; x0 is the
@@ -16,10 +17,38 @@
 # advances of the word (not its ink), which is what a layout engine places. The baseline is the origin of the
 # characters: it does not depend on the ascent and descent a reader assumes for the font, as a bounding box does.
 # Words come per page sorted by baseline and then x0; rectangles in drawing order; an image is the rectangle it is
-# drawn into, which may reach past the page when the page shows only a slice of it.
+# drawn into, which may reach past the page when the page shows only a slice of it. A colour is #rrggbb, with the
+# opacity as a fourth byte (#rrggbbaa) where it is not 1: a word's is its text's fill colour, a rectangle's its fill.
+# The face is the PostScript name of the font the word is drawn with, without the subset tag ("ABCDEF+") a PDF writer
+# puts before it: it names the font file, and with it the weight and the style. The colour and the face come last on a
+# line, after the fields that were there before them, so a file measured before they were added differs only in them.
+# A stroked rectangle (Chromium strokes a border of one colour and style on all four sides as one rectangle path, with
+# mitred corners) is written as the four rectangles its stroke paints, in the stroke's colour and in drawing order
+# among the filled ones: the top and the bottom band across the whole outer width, the left and the right band between
+# them, each on a stroke line (rectangles.py reads fills only, so lines.txt does not hold them). Any other stroke stops
+# the read-back, so a print never loses what it paints without a word.
+import re
 import sys
 
 import pymupdf
+
+
+def colour(red, green, blue, alpha=255):
+    value = f"#{red:02x}{green:02x}{blue:02x}"
+    return value if alpha == 255 else f"{value}{alpha:02x}"
+
+
+def face(name):
+    return re.sub(r"^[A-Z]{6}\+", "", name)
+
+
+def stroked(drawing):
+    if [item[0] for item in drawing["items"]] != ["re"] or drawing.get("dashes") not in (None, "[] 0") \
+            or drawing.get("lineJoin") != 0:
+        raise ValueError(f"a stroke this read-back does not know: {drawing}")
+    r, half = drawing["items"][0][1], drawing["width"] / 2
+    return [(r.x0 - half, r.y0 - half, r.x1 + half, r.y0 + half), (r.x0 - half, r.y1 - half, r.x1 + half, r.y1 + half),
+            (r.x0 - half, r.y0 + half, r.x0 + half, r.y1 - half), (r.x1 - half, r.y0 + half, r.x1 + half, r.y1 - half)]
 
 
 def words(page):
@@ -42,18 +71,25 @@ def words(page):
         x0 = chars[0]["origin"][0]
         x1 = chars[-1]["bbox"][2]
         baseline = chars[0]["origin"][1]
-        result.append((baseline, x0, x1, span["size"], "".join(char["c"] for char in chars)))
+        rgb = span["color"]
+        drawn = colour(rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF, span["alpha"])
+        result.append((baseline, x0, x1, span["size"], "".join(char["c"] for char in chars), drawn, face(span["font"])))
     return sorted(result, key=lambda word: (round(word[0], 3), round(word[1], 3)))
 
 
 for number, page in enumerate(pymupdf.open(sys.argv[1]), start=1):
     print(f"page {number} {page.rect.width:.3f} {page.rect.height:.3f}")
-    for baseline, x0, x1, size, text in words(page):
-        print(f"word {number} {x0:.3f} {x1:.3f} {baseline:.3f} {size:.3f} {text}")
+    for baseline, x0, x1, size, text, drawn, name in words(page):
+        print(f"word {number} {x0:.3f} {x1:.3f} {baseline:.3f} {size:.3f} {text} {drawn} {name}")
     for drawing in page.get_drawings():
         if drawing.get("fill") is not None:
             r = drawing["rect"]
-            print(f"rect {number} {r.x0:.3f} {r.y0:.3f} {r.x1:.3f} {r.y1:.3f}")
+            fill = colour(*(round(part * 255) for part in drawing["fill"]), round((drawing.get("fill_opacity") or 1) * 255))
+            print(f"rect {number} {r.x0:.3f} {r.y0:.3f} {r.x1:.3f} {r.y1:.3f} {fill}")
+        if drawing.get("color") is not None:
+            for x0, y0, x1, y1 in stroked(drawing):
+                ink = colour(*(round(part * 255) for part in drawing["color"]), round((drawing.get("stroke_opacity") or 1) * 255))
+                print(f"stroke {number} {x0:.3f} {y0:.3f} {x1:.3f} {y1:.3f} {ink}")
     for image in page.get_image_info():
         x0, y0, x1, y1 = image["bbox"]
         print(f"image {number} {x0:.3f} {y0:.3f} {x1:.3f} {y1:.3f}")

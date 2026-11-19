@@ -1,4 +1,5 @@
 using System.IO;
+using Ave.Extensions.Documents.TestSupport;
 using Xunit.Abstractions;
 
 namespace UnitTests.Extensions.Documents.Html.Boxes;
@@ -36,6 +37,25 @@ public class CaseStatusTests(ITestOutputHelper output)
     [Fact]
     public void At_least_ten_cases_are_equal_to_Chromium() =>
         File.ReadAllLines(HtmlCases.StatusFile).Count(line => HtmlCases.Fields(line).Status == "equal").Should().BeGreaterThanOrEqualTo(10);
+
+    /// <summary>The three prints with a border Chromium strokes (one rectangle path, all four sides) are refused by the
+    /// HTML path today, so no status line compares them; the comparison reads their strokes as what they paint: the same
+    /// area as four filled sides, and a difference without them.</summary>
+    [Theory]
+    [InlineData("fr-header-cell-margin")]
+    [InlineData("kb-v8-padded-box-kept-para")]
+    [InlineData("kb-v9-padded-box-kept-table-row")]
+    public void A_stroked_border_paints_what_four_filled_sides_paint(string name)
+    {
+        var lines = File.ReadAllLines(Path.Combine(HtmlCases.Folder(), "..", "measured", name + ".print.txt"));
+        var chromium = PrintedPages.Parse(string.Join("\n", lines));
+        var filled = PrintedPages.Parse(string.Join("\n", lines.Select(line => line.StartsWith("stroke ", StringComparison.Ordinal) ? "rect " + line[7..] : line)));
+        var without = PrintedPages.Parse(string.Join("\n", lines.Where(line => !line.StartsWith("stroke ", StringComparison.Ordinal))));
+
+        lines.Count(line => line.StartsWith("stroke ", StringComparison.Ordinal)).Should().Be(4);
+        HtmlCases.Difference(filled, chromium).Should().BeNull();
+        HtmlCases.Difference(without, chromium).Should().Contain("Chromium paints it and the engine does not");
+    }
 
     [Theory]
     [InlineData("a different: equal, but listed as a difference", "different:")]

@@ -20,10 +20,10 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// resolve the styles (the resolver serves <c>common.css</c> and the font files from the repository), generate the
 /// boxes, lay out; then the engine's pages beside every file measured for the case in <c>measured/</c> (README of
 /// <c>tools/reference/chromium</c>): the print read back from Chromium's PDF (<c>&lt;case&gt;.print.txt</c>: pages,
-/// words, rectangles, images), its filled rectangles read back by a second script
-/// (<c>&lt;case&gt;.lines.txt</c>), its words read back by poppler (<c>&lt;case&gt;.words.txt</c>), and the sizes of the
-/// boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>). Each comparison below names its file and its bound. The
-/// files hold no colour and no face (font, weight, style): those are not compared yet.
+/// words with their colour and face, painted rectangles with their colour, images), its filled rectangles read back by a
+/// second script (<c>&lt;case&gt;.lines.txt</c>), its words read back by poppler (<c>&lt;case&gt;.words.txt</c>), and the
+/// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>). Each comparison below names its file and its
+/// bound.
 /// </summary>
 internal static class HtmlCases
 {
@@ -177,7 +177,7 @@ internal static class HtmlCases
 
         var engine = PrintedPages.Engine(pages.Value);
         var difference = Difference(engine, PrintedPages.Parse(File.ReadAllText(Measured(name) + ".print.txt")))
-            ?? RectangleDifference(engine, Rows(name, "lines"))
+            ?? RectangleDifference(engine, PrintedPages.Parse(File.ReadAllText(Measured(name) + ".print.txt")), Rows(name, "lines"))
             ?? PopplerDifference(pages.Value, engine, Rows(name, "words"))
             ?? BoxDifference(name, boxes.Value, Rows(name, "boxes"));
         return (difference, Listed.TryGetValue(name, out var listed)) switch
@@ -201,9 +201,11 @@ internal static class HtmlCases
     /// The first difference between the engine's pages and Chromium's print as <c>print.txt</c> holds it, or null: the same
     /// number of pages of the same size (within 0.001 pt, the file's precision); on each page the same words in the same
     /// order, each with its start and end (<see cref="PrintedWord.X0"/>, <see cref="PrintedWord.X1"/>) and its font size
-    /// within <see cref="Bound"/>, and its baseline after <see cref="WholePixel"/> within <see cref="Bound"/>; the same
-    /// area painted by filled rectangles (<see cref="PaintedDifference"/>); the same image areas in drawing order, each
-    /// edge after <see cref="WholePixel"/> within <see cref="Bound"/>.
+    /// within <see cref="Bound"/>, its baseline after <see cref="WholePixel"/> within <see cref="Bound"/>, and the same
+    /// colour and face (<see cref="PrintedWord.Colour"/>, <see cref="PrintedWord.Face"/>: the PostScript name, which names
+    /// the font file and with it the weight and the style); the same area painted in each colour by the rectangles,
+    /// filled or stroked (<see cref="PaintedDifference"/>); the same image areas in drawing order, each edge after
+    /// <see cref="WholePixel"/> within <see cref="Bound"/>.
     /// </summary>
     public static string? Difference(PrintedPages engine, PrintedPages chromium)
     {
@@ -230,7 +232,8 @@ internal static class HtmlCases
             {
                 var at = $"page {ours.Number} '{word.Text}'";
                 var found = Far(at, "x0", word.X0, measured.X0) ?? Far(at, "x1", word.X1, measured.X1)
-                    ?? Snapped(at, "baseline", word.Baseline, measured.Baseline) ?? Far(at, "font size", word.FontSize, measured.FontSize);
+                    ?? Snapped(at, "baseline", word.Baseline, measured.Baseline) ?? Far(at, "font size", word.FontSize, measured.FontSize)
+                    ?? Same(at, "colour", word.Colour, measured.Colour) ?? Same(at, "face", word.Face, measured.Face);
                 if (found is not null)
                 {
                     return found + " (print.txt)";
@@ -246,10 +249,13 @@ internal static class HtmlCases
         return null;
     }
 
-    /// <summary>The first difference between the area the engine's filled rectangles paint and the area of the rectangles
+    /// <summary>The first difference between the area the engine's rectangles paint and the area of the rectangles
     /// <c>lines.txt</c> holds (<c>page x0 y0 x1 y1 height</c>, read back by <c>rectangles.py</c>; the height is y1 less y0
-    /// of the same line, nothing of its own), page by page as <see cref="PaintedDifference"/> compares them.</summary>
-    private static string? RectangleDifference(PrintedPages engine, List<string[]> rows)
+    /// of the same line, nothing of its own), page by page as <see cref="PaintedDifference"/> compares them. The file
+    /// holds no colour, so the area is one for every colour; and it holds fills only, so the bands that Chromium's strokes
+    /// paint (<c>print.txt</c>, <see cref="PrintedBox.Stroked"/>: Chromium strokes a border of one colour and style on
+    /// all four sides as one rectangle) are added to it.</summary>
+    private static string? RectangleDifference(PrintedPages engine, PrintedPages chromium, List<string[]> rows)
     {
         var measured = rows.Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))).ToList();
         if (measured.FirstOrDefault(box => box.Page < 1 || box.Page > engine.Pages.Length) is { } beyond)
@@ -257,9 +263,11 @@ internal static class HtmlCases
             return $"a rectangle on page {beyond.Page}, the engine has {engine.Pages.Length} pages (lines.txt)";
         }
 
-        foreach (var page in engine.Pages)
+        static PrintedBox Colourless(PrintedBox box) => box with { Colour = null, Stroked = false };
+        foreach (var (page, print) in engine.Pages.Zip(chromium.Pages))
         {
-            if (PaintedDifference(page, page.Rectangles, [.. measured.Where(box => box.Page == page.Number)]) is { } found)
+            var filled = measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless));
+            if (PaintedDifference(page, [.. page.Rectangles.Select(Colourless)], [.. filled]) is { } found)
             {
                 return found + " (lines.txt)";
             }
@@ -269,13 +277,14 @@ internal static class HtmlCases
     }
 
     /// <summary>
-    /// The first difference between the area two sets of filled rectangles paint on a page: the whole pixels of the page
-    /// (0.75 pt) that any of them covers, each edge after <see cref="WholePixel"/>, so an edge within <see cref="Bound"/>
-    /// of Chromium's after snapping covers the same pixels. The area is compared, not each rectangle: Chromium cuts a
-    /// border into other rectangles than the engine, which paint the same pixels (case <c>fr-f9-padded-box-orphans3</c>:
-    /// Chromium's side borders run over the top border, from 93 pt down, the engine's start below it, at 93.75 pt). The
-    /// measured files hold no colour, so the area is one for every colour; the number and the order of the rectangles are
-    /// not compared.
+    /// The first difference between what two sets of painted rectangles show on a page: for each whole pixel of the page
+    /// (0.75 pt), the colour of the last rectangle in drawing order that covers it, each edge after
+    /// <see cref="WholePixel"/>, so an edge within <see cref="Bound"/> of Chromium's after snapping covers the same pixels.
+    /// The area of each colour is compared, not each rectangle: Chromium cuts a border into other rectangles than the
+    /// engine, which paint the same pixels (case <c>fr-f9-padded-box-orphans3</c>: Chromium's side borders run over the
+    /// top border, from 93 pt down, the engine's start below it, at 93.75 pt), and strokes a border of one colour on all
+    /// four sides as one rectangle where the engine fills four. The number of the rectangles is not compared; their order
+    /// only where two colours overlap.
     /// </summary>
     private static string? PaintedDifference(PrintedPage page, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
     {
@@ -286,29 +295,37 @@ internal static class HtmlCases
             if (engine[cell] != chromium[cell])
             {
                 var (x, y) = (cell % columns * 0.75, cell / columns * 0.75);
-                var who = engine[cell] ? "the engine paints it and Chromium does not" : "Chromium paints it and the engine does not";
-                return $"page {page.Number} painted area: the pixel at ({Of(x)}, {Of(y)}): {who}; the engine paints {engine.Count(painted => painted)} px, " +
-                    $"Chromium {chromium.Count(painted => painted)} px";
+                var who = (engine[cell], chromium[cell]) switch
+                {
+                    (null, _) => "Chromium paints it and the engine does not",
+                    (_, null) => "the engine paints it and Chromium does not",
+                    _ => $"the engine paints it {engine[cell]}, Chromium {chromium[cell]}",
+                };
+                var colour = engine[cell] ?? chromium[cell];
+                var area = colour is null or "" ? string.Empty : $" {colour}";
+                return $"page {page.Number} painted area: the pixel at ({Of(x)}, {Of(y)}): {who}; the engine paints {engine.Count(painted => painted == colour)} px{area}, " +
+                    $"Chromium {chromium.Count(painted => painted == colour)} px";
             }
         }
 
         return null;
     }
 
-    /// <summary>The whole pixels of a page that rectangles cover, row by row from the top left, each edge after
-    /// <see cref="WholePixel"/> and cut at the page's edges.</summary>
-    private static bool[] Painted(PrintedPage page, IReadOnlyList<PrintedBox> boxes)
+    /// <summary>The whole pixels of a page, row by row from the top left: the colour of the last rectangle that covers it
+    /// (an empty colour for a rectangle without one), or null; each edge after <see cref="WholePixel"/> and cut at the
+    /// page's edges.</summary>
+    private static string?[] Painted(PrintedPage page, IReadOnlyList<PrintedBox> boxes)
     {
         static int Pixel(double length) => (int)Math.Round(length / 0.75, MidpointRounding.AwayFromZero);
         var (columns, rows) = (Pixel(page.Width), Pixel(page.Height));
-        var cells = new bool[columns * rows];
+        var cells = new string?[columns * rows];
         foreach (var box in boxes)
         {
             for (var y = Math.Max(0, Pixel(box.Y0)); y < Math.Min(rows, Pixel(box.Y1)); y++)
             {
                 for (var x = Math.Max(0, Pixel(box.X0)); x < Math.Min(columns, Pixel(box.X1)); x++)
                 {
-                    cells[y * columns + x] = true;
+                    cells[y * columns + x] = box.Colour ?? string.Empty;
                 }
             }
         }
@@ -478,6 +495,9 @@ internal static class HtmlCases
         return null;
     }
 
+    private static string? Same(string at, string what, string? ours, string? chromium) =>
+        ours != chromium ? $"{at} {what} {ours}, Chromium {chromium}" : null;
+
     private static string? Far(string at, string what, double ours, double chromium) =>
         Math.Abs(ours - chromium) > Bound ? $"{at} {what} {Of(ours)}, Chromium {Of(chromium)}" : null;
 
@@ -505,8 +525,9 @@ internal static class HtmlCases
 
     /// <summary>
     /// The engine's words as the read-backs of Chromium's PDF find them: two runs of glyphs that touch on one baseline at
-    /// the same font size, with no white space between (text on both sides of an inline element's edge), are one word;
-    /// PyMuPDF starts a new word where the size changes.
+    /// the same font size, in the same face and colour, with no white space between (text on both sides of an inline
+    /// element's edge), are one word; PyMuPDF starts a new span, and <c>positions.py</c> a new word, where the font, the
+    /// size or the colour changes.
     /// </summary>
     private static List<PrintedWord> Joined(IEnumerable<PrintedWord> words)
     {
@@ -514,7 +535,7 @@ internal static class HtmlCases
         foreach (var word in words)
         {
             if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && Math.Abs(last.X1 - word.X0) < 1e-6
-                && last.FontSize == word.FontSize)
+                && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour)
             {
                 joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text };
                 continue;

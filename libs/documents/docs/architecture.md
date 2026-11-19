@@ -629,9 +629,13 @@ through the whole HTML path unchanged and its pages are compared with every file
 (`HtmlCases`, where each comparison names its file and bound; `HtmlCases.Bound` is 0.1 pt):
 
 - `measured/<case>.print.txt`, the print read back from the PDF: the same pages of the same size, the same words on
-  each page in the same order, each word's start, end and font size within 0.1 pt and its baseline within 0.1 pt; the
-  same filled rectangles in drawing order and the same image areas, each edge within 0.1 pt;
-- `<case>.lines.txt`, the rectangles read back by a second script: each edge and height within 0.1 pt;
+  each page in the same order, each word's start, end and font size within 0.1 pt, its baseline within 0.1 pt, and
+  its colour and face (the PostScript name of the font, which names the font file and with it the weight and the
+  style); the same area painted in each colour by the rectangles, filled or stroked (each pixel takes the colour of
+  the last rectangle over it; a stroked rectangle is read back as the four bands it paints), and the same image areas
+  in drawing order, each edge within 0.1 pt;
+- `<case>.lines.txt`, the filled rectangles read back by a second script, with the bands of the print's strokes: the
+  same painted area, colour not compared (the file has none);
 - `<case>.words.txt`, the words read back by poppler: the same words inside the page, each start and end within
   0.1 pt, and the line box poppler gives it (the baseline less the face's ascender, plus its descender) within 0.1 pt;
 - `<case>.boxes.txt`, the boxes measured in the page: the height of each box named by an element id within 0.1 pt.
@@ -639,8 +643,9 @@ through the whole HTML path unchanged and its pages are compared with every file
 
 Baselines and the edges of rectangles and images are compared at the whole pixel where Chromium paints them (every
 rectangle and image edge in the committed prints is a whole pixel), so a difference smaller than half a pixel there
-can stay hidden; x positions, font sizes and box heights are compared as they are. Colours and faces (font, weight,
-style) are not in the measured files and are not compared yet.
+can stay hidden; x positions, font sizes and box heights are compared as they are. A face in a print that is not a
+font file the case loads fails `MeasuredFaceTests`: Chromium prints with a fallback font, without a word, when a font
+file does not load.
 
 A line reads `<case> equal`; `<case> refused <code> <property: value or element> at <line>:<column>` (the first
 refusal, counted as one by its exact code: the next packages' work list); `<case> listed <test>: <difference>` for a

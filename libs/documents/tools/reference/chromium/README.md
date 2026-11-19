@@ -65,8 +65,9 @@ one line per item, in points, origin at the top left of the page (y down), three
 
 ```
 page <page> <width> <height>
-word <page> <x0> <x1> <baseline> <font size> <text>
-rect <page> <x0> <y0> <x1> <y1>
+word <page> <x0> <x1> <baseline> <font size> <text> <colour> <face>
+rect <page> <x0> <y0> <x1> <y1> <colour>
+stroke <page> <x0> <y0> <x1> <y1> <colour>
 image <page> <x0> <y0> <x1> <y1>
 ```
 
@@ -74,7 +75,14 @@ A word is a run of characters without white space on one baseline. Its extent is
 first character to the origin of its last plus that character's advance), and its height is its baseline, so neither
 depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. `rect` is a filled rectangle
 (a background, a border, a grid line, or a marker box a case draws on purpose to show where a box is); `image` is the
-area an image is drawn into, which reaches past the page when the page shows only a slice of it.
+area an image is drawn into, which reaches past the page when the page shows only a slice of it. A colour is
+`#rrggbb`, with the opacity as a fourth byte (`#rrggbbaa`) where it is not 1. The face is the PostScript name of the
+font a word is drawn with, without the subset tag (`ABCDEF+`) of the PDF: it names the font file, and with it the
+weight and the style (synthetic bold or italic would not show). A `stroke` line is one of the four bands a stroked
+rectangle paints: Chromium strokes a border of one colour and style on all four sides as one rectangle path
+(`kb-v8-padded-box-kept-para`, `kb-v9-padded-box-kept-table-row`, `fr-header-cell-margin`), and `positions.py` writes
+the top and bottom band across the outer width and the left and right band between them, in drawing order among the
+`rect` lines; any other stroke stops the read-back. `lines.txt` (`rectangles.py`) keeps fills only.
 
 The tests read these files through `PrintedPages` in the test-support project, which gives the engine's page model the
 same form (`PrintedPages.Engine`), so a test compares the two page by page. What the tests compare: the words of each
@@ -86,9 +94,7 @@ rectangles, image areas, x positions in tables) are measured and kept, and pinne
 (`MeasuredReferenceFilesTests`) and by the agreement of the two read-backs (`ChromiumReferenceTests`). Every case that the
 HTML front-end draws is compared on every fact of its `print`, `lines`, `words` and `boxes` files, each with its bound
 (`CaseStatusTests` and `HtmlCases` in `UnitTests.Extensions.Documents.Html`; docs/architecture.md, "The status file").
-The read-backs keep filled drawings only: a border that Chromium strokes as one rectangle is in none of the files
-(`kb-v8-padded-box-kept-para`, whose four sides are 0.75 pt solid black; the prints of `kb-v9-padded-box-kept-table-row`
-and `fr-header-cell-margin` hold one stroke each too). The harness takes any
+The harness takes any
 HTML with an `@page` rule, so whole documents can be measured the same way as the small cases.
 
 Chromium snaps more than layout units when it prints, which a case must allow for:
