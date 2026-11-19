@@ -243,7 +243,7 @@ internal sealed class AreaRasterizer
     }
 
     /// <summary>Keeps the pieces of the row's flagged cells: those of its edges, cut as <see cref="AddPiece"/> cuts
-    /// them, and its horizontal edges.</summary>
+    /// them, and its horizontal edges inside the row (<see cref="CollectFlats"/>).</summary>
     private void Gather(int y, int flat)
     {
         foreach (var edge in _active)
@@ -706,12 +706,22 @@ internal sealed class AreaRasterizer
         Keep(cell, new CellPiece(x0 - cell, y0 - y, x1 - cell, y1 - y, edge.Serial, edge.Turned, signs));
     }
 
-    /// <summary>Keeps the horizontal edges of row <paramref name="y"/> in its flagged cells.</summary>
+    /// <summary>Keeps the horizontal edges inside row <paramref name="y"/> in its flagged cells.</summary>
+    /// <remarks>One on the row's top or bottom line is counted by the flags (<see cref="FlagFlats"/>) and not kept: it
+    /// lies on a side of the cells, where it touches no point inside them. To the arrangement it adds no height and no
+    /// crossing, only a step of the left side's winding number at height 0 or 1, which changes w′ in no band or in every
+    /// band alike, a whole number that round(a − J) takes back (<see cref="CellArrangement"/>); to the two-sided rule a
+    /// piece on a side only stands in the way (<see cref="CellFlags"/>). So leaving it out changes no area.</remarks>
     private void CollectFlats(int y, int flat)
     {
-        for (var index = flat; index < _flats.Count && _flats[index].Y <= y + 1; index++)
+        for (var index = flat; index < _flats.Count && _flats[index].Y < y + 1; index++)
         {
             var piece = _flats[index];
+            if (piece.Y == y)
+            {
+                continue;
+            }
+
             var (from, to) = (piece.From - _firstColumn, piece.To - _firstColumn);
             var (low, high) = (double.Min(from, to), double.Max(from, to));
             for (var cell = (int)Math.Floor(low); cell < high; cell++)
