@@ -63,8 +63,9 @@ public static class LineJustification
     /// <summary>Widens every word separator of the line by an equal share of <paramref name="free"/>, except a separator that
     /// is the line's last glyph: nothing follows it to move, and Chromium gives it no share (case <c>ws-hang-break-spaces</c>,
     /// justified lines of <c>break-spaces</c>, whose spaces stay at a line's end: "aa bb" and three spaces share the free space
-    /// three ways; case <c>ws-justify</c>). Other lines never end with a separator that widens: their collapsible spaces are
-    /// removed there, and preserved ones hang.</summary>
+    /// three ways; case <c>ws-justify</c>), nor to a no-break space that ends a line (case <c>ws-justify-nbsp</c>: with one
+    /// no-break space at the end the space before it takes all the free space, with two the first of them shares it).
+    /// Collapsible spaces never end a line (they are removed there), and preserved ones that hang have no share either.</summary>
     private static TextLine Justify(TextLine line, double free)
     {
         var (lastSegment, lastGlyph) = (line.Segments.Count - 1, line.Segments.Count == 0 ? -1 : line.Segments[^1].Glyphs.Count - 1);

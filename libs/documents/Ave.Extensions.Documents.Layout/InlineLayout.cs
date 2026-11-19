@@ -98,7 +98,7 @@ public static class InlineLayout
         ShapeRuns(environment, box).OnSuccessBind(items => Measured(environment, items).OnSuccessBind(sized =>
         {
             Result<double, Error> Widest(IReadOnlyList<LineBoxes.Item> runs, double width) =>
-                BreakLines(runs, width, box.Style.TextAlign).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
+                BreakLines(runs, width, box.Style).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
             return Widest(sized.Least, 0).OnSuccessBind(least => Widest(sized.Most, double.PositiveInfinity).OnSuccessMap(most =>
                 new IntrinsicWidths(least, most).Plus(SlicedBox.HorizontalInsets(box.Style))));
         }));
@@ -139,37 +139,29 @@ public static class InlineLayout
     /// <remarks>An atomic inline is one glyph of its margin box's width (<see cref="ShapedGlyph.AtomicInline"/>), never
     /// shaped: both its edges are safe places to break, so the breaker never asks for it again; if it did, it gets the same
     /// glyph.</remarks>
-    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, TextAlign align) =>
-        GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs), width, (run, text, showsHyphen, budget) => runs[run] switch
+    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, BoxStyle paragraph) =>
+        GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs, paragraph), width, (run, text, showsHyphen, budget) => runs[run] switch
             {
                 LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, shaped.Run.Style.FontSize.Points, showsHyphen, budget).MapError(error => error.WithSource(shaped.Run.Source)),
                 var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
             },
-            LineEndAtSpace(align));
+            LineEndAtSpace(paragraph.TextAlign));
 
-    /// <summary>The white-space properties of each item for the line breaker: a run's from its style. An atomic inline has no
-    /// spaces, and wraps as the run before it (the first run after it when it starts the paragraph; it wraps when there is no
-    /// run): in Chromium an atomic inline breaks by the wrap mode of the inline box it lies in (Blink
-    /// <c>LineBreaker::CanBreakAfterAtomicInline</c> reads the line breaker's current mode), whose text is the run beside it
-    /// (case <c>ws-image</c>: an image in nowrap text gets no break before or after it).</summary>
-    private static RunWhiteSpace[] WhiteSpaceOf(IReadOnlyList<LineBoxes.Item> runs)
+    /// <summary>The white-space properties of each item for the line breaker, in one pass: a run's from its style. An atomic inline
+    /// has no spaces, and wraps by the mode of the element it lies in, as in Chromium (Blink
+    /// <c>LineBreaker::CanBreakAfterAtomicInline</c> reads the line breaker's current mode, that element's): the image box's own
+    /// text style (<see cref="BoxStyle.Text"/>, which the front-end sets to the computed values of that element), else the
+    /// paragraph's, else <see cref="TextWrapMode.Wrap"/>. Case <c>ws-image-border</c>: an image inside a wrapping element of a
+    /// nowrap paragraph breaks after itself; in nowrap text it gets no break (<c>ws-image</c>).</summary>
+    private static RunWhiteSpace[] WhiteSpaceOf(IReadOnlyList<LineBoxes.Item> runs, BoxStyle paragraph)
     {
-        var modes = new RunWhiteSpace[runs.Count];
-        TextWrapMode? previous = null;
-        for (var index = 0; index < runs.Count; index++)
+        var paragraphWrap = paragraph.Text?.TextWrapMode ?? TextWrapMode.Wrap;
+        return [.. runs.Select(item => item switch
         {
-            if (runs[index] is LineBoxes.ShapedRun shaped)
-            {
-                modes[index] = new RunWhiteSpace(shaped.Run.Style.WhiteSpaceCollapse, shaped.Run.Style.TextWrapMode);
-                previous = shaped.Run.Style.TextWrapMode;
-                continue;
-            }
-
-            var wrap = previous ?? runs.Skip(index + 1).OfType<LineBoxes.ShapedRun>().Select(run => (TextWrapMode?)run.Run.Style.TextWrapMode).FirstOrDefault() ?? TextWrapMode.Wrap;
-            modes[index] = new RunWhiteSpace(WhiteSpaceCollapse.Collapse, wrap);
-        }
-
-        return modes;
+            LineBoxes.ShapedRun shaped => new RunWhiteSpace(shaped.Run.Style.WhiteSpaceCollapse, shaped.Run.Style.TextWrapMode),
+            LineBoxes.AtomicInline atomic => new RunWhiteSpace(WhiteSpaceCollapse.Collapse, atomic.Box.Style.Text?.TextWrapMode ?? paragraphWrap),
+            _ => RunWhiteSpace.Initial,
+        })];
     }
 
     /// <summary>What the line breaker does at a line end at a collapsible space (<see cref="LineEndShaping"/>), from the
@@ -393,7 +385,7 @@ public static class InlineLayout
     {
         var style = box.Style;
         var firstLine = start.LineIndex;
-        var broken = BreakLines(runs, contentWidth, style.TextAlign);
+        var broken = BreakLines(runs, contentWidth, style);
         if (broken.IsFailure)
         {
             return Result<Maybe<SlicedBox.Content>, Error>.Failure(broken.Error);

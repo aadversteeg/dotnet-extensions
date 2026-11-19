@@ -348,7 +348,7 @@ internal static class BreakableSegments
             // white-space property on the nearest common ancestor of the two characters", which runs do not know; Chromium
             // decides by its element's tags there (Blink LineBreaker::HandleOpenTag, HandleCloseTag), the engine by the
             // character before, and the two differ where an element that wraps differently from its parent ends (listed in
-            // docs/architecture.md, cases ws-border). An atomic inline has the mode of the run before it (InlineLayout).
+            // docs/architecture.md, cases ws-border). An atomic inline has the mode of the element it lies in (InlineLayout).
             if (!opportunity.IsMandatory && !rules.Wraps(runOfCharacter[opportunity.Offset - 1]))
             {
                 continue;

@@ -46,14 +46,18 @@ public class WhiteSpaceTests
 
     private static PageSetup Area(double height) => Page(300.Pt(), height.Pt()).Margin(12.Pt());
 
-    private static Result<PageDocument, Error> Laid(double pageHeight, params Element[] body) =>
+    private static Result<PageDocument, Error> Laid(double pageHeight, params Element[] body) => Laid(pageHeight, model => model, body);
+
+    private static Result<PageDocument, Error> Laid(double pageHeight, Func<StyledDocument, StyledDocument> change, params Element[] body) =>
         DocumentTranslator.ToModel(Document([.. body], Area(pageHeight), title: "Title", language: "en").FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt())
                 .FontMetricRounding(FontMetricRounding.WholePixels))
-            .OnSuccessBind(model => DocumentLayout.Run(model, new FontSet([TestFonts.Regular, TestFonts.Bold])));
+            .OnSuccessBind(model => DocumentLayout.Run(change(model), new FontSet([TestFonts.Regular, TestFonts.Bold])));
 
-    private static PrintedPages Engine(double pageHeight, params Element[] body)
+    private static PrintedPages Engine(double pageHeight, params Element[] body) => Engine(pageHeight, model => model, body);
+
+    private static PrintedPages Engine(double pageHeight, Func<StyledDocument, StyledDocument> change, params Element[] body)
     {
-        var printed = Laid(pageHeight, body).OnSuccessMap(PrintedPages.Engine);
+        var printed = Laid(pageHeight, change, body).OnSuccessMap(PrintedPages.Engine);
         printed.IsSuccess.Should().BeTrue(printed.IsFailure ? printed.Error.ToString() : string.Empty);
         return printed.Value;
     }
@@ -76,12 +80,75 @@ public class WhiteSpaceTests
     /// <summary>A gap of <paramref name="lines"/> lines where a case holds a paragraph of a value that is not built.</summary>
     private static ParagraphElement Gap(int lines) => Paragraph([Text(" ")]).PaddingTop((lines * 18).Pt());
 
-    /// <summary>Chromium's print of a case without the words on the given baselines (the lines of a <see cref="Gap"/>).</summary>
+    /// <summary>Chromium's print of a case without the words and images on the given baselines (the lines of a <see cref="Gap"/>).</summary>
     private static PrintedPages Chromium(string caseName, params double[] leftOut) =>
         new([.. PrintedPages.Chromium(caseName).Pages.Select(page => page with
         {
             Words = [.. page.Words.Where(word => !leftOut.Any(baseline => Math.Abs(word.Baseline - baseline) < 0.01))],
+            Images = [.. page.Images.Where(image => !leftOut.Any(baseline => Math.Abs(image.Y1 - baseline) < 0.01))],
         })]);
+
+    /// <summary>The document with the image boxes of the inline boxes given their own wrap mode, in document order
+    /// (null keeps none): as a front-end does for an image inside an element of another mode than its paragraph.</summary>
+    private static Func<StyledDocument, StyledDocument> ImageWrap(params TextWrapMode?[] modes) => document =>
+    {
+        var next = 0;
+        Node Rewrite(Node node, TextStyle? paragraph) => node switch
+        {
+            Box image when image.Layout == LayoutAlgorithmId.Image && paragraph is not null && modes[next++] is { } mode =>
+                image with { Style = image.Style with { Text = paragraph with { TextWrapMode = mode } } },
+            Box box => box with { Children = [.. box.Children.Select(child => Rewrite(child, box.Layout == LayoutAlgorithmId.Inline ? box.Style.Text : null))] },
+            _ => node,
+        };
+
+        return document with { Root = (Box)Rewrite(document.Root, null) };
+    };
+
+    /// <summary>The four paragraphs of ws-image-border; the two where the engine and Chromium differ by the listed end-tag
+    /// rule are gaps of Chromium's three lines unless <paramref name="withDifferences"/>.</summary>
+    private static Element[] ImageBorder(bool withDifferences)
+    {
+        ParagraphElement Or(ParagraphElement paragraph) => withDifferences ? paragraph : Gap(3);
+        return
+        [
+            Or(Spans(Collapse, [Text("ab").TextWrapMode(NoWrap), Fig, Text("cd")], 6)),
+            Or(Spans(Collapse, [Text("ab"), Fig, Text("cd")], 6)),
+            Spans(Collapse, [Text("ab"), Fig, Text("cd").TextWrapMode(NoWrap)], 6),
+            Spans(Collapse, [Text("ab").TextWrapMode(Wrap), Fig, Text("cd")], 6, wrap: NoWrap),
+            X,
+        ];
+    }
+
+    [Fact]
+    public void An_image_breaks_by_the_mode_of_the_element_it_lies_in_like_Chromium() =>
+        // Paragraph 4 is nowrap, its image lies in a wrapping element: the image's own box says Wrap. Left out: paragraphs 1
+        // (25.5, 43.5, 61.5) and 2 (79.5, 97.5, 115.5), pinned below.
+        ShouldMatch(Engine(300, withDifferences: false), Chromium("ws-image-border", 25.5, 43.5, 61.5, 79.5, 97.5, 115.5));
+
+    private static PrintedPages Engine(double pageHeight, bool withDifferences) =>
+        Engine(pageHeight, ImageWrap(withDifferences ? [null, NoWrap, null, Wrap] : [null, Wrap]), ImageBorder(withDifferences));
+
+    [Fact]
+    public void Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium()
+    {
+        // Listed difference (docs/architecture.md, the end-tag rule): Chromium puts "ab", the image and "cd" on three lines in
+        // both paragraphs. Paragraph 1: a nowrap "ab" before an image of a wrapping paragraph, so no break before the image.
+        // Paragraph 2: the image inside a nowrap element (its box says NoWrap), so no break after it.
+        var engine = Engine(300, withDifferences: true).Pages[0];
+
+        engine.Words.Where(word => word.Baseline < 50).Select(word => (word.Text, Math.Round(word.Baseline, 3))).Should().Equal(("ab", 25.5), ("cd", 43.5));
+        engine.Images[0].Y1.Should().BeApproximately(25.5, 0.01, "the image stays on the line of a nowrap \"ab\"");
+        engine.Words.Where(word => word.Baseline is > 50 and < 90).Select(word => (word.Text, Math.Round(word.Baseline, 3))).Should().Equal(("ab", 61.5), ("cd", 79.5));
+        engine.Images[1].Y1.Should().BeApproximately(79.5, 0.01, "\"cd\" stays on the line of an image that does not wrap");
+    }
+
+    [Fact]
+    public void A_no_break_space_that_ends_a_justified_line_gets_no_share_like_Chromium() =>
+        ShouldMatch(Engine(300,
+            P(Collapse, "aa bb\u00A0 cc dd", 40, TextAlign.Justify),
+            P(Collapse, "aa bb\u00A0\u00A0 cc dd", 40, TextAlign.Justify),
+            P(Collapse, "aa bb cc dd", 40, TextAlign.Justify),
+            X), PrintedPages.Chromium("ws-justify-nbsp"));
 
     private static void ShouldMatch(PrintedPages engine, PrintedPages chromium, bool aligned = false)
     {

@@ -30,6 +30,8 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// <summary>Whether the run's text wraps at its soft wrap opportunities (CSS Text 4 §5.1, <c>text-wrap-mode</c>,
     /// inherited); <see cref="TextWrapMode.Wrap"/>, the initial value, unless set. A break opportunity belongs to the run of the
     /// character before it (the line breaker's rule): under <see cref="TextWrapMode.NoWrap"/> it is not taken, and forced
-    /// line breaks still break.</summary>
+    /// line breaks still break. An image in a line (a box among the runs) wraps by its own box's text style
+    /// (<see cref="BoxStyle.Text"/>), else by its paragraph's: a front-end sets that text style to the computed values of the
+    /// element the image lies in.</summary>
     public TextWrapMode TextWrapMode { get; init; } = TextWrapMode.Wrap;
 }
