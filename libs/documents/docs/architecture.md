@@ -625,7 +625,8 @@ element refused by its own rule is left out (`HtmlBoxGenerator`, remarks).
 `HtmlStyleOptions.Page`, by default A4 with no margins; media queries and viewport units see its page area, `size:
 auto` takes its size and a bare `portrait` or `landscape` turns it (the case test passes US Letter, 612 × 792 pt, no
 margins, which the reference tool prints on: cases `h-default-page`, `h-page-size-auto`, `h-page-landscape`,
-`h-page-portrait`, `h-page-default-media`). A root element with `display: none` generates no box: one empty page of
+`h-page-portrait`, `h-page-default-media`). Media queries see that page also where an `@page` rule sets another
+size, as Chromium evaluates them (cases `h-media-page-size-narrow`, `h-media-page-size-wide`). A root element with `display: none` generates no box: one empty page of
 the caller's page, whatever the `@page` rules say (case `h-root-display-none`). An `@page` rule without a selector gives `size` and the margins;
 declarations that reach only the page-margin boxes (inherited properties, the counters) have no effect; any other
 declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Box generation makes

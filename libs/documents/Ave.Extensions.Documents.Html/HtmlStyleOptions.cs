@@ -57,7 +57,9 @@ public sealed record HtmlStyleOptions
     public PageStyle Page { get; init; } = A4Page;
 
     /// <summary>The media @media rules and media attributes are evaluated for: unless set, print on the page area of
-    /// <see cref="Page"/> (in print, Chromium evaluates them against the page area).</summary>
+    /// <see cref="Page"/>. Chromium evaluates them against the paper of the print call also where an <c>@page</c> rule
+    /// sets another size (measured: a 300 pt <c>@page</c> on US Letter matches <c>min-width: 600px</c>, not
+    /// <c>max-width: 500px</c>; cases <c>h-media-page-size-*</c>).</summary>
     public MediaContext Media
     {
         get => _media ?? new MediaContext("print", Page.AreaWidth, Page.AreaHeight);

@@ -40,7 +40,8 @@ public class HtmlRenderingTests
     // No option: A4 with no margins (210 x 297 mm print as 594.96 x 841.92 pt), portrait.
     [InlineData("", false, 594.96, 841.92, 0)]
     [InlineData("@page { size: auto }", false, 594.96, 841.92, 0)]
-    // Media queries see the page without rules (here A4), not the page the rules make.
+    // Media queries see the page without rules (here A4), not the page the rules make, as Chromium does (measured, cases
+    // h-media-page-size-*).
     [InlineData("@page { size: landscape }", false, 841.92, 594.96, 0)]
     // The caller's page, 300 x 198 pt with 12 pt margins: its size, its margins, and media queries on its page area
     // (276 x 174 pt).
