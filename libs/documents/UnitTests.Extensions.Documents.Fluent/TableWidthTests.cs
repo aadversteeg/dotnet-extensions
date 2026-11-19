@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fluent;
 using static Ave.Extensions.Documents.Fluent.Elements;
@@ -32,4 +33,19 @@ public class TableWidthTests
 
         DocumentModelText.Write(model).Should().Contain("width=stretch");
     }
+
+    [Fact]
+    public void Preferred_makes_a_column_of_the_automatic_layout_with_a_given_width()
+    {
+        var box = ModelOf(Table(Columns(Preferred(2.Cm()), Auto), [TableRow([Cell("a"), Cell("b")])]));
+
+        box.Style.Columns.Should().Equal(new TrackSize.Preferred(2.Cm()), TrackSize.Auto.Instance);
+        DocumentModelText.Write(DocumentTranslator.ToModel(Document([Table(Columns(Preferred(2.Cm()), Auto), [TableRow([Cell("a"), Cell("b")])])]).FontFamily("Lato")).Value)
+            .Should().Contain("columns=preferred(");
+    }
+
+    [Fact]
+    public void A_negative_preferred_width_is_refused() =>
+        DocumentTranslator.ToModel(Document([Table(Columns(Preferred((-1).Pt())), [TableRow([Cell("a")])])]).FontFamily("Lato"))
+            .Error.Parts().Select(part => part.Code).Should().Contain(DocumentErrorCodes.Input.Invalid.Columns);
 }

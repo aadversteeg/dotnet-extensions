@@ -81,7 +81,9 @@ public class TableWidthReferenceTests
     /// text item per column with text (Chromium ceils each item, README "The comparison rule"; paddings are truncated
     /// alike in every column and a 0.75pt border is a whole pixel), the column's own truncated share, and for the last
     /// receiving column the other receivers' truncations too (it takes the remainder). Fixed widths of whole pixels
-    /// (45, 60, 75, 90 pt) are exact.
+    /// (45, 60, 75, 90 pt) are exact. What n does not count: a share is the target times a ratio of weights, so an
+    /// input's error reaches the share scaled by the target over the sum of the weights (up to about 3 here); that
+    /// bound is not derived. The measured differences stay at or below 2.88 units (case empty, third column).
     /// </summary>
     [Theory]
     [InlineData("two", new[] { 98.766, 200.484 }, 2, new[] { true, true })]

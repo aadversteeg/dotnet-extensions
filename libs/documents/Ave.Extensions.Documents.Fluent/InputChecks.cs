@@ -221,12 +221,13 @@ internal static class InputChecks
             var valid = column switch
             {
                 DocumentModel.TrackSize.Fixed fixedWidth => IsBounded(fixedWidth.Width) && fixedWidth.Width.Points >= 0,
+                DocumentModel.TrackSize.Preferred preferred => IsBounded(preferred.Width) && preferred.Width.Points >= 0,
                 DocumentModel.TrackSize.Fill fill => double.IsFinite(fill.Weight) && fill.Weight > 0,
                 _ => true,
             };
             if (!valid)
             {
-                yield return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed column width must be zero or more and at most {InputLimits.MaxLength}, and a fill weight positive.", column.ToString(), "columns", source);
+                yield return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed or preferred column width must be zero or more and at most {InputLimits.MaxLength}, and a fill weight positive.", column.ToString(), "columns", source);
             }
         }
     }

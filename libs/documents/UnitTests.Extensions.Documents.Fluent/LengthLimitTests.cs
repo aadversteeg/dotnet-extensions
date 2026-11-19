@@ -33,7 +33,7 @@ public class LengthLimitTests
     /// <summary>Each length property, set to a value, in a document that is otherwise valid; with its error code.</summary>
     public static TheoryData<string> Properties =>
     [
-        "margin", "padding", "border", "font-size", "column", "image-width", "image-height", "area-height", "page-width",
+        "margin", "padding", "border", "font-size", "column", "preferred-column", "image-width", "image-height", "area-height", "page-width",
         "page-height", "page-margin",
     ];
 
@@ -47,6 +47,7 @@ public class LengthLimitTests
             "border" => (Doc(Block([Paragraph("x")]).BorderLeft(length, Color.Black)), DocumentErrorCodes.Input.Invalid.Length),
             "font-size" => (Doc(Paragraph("x").FontSize(length)), DocumentErrorCodes.Input.Invalid.FontSize),
             "column" => (Doc(Table(Columns(length), [TableRow([Cell("x")])])), DocumentErrorCodes.Input.Invalid.Columns),
+            "preferred-column" => (Doc(Table(Columns(Preferred(length)), [TableRow([Cell("x")])])), DocumentErrorCodes.Input.Invalid.Columns),
             "image-width" => (Doc(Image(TestImages.Bytes("rgba8.png")).Width(length).Decorative()), DocumentErrorCodes.Input.Invalid.ImageSize),
             "image-height" => (Doc(Image(TestImages.Bytes("rgba8.png")).Height(length).Decorative()), DocumentErrorCodes.Input.Invalid.ImageSize),
             "area-height" => (Document([Paragraph("x")], PageSetup.A4.Header(Paragraph("h"), length)).FontFamily("Lato"), DocumentErrorCodes.Input.Invalid.Length),
