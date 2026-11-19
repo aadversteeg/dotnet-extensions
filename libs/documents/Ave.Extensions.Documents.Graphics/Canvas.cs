@@ -59,11 +59,14 @@ public sealed class Canvas
     /// Where the edges of the image's pixels fall is computed in double precision from those terms, and each product and
     /// sum rounds by at most 2^-53 of its size; with the rounding of a caller who built the transform from a rectangle
     /// (a scale and an offset, two roundings more), an edge lies at most 6 · 2^-53 · reach from its exact place, which
-    /// within this limit is 2^-10.4 pixel: under a fifth of an 8-bit step where the colours on either side differ the
-    /// most. The same limit keeps the preimage of a device pixel at least 2^-40 image pixels wide, where the rounding of
-    /// its corners (2^-52 of the image coordinates) is at most 2^-12 of its size. Beyond it the error grows with the
-    /// reach (measured: a pixel edge 0.08 pixel off at a reach of 4.9 × 10^15, 5.3 pixels at 4.9 × 10^17), so an image
-    /// reaching farther is refused, not drawn wrong.
+    /// within this limit is 2^-10.4 pixel: for one edge, under a fifth of an 8-bit step where the colours on either side
+    /// differ the most. A pixel that several edges cross takes that from each: the worst measured is an image squeezed
+    /// nearly flat, thousands of its pixels inside one device pixel, at 0.822 of a step from the exact value (0.32 more
+    /// than the rounding to 8 bits alone); every other kind of transform measured at most 0.53. The same limit keeps the
+    /// preimage of a device pixel at least 2^-40 image pixels wide, where the rounding of its corners (2^-52 of the image
+    /// coordinates) is at most 2^-12 of its size. Beyond it the error grows with the reach (measured: a pixel edge 0.08
+    /// pixel off at a reach of 4.9 × 10^15, 5.3 pixels at 4.9 × 10^17), so an image reaching farther is refused, not
+    /// drawn wrong.
     /// </remarks>
     public const double MaxImageReach = 1L << 40;
 

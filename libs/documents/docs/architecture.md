@@ -207,6 +207,12 @@ correct in theory and visibly different from every PDF viewer, so it is not done
 coloured squares (PDF's `/Interpolate false`), each device pixel showing the mean of the image over the part it covers;
 a JPEG's three components are YCbCr unless an Adobe marker says otherwise, as DCTDecode reads them.
 
+**What exact coverage costs.** Measured on the development host against the code before it, which drew every pixel
+from the integral alone: the sample documents take 1.0 to 1.6 times as long at 96 dpi (the timesheets 1.2 to 1.6, the
+other samples 1.0 to 1.3) and 1.0 to 1.24 times as long at 300 dpi; every glyph of a font filled on its own at 12
+pixels per em takes 1.7 to 2.6 times as long. Small text costs the most; at a higher resolution fewer pixels hold more
+than one edge.
+
 **Arguments of the graphics library.** One rule for every public member of `Ave.Extensions.Documents.Graphics`
 (`Canvas`, `Path`, `PathBuilder` and the types they take): a value it cannot draw with — not finite, out of range, a size
 that does not fit — is answered with a `Result` error with a `GraphicsErrorCodes` code (`Documents.Graphics.InvalidValue`,
@@ -265,24 +271,32 @@ no such items (`tools/reference/raster/README.md`). An enlarged image shows its 
 (ISO 32000-1 §8.9.5.3; PDF/A forbids asking for interpolation, ISO 19005-3 §6.2.8); some viewers smooth it. An image
 whose grid reaches farther than 2^40 device pixels from the origin (`Canvas.MaxImageReach`; at 96 dpi about
 8.25 × 10^11 pt) is refused: `Documents.Graphics.InvalidValue` from the canvas, `Documents.Raster.ImageOutOfReach` from
-the raster back-end; the PDF back-end writes such an image as the page model says. A fill whose exact coverage takes
-more work than a limit is refused the same way, before any of it is painted: the work of a pixel where contours may
-overlap grows with the cube of the pieces of edges in it, so `Canvas.MaxFillWork` (2^27 units for one fill),
-`Canvas.MaxCanvasWork` (2^28 units for all fills of one canvas, so of one page) and `Canvas.MaxRowPieces` (2^18
-pieces in the flagged pixels of one row) bound it; `Documents.Graphics.TooMuchWork` from the canvas and from the raster
+the raster back-end; the PDF back-end writes such an image as the page model says. The bound is the arithmetic of
+placing the image's pixel edges: each is computed from terms as large as the reach, each product and sum rounds by
+2^-53 of its size, so an edge lies at most 6 · 2^-53 · reach from its exact place, within the bound 2^-10.4 pixel (for
+one edge, under a fifth of an 8-bit step at full contrast; a pixel that several edges cross takes that from each, and
+the worst measured, an image squeezed nearly flat on the canvas, is 0.822 of a step from the exact value, every other
+kind of transform at most 0.53); the same bound keeps the rounding of a pixel's preimage below 2^-12 of its size.
+Measured beyond it, with numbers that are not round: an edge 0.08 pixel off at a reach of 4.9 × 10^15 pixels, 0.67 at
+4.9 × 10^16, 5.3 at 4.9 × 10^17; a rotated 61 × 43 image enlarged 10^13 times (reach 8.6 × 10^14) up to 3 steps off.
+Within it the tests draw images enlarged so far that a page shows a small part of one pixel, rotated, sheared or not,
+and get the exact areas (`Graphics/Canvas.cs`, `ImageResamplingTests`, `PageRasterizerTests`). The reach is counted
+from the page's origin, not from the page: (|x| + width) × resolution / 72 along x for an image's rectangle at x, and
+the same along y. So an image centred on the origin reaches 1.5 times its width and is refused from two thirds of the
+width an image that starts at the origin may have; and an image wholly off the page beyond the reach is refused
+although it would show nothing, where a rectangle at the same place is drawn, and the PDF back-end writes both
+(`RenderingTests`). A fill whose exact coverage takes more work than a limit is refused the same way, before any of it
+is painted: the work of a pixel where contours may overlap grows with the cube of the pieces of edges in it, so
+`Canvas.MaxFillWork` (2^27 units for one fill), `Canvas.MaxCanvasWork` (2^28 units for all fills of one canvas, so of
+one page) and `Canvas.MaxRowPieces` (2^18 pieces in the flagged pixels of one row) bound it; `Documents.Graphics.TooMuchWork` from the canvas and from the raster
 back-end, which reports a glyph's refused fill for its page. A two-sided pixel costs no units. Measured on the
 development host: the largest glyph of eight fonts at 12 pixels per em takes 248,985 units (539 times under the fill
 limit), the largest sample page 6.83 × 10^5 units at 96 dpi (393 times under the canvas limit); a fill at its limit
 takes about 1.7 s, a page at the canvas limit about 3.6 s; a thousand thin bars through one pixel ask 7.4 × 10^9 units
-and are refused in about 50 ms. The PDF back-end writes such
-a page as the page model says, and a viewer draws it with its own rasteriser. The bound is the arithmetic of
-placing the image's pixel edges: each is computed from terms as large as the reach, each product and sum rounds by
-2^-53 of its size, so an edge lies at most 6 · 2^-53 · reach from its exact place, within the bound 2^-10.4 pixel (under
-a fifth of an 8-bit step at full contrast); the same bound keeps the rounding of a pixel's preimage below 2^-12 of its
-size. Measured beyond it, with numbers that are not round: an edge 0.08 pixel off at a reach of 4.9 × 10^15 pixels,
-0.67 at 4.9 × 10^16, 5.3 at 4.9 × 10^17; a rotated 61 × 43 image enlarged 10^13 times (reach 8.6 × 10^14) up to 3 steps
-off. Within it the tests draw images enlarged so far that a page shows a small part of one pixel, rotated, sheared or
-not, and get the exact areas (`Graphics/Canvas.cs`, `ImageResamplingTests`, `PageRasterizerTests`). JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
+and are refused in about 50 ms. The PDF back-end writes such a page as the page model says, and a viewer draws it with
+its own rasteriser. A font whose licence forbids embedding (OS/2 fsType) is drawn by the raster back-end, since a PNG
+holds pixels and no font, and refused by the PDF back-end (`Documents.Pdf.Write.FontEmbeddingNotPermitted`), so
+`ToPng` draws a document that `ToPdf` refuses. JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
 PDF embeds them. Encoding a PNG costs more than drawing the page (about 50 ms at 96 dpi, 500 ms at 300 dpi for an A4
 page); speed is stage 5's work. Memory and time not yet bounded beyond the limits below: `ToPngPages` draws and keeps
 every page before it returns (about 35 MB per A4 page at 300 dpi); a damaged JPEG can cost the decoder hundreds of MB and
