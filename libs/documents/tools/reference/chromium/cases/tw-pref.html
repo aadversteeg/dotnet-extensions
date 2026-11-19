@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- col lengths in the automatic table layout, 10.5pt (14px): content narrower than the length, min-content wider,
+     the table squeezed below the lengths, every column with a length, beside auto columns, a spanning cell; each with
+     width: auto (class a) and width: 100% (class f). -->
+<style>body { font-size: 10.5pt; } table.f { width: 100%; }</style></head><body>
+<div id="w-narrow-a" style="width:300pt"><table id="narrow-a"><colgroup><col style="width:90pt"><col></colgroup><tr><td>short</td><td>a longer text</td></tr></table></div>
+<div id="w-narrow-f" style="width:300pt"><table id="narrow-f" class="f"><colgroup><col style="width:90pt"><col></colgroup><tr><td>short</td><td>a longer text</td></tr></table></div>
+<div id="w-wide-a" style="width:300pt"><table id="wide-a"><colgroup><col style="width:30pt"><col></colgroup><tr><td>one two three four</td><td>short</td></tr></table></div>
+<div id="w-wide-f" style="width:300pt"><table id="wide-f" class="f"><colgroup><col style="width:30pt"><col></colgroup><tr><td>one two three four</td><td>short</td></tr></table></div>
+<div id="w-squeeze-a" style="width:150pt"><table id="squeeze-a"><colgroup><col style="width:120pt"><col style="width:60pt"></colgroup><tr><td>short</td><td>one two three</td></tr></table></div>
+<div id="w-squeeze-f" style="width:150pt"><table id="squeeze-f" class="f"><colgroup><col style="width:120pt"><col style="width:60pt"></colgroup><tr><td>short</td><td>one two three</td></tr></table></div>
+<div id="w-squeeze-auto-a" style="width:200pt"><table id="squeeze-auto-a"><colgroup><col style="width:120pt"><col></colgroup><tr><td>short</td><td>alpha beta gamma delta epsilon</td></tr></table></div>
+<div id="w-squeeze-auto-f" style="width:200pt"><table id="squeeze-auto-f" class="f"><colgroup><col style="width:120pt"><col></colgroup><tr><td>short</td><td>alpha beta gamma delta epsilon</td></tr></table></div>
+<div id="w-squeeze-auto-min" style="width:100pt"><table id="squeeze-auto-min" class="f"><colgroup><col style="width:120pt"><col></colgroup><tr><td>short words</td><td>alpha beta gamma</td></tr></table></div>
+<div id="w-all-a" style="width:300pt"><table id="all-a"><colgroup><col style="width:60pt"><col style="width:30pt"><col style="width:90pt"></colgroup><tr><td>short</td><td>Supercalifragilistic</td><td>a longer text</td></tr></table></div>
+<div id="w-all-f" style="width:300pt"><table id="all-f" class="f"><colgroup><col style="width:60pt"><col style="width:30pt"><col style="width:90pt"></colgroup><tr><td>short</td><td>Supercalifragilistic</td><td>a longer text</td></tr></table></div>
+<div id="w-beside-a" style="width:300pt"><table id="beside-a"><colgroup><col style="width:30pt"><col><col></colgroup><tr><td>Supercalifragilistic</td><td>one</td><td>two words</td></tr></table></div>
+<div id="w-beside-f" style="width:300pt"><table id="beside-f" class="f"><colgroup><col style="width:30pt"><col><col></colgroup><tr><td>Supercalifragilistic</td><td>one</td><td>two words</td></tr></table></div>
+<div id="w-span-a" style="width:300pt"><table id="span-a"><colgroup><col style="width:60pt"><col><col></colgroup><tr><td colspan="2">a much wider heading over both columns</td><td>third</td></tr><tr><td>one</td><td>two</td><td>x</td></tr></table></div>
+<div id="w-span-f" style="width:300pt"><table id="span-f" class="f"><colgroup><col style="width:60pt"><col><col></colgroup><tr><td colspan="2">a much wider heading over both columns</td><td>third</td></tr><tr><td>one</td><td>two</td><td>x</td></tr></table></div>
+<div id="w-span-min" style="width:150pt"><table id="span-min"><colgroup><col style="width:60pt"><col></colgroup><tr><td colspan="2">Supercalifragilisticexpialidocious</td></tr><tr><td>a</td><td>b</td></tr></table></div>
+<div id="w-span-pref" style="width:300pt"><table id="span-pref"><colgroup><col style="width:60pt"><col style="width:30pt"></colgroup><tr><td colspan="2">Supercalifragilisticexpialidocious and more</td></tr><tr><td>a</td><td>b</td></tr></table></div>
+</body></html>

@@ -1,0 +1,80 @@
+div 300.000 18.234 w-narrow-a
+table 157.113 18.234 narrow-a
+td 90.000 17.484 short
+td 66.363 17.484 a longer text
+div 300.000 18.234 w-narrow-f
+table 300.000 18.234 narrow-f
+td 90.000 17.484 short
+td 209.250 17.484 a longer text
+div 300.000 56.484 w-wide-a
+table 66.504 56.484 wide-a
+td 33.059 55.734 one two three four
+td 32.695 55.734 short
+div 300.000 56.484 w-wide-f
+table 300.000 56.484 wide-f
+td 33.059 55.734 one two three four
+td 266.191 55.734 short
+div 150.000 30.984 w-squeeze-a
+table 150.000 30.984 squeeze-a
+td 96.492 30.234 short
+td 52.758 30.234 one two three
+div 150.000 30.984 w-squeeze-f
+table 150.000 30.984 squeeze-f
+td 96.492 30.234 short
+td 52.758 30.234 one two three
+div 199.992 43.734 w-squeeze-auto-a
+table 199.992 43.734 squeeze-auto-a
+td 120.000 42.984 short
+td 79.242 42.984 alpha beta gamma delta e
+div 199.992 43.734 w-squeeze-auto-f
+table 199.992 43.734 squeeze-auto-f
+td 120.000 42.984 short
+td 79.242 42.984 alpha beta gamma delta e
+div 99.996 43.734 w-squeeze-auto-min
+table 99.996 43.734 squeeze-auto-min
+td 57.340 42.984 short words
+td 41.906 42.984 alpha beta gamma
+div 300.000 18.234 w-all-a
+table 242.848 18.234 all-a
+td 60.000 17.484 short
+td 92.098 17.484 Supercalifragilistic
+td 90.000 17.484 a longer text
+div 300.000 18.234 w-all-f
+table 300.000 18.234 all-f
+td 74.156 17.484 short
+td 113.836 17.484 Supercalifragilistic
+td 111.258 17.484 a longer text
+div 300.000 18.234 w-beside-a
+table 176.238 18.234 beside-a
+td 92.098 17.484 Supercalifragilistic
+td 26.109 17.484 one
+td 57.281 17.484 two words
+div 300.000 18.234 w-beside-f
+table 300.000 18.234 beside-f
+td 92.098 17.484 Supercalifragilistic
+td 64.852 17.484 one
+td 142.301 17.484 two words
+div 300.000 35.719 w-span-a
+table 228.340 35.719 span-a
+td 197.203 17.484 a much wider heading ove
+td 30.387 17.484 third
+td 60.000 17.484 one
+td 137.203 17.484 two
+td 30.387 17.484 x
+div 300.000 35.719 w-span-f
+table 300.000 35.719 span-f
+td 255.867 17.484 a much wider heading ove
+td 43.383 17.484 third
+td 60.000 17.484 one
+td 195.867 17.484 two
+td 43.383 17.484 x
+div 150.000 35.719 w-span-min
+table 157.805 35.719 span-min
+td 157.055 17.484 Supercalifragilisticexpi
+td 60.000 17.484 a
+td 97.055 17.484 b
+div 300.000 48.469 w-span-pref
+table 157.805 48.469 span-pref
+td 157.055 30.234 Supercalifragilisticexpi
+td 104.695 17.484 a
+td 52.359 17.484 b
