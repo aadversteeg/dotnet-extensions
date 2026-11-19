@@ -374,10 +374,12 @@ public class WhiteSpaceTests
         Height(Collapse, "\n").Should().BeApproximately(25.5, 1e-6);
     }
 
-    [Fact]
-    public void A_tab_in_preserved_text_is_refused_with_a_message_that_says_tab_stops_are_not_built()
+    [Theory]
+    [InlineData(Preserve)]
+    [InlineData(BreakSpaces)]
+    public void A_tab_in_preserved_text_is_refused_with_a_message_that_says_tab_stops_are_not_built(WhiteSpaceCollapse mode)
     {
-        var laid = Laid(200, P(Preserve, "a\tb"));
+        var laid = Laid(200, P(mode, "a\tb"));
 
         laid.IsFailure.Should().BeTrue("tab stops are not built (Chromium moves the b to the next tab stop, case ws-tab)");
         laid.Error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.PreservedTab);
