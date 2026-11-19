@@ -60,10 +60,9 @@ internal readonly record struct CellPiece(double X0, double Y0, double X1, doubl
 /// clip box's side is an ordinary edge of a side (it counts as a piece of its kind), and the part of the cell outside the
 /// box has winding 0, which is then one of the two values; the integral over the cell is the area of the other one inside
 /// the box, and the rule is taken over the box's part of the cell (<see cref="AreaRasterizer"/>'s A · g(|a| / A)), exact
-/// for winding values 0 and ±1. The pieces looked at are the ones its flags counted, every piece in the closed cell,
-/// except a horizontal one on its top or bottom side, which is not kept; those on a side of the cell touch no point of
-/// the open cell, which is all the argument looks at, so counting them only makes a run or the gap harder to have, and
-/// leaving one out takes nothing from the argument. The gap is strict: two sides that touch or cross, or a side of no width (two
+/// for winding values 0 and ±1. The pieces looked at are every piece in the closed cell, the ones its flags counted;
+/// those on a side of the cell touch no point of the open cell, which is all the argument looks at, so counting them
+/// only makes a run or the gap harder to have. The gap is strict: two sides that touch or cross, or a side of no width (two
 /// coinciding edges), are not two-sided. The pieces and their directions are the ones the flags are made from
 /// (<see cref="AreaRasterizer"/>, an end of an edge at its own point); the integral takes the interpolated ends, which
 /// differ from those by a rounding, so the cell is exact to the rounding of doubles, as every clean cell is: a gap the
@@ -182,8 +181,7 @@ internal sealed class CellFlags
 
     /// <summary>True when a flagged cell's pieces are two sides apart, so that its integral gives its coverage (see the
     /// class remarks) and it needs no arrangement.</summary>
-    /// <param name="pieces">The pieces of the cell its flags counted, but for horizontal ones on its top or bottom
-    /// side.</param>
+    /// <param name="pieces">All pieces of the cell, as its flags counted them.</param>
     /// <returns>Whether it is two-sided.</returns>
     public static bool IsTwoSided(ReadOnlySpan<CellPiece> pieces)
     {
