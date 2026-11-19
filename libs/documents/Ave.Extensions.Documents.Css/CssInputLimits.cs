@@ -38,9 +38,13 @@ public static class CssInputLimits
     /// refused.</summary>
     public const int MaxSubstitutionLength = 1 << 21;
 
-    /// <summary>The most text all <c>var()</c> substitutions of one cascade make together: 64 MiB, 32 times the largest
-    /// single value. Past the limit the style resolution fails (<see cref="CssErrorCodes.TooLarge"/>).</summary>
-    public const long MaxSubstitutionWork = 1L << 26;
+    /// <summary>The most text all <c>var()</c> substitutions of one cascade make together: 8 MiB (8 388 608 characters),
+    /// 4 times the largest single value. Past the limit the style resolution fails (<see cref="CssErrorCodes.TooLarge"/>).
+    /// Set from measurement: the most costly shape found per character, a sheet of under 1 KB that doubles a value to
+    /// 1 MiB and nests elements that each have custom properties of their own and keep that value as their font-family,
+    /// ends at this limit within about one second of processor time and 330 MB; the documents of the family's corpora use
+    /// at most 58 characters.</summary>
+    public const long MaxSubstitutionWork = 1L << 23;
 
     /// <summary>The deepest nesting of selectors: 32 levels of :is(), :where(), :not(), :has(), :nth-child(of S),
     /// :host() and ::slotted() arguments and of nested style rules (CSS Nesting 1) together. Selector matching recurses

@@ -1,4 +1,5 @@
 using System.Text;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css;
 using Ave.Extensions.Documents.Css.Cascade;
 using Ave.Extensions.Documents.Css.Properties;
@@ -58,7 +59,7 @@ public class CascadeWorkTests
         CssInputLimits.MaxCascadeMemo.Should().Be(1 << 22);
         CssInputLimits.MaxCascadeEntries.Should().Be(1 << 21);
         CssInputLimits.MaxStyleSheets.Should().Be(1024);
-        CssInputLimits.MaxSubstitutionWork.Should().Be(1L << 26);
+        CssInputLimits.MaxSubstitutionWork.Should().Be(1L << 23);
         var budget = new CascadeBudget();
         (budget.MaxWork, budget.MaxMemo, budget.MaxEntries, budget.MaxStyleSheets, budget.MaxSubstitution)
             .Should().Be((CssInputLimits.MaxCascadeWork, (long)CssInputLimits.MaxCascadeMemo, CssInputLimits.MaxCascadeEntries, CssInputLimits.MaxStyleSheets, CssInputLimits.MaxSubstitutionWork));
@@ -171,6 +172,38 @@ public class CascadeWorkTests
             Values(result.Value).Should().Be(expected, $"memo {memo} of {budget.Memo}");
             result.Value.Diagnostics.Select(error => error.Message).Should().Equal(full.Value.Diagnostics.Select(error => error.Message), $"memo {memo} of {budget.Memo}");
         }
+    }
+
+    [Fact]
+    public void The_resolution_fails_at_exactly_the_substitution_limit()
+    {
+        // Each div has custom properties of its own, so each substitutes --b itself: the work grows with the divs.
+        var html = Doc(":root{--a:abcdefghij;--b:var(--a) var(--a)} div{--c:var(--b);color:var(--nope, red)}", Repeat("<div style='--z:1'>", 20));
+        var (full, budget) = Counted(html);
+        full.IsSuccess.Should().BeTrue();
+        var spent = budget.Substituted;
+
+        Counted(html, new CascadeBudget { MaxSubstitution = spent }).Result.IsSuccess.Should().BeTrue();
+        var refused = Counted(html, new CascadeBudget { MaxSubstitution = spent - 1 }).Result;
+        refused.Error.Code.Should().Be(CssErrorCodes.TooLarge);
+        refused.Error.Message.Should().Contain($"more than {spent - 1} characters");
+        refused.Error.Metadata![ErrorMetadataKeys.Value].Should().Be(spent - 1);
+    }
+
+    [Fact]
+    public void A_small_sheet_whose_substitutions_pass_the_limit_ends_the_resolution_with_an_error_that_names_it()
+    {
+        // Under 1 KB of style sheet: --a19 is 2^20 - 1 characters made by doubling, and each of 16 nested divs, with a
+        // custom property of its own, substitutes it again: 16 MiB, twice the limit.
+        var css = ":root{--a0:a;" + string.Concat(Enumerable.Range(1, 19).Select(i => $"--a{i}:var(--a{i - 1}) var(--a{i - 1});")) + "} div{--c:var(--a19)}";
+        var body = string.Concat(Enumerable.Range(0, 16).Select(i => $"<div style='--z:{i}'>"));
+
+        var error = Refused(Doc(css, body), Warn);
+
+        css.Length.Should().BeLessThan(1_000);
+        error.Code.Should().Be(CssErrorCodes.TooLarge);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be(CssInputLimits.MaxSubstitutionWork);
+        error.Message.Should().Contain($"more than {CssInputLimits.MaxSubstitutionWork} characters");
     }
 
     [Fact]

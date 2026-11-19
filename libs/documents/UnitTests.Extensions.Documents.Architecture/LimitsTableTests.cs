@@ -55,7 +55,7 @@ public class LimitsTableTests
         ["style sheets of one cascade"] = ("1 024: the user-agent sheet, style elements, linked and imported sheets; a sheet taken in twice counts twice", [C("Css", "Css.CssInputLimits", "MaxStyleSheets", 1_024)]),
         ["one var() substitution"] = ("2 097 152 characters of text, Chromium 159's limit (measured); the value it makes nests at most 64 levels",
             [C("Css", "Css.CssInputLimits", "MaxSubstitutionLength", 2_097_152), C("Css", "Css.CssInputLimits", "MaxDepth", 64)]),
-        ["all var() substitutions of one cascade"] = ("2^26 characters", [C("Css", "Css.CssInputLimits", "MaxSubstitutionWork", 1L << 26)]),
+        ["all var() substitutions of one cascade"] = ("2^23 characters", [C("Css", "Css.CssInputLimits", "MaxSubstitutionWork", 1L << 23)]),
         ["diagnostics of one style sheet, one cascade, one resolution"] = ("10 000 kept; each quotes at most 100 characters of one value from the input, with `…` where it is cut",
             [C("Css", "Css.CssInputLimits", "MaxDiagnostics", 10_000), C("Html.Parsing", "Html.Parsing.HtmlInputLimits", "MaxDiagnostics", 10_000),
              C("Css", "Css.Syntax.CssSerializer", "MaxQuotedCharacters", 100), C("Html", "Html.InputQuote", "MaxCharacters", 100)]),
