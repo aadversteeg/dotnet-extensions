@@ -9,7 +9,7 @@ namespace UnitTests.Extensions.Documents.Architecture;
 /// <summary>
 /// Until stage 4 the code front-end (Fluent) keeps its own cascade and its own user-agent facts next to the HTML
 /// front-end's property registry and style sheet (docs/architecture.md, known limits of stage 3). These tests tie the
-/// facts both hold, so they cannot drift apart before stage 4 reads one set (review 39 R-1).
+/// facts both hold, so they cannot drift apart before stage 4 reads one set.
 /// </summary>
 public class FrontEndFactsTests
 {

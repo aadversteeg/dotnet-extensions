@@ -231,18 +231,19 @@ minimum (`0.1.0-preview.2`, a version they never had); set it to their first ver
    and Graphics);
 4. `documents`.
 
-From the merge of this stage until step 4 is done, the documents rows of "Release mode (main only)" that are red are
-these, and only these (measured with the job's steps on the branch): the libraries `Ave.Extensions.Documents.Render.Pdf`
+From the merge of this stage until step 4 is done, the documents rows of "Release mode (main only)" that this stage
+turns red are these, and only these (measured with the job's steps on the branch): the libraries `Ave.Extensions.Documents.Render.Pdf`
 (it needs `PageModelRules` from the new PageModel), `Ave.Extensions.Documents.Render.Raster` (Graphics is not on
 nuget.org) and `Ave.Extensions.Documents` (Render.Raster is not), and the test projects
 `UnitTests.Extensions.Documents.Render.Pdf` and `UnitTests.Extensions.Documents.Samples`, for the same reasons. The
 release-mode tests of Core, DocumentModel, Graphics, Layout, Pdf and Typesetting stay green: the shared test helper
 `Ave.Extensions.Documents.TestSupport` uses only API that is already on nuget.org, so the packages this stage does not
-change can still be released in between.
+change can still be released in between. The packages of stage 3 (next section) and their test projects are red as
+well until their own wave is done.
 
-## The HTML and CSS front-end of the documents family (M2)
+## The HTML and CSS front-end of the documents family (milestone M2, stage 3)
 
-Milestone M2 adds three packages to the documents family:
+Stage 3 adds three packages to the documents family:
 
 | Tag name | Package | Needs |
 |---|---|---|
@@ -257,6 +258,11 @@ it. So their first release is one wave of three steps:
 2. once it is on nuget.org, a pull request that raises the minimum version of `Ave.Extensions.Documents.Core` in
    `Directory.Packages.props` to it, then `documents-html-parsing` and `documents-css` (in any order);
 3. `documents-html`.
+
+The three packages are in `Directory.Packages.props` with a placeholder minimum (`0.1.0-preview.2`, a version they
+never had); set it to their first version when they are released. They also need a Core that has
+`ErrorMetadataKeys.Refusals` (the count of refusals a summary diagnostic carries), which M2 adds as well, so the new
+release of `documents-core` in step 1 must be made from a commit that has it.
 
 The minimum is not raised before the new Core is on nuget.org: release mode would then restore a Core that does not
 exist. Until the wave is done, the CI job "Release mode (main only)" is red for the three new packages on `main`: in

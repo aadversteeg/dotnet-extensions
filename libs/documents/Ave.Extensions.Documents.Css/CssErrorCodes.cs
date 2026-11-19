@@ -13,14 +13,15 @@ namespace Ave.Extensions.Documents.Css;
 /// <list type="bullet">
 /// <item><see cref="Parse"/>: a syntax error CSS Syntax 3 recovers from; and <see cref="Invalid"/>: the few things
 /// above CSS Syntax 3 that the engine knows Chromium drops as well (a rule in the wrong place, another engine's
-/// property, a <c>var()</c> cycle). The result is the browser's, so these are warnings.</item>
+/// property). The result is the browser's, so these are warnings.</item>
 /// <item><see cref="Ignored"/>: something valid that has no effect in a static paged document (<c>cursor</c>, a
 /// transition, <c>:hover</c>); listed, not refused.</item>
 /// <item><see cref="Unsupported"/>: valid CSS this engine does not implement, and input above CSS Syntax 3 that the
 /// engine cannot read: a value that does not match its grammar of a known property, a selector or media query that
 /// does not parse, an unknown at-rule. That input is either invalid (a browser drops it) or valid CSS beyond this
 /// profile (a browser uses it); the engine cannot tell which, so its one answer is "not valid or not supported in
-/// this profile". And <see cref="TooLarge"/> and <see cref="TooDeep"/>: input past the reader's limits. A front-end
+/// this profile". Also a cycle of <c>var()</c> references, which Chromium does not resolve as CSS Variables 1 says
+/// (<see cref="Unsupported.Value"/>). And <see cref="TooLarge"/> and <see cref="TooDeep"/>: input past the reader's limits. A front-end
 /// refuses the document by default, because the result could differ from a browser's.</item>
 /// </list>
 /// </remarks>
@@ -138,15 +139,16 @@ public static class CssErrorCodes
         public static readonly ErrorCode ColorFunction = _ / "ColorFunction";
     }
 
-    /// <summary>Input past one of the work limits of <see cref="CssInputLimits"/>: a style sheet longer than
-    /// <see cref="CssInputLimits.MaxCharacters"/>, more imported style sheets than
-    /// <see cref="CssInputLimits.MaxImportedSheets"/>, more selector matching than
-    /// <see cref="CssInputLimits.MaxMatchingWork"/>, more substitution than
-    /// <see cref="CssInputLimits.MaxSubstitutionWork"/>, or a substitution too close to Chromium's limit to tell. A
-    /// refusal: a browser would have read it. Metadata: Value (the limit), SourceFile.</summary>
+    /// <summary>Input past one of the limits of <see cref="CssInputLimits"/>: a style sheet longer than
+    /// <see cref="CssInputLimits.MaxCharacters"/>, more style sheets than <see cref="CssInputLimits.MaxStyleSheets"/>,
+    /// more index entries than <see cref="CssInputLimits.MaxCascadeEntries"/>, more cascade work than
+    /// <see cref="CssInputLimits.MaxCascadeWork"/>, more substitution than <see cref="CssInputLimits.MaxSubstitutionWork"/>,
+    /// or a substitution too close to Chromium's limit to tell. The reader stops there: the result is this error, in
+    /// every mode. Metadata: Value (the limit), SourceFile.</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
 
-    /// <summary>Blocks, functions or nested rules deeper than <see cref="CssInputLimits.MaxDepth"/>. A refusal, as
-    /// <see cref="TooLarge"/>. Metadata: Value (the limit), SourceFile, SourceLine, SourceColumn.</summary>
+    /// <summary>Blocks, functions or nested rules deeper than <see cref="CssInputLimits.MaxDepth"/> (also a value nested
+    /// that deep by var() substitution), or selectors nested deeper than <see cref="CssInputLimits.MaxSelectorNesting"/>.
+    /// The reader stops there, as for <see cref="TooLarge"/>. Metadata: Value (the limit), SourceFile, SourceLine, SourceColumn.</summary>
     public static readonly ErrorCode TooDeep = _ / "TooDeep";
 }

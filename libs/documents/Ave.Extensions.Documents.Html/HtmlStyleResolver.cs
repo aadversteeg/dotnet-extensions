@@ -35,7 +35,9 @@ public static class HtmlStyleResolver
     /// <summary>Resolves the styles of a document.</summary>
     /// <param name="parsed">The document, as the HTML parser gave it.</param>
     /// <param name="options">The media, values, resources, base URL and policy.</param>
-    /// <returns>The styled document; or, under <see cref="UnsupportedPolicy.Refuse"/>, the refusals.</returns>
+    /// <returns>The styled document; or, under <see cref="UnsupportedPolicy.Refuse"/>, the refusals; or, under either
+    /// policy, the first limit of the readers that was reached (<c>TooLarge</c>, <c>TooDeep</c>): resolution stops
+    /// there and returns no partly styled document.</returns>
     public static Result<StyledHtmlDocument, Error> Resolve(HtmlParseResult parsed, HtmlStyleOptions options)
     {
         // The parser always makes the html element; a document made in code may have none, and nothing to style.
@@ -46,7 +48,11 @@ public static class HtmlStyleResolver
         }
 
         var run = new Run(parsed, options);
-        var styled = run.Resolve();
+        if (run.Resolve() is not { } styled)
+        {
+            return Result<StyledHtmlDocument, Error>.Failure(run.Limit!.Value);
+        }
+
         var refusals = styled.Diagnostics.Where(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal).ToList();
         return options.Unsupported == UnsupportedPolicy.Refuse && refusals.Count > 0
             ? Result<StyledHtmlDocument, Error>.Failure(refusals.Count == 1 ? refusals[0] : Errors.Aggregate(refusals))
@@ -57,7 +63,7 @@ public static class HtmlStyleResolver
     internal static readonly string[] FormControls = ["input", "button", "select", "textarea", "meter", "progress"];
 
     /// <summary>The HTML elements outside v0 that Chromium 159 styles with rules or a layout of their own the engine does
-    /// not have (measured, review 39 F3): refused wherever they are, with the reason.</summary>
+    /// not have (measured): refused wherever they are, with the reason.</summary>
     internal static readonly IReadOnlyDictionary<string, string> OutsideProfile = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["details"] = "a disclosure widget (its marker and its closed content)",
@@ -71,6 +77,8 @@ public static class HtmlStyleResolver
         ["iframe"] = "an embedded document",
         ["object"] = "an embedded document or plug-in",
         ["noscript"] = "the engine runs no scripts, and a browser that does hides its content",
+        ["fencedframe"] = "an embedded document",
+        ["geolocation"] = "a permission control",
     };
 
     /// <summary>The script types a browser runs (HTML Standard §4.12.1.1: no type, a JavaScript MIME type, module,
@@ -86,8 +94,10 @@ public static class HtmlStyleResolver
     /// <summary>One resolution: the diagnostics, the base URLs of the style sheets, the resources fetched.</summary>
     private sealed class Run(HtmlParseResult parsed, HtmlStyleOptions options)
     {
-        private readonly List<Error> _diagnostics = [.. parsed.Diagnostics];
+        private readonly List<Error> _diagnostics = [];
         private int _suppressed;
+        private int _suppressedRefusals;
+        private Error? _firstSuppressedRefusal;
         private readonly HashSet<int> _renamed = [];
         private readonly Dictionary<StyleSheet, string?> _baseOf = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, StyleSheet?> _fetched = new(StringComparer.Ordinal);
@@ -95,10 +105,14 @@ public static class HtmlStyleResolver
         private string? _documentBase;
         private HtmlElement? _body;
 
+        /// <summary>The first limit reached: resolution stops at it.</summary>
+        public Error? Limit { get; private set; }
+
         /// <summary>Collects the style sheets in tree order, builds the cascade index and computes every element's
         /// style, parents first.</summary>
-        public StyledHtmlDocument Resolve()
+        public StyledHtmlDocument? Resolve()
         {
+            Keep(parsed.Diagnostics);
             var document = parsed.Document;
             if (document.Mode == DocumentMode.Quirks)
             {
@@ -113,29 +127,56 @@ public static class HtmlStyleResolver
 
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
             sheets.AddRange(AuthorSheets(elements).Select(sheet => new CascadeSheet(sheet, CascadeOrigin.Author)));
-            var index = CascadeIndex.Build(sheets, options.Media, Import);
-            Keep(index.Diagnostics);
+            if (Limit is not null)
+            {
+                return null;
+            }
 
-            var computer = new StyleComputer(index.Value, options.Values);
+            if (ReadOrNull(CascadeIndex.Build(sheets, options.Media, Import)) is not { } index)
+            {
+                return null;
+            }
+
+            var computer = new StyleComputer(index, options.Values);
             var language = DefaultLanguage(elements);
-            var root = Style(tree, computer, language);
+            if (Style(tree, computer, language) is not { } root)
+            {
+                Keep(computer.Diagnostics.Where((_, i) => !_renamed.Contains(i)));
+                return null;
+            }
+
             Keep(computer.Diagnostics.Where((_, i) => !_renamed.Contains(i)));
-            return new StyledHtmlDocument(document, root, index.Value.FontFaces, index.Value.PageRules, Capped(_diagnostics), _sourceName);
+            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) : null;
         }
 
         /// <summary>Keeps a diagnostic, at most <see cref="HtmlInputLimits.MaxDiagnostics"/> in all (the parts are capped
         /// each, their sum is capped here); the rest are counted.</summary>
         private void Keep(Error error)
         {
+            if (error.Code == DocumentErrorCodes.TooManyDiagnostics)
+            {
+                // A part's own summary: its counts join these, so the last summary counts everything left out.
+                _suppressed += Count(error, ErrorMetadataKeys.Value, 1);
+                _suppressedRefusals += Count(error, ErrorMetadataKeys.Refusals, 0);
+                return;
+            }
+
             if (_diagnostics.Count < HtmlInputLimits.MaxDiagnostics)
             {
                 _diagnostics.Add(error);
+                return;
             }
-            else
+
+            _suppressed++;
+            if (HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal)
             {
-                _suppressed++;
+                _suppressedRefusals++;
+                _firstSuppressedRefusal ??= error;
             }
         }
+
+        private static int Count(Error error, string key, int otherwise) =>
+            error.Metadata is { } metadata && metadata.TryGetValue(key, out var value) && value is int count ? count : otherwise;
 
         private void Keep(IEnumerable<Error> errors)
         {
@@ -145,8 +186,9 @@ public static class HtmlStyleResolver
             }
         }
 
-        /// <summary>What the CSS reader read, its diagnostics kept; or, when it failed (past its limits, an encoding
-        /// not decoded), the error kept, a refusal, and <paramref name="none"/> in its place.</summary>
+        /// <summary>What the CSS reader read, its diagnostics kept; or, when it failed, <paramref name="none"/> in its
+        /// place and the error kept: an encoding it does not decode is a refusal (its branch is Unsupported), any other
+        /// failure is a limit (TooLarge, TooDeep), where resolution stops (<see cref="Limit"/>).</summary>
         private T Read<T>(Result<CssResult<T>, Error> result, T none) =>
             result.Match(
                 read =>
@@ -157,6 +199,11 @@ public static class HtmlStyleResolver
                 error =>
                 {
                     Keep(error);
+                    if (!error.Code.IsChildOf(CssErrorCodes.Unsupported._))
+                    {
+                        Limit ??= error;
+                    }
+
                     return none;
                 });
 
@@ -168,9 +215,25 @@ public static class HtmlStyleResolver
         private ValueList<Error> Capped(List<Error> diagnostics) =>
             _suppressed == 0
                 ? [.. diagnostics]
-                : [.. diagnostics, new Error(DocumentErrorCodes.TooManyDiagnostics, $"{_suppressed} more diagnostics are left out: {HtmlInputLimits.MaxDiagnostics} are kept.")
+                : [.. diagnostics, new Error(DocumentErrorCodes.TooManyDiagnostics,
+                        $"{_suppressed} more diagnostics are left out, {_suppressedRefusals} of them refusals{(_firstSuppressedRefusal is { } first ? $" (the first: {first.Message})" : string.Empty)}; {HtmlInputLimits.MaxDiagnostics} are kept.")
                     .With(ErrorMetadataKeys.Value, _suppressed)
+                    .With(ErrorMetadataKeys.Refusals, _suppressedRefusals)
                     .With(ErrorMetadataKeys.SourceFile, _sourceName)];
+
+        /// <summary>The start tag as the author wrote it, with its first attributes (a user-agent rule may select the
+        /// element by one of them, as <c>[dir=rtl]</c> does): at most four, each value cut at 40 characters.</summary>
+        private static string StartTag(HtmlElement html)
+        {
+            var tag = new System.Text.StringBuilder("<").Append(html.LocalName);
+            foreach (var attribute in html.Attributes.Take(4))
+            {
+                var value = attribute.Value.Length > 40 ? attribute.Value[..40] + "…" : attribute.Value;
+                tag.Append(' ').Append(attribute.LocalName).Append("=\"").Append(value).Append('"');
+            }
+
+            return tag.Append(html.Attributes.Count > 4 ? " …>" : ">").ToString();
+        }
 
         private static IEnumerable<StyleElement> Descendants(StyleElement root)
         {
@@ -189,42 +252,133 @@ public static class HtmlStyleResolver
 
         // ---- the styled tree ----
 
-        /// <summary>Styles an element and its subtree, parents first (the computer needs the parent's style).
-        /// Recursive: the parser limits the depth (HtmlInputLimits.MaxDepth).</summary>
-        private StyledElement Style(StyleElement element, StyleComputer computer, string? inheritedLanguage, bool hidden = false)
+        /// <summary>Styles an element and its subtree, parents first (the computer needs the parent's style). Without
+        /// recursion: the elements being styled are kept on a stack of their own, so the depth of the document costs no
+        /// thread stack.</summary>
+        private StyledElement? Style(StyleElement root, StyleComputer computer, string? rootLanguage)
+        {
+            var open = new Stack<Open>();
+            if (Begin(root, computer, rootLanguage, hidden: false) is not { } top)
+            {
+                return null;
+            }
+
+            open.Push(top);
+            while (true)
+            {
+                var current = open.Peek();
+                var html = current.Element.Element;
+                if (current.NextChild < html.Children.Count)
+                {
+                    switch (html.Children[current.NextChild++])
+                    {
+                        case HtmlElement:
+                            if (Begin(current.Element.Children[current.NextElement++], computer, current.Language, current.Hidden) is not { } child)
+                            {
+                                return null;
+                            }
+
+                            open.Push(child);
+                            break;
+                        case HtmlText text:
+                            current.Children.Add(new StyledText(text, current.Style));
+                            break;
+                    }
+
+                    continue;
+                }
+
+                open.Pop();
+                var styled = new StyledElement(html, current.Style, current.Language, [.. current.Children]);
+                if (open.Count == 0)
+                {
+                    return styled;
+                }
+
+                open.Peek().Children.Add(styled);
+            }
+        }
+
+        /// <summary>Computes an element's style, refuses it where it is outside v0, and opens it for its children; null
+        /// at a limit (kept in <see cref="Limit"/>).</summary>
+        private Open? Begin(StyleElement element, StyleComputer computer, string? inheritedLanguage, bool hidden)
         {
             var html = element.Element;
             var own = OwnDeclarations(element);
             var mark = computer.DiagnosticCount;
-            var style = computer.Compute(element, own);
-            hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
-            var refused = RefuseElement(html, hidden);
-            NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
-
-            var language = Language(html) ?? inheritedLanguage;
-            var children = new List<StyledNode>();
-            var next = 0;
-            foreach (var child in html.Children)
+            var computed = computer.Compute(element, own);
+            if (computed.IsFailure || Limit is not null)
             {
-                switch (child)
+                if (computed.IsFailure)
                 {
-                    case HtmlElement:
-                        children.Add(Style(element.Children[next++], computer, language, hidden));
-                        break;
-                    case HtmlText text:
-                        children.Add(new StyledText(text, style));
-                        break;
+                    // The computer fails only at a limit of the cascade.
+                    Keep(computed.Error);
+                    Limit ??= computed.Error;
+                }
+
+                return null;
+            }
+
+            var style = computed.Value;
+            if (html.IsHtml("img") && IsSizedInline(style) && Image(html, out var source) is var image && image != ImageState.There)
+            {
+                RefuseBrokenImage(element, source);
+                if (image == ImageState.Unknown && FallbackLosesItsSizes(html, style))
+                {
+                    // Bytes the engine does not read as an image (a GIF, an SVG, or no image at all; or no resolver to
+                    // ask): Chromium keeps the sizes when it shows them, and makes them auto when it does not.
+                    RefuseUnknownImage(html, source);
+                }
+                else if (image == ImageState.Missing && FallbackLosesItsSizes(html, style))
+                {
+                    // Computed again with the three sizes auto as the last important declarations of the style
+                    // attribute, which no author rule overrides (CSS Cascade 5 §6.2, element-attached declarations):
+                    // the same element and declarations, so no new diagnostic; at most once per img.
+                    computed = computer.Compute(element, own with { StyleAttribute = [.. own.StyleAttribute, .. AutoSizes()] });
+                    if (computed.IsFailure)
+                    {
+                        Keep(computed.Error);
+                        Limit ??= computed.Error;
+                        return null;
+                    }
+
+                    style = computed.Value;
                 }
             }
 
-            return new StyledElement(html, style, language, [.. children]);
+            hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
+            var refused = RefuseElement(element, hidden);
+            NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
+            return new Open(element, style, Language(element) ?? inheritedLanguage, hidden);
+        }
+
+        /// <summary>An element whose children are being styled: its style, language, whether it is hidden, the styled
+        /// children so far, and where the walk of its children is.</summary>
+        private sealed class Open(StyleElement element, ComputedStyle style, string? language, bool hidden)
+        {
+            public StyleElement Element { get; } = element;
+
+            public ComputedStyle Style { get; } = style;
+
+            public string? Language { get; } = language;
+
+            public bool Hidden { get; } = hidden;
+
+            public List<StyledNode> Children { get; } = [];
+
+            /// <summary>The next of the element's child nodes.</summary>
+            public int NextChild { get; set; }
+
+            /// <summary>The next of its element children (<see cref="StyleElement.Children"/>).</summary>
+            public int NextElement { get; set; }
         }
 
         /// <summary>Refuses an element outside v0 at its start tag: a form control that would be drawn, an element of
         /// <see cref="OutsideProfile"/>, an svg or math element (their own matching and style rules), a script a
         /// browser would run, an event handler attribute. True when the element itself is refused.</summary>
-        private bool RefuseElement(HtmlElement html, bool hidden)
+        private bool RefuseElement(StyleElement element, bool hidden)
         {
+            var html = element.Element;
             void Refuse(ErrorCode code, string message, string value) =>
                 Keep(new Error(code, message).With(ErrorMetadataKeys.Value, value).WithSource(_sourceName, html.Position));
 
@@ -249,18 +403,198 @@ public static class HtmlStyleResolver
                     break;
             }
 
-            foreach (var attribute in html.Attributes)
+            if (html.Namespace == ElementNamespace.Html)
             {
-                if (html.Namespace == ElementNamespace.Html && attribute.Namespace == AttributeNamespace.None
-                    && attribute.LocalName.Length > 2 && attribute.LocalName.StartsWith("on", StringComparison.Ordinal))
-                {
-                    Keep(new Error(HtmlStyleErrorCodes.Unsupported.Script, $"The event handler attribute {attribute.LocalName} is not run: the engine runs no scripts, and a browser would run this one.")
-                        .With(ErrorMetadataKeys.Value, attribute.LocalName)
-                        .WithSource(_sourceName, attribute.Position));
-                }
+                RefuseAttributes(element);
+            }
+
+            var handlers = html.Namespace == ElementNamespace.Html ? element.Attributes.EventHandlers : [];
+            if (_diagnostics.Count >= HtmlInputLimits.MaxDiagnostics)
+            {
+                // Past the cap only the number counts: an element made again for a token with many handlers costs one step.
+                _suppressed += handlers.Count;
+                _suppressedRefusals += handlers.Count;
+                return refused;
+            }
+
+            foreach (var attribute in handlers)
+            {
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Script, $"The event handler attribute {InputQuote.Of(attribute.LocalName)} is not run: the engine runs no scripts, and a browser would run this one.")
+                    .With(ErrorMetadataKeys.Value, InputQuote.Of(attribute.LocalName))
+                    .WithSource(_sourceName, attribute.Position));
             }
 
             return refused;
+        }
+
+        /// <summary>Refuses the attributes of an HTML element that make Chromium 159 style the document by a rule the
+        /// engine does not keep, each measured:
+        /// <list type="bullet">
+        /// <item>a Content-Security-Policy pragma in head (§4.2.5.3; CSP 3 §6.1.4): its style-src, style-src-elem,
+        /// style-src-attr and default-src directives drop style elements, style attributes and linked sheets;</item>
+        /// <item>a color-scheme meta (§4.2.5.1) other than normal or light: <c>dark</c> makes the text white;</item>
+        /// <item>autofocus (§6.6.7): the element is focused, so it draws a focus ring and :focus matches;</item>
+        /// <item>the charset of a style sheet link (§4.6.7.20, obsolete): Chromium decodes the sheet by it.</item>
+        /// </list></summary>
+        private void RefuseAttributes(StyleElement element)
+        {
+            var html = element.Element;
+            void Refuse(string attribute, string why) =>
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute {attribute}=\"{InputQuote.Of(html.Attribute(attribute)!)}\" on {html.LocalName} {why}, which is not supported.")
+                    .With(ErrorMetadataKeys.Value, attribute)
+                    .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == attribute).Position));
+
+            if (html.LocalName == "meta" && html.Attribute("http-equiv") is { } equiv && InfraAscii.EqualsIgnoreCase(equiv.Trim(' ', '\t', '\n', '\f', '\r'), "content-security-policy")
+                && element.Parent?.Element.IsHtml("head") == true)
+            {
+                Refuse("http-equiv", "sets a Content-Security-Policy, which can drop style sheets and style attributes");
+            }
+
+            if (html.LocalName == "meta" && html.Attribute("name") is { } name && InfraAscii.EqualsIgnoreCase(name.Trim(' ', '\t', '\n', '\f', '\r'), "color-scheme")
+                && html.Attribute("content") is { } scheme && Keywords(scheme) is not ([] or ["normal"] or ["light"] or ["only", "light"] or ["light", "only"]))
+            {
+                Refuse("content", "sets the page's color scheme");
+            }
+
+            if (html.LocalName == "template" && html.Attribute("shadowrootmode") is not null)
+            {
+                // Chromium 159 attaches a declarative shadow root (HTML Standard §13.2.6.4.1, "allow declarative shadow
+                // roots"): the template's content is drawn in place of the host's children. The parser keeps a template.
+                Refuse("shadowrootmode", "makes a declarative shadow root, whose content Chromium draws in place of the host's children");
+            }
+
+            if (html.Attribute("autofocus") is not null)
+            {
+                Refuse("autofocus", "focuses the element (a focus ring, :focus and :focus-within match)");
+            }
+
+            if (html.LocalName == "link" && html.Attribute("charset") is { } charset && !InfraAscii.EqualsIgnoreCase(charset.Trim(' ', '\t', '\n', '\f', '\r'), "utf-8"))
+            {
+                Refuse("charset", "names the encoding of the linked style sheet");
+            }
+        }
+
+        /// <summary>The image signatures the engine decodes: PNG (8 bytes) and JPEG (the start-of-image marker).</summary>
+        private static readonly byte[][] ImageSignatures = [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], [0xFF, 0xD8, 0xFF]];
+
+        /// <summary>Whether an img's image is there: its bytes start as a PNG or a JPEG, the body of a <c>data:</c> URL
+        /// or what the caller's resolver gives for its src; whether they decode is checked when the image is read.</summary>
+        /// <summary>Whether an img's image is there, missing, or bytes the engine cannot tell: there is no src, an empty
+        /// one, a URL the resolver gives nothing for, or a <c>data:</c> URL of another type than an image, is missing;
+        /// a resource that is neither a PNG nor a JPEG (a GIF or an SVG Chromium shows, or no image at all), a data: URL
+        /// of an image type that is neither, or a URL with no resolver to ask, is unknown.</summary>
+        private ImageState Image(HtmlElement html, out string? source)
+        {
+            source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
+            if (string.IsNullOrEmpty(source))
+            {
+                return ImageState.Missing;
+            }
+
+            if (DataUrl.Body(source) is { } inline)
+            {
+                return IsImage(inline) ? ImageState.There
+                    : InfraAscii.ToLower(source[5..].Split(',', ';')[0].Trim(' ', '\t', '\n', '\f', '\r')).StartsWith("image/", StringComparison.Ordinal) ? ImageState.Unknown
+                    : ImageState.Missing;
+            }
+
+            if (Absolute(source, _documentBase) is not { } url)
+            {
+                return ImageState.Missing;
+            }
+
+            if (options.Resources is null)
+            {
+                return ImageState.Unknown;
+            }
+
+            if (!_images.TryGetValue(url, out var state))
+            {
+                state = options.Resources(url) is { } resource ? (IsImage(resource.Bytes) ? ImageState.There : ImageState.Unknown) : ImageState.Missing;
+                _images[url] = state;
+            }
+
+            return state;
+
+            static bool IsImage(ReadOnlyMemory<byte> bytes) => ImageSignatures.Any(signature => bytes.Span.StartsWith(signature));
+        }
+
+        private enum ImageState
+        {
+            There,
+            Missing,
+            Unknown,
+        }
+
+        /// <summary>What the resolver gave for an image, by URL: it is asked once per URL.</summary>
+        private readonly Dictionary<string, ImageState> _images = new(StringComparer.Ordinal);
+
+        /// <summary>Refuses an inline img with a size whose image the engine cannot tell is there, when Chromium would
+        /// make its sizes auto if it is not: the computed values depend on whether Chromium shows the image.</summary>
+        private void RefuseUnknownImage(HtmlElement html, string? source)
+        {
+            if (html.Attribute("alt") is { Length: > 0 })
+            {
+                return;
+            }
+
+            var at = html.Attributes.FirstOrDefault(item => item.LocalName == "src")?.Position ?? html.Position;
+            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{InputQuote.Of(source ?? string.Empty)}' is neither a PNG nor a JPEG image (or no resource resolver was given), so whether Chromium 159 shows it, with its width, height and aspect-ratio, or its fallback, where they compute to auto, is not known; that is not supported.")
+                .With(ErrorMetadataKeys.Value, "src")
+                .WithSource(_sourceName, at));
+        }
+
+        private static bool IsAuto(ComputedStyle style, string property) => style.Find(property) is Css.Values.CssKeyword { Name: "auto" };
+
+        /// <summary>Whether an element is inline and has a width, a height or an aspect-ratio: only then does a missing
+        /// image change its style.</summary>
+        private static bool IsSizedInline(ComputedStyle style) =>
+            style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "inline" }
+            && !(IsAuto(style, "width") && IsAuto(style, "height") && IsAuto(style, "aspect-ratio"));
+
+        /// <summary>Whether an inline img with a size whose image is not there loses its width, height and
+        /// aspect-ratio, as Chromium 159 computes them (measured; html_image_fallback_helper.cc, <c>AdjustHostStyle</c> and
+        /// <c>TreatImageAsReplaced</c>, read in the Chromium 150 source; HTML Standard §15.4.2): it shows its fallback (a src that is empty or names no
+        /// image, or alt text with no image; measured: no src, or a src of white space only, with no alt text is no
+        /// fallback), and it is not treated as a replaced element, which it is when it has no alt text and both a width
+        /// and a height, or an aspect-ratio and one of them. Its three sizes then compute to auto after the
+        /// cascade.</summary>
+        private static bool FallbackLosesItsSizes(HtmlElement html, ComputedStyle style)
+        {
+            var src = html.Attribute("src");
+            var hasAlt = html.Attribute("alt") is { Length: > 0 };
+            if (!hasAlt && src is not { Length: 0 } && (src is null || src.Trim(' ', '\t', '\n', '\f', '\r').Length == 0))
+            {
+                return false;
+            }
+
+            var width = !IsAuto(style, "width");
+            var height = !IsAuto(style, "height");
+            var ratio = !IsAuto(style, "aspect-ratio");
+            var replaced = !hasAlt && ((width && height) || (ratio && (width || height)));
+            return !replaced && (width || height || ratio);
+        }
+
+        /// <summary>width, height and aspect-ratio auto, important: read once per resolution.</summary>
+        private ValueList<Declaration> AutoSizes() =>
+            _autoSizes ??= Read(CssParser.ParseDeclarations("width: auto !important; height: auto !important; aspect-ratio: auto !important", new CssSourceOptions(_sourceName)), []);
+
+        private ValueList<Declaration>? _autoSizes;
+
+        /// <summary>Refuses an inline img with a size, alt text and no image: Chromium 159 then lays out the alt text
+        /// inline (measured: a missing, empty or unknown src, a resource that is not an image), which the engine does
+        /// not draw.</summary>
+        private void RefuseBrokenImage(StyleElement element, string? source)
+        {
+            var html = element.Element;
+            if (html.Attribute("alt") is not { Length: > 0 })
+            {
+                return;
+            }
+
+            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{InputQuote.Of(source ?? string.Empty)}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
+                .With(ErrorMetadataKeys.Value, "alt")
+                .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == "alt").Position));
         }
 
         /// <summary>Whether a browser runs a script element (HTML Standard §4.12.1.1, "prepare the script element"):
@@ -294,7 +628,7 @@ public static class HtmlStyleResolver
                 if (!refused)
                 {
                     var declaration = $"{error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Property)}: {error.Metadata?.GetValueOrDefault(ErrorMetadataKeys.Value)}";
-                    Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element, $"The element <{html.LocalName}> is not supported: its user-agent style '{declaration}' is outside this profile.")
+                    Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element, $"The element {StartTag(html)} is not supported: its user-agent style '{declaration}' is outside this profile.")
                         .With(ErrorMetadataKeys.Value, html.LocalName)
                         .WithSource(_sourceName, html.Position));
                 }
@@ -306,38 +640,64 @@ public static class HtmlStyleResolver
         private ElementDeclarations OwnDeclarations(StyleElement element)
         {
             ValueList<Declaration> inline = [];
-            if (element.Element.Attributes.FirstOrDefault(attribute => attribute.Namespace == AttributeNamespace.None && attribute.LocalName == "style") is { } style
-                && element.Element.Namespace is ElementNamespace.Html or ElementNamespace.Svg)
+            if (element.Attributes.Find("style") is { } style && element.Element.Namespace is ElementNamespace.Html or ElementNamespace.Svg)
             {
-                inline = Read(CssParser.ParseDeclarations(style.Value, new CssSourceOptions(_sourceName) { Origin = style.PositionOf(0), Positions = style.PositionOf }), []);
+                // Read once when elements the parser made again for one token share it (kept only then).
+                if (element.Attributes.StyleDeclarations is { } shared)
+                {
+                    inline = shared;
+                }
+                else
+                {
+                    inline = Read(CssParser.ParseDeclarations(style.Value, new CssSourceOptions(_sourceName) { Origin = style.PositionOf(0), Positions = style.PositionOf }), []);
+                    if (element.Attributes.Uses > 1)
+                    {
+                        element.Attributes.StyleDeclarations = inline;
+                    }
+                }
             }
 
-            var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
+            var (hints, refused) = HintsOf(element);
             Keep(refused);
             // Chromium 159's style adjuster: an HTML table does not take -webkit-left, -center or -right from around it
-            // or from its own rules; they compute to start (measured, review 39 F4).
+            // or from its own rules; they compute to start (measured).
             var table = element.Element.IsHtml("table");
             return inline.IsEmpty && hints.IsEmpty && !table
                 ? ElementDeclarations.None
                 : new ElementDeclarations(inline, hints, _sourceName) { ResetsLegacyAlignment = table };
         }
 
+        /// <summary>The presentational hints of an element, made once for the elements the parser made again for one
+        /// token (a formatting element it reopens): they share the attribute table, and their namespace and name are
+        /// compared. Besides those, the hints read only the body's link attribute, the same for the whole document,
+        /// so they are those <see cref="PresentationalHints.For"/> makes for each of them; the declarations carry the
+        /// place of the first element, the start tag's, for diagnostics. The cells' hints also read the table around
+        /// them and are made per element (the parser does not reopen a cell). Kept once per attribute table: the memo
+        /// is at most one element's hints for each table, so it grows with the input, not with the copies; and the
+        /// shared declarations let the cascade prepare them once.</summary>
+        private (ValueList<Declaration> Declarations, List<Error> Refused) HintsOf(StyleElement element)
+        {
+            var html = element.Element;
+            if (element.Attributes.Hints is { } kept && kept.Namespace == html.Namespace && kept.LocalName == html.LocalName)
+            {
+                return (kept.Declarations, kept.Refused);
+            }
+
+            var (hints, refused) = PresentationalHints.For(element, _body, _sourceName);
+            if (element.Attributes.Uses > 1 && !html.IsHtml("td") && !html.IsHtml("th"))
+            {
+                element.Attributes.Hints = new SharedHints(html.Namespace, html.LocalName, hints, refused);
+            }
+
+            return (hints, refused);
+        }
+
         // ---- language (§3.2.6.2) ----
 
         /// <summary>The language an element's own attributes give: xml:lang (in the XML namespace) wins over lang (in no
         /// namespace, HTML elements only); null when it has neither.</summary>
-        private static string? Language(HtmlElement element)
-        {
-            foreach (var attribute in element.Attributes)
-            {
-                if (attribute is { Namespace: AttributeNamespace.Xml, LocalName: "lang" })
-                {
-                    return attribute.Value;
-                }
-            }
-
-            return element.Namespace == ElementNamespace.Html ? element.Attribute("lang") : null;
-        }
+        private static string? Language(StyleElement element) =>
+            element.Attributes.XmlLang ?? (element.Element.Namespace == ElementNamespace.Html ? element.GetAttribute("lang") : null);
 
         /// <summary>The pragma-set default language (§4.2.5.3): the first meta http-equiv=content-language with a
         /// content, its text up to the first comma, trimmed; null when there is none.</summary>
@@ -399,10 +759,15 @@ public static class HtmlStyleResolver
         {
             var sheets = new List<StyleSheet>();
             // The preferred style sheet set (§4.6.7.20, §4.2.5.3 default-style): named by whichever comes first in tree
-            // order, a default-style pragma or a style sheet with a title (Chromium 159, measured, review 39 F19).
+            // order, a default-style pragma or a style sheet with a title (Chromium 159, measured).
             string? preferredTitle = null;
             foreach (var element in elements.Select(item => item.Element))
             {
+                if (Limit is not null)
+                {
+                    break;
+                }
+
                 if (element.IsHtml("meta") && element.Attribute("http-equiv") is { } equiv && InfraAscii.EqualsIgnoreCase(equiv, "default-style")
                     && element.Attribute("content") is { Length: > 0 } preferred)
                 {
@@ -478,8 +843,8 @@ public static class HtmlStyleResolver
                     if (element.Attributes.FirstOrDefault(attribute => attribute.LocalName == "integrity" && attribute.Value.Trim().Length > 0) is { } integrity)
                     {
                         // A browser checks the hash and blocks a sheet that does not match (Chromium 159 blocks a sheet
-                        // whose integrity does not match, measured, review 39 F19); the engine does not check it.
-                        Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute integrity=\"{integrity.Value}\" on link asks for a check of the style sheet's hash, which is not supported.")
+                        // whose integrity does not match, measured); the engine does not check it.
+                        Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The attribute integrity=\"{InputQuote.Of(integrity.Value)}\" on link asks for a check of the style sheet's hash, which is not supported.")
                             .With(ErrorMetadataKeys.Value, "integrity")
                             .WithSource(_sourceName, integrity.Position));
                     }
@@ -496,7 +861,7 @@ public static class HtmlStyleResolver
 
         /// <summary>Whether a type attribute names CSS: for style, empty or text/css exactly (ASCII case-insensitive, no
         /// white space trimmed, §4.2.6); for link, a MIME type whose essence is text/css (parameters and the white space
-        /// around it allowed, as Chromium 159 takes <c>text/css; charset=utf-8</c>, measured, review 39 F19).</summary>
+        /// around it allowed, as Chromium 159 takes <c>text/css; charset=utf-8</c>, measured).</summary>
         private static bool IsCss(string type, bool link)
         {
             if (!link)
@@ -556,14 +921,28 @@ public static class HtmlStyleResolver
         private static string[] Keywords(string value) =>
             [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(InfraAscii.ToLower)];
 
+        /// <summary>The document's own address without its fragment, or null when it has none.</summary>
+        private string? DocumentAddress => options.BaseUrl is { } address && Absolute(address, null) is { } absolute ? WithoutFragment(absolute) : null;
+
+        private static string WithoutFragment(string url) => url.IndexOf('#') is var hash and >= 0 ? url[..hash] : url;
+
         /// <summary>An @import: its URL resolved against the importing sheet's URL.</summary>
         private StyleSheet? Import(ImportRule import, StyleSheet importer) =>
             Fetch(import.Url, _baseOf.GetValueOrDefault(importer), importer.SourceName, import.Position);
 
-        /// <summary>Fetches and reads a style sheet through the caller's resolver, once per URL.</summary>
+        /// <summary>Fetches and reads a style sheet through the caller's resolver, once per URL. An empty URL names no
+        /// resource (CSS Values 4 §4.5.1) and the document's own address (without its fragment) names the HTML document,
+        /// which Chromium 159 does not apply as a style sheet outside quirks mode (it is not text/css; measured:
+        /// <c>@import url()</c>, <c>""</c>, <c>"#x"</c> and the document's own name, with and without layer()): both are an
+        /// empty style sheet, and the resolver is not asked.</summary>
         private StyleSheet? Fetch(string url, string? baseUrl, string referrer, TextPosition position)
         {
             var absolute = Absolute(url, baseUrl);
+            if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && WithoutFragment(absolute) == DocumentAddress))
+            {
+                return ReadOrNull(CssParser.ParseStyleSheet(ReadOnlyMemory<byte>.Empty, new CssSourceOptions(absolute ?? referrer)));
+            }
+
             if (absolute is not null && _fetched.TryGetValue(absolute, out var known))
             {
                 return known;
@@ -581,8 +960,8 @@ public static class HtmlStyleResolver
             else
             {
                 var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given" : "was not found by the resource resolver";
-                Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{url}' {why}.")
-                    .With(ErrorMetadataKeys.Value, absolute ?? url)
+                Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{InputQuote.Of(url)}' {why}.")
+                    .With(ErrorMetadataKeys.Value, InputQuote.Of(absolute ?? url))
                     .WithSource(referrer, position));
             }
 

@@ -45,6 +45,38 @@ internal sealed partial class TreeBuilder
     private bool _fosterParenting;
     private bool _skipNextLineFeed;
     private bool _stopped;
+
+    private long _elements;
+    private long _nodes;
+
+    /// <summary>The most elements the parser makes (<see cref="HtmlInputLimits.MaxElements"/>; smaller in tests).</summary>
+    internal long MaxElements { get; init; } = HtmlInputLimits.MaxElements;
+
+    /// <summary>The most nodes the parser makes (<see cref="HtmlInputLimits.MaxNodes"/>; smaller in tests).</summary>
+    internal long MaxNodes { get; init; } = HtmlInputLimits.MaxNodes;
+
+    /// <summary>Which limit the document passed, "elements" or "nodes", or null: parsing stopped there.</summary>
+    public string? TooMany { get; private set; }
+
+    /// <summary>Counts a node the parser makes (an element made again or cloned counts as one more); past a limit
+    /// parsing stops.</summary>
+    private void Made(bool element)
+    {
+        _nodes++;
+        if (element)
+        {
+            _elements++;
+        }
+
+        if (TooMany is null && (_elements > MaxElements || _nodes > MaxNodes))
+        {
+            TooMany = _elements > MaxElements ? "elements" : "nodes";
+            _stopped = true;
+        }
+    }
+
+    /// <summary>Set when the end of the file closed a template and must be processed again (§13.2.6.4.16).</summary>
+    private bool _endOfFileAgain;
     private MutableElement? _context;
 
     /// <summary>Creates a tree builder for a whole document.</summary>
@@ -105,7 +137,7 @@ internal sealed partial class TreeBuilder
 
         ResetInsertionMode();
         // §13.4 step 13: the form element pointer is the nearest form at or above the context element; the context has
-        // no ancestors here, so it is the context itself when that is a form (review 39 HD-8).
+        // no ancestors here, so it is the context itself when that is a form (HD-8).
         if (_context.IsHtml("form"))
         {
             _form = _context;
@@ -135,6 +167,12 @@ internal sealed partial class TreeBuilder
             {
                 _skipNextLineFeed = false;
                 Process(Input.Of(token));
+                while (_endOfFileAgain)
+                {
+                    _endOfFileAgain = false;
+                    Process(Input.Of(token));
+                }
+
                 if (token is { Kind: TokenKind.StartTag, SelfClosing: true, SelfClosingAcknowledged: false })
                 {
                     Error("non-void-html-element-start-tag-with-trailing-solidus", token.Start, token.Name);
@@ -148,7 +186,7 @@ internal sealed partial class TreeBuilder
         }
 
         // "The end" (§13.2.7): pop all the nodes off the stack of open elements (each finishes parsing its children).
-        if (TooDeepAt is null && !CloneBudgetExceeded)
+        if (TooDeepAt is null && !CloneBudgetExceeded && TooMany is null)
         {
             while (_stack.Count > 0)
             {
@@ -174,7 +212,9 @@ internal sealed partial class TreeBuilder
 
             var source = token.SourceIndexOf(offset);
             offset += length;
-            if (_skipNextLineFeed)
+            // A NUL of the data state is dropped before the content rules see it (see Process), so the line feed after
+            // it is still the first character after <pre> or <listing> (Chromium 159, measured: <pre>\0\ny is "y").
+            if (_skipNextLineFeed && c != 0)
             {
                 _skipNextLineFeed = false;
                 if (c == '\n')
@@ -209,7 +249,7 @@ internal sealed partial class TreeBuilder
         {
             // Chromium 159 drops a U+0000 of the data state before the HTML content rules see it (the tokenizer has
             // reported it), so it never counts as text: a NUL before the doctype keeps the doctype and the document's
-            // mode (review 39 HD-1, measured). Every mode of the standard that is not before or after the body ignores it
+            // mode (HD-1, measured). Every mode of the standard that is not before or after the body ignores it
             // anyway; the others would take it as text. Other states make U+FFFD of it, and foreign content keeps its rule.
             if (t.Kind == TokenKind.Characters && t.Char == 0)
             {
@@ -422,7 +462,7 @@ internal sealed partial class TreeBuilder
 
     /// <summary>"Push onto the list of active formatting elements", with the Noah's Ark clause. Chromium 159 leaves an
     /// element with an <c>is</c> attribute (a customized built-in element) off the list, so it is never reconstructed
-    /// nor found by the adoption agency algorithm (review 39 HD-5, measured).</summary>
+    /// nor found by the adoption agency algorithm (HD-5, measured).</summary>
     private void PushFormatting(MutableElement element)
     {
         if (element.Token.HasAttribute("is"))
@@ -482,7 +522,7 @@ internal sealed partial class TreeBuilder
         }
 
         // A reopened element is placed where the token that reopened it is (HtmlNode: "the position of the token that
-        // made the parser insert it"), not at the tag it repeats (review 39 HR-P1).
+        // made the parser insert it"), not at the tag it repeats.
         for (; index < _formatting.Count; index++)
         {
             var entry = _formatting[index]!;
@@ -564,9 +604,24 @@ internal sealed partial class TreeBuilder
             Start = start,
             Content = ns == ElementNamespace.Html && name == "template" ? new MutableFragment { Start = start } : null,
         };
-        foreach (var attribute in token.Attributes)
+        Made(element: true);
+        if (ns == ElementNamespace.Html && token.MadeElement is { } first)
         {
-            element.AddAttribute(ForeignAttribute(attribute, ns));
+            // Made again for the same token (a reopened formatting element, the adoption agency algorithm): the
+            // attributes are shared, not copied.
+            element.ShareAttributesOf(first);
+        }
+        else
+        {
+            foreach (var attribute in token.Attributes)
+            {
+                element.AddAttribute(ForeignAttribute(attribute, ns));
+            }
+
+            if (ns == ElementNamespace.Html)
+            {
+                token.MadeElement = element;
+            }
         }
 
         if (ns != ElementNamespace.Html)
@@ -670,6 +725,7 @@ internal sealed partial class TreeBuilder
         if (previous is not MutableText text)
         {
             text = new MutableText { Start = source };
+            Made(element: false);
             parent.Insert(text, before);
         }
 
@@ -692,6 +748,7 @@ internal sealed partial class TreeBuilder
             before = null;
         }
 
+        Made(element: false);
         target.Insert(new MutableComment { Data = token.Data, Start = token.Start }, before);
     }
 
@@ -704,6 +761,7 @@ internal sealed partial class TreeBuilder
             before = null;
         }
 
+        Made(element: false);
         target.Insert(new MutableProcessingInstruction { Target = token.Name!, Data = token.Data, Start = token.Start }, before);
     }
 

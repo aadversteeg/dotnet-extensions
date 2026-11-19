@@ -7,8 +7,8 @@ namespace UnitTests.Extensions.Documents.Css;
 /// <summary>
 /// Input above CSS Syntax 3 that the engine cannot read is either invalid (Chromium drops it) or valid CSS beyond this
 /// profile (Chromium uses it), and the engine cannot tell which: its one answer is a refusal, "not valid or not
-/// supported in this profile" (review 39, ruling D-b). Each input here is one Chromium 159 takes and the engine once
-/// dropped with a warning, so the document was accepted with a different style (F7, F17, SU-5, F16).
+/// supported in this profile" (the refusal policy in docs/architecture.md). Each input here is one Chromium 159 takes
+/// and the engine once dropped with a warning, so the document was accepted with a different style.
 /// </summary>
 public class RefusalPolicyTests
 {
@@ -71,7 +71,7 @@ public class RefusalPolicyTests
         var root = Doc(E("p", A("id", "t")));
         var computed = Compute(root, ":host(:is(div .foo)), #t { margin-top: 1px }");
 
-        // Chromium 159: the rule applies to #t (review 39 SU-5). :host itself is outside the profile (shadow trees).
+        // Chromium 159: the rule applies to #t. :host itself is outside the profile (shadow trees).
         computed.Value(root["t"], "margin-top").Should().Be("0.75pt");
         Refusals(computed).Should().ContainSingle().Which.Message.Should().Contain(":host()");
         CssParser.ParseStyleSheet(":host(:not(.a .b)) {}", new CssSourceOptions("a.css")).Value.Diagnostics
@@ -109,7 +109,7 @@ public class RefusalPolicyTests
     {
         var sheet = CssParser.ParseStyleSheet("@bogus; @import 'red.css'; @media bogus-query! {} @import 'late.css';", new CssSourceOptions("a.css")).Value;
 
-        // Chromium 159 imports red.css (review 39 F18): only a valid rule closes the place for @import.
+        // Chromium 159 imports red.css: only a valid rule closes the place for @import.
         sheet.Value.Rules.OfType<ImportRule>().Select(import => import.Url).Should().Equal("red.css");
         sheet.Diagnostics.Should().Contain(error => error.Code == CssErrorCodes.Invalid.Rule && error.Message.Contains("@import after another rule"));
     }

@@ -13,7 +13,7 @@ namespace UnitTests.Extensions.Documents.Html.Parsing;
 /// name and in order, and at the line and column the test gives. One rule skips tests: <c>xmlViolation.test</c> expects
 /// the "coercing an HTML DOM into an infoset" tweaks of HTML Standard §13.2.9, which are not the HTML parser. Where
 /// the tokenizer follows Chromium 159 instead of the standard, the run is listed and pinned, not bent: a U+0000 right
-/// after <c>&lt;</c> and in a CDATA section is U+FFFD (Chromium's trees have it, measured, review 39 HD-1, HD-2).
+/// after <c>&lt;</c> and in a CDATA section is U+FFFD (Chromium's trees have it, measured, HD-1, HD-2).
 /// </summary>
 public class TokenizerSuiteTests(ITestOutputHelper output)
 {

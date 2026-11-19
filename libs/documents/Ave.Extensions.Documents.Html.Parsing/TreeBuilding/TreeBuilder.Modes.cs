@@ -82,6 +82,7 @@ internal sealed partial class TreeBuilder
 
         if (!_document.HasElementChild() && !HasDoctypeChild())
         {
+            Made(element: false);
             _document.Insert(new MutableDocumentType { Name = name ?? string.Empty, PublicId = token.PublicId ?? string.Empty, SystemId = token.SystemId ?? string.Empty, Start = token.Start }, null);
         }
 
@@ -470,7 +471,7 @@ internal sealed partial class TreeBuilder
 
         ReconstructFormatting();
         InsertCharacter(t.Char, t.Source);
-        // Chromium 159 does not count U+FFFD as a character that makes a frameset not ok (review 39 HD-3, measured).
+        // Chromium 159 does not count U+FFFD as a character that makes a frameset not ok (HD-3, measured).
         if (!t.IsWhitespace && t.Char != 0xFFFD)
         {
             _framesetOk = false;
@@ -1731,7 +1732,9 @@ internal sealed partial class TreeBuilder
                 ClearFormattingToLastMarker();
                 _templateModes.RemoveAt(_templateModes.Count - 1);
                 ResetInsertionMode();
-                Process(t);
+                // "Reprocess the token": once per open template, so the run loop does it (EndOfFileAgain) rather than a
+                // call from here, which would recurse once per template (up to MaxDepth levels).
+                _endOfFileAgain = true;
                 return;
             case TokenKind.EndTag:
                 if (t.IsEnd("template"))

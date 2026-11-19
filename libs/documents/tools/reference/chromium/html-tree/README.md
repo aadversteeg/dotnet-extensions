@@ -26,5 +26,5 @@ re-measurement, read the diff and copy `out/*` over `measured/`.
   differs from the suite's `#document` are kept (17). `TreeConstructionSuiteTests` expects Chromium's tree there, except
   in the five fragment cases it lists as a limit.
 - `cases.json`: Chromium's tree of every case of `cases.tsv`, the parser's differences from the standard that the
-  suite does not cover (review 39, HD-1 .. HD-12). `ChromiumTreeTests` expects Chromium's tree, except for the cases
+  suite does not cover (HD-1 .. HD-12). `ChromiumTreeTests` expects Chromium's tree, except for the cases
   named `limit-…`, which it pins as still different.

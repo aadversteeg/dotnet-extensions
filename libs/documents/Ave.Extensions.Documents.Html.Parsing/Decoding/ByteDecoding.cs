@@ -81,7 +81,7 @@ internal static class ByteDecoding
     {
         // The shared UTF-16 decoder (§14.2): code units in pairs of bytes, a lone surrogate is U+FFFD. At the end of the
         // bytes Chromium 159 drops what does not complete a character, a lone last byte or a high surrogate without its
-        // pair, where the decoder of the standard writes U+FFFD (review 39 HD-15, measured).
+        // pair, where the decoder of the standard writes U+FFFD (measured).
         var text = new StringBuilder(bytes.Length / 2);
         var replacements = new List<int>();
         var index = 0;

@@ -61,8 +61,22 @@ public static class CssParser
         }
 
         var built = new RuleBuilder(options.SourceName, diagnostics).StyleSheet(rules);
-        return Result<CssResult<StyleSheet>, Error>.Success(new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), diagnostics.ToValueList()));
+        var found = diagnostics.ToValueList();
+        // A selector nested past the limit is a limit, not a diagnostic: the sheet is not read (as for blocks).
+        foreach (var diagnostic in found)
+        {
+            if (diagnostic.Code == CssErrorCodes.TooDeep)
+            {
+                return Fail<StyleSheet>(diagnostic);
+            }
+        }
+
+        return Result<CssResult<StyleSheet>, Error>.Success(new CssResult<StyleSheet>(new StyleSheet(built, options.SourceName), found));
     }
+
+    /// <summary>The most bytes one UTF-16 code unit takes in UTF-8, so a style sheet of more bytes than this many times
+    /// <see cref="CssInputLimits.MaxCharacters"/> is too large before it is decoded.</summary>
+    internal const int MaxBytesPerCharacter = 3;
 
     /// <summary>
     /// Reads a style sheet from bytes (CSS Syntax 3 §3.2): a byte order mark decides the encoding; else the protocol's
@@ -75,7 +89,7 @@ public static class CssParser
     /// <returns>The style sheet and the diagnostics, or the error past a limit or for an encoding not decoded.</returns>
     public static Result<CssResult<StyleSheet>, Error> ParseStyleSheet(ReadOnlyMemory<byte> bytes, CssSourceOptions options)
     {
-        if (bytes.Length > 3L * CssInputLimits.MaxCharacters)
+        if (bytes.Length > (long)MaxBytesPerCharacter * CssInputLimits.MaxCharacters)
         {
             return Fail<StyleSheet>(TooLarge(options));
         }

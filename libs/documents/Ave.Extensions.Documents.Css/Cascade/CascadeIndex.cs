@@ -7,6 +7,8 @@ using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Rules;
 using Ave.Extensions.Documents.Css.Selectors;
 using Ave.Extensions.Documents.Css.Syntax;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Css.Cascade;
 
@@ -48,6 +50,7 @@ public sealed class CascadeIndex
         _byType = builder.ByType;
         _universal = builder.Universal;
         AllRules = builder.All;
+        Budget = builder.Budget;
         FontFaces = [.. builder.FontFaces];
         PageRules = [.. builder.Pages];
         Media = builder.MediaContext;
@@ -62,6 +65,10 @@ public sealed class CascadeIndex
     /// <summary>The media the conditions were evaluated for.</summary>
     public MediaContext Media { get; }
 
+    /// <summary>The limits of the document's cascade and what is spent of them: the index's, and then the computer's that
+    /// styles the document with it.</summary>
+    internal CascadeBudget Budget { get; }
+
     /// <summary>Every style rule of every origin, in order of appearance: the candidates in quirks mode, where the
     /// buckets by ID and class do not hold (HTML Standard §4.16.2).</summary>
     internal List<IndexedRule> AllRules { get; }
@@ -74,13 +81,28 @@ public sealed class CascadeIndex
     /// <param name="imports">Loads the sheets <c>@import</c> names; null when the caller follows no imports (each import
     /// is then reported and skipped).</param>
     /// <returns>The index, with the diagnostics of building it: invalid declarations and conditions, refused or skipped
-    /// imports. Unsupported and ignored properties are reported when they apply, by <see cref="StyleComputer"/>.</returns>
-    public static CssResult<CascadeIndex> Build(IEnumerable<CascadeSheet> sheets, MediaContext media, StyleSheetLoader? imports)
+    /// imports. Unsupported and ignored properties are reported when they apply, by <see cref="StyleComputer"/>. Past a
+    /// limit (more style sheets than <see cref="CssInputLimits.MaxStyleSheets"/>, more entries than
+    /// <see cref="CssInputLimits.MaxCascadeEntries"/>, selectors nested deeper than
+    /// <see cref="CssInputLimits.MaxSelectorNesting"/>) building stops, and the result is the limit's error.</returns>
+    public static Result<CssResult<CascadeIndex>, Error> Build(IEnumerable<CascadeSheet> sheets, MediaContext media, StyleSheetLoader? imports)
     {
-        var builder = new Builder(media, imports);
+        var budget = CascadeBudget.ForNextIndex ?? new CascadeBudget();
+        CascadeBudget.ForNextIndex = null;
+        var builder = new Builder(media, imports, budget);
         foreach (var sheet in sheets)
         {
+            if (builder.Failure is not null)
+            {
+                break;
+            }
+
             builder.Sheet(sheet);
+        }
+
+        if (builder.Failure is { } failure)
+        {
+            return Result<CssResult<CascadeIndex>, Error>.Failure(failure);
         }
 
         foreach (var root in builder.Roots.Values)
@@ -88,7 +110,7 @@ public sealed class CascadeIndex
             root.AssignRanks();
         }
 
-        return new CssResult<CascadeIndex>(new CascadeIndex(builder), builder.Diagnostics.ToValueList());
+        return Result<CssResult<CascadeIndex>, Error>.Success(new CssResult<CascadeIndex>(new CascadeIndex(builder), builder.Diagnostics.ToValueList()));
     }
 
     /// <summary>The rules worth matching against an element: those whose rightmost compound names its ID, one of its
@@ -124,11 +146,16 @@ public sealed class CascadeIndex
     }
 
     /// <summary>Flattens rules into the index (one cascade's worth of mutable state).</summary>
-    private sealed class Builder(MediaContext media, StyleSheetLoader? imports)
+    private sealed class Builder(MediaContext media, StyleSheetLoader? imports, CascadeBudget budget)
     {
         private readonly HashSet<StyleSheet> _importing = new(ReferenceEqualityComparer.Instance);
-        private int _imported;
         private int _order;
+
+        /// <summary>The cascade's limits.</summary>
+        public CascadeBudget Budget { get; } = budget;
+
+        /// <summary>The limit's error once a limit is reached: building stops.</summary>
+        public Error? Failure { get; private set; }
 
         /// <summary>The media <c>@media</c>, <c>@import</c> conditions and <c>media</c> attributes are evaluated
         /// for.</summary>
@@ -168,6 +195,14 @@ public sealed class CascadeIndex
         /// far.</summary>
         public void Sheet(CascadeSheet sheet)
         {
+            if (!Budget.TakeStyleSheet())
+            {
+                Failure ??= new Error(CssErrorCodes.TooLarge, $"The document takes in more than {Budget.MaxStyleSheets} style sheets, its own and imported ones together.")
+                    .With(ErrorMetadataKeys.Value, Budget.MaxStyleSheets)
+                    .With(ErrorMetadataKeys.SourceFile, sheet.Sheet.SourceName);
+                return;
+            }
+
             if (!Roots.TryGetValue(sheet.Origin, out var root))
             {
                 root = LayerNode.Root();
@@ -182,64 +217,83 @@ public sealed class CascadeIndex
         /// <summary>Where a rule is: its style sheet, origin, layer, and for a nested rule the parent's selectors.</summary>
         private sealed record Context(StyleSheet Sheet, CascadeOrigin Origin, LayerNode Layer, SelectorList? Parent);
 
+        /// <summary>Flattens a list of rules, with the blocks of conditional and layer rules, nested style rules and
+        /// imported sheets, in order of appearance. Without recursion: a chain of imports is as deep as
+        /// <see cref="CssInputLimits.MaxStyleSheets"/>, so the lists being walked are kept on a stack of their own.</summary>
         private void Rules(IEnumerable<CssRule> rules, Context context)
         {
-            foreach (var rule in rules)
+            var lists = new Stack<(IEnumerator<CssRule> Rules, Context Context, StyleSheet? Imported)>();
+            lists.Push((Walk(rules), context, null));
+            while (lists.Count > 0 && Failure is null)
             {
-                switch (rule)
+                var (list, current, imported) = lists.Peek();
+                if (!list.MoveNext())
                 {
-                    case StyleRule style:
-                        Style(style, context);
+                    lists.Pop();
+                    list.Dispose();
+                    if (imported is not null)
+                    {
+                        _importing.Remove(imported);
+                    }
+
+                    continue;
+                }
+
+                switch (list.Current)
+                {
+                    case StyleRule style when Style(style, current) is { } nested:
+                        lists.Push((Walk(nested.Rules), nested.Context, null));
                         break;
-                    case NestedDeclarationsRule nested when context.Parent is { } parent:
+                    case NestedDeclarationsRule nested when current.Parent is { } parent:
                         // Same elements, same specificity behaviour as the parent rule (CSS Nesting 1 §3.3).
-                        Add(parent, nested.Declarations, context);
+                        Add(parent, nested.Declarations, current);
                         break;
                     case MediaRule mediaRule when MediaQueries.Matches(mediaRule.Queries, MediaContext):
-                        Rules(mediaRule.Rules, context);
+                        lists.Push((Walk(mediaRule.Rules), current, null));
                         break;
-                    case SupportsRule supports when Supports(supports.Condition, context.Sheet.SourceName, supports.Position):
-                        Rules(supports.Rules, context);
+                    case SupportsRule supports when Supports(supports.Condition, current.Sheet.SourceName, supports.Position):
+                        lists.Push((Walk(supports.Rules), current, null));
                         break;
                     case LayerBlockRule layer:
-                        Rules(layer.Rules, context with { Layer = layer.Name is { } layerName ? context.Layer.Resolve(layerName) : context.Layer.Anonymous() });
+                        lists.Push((Walk(layer.Rules), current with { Layer = layer.Name is { } layerName ? current.Layer.Resolve(layerName) : current.Layer.Anonymous() }, null));
                         break;
                     case LayerStatementRule statement:
                         foreach (var name in statement.Names)
                         {
-                            context.Layer.Resolve(name);
+                            current.Layer.Resolve(name);
                         }
 
                         break;
-                    case ImportRule import:
-                        Import(import, context);
+                    case ImportRule import when Import(import, current) is { } sheet:
+                        lists.Push((Walk(sheet.Rules), sheet.Context, sheet.Sheet));
                         break;
                     case FontFaceRule fontFace:
                         FontFaces.Add(fontFace);
                         break;
                     case PageRule page:
-                        Pages.Add(new CascadedPageRule(page, context.Origin));
+                        Pages.Add(new CascadedPageRule(page, current.Origin));
                         break;
                 }
             }
         }
 
-        private void Style(StyleRule rule, Context context)
+        private static IEnumerator<CssRule> Walk(IEnumerable<CssRule> rules) => rules.GetEnumerator();
+
+        /// <summary>Adds a style rule; its nested rules, with the context they are read in, or null when it has none or
+        /// is refused.</summary>
+        private (IEnumerable<CssRule> Rules, Context Context)? Style(StyleRule rule, Context context)
         {
             var selectors = context.Parent is { } parent ? Nesting.Desugar(rule.Selectors, parent) : rule.Selectors;
             if (Nesting.Depth(selectors) > CssInputLimits.MaxSelectorNesting)
             {
                 // Nested rules and the pseudo-class arguments in them together: the depth selector matching recurses to.
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.TooDeep, $"Style rules and selector lists are nested deeper than {CssInputLimits.MaxSelectorNesting}; the rule and the rules in it are not used.", context.Sheet.SourceName, rule.Position)
-                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSelectorNesting));
-                return;
+                Failure ??= CssDiagnostics.At(CssErrorCodes.TooDeep, $"Style rules and selector lists are nested deeper than {CssInputLimits.MaxSelectorNesting}.", context.Sheet.SourceName, rule.Position)
+                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxSelectorNesting);
+                return null;
             }
 
             Add(selectors, rule.Declarations, context);
-            if (!rule.ChildRules.IsEmpty)
-            {
-                Rules(rule.ChildRules, context with { Parent = selectors });
-            }
+            return rule.ChildRules.IsEmpty ? null : (rule.ChildRules, context with { Parent = selectors });
         }
 
         private void Add(SelectorList selectors, IEnumerable<Declaration> declarations, Context context)
@@ -247,6 +301,13 @@ public sealed class CascadeIndex
             var block = DeclarationPreparer.Prepare(declarations, context.Sheet.SourceName, context.Origin, ref _order, Diagnostics);
             if (block.Entries.IsEmpty && block.WhenApplied.IsEmpty)
             {
+                return;
+            }
+
+            if (!Budget.AddEntries(block.Entries.Count + selectors.Selectors.Count))
+            {
+                Failure ??= CssDiagnostics.At(CssErrorCodes.TooLarge, $"The style sheets make more than {Budget.MaxEntries} selectors and declarations for the cascade (each sheet counted every time it is taken in).", context.Sheet.SourceName, selectors.Selectors[0].Position)
+                    .With(ErrorMetadataKeys.Value, Budget.MaxEntries);
                 return;
             }
 
@@ -288,40 +349,40 @@ public sealed class CascadeIndex
         }
 
         /// <summary>@import (CSS Cascade 5 §2): when its conditions hold, the imported sheet's rules take the import's
-        /// place, in the import's layer. An import of a sheet that is already being imported (a cycle) is skipped, as
-        /// browsers do.</summary>
-        private void Import(ImportRule import, Context context)
+        /// place, in the import's layer; they are returned to be walked there, the sheet marked as being imported until
+        /// they are done. An import of a sheet that is already being imported (a cycle) is skipped, as browsers do.</summary>
+        private (IEnumerable<CssRule> Rules, Context Context, StyleSheet Sheet)? Import(ImportRule import, Context context)
         {
             if (!MediaQueries.Matches(import.Media, MediaContext)
                 || (import.Supports is { } condition && !Supports(condition, context.Sheet.SourceName, import.Position)))
             {
-                return;
+                return null;
             }
 
             if (imports is null)
             {
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{import.Url}' is skipped: the caller follows no imports.", context.Sheet.SourceName, import.Position)
+                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{CssSerializer.Shortened(import.Url)}' is skipped: the caller follows no imports.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, import.Url));
-                return;
+                return null;
             }
 
-            if (++_imported > CssInputLimits.MaxImportedSheets)
+            if (!Budget.TakeStyleSheet())
             {
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.TooLarge, $"More than {CssInputLimits.MaxImportedSheets} style sheets are imported; '{import.Url}' is not.", context.Sheet.SourceName, import.Position)
-                    .With(ErrorMetadataKeys.Value, CssInputLimits.MaxImportedSheets));
-                return;
+                Failure ??= CssDiagnostics.At(CssErrorCodes.TooLarge, $"The document takes in more than {Budget.MaxStyleSheets} style sheets, its own and imported ones together; '{CssSerializer.Shortened(import.Url)}' is one too many.", context.Sheet.SourceName, import.Position)
+                    .With(ErrorMetadataKeys.Value, Budget.MaxStyleSheets);
+                return null;
             }
 
             if (imports(import, context.Sheet) is not { } sheet)
             {
-                return;
+                return null;
             }
 
             if (!_importing.Add(sheet))
             {
-                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{import.Url}' is skipped: the sheet imports itself.", context.Sheet.SourceName, import.Position)
+                Diagnostics.Add(CssDiagnostics.At(CssErrorCodes.Invalid.Rule, $"@import of '{CssSerializer.Shortened(import.Url)}' is skipped: the sheet imports itself.", context.Sheet.SourceName, import.Position)
                     .With(ErrorMetadataKeys.Value, import.Url));
-                return;
+                return null;
             }
 
             var layer = import.Layer switch
@@ -330,8 +391,44 @@ public sealed class CascadeIndex
                 "" => context.Layer.Anonymous(),
                 var name => context.Layer.Resolve(name),
             };
-            Rules(sheet.Rules, context with { Sheet = sheet, Layer = layer });
-            _importing.Remove(sheet);
+            return (sheet.Rules, context with { Sheet = sheet, Layer = layer }, sheet);
+        }
+
+        /// <summary>Whether a value holds, at any depth, a ), ] or } that closes nothing, a bad string or a bad URL, or an
+        /// env() or attr() without an argument, or at its top level a '!' (CSS Syntax 3 §8.2, &lt;declaration-value&gt;),
+        /// without recursion.</summary>
+        private static bool IsNoDeclaration(IReadOnlyList<ComponentValue> values)
+        {
+            if (values.Any(value => value is CssToken { Kind: CssTokenKind.Delim, Text: "!" }))
+            {
+                return true;
+            }
+
+            var pending = new Stack<IReadOnlyList<ComponentValue>>();
+            pending.Push(values);
+            while (pending.Count > 0)
+            {
+                foreach (var value in pending.Pop())
+                {
+                    switch (value)
+                    {
+                        case CssToken { Kind: CssTokenKind.CloseParen or CssTokenKind.CloseSquare or CssTokenKind.CloseCurly or CssTokenKind.BadString or CssTokenKind.BadUrl }:
+                            return true;
+                        // env() and attr() without an argument (measured: '@supports (--y: env())' is false and its negation true).
+                        case FunctionValue function when (function.IsNamed("env") || function.IsNamed("attr"))
+                                                         && function.Values.All(item => item is CssToken { Kind: CssTokenKind.Whitespace }):
+                            return true;
+                        case FunctionValue function:
+                            pending.Push(function.Values);
+                            break;
+                        case SimpleBlock block:
+                            pending.Push(block.Values);
+                            break;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -350,15 +447,35 @@ public sealed class CascadeIndex
         }
 
         /// <summary>Whether Chromium 159 supports a declaration: true for a value of a known property the engine reads
-        /// and supports, or a var() or CSS-wide keyword in one (Chromium accepts those at parse time), and for a
-        /// custom property with an ordinary value; false for another engine's property; null where the engine cannot
+        /// and supports, or a well-formed var() or a CSS-wide keyword in one (Chromium accepts those at parse time),
+        /// and for a custom property with an ordinary value; false for another engine's property; null where the engine cannot
         /// tell (a value it does not read or support, an ignored property's value, an unknown property, which is
         /// refused).</summary>
         private bool? Holds(Declaration declaration)
         {
+            // Text with a '!' outside !important, or an env() or attr() without an argument, is no declaration:
+            // Chromium 159 answers false, and its negation true (measured: '@supports not (color: var(--x) !)' and
+            // 'not (--y: env())' apply). The engine refuses it, and takes it as false. (An unmatched ), ] or }, a bad
+            // string or URL makes Chromium drop the @supports rule whole, which the parser does; in the supports() of
+            // an @import it is refused here too.)
+            if (IsNoDeclaration(declaration.Value))
+            {
+                return null;
+            }
+
             var name = InfraAscii.ToLower(declaration.Name);
             if (declaration.IsCustomProperty)
             {
+                // A var() that does not match the grammar makes the declaration invalid (Chromium 159: '@supports (--x:
+                // var())' is false, measured); so does a '!' at the top level of a var() fallback, or an env() or attr()
+                // whose arguments Chromium does not read (measured: '(--x: var(--y, !))', '(--x: f(var(--y, !)))' and
+                // '(--x: env(,))' are false, '(--x: var(--y, f(!)))' true); so is the name '--' alone.
+                if (name == "--" || (DeclarationPreparer.ContainsFunction(declaration.Value, "var") && !VarSubstitution.IsWellFormed(declaration.Value))
+                    || VarSubstitution.HasBangInFallback(declaration.Value) || !VarSubstitution.HasWellFormedEnvAndAttr(declaration.Value))
+                {
+                    return false;
+                }
+
                 return name.Length > 2 && declaration.Value.All(value => value is not CssToken { Kind: CssTokenKind.CloseCurly or CssTokenKind.CloseSquare or CssTokenKind.CloseParen or CssTokenKind.BadString or CssTokenKind.BadUrl } and not CssToken { Kind: CssTokenKind.Delim, Text: "!" })
                     ? true
                     : null;
@@ -366,9 +483,27 @@ public sealed class CascadeIndex
 
             var longhand = PropertyRegistry.Find(name);
             var shorthand = longhand is null ? PropertyRegistry.FindShorthand(name) : null;
+            if ((longhand is not null || shorthand is not null || name == "all") && DeclarationPreparer.ContainsFunction(declaration.Value, "var"))
+            {
+                // A value with var() is checked against its property's grammar only after substitution, so it is
+                // supported when every var() matches the grammar of CSS Variables 1 §3, whatever the rest and the
+                // fallback hold (CSS Conditional 3 §6.1; Chromium 159, measured: var() and var(--x, a;b) false,
+                // var(--x, -internal-center) true). A '!' in a fallback makes it false (measured: !, a!b, 5px
+                // !important); one deeper in a function the engine cannot answer for.
+                return !VarSubstitution.IsWellFormed(declaration.Value) || VarSubstitution.HasBangInFallback(declaration.Value) ? false
+                    : DeclarationPreparer.ContainsNestedBang(declaration.Value) ? null
+                    : true;
+            }
+
+            // Chromium keeps -internal- keywords for its own style sheet: an author's is not supported (measured).
+            if (name == "text-align" && DeclarationPreparer.ContainsInternalKeyword(declaration.Value))
+            {
+                return false;
+            }
+
             if (longhand is not null || shorthand is not null || name == "all")
             {
-                if (DeclarationPreparer.ContainsFunction(declaration.Value, "var") || DeclarationPreparer.WideKeyword(declaration.Value) is not null)
+                if (DeclarationPreparer.WideKeyword(declaration.Value) is not null)
                 {
                     return true;
                 }

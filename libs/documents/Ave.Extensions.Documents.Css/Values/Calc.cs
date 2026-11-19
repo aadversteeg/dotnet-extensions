@@ -101,7 +101,7 @@ internal static class Calc
         var name = InfraAscii.ToLower(function.Name);
         if (OtherMathFunctions.Contains(name))
         {
-            problem = $"unsupported:the math function {name}() is not supported";
+            problem = $"unsupported:the math function {CssSerializer.Shortened(name)}() is not supported";
             return null;
         }
 
@@ -111,11 +111,11 @@ internal static class Calc
             case "calc":
                 return arguments.Count == 1 ? Sum(arguments[0], ref problem) : Fail("calc() takes one argument", ref problem);
             case "min" or "max":
-                return arguments.Count >= 1 ? Function(name, arguments, ref problem) : Fail($"{name}() needs an argument", ref problem);
+                return arguments.Count >= 1 ? Function(name, arguments, ref problem) : Fail($"{CssSerializer.Shortened(name)}() needs an argument", ref problem);
             case "clamp":
                 return arguments.Count == 3 ? Function(name, arguments, ref problem) : Fail("clamp() takes three arguments", ref problem);
             default:
-                return Fail($"{function.Name}() is not a math function", ref problem);
+                return Fail($"{CssSerializer.Shortened(function.Name)}() is not a math function", ref problem);
         }
     }
 
@@ -266,14 +266,14 @@ internal static class Calc
                 }
 
                 return Units.IsUnsupportedLength(unit) || unit is "deg" or "rad" or "grad" or "turn" or "s" or "ms" or "hz" or "khz" or "dpi" or "dpcm" or "dppx" or "x" or "fr"
-                    ? Fail($"unsupported:the unit {unit} in a math function is not supported", ref problem)
-                    : Fail($"the unknown unit {unit}", ref problem);
+                    ? Fail($"unsupported:the unit {CssSerializer.Shortened(unit)} in a math function is not supported", ref problem)
+                    : Fail($"the unknown unit {CssSerializer.Shortened(unit)}", ref problem);
             case CssToken keyword when keyword.IsIdent("e"):
                 return new CalcLeaf(Math.E, string.Empty);
             case CssToken keyword when keyword.IsIdent("pi"):
                 return new CalcLeaf(Math.PI, string.Empty);
             case CssToken keyword when keyword.IsIdent("infinity") || keyword.IsIdent("-infinity") || keyword.IsIdent("nan"):
-                return Fail($"unsupported:the keyword {keyword.Text} in a math function is not supported", ref problem);
+                return Fail($"unsupported:the keyword {CssSerializer.Shortened(keyword.Text)} in a math function is not supported", ref problem);
             case SimpleBlock { Opening: CssTokenKind.OpenParen } block:
                 return Sum([.. block.Values], ref problem);
             case FunctionValue function when IsMathFunction(function):

@@ -20,14 +20,29 @@ public class SelectorMatchingTests
                 E("input", A("id", "i1"), A("type", "TEXT")),
                 E("em", A("id", "e1")))));
 
-    private static string Matching(string selector)
+    private static string Matching(string selector, TestElement? root = null)
     {
         var values = SyntaxParser.ParseComponentValues(CssSource.Of(selector), (_, _) => { }).Values;
         var parsed = SelectorParser.Parse(values, relative: false, TextPosition.Start);
         parsed.List.Should().NotBeNull(parsed.Error);
         var matcher = new SelectorMatcher();
-        return string.Join(" ", Root.TreeOrder().Where(element => matcher.Matches(parsed.List!, element)).Select(element => element.Id));
+        return string.Join(" ", (root ?? Root).TreeOrder().Where(element => matcher.Matches(parsed.List!, element)).Select(element => element.Id));
     }
+
+    /// <summary>A sibling that is not a p in front of three p elements: a run of equal compounds through + must be as
+    /// long as the run, also where the element before the run would complete it.</summary>
+    private static readonly TestElement Siblings = E("div", A("id", "d"),
+        E("h1", A("id", "h")), E("p", A("id", "a")), E("p", A("id", "b")), E("p", A("id", "c")));
+
+    [Theory]
+    [InlineData("p + p", "b c")]
+    [InlineData("p + p + p", "c")]
+    [InlineData("p + p + p + p", "")]
+    [InlineData("h1 + p + p", "b")]
+    [InlineData("h1 + p + p + p", "c")]
+    [InlineData("div > p + p + p", "c")]
+    public void A_run_of_equal_siblings_matches_only_where_the_run_is_long_enough(string selector, string expected) =>
+        Matching(selector, Siblings).Should().Be(expected);
 
     [Theory]
     [InlineData("p", "p1 p2 p3")]
@@ -114,4 +129,16 @@ public class SelectorMatchingTests
 
         SelectorParser.Parse(values, relative: false, TextPosition.Start).List.Should().BeNull();
     }
+
+    [Theory]
+    [InlineData(-1, long.MinValue + 1, 1, false)]
+    [InlineData(-1, long.MinValue + 1, long.MaxValue, false)]
+    [InlineData(long.MinValue, long.MaxValue, 1, false)]
+    [InlineData(long.MinValue, 1, 1, true)]
+    [InlineData(-1, long.MaxValue, long.MaxValue, true)]
+    [InlineData(-1, long.MaxValue, 1, true)]
+    [InlineData(2, long.MinValue, 2, true)]
+    [InlineData(3, long.MinValue, 2, false)]
+    public void An_plus_B_does_not_overflow_at_the_edges_of_64_bits(long a, long b, long index, bool matches) =>
+        new AnPlusB(a, b).Matches(index).Should().Be(matches);
 }

@@ -8,8 +8,8 @@ using Ave.Extensions.Functional;
 namespace UnitTests.Extensions.Documents.Html.Parsing;
 
 /// <summary>
-/// The inputs of review 39 that made the parser's work grow faster than its input (B7–B12, M2, M3), at the size the
-/// review used and at the size limit (2^24 characters). Before the fix each took from seconds to hours; the bound
+/// Inputs that made the parser's work grow faster than its input, at the size they were first found at and at the
+/// size limit (2^24 characters). Before the fix each took from seconds to hours; the bound
 /// asserted here is generous (it guards against the quadratic and worse, not against a slow machine).
 /// </summary>
 public class BoundedWorkTests
@@ -52,7 +52,7 @@ public class BoundedWorkTests
 
     [Theory]
     [InlineData(30_000)]
-    [InlineData(250_000)]
+    [InlineData((HtmlInputLimits.MaxElements / 2) - 8)]
     public void Many_selectedcontent_elements_and_selected_options_cost_one_fill_each(int n)
     {
         var parsed = ParsedWithin("<select>" + Repeat("<selectedcontent></selectedcontent>", n) + Repeat("<option selected>", n));
@@ -60,11 +60,20 @@ public class BoundedWorkTests
         parsed.Document.DocumentElement!.Should().NotBeNull();
     }
 
-    [Theory]
-    [InlineData(400_000)]
-    [InlineData(830_000)]
-    public void Markers_left_on_the_list_of_active_formatting_elements_are_not_scanned_per_tag(int n) =>
-        ParsedWithin("<table><tr>" + Repeat("<td><applet>", n) + Repeat("<b></b>", n)).Document.Should().NotBeNull();
+    [Fact]
+    public void Markers_left_on_the_list_of_active_formatting_elements_are_not_scanned_per_tag() =>
+        // Three elements per n (td, applet, b): the largest n inside the element limit.
+        ParsedWithin("<table><tr>" + Repeat("<td><applet>", (HtmlInputLimits.MaxElements / 3) - 10) + Repeat("<b></b>", (HtmlInputLimits.MaxElements / 3) - 10)).Document.Should().NotBeNull();
+
+    [Fact]
+    public void The_markers_input_at_the_size_limit_is_refused_by_the_element_limit()
+    {
+        var watch = Stopwatch.StartNew();
+        var result = HtmlParser.Parse("<table><tr>" + Repeat("<td><applet>", 830_000) + Repeat("<b></b>", 830_000));
+
+        watch.Elapsed.Should().BeLessThan(Generous);
+        result.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+    }
 
     [Theory]
     [InlineData(80_000)]
@@ -103,6 +112,152 @@ public class BoundedWorkTests
         cloned!.Value.IsSuccess.Should().BeTrue();
     }
 
+    /// <summary>Runs on a thread with a 256 KB stack (a stack overflow there ends the test process); an exception fails
+    /// the test.</summary>
+    private static T OnSmallStack<T>(Func<T> work)
+    {
+        T? result = default;
+        Exception? thrown = null;
+        var thread = new Thread(
+            () =>
+            {
+                try
+                {
+                    result = work();
+                }
+                catch (Exception exception)
+                {
+                    thrown = exception;
+                }
+            },
+            256 * 1024);
+        thread.Start();
+        thread.Join();
+        thrown.Should().BeNull();
+        return result!;
+    }
+
+    [Theory]
+    [InlineData("<template><tr>", 255)]
+    [InlineData("<template><tbody>", 255)]
+    [InlineData("<template><td>", 255)]
+    [InlineData(" <template><col>", 509)]
+    [InlineData("<template>", 510)]
+    public void The_end_of_the_file_inside_nested_templates_is_processed_on_a_256_KB_stack(string unit, int n)
+    {
+        // The end of the file closes one template at a time and is processed again after each (§13.2.6.4.16): this
+        // recursed once per open template.
+        var parsed = OnSmallStack(() => HtmlParser.Parse(Repeat(unit, n) + "x"));
+
+        parsed.IsSuccess.Should().BeTrue();
+        var templates = 0;
+        var pending = new Stack<HtmlNode>(parsed.Value.Document.Children);
+        while (pending.Count > 0)
+        {
+            if (pending.Pop() is HtmlElement element)
+            {
+                templates += element.TemplateContent is null ? 0 : 1;
+                foreach (var child in element.Children.Concat(element.TemplateContent?.Children ?? []))
+                {
+                    pending.Push(child);
+                }
+            }
+        }
+
+        templates.Should().Be(n);
+    }
+
+    [Fact]
+    public void The_text_form_of_the_deepest_document_is_written_on_a_256_KB_stack()
+    {
+        // html, body, the divs, a template and its b: the parser's depth limit.
+        const int Divs = HtmlInputLimits.MaxDepth - 4;
+        var parsed = HtmlParser.Parse(Repeat("<div>", Divs) + "<template><b>x").Value;
+
+        var text = OnSmallStack(() => HtmlTreeText.Format(parsed.Document));
+        var described = OnSmallStack(() => parsed.Document.ToString() + parsed.Document.DocumentElement!.ToString());
+
+        text.Split('\n').Count(line => line.TrimStart('|', ' ') == "<div>").Should().Be(Divs);
+        text.Should().Contain("content\n");
+        described.Should().Contain("Children = ");
+    }
+
+    [Fact]
+    public void The_text_form_writes_a_template_and_its_contents_in_the_suites_order()
+    {
+        var parsed = HtmlParser.Parse("<!DOCTYPE html><template a=1><p>x</p></template><i>y").Value;
+
+        HtmlTreeText.Format(parsed.Document).Should().Be(
+            "| <!DOCTYPE html>\n| <html>\n|   <head>\n|     <template>\n|       a=\"1\"\n|       content\n|         <p>\n|           \"x\"\n|   <body>\n|     <i>\n|       \"y\"\n");
+    }
+
+    [Fact]
+    public void The_element_limit_is_exact()
+    {
+        // html, head and body, and the br elements.
+        HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<br>", HtmlInputLimits.MaxElements - 3)).IsSuccess.Should().BeTrue();
+        var refused = HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<br>", HtmlInputLimits.MaxElements - 2));
+
+        refused.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+        refused.Error.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be(HtmlInputLimits.MaxElements);
+    }
+
+    [Fact]
+    public void The_node_limit_is_exact()
+    {
+        // The doctype, the comments, and html, head and body.
+        HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<!---->", HtmlInputLimits.MaxNodes - 4)).IsSuccess.Should().BeTrue();
+        var refused = HtmlParser.Parse("<!DOCTYPE html>" + Repeat("<!---->", HtmlInputLimits.MaxNodes - 3));
+
+        refused.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+        refused.Error.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be(HtmlInputLimits.MaxNodes);
+    }
+
+    [Theory]
+    [InlineData("<div></div>", 200_000)]
+    [InlineData("x<!---->", 270_000)]
+    public void The_clones_of_a_selected_option_count_towards_the_element_and_node_limits(string unit, int count)
+    {
+        // 200 000 elements, or 540 000 nodes, are inside the limits; their clones in one selectedcontent are not.
+        var content = "<option selected>" + Repeat(unit, count) + "</option></select>";
+
+        HtmlParser.Parse("<!DOCTYPE html><select>" + content).IsSuccess.Should().BeTrue();
+        HtmlParser.Parse("<!DOCTYPE html><select><button><selectedcontent></selectedcontent></button>" + content).Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+    }
+
+    [Theory]
+    [InlineData("<p>", 500, 20_000)]
+    [InlineData("<select><option selected>", 0, 0)]
+    public void Elements_the_parser_makes_again_count_towards_the_element_limit(string start, int formatting, int paragraphs)
+    {
+        // 500 formatting elements reopened for every <p>x: ten million elements from 84 KB. And the content of a
+        // selected option cloned into twelve selectedcontent elements: 15.6 million elements from 3.6 MB.
+        var text = formatting > 0
+            ? start + string.Concat(Enumerable.Range(0, formatting).Select(i => $"<b a{i}>")) + Repeat("<p>x", paragraphs)
+            : start + Repeat("<p>", 1_200_000) + "</p></option><button>" + Repeat("<selectedcontent></selectedcontent>", 12);
+        var watch = Stopwatch.StartNew();
+
+        var result = HtmlParser.Parse(text);
+
+        watch.Elapsed.Should().BeLessThan(Generous);
+        result.Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+    }
+
+    [Fact]
+    public void An_element_made_again_for_a_token_shares_its_attributes()
+    {
+        // <b> with 8 000 attributes reopened for 8 000 paragraphs: 64 million attribute copies (an out-of-memory
+        // exception at a 4 GB heap) before; now each reopened b shares the first one's list.
+        var text = "<p><b" + string.Concat(Enumerable.Range(0, 8_000).Select(i => $" a{i}")) + ">" + Repeat("<p>x", 8_000);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var parsed = HtmlParser.Parse(text).Value;
+
+        (GC.GetAllocatedBytesForCurrentThread() - before).Should().BeLessThan(300L << 20);
+        parsed.Document.DocumentElement!.Children.OfType<HtmlElement>().Last().Children.OfType<HtmlElement>().Last()
+            .Children.OfType<HtmlElement>().Single().Attributes.Count.Should().Be(8_000);
+    }
+
     [Fact]
     public void The_number_of_diagnostics_is_bounded_and_the_rest_is_counted()
     {
@@ -113,5 +268,32 @@ public class BoundedWorkTests
         last.Code.Should().Be(Ave.Extensions.Documents.Core.DocumentErrorCodes.TooManyDiagnostics);
         // One unexpected-null-character per NUL (and a few for the missing doctype and elements), all counted.
         ((int)last.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value]! + HtmlInputLimits.MaxDiagnostics).Should().BeGreaterThanOrEqualTo(HtmlInputLimits.MaxCharacters);
+    }
+
+    [Fact]
+    public void Past_the_limit_the_first_diagnostics_are_kept()
+    {
+        // 20 000 stray end tags, one parse error each: the first 10 000 are kept, in the order of the input.
+        var parsed = ParsedWithin("<!DOCTYPE html><p id=a>x" + string.Concat(Enumerable.Repeat("</b>", 20_000)));
+
+        parsed.Diagnostics.Count.Should().Be(HtmlInputLimits.MaxDiagnostics + 1);
+        (parsed.Diagnostics[0].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceLine], parsed.Diagnostics[0].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceColumn]).Should().Be((1, 25));
+        parsed.Diagnostics[HtmlInputLimits.MaxDiagnostics - 1].Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.SourceColumn].Should().Be(25 + (4 * (HtmlInputLimits.MaxDiagnostics - 1)));
+    }
+    [Theory]
+    // A tag name of 500 000 characters in a parse error, and an encoding label padded to 500 000 characters by the
+    // white space its comparison ignores, in a meta element after the first 1 024 bytes.
+    [InlineData("<!DOCTYPE html><p><NAME>x")]
+    [InlineData("<!DOCTYPE html><head><!--PAD--><meta charset=\"NAMEwindows-1252\">")]
+    public void A_parse_diagnostic_quotes_at_most_100_characters_of_a_name(string text)
+    {
+        var name = text.Contains("charset", StringComparison.Ordinal) ? new string(' ', 500_000) : new string('n', 500_000);
+        var result = HtmlParser.Parse(Encoding.UTF8.GetBytes(text.Replace("PAD", new string('x', 2_000), StringComparison.Ordinal).Replace("NAME", name, StringComparison.Ordinal)));
+        var errors = result.Match(parsed => (IReadOnlyList<Error>)parsed.Diagnostics, error => [error]);
+
+        errors.Should().NotBeEmpty();
+        errors.Should().Contain(error => error.Message.Contains("…", StringComparison.Ordinal));
+        errors.Should().OnlyContain(error => error.Message.Length < 400);
+        errors.Should().OnlyContain(error => error.Metadata == null || error.Metadata.Values.All(value => (value.ToString() ?? string.Empty).Length <= 101));
     }
 }

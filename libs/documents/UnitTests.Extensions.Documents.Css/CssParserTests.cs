@@ -31,7 +31,7 @@ public class CssParserTests
         var ascii = Encoding.ASCII.GetBytes("@charset \"windows-1252\"; p { color: red }");
         var utf16 = Encoding.Unicode.GetBytes("p { color: red }");
 
-        // An encoding the engine does not decode: no style sheet at all, a failure (review 39 API-1).
+        // An encoding the engine does not decode: no style sheet at all, a failure.
         var refused = CssParser.ParseStyleSheet(latin, Options).Match(_ => throw new InvalidOperationException("expected a failure"), error => error);
         refused.Code.Should().Be(CssErrorCodes.Unsupported.Encoding);
         CssDiagnostics.ClassOf(refused.Code).Should().Be(DiagnosticClass.Refusal);
@@ -70,9 +70,23 @@ public class CssParserTests
     }
 
     [Fact]
+    public void Bytes_are_read_up_to_three_times_the_character_limit_and_then_counted_as_characters()
+    {
+        // UTF-8 takes at most 3 bytes per UTF-16 code unit: more bytes than that cannot be a sheet inside the limit;
+        // fewer are decoded and then held to the character limit.
+        TooLarge(new byte[(3 * CssInputLimits.MaxCharacters) + 1]).Should().BeTrue();
+        var ascii = new byte[CssInputLimits.MaxCharacters + 1];
+        Array.Fill(ascii, (byte)' ');
+        TooLarge(ascii).Should().BeTrue();
+        TooLarge(ascii.AsSpan(1).ToArray()).Should().BeFalse();
+
+        static bool TooLarge(byte[] bytes) => CssParser.ParseStyleSheet(bytes, Options).Match(_ => false, error => error.Code == CssErrorCodes.TooLarge);
+    }
+
+    [Fact]
     public void A_media_query_list_past_the_limit_fails_the_reading_instead_of_matching_every_medium()
     {
-        // Review 39 API-1: it came back as the empty list, which matches every medium.
+        // Before the fix it came back as the empty list, which matches every medium.
         var deep = new string('(', CssInputLimits.MaxDepth + 1) + "print" + new string(')', CssInputLimits.MaxDepth + 1);
 
         CssParser.ParseMediaQueryList(deep, Options).Match(_ => CssErrorCodes.Parse.Syntax, error => error.Code).Should().Be(CssErrorCodes.TooDeep);
@@ -109,6 +123,24 @@ public class CssParserTests
         result.Diagnostics[^1].Message.Should().Be("'@foo' is not valid or not supported in this profile; the rule is skipped.");
     }
 
+    [Theory]
+    [InlineData("@-moz-document url-prefix() { p {} }")]
+    [InlineData("@-o-keyframes k { from {} }")]
+    [InlineData("@custom-media --small (width < 1px);")]
+    public void Every_at_rule_the_engine_does_not_know_is_refused(string css) =>
+        CssParser.ParseStyleSheet(css, Options).Value.Diagnostics.Select(error => error.Code).Should().Equal(CssErrorCodes.Unsupported.AtRule);
+
+    [Theory]
+    [InlineData("@charset \"utf-8\"; p { color: red }")]
+    [InlineData("p { color: red } @charset \"utf-8\";")]
+    public void A_charset_rule_is_read_without_effect_wherever_it_is(string css)
+    {
+        var sheet = CssParser.ParseStyleSheet(css, Options).Value;
+
+        sheet.Diagnostics.Should().BeEmpty();
+        sheet.Value.Rules.Should().ContainSingle();
+    }
+
     [Fact]
     public void Font_face_and_page_rules_are_read()
     {
@@ -134,5 +166,19 @@ public class CssParserTests
             CssSerializer.Serialize(again).Should().Be(CssSerializer.Serialize(values), text);
             again.Count.Should().Be(values.Count, text);
         }
+    }
+
+    [Fact]
+    public void Past_the_limit_the_summary_of_a_style_sheet_names_its_first_refusal()
+    {
+        // 10 000 rules with a declaration that has no colon (one syntax error each), then two unknown at-rules: both are
+        // left out, counted as refusals, and the summary names the first of them.
+        var text = string.Concat(Enumerable.Repeat("a{b}", CssInputLimits.MaxDiagnostics)) + "@first-unknown;@second-unknown;";
+
+        var diagnostics = CssParser.ParseStyleSheet(text, new CssSourceOptions("s.css")).Value.Diagnostics;
+
+        var summary = diagnostics[diagnostics.Count - 1];
+        summary.Code.Should().Be(Ave.Extensions.Documents.Core.DocumentErrorCodes.TooManyDiagnostics);
+        summary.Message.Should().StartWith("2 more diagnostics are left out, 2 of them refusals (the first: '@first-unknown'");
     }
 }

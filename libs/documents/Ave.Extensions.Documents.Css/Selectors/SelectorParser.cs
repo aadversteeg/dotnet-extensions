@@ -24,7 +24,7 @@ public sealed record SelectorParseResult(SelectorList? List, string? Error, Text
     public bool TooDeep { get; init; }
 
     /// <summary>Whether a forgiving list (<c>:is()</c>, <c>:where()</c>) dropped an item or was empty: valid in a style
-    /// rule, but not a selector <c>@supports selector()</c> holds for in Chromium 159 (measured, review 39 F20).</summary>
+    /// rule, but not a selector <c>@supports selector()</c> holds for in Chromium 159 (measured).</summary>
     public bool Forgave { get; init; }
 }
 
@@ -299,7 +299,7 @@ internal static class SelectorParser
                     {
                         if (pseudoElement is not null && !PseudoClasses.AllowedAfterPseudoElement(pseudoElement, element.Name))
                         {
-                            return context.Fail<CompoundSelector>($"'::{element.Name}' cannot follow '::{pseudoElement}'", colon.Position);
+                            return context.Fail<CompoundSelector>($"'::{CssSerializer.Shortened(element.Name)}' cannot follow '::{CssSerializer.Shortened(pseudoElement)}'", colon.Position);
                         }
 
                         pseudoElement = element.Name;
@@ -320,7 +320,7 @@ internal static class SelectorParser
                     }
                     else if (next is PseudoClassSelector pseudoClass && pseudoElement is not null && !PseudoClasses.AllowedAfter(pseudoElement, pseudoClass.Name))
                     {
-                        return context.Fail<CompoundSelector>($"':{pseudoClass.Name}' cannot follow '::{pseudoElement}'", colon.Position);
+                        return context.Fail<CompoundSelector>($"':{CssSerializer.Shortened(pseudoClass.Name)}' cannot follow '::{CssSerializer.Shortened(pseudoElement)}'", colon.Position);
                     }
 
                     break;
@@ -353,6 +353,17 @@ internal static class SelectorParser
         static bool IsName(CssToken? token) => token is { Kind: CssTokenKind.Ident } || (token is not null && token.IsDelim('*'));
         static string NameOf(CssToken token) => token.Kind == CssTokenKind.Ident ? token.Text : "*";
 
+        // An escaped asterisk ('\*') is an identifier: a type selector for elements named '*', which match nothing in
+        // Chromium 159 (measured), while the engine's TypeSelector takes '*' for the universal selector: refused.
+        foreach (var token in new[] { first, second, third })
+        {
+            if (token is { Kind: CssTokenKind.Ident, Text: "*" })
+            {
+                context.Fail<TypeSelector>("a type selector written as an escaped '*' (the name of an element called '*')", token.Position);
+                return false;
+            }
+        }
+
         if (first is not null && first.IsDelim('|') && IsName(second))
         {
             cursor.Next();
@@ -365,7 +376,7 @@ internal static class SelectorParser
         {
             if (first!.Kind == CssTokenKind.Ident)
             {
-                context.Fail<TypeSelector>($"the namespace prefix '{first.Text}' is not declared", first.Position);
+                context.Fail<TypeSelector>($"the namespace prefix '{CssSerializer.Shortened(first.Text)}' is not declared", first.Position);
                 return false;
             }
 
@@ -405,7 +416,7 @@ internal static class SelectorParser
         {
             if (first.Kind == CssTokenKind.Ident)
             {
-                return context.Fail<AttributeSelector>($"the namespace prefix '{first.Text}' is not declared", first.Position);
+                return context.Fail<AttributeSelector>($"the namespace prefix '{CssSerializer.Shortened(first.Text)}' is not declared", first.Position);
             }
 
             ns = "*";
@@ -451,7 +462,7 @@ internal static class SelectorParser
                     break;
                 // Selectors 4 also has s (case-sensitive); Chromium 159 rejects it (measured), so it is invalid here too.
                 default:
-                    return context.Fail<AttributeSelector>($"an unknown attribute selector modifier '{flag.Text}'", flag.Position);
+                    return context.Fail<AttributeSelector>($"an unknown attribute selector modifier '{CssSerializer.Shortened(flag.Text)}'", flag.Position);
             }
 
             cursor.Next();
@@ -515,7 +526,7 @@ internal static class SelectorParser
 
                 if (PseudoClasses.FindClass(lower, functional: false) is not { } entry)
                 {
-                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{ident.Text}'", position);
+                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{CssSerializer.Shortened(ident.Text)}'", position);
                 }
 
                 Note(entry, ":" + lower, position, context);
@@ -525,7 +536,7 @@ internal static class SelectorParser
                 var name = InfraAscii.ToLower(function.Name);
                 if (PseudoClasses.FindClass(name, functional: true) is not { } known)
                 {
-                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{function.Name}()'", position);
+                    return context.Fail<SimpleSelector>($"the unknown pseudo-class ':{CssSerializer.Shortened(function.Name)}()'", position);
                 }
 
                 Note(known, $":{name}()", position, context);
@@ -586,7 +597,9 @@ internal static class SelectorParser
                 var ofIndex = -1;
                 for (var i = 0; i < arguments.Count && name is "nth-child" or "nth-last-child"; i++)
                 {
-                    if (arguments[i] is CssToken token && token.IsIdent("of"))
+                    // Chromium 159 takes 'of' in lowercase only (measured: ':nth-child(1 OF .a)' drops the rule), where
+                    // Selectors 4 compares it ASCII case-insensitively; the other spellings are refused.
+                    if (arguments[i] is CssToken { Kind: CssTokenKind.Ident, Text: "of" })
                     {
                         ofIndex = i;
                         break;
@@ -594,9 +607,21 @@ internal static class SelectorParser
                 }
 
                 var anb = ofIndex < 0 ? arguments.Items : arguments.Items[..ofIndex];
+                if (ofIndex < 0 && name is "nth-child" or "nth-last-child" && arguments.Items.Any(value => value is CssToken { Kind: CssTokenKind.Ident } word && InfraAscii.EqualsIgnoreCase(word.Text, "of")))
+                {
+                    return context.Fail<PseudoClassSelector>($"':{name}()' has 'of' in capitals, which Chromium does not read", position);
+                }
+
                 if (AnPlusBParser.Parse(anb) is not { } nth)
                 {
                     return context.Fail<PseudoClassSelector>($"':{name}()' needs An+B", position);
+                }
+
+                // Chromium 159 matches nothing once A or B is 2^30 or more in size (measured: -n+1073741823 matches
+                // every element, -n+1073741824 none); the engine computes such values exactly, so it refuses them.
+                if (System.Int128.Abs(nth.A) > MaxAnPlusB || System.Int128.Abs(nth.B) > MaxAnPlusB)
+                {
+                    return context.Fail<PseudoClassSelector>($"':{name}()' has a step or an offset of 2^30 or more, where Chromium matches nothing", position);
                 }
 
                 if (ofIndex < 0)
@@ -614,6 +639,9 @@ internal static class SelectorParser
         }
     }
 
+    /// <summary>The largest A and B of An+B whose matching Chromium 159 computes: 2^30 - 1 (measured).</summary>
+    private const long MaxAnPlusB = (1L << 30) - 1;
+
     private static PseudoElementSelector? ParsePseudoElement(Cursor cursor, TextPosition position, Context context)
     {
         switch (cursor.Peek)
@@ -622,7 +650,7 @@ internal static class SelectorParser
                 cursor.Next();
                 if (PseudoClasses.FindElement(ident.Text, functional: false) is not { } entry)
                 {
-                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{ident.Text}'", position);
+                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{CssSerializer.Shortened(ident.Text)}'", position);
                 }
 
                 context.Findings.Add(new SelectorFinding(entry.Support, "::" + entry.Name, position));
@@ -631,7 +659,7 @@ internal static class SelectorParser
                 cursor.Next();
                 if (PseudoClasses.FindElement(function.Name, functional: true) is not { } known)
                 {
-                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{function.Name}()'", position);
+                    return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{CssSerializer.Shortened(function.Name)}()'", position);
                 }
 
                 var valid = known.Name switch
@@ -669,7 +697,7 @@ internal static class SelectorParser
     /// <summary>Whether the selector lists inside a compound's pseudo-classes hold compound selectors only, and no
     /// :has(): Chromium's rule for the arguments of :host(), :host-context() and ::slotted(). The forgiving lists of
     /// :is() and :where() drop a complex selector instead (Chromium 159 keeps the rule with
-    /// <c>:host(:is(div .foo))</c>, measured, review 39 SU-5); :not() is not forgiving.</summary>
+    /// <c>:host(:is(div .foo))</c>, measured); :not() is not forgiving.</summary>
     private static bool OnlyCompounds(CompoundSelector compound) =>
         compound.Selectors.All(simple => simple switch
         {

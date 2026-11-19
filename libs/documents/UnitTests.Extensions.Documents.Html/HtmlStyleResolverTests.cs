@@ -35,6 +35,24 @@ public class HtmlStyleResolverTests
     }
 
     [Fact]
+    public void A_cell_with_no_table_around_it_is_refused()
+    {
+        // Only a tree made in code has one. Chromium 159 gives it a padding of 1px that an author's revert keeps
+        // (measured through script: td and th made by createElement in a div), which no presentational hint gives.
+        static Ave.Extensions.Documents.Html.Parsing.HtmlElement Element(string name, params Ave.Extensions.Documents.Html.Parsing.HtmlNode[] children) =>
+            new(Ave.Extensions.Documents.Html.Parsing.ElementNamespace.Html, name, [], [.. children], null, TextPosition.Start);
+        var document = new Ave.Extensions.Documents.Html.Parsing.HtmlDocument(Ave.Extensions.Documents.Html.Parsing.DocumentMode.NoQuirks,
+            [Element("html", Element("head"), Element("body", Element("div", Element("td"), Element("th")), Element("table", Element("td"))))]);
+        var parsed = new Ave.Extensions.Documents.Html.Parsing.HtmlParseResult(document, [], "made.html");
+
+        var styled = HtmlStyleResolver.Resolve(parsed, Warn).Match(value => value, error => throw new InvalidOperationException(error.Message));
+        styled.Diagnostics.Where(error => error.Code == HtmlStyleErrorCodes.Unsupported.Element).Select(error => error.Metadata![ErrorMetadataKeys.Value])
+            .Should().Equal("td", "th");
+        Parts(HtmlStyleResolver.Resolve(parsed, Warn with { Unsupported = UnsupportedPolicy.Refuse }).Match(_ => throw new InvalidOperationException("accepted"), error => error))
+            .Select(error => error.Code).Should().Equal(HtmlStyleErrorCodes.Unsupported.Element, HtmlStyleErrorCodes.Unsupported.Element);
+    }
+
+    [Fact]
     public void A_document_in_quirks_mode_is_refused()
     {
         Parts(Refused("<p>no doctype</p>")).Should().ContainSingle(error => error.Code == HtmlStyleErrorCodes.Unsupported.QuirksMode);
@@ -66,7 +84,7 @@ public class HtmlStyleResolverTests
         p.Value("margin-top").Should().Be("3px");
         p.Value("margin-left").Should().Be("4px");
         asked.Should().BeEquivalentTo(["https://example.org/css/site.css", "https://example.org/css/parts/colours.css", "https://example.org/other.css"]).And.OnlyHaveUniqueItems();
-        // The two sheets that do not apply say why (review 39 F19), as class Ignored.
+        // The two sheets that do not apply say why, as class Ignored.
         styled.Diagnostics.Select(error => error.Message).Should().Equal(
             "The style sheet of this link element does not apply: it is an alternate style sheet.",
             "The style sheet of this link element does not apply: its media 'screen' do not match.");
@@ -119,7 +137,7 @@ public class HtmlStyleResolverTests
     {
         var styled = Styled(Doctype + "\n" + markup, Warn);
 
-        // Review 39 M16: the place of the character in the attribute value, through character references and line feeds.
+        // The place of the character in the attribute value, through character references and line feeds.
         var diagnostic = styled.Diagnostics.First(error => error.Code != HtmlStyleErrorCodes.Ignored.StyleSheet);
         ((int)diagnostic.Metadata![ErrorMetadataKeys.SourceLine]!, (int)diagnostic.Metadata![ErrorMetadataKeys.SourceColumn]!).Should().Be((line, column));
     }
@@ -127,7 +145,7 @@ public class HtmlStyleResolverTests
     [Fact]
     public void Diagnostics_of_a_style_element_with_several_texts_point_into_each_text()
     {
-        // Review 39 CR-10: the text after a child element of an svg style element keeps its own place.
+        // The text after a child element of an svg style element keeps its own place.
         var styled = Styled(Doctype + "\n<p id=t>x</p><svg><style>p{}<g/>\n#t{bogus:1}</style></svg>", Warn);
 
         var diagnostic = styled.Diagnostics.Single(error => error.Message.Contains("bogus", StringComparison.Ordinal));

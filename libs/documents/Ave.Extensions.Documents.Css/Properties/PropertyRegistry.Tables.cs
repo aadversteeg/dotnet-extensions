@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
 namespace Ave.Extensions.Documents.Css.Properties;
@@ -45,7 +46,7 @@ public static partial class PropertyRegistry
                 }
 
                 return reader.AnyKeyword() is { } other
-                    ? ParsedValue.Refused($"the counter style '{other}' is not supported")
+                    ? ParsedValue.Refused($"the counter style '{CssSerializer.Shortened(other)}' is not supported")
                     : reader.String() is not null
                         ? ParsedValue.Refused("a string as list marker is not supported")
                         : ParsedValue.Invalid("not a value of list-style-type");
@@ -74,11 +75,11 @@ public static partial class PropertyRegistry
         {
             yield return new PropertyDefinition(
                 name, inherited: true, new CssNumber(2, IsInteger: true), "block containers that establish an inline formatting context",
-                "<integer [1,∞]>", PropertySupport.Supported, "CSS Fragmentation 3 §3.3",
+                $"<integer [1,{MaxShortInteger}]>", PropertySupport.Supported, "CSS Fragmentation 3 §3.3",
                 reader => reader.Count == 1 && reader.Integer() is { } count && count >= 1
                     ? count <= MaxShortInteger
                         ? ParsedValue.Of(new CssNumber(count, IsInteger: true))
-                        : ParsedValue.Refused($"{name} above {MaxShortInteger}: Chromium 159 clamps it to {MaxShortInteger} (measured, review 39 F9)")
+                        : ParsedValue.Refused($"{name} above {MaxShortInteger}: Chromium 159 clamps it to {MaxShortInteger} (measured)")
                     : ParsedValue.Invalid($"{name} is an integer of at least 1"),
                 AsSpecified);
         }

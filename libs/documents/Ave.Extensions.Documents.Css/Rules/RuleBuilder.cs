@@ -38,6 +38,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
     {
         var result = new List<CssRule>();
         var importsAllowed = true;
+        var imported = false;
         foreach (var rule in rules)
         {
             switch (rule)
@@ -52,6 +53,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     if (Import(at) is { } import)
                     {
                         result.Add(import);
+                        imported = true;
                     }
 
                     continue;
@@ -59,10 +61,12 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
                     // @charset is read when bytes are decoded (CSS Syntax 3 §3.2); as a rule it is nothing.
                     continue;
                 case SyntaxAtRule at when InfraAscii.EqualsIgnoreCase(at.Name, "layer") && at.Block is null:
-                    // Layer statements may come before @import (CSS Cascade 5 §2).
+                    // Layer statements may come before @import (CSS Cascade 5 §2); one after an @import ends the place
+                    // for imports, as in Chromium 159 (measured: '@import "a.css"; @layer x; @import "b.css";' drops b.css).
                     if (LayerStatement(at) is { } statement)
                     {
                         result.Add(statement);
+                        importsAllowed &= !imported;
                     }
 
                     continue;
@@ -78,13 +82,24 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
             // Only a valid rule closes the place for @import (CSS Cascade 5 §2): one the engine skips as unreadable
             // does not, as a browser drops it before it counts.
-            if (built is not null || (rule is SyntaxAtRule known && (UnsupportedAtRules.Contains(InfraAscii.ToLower(known.Name)) || IgnoredAtRules.Contains(InfraAscii.ToLower(known.Name)))))
+            if (built is not null || (rule is SyntaxAtRule known && (UnsupportedAtRules.Contains(InfraAscii.ToLower(known.Name)) || (IgnoredAtRules.Contains(InfraAscii.ToLower(known.Name)) && HasKeyframesName(known)))))
             {
                 importsAllowed = false;
             }
         }
 
         return [.. result];
+    }
+
+    /// <summary>Whether a @keyframes rule has a name (CSS Animations 1 §4: an identifier other than a CSS-wide keyword
+    /// and none, or a string): one without is invalid and, as in Chromium 159, does not end the place for @import
+    /// (measured: '@keyframes {} @import "b.css";' applies b.css).</summary>
+    private static bool HasKeyframesName(SyntaxAtRule rule)
+    {
+        var name = rule.Prelude.Where(value => value is not CssToken { Kind: CssTokenKind.Whitespace }).ToList();
+        return name is [CssToken { Kind: CssTokenKind.String }]
+            || (name is [CssToken { Kind: CssTokenKind.Ident } ident]
+                && InfraAscii.ToLower(ident.Text) is not ("none" or "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default"));
     }
 
     /// <summary>One rule, at the top level or nested in a style rule (where declarations become nested declarations
@@ -106,6 +121,15 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
     private StyleRule? Style(SyntaxQualifiedRule rule, bool nested)
     {
+        if (rule.Prelude.Any(value => value is CssToken { Kind: CssTokenKind.Semicolon }))
+        {
+            // No selector holds a ';': in the block of a group rule a stray ';' or a declaration becomes the start of the
+            // next rule's prelude, and every browser drops that rule (Chromium 159, measured: '@media print{ .a{…}; .b{…} }'
+            // drops the rule of .b).
+            Report(CssErrorCodes.Invalid.Rule, $"The rule after a ';' ('{CssSerializer.Shortened(rule.Prelude)}') is invalid; it is dropped.", rule.Position);
+            return null;
+        }
+
         var parsed = SelectorParser.Parse(rule.Prelude, relative: nested, rule.Position);
         if (parsed.List is not { } selectors)
         {
@@ -125,11 +149,11 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         {
             if (finding.Support == SelectorSupport.Unsupported)
             {
-                Report(CssErrorCodes.Unsupported.Selector, $"The selector '{finding.Name}' is not supported.", finding.Position);
+                Report(CssErrorCodes.Unsupported.Selector, $"The selector '{CssSerializer.Shortened(finding.Name)}' is not supported.", finding.Position);
             }
             else
             {
-                Report(CssErrorCodes.Ignored.Selector, $"The selector '{finding.Name}' never matches in a static document.", finding.Position);
+                Report(CssErrorCodes.Ignored.Selector, $"The selector '{CssSerializer.Shortened(finding.Name)}' never matches in a static document.", finding.Position);
             }
         }
 
@@ -164,7 +188,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             }
             else
             {
-                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{at.Name} are invalid; they are dropped.", declarations[0].Position);
+                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{CssSerializer.Shortened(at.Name)} are invalid; they are dropped.", declarations[0].Position);
             }
         }
 
@@ -172,7 +196,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         {
             if (rule is SyntaxNestedDeclarations && !nested)
             {
-                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{at.Name} are invalid; they are dropped.", rule.Position);
+                Report(CssErrorCodes.Invalid.Rule, $"Declarations directly in a top-level @{CssSerializer.Shortened(at.Name)} are invalid; they are dropped.", rule.Position);
                 continue;
             }
 
@@ -216,21 +240,21 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
             case "page" when !nested && at.Block is not null:
                 return Page(at);
             case "import" or "charset":
-                Report(CssErrorCodes.Invalid.Rule, $"@{name} is invalid here.", at.Position);
+                Report(CssErrorCodes.Invalid.Rule, $"@{CssSerializer.Shortened(name)} is invalid here.", at.Position);
                 return null;
         }
 
         if (UnsupportedAtRules.Contains(name))
         {
-            Report(CssErrorCodes.Unsupported.AtRule, $"@{at.Name} is not supported.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, $"@{CssSerializer.Shortened(at.Name)} is not supported.", at.Position);
         }
         else if (IgnoredAtRules.Contains(name))
         {
-            Report(CssErrorCodes.Ignored.AtRule, $"@{at.Name} is read for nothing: it only drives animations, and an animation that names it is refused.", at.Position);
+            Report(CssErrorCodes.Ignored.AtRule, $"@{CssSerializer.Shortened(at.Name)} is read for nothing: it only drives animations, and a value that names an animation, or may name one through var() or env(), is refused.", at.Position);
         }
         else
         {
-            Report(CssErrorCodes.Unsupported.AtRule, $"'@{at.Name}' is not valid or not supported in this profile" + (nested ? " inside a style rule" : string.Empty) + "; the rule is skipped.", at.Position);
+            Report(CssErrorCodes.Unsupported.AtRule, $"'@{CssSerializer.Shortened(at.Name)}' is not valid or not supported in this profile" + (nested ? " inside a style rule" : string.Empty) + "; the rule is skipped.", at.Position);
         }
 
         return null;
@@ -425,10 +449,10 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
                     break;
                 case "font-display" or "font-stretch" or "font-feature-settings" or "font-variation-settings" or "ascent-override" or "descent-override" or "line-gap-override" or "size-adjust" or "font-named-instance" or "font-language-override":
-                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{declaration.Name}' is not supported.", declaration.Position);
+                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{CssSerializer.Shortened(declaration.Name)}' is not supported.", declaration.Position);
                     break;
                 default:
-                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{declaration.Name}' is not valid or not supported in this profile.", declaration.Position);
+                    Report(CssErrorCodes.Unsupported.Value, $"The @font-face descriptor '{CssSerializer.Shortened(declaration.Name)}' is not valid or not supported in this profile.", declaration.Position);
                     break;
             }
         }

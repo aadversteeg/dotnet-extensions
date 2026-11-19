@@ -25,7 +25,7 @@ public static class HtmlParser
     /// <exception cref="ArgumentNullException">The text is null.</exception>
     public static Result<HtmlParseResult, Error> Parse(string text, HtmlParseOptions? options = null)
     {
-        // A null text is a programming error, not input that can fail (review 39 HR-9).
+        // A null text is a programming error, not input that can fail.
         ArgumentNullException.ThrowIfNull(text);
         options ??= HtmlParseOptions.Default;
         return text.Length > HtmlInputLimits.MaxCharacters
@@ -57,11 +57,11 @@ public static class HtmlParser
         if (found is not null && found.Encoding != EncodingLabels.Utf8)
         {
             var index = SourceText.NormalisedIndices(decoded.Text, [ByteDecoding.Utf8Length(bytes.Span, found.Offset)]);
-            return EncodingError(options, found.Label, source.PositionOf(index.Count > 0 ? index[0] : 0));
+            return EncodingError(options, found.Label, source.PositionOf(index.Count > 0 ? index[0] : 0), found.Xml ? "The XML declaration" : "A meta element");
         }
 
         // Bytes that are not UTF-8, with no byte order mark and nothing that declares UTF-8: a browser detects a legacy
-        // encoding for them (Chromium 159 reads caf\xe9 as windows-1252 café, review 39 HD-16), the parser would make
+        // encoding for them (Chromium 159 reads caf\xe9 as windows-1252 café), the parser would make
         // U+FFFD of them. Refused, as a declared legacy encoding is.
         if (!decoded.HasByteOrderMark && found is null && decoded.Replacements.Count > 0)
         {
@@ -111,6 +111,11 @@ public static class HtmlParser
         if (builder.CloneBudgetExceeded)
         {
             return Result<HtmlFragmentResult, Error>.Failure(CloneBudgetError(options));
+        }
+
+        if (builder.TooMany is { } fragmentUnit)
+        {
+            return Result<HtmlFragmentResult, Error>.Failure(TooManyError(options, fragmentUnit));
         }
 
         var freezer = new TreeFreezer(source.PositionOf);
@@ -168,6 +173,11 @@ public static class HtmlParser
             return Result<HtmlParseResult, Error>.Failure(CloneBudgetError(options));
         }
 
+        if (builder.TooMany is { } unit)
+        {
+            return Result<HtmlParseResult, Error>.Failure(TooManyError(options, unit));
+        }
+
         var freezer = new TreeFreezer(source.PositionOf);
         var frozen = freezer.Document(document);
         return (builder.TooDeepAt ?? freezer.TooDeepAt) is { } deep
@@ -192,7 +202,7 @@ public static class HtmlParser
         }
 
         return label is not null && MetaEncodings.ForMeta(EncodingLabels.Resolve(label)!) != EncodingLabels.Utf8
-            ? EncodingError(options, label, source.PositionOf(meta.Start)).Error
+            ? EncodingError(options, label, source.PositionOf(meta.Start), "A meta element").Error
             : null;
     }
 
@@ -203,7 +213,7 @@ public static class HtmlParser
         {
             var message = diagnostic.Detail is null
                 ? $"HTML parse error '{diagnostic.Name}'."
-                : $"HTML parse error '{diagnostic.Name}' at <{diagnostic.Detail}>.";
+                : $"HTML parse error '{diagnostic.Name}' at <{InputQuote.Of(diagnostic.Detail)}>.";
             errors.Add(new Error(HtmlErrorCodes.Parse.Syntax, message)
                 .With(ErrorMetadataKeys.Value, diagnostic.Name)
                 .WithSource(options.SourceName, source.PositionOf(diagnostic.Index)));
@@ -213,6 +223,7 @@ public static class HtmlParser
         {
             errors.Add(new Error(DocumentErrorCodes.TooManyDiagnostics, $"{diagnostics.Suppressed} more parse errors are left out: the parser keeps {HtmlInputLimits.MaxDiagnostics}.")
                 .With(ErrorMetadataKeys.Value, diagnostics.Suppressed)
+                .With(ErrorMetadataKeys.Refusals, 0)
                 .With(ErrorMetadataKeys.SourceFile, options.SourceName));
         }
 
@@ -230,18 +241,28 @@ public static class HtmlParser
             .With(ErrorMetadataKeys.SourceFile, options.SourceName);
 
     private static Error CloneBudgetError(HtmlParseOptions options) =>
-        new Error(HtmlErrorCodes.TooLarge, $"The selected options' content cloned into selectedcontent elements exceeds {TreeBuilder.CloneWorkPerCharacter} nodes and characters per character of input.")
+        new Error(HtmlErrorCodes.TooLarge, $"The selected options' content cloned into selectedcontent elements exceeds {TreeBuilder.CloneWorkPerCharacter} nodes and characters per character of input ({TreeBuilder.MinimumCloneWork} for a shorter input).")
             .With(ErrorMetadataKeys.Value, TreeBuilder.CloneWorkPerCharacter)
             .With(ErrorMetadataKeys.SourceFile, options.SourceName);
+
+    private static Error TooManyError(HtmlParseOptions options, string unit)
+    {
+        var limit = unit == "elements" ? HtmlInputLimits.MaxElements : HtmlInputLimits.MaxNodes;
+        return new Error(HtmlErrorCodes.TooLarge, unit == "elements"
+                ? $"The document makes more than {limit} elements (reopened formatting elements and clones included), the most the parser makes."
+                : $"The document makes more than {limit} nodes (elements, text, comments; reopened formatting elements and clones included), the most the parser makes.")
+            .With(ErrorMetadataKeys.Value, limit)
+            .With(ErrorMetadataKeys.SourceFile, options.SourceName);
+    }
 
     private static Error TooDeepError(HtmlParseOptions options, TextPosition position) =>
         new Error(HtmlErrorCodes.TooDeep, $"Elements are nested more than {HtmlInputLimits.MaxDepth} deep; the parser refuses the document instead of flattening it.")
             .With(ErrorMetadataKeys.Value, HtmlInputLimits.MaxDepth)
             .WithSource(options.SourceName, position);
 
-    private static Result<HtmlParseResult, Error> EncodingError(HtmlParseOptions options, string label, TextPosition position) =>
+    private static Result<HtmlParseResult, Error> EncodingError(HtmlParseOptions options, string label, TextPosition position, string declaration) =>
         Result<HtmlParseResult, Error>.Failure(
-            new Error(HtmlErrorCodes.Encoding, $"A meta element says the bytes are in the encoding '{label}'; the parser reads UTF-8 and UTF-16 only. Convert the document to UTF-8.")
-                .With(ErrorMetadataKeys.Value, label)
+            new Error(HtmlErrorCodes.Encoding, $"{declaration} says the bytes are in the encoding '{InputQuote.Of(label)}'; the parser reads UTF-8 and UTF-16 only. Convert the document to UTF-8.")
+                .With(ErrorMetadataKeys.Value, InputQuote.Of(label))
                 .WithSource(options.SourceName, position));
 }

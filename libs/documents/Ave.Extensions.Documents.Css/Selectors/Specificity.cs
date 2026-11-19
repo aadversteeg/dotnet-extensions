@@ -63,8 +63,10 @@ public readonly record struct Specificity(int Ids, int Classes, int Types) : ICo
         PseudoClassSelector => new(0, 1, 0),
         // & in a nested rule: the parent's most specific selector, computed once when the parent was read.
         ParentSelector parent => parent.Specificity,
-        // At the top level & is :scope, a pseudo-class.
-        NestingSelector => new(0, 1, 0),
+        // At the top level & matches as :scope, but with no specificity (CSS Nesting 1 §3: "&" outside a rule has the
+        // specificity of its parent, which there is none of; Chromium 159, measured: '& {min-width:101px} html
+        // {min-width:100px}' gives 100px).
+        NestingSelector => Zero,
         _ => Zero,
     };
 }

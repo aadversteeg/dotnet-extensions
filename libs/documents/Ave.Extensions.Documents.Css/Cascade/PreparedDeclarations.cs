@@ -45,12 +45,17 @@ internal sealed record RefusedEntry(ErrorCode Code, string Problem) : EntryValue
 /// <summary>A custom property's value (CSS Variables 1 §2): component values with their text.</summary>
 internal sealed record CustomEntry(ValueList<ComponentValue> Values, string Text, bool HasVar) : EntryValue;
 
-/// <summary>One property set by one declaration: a longhand, or a custom property by name.</summary>
+/// <summary>One property set by one declaration: a longhand, a custom property by name, or (neither) <c>all</c>.</summary>
 internal readonly record struct Entry(PropertyDefinition? Longhand, string? Custom, EntryValue Value, PreparedDeclaration Declaration);
 
-/// <summary>A rule's declarations, prepared once: the entries, and the diagnostics reported once when the rule first
-/// applies to an element (properties the engine ignores by rule, or does not know).</summary>
-internal sealed record PreparedBlock(ValueList<Entry> Entries, ValueList<Error> WhenApplied)
+/// <summary>A diagnostic reported when its declaration first applies to an element, once for that declaration.</summary>
+/// <param name="Declaration">The declaration it is about: what it is reported once for.</param>
+/// <param name="Diagnostic">The diagnostic.</param>
+internal readonly record struct Notice(PreparedDeclaration Declaration, Error Diagnostic);
+
+/// <summary>A rule's declarations, prepared once: the entries, and the diagnostics reported once per declaration when the
+/// rule first applies to an element (properties the engine ignores by rule, or does not know).</summary>
+internal sealed record PreparedBlock(ValueList<Entry> Entries, ValueList<Notice> WhenApplied)
 {
     /// <summary>A block with no declarations.</summary>
     public static PreparedBlock Empty { get; } = new([], []);
@@ -83,16 +88,49 @@ internal static class DeclarationPreparer
     public static PreparedBlock Prepare(IEnumerable<Declaration> declarations, string sourceName, CascadeOrigin origin, ref int order, DiagnosticCollector diagnostics)
     {
         var entries = new List<Entry>();
-        var whenApplied = new List<Error>();
+        var whenApplied = new List<Notice>();
         foreach (var declaration in declarations)
         {
             Prepare(declaration, sourceName, origin, order++, entries, whenApplied, diagnostics);
         }
 
-        return entries.Count == 0 && whenApplied.Count == 0 ? PreparedBlock.Empty : new PreparedBlock([.. entries], [.. whenApplied]);
+        return entries.Count == 0 && whenApplied.Count == 0 ? PreparedBlock.Empty : new PreparedBlock(Unshadowed(entries), [.. whenApplied]);
     }
 
-    private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Error> whenApplied, DiagnosticCollector diagnostics)
+    /// <summary>The entries of one block that can win: of the entries for one property (or for <c>all</c>) with one
+    /// importance, the last that is not refused and the refused ones after it. The earlier ones lose to it in every
+    /// cascade (same origin, layer, specificity and element, later order), so a block that repeats a declaration costs
+    /// one entry, not one per repetition. (A refused entry is skipped when it would win, so the one before it stays.)</summary>
+    private static ValueList<Entry> Unshadowed(List<Entry> entries)
+    {
+        if (entries.Count < 2)
+        {
+            return [.. entries];
+        }
+
+        var settled = new HashSet<(int Longhand, string? Custom, bool Important)>();
+        var kept = new List<Entry>(entries.Count);
+        for (var i = entries.Count - 1; i >= 0; i--)
+        {
+            var entry = entries[i];
+            var key = (entry.Longhand?.Index ?? -1, entry.Custom, entry.Declaration.Important);
+            if (settled.Contains(key))
+            {
+                continue;
+            }
+
+            kept.Add(entry);
+            if (entry.Value is not RefusedEntry)
+            {
+                settled.Add(key);
+            }
+        }
+
+        kept.Reverse();
+        return [.. kept];
+    }
+
+    private static void Prepare(Declaration declaration, string sourceName, CascadeOrigin origin, int order, List<Entry> entries, List<Notice> whenApplied, DiagnosticCollector diagnostics)
     {
         var name = declaration.IsCustomProperty ? declaration.Name : InfraAscii.ToLower(declaration.Name);
         var prepared = new PreparedDeclaration(declaration, sourceName, name, declaration.Important && origin != CascadeOrigin.PresentationalHint, order);
@@ -100,14 +138,32 @@ internal static class DeclarationPreparer
         if (declaration.Value.Any(value => value is CssToken token && token.IsDelim('!')))
         {
             // A top-level '!' other than !important is not a <declaration-value> (CSS Syntax 3 §8.2): no property's
-            // grammar takes it, a custom property's included, so Chromium drops the declaration (review 39 F8).
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A '!' that is not !important makes the declaration of '{declaration.Name}' invalid; it is dropped (CSS Syntax 3 §8.2).", prepared));
+            // grammar takes it, a custom property's included, so Chromium drops the declaration.
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A '!' that is not !important makes the declaration of '{CssSerializer.Shortened(declaration.Name)}' invalid; it is dropped (CSS Syntax 3 §8.2).", prepared));
+            return;
+        }
+
+        if (declaration.IsCustomProperty && name == "--")
+        {
+            // '--' alone is reserved (CSS Variables 1 §2): no custom property has that name; Chromium 159 drops it.
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Property, "'--' alone is not a custom property name (CSS Variables 1 §2); the declaration is dropped.", prepared));
             return;
         }
 
         if (ContainsFunction(declaration.Value, "var") && !VarSubstitution.IsWellFormed(declaration.Value))
         {
-            diagnostics.Add(Diagnostic(CssErrorCodes.Unsupported.Value, NotReadable(prepared, "a var() that does not match var( --name [, fallback]? )") + "; the declaration is skipped.", prepared));
+            // CSS Variables 1 §3: a var() that does not match its grammar makes the declaration invalid when it is
+            // parsed; Chromium 159 drops it (measured: 'var(--, yf)').
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A var() in '{CssSerializer.Shortened(declaration.Name)}' does not match var( --name [, fallback]? ); the declaration is invalid and dropped (CSS Variables 1 §3).", prepared));
+            return;
+        }
+
+        if (ContainsFunction(declaration.Value, "var") && ContainsNestedBang(declaration.Value))
+        {
+            // A '!' inside a var() (in its fallback): Chromium 159 drops some such declarations and makes others invalid at
+            // computed-value time (measured: 'var(--x, a!b)' is dropped, 'var(--x, 5px !important)' unsets the property),
+            // by a rule the engine does not follow, so it is refused.
+            diagnostics.Add(Diagnostic(CssErrorCodes.Unsupported.Value, NotReadable(prepared, "a '!' inside a function") + "; the declaration is skipped.", prepared));
             return;
         }
 
@@ -125,17 +181,17 @@ internal static class DeclarationPreparer
         {
             if (PropertyRegistry.FindIgnored(name) is { } ignored)
             {
-                whenApplied.Add(ignored.Refuses?.Invoke(declaration.Value) == true
-                    ? Diagnostic(CssErrorCodes.Unsupported.Value, $"'{declaration.Name}: {CssSerializer.Shortened(declaration.Value)}' is not supported: {ignored.RefusedValues}.", prepared)
-                    : Diagnostic(CssErrorCodes.Ignored.Property, $"'{declaration.Name}' is ignored: it concerns {ignored.Reason}.", prepared));
+                whenApplied.Add(new Notice(prepared, ignored.Refuses?.Invoke(declaration.Value) == true
+                    ? Diagnostic(CssErrorCodes.Unsupported.Value, $"'{CssSerializer.Shortened(declaration.Name)}: {CssSerializer.Shortened(declaration.Value)}' is not supported: {ignored.RefusedValues}.", prepared)
+                    : Diagnostic(CssErrorCodes.Ignored.Property, $"'{CssSerializer.Shortened(declaration.Name)}' is ignored: it concerns {ignored.Reason}.", prepared)));
             }
             else if (name.StartsWith("-moz-", StringComparison.Ordinal) || name.StartsWith("-ms-", StringComparison.Ordinal) || name.StartsWith("-o-", StringComparison.Ordinal))
             {
-                diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Property, $"'{declaration.Name}' is a property of another browser engine; the declaration is dropped.", prepared));
+                diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Property, $"'{CssSerializer.Shortened(declaration.Name)}' is a property of another browser engine; the declaration is dropped.", prepared));
             }
             else
             {
-                whenApplied.Add(Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{declaration.Name}' is not supported.", prepared));
+                whenApplied.Add(new Notice(prepared, Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{CssSerializer.Shortened(declaration.Name)}' is not supported.", prepared)));
             }
 
             return;
@@ -144,11 +200,19 @@ internal static class DeclarationPreparer
         IReadOnlyList<PropertyDefinition> targets = longhand is not null
             ? [longhand]
             : isAll
-                ? [.. PropertyRegistry.Longhands.Where(property => property.Name is not ("direction" or "unicode-bidi"))]
+                ? []
                 : [.. shorthand!.Longhands.Select(longhandName => PropertyRegistry.Find(longhandName)!)];
 
         void AddAll(EntryValue value)
         {
+            if (isAll)
+            {
+                // One entry for every longhand but direction and unicode-bidi (CSS Cascade 5 §3.2): the cascade takes it
+                // with each longhand's own candidates, so a declaration of all costs one entry, not one per longhand.
+                entries.Add(new Entry(null, null, value, prepared));
+                return;
+            }
+
             foreach (var target in targets)
             {
                 entries.Add(new Entry(target, null, value, prepared));
@@ -187,10 +251,10 @@ internal static class DeclarationPreparer
 
         // Chromium keeps its -internal- keywords for its own style sheet: an author's text-align: -internal-center is
         // dropped. Where a property takes a name (font-family, counter names, list-style-type, page), Chromium 159 reads
-        // -internal-… as an ordinary name (measured, review 39), so that is left to the property's grammar.
+        // -internal-… as an ordinary name (measured), so that is left to the property's grammar.
         if (origin != CascadeOrigin.UserAgent && name == "text-align" && ContainsInternalKeyword(declaration.Value))
         {
-            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; the declaration of '{declaration.Name}' is dropped.", prepared));
+            diagnostics.Add(Diagnostic(CssErrorCodes.Invalid.Value, $"A value starting with -internal- is for the user agent only; the declaration of '{CssSerializer.Shortened(declaration.Name)}' is dropped.", prepared));
             return;
         }
 
@@ -239,14 +303,14 @@ internal static class DeclarationPreparer
     /// <param name="problem">What the grammar found, or null.</param>
     /// <returns>The message, without the consequence.</returns>
     public static string NotReadable(PreparedDeclaration declaration, string? problem) =>
-        $"'{declaration.Source.Name}: {CssSerializer.Serialize(Trim(declaration.Source.Value))}' is not valid or not supported in this profile"
+        $"'{CssSerializer.Shortened(declaration.Source.Name)}: {CssSerializer.Shortened(Trim(declaration.Source.Value))}' is not valid or not supported in this profile"
         + (problem is null ? string.Empty : $" ({problem})");
 
     /// <summary>A diagnostic about a declaration: at its place, with its property and value.</summary>
     public static Error Diagnostic(ErrorCode code, string message, PreparedDeclaration declaration) =>
         CssDiagnostics.At(code, message, declaration.SourceName, declaration.Source.Position)
-            .With(ErrorMetadataKeys.Property, declaration.Name)
-            .With(ErrorMetadataKeys.Value, CssSerializer.Serialize(Trim(declaration.Source.Value)));
+            .With(ErrorMetadataKeys.Property, CssSerializer.Shortened(declaration.Name))
+            .With(ErrorMetadataKeys.Value, CssSerializer.Shortened(Trim(declaration.Source.Value)));
 
     /// <summary>The CSS-wide keyword the whole value is, or null (CSS Cascade 5 §7.3; white space around it does not
     /// count).</summary>
@@ -344,7 +408,46 @@ internal static class DeclarationPreparer
         return null;
     }
 
-    private static bool ContainsInternalKeyword(IEnumerable<ComponentValue> values)
+    /// <summary>Whether a '!' delimiter is inside a function or block of the values (a top-level one is checked apart).</summary>
+    internal static bool ContainsNestedBang(IReadOnlyList<ComponentValue> values)
+    {
+        var pending = new Stack<IReadOnlyList<ComponentValue>>();
+        foreach (var value in values)
+        {
+            switch (value)
+            {
+                case FunctionValue function:
+                    pending.Push(function.Values);
+                    break;
+                case SimpleBlock block:
+                    pending.Push(block.Values);
+                    break;
+            }
+        }
+
+        while (pending.Count > 0)
+        {
+            foreach (var value in pending.Pop())
+            {
+                switch (value)
+                {
+                    case CssToken token when token.IsDelim('!'):
+                        return true;
+                    case FunctionValue function:
+                        pending.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        pending.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether an identifier or function name starting with -internal- is anywhere in the values.</summary>
+    internal static bool ContainsInternalKeyword(IEnumerable<ComponentValue> values)
     {
         foreach (var value in values)
         {

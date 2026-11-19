@@ -103,7 +103,7 @@ internal static partial class Colors
 
                 if (OtherSystem.Contains(name))
                 {
-                    message = $"the system colour '{ident.Text}' is not supported";
+                    message = $"the system colour '{CssSerializer.Shortened(ident.Text)}' is not supported";
                     return ColorOutcome.Unsupported;
                 }
 
@@ -122,7 +122,7 @@ internal static partial class Colors
 
                 if (OtherFunctions.Contains(functionName))
                 {
-                    message = $"the colour function {functionName}() is not supported";
+                    message = $"the colour function {CssSerializer.Shortened(functionName)}() is not supported";
                     return ColorOutcome.Unsupported;
                 }
 
@@ -254,7 +254,7 @@ internal static partial class Colors
     private static bool IsNone(ComponentValue value) => value is CssToken token && token.IsIdent("none");
 
     /// <summary>A refusal when a modern colour function has a <c>none</c> component: Chromium 159 keeps it missing and
-    /// writes the colour as <c>color(srgb none none none)</c> or <c>hsl(none 50% 50%)</c> (measured, review 39), where
+    /// writes the colour as <c>color(srgb none none none)</c> or <c>hsl(none 50% 50%)</c> (measured), where
     /// the engine would compute zero.</summary>
     private static string? HasNone(IReadOnlyList<ComponentValue> channels, ComponentValue? alpha, bool legacy) =>
         !legacy && (channels.Any(IsNone) || (alpha is not null && IsNone(alpha)))
@@ -377,7 +377,7 @@ internal static partial class Colors
         else if (Hue(channels[0]) is { } degrees)
         {
             // A hue is periodic, so a huge one has no reliable remainder in a double: Chromium 159 gives red for
-            // hsl(1e999, 100%, 50%) (measured, review 39 CR-8), which no rule of CSS Color 4 explains. Refused instead.
+            // hsl(1e999, 100%, 50%) (measured), which no rule of CSS Color 4 explains. Refused instead.
             if (!(Math.Abs(degrees) <= MaxHueDegrees))
             {
                 message = $"a hue beyond {MaxHueDegrees} degrees either way is not supported";

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 using Ave.Extensions.Documents.Core;
 
 namespace Ave.Extensions.Documents.Html.Parsing;
@@ -24,13 +25,34 @@ public sealed record HtmlDocument(DocumentMode Mode, ValueList<HtmlNode> Childre
     /// <summary>The document element: the <c>html</c> element every parsed document has; null for a document made in
     /// code without an element.</summary>
     public HtmlElement? DocumentElement => Children.OfType<HtmlElement>().FirstOrDefault();
+
+    /// <summary>The members for <see cref="object.ToString"/>: the children by their number, so the text of a deep tree
+    /// costs no recursion (<see cref="HtmlTreeText"/> writes the whole tree).</summary>
+    /// <param name="builder">Where the members are written.</param>
+    /// <returns>True: members were written.</returns>
+    protected override bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("Mode = ").Append(Mode).Append(", Children = ").Append(Children.Count).Append(" nodes");
+        return true;
+    }
 }
 
 /// <summary>A document fragment (DOM Standard §4.7): the content of a <c>template</c> element, or the result of
 /// parsing a fragment (HTML Standard §13.4).</summary>
 /// <param name="Children">Its children.</param>
 /// <param name="Position">Where it starts: the template's start tag, or the start of the fragment's text.</param>
-public sealed record HtmlDocumentFragment(ValueList<HtmlNode> Children, TextPosition Position) : HtmlNode(Position);
+public sealed record HtmlDocumentFragment(ValueList<HtmlNode> Children, TextPosition Position) : HtmlNode(Position)
+{
+    /// <summary>The members for <see cref="object.ToString"/>: the children by their number, so the text of a deep tree
+    /// costs no recursion (<see cref="HtmlTreeText"/> writes the whole tree).</summary>
+    /// <param name="builder">Where the members are written.</param>
+    /// <returns>True: members were written.</returns>
+    protected override bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("Children = ").Append(Children.Count).Append(" nodes, Position = ").Append(Position);
+        return true;
+    }
+}
 
 /// <summary>A doctype (DOM Standard §4.6). Missing identifiers are empty strings, as the DOM has them.</summary>
 /// <param name="Name">The name, lowercase (for example <c>html</c>); empty when the doctype has none.</param>
@@ -78,6 +100,23 @@ public sealed record HtmlElement(
     /// <returns>Whether the element is that HTML element.</returns>
     public bool IsHtml(string localName) =>
         Namespace == ElementNamespace.Html && string.Equals(LocalName, localName, StringComparison.Ordinal);
+
+    /// <summary>The members for <see cref="object.ToString"/>: the children and the template contents by their number
+    /// of nodes, so the text of a deep tree costs no recursion (<see cref="HtmlTreeText"/> writes the whole tree).</summary>
+    /// <param name="builder">Where the members are written.</param>
+    /// <returns>True: members were written.</returns>
+    protected override bool PrintMembers(StringBuilder builder)
+    {
+        builder.Append("Namespace = ").Append(Namespace).Append(", LocalName = ").Append(LocalName)
+            .Append(", Attributes = ").Append(Attributes).Append(", Children = ").Append(Children.Count).Append(" nodes");
+        if (TemplateContent is { } content)
+        {
+            builder.Append(", TemplateContent = ").Append(content.Children.Count).Append(" nodes");
+        }
+
+        builder.Append(", Position = ").Append(Position);
+        return true;
+    }
 }
 
 /// <summary>Text (DOM Standard §4.11). Adjacent character tokens become one text node (HTML Standard §13.2.6.1,

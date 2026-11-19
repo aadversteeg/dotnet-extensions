@@ -15,7 +15,7 @@ public static partial class PropertyRegistry
             ComputeColor);
 
         yield return new PropertyDefinition(
-            "text-align", inherited: true, new CssKeyword("start"), "block containers", "start | end | left | right | center | justify | match-parent | -webkit-left | -webkit-right | -webkit-center",
+            "text-align", inherited: true, new CssKeyword("start"), "block containers", "start | end | left | right | center | justify | -webkit-left | -webkit-right | -webkit-center",
             PropertySupport.Supported, "CSS Text 3 §6.1",
             ParseTextAlign,
             ComputeTextAlign);
@@ -79,40 +79,39 @@ public static partial class PropertyRegistry
     private static ComputedResult ComputeColor(CssValue value, ComputeContext context) =>
         value is CssKeyword { Name: "currentcolor" } ? context.Inherited(Color) : value;
 
+    /// <summary>The text-align keyword of th in the engine's user-agent style sheet (its own name).</summary>
+    private const string HeaderCenter = "-internal-ave-th-center";
+
     /// <summary>text-align (CSS Text 3 §6.1), with Chromium's <c>-webkit-left</c>, <c>-webkit-right</c> and
     /// <c>-webkit-center</c>: they align the text as left, right and center do, and also align the block children whose
     /// width leaves room ("align descendants", HTML Standard §15.2); the HTML align attribute and the caption of the
-    /// user-agent style sheet use them. Layout must do both, or refuse them. The user agent's <c>-internal-center</c> for th (HTML Standard §15.3.8:
-    /// centred where the parent's text-align is its initial value) is accepted from the user-agent style sheet only,
-    /// which the parser knows by the keyword's form: authors cannot write a name starting with -internal- in a way that
-    /// matters, since Chromium rejects it for them too.</summary>
+    /// user-agent style sheet use them. Layout must do both, or refuse them. The engine's own keyword
+    /// <c>-internal-ave-th-center</c>, for th in its user-agent style sheet (HTML Standard §15.3.8: centred where the
+    /// parent's text-align is its initial value), is accepted from that sheet only, which the parser knows by the
+    /// keyword's form: the cascade drops every keyword starting with -internal- from an author's sheet, as Chromium
+    /// drops its own.</summary>
     private static ParsedValue ParseTextAlign(ValueReader reader)
     {
-        if (reader.Count == 1 && reader.Keyword("-internal-center") is not null)
+        if (reader.Count == 1 && reader.Keyword(HeaderCenter) is not null)
         {
-            return ParsedValue.Of(new CssKeyword("-internal-center"));
+            return ParsedValue.Of(new CssKeyword(HeaderCenter));
         }
 
         return reader.Count == 1 && reader.Peek is Syntax.CssToken { Kind: Syntax.CssTokenKind.String }
             ? ParsedValue.Refused("text-align with a string is not supported")
-            : OneKeyword(reader, "text-align", ["start", "end", "left", "right", "center", "justify", "match-parent", "-webkit-left", "-webkit-right", "-webkit-center"], ["justify-all", "-webkit-match-parent", "-webkit-auto"]);
+            : OneKeyword(reader, "text-align", ["start", "end", "left", "right", "center", "justify", "-webkit-left", "-webkit-right", "-webkit-center"], ["justify-all", "-webkit-match-parent", "-webkit-auto"]);
     }
 
-    /// <summary>The computed text-align: <c>match-parent</c> is the parent's computed value (CSS Text 3 §6.1 resolves
-    /// start and end against the parent's direction; Chromium 159 keeps them as they are, measured, and the engine is
-    /// left-to-right only, where start is left); <c>-internal-center</c> is center when the parent's value is start,
-    /// else the parent's value.</summary>
+    /// <summary>The computed text-align: <c>-internal-ave-th-center</c> is center when the parent's value is start, else
+    /// the parent's value. <c>match-parent</c> (CSS Text 3 §6.1) is not a value: Chromium 159 does not parse it
+    /// (css_parser_fast_paths.cc, CSSTextAlignMatchParentEnabled, read in the Chromium 150 source; measured: <c>text-align: match-parent</c> after
+    /// <c>text-align: right</c> leaves right).</summary>
     private static ComputedResult ComputeTextAlign(CssValue value, ComputeContext context)
     {
         var parent = context.Inherited(TextAlign) as CssKeyword;
         return value switch
         {
-            CssKeyword { Name: "match-parent" } => parent?.Name switch
-            {
-                "-internal-center" => new CssKeyword("center"),
-                _ => parent ?? new CssKeyword("start"),
-            },
-            CssKeyword { Name: "-internal-center" } => parent is null or { Name: "start" } ? new CssKeyword("center") : parent,
+            CssKeyword { Name: HeaderCenter } => parent is null or { Name: "start" } ? new CssKeyword("center") : parent,
             _ => value,
         };
     }

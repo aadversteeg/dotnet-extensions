@@ -63,7 +63,7 @@ names nothing.
 | `margin-top` | no | `0pt` | `<length-percentage [0,∞]> \| auto` | CSS Box Model 3 §5.1 |
 | `max-width` | no | `none` | `none \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
 | `min-width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
-| `orphans` | yes | `2` | `<integer [1,∞]>` | CSS Fragmentation 3 §3.3 |
+| `orphans` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `outline-color` | no | `currentcolor` | `<color> (nothing is drawn: outline-style is only none; Chromium 159 does not take auto)` | CSS UI 4 §3.4 |
 | `outline-offset` | no | `0pt` | `<length> (nothing is drawn: outline-style is only none)` | CSS UI 4 §3.5 |
 | `outline-width` | no | `2.25pt` | `<line-width> (nothing is drawn: outline-style is only none)` | CSS UI 4 §3.2 |
@@ -75,7 +75,7 @@ names nothing.
 | `padding-top` | no | `0pt` | `<length-percentage [0,∞]>` | CSS Box Model 3 §5.2 |
 | `print-color-adjust` | yes | `economy` | `economy \| exact` | CSS Color Adjust 1 §3.1 |
 | `table-layout` | no | `auto` | `auto \| fixed` | CSS 2.1 §17.5.2 |
-| `text-align` | yes | `start` | `start \| end \| left \| right \| center \| justify \| match-parent \| -webkit-left \| -webkit-right \| -webkit-center` | CSS Text 3 §6.1 |
+| `text-align` | yes | `start` | `start \| end \| left \| right \| center \| justify \| -webkit-left \| -webkit-right \| -webkit-center` | CSS Text 3 §6.1 |
 | `text-decoration-color` | no | `currentcolor` | `<color>` | CSS Text Decoration 3 §2.3 |
 | `text-decoration-line` | no | `none` | `none \| underline` | CSS Text Decoration 3 §2.1 |
 | `text-decoration-style` | no | `solid` | `solid` | CSS Text Decoration 3 §2.2 |
@@ -83,15 +83,21 @@ names nothing.
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
 | `vertical-align` | no | `baseline` | `baseline \| top \| middle \| bottom` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
 | `white-space-collapse` | yes | `collapse` | `collapse \| preserve` | CSS Text 4 §3.1 |
-| `widows` | yes | `2` | `<integer [1,∞]>` | CSS Fragmentation 3 §3.3 |
+| `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+
+`overflow-x` and `overflow-y`: `hidden` on one axis while the other stays `visible` is refused, since Chromium
+computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
+so `clip` beside `visible` is accepted and kept, as in Chromium.
 
 ### Supported at the initial value only
 
 What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and
 the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,
 which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and
-on any other element stage 4 applies the ratio or refuses it. Any other value is refused.
+on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or
+a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`
+and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.
 
 | Property | Initial | Accepted | Defined in |
 | --- | --- | --- | --- |
@@ -238,7 +244,7 @@ Each was checked against Chromium 159's print rendering; the values that change 
 | `-webkit-text-size-adjust` | screen rendering hints; they do not change what is drawn on a page |  |
 | `-webkit-touch-callout` | interaction with a pointer or keyboard; a static document has none |  |
 | `-webkit-user-drag` | interaction with a pointer or keyboard; a static document has none |  |
-| `-webkit-user-modify` | interaction with a pointer or keyboard; a static document has none |  |
+| `-webkit-user-modify` | interaction with a pointer or keyboard; a static document has none | any value but read-only: Chromium 159 wraps and keeps the text as it does editable text (measured: read-write-plaintext-only makes white-space-collapse preserve) |
 | `-webkit-user-select` | interaction with a pointer or keyboard; a static document has none |  |
 | `accent-color` | interaction with a pointer or keyboard; a static document has none |  |
 | `animation` | transitions and the parts of an animation: without a change of state or an animation name they change nothing on the printed page | a value that names an animation: Chromium 159 prints the animated state |
@@ -321,7 +327,8 @@ Each was checked against Chromium 159's print rendering; the values that change 
 - Absolute lengths: cm, in, mm, pc, pt, px, q. Relative lengths the engine resolves: ch, em, ex, rem, vh, vw (ex and ch need the caller's font metrics, else they are refused). Refused: cap, cqb, cqh, cqi, cqmax, cqmin, cqw, dvb, dvh, dvi, dvmax, dvmin, dvw, ic, lh, lvb, lvh, lvi, lvmax, lvmin, lvw, rcap, rch, rex, ric, rlh, svb, svh, svi, svmax, svmin, svw, vb, vi, vmax, vmin.
 - Math functions: calc(), min(), max(), clamp(); a result that still mixes a length and a percentage after computing is refused. Refused: abs(), acos(), asin(), atan(), atan2(), calc-size(), cos(), exp(), hypot(), log(), mod(), pow(), progress(), random(), rem(), round(), sibling-count(), sibling-index(), sign(), sin(), sqrt(), tan(), and typed arithmetic (multiplying or dividing dimensions).
 - Colours: the 148 named colours, transparent, currentcolor, #rgb, #rgba, #rrggbb, #rrggbbaa, rgb(), rgba(), hsl(), hsla(); system colours activetext, canvas, canvastext, linktext, visitedtext. Refused: -webkit-image-set(), color(), color-mix(), contrast-color(), device-cmyk(), hwb(), lab(), lch(), light-dark(), oklab(), oklch(), relative colour syntax.
-- Custom properties and var() (CSS Variables 1), with fallbacks; cycles and missing values make the property unset, as in a browser. Refused: env(), attr(), if().
+- Custom properties and var() (CSS Variables 1), with fallbacks; missing values make the property unset, as in a browser; revert and revert-layer made by substitution roll the cascade back. Refused: a cycle of var() references (Chromium does not make every member invalid), a '!' inside a var(), env(), attr(), if().
+- CSS-wide keywords initial, inherit, unset, revert and revert-layer (CSS Cascade 5 §7.3). An important revert-layer rolls back the normal declarations of its own layer, of the later layers and the unlayered ones too, so the value comes from the layers below it (§7.3.5); in the style attribute it also rolls back the attribute's normal declarations, as in Chromium 159.
 
 ## Selectors
 
@@ -427,7 +434,9 @@ Pseudo-elements never draw in an accepted document and are ignored by rule: `::p
   refused), @supports (answered as Chromium 159 would where the engine can tell, refused where it cannot), @import (through the caller's resolver, with layer() and supports()), @layer, @font-face and
   @page (read as values for the layout), CSS Nesting 1 inside style rules.
 - Ignored by rule: @-webkit-keyframes, @keyframes.
-- Refused: @color-profile, @container, @counter-style, @document, @font-feature-values, @font-palette-values, @function, @namespace, @position-try, @property, @scope, @starting-style, @view-transition.
+- Refused: @color-profile, @container, @counter-style, @document, @font-feature-values, @font-palette-values, @function, @namespace, @position-try, @property, @scope, @starting-style, @view-transition, and every
+  other at-rule the engine does not know, a vendor-prefixed one too (`@-moz-document`); Chromium drops those.
+- Read without effect: @charset (the encoding is decided before the sheet is parsed).
 
 ## HTML
 
@@ -435,7 +444,7 @@ Pseudo-elements never draw in an accepted document and are ignored by rule: `::p
   applies it).
 - A document in quirks mode is refused (add `<!DOCTYPE html>`).
 - Refused when drawn (display not none): input, button, select, textarea, meter, progress.
-- Refused wherever they are: audio, canvas, details, embed, iframe, marquee, noscript, object, optgroup, option, summary, svg and math (their own
+- Refused wherever they are: audio, canvas, details, embed, fencedframe, geolocation, iframe, marquee, noscript, object, optgroup, option, summary, svg and math (their own
   matching and style rules), and an element whose user-agent style is outside the profile (sub, sup, del, s, ruby …).
 - Scripts are not run, so a script element a browser runs (no type, a JavaScript type, module, importmap) and every
   event handler attribute (`on…`) are refused; a data block (any other type) is not.
@@ -446,20 +455,24 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 
 | Element | Mapped | Refused |
 | --- | --- | --- |
-| body | bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag) | background |
-| table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right (float), background, frame, rules |
-| caption | align=top | align=bottom/left/right |
+| html, head |  | align |
+| body | bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag) | align, background |
+| table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right/inline-start/inline-end (float), background, frame, rules |
+| caption | align=top | align=bottom |
 | col, colgroup | width, align (-webkit-left/right/center, or one text-align value) |  |
 | thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign | background |
-| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (the integer it starts with, at least 0) and border (1px inset, or solid with bordercolor) | background |
+| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535; 0 when that integer is beyond 2,147,483,647) and border (1px inset, or solid with bordercolor) | background; a td or th with no table around it (only a tree made in code has one) |
 | div, p | align (-webkit-left/right/center, or one text-align value) |  |
-| h1–h6 | align (middle as center, or one text-align value) |  |
 | hr | align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width |  |
-| img | width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom | align=left/right (float), texttop, middle/center |
+| img | width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom | align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG) |
 | ol, ul, li | type | ol start, ol reversed, li value |
 | pre | wrap |  |
 | br |  | clear |
 | font | color, face (one font-family value), size |  |
 | legend |  | align |
 | iframe, embed, object, video, canvas, input, marquee, applet, frame |  | width, height, align, hspace, vspace, border |
-| every element |  | contenteditable (empty, true or plaintext-only) |
+| meta |  | http-equiv=Content-Security-Policy in head; name=color-scheme with a content other than normal or light |
+| link |  | charset other than utf-8 (on any link) |
+| every other element (h1–h6, lists, sections, phrasing, custom and unknown elements) but button, select and textarea | align (middle as center, or one text-align value) |  |
+| every element but embed | hidden (display: none) | hidden=until-found (its hint content-visibility: hidden is outside this profile) |
+| every element |  | contenteditable (empty, true or plaintext-only), autofocus |

@@ -25,13 +25,16 @@ internal static class CssSerializer
         return text.ToString();
     }
 
-    /// <summary>The text of component values for a message: trimmed, at most 100 characters (a value can be
-    /// megabytes).</summary>
-    public static string Shortened(IEnumerable<ComponentValue> values)
-    {
-        var text = Serialize(values).Trim();
-        return text.Length <= 100 ? text : text[..100] + "…";
-    }
+    /// <summary>The most characters of one input name or value a diagnostic quotes.</summary>
+    public const int MaxQuotedCharacters = InputQuote.MaxCharacters;
+
+    /// <summary>The text of component values for a message: trimmed, at most <see cref="MaxQuotedCharacters"/>
+    /// characters (a value can be megabytes).</summary>
+    public static string Shortened(IEnumerable<ComponentValue> values) => Shortened(Serialize(values).Trim());
+
+    /// <summary>Text from the input for a message: itself, or its first <see cref="MaxQuotedCharacters"/> characters
+    /// followed by <c>…</c>; a cut never splits a surrogate pair.</summary>
+    public static string Shortened(string text) => InputQuote.Of(text);
 
     /// <summary>What kind of text the last write ended with, for the comment rule of §10.</summary>
     private enum Piece

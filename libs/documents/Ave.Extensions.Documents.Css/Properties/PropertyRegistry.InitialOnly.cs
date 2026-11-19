@@ -76,7 +76,7 @@ public static partial class PropertyRegistry
             reader => reader.Count == 1 && reader.Keyword("normal") is not null
                 ? ParsedValue.Of(Zero)
                 : reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "word-spacing") is { Value: CssLength { Points: 0 } or CssPercentage { Value: 0 } } zero
-                    // Chromium 159 keeps 0% as 0% (measured, review 39); 0 and 0px are 0px.
+                    // Chromium 159 keeps 0% as 0% (measured); 0 and 0px are 0px.
                     ? ParsedValue.Of(zero.Value is CssPercentage ? new CssPercentage(0) : Zero)
                     : ParsedValue.Refused("'word-spacing' is supported only at its initial value, normal"),
             AsSpecified);
@@ -170,24 +170,43 @@ public static partial class PropertyRegistry
     /// <summary>A background position axis the engine implements only at its initial value, 0%.</summary>
     private static PropertyDefinition InitialPercentPair(string name, string appliesTo, string specification) =>
         new(name, false, new CssPercentage(0), appliesTo, "0%", PropertySupport.InitialOnly, specification,
-            // A zero length is the same position, and Chromium 159 keeps it as written: 0px, not 0% (measured, review 39).
+            // A zero length is the same position, and Chromium 159 keeps it as written: 0px, not 0% (measured).
             reader => reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, name) is { Value: (CssPercentage { Value: 0 } or CssLength { Points: 0 }) and var zero }
                 ? ParsedValue.Of(zero)
                 : ParsedValue.Refused($"'{name}' is supported only at its initial value, 0%"),
             AsSpecified);
 
     /// <summary>aspect-ratio = auto || &lt;ratio&gt;, &lt;ratio&gt; = &lt;number [0,∞]&gt; [ / &lt;number [0,∞]&gt; ]? (CSS Values 4
-    /// §7.8). Only auto, alone or with a ratio, is supported.</summary>
+    /// §7.8). Only auto, alone or with a ratio, is supported. Each of the two comes at most once (Chromium 159, measured:
+    /// <c>auto 16/9 auto</c> is dropped); a number past the largest single-precision float is that float, as Chromium
+    /// keeps it (measured: <c>1e999/1</c> is <c>3.40282e+38 / 1</c>).</summary>
     private static ParsedValue ParseAspectRatio(ValueReader reader)
     {
-        var auto = reader.Keyword("auto") is not null;
+        // Chromium keeps the ratio as two single-precision floats in a gfx::SizeF, which makes a component of 8
+        // float epsilons (2^-20) or less 0 (ui/gfx/geometry/size_f.h, SizeF::clamp, read in the Chromium 150 source;
+        // measured in 159: 0.0000001/1 is 0 / 1,
+        // 2^-20 is 0, 0.000000954 stays). Other numbers keep their value (opacity: 0.0000001 is 1e-07).
+        const float Trivial = 9.5367431640625E-07f; // 2^-20: 8 × the single-precision machine epsilon 2^-23
+        static double RatioComponent(double value) => (float)value > Trivial ? System.Math.Min(value, float.MaxValue) : 0;
+
+        // A math function's NaN is 0 and its result is clamped to the component's range [0, ∞] (CSS Values 4 §10.9,
+        // §10.12; Chromium 159, measured: 'auto calc(0/0)' and 'auto calc(-1)' are auto 0 / 1).
+        double? Component()
+        {
+            var math = reader.Peek is Syntax.FunctionValue;
+            var number = reader.Number();
+            return math && number is { } value && (double.IsNaN(value) || value < 0) ? 0 : number;
+        }
+
+        var first = reader.Keyword("auto") is not null;
+        var auto = first;
         CssRatio? ratio = null;
-        if (reader.Number() is { } width && width >= 0)
+        if (Component() is { } width && width >= 0)
         {
             var height = 1.0;
             if (reader.Delim('/'))
             {
-                if (reader.Number() is not { } second || second < 0)
+                if (Component() is not { } second || second < 0)
                 {
                     return ParsedValue.Invalid("not a value of aspect-ratio");
                 }
@@ -195,10 +214,10 @@ public static partial class PropertyRegistry
                 height = second;
             }
 
-            ratio = new CssRatio(width, height);
+            ratio = new CssRatio(RatioComponent(width), RatioComponent(height));
         }
 
-        auto |= reader.Keyword("auto") is not null;
+        auto |= !first && reader.Keyword("auto") is not null;
         if (!reader.AtEnd || (!auto && ratio is null))
         {
             return ParsedValue.Invalid("not a value of aspect-ratio");

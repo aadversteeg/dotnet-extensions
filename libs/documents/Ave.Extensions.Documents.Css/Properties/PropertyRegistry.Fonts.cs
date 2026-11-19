@@ -124,7 +124,7 @@ public static partial class PropertyRegistry
             return size;
         }
 
-        // Chromium 159's font-size bounds (measured, review 39 F9 and F13): it computes at most 10 000px, and raises a
+        // Chromium 159's font-size bounds (measured): it computes at most 10 000px, and raises a
         // size made from a relative value (em, %, larger, smaller of a size that was never absolute) above 0 and below
         // 6px, its minimum logical font size, to 6px, while children inherit the size before the change. The engine
         // keeps neither rule's second size, so it refuses both cases instead.
@@ -132,6 +132,12 @@ public static partial class PropertyRegistry
         if (pixels > MaxFontSizePixels)
         {
             return ComputedResult.Refused($"a font size above {MaxFontSizePixels}px (Chromium 159 clamps it to {MaxFontSizePixels}px)");
+        }
+
+        // Chromium 159 computes 1e-7px as 0px and keeps 2e-7px (measured); between them the engine cannot tell.
+        if (pixels is > 0 and < MinKeptFontSizePixels)
+        {
+            return ComputedResult.Refused("a font size above 0 and below 2e-7px (Chromium 159 computes 1e-7px as 0px)");
         }
 
         if (pixels is > 0 and < MinLogicalFontSizePixels && !context.FontSizeSource.Absolute)
@@ -144,6 +150,9 @@ public static partial class PropertyRegistry
 
     /// <summary>The largest computed font size of Chromium 159, in px.</summary>
     private const double MaxFontSizePixels = 10000;
+
+    /// <summary>The least font size above 0, in px, that Chromium 159 is measured to keep as it is.</summary>
+    private const double MinKeptFontSizePixels = 2e-7;
 
     /// <summary>Chromium 159's minimum logical font size, in px: the least it computes for a relative size.</summary>
     private const double MinLogicalFontSizePixels = 6;
@@ -180,7 +189,8 @@ public static partial class PropertyRegistry
 
     /// <summary>font-family (CSS Fonts 4 §2.1): a comma-separated list of family names (a string, or identifiers joined by
     /// single spaces) and generic families (keywords). The CSS-wide keywords and "default" cannot be a family name
-    /// written without quotes.</summary>
+    /// written without quotes, and a generic family keyword cannot start a name of several identifiers (Chromium 159
+    /// reads it as the generic family and then wants a comma; measured: <c>font: 12px sans-serif serif</c> is dropped).</summary>
     private static ParsedValue ParseFontFamily(ValueReader reader)
     {
         var families = new List<CssValue>();
@@ -211,7 +221,15 @@ public static partial class PropertyRegistry
                 case CssToken { Kind: CssTokenKind.Ident } word when expectName:
                     if (words.Count == 0 && InfraAscii.ToLower(word.Text) is "initial" or "inherit" or "unset" or "revert" or "revert-layer" or "default")
                     {
-                        return ParsedValue.Invalid($"'{word.Text}' cannot be a font family name without quotes");
+                        return ParsedValue.Invalid($"'{CssSerializer.Shortened(word.Text)}' cannot be a font family name without quotes");
+                    }
+
+                    // Chromium also reads -webkit-body as a generic family here (ConsumeGenericFamily of
+                    // css_parsing_utils.cc takes the keywords serif to math of css_value_keywords.json5; read in the
+                    // Chromium 150 source), so 'font: 12px -webkit-body a' is dropped (measured in 159).
+                    if (words.Count == 1 && (GenericFamilies.Contains(InfraAscii.ToLower(words[0])) || InfraAscii.ToLower(words[0]) == "-webkit-body"))
+                    {
+                        return ParsedValue.Invalid($"the generic family '{CssSerializer.Shortened(words[0])}' cannot start a font family name");
                     }
 
                     words.Add(word.Text);
@@ -264,7 +282,11 @@ public static partial class PropertyRegistry
             : ParsedValue.Invalid("font-weight is a number from 1 to 1000");
     }
 
-    /// <summary>The computed weight: bolder and lighter step from the parent's weight by the table of CSS Fonts 4 §2.2.1.</summary>
+    /// <summary>The computed weight: bolder and lighter step from the parent's weight by the table of CSS Fonts 4 §2.2.1;
+    /// a number is kept in quarters, cut toward zero, as Chromium keeps a weight in a fixed-point value with two
+    /// fractional bits (platform/fonts/font_selection_types.h, FontSelectionValue, read in the Chromium 150 source;
+    /// measured in 159: 100.6 is 100.5, 999.99 is
+    /// 999.75, calc(0.1234567 * 400) is 49.25).</summary>
     private static ComputedResult ComputeFontWeight(CssValue value, ComputeContext context)
     {
         var parent = context.Inherited(FontWeight) is CssNumber inherited ? inherited.Value : 400;
@@ -272,6 +294,7 @@ public static partial class PropertyRegistry
         {
             CssKeyword { Name: "bolder" } => new CssNumber(parent < 350 ? 400 : parent < 550 ? 700 : parent < 900 ? 900 : parent),
             CssKeyword { Name: "lighter" } => new CssNumber(parent < 100 ? parent : parent < 550 ? 100 : parent < 750 ? 400 : 700),
+            CssNumber number when System.Math.Truncate((float)number.Value * 4f) / 4 is var quarters && quarters != number.Value => new CssNumber(quarters),
             _ => value,
         };
     }
@@ -304,7 +327,7 @@ public static partial class PropertyRegistry
     /// percentage of the element's font size.</summary>
     /// <remarks>Chromium 159 keeps a calc() that mixes a length and a percentage in its layout unit, 1/64 px, rounded
     /// down: calc(1px + 10%) at 16px is 2.59375px, not 2.6px; a percentage or a length alone is kept as it is
-    /// (measured, review 39).</remarks>
+    /// (measured).</remarks>
     private static ComputedResult ComputeLineHeight(CssValue value, ComputeContext context)
     {
         if (value is CssKeyword or CssNumber)

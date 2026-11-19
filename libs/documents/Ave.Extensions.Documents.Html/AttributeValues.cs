@@ -37,7 +37,14 @@ internal static class AttributeValues
     /// <summary>"Rules for parsing integers" (§2.3.4.1): leading white space, an optional sign, digits; what follows the
     /// digits is ignored (<c>5abc</c> is 5, <c>7.9</c> is 7). Null for an error; the magnitude is clamped to
     /// int.MaxValue.</summary>
-    public static long? Integer(string input)
+    public static long? Integer(string input) => Integer(input, overflowIsError: false);
+
+    /// <summary>"Rules for parsing integers" (§2.3.4.1) into a 32-bit integer, as Chromium 159 reads a cellpadding: null
+    /// also when the magnitude is beyond int.MaxValue (measured: cellpadding="2147483647" is 65,535 px; "2147483648",
+    /// "+2147483648", "2147483648abc", "2147483648.5" and 400 nines are 0).</summary>
+    public static long? Int32Integer(string input) => Integer(input, overflowIsError: true);
+
+    private static long? Integer(string input, bool overflowIsError)
     {
         var position = SkipWhitespace(input, 0);
         var negative = false;
@@ -52,7 +59,17 @@ internal static class AttributeValues
         while (position < input.Length && char.IsAsciiDigit(input[position]))
         {
             // Very long numbers are a parse result too; clamp instead of overflowing.
-            value = Math.Min(value * 10 + (input[position] - '0'), int.MaxValue);
+            value = value * 10 + (input[position] - '0');
+            if (value > int.MaxValue)
+            {
+                if (overflowIsError)
+                {
+                    return null;
+                }
+
+                value = int.MaxValue;
+            }
+
             position++;
         }
 
@@ -66,7 +83,7 @@ internal static class AttributeValues
 
     /// <summary>"Rules for parsing dimension values" (§2.3.4.4): digits with an optional fraction, then a percentage
     /// sign or not; null for an error. A relative dimension (digits then <c>*</c>, as in <c>width="3*"</c>) is no value
-    /// either: Chromium 159 gives it no hint (measured on td and img, review 39 F5).</summary>
+    /// either: Chromium 159 gives it no hint (measured on td and img).</summary>
     public static HtmlDimension? Dimension(string input)
     {
         var position = SkipWhitespace(input, 0);
@@ -106,14 +123,52 @@ internal static class AttributeValues
     /// <summary>"Rules for parsing nonzero dimension values" (§2.3.4.5): a dimension, zero being an error.</summary>
     public static HtmlDimension? NonzeroDimension(string input) => Dimension(input) is { Value: > 0 } dimension ? dimension : null;
 
+    /// <summary>The text without the white space Chromium 159 strips from a colour attribute before the rules for parsing
+    /// a legacy colour value (HTML §2.3.6.4): ASCII white space and the code points whose bidirectional class is white
+    /// space (U+1680, U+2000 to U+200A, U+2028, U+205F, U+3000), as <c>String::StripWhiteSpace</c> does in
+    /// <c>HTMLElement::ParseColorWithLegacyRules</c> (html_element.cc, with <c>IsSpaceOrNewline</c> of wtf/text/unicode.h;
+    /// read in the Chromium 150 source; measured in 159: bgcolor="&#x3000;red" is red).</summary>
+    private static string StripWhiteSpace(string value)
+    {
+        static bool IsSpace(char c) => c <= 0x7F
+            ? c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r'
+            : c is '\u1680' or (>= '\u2000' and <= '\u200A') or '\u2028' or '\u205F' or '\u3000';
+        var start = 0;
+        var end = value.Length;
+        while (start < end && IsSpace(value[start]))
+        {
+            start++;
+        }
+
+        while (end > start && IsSpace(value[end - 1]))
+        {
+            end--;
+        }
+
+        return value.Substring(start, end - start);
+    }
+
     /// <summary>"Rules for parsing a legacy color value" (§2.3.6): a named colour, <c>#rgb</c>, or any other text read
-    /// as hex digits in the forgiving way browsers have always done; null for an error (empty, or transparent).</summary>
+    /// as hex digits in the forgiving way browsers have always done; null for an error (empty, or transparent). Chromium
+    /// 159 tests for the empty value before it strips the white space, so a value of white space only is black
+    /// (measured: bgcolor=" ", "&#x3000;" and "&#x2003;" on td, table, tr and body, color on font and hr, and body
+    /// text and link are rgb(0, 0, 0); bgcolor="" is no colour).</summary>
     public static CssColor? LegacyColor(string value)
     {
-        var input = value.Trim(' ', '\t', '\n', '\f', '\r');
-        if (input.Length == 0 || InfraAscii.EqualsIgnoreCase(input, "transparent"))
+        if (value.Length == 0)
         {
             return null;
+        }
+
+        var input = StripWhiteSpace(value);
+        if (InfraAscii.EqualsIgnoreCase(input, "transparent"))
+        {
+            return null;
+        }
+
+        if (input.Length == 0)
+        {
+            return new CssColor(0, 0, 0, 1);
         }
 
         if (CssColor.Named(input) is { } named)

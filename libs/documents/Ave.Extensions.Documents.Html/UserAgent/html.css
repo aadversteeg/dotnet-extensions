@@ -32,13 +32,9 @@ noframes, param, rp, script, style, template, title {
   display: none;
 }
 
-[hidden]:not([hidden=until-found i]):not(embed) {
-  display: none;
-}
-
-[hidden=until-found i]:not(embed) {
-  content-visibility: hidden;
-}
+/* The hidden attribute is a presentational hint, as in Chromium (HTMLElement::CollectStyleForPresentationAttribute,
+   html_element.cc, read in the Chromium 150 source; measured in 159): display: none, or content-visibility: hidden for until-found, at the level of the author's
+   declarations, so revert rolls it back (measured). */
 
 embed[hidden] { display: inline; height: 0; width: 0; }
 
@@ -155,7 +151,9 @@ h6 { margin-block: 2.33em; font-size: 0.67em; }
 
 /* §15.3.7 Lists */
 dir, dd, dl, dt, menu, ol, ul { display: block; }
-li { display: list-item; text-align: match-parent; }
+/* §15.3.7 gives li text-align: match-parent; Chromium 159 does not parse that value (measured; css_parser_fast_paths.cc,
+   CSSTextAlignMatchParentEnabled, read in the Chromium 150 source), so its li inherits text-align as every other element does. */
+li { display: list-item; }
 
 dir, dl, menu, ol, ul { margin-block: 1em; }
 
@@ -181,18 +179,13 @@ dir, menu, ul {
 /* §15.3.8 Tables */
 table { display: table; }
 caption { display: table-caption; }
-colgroup, colgroup[hidden] { display: table-column-group; }
-col, col[hidden] { display: table-column; }
-thead, thead[hidden] { display: table-header-group; }
-tbody, tbody[hidden] { display: table-row-group; }
-tfoot, tfoot[hidden] { display: table-footer-group; }
-tr, tr[hidden] { display: table-row; }
+colgroup { display: table-column-group; }
+col { display: table-column; }
+thead { display: table-header-group; }
+tbody { display: table-row-group; }
+tfoot { display: table-footer-group; }
+tr { display: table-row; }
 td, th { display: table-cell; }
-
-colgroup[hidden], col[hidden], thead[hidden], tbody[hidden],
-tfoot[hidden], tr[hidden] {
-  visibility: collapse;
-}
 
 table {
   box-sizing: border-box;
@@ -200,11 +193,13 @@ table {
   border-collapse: separate;
   text-indent: initial;
 }
-td, th { padding: 1px; }
+/* A cell's padding is its table's presentational hint, not a rule here: 1px by default, 0px after an author's revert
+   (measured). A td or th with no table around it (only a tree made in code has one) is refused, as no hint gives it
+   the padding Chromium 159 gives it (measured: 1px that an author's revert keeps). */
 th { font-weight: bold; }
 
 /* §15.3.8: th is centred when its parent's text-align is the initial value. */
-th { text-align: -internal-center; }
+th { text-align: -internal-ave-th-center; }
 
 caption { text-align: -webkit-center; }
 thead, tbody, tfoot, table > tr { vertical-align: middle; }
