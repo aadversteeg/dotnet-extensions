@@ -103,15 +103,23 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// </summary>
     public bool BodyShown { get; init; } = true;
 
+    /// <summary>
+    /// Whether the table's header rows are repeated at the top of its later fragments, as its first fragment decided
+    /// (<see cref="TablePage"/>, RepeatsHeader): a later page does not decide again. Null in a token not made by the
+    /// layout; then the page it resumes on decides, as a first page does. Part of the position.
+    /// </summary>
+    public bool? RepeatsHeader { get; init; }
+
     /// <summary>Equal when the positions are equal (<see cref="Prepared"/> is not compared).</summary>
     /// <param name="other">The other token.</param>
     /// <returns>True for the same position.</returns>
     public bool Equals(TracksBreakToken? other) =>
-        other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown;
+        other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown
+        && RepeatsHeader == other.RepeatsHeader;
 
     /// <summary>The hash of the position.</summary>
     /// <returns>The hash code.</returns>
-    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown);
+    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, RepeatsHeader);
 }
 
 /// <summary>Where one cut cell continues.</summary>

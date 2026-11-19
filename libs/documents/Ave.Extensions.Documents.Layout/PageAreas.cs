@@ -48,7 +48,7 @@ internal static class PageAreas
         var content = area.Content;
         var available = area.Height?.Points ?? pageAreaHeight;
         var margin = content.Style.Margin;
-        return InFlowChild.Place(environment, content, width, margin.Top.Points, available, isAtPageStart: true, resume: null, isPageRoot: true)
+        return InFlowChild.Place(environment, content, width, margin.Top.Points, available, available, isAtPageStart: true, resume: null, isPageRoot: true)
             .OnSuccessBind(placement =>
             {
                 // At the start of an empty area NoRoom cannot happen (the contract turns it into DoesNotFit); a

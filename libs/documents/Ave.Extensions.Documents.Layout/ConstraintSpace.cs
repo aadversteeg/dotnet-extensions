@@ -30,6 +30,16 @@ public sealed record ConstraintSpace(
     public bool FollowsContent { get; init; }
 
     /// <summary>
+    /// The height of the page area the box is laid out in (Chromium's "fragmentainer block size", beside its available
+    /// block size), less the header rows of the tables around the box that repeat them: Chromium reserves their room in
+    /// the fragmentainer for the content of the rows below them (<c>ConstraintSpaceBuilder::ReserveSpaceInFragmentainer</c>).
+    /// Unlike <see cref="AvailableHeight"/> it does not depend on where the box starts on the page, and a layout with
+    /// unlimited height (the measurement of a table cell) carries the value of the page it measures for. A table decides
+    /// from it whether its header rows repeat (<see cref="TablePage"/>). Zero when not given: then no header row repeats.
+    /// </summary>
+    public double FragmentainerBlockSize { get; init; }
+
+    /// <summary>
     /// Null, or the early break at which the box must end its fragment on this page: one the box reported in an earlier
     /// layout of the same page (<see cref="LayoutResult.Placed.BestBreak"/>), when its parent found that breaking there
     /// is better than where the parent ran out of room. The box lays its content out as before up to that breakpoint and

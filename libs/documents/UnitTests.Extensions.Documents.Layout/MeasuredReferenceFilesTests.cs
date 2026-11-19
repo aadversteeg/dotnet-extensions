@@ -340,6 +340,22 @@ public class MeasuredReferenceFilesTests
         ["a6-header-quarter-360-9075.lines.txt"] = 186,
         ["a6-header-quarter-360-9075.print.txt"] = 250,
         ["a6-header-quarter-360-9075.words.txt"] = 61,
+        ["a6-nested-header-h4425-n14.boxes.txt"] = 16,
+        ["a6-nested-header-h4425-n14.lines.txt"] = 53,
+        ["a6-nested-header-h4425-n14.print.txt"] = 70,
+        ["a6-nested-header-h4425-n14.words.txt"] = 15,
+        ["a6-nested-header-h4425-n16.boxes.txt"] = 18,
+        ["a6-nested-header-h4425-n16.lines.txt"] = 59,
+        ["a6-nested-header-h4425-n16.print.txt"] = 78,
+        ["a6-nested-header-h4425-n16.words.txt"] = 17,
+        ["a6-nested-header-h4425-n20.boxes.txt"] = 22,
+        ["a6-nested-header-h4425-n20.lines.txt"] = 74,
+        ["a6-nested-header-h4425-n20.print.txt"] = 98,
+        ["a6-nested-header-h4425-n20.words.txt"] = 21,
+        ["a6-nested-header-h4425-n26.boxes.txt"] = 28,
+        ["a6-nested-header-h4425-n26.lines.txt"] = 92,
+        ["a6-nested-header-h4425-n26.print.txt"] = 122,
+        ["a6-nested-header-h4425-n26.words.txt"] = 27,
         ["a6-nested-header-pad12-h2925.boxes.txt"] = 32,
         ["a6-nested-header-pad12-h2925.lines.txt"] = 119,
         ["a6-nested-header-pad12-h2925.print.txt"] = 157,
@@ -348,6 +364,10 @@ public class MeasuredReferenceFilesTests
         ["a6-nested-under-header-h2400.lines.txt"] = 145,
         ["a6-nested-under-header-h2400.print.txt"] = 190,
         ["a6-nested-under-header-h2400.words.txt"] = 40,
+        ["a6-nested-under-header-h2700-n16.boxes.txt"] = 19,
+        ["a6-nested-under-header-h2700-n16.lines.txt"] = 66,
+        ["a6-nested-under-header-h2700-n16.print.txt"] = 87,
+        ["a6-nested-under-header-h2700-n16.words.txt"] = 19,
         ["a6-nested-under-header-h2700.boxes.txt"] = 33,
         ["a6-nested-under-header-h2700.lines.txt"] = 122,
         ["a6-nested-under-header-h2700.print.txt"] = 161,
@@ -1068,7 +1088,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(260);
+        cases.Should().HaveCount(265);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

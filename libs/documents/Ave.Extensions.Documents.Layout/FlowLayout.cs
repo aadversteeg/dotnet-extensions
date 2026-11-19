@@ -295,7 +295,7 @@ public static class FlowLayout
             var followsContent = space.FollowsContent || hasContent;
             var inside = breakAt is { Inside: { } target } && breakAt.ChildIndex == index ? target : null;
             var outcome = InFlowChild.Place(
-                environment, child, contentWidth, top, contentHeight, childIsAtPageStart, childResume, followsContent: followsContent, breakAt: inside,
+                environment, child, contentWidth, top, contentHeight, space.FragmentainerBlockSize, childIsAtPageStart, childResume, followsContent: followsContent, breakAt: inside,
                 isBelowStartInsets: contentIsBelowStartInsets && !(top > 0));
             if (outcome.IsFailure)
             {
@@ -318,7 +318,7 @@ public static class FlowLayout
 
                 return Broken(best is null
                     ? SlicedBox.Placed(placed.ToImmutable(), cursor, lastResort, BreakAppeal.LastResort)
-                    : BreakAt(environment, children, contentWidth, contentHeight, placed, best, isEarlier: best.Index != index || best.Inside is not null));
+                    : BreakAt(environment, children, contentWidth, contentHeight, space.FragmentainerBlockSize, placed, best, isEarlier: best.Index != index || best.Inside is not null));
             }
 
             var placement = outcome.Value.Value;
@@ -330,7 +330,7 @@ public static class FlowLayout
                 var kept = BreakAvoidance.Inside(child, placement.KeptAppeal);
                 if (inside is null && best is not null && best.Appeal > (placement.KeepsItsBreak ? kept : appeal))
                 {
-                    return Broken(BreakAt(environment, children, contentWidth, contentHeight, placed, best, isEarlier: best.Index != index || best.Inside is not null));
+                    return Broken(BreakAt(environment, children, contentWidth, contentHeight, space.FragmentainerBlockSize, placed, best, isEarlier: best.Index != index || best.Inside is not null));
                 }
 
                 // A child that keeps its break is compared at its kept appeal (BreakAvoidance.Kept, lowered by its own
@@ -400,7 +400,7 @@ public static class FlowLayout
     /// (<see cref="BreakAvoidance.Kept"/>): Chromium's box lays itself out again to its early break there.
     /// </summary>
     private static Result<Maybe<SlicedBox.Content>, Error> BreakAt(
-        LayoutEnvironment environment, ImmutableArray<Box> children, double contentWidth, double contentHeight, ImmutableArray<PlacedFragment>.Builder placed, Breakpoint breakpoint, bool isEarlier)
+        LayoutEnvironment environment, ImmutableArray<Box> children, double contentWidth, double contentHeight, double fragmentainerBlockSize, ImmutableArray<PlacedFragment>.Builder placed, Breakpoint breakpoint, bool isEarlier)
     {
         ValueList<PlacedFragment> before = [.. placed.Take(breakpoint.PlacedCount)];
         if (breakpoint.Inside is not { } inside)
@@ -409,7 +409,7 @@ public static class FlowLayout
         }
 
         var child = children[breakpoint.Index];
-        return InFlowChild.Place(environment, child, contentWidth, inside.Top, contentHeight, inside.IsAtPageStart, inside.Resume, followsContent: inside.FollowsContent, breakAt: inside.Break)
+        return InFlowChild.Place(environment, child, contentWidth, inside.Top, contentHeight, fragmentainerBlockSize, inside.IsAtPageStart, inside.Resume, followsContent: inside.FollowsContent, breakAt: inside.Break)
             .OnSuccessBind(outcome => outcome is { HasValue: true, Value.Continuation: { } continuation }
                 ? SlicedBox.Placed([.. before, outcome.Value.Fragment], inside.Top + outcome.Value.Fragment.Fragment.Size.Height, new FlowBreakToken(breakpoint.Index, continuation), breakpoint.Appeal, keepsItsBreak: isEarlier,
                     keptAppeal: BreakAvoidance.Inside(child, BreakAvoidance.Kept(child, inside.Break)))
