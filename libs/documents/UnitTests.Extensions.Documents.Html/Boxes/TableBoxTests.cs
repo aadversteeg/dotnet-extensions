@@ -72,21 +72,27 @@ public class TableBoxTests
     }
 
     [Theory]
-    // Fixed layout: column elements, then the first row's cells; the rest shares what is left equally (CSS 2.1 §17.5.2.1).
-    [InlineData("<colgroup><col style=\"width:80pt\"><col></colgroup><tr><td>a</td><td>b</td></tr>", "fixed", "80pt 1fr")]
-    [InlineData("<tr><td>a</td><td style=\"width:20pt\">b</td><td>c</td></tr><tr><td style=\"width:50pt\">d</td><td>e</td><td>f</td></tr>", "fixed", "1fr 20pt 1fr")]
-    [InlineData("<col style=\"width:30pt\"><tr><td style=\"width:90pt\">a</td><td>b</td></tr>", "fixed", "30pt 1fr")]
-    [InlineData("<col span=2 style=\"width:10pt\"><tr><td>a</td><td>b</td><td>c</td></tr>", "fixed", "10pt 10pt 1fr")]
-    [InlineData("<colgroup span=\"2\"></colgroup><col style=\"width:5pt\"><tr><td>a</td><td>b</td><td>c</td></tr>", "fixed", "1fr 1fr 5pt")]
-    [InlineData("<colgroup><col style=\"width:30%\"><col style=\"width:70%\"></colgroup><tr><td>a</td><td>b</td></tr>", "fixed", "30fr 70fr")]
-    [InlineData("<col style=\"width:25%\"><tr><td>a</td><td>b</td><td>c</td></tr>", "fixed", "25fr 37.5fr 37.5fr")]
-    [InlineData("<col style=\"width:14.29%\"><col style=\"width:17.14%\"><col style=\"width:57.14%\"><col style=\"width:11.43%\"><tr><td>a</td><td>b</td><td>c</td><td>d</td></tr>", "fixed", "14.29fr 17.14fr 57.14fr 11.43fr")]
-    // Automatic layout: only what does not depend on the content.
-    [InlineData("<tr><td>a</td></tr>", "auto", "1fr")]
-    [InlineData("<col style=\"width:80pt\"><col><tr><td>a</td><td>b</td></tr>", "auto", "80pt 1fr")]
-    [InlineData("<tr><td colspan=2>a</td></tr><tr><td>b</td><td>c</td></tr>", "fixed", "1fr 1fr")]
-    public void Column_widths_are_the_model_s_column_sizes(string rows, string layout, string columns) =>
-        string.Join(" ", Table($"<table>{rows}</table>", $"{Collapsed} table {{ table-layout: {layout} }}").Style.Columns).Should().Be(columns);
+    // Fixed layout (a table of width 100%): a column element's length is exact, the rest shares what is left equally
+    // (CSS 2.1 §17.5.2.1); with every column of a length the table's width left over goes to them (Stretch).
+    [InlineData("<colgroup><col style=\"width:80pt\"><col></colgroup><tr><td>a</td><td>b</td></tr>", "fixed", "", "80pt 1fr", BoxWidth.Stretch)]
+    [InlineData("<col span=2 style=\"width:10pt\"><tr><td>a</td><td>b</td><td>c</td></tr>", "fixed", "", "10pt 10pt 1fr", BoxWidth.Stretch)]
+    [InlineData("<colgroup span=\"2\"></colgroup><col style=\"width:5pt\"><tr><td>a</td><td>b</td><td>c</td></tr>", "fixed", "", "1fr 1fr 5pt", BoxWidth.Stretch)]
+    [InlineData("<col style=\"width:30pt\"><col style=\"width:0pt\"><tr><td>a</td><td>b</td></tr>", "fixed", "", "30pt 0pt", BoxWidth.Stretch)]
+    [InlineData("<tr><td colspan=2>a</td></tr><tr><td>b</td><td>c</td></tr>", "fixed", "", "1fr 1fr", BoxWidth.Stretch)]
+    // Automatic layout: a column element's length is the column's preferred width, a column without one is sized by
+    // its content; width auto (also with table-layout: fixed, which Chromium takes only at a width other than auto)
+    // is as wide as the columns need, width 100% takes the container's width.
+    [InlineData("<tr><td>a</td></tr>", "auto", "", "auto", BoxWidth.Stretch)]
+    [InlineData("<tr><td>a</td><td>b</td></tr>", "auto", "", "auto auto", BoxWidth.Stretch)]
+    [InlineData("<col style=\"width:80pt\"><col><tr><td>a</td><td>b</td></tr>", "auto", "", "preferred(80pt) auto", BoxWidth.Stretch)]
+    [InlineData("<col style=\"width:80pt\"><col><tr><td>a</td><td>b</td></tr>", "auto", "width: auto", "preferred(80pt) auto", BoxWidth.Auto)]
+    [InlineData("<col style=\"width:80pt\"><col><tr><td>a</td><td>b</td></tr>", "fixed", "width: auto", "preferred(80pt) auto", BoxWidth.Auto)]
+    [InlineData("<col style=\"width:30pt\"><col style=\"width:40pt\"><tr><td colspan=2>a</td></tr><tr><td>b</td><td>c</td></tr>", "auto", "width: auto", "preferred(30pt) preferred(40pt)", BoxWidth.Auto)]
+    public void Column_widths_are_the_model_s_column_sizes(string rows, string layout, string width, string columns, BoxWidth tableWidth)
+    {
+        var table = Table($"<table>{rows}</table>", $"{Collapsed} table {{ table-layout: {layout}; {width} }}");
+        (string.Join(" ", table.Style.Columns), table.Style.Width).Should().Be((columns, tableWidth));
+    }
 
     [Theory]
     [InlineData("colspan=2", 2, 1)]
@@ -98,7 +104,7 @@ public class TableBoxTests
     [InlineData("rowspan=9", 1, 3)]
     public void Spans_are_read_from_the_attributes(string attribute, int columns, int rows)
     {
-        var table = Table($"<table><tr><td {attribute}>a</td><td>b</td><td>c</td><td>d</td></tr><tr><td>e</td></tr><tr><td>f</td></tr></table>");
+        var table = Table($"<table><tr><td {attribute}>a</td><td>b</td><td>c</td><td>d</td></tr><tr><td>e</td><td>e</td><td>e</td><td>e</td><td>e</td><td>e</td></tr><tr><td>f</td></tr></table>");
         Parts(Parts(Parts(table).Single()).First()).First().Style.Span.Should().Be(new CellSpan(columns, rows));
     }
 
@@ -151,14 +157,8 @@ public class TableBoxTests
         // Column sizes the model cannot give.
         { "<col><col><col><table><tr><td>a</td><td>b</td></tr></table>", "", null },
         { "<table><col><col><col><tr><td>a</td><td>b</td></tr></table>", "", "3 column elements for 2 columns" },
-        { "<table><tr><td colspan=2 style=\"width:10pt\">a</td></tr></table>", "", "width on a first-row cell that spans columns" },
-        { "<table><tr><td>a</td></tr><tr><td style=\"width:10pt\">b</td></tr></table>", "table { table-layout: auto }", "cell widths in the automatic table layout" },
-        { "<table><col style=\"width:50%\"><tr><td>a</td></tr></table>", "table { table-layout: auto }", "percent columns in the automatic table layout" },
-        { "<table><col style=\"width:50%\"><col style=\"width:20pt\"><col><tr><td>a</td><td>b</td><td>c</td></tr></table>", "", "percent and length columns together" },
-        { "<table><col style=\"width:30%\"><col style=\"width:30%\"><tr><td>a</td><td>b</td></tr></table>", "", "percent columns that do not add up to 100%" },
-        { "<table><col style=\"width:60%\"><col style=\"width:40%\"><col><tr><td>a</td><td>b</td><td>c</td></tr></table>", "", "percent columns that do not add up to 100%" },
-        { "<table><col style=\"width:30pt\"><col style=\"width:30pt\"><tr><td>a</td><td>b</td></tr></table>", "", "every column of a given width" },
-        { "<table><tr><td>a</td><td>b</td></tr></table>", "table { table-layout: auto }", "automatic table layout, 2 columns without a width" },
+        { "<table><tr><td colspan=2>a</td></tr></table>", "", "column 2 without a cell that starts in it" },
+        { "<table><tr><td>a</td><td colspan=2>b</td></tr></table>", "table { table-layout: auto }", "column 3 without a cell that starts in it" },
     };
 
     [Theory]
@@ -178,8 +178,14 @@ public class TableBoxTests
 
     [Theory]
     [InlineData("<table style=\"width:50%\"><tr><td>a</td></tr></table>", "", "width", "50%")]
-    [InlineData("<table style=\"width:auto\"><tr><td>a</td></tr></table>", "", "width", "auto")]
+    [InlineData("<table style=\"width:300pt\"><tr><td>a</td></tr></table>", "", "width", "300pt")]
     [InlineData("<table style=\"margin-left:10pt\"><tr><td>a</td></tr></table>", "", "margin-left", "10pt")]
+    [InlineData("<table style=\"width:auto;margin-right:10pt\"><tr><td>a</td></tr></table>", "", "margin-right", "10pt")]
+    [InlineData("<table style=\"width:auto;margin-left:auto\"><tr><td>a</td></tr></table>", "", "margin-left", "auto")]
+    [InlineData("<table><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "", "width", "50%")]
+    [InlineData("<table><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "table { table-layout: auto }", "width", "50%")]
+    [InlineData("<table><tr><td style=\"width:10pt\">a</td></tr></table>", "", "width", "10pt")]
+    [InlineData("<table><tr><td style=\"width:10pt\">a</td></tr></table>", "table { table-layout: auto }", "width", "10pt")]
     [InlineData("<table style=\"background:#ccc\"><tr><td>a</td></tr></table>", "", "background-color", "rgb(204, 204, 204)")]
     [InlineData("<table><tbody style=\"background:#ccc\"><tr><td>a</td></tr></tbody></table>", "", "background-color", "rgb(204, 204, 204)")]
     [InlineData("<table><tr style=\"background:#ccc\"><td>a</td></tr></table>", "", "background-color", "rgb(204, 204, 204)")]
@@ -200,6 +206,7 @@ public class TableBoxTests
     [InlineData("tr { width: 50pt; padding: 3pt } tbody { padding: 2pt; margin: 4pt }")]
     [InlineData("td { margin: 3pt }")]
     [InlineData("table { padding: 6pt; margin: 4pt 0 }")]
+    [InlineData("table { margin: 0 auto }")]
     public void Table_values_without_effect_are_drawn_as_nothing(string css) =>
         Boxes(Doc("<table><tr><td>a</td></tr></table>", Collapsed + css)).IsSuccess.Should().BeTrue();
 

@@ -26,25 +26,29 @@ internal static class TableProperties
     };
 
     /// <summary>
-    /// The width of a table part: the table's is 100%, the model's only table width; a column's a length or a
-    /// percentage, a cell's a length (the table then checks what its layout makes of them, CSS 2.1 §17.5.2); a column
-    /// group's auto; no effect on a row or a row group (CSS 2.1 §17.5.2 reads the widths of columns and cells only).
+    /// The width of a table part: the table's <c>auto</c> or <c>100%</c>; a column's a length (the table reads it for its
+    /// layout, CSS 2.1 §17.5.2); a cell's, a column group's and percent columns are not drawn; no effect on a row or a
+    /// row group (CSS 2.1 §17.5.2 reads the widths of columns and cells only).
     /// </summary>
     public static string? Width(CssValue value, ElementFacts facts) => Part(facts) switch
     {
-        _ when value is CssKeyword { Name: "auto" } && Part(facts) != TablePart.Table => null,
-        TablePart.Table => value is CssPercentage { Value: 100 } ? null : "a table is drawn only at width: 100% in this version",
-        TablePart.Column => value is CssLength or CssPercentage ? null : "a calculated column width is not drawn in this version",
-        TablePart.Cell => value is CssLength ? null : "a cell width other than a length is not drawn in this version",
+        _ when value is CssKeyword { Name: "auto" } => null,
+        TablePart.Table => value is CssPercentage { Value: 100 } ? null : "a table is drawn only at width: auto or 100% in this version",
+        TablePart.Column => value is CssLength ? null : "a column width other than a length is not drawn in this version",
+        TablePart.Cell => "a width on a cell is not drawn in this version",
         TablePart.ColumnGroup => "a width on a column group is not drawn in this version",
         _ => null,
     };
 
     /// <summary>Margins: internal table elements have none (CSS 2.1 §17.5: "Internal table elements do not have
-    /// margins"); a table of width 100% has no horizontal margin in this version (it would pass its container).</summary>
+    /// margins"); a table has no horizontal margin in this version (at width 100% it would pass its container, and auto
+    /// margins centre a narrower table), but <c>auto</c> on a table of width 100%, where it is 0 (CSS 2.1 §10.3.3).</summary>
     public static string? Margin(string side, CssValue value, ElementFacts facts) => Part(facts) switch
     {
-        TablePart.Table when side is "left" or "right" => value is CssKeyword { Name: "auto" } || value is CssLength { Value.Points: 0 } ? null : "a horizontal margin on a table is not drawn in this version",
+        TablePart.Table when side is "left" or "right" => value is CssLength { Value.Points: 0 }
+            || (value is CssKeyword { Name: "auto" } && facts.Style[PropertyRegistry.Find("width")!] is CssPercentage { Value: 100 })
+            ? null
+            : "a horizontal margin on a table is not drawn in this version",
         TablePart.Table => value switch
         {
             CssKeyword { Name: "auto" } => null,

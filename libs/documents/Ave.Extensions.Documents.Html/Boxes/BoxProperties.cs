@@ -113,7 +113,7 @@ internal static class BoxProperties
         foreach (var side in Sides)
         {
             var vertical = side is "top" or "bottom";
-            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1) or an internal table part (§17.5)" : "a length of 0 or more, auto (0) on a block box; 0 or auto on an inline box or a table; no effect on an internal table part (CSS 2.1 §17.5)",
+            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1) or an internal table part (§17.5)" : "a length of 0 or more, auto (0) on a block box; 0 or auto on an inline box; 0 on a table, or auto at width 100%; no effect on an internal table part (CSS 2.1 §17.5)",
                 (value, facts) => value switch
                 {
                     _ when TableProperties.IsPart(facts) => TableProperties.Margin(side, value, facts),

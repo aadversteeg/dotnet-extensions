@@ -113,9 +113,6 @@ public static partial class HtmlBoxGenerator
         /// <summary>Per table: per column, the width its column element gives, or null for none (auto).</summary>
         private readonly Dictionary<StyledElement, List<CssValue?>> _columns = new(ReferenceEqualityComparer.Instance);
 
-        /// <summary>Per cell box: its computed width, where not auto.</summary>
-        private readonly Dictionary<NodeId, CssValue> _cellWidths = [];
-
         private static TablePart PartOf(StyledElement element) => HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]);
 
         private void RefuseTable(string message, string value, TextPosition position) =>
@@ -297,11 +294,6 @@ public static partial class HtmlBoxGenerator
                 rows = 1;
             }
 
-            if (Width(element) is { } width)
-            {
-                _cellWidths[box.Id] = width;
-            }
-
             var align = Value(element, "vertical-align") switch
             {
                 CssKeyword { Name: "middle" } => VerticalAlign.Middle,
@@ -385,11 +377,12 @@ public static partial class HtmlBoxGenerator
                 return box with { Role = SemanticRole.Generic, Layout = LayoutAlgorithmId.Flow, Children = [] };
             }
 
+            var sizes = Columns(element, grid);
             return box with
             {
                 Role = SemanticRole.Table,
                 Layout = LayoutAlgorithmId.Tracks,
-                Style = box.Style with { Columns = Columns(element, grid.ColumnCount, groups), DecorationBreak = BoxDecorationBreak.Slice, Padding = Edges.Zero, Text = null },
+                Style = box.Style with { Columns = sizes.Columns, Width = sizes.Width, DecorationBreak = BoxDecorationBreak.Slice, Padding = Edges.Zero, Text = null },
                 Children = [.. groups.Select(group => (Node)(group.Style.TableDisplay == TableDisplay.HeaderGroup && hasBody ? group with { Role = SemanticRole.TableHead } : group))],
             };
         }
@@ -400,74 +393,43 @@ public static partial class HtmlBoxGenerator
         private static TableSlots.Grid Grid(List<Box> groups) =>
             TableSlots.Fill([.. groups.Select(group => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. Parts(group).Select(row => (IReadOnlyList<CellSpan>)[.. Parts(row).Select(cell => cell.Style.Span)])])]);
 
-        /// <summary>The column sizes (CSS 2.1 §17.5.2); after a refusal (drawn under <see cref="UnsupportedPolicy.Warn"/>)
-        /// equal shares of the width.</summary>
-        private ValueList<TrackSize> Columns(StyledElement table, int count, List<Box> groups)
+        /// <summary>
+        /// The column sizes and the table's width (CSS 2.1 §17.5.2), as Chromium lays them out; after a refusal (drawn
+        /// under <see cref="UnsupportedPolicy.Warn"/>) equal shares of the width. The fixed table layout is taken only by
+        /// a table whose width is not auto (Chromium: <c>ComputedStyle::IsFixedTableLayout</c>); a table of width auto with
+        /// <c>table-layout: fixed</c> is laid out automatically.
+        /// </summary>
+        private (ValueList<TrackSize> Columns, BoxWidth Width) Columns(StyledElement table, TableSlots.Grid grid)
         {
             var html = table.Element;
+            var count = grid.ColumnCount;
+            var stretch = Value(table, "width") is CssPercentage { Value: 100 };
+            var width = stretch ? BoxWidth.Stretch : BoxWidth.Auto;
             var given = _columns.TryGetValue(table, out var columns) ? columns : [];
             if (given.Count > count)
             {
                 RefuseTable($"The table <{html.LocalName}> has {given.Count} column elements for {count} columns of cells, which is not drawn in this version.", $"{given.Count} column elements for {count} columns", html.Position);
-                return Equal(count);
+                return (Equal(count), width);
             }
 
-            var isFixed = Value(table, "table-layout") is CssKeyword { Name: "fixed" };
-            var cells = groups.SelectMany(group => group.Children.OfType<Box>()).SelectMany(row => row.Children.OfType<Box>()).ToList();
-            var widths = Enumerable.Range(0, count).Select(column => column < given.Count ? given[column] : null).ToArray();
-            if (isFixed)
+            var empty = Enumerable.Range(0, count).FirstOrDefault(column => !grid.Cells.Any(cell => cell.Column == column), -1);
+            if (empty >= 0)
             {
-                // §17.5.2.1: "A cell in the first row with a value other than 'auto' for the 'width' property determines
-                // the width for that column."
-                var first = groups.SelectMany(group => group.Children.OfType<Box>()).FirstOrDefault();
-                var column = 0;
-                foreach (var cell in first?.Children.OfType<Box>() ?? [])
-                {
-                    if (_cellWidths.TryGetValue(cell.Id, out var width) && widths[column] is null)
-                    {
-                        if (cell.Style.Span.Columns > 1)
-                        {
-                            RefuseTable($"A width on a cell of the first row that spans {cell.Style.Span.Columns} columns of the fixed table <{html.LocalName}> is not drawn in this version.", "width on a first-row cell that spans columns", html.Position);
-                            return Equal(count);
-                        }
-
-                        widths[column] = width;
-                    }
-
-                    column += cell.Style.Span.Columns;
-                }
+                RefuseTable($"Column {empty + 1} of <{html.LocalName}>, in which no cell starts, is not drawn in this version: only spanning cells give it a width.", $"column {empty + 1} without a cell that starts in it", html.Position);
+                return (Equal(count), width);
             }
-            else if (cells.Any(cell => _cellWidths.ContainsKey(cell.Id)))
+
+            var lengths = Enumerable.Range(0, count).Select(column => column < given.Count ? given[column] as CssLength : null).ToArray();
+            if (stretch && Value(table, "table-layout") is CssKeyword { Name: "fixed" })
             {
-                RefuseTable($"Cell widths in the automatic table layout of <{html.LocalName}> are not drawn in this version: they depend on the content (CSS 2.1 §17.5.2.2).", "cell widths in the automatic table layout", html.Position);
-                return Equal(count);
+                // §17.5.2.1: the widths of the column elements, exact, and the width left over shared equally by the
+                // columns without one (fill columns of weight 1); with no such column the table's width left over goes to
+                // the fixed columns in proportion (BoxWidth.Stretch).
+                return ([.. lengths.Select(length => length is null ? new TrackSize.Fill(1) : (TrackSize)new TrackSize.Fixed(length.Value))], width);
             }
 
-            // The sum of the percentages as written: 100 within the rounding of their binary form.
-            var percents = widths.OfType<CssPercentage>().Sum(width => width.Value);
-            const double tolerance = 1e-9;
-            var open = widths.Count(width => width is null);
-            if (widths.Any(width => width is CssPercentage))
-            {
-                if (!isFixed || widths.Any(width => width is CssLength) || percents > 100 + tolerance || (open == 0 && Math.Abs(percents - 100) > tolerance) || (open > 0 && percents >= 100 - tolerance))
-                {
-                    RefuseTable($"Column widths in percent of <{html.LocalName}> are drawn only in the fixed table layout, without columns of a length, adding up to 100% with the columns without a width.", !isFixed ? "percent columns in the automatic table layout" : widths.Any(width => width is CssLength) ? "percent and length columns together" : "percent columns that do not add up to 100%", html.Position);
-                    return Equal(count);
-                }
-
-                return [.. widths.Select(width => (TrackSize)new TrackSize.Fill(width is CssPercentage percentage ? percentage.Value : (100 - percents) / open))];
-            }
-
-            if (open == 0 || (!isFixed && open > 1))
-            {
-                RefuseTable(open == 0
-                    ? $"The table <{html.LocalName}> whose every column has a width is not drawn in this version: the width left would be shared out over the columns."
-                    : $"The automatic table layout of <{html.LocalName}> with {open} columns without a width is not drawn in this version: their widths depend on the content (CSS 2.1 §17.5.2.2).",
-                    open == 0 ? "every column of a given width" : $"automatic table layout, {open} columns without a width", html.Position);
-                return Equal(count);
-            }
-
-            return [.. widths.Select(width => width is CssLength length ? (TrackSize)new TrackSize.Fixed(length.Value) : new TrackSize.Fill(1))];
+            // §17.5.2.2: a column length is the column's preferred width, a column without one is sized by its content.
+            return ([.. lengths.Select(length => length is null ? TrackSize.Auto.Instance : (TrackSize)new TrackSize.Preferred(length.Value))], width);
         }
 
         private static ValueList<TrackSize> Equal(int count) => [.. Enumerable.Repeat((TrackSize)new TrackSize.Fill(1), count)];

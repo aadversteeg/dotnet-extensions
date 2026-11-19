@@ -639,18 +639,19 @@ body, for PDF/UA). Borders of the table, groups, rows and cells go to their boxe
 cells keep padding, background and `vertical-align` `top`, `middle` or `bottom`; internal parts have no margins and
 rows and groups no padding (§17.5), the table no padding (§17.6.2); `colspan` and `rowspan` are read by the rules for
 non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); lines at a page break are sliced
-(`BoxDecorationBreak.Slice`, as Chromium paints them). Column sizes: in the fixed layout the widths of the column
-elements, then of the first row's cells, as fixed columns, and the columns without a width share what is left
-(fill columns of weight 1); percentages as fill columns of that weight, when no column has a length and they add up
-to 100% with the columns without a width. In the automatic layout only what does not depend on the content: column
-lengths and one column without a width. The table's width is `100%`. A limit of both: a fill column is never narrower
-than its content's min-content width and a fixed column never wider than its width, where Chromium lets content
-overflow a column of the fixed layout and widens a column with a width in the automatic layout to its min-content;
-the two agree while the content fits its column. Refused (`Documents.Html.Unsupported.Table`,
+(`BoxDecorationBreak.Slice`, as Chromium paints them). Column sizes, as Chromium lays them out: in the automatic layout a
+column element's length is the column's preferred width (`TrackSize.Preferred`) and a column without one is sized by
+its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only for a table whose width is not `auto`
+(`ComputedStyle::IsFixedTableLayout`), a column element's length is an exact width (`TrackSize.Fixed`) and the
+columns without one share what is left (fill columns of weight 1). A table of width `auto` is as wide as its columns
+need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
+layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
+it; the two agree while the content fits its column. Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
 (§17.2.1); a table part on another element than its HTML element; captions, footer groups, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
-column sizes outside the rules above; backgrounds of the table, groups, rows and columns; column borders. Under
+a column in which no cell starts; percent columns, a width on a cell or a column group, a table width other than
+`auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
 
