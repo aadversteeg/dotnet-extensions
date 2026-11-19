@@ -87,11 +87,17 @@ public static class ModelCheck
                 return problem;
             }
 
+            if (node is Box paragraph && paragraph.Layout == LayoutAlgorithmId.Inline && AtomicInlines(paragraph) is { } atomic)
+            {
+                return atomic;
+            }
+
             if (node is Box parent)
             {
                 // A child box is one level deeper, except the parts of a table: a table is one level with its row groups,
                 // rows and cells (the front-end counts a table, or a row of blocks, as one element), and the content of a
-                // cell is the next level. Runs and images are content of their box, no level of their own.
+                // cell is the next level. Runs and images are content of their box, no level of their own; a box among the runs of
+                // an inline box (an image in a line) is one level deeper, as any child box.
                 var isRow = parent.Style.TableDisplay == TableDisplay.Row;
                 foreach (var child in parent.Children)
                 {
@@ -119,6 +125,34 @@ public static class ModelCheck
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", Number(heading.Level), "level", box)
                 : null)
             ?? (style.Text is { } strut ? Text(strut, box) : null);
+    }
+
+    /// <summary>
+    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3 §2.1), which this version accepts only when
+    /// laid out by <see cref="LayoutAlgorithmId.Image"/> (an image in a line of text), and only with the initial page break
+    /// properties: <c>break-before</c>, <c>break-after</c> and <c>break-inside</c> apply to block-level boxes (CSS
+    /// Fragmentation 3 §3.1, §3.2), and an atomic inline never breaks, so a value there could only be lost. The child box
+    /// is one nesting level deeper, as any child box.
+    /// </summary>
+    private static Error? AtomicInlines(Box paragraph)
+    {
+        var initial = BoxStyle.Initial;
+        foreach (var child in paragraph.Children)
+        {
+            if (child is Box other && other.Layout != LayoutAlgorithmId.Image)
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "A box among the text runs of an inline box must be laid out by the image algorithm (an image in a line); other boxes are not supported in a line.",
+                    other.Layout.ToString(), "layout", other);
+            }
+
+            if (child is Box box && (box.Style.BreakBefore != initial.BreakBefore || box.Style.BreakAfter != initial.BreakAfter || box.Style.BreakInside != initial.BreakInside))
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An image in a line of text has no page break properties: they apply to block-level boxes only.",
+                    $"{box.Style.BreakBefore}/{box.Style.BreakAfter}/{box.Style.BreakInside}", "break", box);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and positive.</summary>

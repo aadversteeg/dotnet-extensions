@@ -12,8 +12,37 @@ namespace Ave.Extensions.Documents.Layout;
 /// <summary>Builds line boxes from broken lines (CSS 2.1 §10.8 "Line height calculations").</summary>
 internal static class LineBoxes
 {
+    /// <summary>An item of a paragraph's lines: an inline run with its glyphs (<see cref="ShapedRun"/>) or an atomic inline
+    /// (<see cref="AtomicInline"/>).</summary>
+    public abstract record Item;
+
     /// <summary>An inline run with its resolved font and shaped glyphs.</summary>
-    public sealed record ShapedRun(InlineRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs);
+    public sealed record ShapedRun(InlineRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs) : Item;
+
+    /// <summary>
+    /// An atomic inline (CSS Display 3 §2.1): a child box of the paragraph laid out by its own algorithm, one item of the
+    /// line that is never broken. On the line it is its margin box (CSS 2.1 §10.8.1: "for replaced elements, inline-block
+    /// elements, and inline-table elements, the height is the height of their margin box").
+    /// </summary>
+    /// <param name="Box">The child box.</param>
+    /// <param name="Fragment">Its fragment, once laid out at the paragraph's width; null while only measured.</param>
+    /// <param name="Width">The width of its margin box, in points: its advance on the line.</param>
+    public sealed record AtomicInline(Box Box, BoxFragment? Fragment, double Width) : Item
+    {
+        /// <summary>Its horizontal margins, in points.</summary>
+        public double Margins => Box.Style.Margin.Horizontal.Points;
+    }
+
+    /// <summary>The glyphs an item puts on the line breaker's runs: a run's own glyphs, or for an atomic inline one glyph
+    /// as wide as its margin box (<see cref="ShapedGlyph.AtomicInline"/>).</summary>
+    /// <param name="item">The item.</param>
+    /// <returns>Its glyphs.</returns>
+    public static ValueList<ShapedGlyph> GlyphsOf(Item item) => item switch
+    {
+        ShapedRun run => run.Glyphs,
+        AtomicInline atomic => [ShapedGlyph.AtomicInline(atomic.Width)],
+        _ => throw new InvalidOperationException($"Unknown line item {item.GetType().Name}."),
+    };
 
     /// <summary>The strut of a paragraph's lines (CSS 2.1 §10.8.1): the paragraph's own font, resolved, and its text
     /// properties (font size and line height).</summary>
@@ -49,6 +78,11 @@ internal static class LineBoxes
             var above = whole ? CssPixels.Floor(leading / 2) : leading / 2;
             return new InlineExtent(ascent, descent, above, leading - above);
         }
+
+        /// <summary>The extent of an atomic inline's margin box: all of it above the baseline (<see cref="Build"/>, THE RULE
+        /// FOR AN ATOMIC INLINE ON THE LINE).</summary>
+        public static InlineExtent OfMarginBox(AtomicInline atomic) =>
+            new(atomic.Box.Style.Margin.Vertical.Points + (atomic.Fragment?.Size.Height ?? 0), 0, 0, 0);
     }
 
     /// <summary>
@@ -60,7 +94,15 @@ internal static class LineBoxes
     /// </summary>
     /// <remarks>
     /// Horizontally the line is placed by its paragraph's <c>text-align</c> (<see cref="LineJustification.Place"/>):
-    /// moved right or to the centre, or justified by widening its word separators.
+    /// moved right or to the centre, or justified by widening its word separators; an atomic inline is none (case
+    /// <c>ii-align</c>: in "one", image, "two" the justified line widens only the space after "two").
+    /// <para>THE RULE FOR AN ATOMIC INLINE ON THE LINE: its margin box sits with its bottom on the baseline and reaches as
+    /// high above it as it is tall (CSS 2.1 §10.8.1, the margin box; §10.8 'vertical-align': "baseline: Align the baseline of
+    /// the box with the baseline of the parent box. If the box does not have a baseline, align the bottom margin edge with
+    /// the parent's baseline"), as Chromium synthesizes the baseline of an image off its margin box's bottom edge (Blink
+    /// <c>LogicalBoxFragment::BaselineMetrics</c>, core/layout/logical_box_fragment.cc). So it makes the line taller when it
+    /// is taller than the strut's part above the baseline, never below it; its margins count above, below and beside it
+    /// (case <c>ii-baseline</c>).</para>
     /// </remarks>
     /// <param name="broken">The broken line.</param>
     /// <param name="runs">The paragraph's runs; <see cref="LineSegment.Run"/> indexes into it.</param>
@@ -72,12 +114,17 @@ internal static class LineBoxes
     /// <param name="empty">The paragraph's runs that put no glyph on any line and lie on this one (<see cref="EmptyRunsByLine"/>):
     /// their inline boxes count for the line's height all the same.</param>
     /// <returns>The line fragment with its text fragments.</returns>
-    public static LineFragment Build(TextLine broken, IReadOnlyList<ShapedRun> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding, IReadOnlyList<ShapedRun>? empty = null)
+    public static LineFragment Build(TextLine broken, IReadOnlyList<Item> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding, IReadOnlyList<ShapedRun>? empty = null)
     {
         var (line, offset) = LineJustification.Place(broken, width, align, isLastLine);
         var pieces = line.Segments
             .Select(segment => (Segment: segment, Run: runs[segment.Run]))
-            .Select(piece => (piece.Segment, piece.Run, Extent: InlineExtent.Of(piece.Run.Font, piece.Run.Run.Style.FontSize.Points, piece.Run.Run.Style.LineHeight, rounding)))
+            .Select(piece => (piece.Segment, piece.Run, Extent: piece.Run switch
+            {
+                ShapedRun run => InlineExtent.Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding),
+                AtomicInline atomic => InlineExtent.OfMarginBox(atomic),
+                _ => throw new InvalidOperationException($"Unknown line item {piece.Run.GetType().Name}."),
+            }))
             .ToImmutableArray();
         ImmutableArray<InlineExtent> extents = [.. pieces.Select(piece => piece.Extent),
             .. (empty ?? []).Select(run => InlineExtent.Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding)),
@@ -87,13 +134,18 @@ internal static class LineBoxes
         var below = extents.Max(extent => extent.Below);
         var children = ImmutableArray.CreateBuilder<PlacedFragment>(pieces.Length);
         var x = offset;
-        foreach (var (segment, run, extent) in pieces)
+        foreach (var (segment, item, extent) in pieces)
         {
-            var size = new Size(segment.Width, extent.Ascent + extent.Descent);
-            var text = new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, size);
-
-            // The baseline lies `above` below the line's top; this piece's top edge is its ascent above that.
-            children.Add(new PlacedFragment(new Point(x, above - extent.Ascent), text));
+            // The baseline lies `above` below the line's top; this piece's top edge is its ascent above that. An atomic
+            // inline's border box lies inside its margin box, whose bottom is on the baseline.
+            children.Add(item switch
+            {
+                AtomicInline { Fragment: { } fragment } atomic => new PlacedFragment(
+                    new Point(x + atomic.Box.Style.Margin.Left.Points, above - atomic.Box.Style.Margin.Bottom.Points - fragment.Size.Height), fragment),
+                ShapedRun run => new PlacedFragment(
+                    new Point(x, above - extent.Ascent), new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, new Size(segment.Width, extent.Ascent + extent.Descent))),
+                _ => throw new InvalidOperationException("An atomic inline is placed on a line only once it is laid out."),
+            });
             x += segment.Width;
         }
 
@@ -110,7 +162,7 @@ internal static class LineBoxes
     /// <param name="lines">The paragraph's lines.</param>
     /// <param name="runs">The paragraph's runs.</param>
     /// <returns>Per line, the runs without glyphs that lie on it.</returns>
-    public static IReadOnlyList<IReadOnlyList<ShapedRun>> EmptyRunsByLine(IReadOnlyList<TextLine> lines, IReadOnlyList<ShapedRun> runs)
+    public static IReadOnlyList<IReadOnlyList<ShapedRun>> EmptyRunsByLine(IReadOnlyList<TextLine> lines, IReadOnlyList<Item> runs)
     {
         // One pass over the segments and one over the runs: linear in the paragraph.
         var lastLineOf = new int?[runs.Count];
@@ -133,7 +185,11 @@ internal static class LineBoxes
                 continue;
             }
 
-            byLine[current].Add(runs[run]);
+            // An atomic inline always has its glyph on a line.
+            if (runs[run] is ShapedRun empty)
+            {
+                byLine[current].Add(empty);
+            }
         }
 
         return byLine;

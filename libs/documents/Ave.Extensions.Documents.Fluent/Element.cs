@@ -64,7 +64,8 @@ public sealed record PageBreakElement(SourceLocation Source) : Element(Source);
 
 /// <summary>
 /// A piece of text inside a paragraph. Made by <see cref="Elements.Text"/> and <see cref="Elements.Bold"/>, or, for
-/// text that only layout knows, by <see cref="Elements.PageNumber"/> and <see cref="Elements.PageCount"/>.
+/// text that only layout knows, by <see cref="Elements.PageNumber"/> and <see cref="Elements.PageCount"/>; or an image in
+/// the line, made by <see cref="Elements.InlineImage"/>.
 /// Only text modifiers apply to a span; a shared style with box properties is reported as an input error.
 /// </summary>
 /// <param name="Text">The text; empty for a page counter.</param>
@@ -75,6 +76,9 @@ public sealed record Span(string Text, Style Format, Style Style, SourceLocation
 {
     /// <summary>The page counter the span shows instead of <see cref="Text"/>, or null for literal text.</summary>
     public DocumentModel.PageCounter? Counter { get; init; }
+
+    /// <summary>The image the span shows in the line instead of text, or null for text.</summary>
+    public ImageElement? Image { get; init; }
 
     /// <summary>Applies a shared style (its text part). The span's own modifier values still win over it.</summary>
     /// <param name="style">The style; replaces a style applied before.</param>

@@ -284,7 +284,7 @@ internal static class BreakableSegments
         var segments = ImmutableArray.CreateBuilder<Segment>();
         var start = 0;
         var cursor = 0;
-        foreach (var opportunity in UnicodeLineBreaking.Find(text))
+        foreach (var opportunity in WithAtomicInlines(UnicodeLineBreaking.Find(text), placed, text.Length))
         {
             var usable = opportunity.Offset < text.Length && (clusterStarts[opportunity.Offset] || canShapeAgain);
             if (opportunity.Offset > start && usable)
@@ -301,6 +301,44 @@ internal static class BreakableSegments
         }
 
         return new Paragraph(text, placed, runStarts.ToImmutable(), segments.ToImmutable());
+    }
+
+    /// <summary>
+    /// THE RULE FOR BREAKING AT AN ATOMIC INLINE: the opportunities of UAX #14, plus one before and one after every atomic
+    /// inline (<see cref="ShapedGlyph.IsAtomicInline"/>), whatever is beside it. CSS Text 3 §5.1: "For Web-compatibility
+    /// there is a soft wrap opportunity before and after each replaced element or other atomic inline, even when adjacent
+    /// to a character that would normally suppress them, including U+00A0 NO-BREAK SPACE." As Chromium breaks there (Blink
+    /// <c>LineBreaker::CanBreakAfterAtomicInline</c> and <c>LineBreaker::CanBreakAfter</c>, core/layout/inline/line_breaker.cc:
+    /// "Atomic inlines have break opportunities before and after, even when the adjacent character is U+00A0 NO-BREAK SPACE
+    /// character"), also between letters and before closing punctuation, where UAX #14 alone has none for U+FFFC (LB12 GL ×,
+    /// LB13 × CL; case <c>ii-breaks</c>). One pass over the text.
+    /// </summary>
+    /// <param name="opportunities">The UAX #14 opportunities, in text order.</param>
+    /// <param name="glyphs">The paragraph's glyphs with their places.</param>
+    /// <param name="length">The text's length.</param>
+    /// <returns>All opportunities, in text order, each once.</returns>
+    private static IEnumerable<BreakOpportunity> WithAtomicInlines(ImmutableArray<BreakOpportunity> opportunities, ImmutableArray<Placed> glyphs, int length)
+    {
+        var mandatory = new bool?[length + 1];
+        foreach (var opportunity in opportunities)
+        {
+            mandatory[opportunity.Offset] = opportunity.IsMandatory;
+        }
+
+        foreach (var glyph in glyphs.Where(glyph => glyph.Glyph.IsAtomicInline))
+        {
+            mandatory[glyph.Start] ??= false;
+            mandatory[glyph.End] ??= false;
+        }
+
+        // The start of the text is never an opportunity (UAX #14 LB2).
+        for (var offset = 1; offset <= length; offset++)
+        {
+            if (mandatory[offset] is { } isMandatory)
+            {
+                yield return new BreakOpportunity(offset, isMandatory);
+            }
+        }
     }
 
     /// <summary>The segment from <paramref name="start"/> to <paramref name="end"/>. The segments come in order, so

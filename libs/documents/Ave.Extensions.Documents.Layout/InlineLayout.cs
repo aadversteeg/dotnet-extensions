@@ -32,7 +32,7 @@ public static class InlineLayout
     /// changes the wrapping, a line may repeat or be skipped at the break.
     /// </remarks>
     /// <param name="environment">The fonts, algorithms and current page.</param>
-    /// <param name="box">A box whose children are all inline runs.</param>
+    /// <param name="box">A box whose children are inline runs and atomic inlines (<see cref="LineBoxes.AtomicInline"/>).</param>
     /// <param name="space">The space on the current page.</param>
     /// <param name="incoming">An <see cref="InlineBreakToken"/>, or null to start.</param>
     /// <returns>The fragment and continuation, NoRoom, or an error (missing font or glyph, with the run's location).</returns>
@@ -47,14 +47,15 @@ public static class InlineLayout
 
         // A first line taller than the page area that starts the page is sliced when the profile says so (MonolithicSlices).
         var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
-        return ShapeRuns(environment, box).OnSuccessBind(runs => StrutOf(environment, box).OnSuccessBind(strut =>
+        return ShapeRuns(environment, box).OnSuccessBind(items => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
-                StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, width, height, breakAt switch
-                {
-                    null => null,
-                    InlineEarlyBreak line => line,
-                    _ => throw new ArgumentException($"Inline received a {breakAt.GetType().Name} it did not report.", nameof(space)),
-                }))));
+                LaidOut(environment, items, width).OnSuccessBind(runs =>
+                    StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, width, height, breakAt switch
+                    {
+                        null => null,
+                        InlineEarlyBreak line => line,
+                        _ => throw new ArgumentException($"Inline received a {breakAt.GetType().Name} it did not report.", nameof(space)),
+                    })))));
     }
 
     /// <summary>Why a paragraph cannot resume from <paramref name="token"/>, or null when it can: a token of another
@@ -85,26 +86,65 @@ public static class InlineLayout
     /// The intrinsic widths of a paragraph (CSS Sizing 3 §5.1): the min-content inline size, which for text is the
     /// widest piece that cannot be broken, and the max-content inline size, the widest line when the text only breaks
     /// at forced breaks (CSS Sizing 3 §5.2 leaves the details to CSS 2.1). Both come from the same line breaker as layout: break
-    /// with no width at all (every break opportunity is taken) and with unlimited width. Border and padding are added.
+    /// with no width at all (every break opportunity is taken) and with unlimited width. Border and padding are added. An
+    /// atomic inline counts with its margin box at its own min-content width in the first and its max-content width in the
+    /// second (CSS Sizing 3 §5.1: an inline's contribution is its outer size), measured by its own algorithm once (case
+    /// <c>ii-table</c>: an image and its margins widen both widths of a table column).
     /// </summary>
     /// <param name="environment">The fonts, algorithms and current page.</param>
-    /// <param name="box">A box whose children are all inline runs.</param>
+    /// <param name="box">A box whose children are inline runs and atomic inlines.</param>
     /// <returns>The widths, or a font error.</returns>
     public static Result<IntrinsicWidths, Error> Measure(LayoutEnvironment environment, Box box) =>
-        ShapeRuns(environment, box).OnSuccessBind(runs =>
+        ShapeRuns(environment, box).OnSuccessBind(items => Measured(environment, items).OnSuccessBind(sized =>
         {
-            Result<double, Error> Widest(double width) =>
+            Result<double, Error> Widest(IReadOnlyList<LineBoxes.Item> runs, double width) =>
                 BreakLines(runs, width, box.Style.TextAlign).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
-            return Widest(0).OnSuccessBind(least => Widest(double.PositiveInfinity).OnSuccessMap(most =>
+            return Widest(sized.Least, 0).OnSuccessBind(least => Widest(sized.Most, double.PositiveInfinity).OnSuccessMap(most =>
                 new IntrinsicWidths(least, most).Plus(SlicedBox.HorizontalInsets(box.Style))));
-        });
+        }));
+
+    /// <summary>The paragraph's items with every atomic inline at its min-content width (<c>Least</c>) and at its
+    /// max-content width (<c>Most</c>), each plus its horizontal margins: one measurement of each atomic inline.</summary>
+    private static Result<(IReadOnlyList<LineBoxes.Item> Least, IReadOnlyList<LineBoxes.Item> Most), Error> Measured(LayoutEnvironment environment, IReadOnlyList<LineBoxes.Item> items) =>
+        items.TraverseAll(item => item is LineBoxes.AtomicInline atomic
+                ? environment.Measure(atomic.Box).OnSuccessMap(widths => (Least: (LineBoxes.Item)(atomic with { Width = widths.MinContent + atomic.Margins }), Most: (LineBoxes.Item)(atomic with { Width = widths.MaxContent + atomic.Margins })))
+                : Result<(LineBoxes.Item Least, LineBoxes.Item Most), Error>.Success((item, item)))
+            .OnSuccessMap(pairs => ((IReadOnlyList<LineBoxes.Item>)[.. pairs.Select(pair => pair.Least)], (IReadOnlyList<LineBoxes.Item>)[.. pairs.Select(pair => pair.Most)]));
+
+    /// <summary>
+    /// The paragraph's items with every atomic inline laid out by its own algorithm (<see cref="LayoutEnvironment.Layout"/>)
+    /// at its shrink-to-fit width, with no limit to its height: it is monolithic, and the line it lands on decides where the
+    /// page breaks (CSS Fragmentation 3 §4.1 lists no breakpoint inside an atomic inline). The width is CSS 2.1 §10.3.9's
+    /// for an inline-block, "min(max(preferred minimum width, available width), preferred width)", with the content width
+    /// less its horizontal margins as the available width; for an image both widths are its used width (§10.3.2: an inline
+    /// replaced element is as wide as its image), so an image wider than the line overflows it, as in Chromium (case
+    /// <c>ii-wrap</c>). Each atomic inline is measured once and laid out once per layout of the paragraph. One that does not
+    /// lay out whole is a bug of its algorithm.
+    /// </summary>
+    private static Result<IReadOnlyList<LineBoxes.Item>, Error> LaidOut(LayoutEnvironment environment, IReadOnlyList<LineBoxes.Item> items, double contentWidth) =>
+        items.TraverseAll(item => item is LineBoxes.AtomicInline atomic
+                ? environment.Measure(atomic.Box).OnSuccessBind(widths => environment.Layout(
+                    atomic.Box,
+                    new ConstraintSpace(Math.Min(Math.Max(widths.MinContent, contentWidth - atomic.Margins), widths.MaxContent), double.PositiveInfinity, IsAtPageStart: true),
+                    null))
+                    .OnSuccessBind(result => result is LayoutResult.Placed { Continuation: null } placed
+                        ? Result<LineBoxes.Item, Error>.Success(atomic with { Fragment = placed.Fragment, Width = placed.Fragment.Size.Width + atomic.Margins })
+                        : Result<LineBoxes.Item, Error>.Failure(LayoutErrors.InvalidContent(atomic.Box, "an atomic inline must lay out whole, with no limit to its height.")))
+                : Result<LineBoxes.Item, Error>.Success(item))
+            .OnSuccessMap(laid => (IReadOnlyList<LineBoxes.Item>)[.. laid]);
 
     /// <summary>The paragraph's lines at a width, each shaped as the line it is: where a line ends or starts at a place
     /// that is not safe to break, its end is shaped again with the run's font (<see cref="GreedyLineBreaker"/>, THE RULE
     /// FOR SHAPING AT A BREAK). A shaping error names the run.</summary>
-    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.ShapedRun> runs, double width, TextAlign align) =>
-        GreedyLineBreaker.BreakLines([.. runs.Select(run => run.Glyphs)], width, (run, text, showsHyphen, budget) =>
-            Shaper.ShapeLinePiece(text, runs[run].Font, runs[run].Run.Style.FontSize.Points, showsHyphen, budget).MapError(error => error.WithSource(runs[run].Run.Source)),
+    /// <remarks>An atomic inline is one glyph of its margin box's width (<see cref="ShapedGlyph.AtomicInline"/>), never
+    /// shaped: both its edges are safe places to break, so the breaker never asks for it again; if it did, it gets the same
+    /// glyph.</remarks>
+    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, TextAlign align) =>
+        GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], width, (run, text, showsHyphen, budget) => runs[run] switch
+            {
+                LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, shaped.Run.Style.FontSize.Points, showsHyphen, budget).MapError(error => error.WithSource(shaped.Run.Source)),
+                var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
+            },
             LineEndAtSpace(align));
 
     /// <summary>What the line breaker does at a line end at a collapsible space (<see cref="LineEndShaping"/>), from the
@@ -119,12 +159,14 @@ public static class InlineLayout
     /// <summary>
     /// True when the box's text makes at least one line box: some text is left after white-space collapsing.
     /// A paragraph of only spaces has no line boxes (CSS 2.1 §9.4.2), which makes it an empty box for margin
-    /// collapsing (<see cref="MarginCollapsing.IsEmpty"/>). A page counter always shows digits.
+    /// collapsing (<see cref="MarginCollapsing.IsEmpty"/>). A page counter always shows digits, and an atomic inline always
+    /// makes a line (CSS 2.1 §9.4.2: line boxes that contain no "replaced elements" among other content are the ones that
+    /// do not exist).
     /// </summary>
     /// <param name="box">An inline box.</param>
     /// <returns>Whether it has line boxes.</returns>
     public static bool HasLineBoxes(Box box) =>
-        box.Children.Any(child => child is CounterRun || (child is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text)));
+        box.Children.Any(child => child is CounterRun or Box || (child is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text)));
 
     /// <summary>
     /// Resolves every run to its text, collapses white space over the whole paragraph, finds each run's font, then shapes
@@ -132,22 +174,63 @@ public static class InlineLayout
     /// across the border of two runs is kept, and every run gets its own glyphs back. Errors from all runs are reported
     /// together, each with the location of the run that caused it.
     /// </summary>
-    private static Result<IReadOnlyList<LineBoxes.ShapedRun>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
+    /// <remarks>
+    /// THE RULE FOR AN ATOMIC INLINE AMONG THE RUNS: a child box laid out by <see cref="LayoutAlgorithmId.Image"/> is an
+    /// atomic inline (CSS Display 3 §2.1: "An inline-level box that is replaced (such as an image) or that establishes a new
+    /// formatting context … and which cannot split across lines"), one item of the line (<see cref="LineBoxes.AtomicInline"/>).
+    /// For white-space collapsing it is the object replacement character U+FFFC, as in Chromium's inline text (Blink
+    /// <c>InlineItemsBuilder::AppendAtomicInline</c>): not a space, so a space on each side of it is kept (case
+    /// <c>ii-baseline</c>: "ab", a space, the image, a space, "cd"), and a space at a line end next to it goes as at any line
+    /// end. It ends the shaping group before it and the text after it starts a new one. Any other box among the runs is
+    /// refused (<see cref="ModelCheck"/> refuses it first).
+    /// </remarks>
+    private static Result<IReadOnlyList<LineBoxes.Item>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
     {
-        if (box.Children.Any(child => child is not (TextRun or CounterRun)))
+        if (box.Children.FirstOrDefault(child => child is not (TextRun or CounterRun) && !(child is Box image && image.Layout == LayoutAlgorithmId.Image)) is { } other)
         {
-            return Result<IReadOnlyList<LineBoxes.ShapedRun>, Error>.Failure(
-                LayoutErrors.InvalidContent(box, "inline layout needs text-run children; boxes belong in a flow box."));
+            return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(
+                LayoutErrors.InvalidContent(box, other is Box
+                    ? "a box among the text runs must be an image (an atomic inline laid out by the image algorithm); other boxes belong in a flow box."
+                    : "inline layout needs text runs and images as children."));
         }
 
-        var runs = box.Children.Cast<InlineRun>().ToImmutableArray();
-        var collapsed = WhiteSpaceCollapsing.Collapse([.. runs.Select(run => TextOf(run, environment.Page))]);
-        var members = runs.Select((run, index) => new GroupMember(run, collapsed[index],
-            environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source))));
-        return ShapingGroups([.. members])
-            .TraverseAll(group => group[0].Font.IsFailure ? Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(group[0].Font.Error) : ShapeGroup(group))
-            .OnSuccessMap(shaped => (IReadOnlyList<LineBoxes.ShapedRun>)[.. shaped.SelectMany(group => group)]);
+        var collapsed = WhiteSpaceCollapsing.Collapse([.. box.Children.Select(child => child is InlineRun run ? TextOf(run, environment.Page) : ObjectReplacement)]);
+
+        // The paragraph in stretches: the runs between two atomic inlines are shaped in groups, an atomic inline is an item
+        // of its own.
+        var stretches = new List<Result<IEnumerable<LineBoxes.Item>, Error>>();
+        var members = new List<GroupMember>();
+        void EndStretch()
+        {
+            if (members.Count > 0)
+            {
+                stretches.Add(ShapingGroups([.. members])
+                    .TraverseAll(group => group[0].Font.IsFailure ? Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(group[0].Font.Error) : ShapeGroup(group))
+                    .OnSuccessMap(shaped => shaped.SelectMany(group => group).Cast<LineBoxes.Item>()));
+                members.Clear();
+            }
+        }
+
+        foreach (var (child, text) in box.Children.Zip(collapsed))
+        {
+            if (child is InlineRun run)
+            {
+                members.Add(new GroupMember(run, text,
+                    environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source))));
+                continue;
+            }
+
+            EndStretch();
+            stretches.Add(Result<IEnumerable<LineBoxes.Item>, Error>.Success([new LineBoxes.AtomicInline((Box)child, Fragment: null, Width: 0)]));
+        }
+
+        EndStretch();
+        return stretches.TraverseAll(stretch => stretch)
+            .OnSuccessMap(items => (IReadOnlyList<LineBoxes.Item>)[.. items.SelectMany(stretch => stretch)]);
     }
+
+    /// <summary>An atomic inline's text for white-space collapsing: the object replacement character U+FFFC.</summary>
+    private static readonly string ObjectReplacement = ShapedGlyph.ObjectReplacementCharacter.ToString();
 
     /// <summary>A run of the paragraph with its collapsed text and its font, or the error of a font that was not found.</summary>
     private sealed record GroupMember(InlineRun Run, string Text, Result<TrueTypeFont, Error> Font);
@@ -278,7 +361,7 @@ public static class InlineLayout
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.ShapedRun> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var style = box.Style;
         var firstLine = start.LineIndex;

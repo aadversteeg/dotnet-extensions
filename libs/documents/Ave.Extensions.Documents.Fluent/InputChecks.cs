@@ -170,6 +170,10 @@ internal static class InputChecks
     public static Error BoxPropertiesOnSpan(SourceLocation source) =>
         Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, "A span has no box and no lines: its style may not set margin, padding, background or text alignment.", "Style", "style", source);
 
+    /// <summary>The span of an image in a line has no text and no box of its own: formatting belongs on the image.</summary>
+    public static Error FormatOnImageSpan(SourceLocation source) =>
+        Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, "The span of an image in a line shows no text: format the image instead (InlineImage(Image(file).Margin(...))).", "Style", "style", source);
+
     /// <summary>A page break with nothing after it in its list has nothing to move to the next page.</summary>
     public static Error TrailingPageBreak(SourceLocation source) =>
         Problem(DocumentErrorCodes.Input.Invalid.PageBreak, "A page break must be followed by an element in the same list.", "PageBreak", "break-before", source);

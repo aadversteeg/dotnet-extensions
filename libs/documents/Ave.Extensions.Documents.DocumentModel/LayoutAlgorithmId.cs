@@ -11,7 +11,7 @@ public readonly record struct LayoutAlgorithmId(string Name)
     /// <summary>Block flow: stacks child boxes from top to bottom (CSS 2.1 §9.4.1).</summary>
     public static LayoutAlgorithmId Flow => new("flow");
 
-    /// <summary>Inline formatting context: sets text runs in lines (CSS 2.1 §9.4.2).</summary>
+    /// <summary>Inline formatting context: sets text runs, and image boxes among them, in lines (CSS 2.1 §9.4.2).</summary>
     public static LayoutAlgorithmId Inline => new("inline");
 
     /// <summary>

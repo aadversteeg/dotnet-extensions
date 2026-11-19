@@ -136,7 +136,7 @@ public static class DocumentTranslator
     internal static int NodeCount(Element element) => element switch
     {
         BlockElement block => 1 + block.Children.Sum(NodeCount),
-        ParagraphElement paragraph => 1 + paragraph.Spans.Count,
+        ParagraphElement paragraph => 1 + paragraph.Spans.Sum(span => span.Image is null ? 1 : NodeCount(span.Image)),
         ImageElement => 2,
         TableElement table => TableTranslator.NodeCount(table),
         RowElement row => TableTranslator.NodeCount(row),
@@ -205,7 +205,7 @@ public static class DocumentTranslator
     /// A paragraph becomes a box with inline layout whose children are one inline run per span. Cascade order
     /// for its text: inherited, then the user-agent heading defaults, then the paragraph's own values (style,
     /// then modifiers; see <see cref="Cascade"/>), then each span's own values. A page-counter span becomes a
-    /// <see cref="CounterRun"/>.
+    /// <see cref="CounterRun"/>; an image span the image's box (<see cref="Image"/>), which inline layout sets in the line.
     /// </summary>
     private static Result<Node, Error> Paragraph(ParagraphElement paragraph, NodeId id, bool pageBreakBefore, Inherited inherited)
     {
@@ -223,13 +223,20 @@ public static class DocumentTranslator
 
         var own = (inherited with { Text = WithRoleDefaults(inherited.Text, paragraph.Role) }).With(text);
         // A span of only forced line breaks (LineBreak()) draws nothing and has no text style of its own: it takes the
-        // paragraph's, so a size set on it cannot make its line taller.
-        var runs = paragraph.Spans
-            .Select((span, index) => Run(span, new NodeId(id.Value + 1 + index), IsLineBreaks(span) ? own.Text : own.With(Cascade.Text(span.Format, span.Style)).Text))
-            .ToImmutableArray();
+        // paragraph's, so a size set on it cannot make its line taller. An image span takes the ids of its image's nodes.
+        var next = id.Value + 1;
+        var spans = paragraph.Spans.Select(span =>
+        {
+            var spanId = new NodeId(next);
+            next += span.Image is null ? 1 : NodeCount(span.Image);
+            return (Span: span, Id: spanId);
+        }).ToImmutableArray();
+        var runs = spans.TraverseAll(item => item.Span.Image is { } image
+            ? Image(image, item.Id, pageBreakBefore: false)
+            : Result<Node, Error>.Success(Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
         // The paragraph's own font and line height make the strut of its lines (CSS 2.1 §10.8.1).
-        return Result<Node, Error>.Success(new Box(
-            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, runs, paragraph.Source));
+        return runs.OnSuccessMap(children => (Node)new Box(
+            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, children.ToValueList(), paragraph.Source));
     }
 
     /// <summary>A span whose text is one or more forced line breaks: the line separator U+2028 that LineBreak() writes,
@@ -315,7 +322,9 @@ public static class DocumentTranslator
     /// <summary>A span's text values must be valid, and its shared style may not carry box properties or a text
     /// alignment: a span has no box and no lines of its own in this front-end, so they would be silently lost.</summary>
     private static IEnumerable<Error> SpanProblems(Span span) =>
-        InputChecks.Text(Cascade.Text(span.Format, span.Style), span.Source)
+        span.Image is not null
+            ? span.Format == Style.Empty && span.Style == Style.Empty ? [] : [InputChecks.FormatOnImageSpan(span.Source)]
+            : InputChecks.Text(Cascade.Text(span.Format, span.Style), span.Source)
             .Concat(InputChecks.Characters(span.Text, "text", span.Source))
             .Concat(span.Style.Box.IsEmpty && span.Style.Text.TextAlign is null ? [] : [InputChecks.BoxPropertiesOnSpan(span.Source)]);
 

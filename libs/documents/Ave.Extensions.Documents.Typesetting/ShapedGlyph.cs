@@ -45,4 +45,22 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// (<see cref="GreedyLineBreaker"/>).
     /// </summary>
     public bool UnsafeToBreak { get; init; }
+
+    /// <summary>
+    /// True for the stand-in of an atomic inline (an image in a line of text; CSS Display 3 §2.1, "atomic inline"): the
+    /// object replacement character U+FFFC in the paragraph's text, as Chromium puts one in its inline text for every
+    /// atomic inline (Blink <c>InlineItemsBuilder::AppendAtomicInline</c>, core/layout/inline/inline_items_builder.cc). Its
+    /// advance is the width of the inline's margin box; it is never shaped, draws no glyph, and has a break opportunity
+    /// before and after it (<see cref="LineBreaking.BreakableSegments.Split"/>). Made by <see cref="AtomicInline"/>.
+    /// </summary>
+    public bool IsAtomicInline { get; init; }
+
+    /// <summary>The object replacement character U+FFFC, which stands for an atomic inline in a paragraph's text.</summary>
+    public const char ObjectReplacementCharacter = '￼';
+
+    /// <summary>The stand-in of an atomic inline (<see cref="IsAtomicInline"/>) of the given width.</summary>
+    /// <param name="advance">The width of the atomic inline's margin box, in points.</param>
+    /// <returns>The glyph.</returns>
+    public static ShapedGlyph AtomicInline(double advance) =>
+        new(default, advance, ObjectReplacementCharacter.ToString()) { IsAtomicInline = true };
 }

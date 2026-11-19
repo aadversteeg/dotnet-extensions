@@ -130,6 +130,11 @@ public static class DocumentErrorCodes
 
             /// <summary>A negative margin (allowed by CSS, not implemented yet). Metadata: Value, Property.</summary>
             public static readonly ErrorCode NegativeMargin = _ / "NegativeMargin";
+
+            /// <summary>A box among the text runs of an inline box that this version cannot set in a line: one laid out by
+            /// another algorithm than the image algorithm, or one with page break properties, which apply to block-level
+            /// boxes only. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode AtomicInline = _ / "AtomicInline";
         }
     }
 }

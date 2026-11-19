@@ -80,6 +80,9 @@ public static class GreedyLineBreaker
     /// A segment that ends in a soft hyphen goes on the line only when it fits with that hyphen — LIMIT: so a line may
     /// end one segment earlier than it would if the segment after it also fitted, which would make the hyphen
     /// unnecessary.</item>
+    /// <item>An atomic inline (<see cref="ShapedGlyph.IsAtomicInline"/>, an image in the line) is a piece of its own: a line
+    /// may break before and after it (<see cref="LineBreaking.BreakableSegments.Split"/>), it is never shaped again, and it
+    /// is wider than nothing only by its own advance.</item>
     /// <item>A piece wider than the whole line is put on a line of its own and overflows it: there is no break
     /// opportunity inside it, and <c>overflow-wrap: normal</c> does not break words (CSS Text 3 §5.4).</item>
     /// <item>THE RULE FOR SHAPING AT A BREAK, Chromium's (Blink <c>ShapingLineBreaker::ShapeLine</c>: "Unless the break

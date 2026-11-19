@@ -18,7 +18,8 @@ public abstract record Node(NodeId Id, SourceLocation Source);
 /// <remarks>
 /// Which children a box may have depends on its algorithm: <see cref="LayoutAlgorithmId.Flow"/> stacks child
 /// boxes, <see cref="LayoutAlgorithmId.Inline"/> sets inline runs in lines (a block container whose content is an
-/// inline formatting context, CSS 2.1 §9.2.1), <see cref="LayoutAlgorithmId.Tracks"/> lays out row groups of rows of
+/// inline formatting context, CSS 2.1 §9.2.1), and among them boxes laid out by <see cref="LayoutAlgorithmId.Image"/>, each
+/// an atomic inline (an image in a line of text, CSS Display 3 §2.1), <see cref="LayoutAlgorithmId.Tracks"/> lays out row groups of rows of
 /// cells, <see cref="LayoutAlgorithmId.Image"/> holds one image. The algorithm reports an error for children it
 /// cannot lay out.
 /// </remarks>
@@ -38,8 +39,8 @@ public sealed record Box(
 
 /// <summary>
 /// A piece of text in one style, laid out by its parent's inline algorithm: literal text
-/// (<see cref="TextRun"/>) or text computed at layout time (<see cref="CounterRun"/>). Inline layout reports any
-/// other kind as invalid content.
+/// (<see cref="TextRun"/>) or text computed at layout time (<see cref="CounterRun"/>). Beside the runs, an inline box may
+/// hold image boxes (atomic inlines); inline layout reports any other child as invalid content.
 /// </summary>
 /// <param name="Id">The node id.</param>
 /// <param name="Style">The computed text properties.</param>
