@@ -170,6 +170,25 @@ public class ChromiumBehaviourTests
     public void A_var_with_a_semicolon_in_its_fallback_drops_the_declaration(string sheet, string color) =>
         Styled(Doctype + "<style>" + sheet + "</style><p id=t>x</p>", Refusing).ById("t").Value("color").Should().Be(color);
 
+    [Theory]
+    // Values Chromium keeps in a narrower form than a number: a ratio component as a float of more than 2^-20, else 0
+    // (gfx::SizeF); a font weight in quarters, cut toward zero (FontSelectionValue). Other numbers keep their value.
+    // Measured in Chromium 159.0.8154.6.
+    [InlineData("aspect-ratio: auto 0.0000001/1", "aspect-ratio", "auto 0 / 1")]
+    [InlineData("aspect-ratio: auto 1/0.0000001", "aspect-ratio", "auto 1 / 0")]
+    [InlineData("aspect-ratio: auto 0.00000095367431640625/1", "aspect-ratio", "auto 0 / 1")]
+    [InlineData("aspect-ratio: auto 0.000000954/1", "aspect-ratio", "auto 9.54e-07 / 1")]
+    [InlineData("aspect-ratio: auto 1e-7/1e-7", "aspect-ratio", "auto 0 / 0")]
+    [InlineData("aspect-ratio: auto calc(0.0000001)/1", "aspect-ratio", "auto 0 / 1")]
+    [InlineData("aspect-ratio: auto 0.000001/1", "aspect-ratio", "auto 1e-06 / 1")]
+    [InlineData("font-weight: 100.6", "font-weight", "100.5")]
+    [InlineData("font-weight: 999.99", "font-weight", "999.75")]
+    [InlineData("font-weight: 400.24", "font-weight", "400")]
+    [InlineData("font-weight: 1.1", "font-weight", "1")]
+    [InlineData("font-weight: calc(0.1234567 * 400)", "font-weight", "49.25")]
+    public void A_number_Chromium_keeps_in_a_narrower_form_is_Chromiums(string declaration, string property, string chromium) =>
+        Styled(Doctype + "<style>p { " + declaration + " }</style><p id=t>x</p>", Refusing).ById("t").Value(property).Should().Be(chromium);
+
     [Fact]
     public void Body_margins_come_from_the_last_attribute_of_each_pair()
     {

@@ -279,7 +279,10 @@ public static partial class PropertyRegistry
             : ParsedValue.Invalid("font-weight is a number from 1 to 1000");
     }
 
-    /// <summary>The computed weight: bolder and lighter step from the parent's weight by the table of CSS Fonts 4 §2.2.1.</summary>
+    /// <summary>The computed weight: bolder and lighter step from the parent's weight by the table of CSS Fonts 4 §2.2.1;
+    /// a number is kept in quarters, cut toward zero, as Chromium 159 keeps a weight in a fixed-point value with two
+    /// fractional bits (platform/fonts/font_selection_types.h, FontSelectionValue; measured: 100.6 is 100.5, 999.99 is
+    /// 999.75, calc(0.1234567 * 400) is 49.25).</summary>
     private static ComputedResult ComputeFontWeight(CssValue value, ComputeContext context)
     {
         var parent = context.Inherited(FontWeight) is CssNumber inherited ? inherited.Value : 400;
@@ -287,6 +290,7 @@ public static partial class PropertyRegistry
         {
             CssKeyword { Name: "bolder" } => new CssNumber(parent < 350 ? 400 : parent < 550 ? 700 : parent < 900 ? 900 : parent),
             CssKeyword { Name: "lighter" } => new CssNumber(parent < 100 ? parent : parent < 550 ? 100 : parent < 750 ? 400 : 700),
+            CssNumber number when System.Math.Truncate((float)number.Value * 4f) / 4 is var quarters && quarters != number.Value => new CssNumber(quarters),
             _ => value,
         };
     }
