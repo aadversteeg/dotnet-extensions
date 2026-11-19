@@ -91,6 +91,34 @@ public class ChromiumBehaviourTests
     public void The_roll_back_of_an_important_revert_layer_and_a_substituted_internal_keyword_are_Chromiums(string body, string id, string property, string chromium) =>
         Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
 
+    private static HtmlStyleOptions Refusing { get; } = MeasuredPage with { Unsupported = UnsupportedPolicy.Refuse };
+
+    [Theory]
+    // An inline image that is not there (no resolver in these tests), with no alt text: its width, height and
+    // aspect-ratio compute to auto unless it has both sizes, or an aspect-ratio and one size; whatever the author wrote,
+    // important or in a layer. No src, or a src of white space only, is not an image that failed. Measured in Chromium
+    // 159.0.8154.6; accepted in the default mode.
+    [InlineData("<p><img id=t src=missing.png width=10></p>", "width", "auto")]
+    [InlineData("<p><img id=t src=missing.png height=10></p>", "height", "auto")]
+    [InlineData("<p><img id=t src=missing.png alt=\"\" width=10></p>", "width", "auto")]
+    [InlineData("<p><img id=t src=\"\" width=10></p>", "width", "auto")]
+    [InlineData("<p><img id=t src=\"data:text/plain,x\" width=10></p>", "width", "auto")]
+    [InlineData("<p><img id=t src=missing.png width=\"50%\"></p>", "width", "auto")]
+    [InlineData("<p><img id=t src=missing.png style=\"width: 10px\"></p>", "width", "auto")]
+    [InlineData("<style>img { width: 10px !important }</style><p><img id=t src=missing.png alt=\"\"></p>", "width", "auto")]
+    [InlineData("<style>@layer a { img { width: 10px !important } }</style><p><img id=t src=missing.png></p>", "width", "auto")]
+    [InlineData("<p><img id=t src=missing.png style=\"width: revert-layer !important; width: 10px\"></p>", "width", "auto")]
+    [InlineData("<p><img id=t src=missing.png style=\"aspect-ratio: auto 2 / 1\"></p>", "aspect-ratio", "auto")]
+    [InlineData("<p><img id=t src=missing.png width=10 height=10></p>", "aspect-ratio", "auto 10 / 10")]
+    [InlineData("<p><img id=t src=missing.png alt=\"\" width=10 height=10></p>", "width", "10px")]
+    [InlineData("<p><img id=t src=missing.png width=10 style=\"aspect-ratio: auto 2 / 1\"></p>", "width", "10px")]
+    [InlineData("<p><img id=t src=missing.png width=10 style=\"height: 10px !important\"></p>", "width", "10px")]
+    [InlineData("<p><img id=t src=missing.png width=10 style=\"display: block\"></p>", "width", "10px")]
+    [InlineData("<p><img id=t width=10></p>", "width", "10px")]
+    [InlineData("<p><img id=t src=\"  \" width=10></p>", "width", "10px")]
+    public void A_missing_image_keeps_or_loses_its_sizes_as_in_Chromium(string body, string property, string chromium) =>
+        Styled(Doctype + body, Refusing).ById("t").Value(property).Should().Be(chromium);
+
     [Fact]
     public void Body_margins_come_from_the_last_attribute_of_each_pair()
     {

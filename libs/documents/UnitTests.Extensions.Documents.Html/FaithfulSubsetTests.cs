@@ -216,6 +216,7 @@ public class FaithfulSubsetTests
     [InlineData("<img src=missing.png alt=logo width=100 height=40>", "Documents.Html.Unsupported.Attribute", "alt text")]
     [InlineData("<img src=missing.png alt=logo style=\"width:100px;height:40px\">", "Documents.Html.Unsupported.Attribute", "alt text")]
     [InlineData("<img src=missing.png alt=logo width=100>", "Documents.Html.Unsupported.Attribute", "alt text")]
+    [InlineData("<img src=missing.png alt=x width=100>", "Documents.Html.Unsupported.Attribute", "alt text")]
     [InlineData("<img src=\"\" alt=logo width=100 height=40>", "Documents.Html.Unsupported.Attribute", "alt text")]
     [InlineData("<img alt=logo width=100 height=40>", "Documents.Html.Unsupported.Attribute", "alt text")]
     [InlineData("<style>img{width:100px;height:40px;border:1px solid}</style><img src=missing.png alt=logo>", "Documents.Html.Unsupported.Attribute", "alt text")]

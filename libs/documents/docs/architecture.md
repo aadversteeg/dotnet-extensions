@@ -477,8 +477,10 @@ Known limits of stage 3 (also in the profile document):
 - HTML Chromium styles by a rule the engine does not keep (each measured): a Content-Security-Policy `meta` in head; a
   color-scheme `meta` other than normal or light; `autofocus`; the `charset` of a link; `align` on html, head and body;
   an img with alt text and a size whose image is not there (Chromium shows the alt text inline, and the size computes
-  to auto); `fencedframe` and `geolocation`. Whether an image is there, stage 3 decides by its signature only: the
-  bytes start as a PNG or a JPEG file. Whether they decode is checked where the image is read, in stage 4.
+  to auto); `fencedframe` and `geolocation`. An inline img whose image is not there and that has no alt text gets
+  Chromium's values: its width, height and aspect-ratio compute to auto, unless it has both sizes, or an aspect-ratio
+  and one of them. Whether an image is there, stage 3 decides by its signature only: the bytes start as a PNG or a
+  JPEG file. Whether they decode is checked where the image is read, in stage 4.
 - `-webkit-left`, `-webkit-right`, `-webkit-center` (from align attributes and the caption) must align descendant
   blocks as well as text; `border-style: inset` and `outset` (hr, table border) are drawn in two shades by Chromium;
   `overflow: hidden | clip` (hr, img) clips; `aspect-ratio: auto` with a ratio (the width and height attributes of

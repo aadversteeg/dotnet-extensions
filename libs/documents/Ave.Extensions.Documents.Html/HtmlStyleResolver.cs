@@ -320,9 +320,28 @@ public static class HtmlStyleResolver
             }
 
             var style = computed.Value;
+            if (html.IsHtml("img") && IsSizedInline(style) && !ImageIsThere(html, out var source))
+            {
+                RefuseBrokenImage(element, source);
+                if (FallbackLosesItsSizes(html, style))
+                {
+                    // Computed again with the three sizes auto as the last important declarations of the style
+                    // attribute, which no author rule overrides (CSS Cascade 5 §6.2, element-attached declarations):
+                    // the same element and declarations, so no new diagnostic; at most once per img.
+                    computed = computer.Compute(element, own with { StyleAttribute = [.. own.StyleAttribute, .. AutoSizes()] });
+                    if (computed.IsFailure)
+                    {
+                        Keep(computed.Error);
+                        Limit ??= computed.Error;
+                        return null;
+                    }
+
+                    style = computed.Value;
+                }
+            }
+
             hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
             var refused = RefuseElement(element, hidden);
-            RefuseBrokenImage(element, style);
             NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
             return new Open(element, style, Language(element) ?? inheritedLanguage, hidden);
         }
@@ -452,31 +471,84 @@ public static class HtmlStyleResolver
         /// <summary>The image signatures the engine decodes: PNG (8 bytes) and JPEG (the start-of-image marker).</summary>
         private static readonly byte[][] ImageSignatures = [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], [0xFF, 0xD8, 0xFF]];
 
-        /// <summary>Refuses an img with alt text whose image is not there, when its style gives it a size: Chromium 159
-        /// then lays out the alt text inline, and width, height and aspect-ratio compute to auto (measured: a missing,
-        /// empty or unknown src, a resource that is not an image; with alt="", no alt, or display: block the values are
-        /// the engine's). An image is there when its bytes start as a PNG or a JPEG: the body of a <c>data:</c> URL, or
-        /// what the caller's resolver gives for its URL; whether they decode is checked when the image is read.</summary>
-        private void RefuseBrokenImage(StyleElement element, ComputedStyle style)
+        /// <summary>Whether an img's image is there: its bytes start as a PNG or a JPEG, the body of a <c>data:</c> URL
+        /// or what the caller's resolver gives for its src; whether they decode is checked when the image is read.</summary>
+        private bool ImageIsThere(HtmlElement html, out string? source)
+        {
+            source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
+            if (string.IsNullOrEmpty(source))
+            {
+                return false;
+            }
+
+            if (DataUrl.Body(source) is { } inline)
+            {
+                return IsImage(inline);
+            }
+
+            if (Absolute(source, _documentBase) is not { } url)
+            {
+                return false;
+            }
+
+            if (!_images.TryGetValue(url, out var there))
+            {
+                there = options.Resources?.Invoke(url) is { } resource && IsImage(resource.Bytes);
+                _images[url] = there;
+            }
+
+            return there;
+
+            static bool IsImage(ReadOnlyMemory<byte> bytes) => ImageSignatures.Any(signature => bytes.Span.StartsWith(signature));
+        }
+
+        /// <summary>Whether the resolver gave an image, by URL: it is asked once per URL.</summary>
+        private readonly Dictionary<string, bool> _images = new(StringComparer.Ordinal);
+
+        private static bool IsAuto(ComputedStyle style, string property) => style.Find(property) is Css.Values.CssKeyword { Name: "auto" };
+
+        /// <summary>Whether an element is inline and has a width, a height or an aspect-ratio: only then does a missing
+        /// image change its style.</summary>
+        private static bool IsSizedInline(ComputedStyle style) =>
+            style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "inline" }
+            && !(IsAuto(style, "width") && IsAuto(style, "height") && IsAuto(style, "aspect-ratio"));
+
+        /// <summary>Whether an inline img with a size whose image is not there loses its width, height and
+        /// aspect-ratio, as Chromium 159 computes them (html_image_fallback_helper.cc, <c>AdjustHostStyle</c> and
+        /// <c>TreatImageAsReplaced</c>; HTML Standard §15.4.2): it shows its fallback (a src that is empty or names no
+        /// image, or alt text with no image; measured: no src, or a src of white space only, with no alt text is no
+        /// fallback), and it is not treated as a replaced element, which it is when it has no alt text and both a width
+        /// and a height, or an aspect-ratio and one of them. Its three sizes then compute to auto after the
+        /// cascade.</summary>
+        private static bool FallbackLosesItsSizes(HtmlElement html, ComputedStyle style)
+        {
+            var src = html.Attribute("src");
+            var hasAlt = html.Attribute("alt") is { Length: > 0 };
+            if (!hasAlt && src is not { Length: 0 } && (src is null || src.Trim(' ', '\t', '\n', '\f', '\r').Length == 0))
+            {
+                return false;
+            }
+
+            var width = !IsAuto(style, "width");
+            var height = !IsAuto(style, "height");
+            var ratio = !IsAuto(style, "aspect-ratio");
+            var replaced = !hasAlt && ((width && height) || (ratio && (width || height)));
+            return !replaced && (width || height || ratio);
+        }
+
+        /// <summary>width, height and aspect-ratio auto, important: read once per resolution.</summary>
+        private ValueList<Declaration> AutoSizes() =>
+            _autoSizes ??= Read(CssParser.ParseDeclarations("width: auto !important; height: auto !important; aspect-ratio: auto !important", new CssSourceOptions(_sourceName)), []);
+
+        private ValueList<Declaration>? _autoSizes;
+
+        /// <summary>Refuses an inline img with a size, alt text and no image: Chromium 159 then lays out the alt text
+        /// inline (measured: a missing, empty or unknown src, a resource that is not an image), which the engine does
+        /// not draw.</summary>
+        private void RefuseBrokenImage(StyleElement element, string? source)
         {
             var html = element.Element;
-            if (!html.IsHtml("img") || html.Attribute("alt") is not { Length: > 0 } || style[Css.Properties.PropertyRegistry.Display] is not Css.Values.CssKeyword { Name: "inline" })
-            {
-                return;
-            }
-
-            static bool Auto(ComputedStyle style, string property) => style.Find(property) is Css.Values.CssKeyword { Name: "auto" };
-            if (Auto(style, "width") && Auto(style, "height") && Auto(style, "aspect-ratio"))
-            {
-                return;
-            }
-
-            var source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
-            var url = string.IsNullOrEmpty(source) ? null : Absolute(source, _documentBase);
-            ReadOnlyMemory<byte>? bytes = string.IsNullOrEmpty(source) ? null
-                : DataUrl.Body(source) is { } inline ? inline
-                : url is null ? null : options.Resources?.Invoke(url)?.Bytes;
-            if (bytes is { } found && ImageSignatures.Any(signature => found.Span.StartsWith(signature)))
+            if (html.Attribute("alt") is not { Length: > 0 })
             {
                 return;
             }
