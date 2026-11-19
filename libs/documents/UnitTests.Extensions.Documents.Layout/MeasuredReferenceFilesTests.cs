@@ -14,7 +14,7 @@ public class MeasuredReferenceFilesTests
 {
     /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
     /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
-    private static readonly string[] InkCases = ["dl-skip", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
+    private static readonly string[] InkCases = ["dl-skip", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -1310,6 +1310,11 @@ public class MeasuredReferenceFilesTests
         ["sk-nest.lines.txt"] = 12,
         ["sk-nest.print.txt"] = 22,
         ["sk-nest.words.txt"] = 9,
+        ["sk-part.boxes.txt"] = 1,
+        ["sk-part.ink.txt"] = 134,
+        ["sk-part.lines.txt"] = 11,
+        ["sk-part.print.txt"] = 24,
+        ["sk-part.words.txt"] = 12,
         ["sk-size.boxes.txt"] = 1,
         ["sk-size.ink.txt"] = 47,
         ["sk-size.lines.txt"] = 11,
@@ -1452,7 +1457,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(352);
+        cases.Should().HaveCount(353);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

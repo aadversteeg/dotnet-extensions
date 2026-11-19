@@ -8,9 +8,16 @@
 #                                        clips, not cut to the rectangle (raw)
 #   piece <page> <x0> <x1>               what is left visible: the rectangle minus the union of the gaps
 #
-# A clip that does not cut the rectangle across its whole height (so the visible line is not a set of rectangles) is
-# written as "uneven <page> <x0> <y0> <x1> <y1>" with the clip's box; a curve in a clip as "curve <page>". Writes nothing
-# for a print without such clips. Run by extract.sh in the reference tools image: python3 ink.py <file.pdf>
+# A clip that cuts a rectangle out of only part of the line's height (the clip of an earlier line of the same text) is
+# written with that rectangle's top and bottom, and the line then with its visible ink as rectangles, columns of equal
+# rows joined:
+#
+#   gap <page> <x0> <x1> <y0> <y1>       the rectangle such a clip leaves out (raw)
+#   part <page> <x0> <y0> <x1> <y1>      a visible rectangle of a line cut by such a clip
+#
+# A clip that leaves out anything other than one rectangle is written as "uneven <page> <x0> <y0> <x1> <y1>" with the
+# clip's box; a curve in a clip as "curve <page>". Writes nothing for a print without such clips. Run by extract.sh in the
+# reference tools image: python3 ink.py <file.pdf>
 import sys
 
 import pymupdf
@@ -73,6 +80,51 @@ def cut(clip, fill):
     return out
 
 
+def hole(clip):
+    """The one rectangle (x0, x1, y0, y1) an even-odd clip of straight sides leaves out of its box, or None."""
+    sides = segments(clip["items"])
+    if sides is None or any(abs(a.x - b.x) > EPSILON and abs(a.y - b.y) > EPSILON for a, b in sides):
+        return None
+    box = clip["scissor"]
+    xs = sorted({round(v, 4) for a, b in sides for v in (a.x, b.x)} | {round(box.x0, 4), round(box.x1, 4)})
+    ys = sorted({round(v, 4) for a, b in sides for v in (a.y, b.y)} | {round(box.y0, 4), round(box.y1, 4)})
+    vertical = [(a.x, min(a.y, b.y), max(a.y, b.y)) for a, b in sides if abs(a.x - b.x) <= EPSILON]
+    out = []
+    for left, right in zip(xs, xs[1:]):
+        for top, bottom in zip(ys, ys[1:]):
+            cx, cy = (left + right) / 2, (top + bottom) / 2
+            if not (box.x0 < cx < box.x1 and box.y0 < cy < box.y1):
+                continue
+            if sum(1 for x, y0, y1 in vertical if x > cx and y0 < cy < y1) % 2 == 0:
+                out.append((left, right, top, bottom))
+    if not out:
+        return None
+    x0, x1 = min(c[0] for c in out), max(c[1] for c in out)
+    y0, y1 = min(c[2] for c in out), max(c[3] for c in out)
+    area = sum((c[1] - c[0]) * (c[3] - c[2]) for c in out)
+    return (x0, x1, y0, y1) if abs(area - (x1 - x0) * (y1 - y0)) < 1e-6 else None
+
+
+def parts(page_number, fill, holes):
+    """The visible rectangles of the fill minus the holes: columns split at every hole end, equal columns joined."""
+    xs = sorted({fill.x0, fill.x1} | {min(max(v, fill.x0), fill.x1) for h in holes for v in h[:2]})
+    columns = []
+    for left, right in zip(xs, xs[1:]):
+        if right - left <= EPSILON:
+            continue
+        middle = (left + right) / 2
+        rows = [(fill.y0, fill.y1)]
+        for x0, x1, y0, y1 in holes:
+            if x0 < middle < x1:
+                rows = [piece for top, bottom in rows for piece in
+                        ((top, min(bottom, y0)), (max(top, y1), bottom)) if piece[1] - piece[0] > EPSILON]
+        if columns and columns[-1][2] == rows and abs(columns[-1][1] - left) <= EPSILON:
+            columns[-1] = (columns[-1][0], right, rows)
+        else:
+            columns.append((left, right, rows))
+    return [f"part {page_number} {left:.3f} {top:.3f} {right:.3f} {bottom:.3f}" for left, right, rows in columns for top, bottom in rows]
+
+
 def main(path):
     for page_number, page in enumerate(pymupdf.open(path), start=1):
         clips = []
@@ -85,21 +137,31 @@ def main(path):
                 continue
             fill = drawing["rect"]
             active = [clip for clip in clips if clip["level"] < level and clip.get("even_odd")]
-            gaps, rows = [], []
+            gaps, rows, holes = [], [], []
             for clip in active:
                 result = cut(clip, fill)
+                if result == "uneven" and (rectangle := hole(clip)) is not None:
+                    if rectangle[0] < fill.x1 and rectangle[1] > fill.x0 and rectangle[2] < fill.y1 and rectangle[3] > fill.y0:
+                        holes.append(rectangle)
+                        rows.append(f"gap {page_number} {rectangle[0]:.3f} {rectangle[1]:.3f} {rectangle[2]:.3f} {rectangle[3]:.3f}")
+                    continue
                 if isinstance(result, str):
                     box = clip["scissor"]
                     rows.append(f"{result} {page_number} {box.x0:.3f} {box.y0:.3f} {box.x1:.3f} {box.y1:.3f}")
                     continue
                 for left, right in result:
                     gaps.append((left, right))
+                    holes.append((left, right, fill.y0, fill.y1))
                     rows.append(f"gap {page_number} {left:.3f} {right:.3f}")
             if not rows:
                 continue
             print(f"fill {page_number} {fill.x0:.3f} {fill.y0:.3f} {fill.x1:.3f} {fill.y1:.3f}")
             for row in rows:
                 print(row)
+            if any(top > fill.y0 + EPSILON or bottom < fill.y1 - EPSILON for _, _, top, bottom in holes):
+                for row in parts(page_number, fill, holes):
+                    print(row)
+                continue
             x = fill.x0
             for left, right in sorted(gaps):
                 left, right = max(left, fill.x0), min(right, fill.x1)
