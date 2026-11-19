@@ -123,7 +123,7 @@ public static class HtmlStyleResolver
             var tree = StyleElement.Tree(document);
             var elements = Descendants(tree).ToList();
             _body = elements.Select(item => item.Element).FirstOrDefault(element => element.IsHtml("body"));
-            _documentBase = DocumentBase(elements);
+            _documentBase = Urls.DocumentBase(document, options.BaseUrl);
 
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
             sheets.AddRange(AuthorSheets(elements).Select(sheet => new CascadeSheet(sheet, CascadeOrigin.Author)));
@@ -717,14 +717,6 @@ public static class HtmlStyleResolver
         }
 
         // ---- style sheets ----
-
-        /// <summary>The document base URL (§2.4.1): the first base element with an href, resolved against the
-        /// document's URL; else the document's URL.</summary>
-        private string? DocumentBase(List<StyleElement> elements)
-        {
-            var href = elements.Select(item => item.Element).FirstOrDefault(element => element.IsHtml("base") && element.Attribute("href") is not null)?.Attribute("href");
-            return href is null ? options.BaseUrl : Urls.Absolute(href.Trim(), options.BaseUrl) ?? options.BaseUrl;
-        }
 
         /// <summary>The style sheets of the document in tree order (§4.2.6 style, §4.2.4 link with rel stylesheet; the
         /// style element of SVG too, as in Chromium 159). A sheet that does not apply leaves a diagnostic of class

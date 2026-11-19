@@ -139,41 +139,17 @@ public static partial class HtmlBoxGenerator
             return Urls.Absolute(source, DocumentBase()) is { } url && options.Resources?.Invoke(url) is { } resource ? resource.Bytes : null;
         }
 
+        /// <summary>The document base URL, by the style resolver's rule (<see cref="Urls.DocumentBase"/>), against this
+        /// run's base URL.</summary>
         private string? DocumentBase()
         {
             if (!_documentBaseRead)
             {
                 _documentBaseRead = true;
-                var href = BaseHref(styled.Root);
-                _documentBase = href is null ? options.BaseUrl : Urls.Absolute(href.Trim(), options.BaseUrl) ?? options.BaseUrl;
+                _documentBase = Urls.DocumentBase(styled.Document, options.BaseUrl);
             }
 
             return _documentBase;
-        }
-
-        /// <summary>The href of the first <c>base</c> element that has one, in tree order; null for none.</summary>
-        private static string? BaseHref(StyledElement root)
-        {
-            var pending = new System.Collections.Generic.Stack<StyledElement>();
-            pending.Push(root);
-            while (pending.Count > 0)
-            {
-                var element = pending.Pop();
-                if (IsHtml(element, "base") && element.Element.Attribute("href") is { } href)
-                {
-                    return href;
-                }
-
-                for (var i = element.Children.Count - 1; i >= 0; i--)
-                {
-                    if (element.Children[i] is StyledElement child)
-                    {
-                        pending.Push(child);
-                    }
-                }
-            }
-
-            return null;
         }
     }
 }
