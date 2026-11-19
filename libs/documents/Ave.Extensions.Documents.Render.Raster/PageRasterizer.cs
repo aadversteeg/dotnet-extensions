@@ -26,8 +26,11 @@ public static class PageRasterizer
     /// <param name="options">The resolution and background.</param>
     /// <returns>The pixels (8-bit RGBA, sRGB, alpha not premultiplied), or an error: the page model's contract
     /// (<c>Documents.Raster.InvalidPageModel</c>), the options (<c>InvalidOptions</c>), the size (<c>TooLarge</c>), an image
-    /// too far from the page's origin to be drawn exactly (<c>ImageOutOfReach</c>), or a glyph outline or an image that
-    /// cannot be decoded (<c>Documents.Font.Parse.*</c>, <c>Documents.Image.*</c>).</returns>
+    /// too far from the page's origin to be drawn exactly (<c>ImageOutOfReach</c>), a glyph outline or an image that
+    /// cannot be decoded (<c>Documents.Font.Parse.*</c>, <c>Documents.Image.*</c>), or a fill of the canvas that fails
+    /// (<c>Documents.Graphics.TooMuchWork</c>, <c>Documents.Graphics.InexactCoverage</c>, see <see cref="Canvas.Fill"/>):
+    /// both kinds of fill error leave by one path, the canvas's result handed back unchanged by the painter and by this
+    /// call, and the canvas they leave behind is dropped.</returns>
     public static Result<RgbaImage, Error> Render(Page page, RasterOptions options) =>
         Checked(options, code => PageModelRules.Check(page, code))
             .OnSuccessBind(checkedPage => Draw(checkedPage, options, new PagePainter.Images()));
@@ -79,9 +82,18 @@ public static class PageRasterizer
     /// <param name="resolution">Pixels per inch.</param>
     /// <returns>Width and height in pixels (as 64-bit numbers, since a large page at a high resolution may not fit 32
     /// bits). A positive side at a positive resolution is at least 1 pixel, as the formula says, also where the product
-    /// is too small for a double and rounds to 0 (a resolution near 5e-324).</returns>
+    /// is too small for a double and rounds to 0 (a resolution near 5e-324). A page or a resolution that
+    /// <see cref="Render(Page, RasterOptions)"/> refuses by the contract or the options (a side not from
+    /// <see cref="PageModelRules.MinPageSide"/> to <see cref="PageModelRules.MaxNumber"/>, not a number, or a resolution
+    /// that is not a positive finite number) has no image: the answer is (0, 0). A page the contract accepts but too large
+    /// to draw gets its size; <see cref="Render(Page, RasterOptions)"/> refuses it with <c>TooLarge</c> and names it.</returns>
     public static (long Width, long Height) PixelSize(Size page, double resolution) =>
-        (Pixels(page.Width, resolution), Pixels(page.Height, resolution));
+        Drawable(page.Width) && Drawable(page.Height) && resolution is > 0 and < double.PositiveInfinity
+            ? (Pixels(page.Width, resolution), Pixels(page.Height, resolution))
+            : (0, 0);
+
+    /// <summary>A page side the contract accepts (<c>PageModelRules</c>, page size).</summary>
+    private static bool Drawable(double side) => side is >= PageModelRules.MinPageSide and <= PageModelRules.MaxNumber;
 
     private static long Pixels(double points, double resolution)
     {

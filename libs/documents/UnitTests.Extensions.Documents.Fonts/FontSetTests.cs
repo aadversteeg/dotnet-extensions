@@ -43,4 +43,26 @@ public class FontSetTests
         error.Code.Should().Be(FontErrorCodes.NotFound);
         error.Metadata![ErrorMetadataKeys.Value].Should().Be("700 italic");
     }
+
+    [Fact]
+    public void A_default_set_is_an_empty_set()
+    {
+        var error = new FontSet(default).Find("Lato", FontWeight.Regular).Error;
+
+        error.Code.Should().Be(FontErrorCodes.NotFound);
+        error.Message.Should().Contain("Available: none");
+    }
+
+    [Fact]
+    public void A_set_with_a_missing_font_is_refused_whatever_is_asked_for()
+    {
+        var alone = new FontSet([null!]).Find("Lato", FontWeight.Regular).Error;
+        var after = new FontSet([TestFonts.Regular, null!]).Find("Lato", FontWeight.Regular).Error;
+
+        alone.Code.Should().Be(FontErrorCodes.NotFound);
+        alone.Message.Should().Contain("Font 1 of the font set is missing");
+        after.Code.Should().Be(FontErrorCodes.NotFound);
+        after.Message.Should().Contain("Font 2 of the font set is missing");
+        after.Metadata![ErrorMetadataKeys.Value].Should().Be("400");
+    }
 }

@@ -66,6 +66,16 @@ public class RenderingTests
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
     }
 
+    [Fact]
+    public void A_default_or_incomplete_font_set_is_an_error_not_an_exception()
+    {
+        var document = Document([Paragraph("World")]).FontFamily("Lato");
+
+        document.ToPdf(new FontSet(default), Options).Error.Code.Should().Be(FontErrorCodes.NotFound);
+        document.ToPdf(new FontSet([TestFonts.Regular, null!]), Options).Error.Code.Should().Be(FontErrorCodes.NotFound);
+        document.ToPng(new FontSet([null!]), 1, new()).Error.Code.Should().Be(FontErrorCodes.NotFound);
+    }
+
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 
     private static string ThisFile([CallerFilePath] string file = "") => file;

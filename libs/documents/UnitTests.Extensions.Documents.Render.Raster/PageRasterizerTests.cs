@@ -240,6 +240,28 @@ public class PageRasterizerTests
         (image.Width, image.Height).Should().Be((pixelsAcross, pixelsDown));
     }
 
+    [Theory]
+    [InlineData(double.NaN, 100, 72)]
+    [InlineData(100, double.NaN, 72)]
+    [InlineData(-100, 100, 72)]
+    [InlineData(100, -0.5, 72)]
+    [InlineData(0, 100, 72)]
+    [InlineData(0.00009, 100, 72)]
+    [InlineData(double.PositiveInfinity, 100, 72)]
+    [InlineData(100, double.NegativeInfinity, 72)]
+    [InlineData(3.5e38, 100, 72)]
+    [InlineData(100, 100, double.NaN)]
+    [InlineData(100, 100, 0)]
+    [InlineData(100, 100, -72)]
+    [InlineData(100, 100, double.PositiveInfinity)]
+    public void A_page_size_or_resolution_that_is_refused_has_no_pixels(double width, double height, double resolution)
+    {
+        PageRasterizer.PixelSize(new Size(width, height), resolution).Should().Be((0L, 0L));
+        var result = PageRasterizer.Render(PageOf(width, height), new RasterOptions(resolution));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().BeOneOf(RasterErrorCodes.InvalidPageModel, RasterErrorCodes.InvalidOptions);
+    }
+
     [Fact]
     public void The_background_is_white_unless_set_and_transparent_when_null()
     {
