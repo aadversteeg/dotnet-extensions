@@ -145,12 +145,24 @@ public class PageRasterizerTests
         // same rows and buffers. Counted, not timed: the bytes allocated on this thread by a render (after one render of
         // each, so that nothing is allocated once only), which the rasteriser's buffers would follow if its rows or
         // columns followed the shape. A clock under a loaded host says nothing.
+        //
+        // Measured (Linux x64, 2026-11-19): both shapes clip to the same four vertices and a render of either allocates
+        // the same bytes, 17,491,072; the difference made by the shape is 0. What varies is the runtime's count, for
+        // either shape alike: a render that does not start from a collection is counted up to 8.2 KB more or less now
+        // and then (Windows CI saw 6,368), and one that does, ±240 bytes in a few renders while other tests run alongside.
+        // So each measured render starts from a full collection, each shape is rendered five times in turn, and the
+        // medians are compared. The allowance, 2 KiB, is eight times that remaining noise and less than what the
+        // rasteriser's column buffers take for 40 columns more (53 bytes a column; the canvas has 1,240): a clip box 64
+        // pixels wider than the canvas fails here by 816 bytes. One row of the canvas in doubles is already 9.9 KB.
         var huge = PageOf(595, 842, new FillRectangle(new Rect(new Point(-1e30, -1e30), new Size(2e30, 2e30)), Color.Black));
         var page = PageOf(595, 842, new FillRectangle(new Rect(new Point(0, 0), new Size(600, 850)), Color.Black));
         var options = new RasterOptions(150);
 
         long Allocated(Page subject)
         {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
             var before = GC.GetAllocatedBytesForCurrentThread();
             PageRasterizer.Render(subject, options).IsSuccess.Should().BeTrue();
             return GC.GetAllocatedBytesForCurrentThread() - before;
@@ -158,8 +170,17 @@ public class PageRasterizerTests
 
         PageRasterizer.Render(page, options).IsSuccess.Should().BeTrue();
         PageRasterizer.Render(huge, options).IsSuccess.Should().BeTrue();
-        var (pageBytes, hugeBytes) = (Allocated(page), Allocated(huge));
-        hugeBytes.Should().BeLessThanOrEqualTo(pageBytes + 4096, $"huge {hugeBytes} bytes, page {pageBytes} bytes");
+        var (pageCounts, hugeCounts) = (new List<long>(), new List<long>());
+        for (var round = 0; round < 5; round++)
+        {
+            pageCounts.Add(Allocated(page));
+            hugeCounts.Add(Allocated(huge));
+        }
+
+        var (pageBytes, hugeBytes) = (pageCounts.Order().ElementAt(2), hugeCounts.Order().ElementAt(2));
+        hugeBytes.Should().BeLessThanOrEqualTo(
+            pageBytes + 2048,
+            $"huge {hugeBytes} bytes, page {pageBytes} bytes (medians; huge {string.Join(", ", hugeCounts)}; page {string.Join(", ", pageCounts)})");
         PageRasterizer.Render(huge, options).Value.Pixels.Should().Equal(PageRasterizer.Render(page, options).Value.Pixels);
     }
 
