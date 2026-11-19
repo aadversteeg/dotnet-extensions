@@ -241,6 +241,13 @@ public static class Elements
     /// <returns>The column size.</returns>
     public static TrackSize Fill(double weight = 1) => new TrackSize.Fill(weight);
 
+    /// <summary>A column of this width that its content may widen and a narrow table may shrink down to its content, as a
+    /// browser lays out a <c>col</c> width in an HTML table: wider when a word of a cell is wider than the width, narrower
+    /// when the table cannot give every such column its width. A plain length is a fixed width instead.</summary>
+    /// <param name="width">The preferred width, zero or more.</param>
+    /// <returns>The column size.</returns>
+    public static TrackSize Preferred(Length width) => new TrackSize.Preferred(width);
+
     /// <summary>A column as wide as its content needs, up to its widest content.</summary>
     public static TrackSize Auto => TrackSize.Auto.Instance;
 

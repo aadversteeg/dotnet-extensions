@@ -163,12 +163,13 @@ public static class ModelCheck
             var valid = column switch
             {
                 TrackSize.Fixed fixedWidth => IsBounded(fixedWidth.Width) && fixedWidth.Width.Points >= 0,
+                TrackSize.Preferred preferred => IsBounded(preferred.Width) && preferred.Width.Points >= 0,
                 TrackSize.Fill fill => double.IsFinite(fill.Weight) && fill.Weight > 0,
                 _ => true,
             };
             if (!valid)
             {
-                return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed column width must be zero or more and at most {ModelLimits.MaxLength}, and a fill weight positive.", column.ToString()!, "columns", box);
+                return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed or preferred column width must be zero or more and at most {ModelLimits.MaxLength}, and a fill weight positive.", column.ToString()!, "columns", box);
             }
         }
 

@@ -62,6 +62,18 @@ public sealed record TableElement(
     /// <returns>A copy that splits the line.</returns>
     public TableElement SplitLinesAtBreaks() => this with { LinesAtBreaks = BoxDecorationBreak.Slice };
 
+    /// <summary>How wide the table is when none of its columns is a <see cref="Elements.Fill"/> column:
+    /// <see cref="BoxWidth.Auto"/> (the default) makes it as wide as its columns need; <see cref="BoxWidth.Stretch"/>
+    /// makes it as wide as the space it is in (<see cref="FullWidth"/>).</summary>
+    public BoxWidth Width { get; init; } = BoxWidth.Auto;
+
+    /// <summary>Makes the table as wide as the space it is in, as a browser lays out an HTML table with
+    /// <c>width: 100%</c>: the width left over the columns is shared over the auto columns in proportion to their widest
+    /// content, or over the fixed columns in proportion to their widths when no column is auto. A table with a
+    /// <see cref="Elements.Fill"/> column is that wide already.</summary>
+    /// <returns>A copy that fills the width.</returns>
+    public TableElement FullWidth() => this with { Width = BoxWidth.Stretch };
+
     /// <inheritdoc/>
     TableElement IFormatted<TableElement>.WithFormat(Style format) => this with { Format = format };
 }

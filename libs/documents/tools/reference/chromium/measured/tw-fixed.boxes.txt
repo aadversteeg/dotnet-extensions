@@ -1,0 +1,13 @@
+div 300.000 18.234 w-fixed
+table 300.000 18.234 fixed
+td 119.695 17.484 short
+td 179.555 17.484 a longer text
+div 300.000 18.234 w-fixed-three
+table 300.000 18.234 fixed-three
+td 74.813 17.484 a
+td 99.750 17.484 b
+td 124.688 17.484 c
+div 300.000 43.734 w-fixed-zero
+table 300.000 43.734 fixed-zero
+td 299.250 42.984 short
+td 0.000 42.984 a longer text

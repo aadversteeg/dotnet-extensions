@@ -370,6 +370,12 @@ sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_the_first_run_s: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
+tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
+tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
+tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1
+tw-insets refused Documents.Html.Unsupported.Value width: 300pt at 5:1
+tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
+tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
 ws-border refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:6
