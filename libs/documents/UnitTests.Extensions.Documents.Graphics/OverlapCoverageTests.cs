@@ -415,8 +415,8 @@ public class OverlapCoverageTests(ITestOutputHelper output)
     /// of a border, with the classification the rule must give it: two sides that run parallel, cross inside the pixel,
     /// touch in one point, meet on a pixel side or corner; two sides of the same direction (winding 0, 1 and 2); two sides
     /// inside another contour (winding 1 and 2, and −1 and 0); three sides; a stem cut by a clip side; a stem of zero
-    /// width; a horizontal edge or a vertical edge of a third contour between two sides; the same for horizontal strokes;
-    /// a side through the polygon's start.
+    /// width; a horizontal edge or a vertical edge of a third contour between two sides; the same for horizontal strokes,
+    /// and a bar whose side lies on the pixel's top or bottom side; a side through the polygon's start.
     /// </summary>
     internal static IEnumerable<(Shape Shape, (int X, int Y) Pixel, bool TwoSided)> TwoSidedBorders()
     {
@@ -454,6 +454,11 @@ public class OverlapCoverageTests(ITestOutputHelper output)
         yield return (new Shape("bar whose sides cross in the pixel", [Points((0.5, 3.125), (7, 3.875), (7, 3.125), (0.5, 3.875))]), (3, 3), false);
         yield return (new Shape("two bars of the same direction", [Rectangle(0.5, 3.125, 7.5, 3.875), Rectangle(0.5, 3.375, 7.5, 3.625)]), (3, 3), false);
         yield return (new Shape("bar cut by a horizontal clip side", [bar], Box(0, 0, 8, 3.5)), (3, 3), true);
+
+        // A side on the pixel's top or bottom side touches no point inside it, but it is the bar's side of its kind there:
+        // without it the pixel has one side only and would be arranged.
+        yield return (new Shape("bar whose top side lies on the pixel's top side", [Rectangle(0.5, 3, 7.5, 3.5)]), (3, 3), true);
+        yield return (new Shape("bar whose bottom side lies on the pixel's bottom side", [Rectangle(0.5, 3.5, 7.5, 4)]), (3, 3), true);
 
         // The stem's left side is the polygon's last and first edge: one run in the numbering counted from half way round.
         yield return (new Shape("stem whose side runs through the polygon's start", [Points((2.25, 4.5), (2.25, 7.5), (2.75, 7.5), (2.75, 0.5), (2.25, 0.5))]), (2, 4), true);
