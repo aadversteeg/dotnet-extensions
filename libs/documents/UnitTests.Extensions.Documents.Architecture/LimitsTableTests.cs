@@ -26,11 +26,13 @@ public class LimitsTableTests
         ["shaping operations of one text"] = ("1 024 per input glyph, at least 65 536",
             [C("Typesetting", "Typesetting.Shaping.ShapingBudget", "OperationsPerGlyph", 1_024), C("Typesetting", "Typesetting.Shaping.ShapingBudget", "MinOperations", 65_536)]),
         ["cell span"] = ("1 000 columns, 65 534 rows", [C("Core", "Core.TableSlots", "MaxColumnSpan", 1_000), C("Core", "Core.TableSlots", "MaxRowSpan", 65_534)]),
-        ["every number of a page model (sizes, positions, font sizes, areas)"] = ("within ±3.403 × 10^38, the range of a PDF real (ISO 32000-1 Annex C, Table C.1)",
+        ["every number of a page model (sizes, positions, font sizes, areas), and the edges computed from them (x + width, y + height, the place of a glyph, the height above the foot of the page)"] = ("within ±3.403 × 10^38, the range of a PDF real (ISO 32000-1 Annex C, Table C.1)",
             [C("PageModel", "PageModel.PageModelRules", "MaxNumber", 3.403e38)]),
         ["clips open one inside the other on a page, for both back-ends"] = ("27 (in PDF one `q` each, plus the drawing's own: the 28 levels of ISO 32000-1 Annex C and ISO 19005-3 §6.1.13; the raster back-end takes the same)",
             [C("PageModel", "PageModel.PageModelRules", "MaxClipDepth", 27)]),
         ["slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`)"] = ("100, one per page", [C("Layout", "Layout.MonolithicSlices", "MaxSlices", 100)]),
+        ["slices of one document, all pieces together (`MonolithicOverflow.Slice`)"] = ("1 000, counted page by page; a document without a piece taller than the page area has none",
+            [C("Layout", "Layout.MonolithicSlices", "MaxSlicesPerDocument", 1_000)]),
         ["pixels of one page drawn as an image"] = ("2^26", [C("Graphics", "Graphics.Canvas", "MaxPixels", 1L << 26)]),
         ["coordinates the graphics library draws with"] = ("±10^150 after the transform; a clip box within ±2^30 pixels",
             [C("Graphics", "Graphics.Canvas", "MaxCoordinate", 1e150), C("Graphics", "Graphics.Canvas", "MaxPixelCoordinate", 1 << 30)]),
@@ -75,7 +77,7 @@ public class LimitsTableTests
         ["glyphs of one text"] = ("`Typesetting/Shaping/GlyphSubstitution.cs`", "`Documents.Typesetting.TooManyGlyphs`"),
         ["shaping operations of one text"] = ("`Typesetting/Shaping/ShapingBudget.cs`", "`Documents.Typesetting.TooMuchWork`"),
         ["cell span"] = ("`Core/TableSlots.cs`", "`Documents.Input.Invalid.Table`; in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel`"),
-        ["every number of a page model (sizes, positions, font sizes, areas)"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel`"),
+        ["every number of a page model (sizes, positions, font sizes, areas), and the edges computed from them (x + width, y + height, the place of a glyph, the height above the foot of the page)"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel`"),
         ["pixels of one page drawn as an image"] = ("`Render.Raster/PageRasterizer.cs`, `Graphics/Canvas.cs`", "`Documents.Raster.TooLarge`; `Documents.Graphics.TooLarge`"),
         ["coordinates the graphics library draws with"] = ("`Graphics/Canvas.cs`", "`Documents.Graphics.InvalidValue`"),
         ["PDF/UA grid of one table"] = ("`Render.Pdf/Tagging/TableRegularity.cs`", "`Documents.Pdf.Conformance.PdfUa1.TableTooLarge`"),
@@ -99,6 +101,7 @@ public class LimitsTableTests
         ["nesting of composite glyphs"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
         ["clips open one inside the other on a page, for both back-ends"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel`"),
         ["slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`)"] = ("`Layout/MonolithicSlices.cs`", "`Documents.Layout.TooManySlices`"),
+        ["slices of one document, all pieces together (`MonolithicOverflow.Slice`)"] = ("`Layout/MonolithicSlices.cs`, `Layout/Paginator.cs`", "`Documents.Layout.TooManySlices` (the message names the limit for one document)"),
     };
 
     /// <summary>The types whose public constants are limits: each such constant has a row.</summary>
