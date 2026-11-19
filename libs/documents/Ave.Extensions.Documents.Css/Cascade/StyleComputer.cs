@@ -69,7 +69,10 @@ public sealed class StyleComputer
     /// <summary>The element being computed.</summary>
     private IStyleElement? _element;
     private readonly Dictionary<IStyleElement, ComputedStyle> _styles = new(ReferenceEqualityComparer.Instance);
-    private readonly Dictionary<(PreparedDeclaration Declaration, object Custom), Substitution> _substituted = new(new SubstitutionComparer());
+    private readonly Dictionary<(PreparedDeclaration Declaration, CssTokens?[] Read), Substitution> _substituted = new(new SubstitutionComparer());
+
+    /// <summary>The custom property names each declaration's var() functions name, fallbacks included, in order.</summary>
+    private readonly Dictionary<PreparedDeclaration, string[]> _namesRead = new(ReferenceEqualityComparer.Instance);
 
     private readonly Dictionary<(object Parent, PreparedDeclaration?[] Winners), ImmutableDictionary<string, CssTokens>> _customTables = new(new CustomTableComparer());
 
@@ -635,7 +638,9 @@ public sealed class StyleComputer
                 switch (DeclarationPreparer.WideKeyword(substituted))
                 {
                     case null:
-                        result[name] = new CssTokens(substituted, CssSerializer.Serialize(substituted));
+                        // One value object per remembered substitution, so the elements that share it share what
+                        // reads it in turn.
+                        result[name] = substitution.Tokens ??= new CssTokens(substituted, CssSerializer.Serialize(substituted));
                         break;
                     case "inherit" or "unset":
                         if (inherited.TryGetValue(name, out var parentValue))
@@ -714,18 +719,35 @@ public sealed class StyleComputer
         public ValueList<ComponentValue> Values { get; } = values;
 
         public Reading? Reading { get; set; }
+
+        /// <summary>The values as a custom property's computed value, made once.</summary>
+        public CssTokens? Tokens { get; set; }
     }
 
-    /// <summary>A substitution, remembered per declaration and custom-property table (tables are shared, see
-    /// <see cref="CustomProperties"/>), and charged to the cascade's substitution work; past that limit the cascade
-    /// stops. The key is complete: substitution reads only the declaration's value and the table, and the table is
-    /// immutable, so its identity stands for its content. What the result reads as (<see cref="Read"/>) depends besides on
-    /// the declaration alone (its property, origin and name), so it is kept with it. When the memo is full, each call
-    /// substitutes again and is charged again, so what is not remembered is still bounded by
-    /// <see cref="CssInputLimits.MaxSubstitutionWork"/>.</summary>
+    /// <summary>A substitution, remembered per declaration and the values of the custom properties its var() functions
+    /// name, and charged to the cascade's substitution work; past that limit the cascade stops. The key is complete:
+    /// substitution reads only the declaration's value and those properties of the table, and a value is immutable, so
+    /// its identity stands for its content (an inherited value is the parent's object, so elements that each set a
+    /// custom property of their own still share the reading of one they inherit). What the result reads as
+    /// (<see cref="Read"/>) depends besides on the declaration alone (its property, origin and name), so it is kept with
+    /// it. When the memo is full, each call substitutes again and is charged again, so what is not remembered is still
+    /// bounded by <see cref="CssInputLimits.MaxSubstitutionWork"/>.</summary>
     private Substitution Substitute(IReadOnlyList<ComponentValue> values, IReadOnlyDictionary<string, CssTokens> custom, PreparedDeclaration declaration)
     {
-        var key = (declaration, (object)custom);
+        if (!_namesRead.TryGetValue(declaration, out var names))
+        {
+            names = NamesRead(values);
+            _namesRead[declaration] = names;
+        }
+
+        var read = new CssTokens?[names.Length];
+        for (var i = 0; i < names.Length; i++)
+        {
+            read[i] = custom.TryGetValue(names[i], out var value) ? value : null;
+        }
+
+        _budget.Charge(1 + names.Length);
+        var key = (declaration, read);
         if (_substituted.TryGetValue(key, out var known))
         {
             return known;
@@ -991,15 +1013,79 @@ public sealed class StyleComputer
     }
 
     /// <summary>Compares substitution keys by the identity of the declaration and the table.</summary>
-    private sealed class SubstitutionComparer : IEqualityComparer<(PreparedDeclaration Declaration, object Custom)>
+    /// <summary>The custom property names the var() functions of a value name, fallbacks included, each once, in the
+    /// order they come; without recursion.</summary>
+    private static string[] NamesRead(IReadOnlyList<ComponentValue> values)
+    {
+        var names = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var lists = new Stack<IReadOnlyList<ComponentValue>>();
+        lists.Push(values);
+        while (lists.Count > 0)
+        {
+            foreach (var value in lists.Pop())
+            {
+                switch (value)
+                {
+                    case FunctionValue function when function.IsNamed("var") && VarSubstitution.ArgumentsOf(function) is var (name, fallback):
+                        if (seen.Add(name))
+                        {
+                            names.Add(name);
+                        }
+
+                        if (fallback is not null)
+                        {
+                            lists.Push(fallback);
+                        }
+
+                        break;
+                    case FunctionValue function:
+                        lists.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        lists.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return [.. names];
+    }
+
+    /// <summary>Compares a declaration and the values it reads by identity.</summary>
+    private sealed class SubstitutionComparer : IEqualityComparer<(PreparedDeclaration Declaration, CssTokens?[] Read)>
     {
         /// <inheritdoc />
-        public bool Equals((PreparedDeclaration Declaration, object Custom) x, (PreparedDeclaration Declaration, object Custom) y) =>
-            ReferenceEquals(x.Declaration, y.Declaration) && ReferenceEquals(x.Custom, y.Custom);
+        public bool Equals((PreparedDeclaration Declaration, CssTokens?[] Read) x, (PreparedDeclaration Declaration, CssTokens?[] Read) y)
+        {
+            if (!ReferenceEquals(x.Declaration, y.Declaration) || x.Read.Length != y.Read.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < x.Read.Length; i++)
+            {
+                if (!ReferenceEquals(x.Read[i], y.Read[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         /// <inheritdoc />
-        public int GetHashCode((PreparedDeclaration Declaration, object Custom) obj) =>
-            HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Declaration), System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Custom));
+        public int GetHashCode((PreparedDeclaration Declaration, CssTokens?[] Read) obj)
+        {
+            var hash = new HashCode();
+            hash.Add(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj.Declaration));
+            foreach (var value in obj.Read)
+            {
+                hash.Add(value is null ? 0 : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value));
+            }
+
+            return hash.ToHashCode();
+        }
     }
 
     /// <summary>Compares the rolled-back layers of revert-layer: origin, importance and the layer's identity.</summary>

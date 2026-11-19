@@ -174,11 +174,26 @@ public class CascadeWorkTests
         }
     }
 
+    [Theory]
+    // Each p sets a custom property of its own, so each has a custom-property table of its own; all read one inherited
+    // --f through one declaration, directly or through a custom property of the rule. The reading is substituted once,
+    // not once per p, so the substituted characters do not grow with the elements.
+    [InlineData("p{font-family:var(--f)}")]
+    [InlineData("p{--w:var(--f);font-family:var(--w)}")]
+    public void A_reading_of_an_inherited_property_is_shared_by_elements_with_custom_properties_of_their_own(string rule)
+    {
+        long Substituted(int paragraphs) => Counted(Doc(":root{--f:aaaaaaaaaa,bbbbbbbbbb} " + rule, string.Concat(Enumerable.Range(0, paragraphs).Select(i => $"<p style='--v:{i}'>x</p>")))).Budget.Substituted;
+
+        Substituted(1).Should().BeGreaterThan(0);
+        Substituted(200).Should().Be(Substituted(1));
+    }
+
     [Fact]
     public void The_resolution_fails_at_exactly_the_substitution_limit()
     {
-        // Each div has custom properties of its own, so each substitutes --b itself: the work grows with the divs.
-        var html = Doc(":root{--a:abcdefghij;--b:var(--a) var(--a)} div{--c:var(--b);color:var(--nope, red)}", Repeat("<div style='--z:1'>", 20));
+        // Each div has a custom property of its own that --c reads, so each substitutes --c itself: the work grows
+        // with the divs.
+        var html = Doc(":root{--a:abcdefghij;--b:var(--a) var(--a)} div{--c:var(--b) var(--z);color:var(--nope, red)}", string.Concat(Enumerable.Range(0, 20).Select(i => $"<div style='--z:{i}'>")));
         var (full, budget) = Counted(html);
         full.IsSuccess.Should().BeTrue();
         var spent = budget.Substituted;
@@ -193,9 +208,9 @@ public class CascadeWorkTests
     [Fact]
     public void A_small_sheet_whose_substitutions_pass_the_limit_ends_the_resolution_with_an_error_that_names_it()
     {
-        // Under 1 KB of style sheet: --a19 is 2^20 - 1 characters made by doubling, and each of 16 nested divs, with a
-        // custom property of its own, substitutes it again: 16 MiB, twice the limit.
-        var css = ":root{--a0:a;" + string.Concat(Enumerable.Range(1, 19).Select(i => $"--a{i}:var(--a{i - 1}) var(--a{i - 1});")) + "} div{--c:var(--a19)}";
+        // Under 1 KB of style sheet: --a19 is 2^20 - 1 characters made by doubling, and each of 16 nested divs
+        // substitutes it again into --c beside a custom property of its own: 16 MiB, twice the limit.
+        var css = ":root{--a0:a;" + string.Concat(Enumerable.Range(1, 19).Select(i => $"--a{i}:var(--a{i - 1}) var(--a{i - 1});")) + "} div{--c:var(--a19) var(--z)}";
         var body = string.Concat(Enumerable.Range(0, 16).Select(i => $"<div style='--z:{i}'>"));
 
         var error = Refused(Doc(css, body), Warn);
