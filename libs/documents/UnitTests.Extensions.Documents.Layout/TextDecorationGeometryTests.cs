@@ -74,4 +74,19 @@ public class TextDecorationGeometryTests
         decorated[0].Should().BeApproximately(decorated[1], 1e-9, "both lines end with \"AV\" shaped alone");
         plain[0].Should().NotBeApproximately(plain[1], 1e-6, "the plain first line keeps the kerning of \"V\" with the space");
     }
+
+    [Fact]
+    public void A_piece_of_no_width_draws_no_line()
+    {
+        // A decorated run of only a zero width space has a piece on the line with no advance; Chromium paints nothing for a
+        // line of no width (Blink DecorationLinePainter::Paint: "if (geometry.line.width() <= 0) return").
+        var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
+        [
+            new TextRun(new NodeId(2), "ab", Text(20), At(0)),
+            new TextRun(new NodeId(3), "\u200B", Text(20) with { Decorations = [Line(TextDecorationLine.Underline, 20)] }, At(0)),
+            new TextRun(new NodeId(4), "cd", Text(20), At(0)),
+        ], At(0));
+
+        DocumentLayout.Run(Document(paragraph), TestFonts.Set).Value.Pages[0].Items.OfType<FillRectangle>().Should().BeEmpty();
+    }
 }
