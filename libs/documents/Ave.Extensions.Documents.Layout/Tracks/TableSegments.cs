@@ -121,7 +121,7 @@ internal static class TableSegments
     /// area". Taken only when the content then breaks; otherwise the cell is as before (and refused or placed as the
     /// table decides). Under <see cref="MonolithicOverflow.Refuse"/> nothing changes. Chromium does not slice here: it
     /// places the piece whole at the top of the page and lets the bottom padding and border pass the page end
-    /// (docs/architecture.md, "Known limits"; reference case <c>d1-img177-pad3</c>).
+    /// (docs/architecture.md, "Known limits"; reference case <c>a4-cell-pad3-image-177</c>).
     /// </summary>
     private static Result<LayoutResult, Error> SlicedAboveBottomInset(
         TableGeometry table, Box box, LayoutResult whole, double room, bool startsPage, Func<double, Result<LayoutResult, Error>> layOutIn, double sliceHeight)

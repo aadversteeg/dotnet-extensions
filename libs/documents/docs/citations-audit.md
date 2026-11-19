@@ -1268,3 +1268,12 @@ research agent on 2026-11-17 (raw W3C HTML; the Chromium commit as exported to w
 | `Ave.Extensions.Documents.Layout/Tracks/TableBreaks.cs:272` | citation | RIGHT: CSS Fragmentation 3 (CR 2018-12-04) §4.1, class A "Between sibling boxes of the following types", list holds "table row boxes", no text on row-spanning cells; §4.4 rule 2 ("a common ancestor of all the elements has a break-inside value of avoid") and rule 4 as in BreakAvoidance.cs; CSS 2.1 §13.3.3 names no table rows, §17 no page breaks; CSS Tables 3 (WD 2025-12-16) §6.1 "if the cells spanning the row do not span any subsequent row", "Other rows are said freely fragmentable."; Chromium commit "[table-fragmentation] Remove rowspan avoidance logic" (review 4136462, bug 1396218, 2023-01-10): "creating large gaps when printing", verbatim |
 | `Ave.Extensions.Documents.Layout/Tracks/TablePage.cs:11` | citation | unchanged places; the sentence on a break between two rows of a unit now states the rule of TableBreaks.cs:272, no new quotation |
 | `UnitTests.Extensions.Documents.Layout/ChromiumReferenceTests.cs` (two new tests) | mention | mention: Chromium 159 print of cases `b4-row-span` and `b5-row-span-kept-cell`, measured 2026-11-17 (`tools/reference/chromium/measured/`) |
+
+## Milestone M2: blocks not checked yet
+
+Milestone M2's citations are checked together before M2 closes (see the top of this file). This list names blocks of
+M2 so that check does not miss them; a row here is not a verdict.
+
+| Where | Kind | Verdict |
+| --- | --- | --- |
+| `Ave.Extensions.Documents.Layout/Tracks/TablePage.cs:250` (`RepeatsHeader`) | citation | not checked yet: CSS Tables 3 §6.2, quotation "up to one quarter for header rows"; Chromium `third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc`, `TableLayoutAlgorithm::GenerateFragment`, read in the source of Chromium 150 (150.0.7871.253) on 2026-11-19: `FragmentainerBlockSize() / 4` (line 1086), and the comment "Headers and footers may be repeated if their block-size is one quarter or less than that of the fragmentainer, AND 'break-inside' has an applicable avoid* value" (lines 1116 to 1118) |

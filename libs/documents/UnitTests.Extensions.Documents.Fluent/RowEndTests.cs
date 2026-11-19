@@ -184,7 +184,7 @@ public class RowEndTests
     }
 
     [Fact]
-    public void The_95_documents_that_were_refused_print_the_words_of_Chromium_on_the_same_pages_at_the_same_places()
+    public void The_95_documents_that_were_refused_print_the_words_of_Chromium_on_the_same_pages_and_in_87_at_the_same_places()
     {
         // Same words on the same pages in all 95, at the same places in 87. In the 8 with a first row of 10 or 11 lines and
         // a second of 23 (in the four table shapes), page 2 starts below the line between the rows, which the engine splits at the break and Chromium
