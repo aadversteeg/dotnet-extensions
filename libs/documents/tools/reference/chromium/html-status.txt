@@ -265,6 +265,10 @@ h-kern-span listed Text_is_not_kerned_across_the_border_of_an_inline_element_as_
 h-kerning-auto equal
 h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none at 2:74
 h-kerning-normal equal
+h-page-a4-margin-px equal
+h-page-a4-zero-justify listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: page 1 'sit' x1 116.494, Chromium 116.599 (print.txt)
+h-page-a4-zero-lines listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: 2 pages, Chromium 1 (print.txt)
+h-page-a4-zero-right listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: page 1 'right' x0 541.95, Chromium 542.484 (print.txt)
 h-page-area-bottom equal
 h-page-area-continued equal
 h-page-area-half equal

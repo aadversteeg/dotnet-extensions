@@ -1084,6 +1084,22 @@ public class MeasuredReferenceFilesTests
         ["h-kerning-normal.lines.txt"] = 0,
         ["h-kerning-normal.print.txt"] = 4,
         ["h-kerning-normal.words.txt"] = 3,
+        ["h-page-a4-margin-px.boxes.txt"] = 1,
+        ["h-page-a4-margin-px.lines.txt"] = 1,
+        ["h-page-a4-margin-px.print.txt"] = 5,
+        ["h-page-a4-margin-px.words.txt"] = 3,
+        ["h-page-a4-zero-justify.boxes.txt"] = 1,
+        ["h-page-a4-zero-justify.lines.txt"] = 0,
+        ["h-page-a4-zero-justify.print.txt"] = 39,
+        ["h-page-a4-zero-justify.words.txt"] = 38,
+        ["h-page-a4-zero-lines.boxes.txt"] = 1,
+        ["h-page-a4-zero-lines.lines.txt"] = 0,
+        ["h-page-a4-zero-lines.print.txt"] = 65,
+        ["h-page-a4-zero-lines.words.txt"] = 64,
+        ["h-page-a4-zero-right.boxes.txt"] = 1,
+        ["h-page-a4-zero-right.lines.txt"] = 1,
+        ["h-page-a4-zero-right.print.txt"] = 5,
+        ["h-page-a4-zero-right.words.txt"] = 3,
         ["h-page-area-bottom.boxes.txt"] = 1,
         ["h-page-area-bottom.lines.txt"] = 0,
         ["h-page-area-bottom.print.txt"] = 30,
@@ -1336,7 +1352,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(327);
+        cases.Should().HaveCount(331);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

@@ -67,6 +67,29 @@ public class HtmlListedDifferenceTests
         (engineY[0] - chromiumY[0]).Should().BeGreaterThan(0.2, "the engine does not");
     }
 
+    /// <summary>
+    /// A4 without margins (the default page): Chromium's page area is 794 x 1123 px (595.5 x 842.25 pt), the page size
+    /// rounded up to whole pixels, and reaches past the sheet it prints, 594.96 x 841.92 pt; the model holds no page area
+    /// larger than the sheet, so the engine's ends at the sheet. Text and backgrounds end 0.54 pt short on the right, and
+    /// 64 lines of 1123/64 px, which fill Chromium's page, need two. A right margin of 0.71 px (0.53 pt) or more and a
+    /// bottom margin of 0.52 px (0.39 pt) or more bring the area inside the sheet: then both agree (case
+    /// <c>h-page-a4-margin-px</c>, 1 px margins, equal).
+    /// </summary>
+    [Fact]
+    public void The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet()
+    {
+        var (engine, chromium) = (Engine("h-page-a4-zero-right").Pages.Single(), Chromium("h-page-a4-zero-right").Pages.Single());
+        (chromium.Width, engine.Width).Should().Be((594.96, 594.96));
+        chromium.Rectangles.Single().X1.Should().Be(595.5, "Chromium's page area is 794 px wide");
+        engine.Rectangles.Single().X1.Should().BeApproximately(594.96, 1e-6, "the engine's ends at the sheet");
+
+        LineEnds(Chromium("h-page-a4-zero-justify"))[0].Should().BeApproximately(595.5, 0.01);
+        LineEnds(Engine("h-page-a4-zero-justify"))[0].Should().BeApproximately(594.96, 0.01);
+
+        Chromium("h-page-a4-zero-lines").Pages.Should().ContainSingle("64 lines of 1123/64 px fill 1123 px");
+        Engine("h-page-a4-zero-lines").Pages.Should().HaveCount(2, "the engine's page area is 1122.56 px high");
+    }
+
     /// <summary>Where each line of the only page ends: its last word's end, lines in order.</summary>
     private static double[] LineEnds(PrintedPages pages) =>
         [.. pages.Pages.Single().Words.GroupBy(word => word.Baseline).OrderBy(line => line.Key).Select(line => line.Max(word => word.X1))];

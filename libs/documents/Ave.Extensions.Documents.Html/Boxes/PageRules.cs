@@ -105,7 +105,9 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
     /// <c>PageBorderBoxLayoutAlgorithm::CreateConstraintSpaceForPageArea</c> in page_border_box_layout_algorithm.cc).
     /// The sheet is the page box in points, rounded twice (<see cref="Printed"/>). The engine's right and bottom margins
     /// are what the sheet leaves beside that page area; where the area reaches past the sheet (no margin, a size that is
-    /// not whole pixels) they are 0 and the engine's page area is the smaller by less than a pixel. Measured: cases
+    /// not whole pixels) they are 0 and the engine's page area is the smaller by less than a pixel: a listed difference
+    /// (measured on A4 without margins, cases <c>h-page-a4-zero-*</c>; 1 px margins remove it, <c>h-page-a4-margin-px</c>).
+    /// Measured: cases
     /// <c>h-page-margin-round</c> (11.75 pt margins: area from 16 px to 385 px), <c>h-page-margin-half</c> (15.5 px
     /// margins: left at 16 px), <c>h-page-area-half</c> (368.5 px left: 369 px), <c>h-page-area-right</c>,
     /// <c>h-page-area-justify</c> (right edges), <c>h-page-area-bottom</c> (29 lines of 12.89 px fit 374 px).
