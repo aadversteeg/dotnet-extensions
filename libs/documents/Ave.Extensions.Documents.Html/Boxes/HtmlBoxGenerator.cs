@@ -135,9 +135,18 @@ public static class HtmlBoxGenerator
 
         public StyledDocument Generate()
         {
+            var metadata = new DocumentMetadata(Title(styled.Root), null) { Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language };
+            if (Display(styled.Root) == "none")
+            {
+                // CSS Display 3 §2.5: the root with display: none generates no box at all. Chromium prints one empty page
+                // on the paper of the print call, and the @page rules have no effect (measured, case
+                // h-root-display-none: an @page of 300 x 100 pt prints US Letter, 612 x 792 pt).
+                var empty = new Box(NewId(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [], Source(styled.Root.Element.Position));
+                return new StyledDocument(metadata, new PageRules(_sourceName, Refusals).Apply([], styled.Page), empty) { Profile = ChromiumProfile };
+            }
+
             var root = Build(styled.Root);
             var page = Page();
-            var metadata = new DocumentMetadata(Title(styled.Root), null) { Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language };
             return new StyledDocument(metadata, page, root) { Profile = ChromiumProfile };
         }
 

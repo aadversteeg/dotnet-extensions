@@ -319,6 +319,15 @@ public class BoxGenerationTests
         page.Margins.Bottom.Points.Should().BeGreaterThanOrEqualTo(0);
     }
 
+    [Fact]
+    public void A_root_with_display_none_is_one_empty_page_of_the_caller_s_paper_whatever_the_page_rules_say()
+    {
+        var model = Model(Doc("<p>before</p><p><q>after</q></p>", "html { display: none } @page { size: 300pt 100pt; margin: 10pt }"));
+        model.Root.Children.Should().BeEmpty();
+        model.Page.Width.Points.Should().BeApproximately(594.96, 1e-9, "the default page, A4, not the 300 pt of the @page rule");
+        model.Page.Margins.Should().Be(default(Edges));
+    }
+
     [Theory]
     [InlineData("@page :first { margin: 0 }")]
     [InlineData("@page { @top-center { content: 'x' } }")]

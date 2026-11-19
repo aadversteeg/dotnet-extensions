@@ -277,6 +277,7 @@ h-page-size-hundred-px equal
 h-page-size-legal equal
 h-page-size-letter equal
 h-page-size-mm equal
+h-root-display-none equal
 kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:133
 kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:120
 kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br at 8:85
