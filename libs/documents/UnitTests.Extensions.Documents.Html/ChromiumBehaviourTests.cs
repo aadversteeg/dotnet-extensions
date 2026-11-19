@@ -119,6 +119,24 @@ public class ChromiumBehaviourTests
     public void A_missing_image_keeps_or_loses_its_sizes_as_in_Chromium(string body, string property, string chromium) =>
         Styled(Doctype + body, Refusing).ById("t").Value(property).Should().Be(chromium);
 
+    [Theory]
+    // align on an element without a rule of its own: middle is center, any other value is read as text-align (no
+    // hint when it is not one: absmiddle, "right;"), inside a div that aligns right. Measured in Chromium 159.0.8154.6.
+    [InlineData("<ul id=t align=center><li>i</li></ul>", "center")]
+    [InlineData("<ul><li id=t align=middle>i</li></ul>", "center")]
+    [InlineData("<section id=t align=justify>x</section>", "justify")]
+    [InlineData("<span id=t align=\" center\">x</span>", "center")]
+    [InlineData("<x-custom id=t align=end>x</x-custom>", "end")]
+    [InlineData("<foo id=t align=MIDDLE>x</foo>", "center")]
+    [InlineData("<pre id=t align=-webkit-center>x</pre>", "-webkit-center")]
+    [InlineData("<font id=t align=left>x</font>", "left")]
+    [InlineData("<center id=t align=right>x</center>", "right")]
+    [InlineData("<blockquote id=t align=absmiddle>x</blockquote>", "right")]
+    [InlineData("<address id=t align=\"right;\">x</address>", "right")]
+    [InlineData("<h3 id=t align=middle>x</h3>", "center")]
+    public void Align_on_other_elements_is_Chromiums(string element, string textAlign) =>
+        Styled(Doctype + "<div style=\"text-align: right\">" + element + "</div>", MeasuredPage).ById("t").Value("text-align").Should().Be(textAlign);
+
     [Fact]
     public void Body_margins_come_from_the_last_attribute_of_each_pair()
     {

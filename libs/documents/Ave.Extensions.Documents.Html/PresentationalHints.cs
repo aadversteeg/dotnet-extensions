@@ -28,6 +28,10 @@ internal static class PresentationalHints
     /// does not map: they are not in the v0 set (§15.4.1, §15.4.3).</summary>
     private static readonly string[] EmbeddedContent = ["iframe", "embed", "object", "video", "canvas", "input", "marquee", "applet", "frame"];
 
+    /// <summary>The elements whose align is mapped or refused by a rule of their own, or not mapped at all (button,
+    /// select, textarea); every other element maps it as text-align.</summary>
+    private static readonly string[] OwnAlign = ["html", "head", "body", "table", "caption", "col", "colgroup", "thead", "tbody", "tfoot", "tr", "td", "th", "div", "p", "hr", "img", "legend", "button", "select", "textarea"];
+
     /// <summary>The attributes mapped and refused, by element, for docs/html-css-profile.md: the same cases as
     /// <see cref="For"/>, in words (a test generates the document from this table).</summary>
     internal static readonly (string Elements, string Mapped, string Refused)[] Documented =
@@ -40,7 +44,6 @@ internal static class PresentationalHints
         ("thead, tbody, tfoot, tr", "height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign", "background"),
         ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (the integer it starts with, at least 0) and border (1px inset, or solid with bordercolor)", "background"),
         ("div, p", "align (-webkit-left/right/center, or one text-align value)", ""),
-        ("h1–h6", "align (middle as center, or one text-align value)", ""),
         ("hr", "align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width", ""),
         ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG)"),
         ("ol, ul, li", "type", "ol start, ol reversed, li value"),
@@ -51,6 +54,7 @@ internal static class PresentationalHints
         ("iframe, embed, object, video, canvas, input, marquee, applet, frame", "", "width, height, align, hspace, vspace, border"),
         ("meta", "", "http-equiv=Content-Security-Policy in head; name=color-scheme with a content other than normal or light"),
         ("link", "", "charset other than utf-8 (on any link)"),
+        ("every other element (h1–h6, lists, sections, phrasing, custom and unknown elements) but button, select and textarea", "align (middle as center, or one text-align value)", ""),
         ("every element", "", "contenteditable (empty, true or plaintext-only), autofocus"),
     ];
 
@@ -276,18 +280,6 @@ internal static class PresentationalHints
                 // Chromium maps p's align as div's (-webkit- values, measured); the standard says text-align only.
                 BlockAlign();
                 break;
-            case "h1" or "h2" or "h3" or "h4" or "h5" or "h6":
-                // Chromium 159: middle is center, any other value is read as text-align (measured).
-                if (Attr("align") is { } textAlign && InfraAscii.ToLower(textAlign) == "middle")
-                {
-                    hints.Add(("text-align", "center"));
-                }
-                else
-                {
-                    AsValue("align", "text-align");
-                }
-
-                break;
             case "hr":
                 HorizontalRule(html, hints);
                 break;
@@ -393,6 +385,22 @@ internal static class PresentationalHints
                 }
 
                 break;
+        }
+
+        // Every other element maps align as Chromium's HTMLElement does (html_element.cc,
+        // CollectStyleForPresentationAttribute): middle, compared ASCII case-insensitively, is center, any other value
+        // is read as text-align; button, select and textarea do not map it (their IsPresentationAttribute). Measured on
+        // 48 elements, headings, lists, sections, phrasing, custom and unknown ones among them.
+        if (!OwnAlign.Contains(html.LocalName) && !EmbeddedContent.Contains(html.LocalName))
+        {
+            if (Attr("align") is { } textAlign && InfraAscii.ToLower(textAlign) == "middle")
+            {
+                hints.Add(("text-align", "center"));
+            }
+            else
+            {
+                AsValue("align", "text-align");
+            }
         }
 
         if (hints.Count == 0 && raw.Count == 0)
