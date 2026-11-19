@@ -108,6 +108,112 @@ internal static class VarSubstitution
         return false;
     }
 
+    /// <summary>Whether every env() and attr() in the values, at any depth, has arguments Chromium 159 reads: env(
+    /// name, then integers of at least 0, then a comma and a fallback or nothing ); attr( name, then one type (an
+    /// identifier, %, or type() with something in it) or none, then a comma and a fallback or nothing ); a fallback with
+    /// no '!' or ';' at its top level. Without recursion. Measured in custom-property supports tests: env(a 1 2),
+    /// env(a +1), env(a, b c), env(a,,), attr(x foo), attr(x %), attr(x type(*), 1px) hold; env(,), env(a b), env(a -1),
+    /// env(a 1.5), env(a 1e1), env("a"), env(a var(--z)), env(a, !), env(a, ;), attr(1), attr(ns|x), attr(x px px),
+    /// attr(x type()), attr(x;), attr(x px, !) do not, also inside a function, a block or a var() fallback.</summary>
+    public static bool HasWellFormedEnvAndAttr(IReadOnlyList<ComponentValue> values)
+    {
+        var pending = new Stack<IReadOnlyList<ComponentValue>>();
+        pending.Push(values);
+        while (pending.Count > 0)
+        {
+            foreach (var value in pending.Pop())
+            {
+                switch (value)
+                {
+                    case FunctionValue function:
+                        if ((function.IsNamed("env") && !EnvArguments(function.Values)) || (function.IsNamed("attr") && !AttrArguments(function.Values)))
+                        {
+                            return false;
+                        }
+
+                        pending.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        pending.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static int SkipWhitespace(IReadOnlyList<ComponentValue> values, int index)
+    {
+        while (index < values.Count && values[index] is CssToken { Kind: CssTokenKind.Whitespace })
+        {
+            index++;
+        }
+
+        return index;
+    }
+
+    /// <summary>The end of env() or attr() arguments at <paramref name="index"/>: nothing, or a comma and a fallback with
+    /// no '!' or ';' at its top level.</summary>
+    private static bool FallbackEnd(IReadOnlyList<ComponentValue> values, int index)
+    {
+        index = SkipWhitespace(values, index);
+        if (index == values.Count)
+        {
+            return true;
+        }
+
+        if (values[index] is not CssToken { Kind: CssTokenKind.Comma })
+        {
+            return false;
+        }
+
+        for (index++; index < values.Count; index++)
+        {
+            if (values[index] is CssToken { Kind: CssTokenKind.Semicolon } or CssToken { Kind: CssTokenKind.Delim, Text: "!" })
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool EnvArguments(IReadOnlyList<ComponentValue> values)
+    {
+        var index = SkipWhitespace(values, 0);
+        if (index == values.Count || values[index] is not CssToken { Kind: CssTokenKind.Ident })
+        {
+            return false;
+        }
+
+        index = SkipWhitespace(values, index + 1);
+        while (index < values.Count && values[index] is CssToken { Kind: CssTokenKind.Number, IsInteger: true, Number: >= 0 })
+        {
+            index = SkipWhitespace(values, index + 1);
+        }
+
+        return FallbackEnd(values, index);
+    }
+
+    private static bool AttrArguments(IReadOnlyList<ComponentValue> values)
+    {
+        var index = SkipWhitespace(values, 0);
+        if (index == values.Count || values[index] is not CssToken { Kind: CssTokenKind.Ident })
+        {
+            return false;
+        }
+
+        index = SkipWhitespace(values, index + 1);
+        if (index < values.Count && (values[index] is CssToken { Kind: CssTokenKind.Ident } or CssToken { Kind: CssTokenKind.Delim, Text: "%" }
+                                     || (values[index] is FunctionValue type && type.IsNamed("type") && type.Values.Any(item => item is not CssToken { Kind: CssTokenKind.Whitespace }))))
+        {
+            index++;
+        }
+
+        return FallbackEnd(values, index);
+    }
+
     /// <summary>Whether a var() in the values has a '!' at the top level of its fallback, which no
     /// &lt;declaration-value&gt; holds (CSS Syntax 3 §8.2).</summary>
     public static bool HasBangInFallback(IReadOnlyList<ComponentValue> values)

@@ -453,10 +453,11 @@ public sealed class CascadeIndex
         /// refused).</summary>
         private bool? Holds(Declaration declaration)
         {
-            // Text with an unmatched ), ] or }, a bad string or URL, or a '!' outside !important is no declaration:
-            // Chromium 159 reads the parentheses as <general-enclosed>, which is unknown, so neither the condition nor
-            // its negation holds (CSS Conditional 4 §2; measured: '@supports (color: var(--x,]))' and
-            // '@supports not (color: var(--x,]))' are both false). The engine has no unknown answer: refused, false.
+            // Text with a '!' outside !important, or an env() or attr() without an argument, is no declaration:
+            // Chromium 159 answers false, and its negation true (measured: '@supports not (color: var(--x) !)' and
+            // 'not (--y: env())' apply). The engine refuses it, and takes it as false. (An unmatched ), ] or }, a bad
+            // string or URL makes Chromium drop the @supports rule whole, which the parser does; in the supports() of
+            // an @import it is refused here too.)
             if (IsNoDeclaration(declaration.Value))
             {
                 return null;
@@ -466,8 +467,11 @@ public sealed class CascadeIndex
             if (declaration.IsCustomProperty)
             {
                 // A var() that does not match the grammar makes the declaration invalid (Chromium 159: '@supports (--x:
-                // var())' is false, measured); so is the name '--' alone.
-                if (name == "--" || (DeclarationPreparer.ContainsFunction(declaration.Value, "var") && !VarSubstitution.IsWellFormed(declaration.Value)))
+                // var())' is false, measured); so does a '!' at the top level of a var() fallback, or an env() or attr()
+                // whose arguments Chromium does not read (measured: '(--x: var(--y, !))', '(--x: f(var(--y, !)))' and
+                // '(--x: env(,))' are false, '(--x: var(--y, f(!)))' true); so is the name '--' alone.
+                if (name == "--" || (DeclarationPreparer.ContainsFunction(declaration.Value, "var") && !VarSubstitution.IsWellFormed(declaration.Value))
+                    || VarSubstitution.HasBangInFallback(declaration.Value) || !VarSubstitution.HasWellFormedEnvAndAttr(declaration.Value))
                 {
                     return false;
                 }

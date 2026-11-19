@@ -158,15 +158,70 @@ public class ChromiumBehaviourTests
     }
 
     [Theory]
-    // Text in a supports test that is no declaration is <general-enclosed> for Chromium 159: unknown, so the condition
-    // and its negation are both false (measured). The engine refuses such a condition and takes it as false.
+    // Measured in Chromium 159.0.8154.6: a ), ] or } that closes nothing, a bad string or a bad URL anywhere in the
+    // condition drops the @supports rule whole, however the tests are combined; neither the rule nor its negation
+    // applies. The engine drops it with a diagnostic.
+    [InlineData("(color: red) or (--x: ])")]
+    [InlineData("(--x: ]) or (color: red)")]
+    [InlineData("not ((-moz-a: b) and (--x: ]))")]
+    [InlineData("(color: red) or (--x: \"a\n)")]
+    [InlineData("(color: red) or (--x: url(a b))")]
+    [InlineData("(color: red) or (color: var(--x, url(a b)))")]
+    [InlineData("(color: red) or foo(])")]
+    [InlineData("(color: red) or selector(])")]
+    [InlineData("((color: red) and (--x: {]})) or (color: red)")]
+    [InlineData("(color: red) or (not (-moz-a: ]))")]
+    public void A_supports_condition_with_a_token_that_closes_nothing_drops_the_rule(string condition)
+    {
+        var html = Doctype + $"<style>p {{ color: green }} @supports {condition} {{ p {{ color: red }} }} @supports not ({condition}) {{ p {{ background-color: blue }} }}</style><p id=t>p";
+        var styled = Styled(html, MeasuredPage);
+
+        (styled.ById("t").Value("color"), styled.ById("t").Value("background-color")).Should().Be(("rgb(0, 128, 0)", "rgba(0, 0, 0, 0)"));
+        styled.Diagnostics.Count(error => error.Code == CssErrorCodes.Unsupported.AtRule).Should().Be(2);
+        Resolve(html, MeasuredPage with { Unsupported = UnsupportedPolicy.Refuse }).IsFailure.Should().BeTrue();
+    }
+
+    [Theory]
+    // Measured in Chromium 159.0.8154.6: a custom property with a '!' at the top level of a var() fallback, or with an
+    // env() or attr() whose arguments Chromium does not read, is not supported (red: the test holds; blue: its negation).
+    [InlineData("--x: var(--y, !)", "blue")]
+    [InlineData("--x: f(var(--y, !))", "blue")]
+    [InlineData("--x: var(--y, red !important)", "blue")]
+    [InlineData("--x: var(--y, f(!))", "red")]
+    [InlineData("--x: env(,)", "blue")]
+    [InlineData("--x: env(a -1)", "blue")]
+    [InlineData("--x: env(a 1.5)", "blue")]
+    [InlineData("--x: env(a, !)", "blue")]
+    [InlineData("--x: f(env(,))", "blue")]
+    [InlineData("--x: var(--y, env(,))", "blue")]
+    [InlineData("--x: attr(ns|x)", "blue")]
+    [InlineData("--x: attr(x px px)", "blue")]
+    [InlineData("--x: attr(x type())", "blue")]
+    [InlineData("--x: env(a 1 2)", "red")]
+    [InlineData("--x: env(a +1)", "red")]
+    [InlineData("--x: env(a, b c)", "red")]
+    [InlineData("--x: attr(x type(*), 1px)", "red")]
+    [InlineData("--x: attr(x %)", "red")]
+    public void A_supports_test_of_a_custom_property_reads_its_fallbacks_env_and_attr_as_Chromium_does(string test, string chromium)
+    {
+        var styled = Styled(Doctype + $"<style>p {{ color: green }} @supports ({test}) {{ p {{ color: red }} }} @supports not ({test}) {{ p {{ color: blue }} }}</style><p id=t>p", MeasuredPage);
+
+        styled.ById("t").Value("color").Should().Be(chromium == "red" ? "rgb(255, 0, 0)" : "rgb(0, 0, 255)");
+        Refusals(styled).Should().BeEmpty();
+    }
+
+    [Theory]
+    // A supports test that is no declaration. With a ), ] or } that closes nothing, a bad string or a bad URL, Chromium
+    // 159 drops the @supports rule whole, and so does the engine (measured: green). With a '!' outside !important, or
+    // env() or attr() without an argument, Chromium answers false and its negation true (measured: blue); the engine
+    // refuses such a test and takes it as false, so neither rule applies.
     [InlineData("color: var(--x,])")]
     [InlineData("margin: var(--x) }")]
     [InlineData("color: var(--x) !")]
     [InlineData("color: var(--x) url(a b)")]
     [InlineData("--y: env()")]
     [InlineData("--y: attr()")]
-    public void A_supports_test_that_is_no_declaration_holds_neither_way(string test)
+    public void A_supports_test_that_is_no_declaration_is_refused(string test)
     {
         var styled = Styled(Doctype + $"<style>p {{ color: green }} @supports ({test}) {{ p {{ color: red }} }} @supports not ({test}) {{ p {{ color: blue }} }}</style><p id=t>p", MeasuredPage);
 

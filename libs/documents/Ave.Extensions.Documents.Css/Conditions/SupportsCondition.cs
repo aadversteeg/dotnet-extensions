@@ -41,11 +41,19 @@ public sealed record SupportsOther(string Text, TextPosition Position) : Support
 internal static class SupportsConditions
 {
     /// <summary>Parses a supports condition (the prelude of <c>@supports</c>, or the argument of <c>supports()</c> in
-    /// <c>@import</c>); null when it does not match the grammar.</summary>
+    /// <c>@import</c>); null when it does not match the grammar, or when it holds, at any depth, a ), ] or } that closes
+    /// nothing, a bad string or a bad URL: Chromium 159 drops such a rule whole, wherever the token is and however the
+    /// tests are combined (measured: '(color: red) or (--x: ])', 'not ((-moz-a: b) and (--x: "a&#10;))', '(color:
+    /// red) or foo(])' and 'selector(])' apply neither the rule nor its negation).</summary>
     /// <param name="values">The component values.</param>
     /// <returns>The condition, or null.</returns>
     public static SupportsCondition? Parse(IReadOnlyList<ComponentValue> values)
     {
+        if (HasBrokenToken(values))
+        {
+            return null;
+        }
+
         var tokens = new List<ComponentValue>();
         foreach (var value in values)
         {
@@ -120,6 +128,33 @@ internal static class SupportsConditions
                 // some of them true, so the engine cannot tell.
                 return null;
         }
+    }
+
+    /// <summary>Whether the values hold, at any depth, a ), ] or } that closes nothing, a bad string or a bad URL;
+    /// without recursion.</summary>
+    private static bool HasBrokenToken(IReadOnlyList<ComponentValue> values)
+    {
+        var pending = new Stack<IReadOnlyList<ComponentValue>>();
+        pending.Push(values);
+        while (pending.Count > 0)
+        {
+            foreach (var value in pending.Pop())
+            {
+                switch (value)
+                {
+                    case CssToken { Kind: CssTokenKind.CloseParen or CssTokenKind.CloseSquare or CssTokenKind.CloseCurly or CssTokenKind.BadString or CssTokenKind.BadUrl }:
+                        return true;
+                    case FunctionValue function:
+                        pending.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        pending.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static SupportsCondition? Condition(List<ComponentValue> tokens, ref int index)
