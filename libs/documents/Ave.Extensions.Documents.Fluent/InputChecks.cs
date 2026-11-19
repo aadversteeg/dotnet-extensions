@@ -81,6 +81,11 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The white-space-collapse value is not one of WhiteSpaceCollapse.", collapse.ToString(), "white-space-collapse", source);
         }
 
+        if (format.TextWrapMode is { } wrap && !Enum.IsDefined(wrap))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one of TextWrapMode.", wrap.ToString(), "text-wrap-mode", source);
+        }
+
         // CSS Fragmentation 3 §3.3: "Only positive integers are allowed as values of orphans and widows."
         if (format.Orphans is int orphans and < 1)
         {

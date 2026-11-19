@@ -147,10 +147,30 @@ public static class InlineLayout
             },
             LineEndAtSpace(align));
 
-    /// <summary>The white-space properties of each item for the line breaker: a run's from its style; an atomic inline has no
-    /// spaces, so the initial values.</summary>
-    private static RunWhiteSpace[] WhiteSpaceOf(IReadOnlyList<LineBoxes.Item> runs) =>
-        [.. runs.Select(item => item is LineBoxes.ShapedRun shaped ? new RunWhiteSpace(shaped.Run.Style.WhiteSpaceCollapse) : RunWhiteSpace.Initial)];
+    /// <summary>The white-space properties of each item for the line breaker: a run's from its style. An atomic inline has no
+    /// spaces, and wraps as the run before it (the first run after it when it starts the paragraph; it wraps when there is no
+    /// run): in Chromium an atomic inline breaks by the wrap mode of the inline box it lies in (Blink
+    /// <c>LineBreaker::CanBreakAfterAtomicInline</c> reads the line breaker's current mode), whose text is the run beside it
+    /// (case <c>ws-image</c>: an image in nowrap text gets no break before or after it).</summary>
+    private static RunWhiteSpace[] WhiteSpaceOf(IReadOnlyList<LineBoxes.Item> runs)
+    {
+        var modes = new RunWhiteSpace[runs.Count];
+        TextWrapMode? previous = null;
+        for (var index = 0; index < runs.Count; index++)
+        {
+            if (runs[index] is LineBoxes.ShapedRun shaped)
+            {
+                modes[index] = new RunWhiteSpace(shaped.Run.Style.WhiteSpaceCollapse, shaped.Run.Style.TextWrapMode);
+                previous = shaped.Run.Style.TextWrapMode;
+                continue;
+            }
+
+            var wrap = previous ?? runs.Skip(index + 1).OfType<LineBoxes.ShapedRun>().Select(run => (TextWrapMode?)run.Run.Style.TextWrapMode).FirstOrDefault() ?? TextWrapMode.Wrap;
+            modes[index] = new RunWhiteSpace(WhiteSpaceCollapse.Collapse, wrap);
+        }
+
+        return modes;
+    }
 
     /// <summary>What the line breaker does at a line end at a collapsible space (<see cref="LineEndShaping"/>), from the
     /// paragraph's alignment, as Chromium decides whether a line "needs an accurate end position" (Blink

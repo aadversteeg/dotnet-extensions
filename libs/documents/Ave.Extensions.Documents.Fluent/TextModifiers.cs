@@ -116,6 +116,17 @@ public static class TextModifiers
     public static T WhiteSpaceCollapse<T>(this T element, WhiteSpaceCollapse collapse) where T : IFormatted<T> =>
         element.WithText(element.Format.Text with { WhiteSpaceCollapse = collapse });
 
+    /// <summary>Sets whether text wraps at its soft wrap opportunities (CSS <c>text-wrap-mode</c>, CSS Text 4, inherited):
+    /// <see cref="Core.TextWrapMode.NoWrap"/> keeps the text on one line up to a forced break (with preserved spaces,
+    /// <c>white-space: pre</c>; with collapsing ones, <c>nowrap</c>); a line wider than its box overflows it. A table column with
+    /// such text is at least as wide as its line.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="wrap">The value.</param>
+    /// <returns>A copy with the value set.</returns>
+    public static T TextWrapMode<T>(this T element, TextWrapMode wrap) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { TextWrapMode = wrap });
+
     private static T WithText<T>(this T element, TextFormat text) where T : IFormatted<T> =>
         element.WithFormat(element.Format with { Text = text });
 }

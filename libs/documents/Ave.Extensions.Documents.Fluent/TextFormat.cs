@@ -40,4 +40,7 @@ public sealed record TextFormat(
 
     /// <summary>How white space collapses (CSS <c>white-space-collapse</c>, CSS Text 4, inherited).</summary>
     public WhiteSpaceCollapse? WhiteSpaceCollapse { get; init; }
+
+    /// <summary>Whether text wraps at its soft wrap opportunities (CSS <c>text-wrap-mode</c>, CSS Text 4, inherited).</summary>
+    public TextWrapMode? TextWrapMode { get; init; }
 }

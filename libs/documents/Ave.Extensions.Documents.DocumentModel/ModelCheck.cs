@@ -200,6 +200,11 @@ public static class ModelCheck
             return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The white-space-collapse value is not one the model has.", style.WhiteSpaceCollapse.ToString(), "white-space-collapse", node);
         }
 
+        if (!System.Enum.IsDefined(style.TextWrapMode))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one the model has.", style.TextWrapMode.ToString(), "text-wrap-mode", node);
+        }
+
         var lineHeight = style.LineHeight switch
         {
             LineHeight.Factor factor => (double?)factor.Value,

@@ -55,6 +55,7 @@ public static class DocumentTranslator
             {
                 LineHeight = format.LineHeight?.Computed(rootFontSize) ?? LineHeight.Normal.Instance,
                 WhiteSpaceCollapse = format.WhiteSpaceCollapse ?? WhiteSpaceCollapse.Collapse,
+                TextWrapMode = format.TextWrapMode ?? TextWrapMode.Wrap,
             },
             format.TextAlign ?? TextAlign.Left,
             format.Orphans ?? BoxStyle.Initial.Orphans,
@@ -97,6 +98,7 @@ public static class DocumentTranslator
                 {
                     LineHeight = format.LineHeight?.Computed(fontSize) ?? Text.LineHeight,
                     WhiteSpaceCollapse = format.WhiteSpaceCollapse ?? Text.WhiteSpaceCollapse,
+                    TextWrapMode = format.TextWrapMode ?? Text.TextWrapMode,
                 },
                 format.TextAlign ?? Align,
                 format.Orphans ?? Orphans,

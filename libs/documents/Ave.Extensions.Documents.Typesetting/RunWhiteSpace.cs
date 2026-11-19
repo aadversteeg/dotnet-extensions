@@ -4,15 +4,19 @@ namespace Ave.Extensions.Documents.Typesetting;
 
 /// <summary>
 /// The white-space properties of one run that line breaking reads (<see cref="GreedyLineBreaker"/>): whether its spaces are
-/// preserved, which decides whether a space at a line end is removed or hangs.
+/// preserved, which decides whether a space at a line end is removed or hangs, and whether it wraps.
 /// </summary>
-/// <param name="Collapse">The run's <c>white-space-collapse</c> (CSS Text 4).</param>
-public readonly record struct RunWhiteSpace(WhiteSpaceCollapse Collapse)
+/// <param name="Collapse">The run's <c>white-space-collapse</c> (CSS Text 4 §4.1).</param>
+/// <param name="Wrap">The run's <c>text-wrap-mode</c> (CSS Text 4 §5.1).</param>
+public readonly record struct RunWhiteSpace(WhiteSpaceCollapse Collapse, TextWrapMode Wrap = TextWrapMode.Wrap)
 {
-    /// <summary>The CSS initial values: white space collapses.</summary>
+    /// <summary>The CSS initial values: white space collapses, and text wraps.</summary>
     public static RunWhiteSpace Initial => new(WhiteSpaceCollapse.Collapse);
 
     /// <summary>True when the run's spaces are preserved (<see cref="WhiteSpaceCollapse.Preserve"/>): not collapsible, so
-    /// not removed at a line's start, and hanging at its end.</summary>
+    /// not removed at a line's start.</summary>
     public bool PreservesSpaces => Collapse == WhiteSpaceCollapse.Preserve;
+
+    /// <summary>True when the run's text wraps at its soft wrap opportunities (<see cref="TextWrapMode.Wrap"/>).</summary>
+    public bool Wraps => Wrap == TextWrapMode.Wrap;
 }

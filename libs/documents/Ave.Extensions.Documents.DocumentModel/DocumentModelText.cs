@@ -104,7 +104,8 @@ public static class DocumentModelText
     private static string StyleText(TextStyle style) =>
         $"{style.FontFamily} {style.FontSize} w{style.FontWeight}{(style.FontStyle == FontStyle.Italic ? " italic" : string.Empty)} {style.Color}"
         + (style.LineHeight is LineHeight.Normal ? string.Empty : $" line-height={style.LineHeight}")
-        + (style.WhiteSpaceCollapse == WhiteSpaceCollapse.Collapse ? string.Empty : $" white-space-collapse={Kebab(style.WhiteSpaceCollapse)}");
+        + (style.WhiteSpaceCollapse == WhiteSpaceCollapse.Collapse ? string.Empty : $" white-space-collapse={Kebab(style.WhiteSpaceCollapse)}")
+        + (style.TextWrapMode == TextWrapMode.Wrap ? string.Empty : $" text-wrap-mode={Kebab(style.TextWrapMode).Replace("-", string.Empty, StringComparison.Ordinal)}");
 
     /// <summary>A value's CSS keyword: <c>PreserveBreaks</c> is <c>preserve-breaks</c>.</summary>
     private static string Kebab<T>(T value)

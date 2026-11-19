@@ -38,8 +38,15 @@ internal static class BreakableSegments
         /// <summary>True for a collapsible space: a space of a run whose spaces are not preserved.</summary>
         public bool IsCollapsibleSpace(int run, ShapedGlyph glyph) => glyph.IsSpace && !Of(run).PreservesSpaces;
 
-        /// <summary>True for a space that hangs at a line's end (CSS Text 3 §4.1.2): a preserved space.</summary>
-        public bool Hangs(int run, ShapedGlyph glyph) => glyph.IsSpace && Of(run).PreservesSpaces;
+        /// <summary>True for a space that hangs at a line's end (CSS Text 3 §4.1.2): a preserved space of a run that wraps. A
+        /// preserved space of a run that does not wrap (<c>white-space: pre</c>) does not hang: it takes its room as any glyph
+        /// (Chromium, <c>LineInfo::ComputeTrailingSpaceWidth</c>: "We don't hang"; case <c>ws-hang-pre</c>: "aa" and four spaces
+        /// right-aligned end the spaces' width before the edge).</summary>
+        public bool Hangs(int run, ShapedGlyph glyph) => glyph.IsSpace && Of(run).PreservesSpaces && Of(run).Wraps;
+
+        /// <summary>True when a line may break at a soft wrap opportunity after a character of <paramref name="run"/>: the run
+        /// wraps (THE RULE FOR NOWRAP, <see cref="Split"/>).</summary>
+        public bool Wraps(int run) => Of(run).Wraps;
 
         /// <summary>
         /// True for a glyph that a line's start or end removes or that has no width there: a collapsible space (removed, CSS
@@ -308,11 +315,38 @@ internal static class BreakableSegments
             clusterStarts[glyph.Start] = true;
         }
 
+        // The run of every character, for THE RULE FOR NOWRAP: one pass, as the run starts only grow.
+        var runOfCharacter = new int[text.Length];
+        for (var (position, owner) = (0, 0); position < text.Length; position++)
+        {
+            while (owner + 1 < runs.Count && runStarts[owner + 1] <= position)
+            {
+                owner++;
+            }
+
+            runOfCharacter[position] = owner;
+        }
+
         var segments = ImmutableArray.CreateBuilder<Segment>();
         var start = 0;
         var cursor = 0;
         foreach (var opportunity in WithAtomicInlines(UnicodeLineBreaking.Find(text), placed, text.Length))
         {
+            // THE RULE FOR NOWRAP: a soft wrap opportunity belongs to the run of the character before it, and is not taken when
+            // that run does not wrap (CSS Text 4 §5.1, text-wrap-mode; forced breaks break "regardless of the text-wrap-mode
+            // value"). For the opportunity after a space that is the space's run, as CSS Text 3 §5.5 says: "For soft wrap
+            // opportunities created by characters that disappear at the line break (e.g. U+0020 SPACE), properties on the box
+            // directly containing that character control the line breaking at that opportunity" (case ws-border: "aa" and a
+            // nowrap " bb" stay on one line, a nowrap "aa" and " bb" break). Between two other characters §5.5 asks for "the
+            // white-space property on the nearest common ancestor of the two characters", which runs do not know; Chromium
+            // decides by its element's tags there (Blink LineBreaker::HandleOpenTag, HandleCloseTag), the engine by the
+            // character before, and the two differ where an element that wraps differently from its parent ends (listed in
+            // docs/architecture.md, cases ws-border). An atomic inline has the mode of the run before it (InlineLayout).
+            if (!opportunity.IsMandatory && !rules.Wraps(runOfCharacter[opportunity.Offset - 1]))
+            {
+                continue;
+            }
+
             var usable = opportunity.Offset < text.Length && (clusterStarts[opportunity.Offset] || canShapeAgain);
             if (opportunity.Offset > start && usable)
             {

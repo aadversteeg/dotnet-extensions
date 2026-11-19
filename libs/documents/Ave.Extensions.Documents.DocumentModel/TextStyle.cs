@@ -26,4 +26,10 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// stops are not built.
     /// </summary>
     public WhiteSpaceCollapse WhiteSpaceCollapse { get; init; } = WhiteSpaceCollapse.Collapse;
+
+    /// <summary>Whether the run's text wraps at its soft wrap opportunities (CSS Text 4 §5.1, <c>text-wrap-mode</c>,
+    /// inherited); <see cref="TextWrapMode.Wrap"/>, the initial value, unless set. A break opportunity belongs to the run of the
+    /// character before it (the line breaker's rule): under <see cref="TextWrapMode.NoWrap"/> it is not taken, and forced
+    /// line breaks still break.</summary>
+    public TextWrapMode TextWrapMode { get; init; } = TextWrapMode.Wrap;
 }
