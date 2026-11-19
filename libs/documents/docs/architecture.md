@@ -688,10 +688,10 @@ Each is documented next to its code as well.
   594.96 × 841.92 pt); the model holds no page area larger than its sheet, so the engine's ends at the sheet: 0.54 pt
   narrower and 0.33 pt lower (cases `h-page-a4-zero-*`, listed; `HtmlListedDifferenceTests`). A right margin of 0.53 pt
   and a bottom margin of 0.39 pt or more remove the difference (case `h-page-a4-margin-px`).
-- **A ligature across the border of an inline element (HTML):** the engine's text keeps every character the glyph
+- **A ligature across the border of an inline element:** the engine's text keeps every character the glyph
   shows, Chromium's print maps it to the first run's characters only (`f<span>i</span>x` reads "fx"; the rule for shaping
   across runs above; case `sr-same-font`, listed; `HtmlListedDifferenceTests`).
-- **A zero width non-joiner in the text (HTML):** Chromium's print keeps U+200C in the text of its PDF, in the word it
+- **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
