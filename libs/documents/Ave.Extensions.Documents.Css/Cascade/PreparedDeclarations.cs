@@ -409,7 +409,7 @@ internal static class DeclarationPreparer
     }
 
     /// <summary>Whether a '!' delimiter is inside a function or block of the values (a top-level one is checked apart).</summary>
-    private static bool ContainsNestedBang(IReadOnlyList<ComponentValue> values)
+    internal static bool ContainsNestedBang(IReadOnlyList<ComponentValue> values)
     {
         var pending = new Stack<IReadOnlyList<ComponentValue>>();
         foreach (var value in values)

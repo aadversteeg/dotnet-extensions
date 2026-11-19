@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
@@ -48,7 +49,8 @@ internal static class VarSubstitution
     }
 
     /// <summary>Whether every var() in the values has the grammar of §3 (else the declaration is invalid when parsed,
-    /// as Chromium reads it).</summary>
+    /// as Chromium reads it): a custom property name, and a fallback that is a &lt;declaration-value&gt;, so with no
+    /// semicolon at its own top level (CSS Syntax 3 §8.2; Chromium 159 drops <c>color: var(--x, a;b)</c>, measured).</summary>
     public static bool IsWellFormed(IReadOnlyList<ComponentValue> values)
     {
         foreach (var value in values)
@@ -56,7 +58,8 @@ internal static class VarSubstitution
             switch (value)
             {
                 case FunctionValue function when function.IsNamed("var"):
-                    if (Arguments(function) is not { } arguments || (arguments.Fallback is { } fallback && !IsWellFormed(fallback)))
+                    if (Arguments(function) is not { } arguments
+                        || (arguments.Fallback is { } fallback && (HasTopLevel(fallback, CssTokenKind.Semicolon) || !IsWellFormed(fallback))))
                     {
                         return false;
                     }
@@ -71,6 +74,42 @@ internal static class VarSubstitution
 
         return true;
     }
+
+    /// <summary>Whether a var() in the values has a '!' at the top level of its fallback, which no
+    /// &lt;declaration-value&gt; holds (CSS Syntax 3 §8.2).</summary>
+    public static bool HasBangInFallback(IReadOnlyList<ComponentValue> values)
+    {
+        var pending = new Stack<IReadOnlyList<ComponentValue>>();
+        pending.Push(values);
+        while (pending.Count > 0)
+        {
+            foreach (var value in pending.Pop())
+            {
+                switch (value)
+                {
+                    case FunctionValue function when function.IsNamed("var") && Arguments(function) is { Fallback: { } fallback }:
+                        if (fallback.Any(item => item is CssToken token && token.IsDelim('!')))
+                        {
+                            return true;
+                        }
+
+                        pending.Push(fallback);
+                        break;
+                    case FunctionValue function:
+                        pending.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        pending.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasTopLevel(IReadOnlyList<ComponentValue> values, CssTokenKind kind) =>
+        values.Any(value => value is CssToken token && token.Kind == kind);
 
     /// <summary>Substitutes every var() in the values.</summary>
     /// <param name="values">The values.</param>

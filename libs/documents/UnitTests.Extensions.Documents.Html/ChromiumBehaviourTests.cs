@@ -137,6 +137,39 @@ public class ChromiumBehaviourTests
     public void Align_on_other_elements_is_Chromiums(string element, string textAlign) =>
         Styled(Doctype + "<div style=\"text-align: right\">" + element + "</div>", MeasuredPage).ById("t").Value("text-align").Should().Be(textAlign);
 
+    [Theory]
+    // @supports with var(): true when every var() has its grammar, whatever its fallback holds; false for a var()
+    // without a name, or with a semicolon or a '!' at the top of its fallback. Measured in Chromium 159.0.8154.6.
+    [InlineData("(color: var())", "1px")]
+    [InlineData("(color: var(--x, var()))", "1px")]
+    [InlineData("(color: var(x))", "1px")]
+    [InlineData("(color: var(--))", "1px")]
+    [InlineData("(margin: 1px var())", "1px")]
+    [InlineData("(font: var())", "1px")]
+    [InlineData("(all: var())", "1px")]
+    [InlineData("(color: rgb(var()))", "1px")]
+    [InlineData("(color: var(--x, a;b))", "1px")]
+    [InlineData("(color: var(--x, var(--y, ;)))", "1px")]
+    [InlineData("(color: var(--x, !))", "1px")]
+    [InlineData("(color: var(--x, 5px !important))", "1px")]
+    [InlineData("not (color: var())", "9px")]
+    [InlineData("(text-align: var(--x, -internal-center))", "9px")]
+    [InlineData("(text-align: -internal-center var(--x))", "9px")]
+    [InlineData("(text-align: var(--x, -internal-ave-th-center))", "9px")]
+    [InlineData("(color: var(--x, (;)))", "9px")]
+    [InlineData("(color: var(--x,))", "9px")]
+    public void A_supports_condition_with_var_is_answered_as_Chromium_answers_it(string condition, string marginLeft) =>
+        Styled(Doctype + "<style>p { margin-left: 1px } @supports " + condition + " { p { margin-left: 9px } }</style><p id=t>x</p>", Refusing).ById("t").Value("margin-left").Should().Be(marginLeft);
+
+    [Theory]
+    // A var() with a semicolon at the top of its fallback is invalid when parsed: the declaration is dropped, also a
+    // custom property's. Measured in Chromium 159.0.8154.6.
+    [InlineData("p { color: green; color: var(--x, a;b) }", "rgb(0, 128, 0)")]
+    [InlineData("p { color: green; color: rgb(var(--x, ;)) }", "rgb(0, 128, 0)")]
+    [InlineData("p { --a: var(--x, ;); color: green; color: var(--a, blue) }", "rgb(0, 0, 255)")]
+    public void A_var_with_a_semicolon_in_its_fallback_drops_the_declaration(string sheet, string color) =>
+        Styled(Doctype + "<style>" + sheet + "</style><p id=t>x</p>", Refusing).ById("t").Value("color").Should().Be(color);
+
     [Fact]
     public void Body_margins_come_from_the_last_attribute_of_each_pair()
     {

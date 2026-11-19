@@ -410,8 +410,8 @@ public sealed class CascadeIndex
         }
 
         /// <summary>Whether Chromium 159 supports a declaration: true for a value of a known property the engine reads
-        /// and supports, or a var() or CSS-wide keyword in one (Chromium accepts those at parse time), and for a
-        /// custom property with an ordinary value; false for another engine's property; null where the engine cannot
+        /// and supports, or a well-formed var() or a CSS-wide keyword in one (Chromium accepts those at parse time),
+        /// and for a custom property with an ordinary value; false for another engine's property; null where the engine cannot
         /// tell (a value it does not read or support, an ignored property's value, an unknown property, which is
         /// refused).</summary>
         private bool? Holds(Declaration declaration)
@@ -433,6 +433,18 @@ public sealed class CascadeIndex
 
             var longhand = PropertyRegistry.Find(name);
             var shorthand = longhand is null ? PropertyRegistry.FindShorthand(name) : null;
+            if ((longhand is not null || shorthand is not null || name == "all") && DeclarationPreparer.ContainsFunction(declaration.Value, "var"))
+            {
+                // A value with var() is checked against its property's grammar only after substitution, so it is
+                // supported when every var() matches the grammar of CSS Variables 1 §3, whatever the rest and the
+                // fallback hold (CSS Conditional 3 §6.1; Chromium 159, measured: var() and var(--x, a;b) false,
+                // var(--x, -internal-center) true). A '!' in a fallback makes it false (measured: !, a!b, 5px
+                // !important); one deeper in a function the engine cannot answer for.
+                return !VarSubstitution.IsWellFormed(declaration.Value) || VarSubstitution.HasBangInFallback(declaration.Value) ? false
+                    : DeclarationPreparer.ContainsNestedBang(declaration.Value) ? null
+                    : true;
+            }
+
             // Chromium keeps -internal- keywords for its own style sheet: an author's is not supported (measured).
             if (name == "text-align" && DeclarationPreparer.ContainsInternalKeyword(declaration.Value))
             {
@@ -441,7 +453,7 @@ public sealed class CascadeIndex
 
             if (longhand is not null || shorthand is not null || name == "all")
             {
-                if (DeclarationPreparer.ContainsFunction(declaration.Value, "var") || DeclarationPreparer.WideKeyword(declaration.Value) is not null)
+                if (DeclarationPreparer.WideKeyword(declaration.Value) is not null)
                 {
                     return true;
                 }
