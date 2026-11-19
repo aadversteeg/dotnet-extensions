@@ -10,10 +10,6 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// </summary>
 public class HtmlListedDifferenceTests
 {
-    /// <summary>Where the page area of the cases ends on the right: 13 px margin, 374 px wide (300 pt page, 10 pt margins).</summary>
-    private const double AreaLeft = 9.75;
-    private const double AreaWidth = 280.5;
-
     private static PrintedPages Chromium(string name) =>
         PrintedPages.Parse(File.ReadAllText(Path.Combine(HtmlCases.Folder(), "..", "measured", name + ".print.txt")));
 
@@ -28,20 +24,41 @@ public class HtmlListedDifferenceTests
     /// right edge of its content over the page area's width, up to a factor of 1.5 (<c>CalculateOverflowShrinkForPrinting</c>
     /// in pagination_utils.cc, applied by <c>LocalFrameView::ForceLayoutForPagination</c>; the limit is the setting
     /// <c>printingMaximumShrinkFactor</c>, settings.json5). Past the limit the content is clipped. The engine has no page
-    /// scale: it prints the word at its size and lets it stick out of the page area.
+    /// scale: it prints the content at its size and lets it stick out of the page area. Below the limit the scale is the
+    /// whole difference: Chromium's print taken back through it about the page area's top left corner (each position and
+    /// font size times the factor) is the engine's, compared as every case is (<see cref="HtmlCases.Difference"/>).
     /// </summary>
+    /// <param name="name">The case.</param>
+    /// <param name="left">The left edge of the page area, in points, at Chromium's whole-pixel margin.</param>
+    /// <param name="top">The top edge of the page area.</param>
+    /// <param name="width">The width of the page area.</param>
     [Theory]
-    [InlineData("h-wide-word-little")]
-    [InlineData("h-wide-word-much")]
-    public void Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page(string name)
+    [InlineData("h-wide-word-little", 9.75, 9.75, 280.5)]
+    [InlineData("h-wide-word-much", 9.75, 9.75, 280.5)]
+    [InlineData("hw-nowrap", 12, 12, 276)]
+    public void Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page(string name, double left, double top, double width)
     {
-        var engine = Engine(name).Pages.Single().Words[0];
-        engine.FontSize.Should().Be(12);
-        engine.X1.Should().BeGreaterThan(AreaLeft + AreaWidth, "the engine lets the word stick out");
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        var right = engine.Pages.Single().Words.Max(word => word.X1);
+        right.Should().BeGreaterThan(left + width, "the engine lets the content stick out");
 
-        var scale = System.Math.Min(1.5, (engine.X1 - engine.X0) / AreaWidth);
-        Chromium(name).Pages.Single().Words.Should().OnlyContain(word => System.Math.Abs(word.FontSize - (12 / scale)) < 0.005,
+        var scale = System.Math.Min(1.5, (right - left) / width);
+        chromium.Pages.Single().Words.Zip(engine.Pages.Single().Words).Should().OnlyContain(pair => System.Math.Abs(pair.First.FontSize - (pair.Second.FontSize / scale)) < 0.005,
             "Chromium prints every word of the page shrunk by one factor");
+        if (scale < 1.5)
+        {
+            var unscaled = new PrintedPages([.. chromium.Pages.Select(page => page with
+            {
+                Words = [.. page.Words.Select(word => word with
+                {
+                    X0 = left + ((word.X0 - left) * scale),
+                    X1 = left + ((word.X1 - left) * scale),
+                    Baseline = top + ((word.Baseline - top) * scale),
+                    FontSize = word.FontSize * scale,
+                })],
+            })]);
+            HtmlCases.Difference(engine, unscaled).Should().BeNull("the scale is the whole difference");
+        }
     }
 
     /// <summary>

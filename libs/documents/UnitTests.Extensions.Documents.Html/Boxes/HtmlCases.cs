@@ -64,6 +64,7 @@ internal static class HtmlCases
         ["f-tiny-038"] = "At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does",
         ["h-wide-word-little"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
         ["h-wide-word-much"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
+        ["hw-nowrap"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
         ["h-page-a4-zero-right"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["h-page-a4-zero-justify"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["h-page-a4-zero-lines"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",

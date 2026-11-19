@@ -688,8 +688,9 @@ Each is documented next to its code as well.
 
 - **Content wider than the page area (HTML):** Chromium shrinks the whole print by the widest page's overflow, up to a
   factor of 1.5, and clips past it (`CalculateOverflowShrinkForPrinting`, pagination_utils.cc); the engine has no page
-  scale and lets the content stick out (cases `h-wide-word-little`, `h-wide-word-much`, listed;
-  `HtmlListedDifferenceTests`).
+  scale and lets the content stick out (cases `h-wide-word-little`, `h-wide-word-much` and `hw-nowrap`, a line that does
+  not wrap, listed; `HtmlListedDifferenceTests`: below the limit Chromium's print taken back through its scale is the
+  engine's).
 - **The page area past the sheet (HTML):** Chromium rounds the page area up to whole pixels even where it then reaches
   past the printed sheet, as on A4 without margins, the default page (794 × 1123 px, 595.5 × 842.25 pt, on a sheet of
   594.96 × 841.92 pt); the model holds no page area larger than its sheet, so the engine's ends at the sheet: 0.54 pt
