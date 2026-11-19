@@ -33,8 +33,12 @@ namespace Ave.Extensions.Documents.Graphics;
 /// <see cref="PathBuilder"/>). The ranges: every point of a path, after the
 /// transform, lies within ±<see cref="MaxCoordinate"/> in both directions, so sums and squares of a few coordinates stay
 /// finite in double precision; a clip box of <see cref="Coverage"/> lies within ±<see cref="MaxPixelCoordinate"/>.
-/// Inside these ranges the work of a fill is bounded by the pixels it can touch, never by the size of the shape: a shape
-/// is clipped to the box in floating point before any number becomes an integer.</para>
+/// Inside these ranges the size of a coordinate makes no work: a shape is clipped to the box in floating point before
+/// any number becomes an integer, so a point far outside costs what a point on the box's side costs. The work of a fill
+/// follows the shape inside the box: per row, the edges that cross it and the pixels from the shape's left to its right,
+/// plus the charged arrangement of the pixels where contours may overlap (<see cref="MaxFillWork"/>). No limit bounds the
+/// edges of a path: a zigzag of 20,000 edges, each over all rows of a 4,096 × 4,096 canvas, is charged nothing (it flags
+/// no pixel) and took 2.8 s, work in proportion to the path.</para>
 /// </remarks>
 public sealed class Canvas
 {

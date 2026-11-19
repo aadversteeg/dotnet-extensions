@@ -219,8 +219,12 @@ that does not fit — is answered with a `Result` error with a `GraphicsErrorCod
 `Documents.Graphics.TooLarge`), never with an exception; only a null reference (`ArgumentNullException`) is the caller's
 bug. A path cannot be built out of order: `PathBuilder` offers only `MoveTo`, which hands back a `SubpathBuilder` with
 the other commands, so a segment before the first `MoveTo` does not compile. Inside
-the ranges (table below) the work of a fill is bounded by the pixels it can touch, never by the size of the shape: a
-shape is clipped to the box in floating point before any number becomes an integer. `ArgumentRuleTests` in
+the ranges (table below) the size of a coordinate makes no work: a shape is clipped to the box in floating point before
+any number becomes an integer, so a point far outside costs what a point on the box's side costs. The work of a fill
+follows the shape inside the box: per row, the edges that cross it and the pixels from the shape's left to its right,
+plus the charged arrangement of the pixels where contours may overlap (the work limit). No limit bounds the edges of a
+path: a zigzag of 20,000 edges, each over all rows of a 4,096 × 4,096 canvas, is charged nothing (it flags no pixel) and
+took 2.8 s, work in proportion to the path. `ArgumentRuleTests` in
 `UnitTests.Extensions.Documents.Graphics` holds it to that, hostile values included.
 
 **Determinism.** The pixel path uses only correctly rounded double arithmetic and square roots, in a fixed order, and

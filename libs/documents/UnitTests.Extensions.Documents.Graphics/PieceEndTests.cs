@@ -133,7 +133,7 @@ public class PieceEndTests
     [Theory]
     [InlineData(FillRule.NonZero)]
     [InlineData(FillRule.EvenOdd)]
-    public void Through_the_canvas_the_shapes_are_drawn_and_the_pixel_once_off_is_90(FillRule rule)
+    public void The_known_shapes_draw_through_the_canvas_and_a_pixel_beside_a_corner_point_gets_its_exact_coverage(FillRule rule)
     {
         foreach (var contours in Known().Select(row => ((double X, double Y)[][])row[1]))
         {
