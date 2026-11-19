@@ -39,8 +39,18 @@ internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double
 /// a winding number of two neighbouring values after all and keeps its integral, by the argument there. Every other
 /// flagged cell gets its coverage from the exact arrangement of its pieces (<see cref="CellArrangement"/>): the area where
 /// the winding number is not 0, or is odd, inside the cell and the area. It keeps the integral's value where the two
-/// differ by at most <see cref="KeepWithin"/>, so a cell that was right keeps its bits. So the coverage is exact in every
-/// cell, to the rounding of doubles.</para>
+/// differ by at most <see cref="KeepWithin"/>, so a cell that was right keeps its bits. So the coverage of every cell is
+/// exact to 10^-9: a cell that is not flagged and a two-sided one to the rounding of doubles, an arranged one to
+/// <see cref="KeepWithin"/>, the most by which the value it keeps may differ from its exact area.</para>
+/// <para><b>The pieces of a cell, and the guard.</b> The arrangement is right because its pieces are: each piece kept
+/// lies in its cell's closed box, and an end on a side of the cell lies on it exactly (<see cref="Ends"/>), so the
+/// arrangement sees every place where a run of pieces leaves or enters the cell. It is anchored on the cell's integral a:
+/// counted from the cell's left side, its winding number is off from the true one by one whole number over the whole
+/// cell, round(a − J) (<see cref="CellArrangement"/>). Where a − J lies further than
+/// <see cref="CellArrangement.Tolerance"/> (2^-10) from a whole number, the pieces and the integral do not agree, and the
+/// fill stops with <c>Documents.Graphics.InexactCoverage</c> (<see cref="Rasterize"/>). That is a guard against a wrong piece, and only
+/// against one that moves a − J by more than 2^-10; a smaller error would be drawn. So what the guard lets pass is not
+/// shown right by the guard; it is right because the pieces are made right.</para>
 /// <para><b>Work.</b> A cell arranged with m pieces costs m·(2m + m(m − 1)/2) + m² units
 /// (<see cref="CellArrangement.Charge"/>); before a row is reported their sum, or a bound on it, is put to the caller, who
 /// decides whether to go on (<see cref="Canvas.MaxFillWork"/>, <see cref="Canvas.MaxCanvasWork"/>; see
@@ -510,11 +520,25 @@ internal sealed class AreaRasterizer
         FlagFlats(y, ref flat);
     }
 
-    /// <summary>Marks the piece of an edge in a row (<see cref="Piece"/>) in the cells it lies in.</summary>
+    /// <summary>Marks the piece of an edge in a row (<see cref="Piece"/>) in the cells it lies in, with its ends as
+    /// they are kept (<see cref="Ends"/>).</summary>
     private void MarkPiece(Edge edge, double top, double bottom, double xTop, double xBottom)
     {
-        Mark(double.Min(xTop, xBottom), double.Max(xTop, xBottom), edge.Serial, edge.Turned, Signs(edge, xTop, xBottom));
+        var (start, end) = Ends(edge, top, bottom, xTop, xBottom);
+        Mark(double.Min(start, end), double.Max(start, end), edge.Serial, edge.Turned, Signs(edge, start, end));
     }
+
+    /// <summary>
+    /// The x of the two ends of a piece (<see cref="Piece"/>) as its flags count it and as it is kept for its cells
+    /// (row-relative): an end that is the edge's own end point at that point, else where the interpolation puts it.
+    /// </summary>
+    /// <remarks>The interpolation may miss an end point by a rounding, and across a pixel line: a corner one rounding
+    /// step left of a column interpolated onto the column itself. The cells of the piece are chosen from these ends, and
+    /// it is cut at the columns between them, so each kept piece lies in its cell's closed box, and an end on a side of
+    /// the cell is on it exactly (x or y, relative to the cell, exactly 0 or 1). The integral takes the interpolated
+    /// ends; the two differ by a rounding, which moves an area by a rounding.</remarks>
+    private (double Top, double Bottom) Ends(Edge edge, double top, double bottom, double xTop, double xBottom) =>
+        (top == edge.Y0 ? edge.X0 - _firstColumn : xTop, bottom == edge.Y1 ? edge.X1 - _firstColumn : xBottom);
 
     /// <summary>The directions of an edge's piece as the polygon runs: down (+1) or up (−1); right, left or neither.</summary>
     private static int Signs(Edge edge, double xTop, double xBottom)
@@ -565,8 +589,8 @@ internal sealed class AreaRasterizer
 
     /// <summary>The part of an edge inside row <paramref name="y"/>: from height <paramref name="top"/> at x
     /// <paramref name="xTop"/> to <paramref name="bottom"/> at <paramref name="xBottom"/> (row-relative x); false when
-    /// it has no height there. One computation for the integral, the flags and the pieces kept, so all three see the same
-    /// piece.</summary>
+    /// it has no height there. One computation for the integral, the flags and the pieces kept; the flags and the pieces
+    /// kept take an end that is the edge's own end point at that point (<see cref="Ends"/>).</summary>
     private bool Piece(Edge edge, int y, out double top, out double bottom, out double xTop, out double xBottom)
     {
         top = double.Max(edge.Y0, y);
@@ -630,13 +654,12 @@ internal sealed class AreaRasterizer
             return;
         }
 
-        // An end of the piece that is the edge's own end point is kept at that point, not where the interpolation (which
-        // may miss it by a rounding) puts it; on a cell's side it must be found there exactly.
-        var keptTop = top == edge.Y0 ? edge.X0 - _firstColumn : xTop;
-        var keptBottom = bottom == edge.Y1 ? edge.X1 - _firstColumn : xBottom;
-        var signs = Signs(edge, xTop, xBottom);
-        var low = double.Min(xTop, xBottom);
-        var high = double.Max(xTop, xBottom);
+        // The cells come from the ends as kept, as the flags counted them: an end point the interpolation would put on
+        // the other side of a pixel line is found in its own cell, and so on that cell's side exactly when it is there.
+        var (keptTop, keptBottom) = Ends(edge, top, bottom, xTop, xBottom);
+        var signs = Signs(edge, keptTop, keptBottom);
+        var low = double.Min(keptTop, keptBottom);
+        var high = double.Max(keptTop, keptBottom);
         var column = (int)Math.Floor(low);
         if (high <= column + 1)
         {
@@ -661,19 +684,11 @@ internal sealed class AreaRasterizer
             if (_flagged[cell])
             {
                 // The part of the piece in this column, from its top end to its bottom end: at the column's sides
-                // where it is cut there, else the piece's own ends.
+                // where it is cut there (whole numbers), else the piece's own ends.
                 var from = double.Max(low, cell);
                 var to = double.Min(high, cell + 1);
-                var (start, end) = xTop < xBottom ? (from, to) : (to, from);
-                Collect(
-                    cell,
-                    y,
-                    edge,
-                    signs,
-                    start == xTop ? keptTop : start,
-                    At(start, xTop, top, xBottom, bottom),
-                    end == xBottom ? keptBottom : end,
-                    At(end, xTop, top, xBottom, bottom));
+                var (start, end) = keptTop < keptBottom ? (from, to) : (to, from);
+                Collect(cell, y, edge, signs, start, At(start, keptTop, top, keptBottom, bottom), end, At(end, keptTop, top, keptBottom, bottom));
             }
         }
     }

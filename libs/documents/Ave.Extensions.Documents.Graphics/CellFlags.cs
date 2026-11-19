@@ -63,9 +63,10 @@ internal readonly record struct CellPiece(double X0, double Y0, double X1, doubl
 /// for winding values 0 and ±1. The pieces looked at are every piece in the closed cell, the ones its flags counted;
 /// those on a side of the cell touch no point of the open cell, which is all the argument looks at, so counting them
 /// only makes a run or the gap harder to have. The gap is strict: two sides that touch or cross, or a side of no width (two
-/// coinciding edges), are not two-sided. The pieces and their directions are the ones the flags and the integral are made
-/// from (<see cref="AreaRasterizer"/>, an end of an edge at its own point), so the cell is exact to the rounding of
-/// doubles, as every clean cell is: a gap the size of a rounding moves an area by that much.</para>
+/// coinciding edges), are not two-sided. The pieces and their directions are the ones the flags are made from
+/// (<see cref="AreaRasterizer"/>, an end of an edge at its own point); the integral takes the interpolated ends, which
+/// differ from those by a rounding, so the cell is exact to the rounding of doubles, as every clean cell is: a gap the
+/// size of a rounding moves an area by that much.</para>
 /// <para><b>What the rule may get wrong, and which way.</b> A flagged cell whose integral was exact after all is only
 /// work: its arrangement gives the same area. A cell the rule would wrongly call clean or two-sided is the one thing it
 /// must not do, so every choice above counts more pieces, or breaks a run sooner, rather than fewer.</para>

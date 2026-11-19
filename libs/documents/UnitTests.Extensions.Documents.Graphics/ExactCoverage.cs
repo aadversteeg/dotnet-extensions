@@ -3,13 +3,13 @@ using System.Numerics;
 namespace UnitTests.Extensions.Documents.Graphics;
 
 /// <summary>
-/// The exact coverage of polygons per pixel, in rational arithmetic, written independently of the rasteriser: for shapes
-/// whose coordinates are multiples of 1/64 pixel, the area of {winding ≠ 0} and of {winding odd} inside each pixel and a
-/// clip box, as fractions of whole numbers. The plane is cut into vertical slabs (the rasteriser works in rows) at every
-/// vertex, every crossing of two edges, every pixel column and every place an edge meets a pixel row or the box; inside a
-/// slab no two edges cross and none crosses a row line, so the regions between them, sorted from the top, are trapezoids
-/// whose area is the slab's width times their height at its middle, and the winding number of each is counted from the
-/// edges above it.
+/// The exact coverage of polygons per pixel, in rational arithmetic, written independently of the rasteriser: the area
+/// of {winding ≠ 0} and of {winding odd} inside each pixel and a clip box, as fractions of whole numbers, for shapes whose
+/// coordinates are multiples of 1/64 pixel, or any doubles (each double is a fraction with a power of two below it). The
+/// plane is cut into vertical slabs (the rasteriser works in rows) at every vertex, every crossing of two edges, every
+/// pixel column and every place an edge meets a pixel row or the box; inside a slab no two edges cross and none crosses a
+/// row line, so the regions between them, sorted from the top, are trapezoids whose area is the slab's width times their
+/// height at its middle, and the winding number of each is counted from the edges above it.
 /// </summary>
 internal static class ExactCoverage
 {
@@ -23,9 +23,64 @@ internal static class ExactCoverage
     /// <param name="contours">Closed polygons, coordinates in 1/64 pixel.</param>
     /// <param name="box">A clip box in 1/64 pixel (left, top, right, bottom), or null.</param>
     /// <returns>Per pixel (column, row): the non-zero and the even-odd coverage, 0 to 1.</returns>
-    public static Dictionary<(int X, int Y), (double NonZero, double EvenOdd)> Areas(IReadOnlyList<(long X, long Y)[]> contours, (long Left, long Top, long Right, long Bottom)? box)
+    public static Dictionary<(int X, int Y), (double NonZero, double EvenOdd)> Areas(IReadOnlyList<(long X, long Y)[]> contours, (long Left, long Top, long Right, long Bottom)? box) =>
+        Areas(
+            [.. contours.Select(contour => contour.Select(point => ((BigInteger)point.X, (BigInteger)point.Y)).ToArray())],
+            box is { } b ? ((BigInteger)b.Left, (BigInteger)b.Top, (BigInteger)b.Right, (BigInteger)b.Bottom) : null,
+            Unit);
+
+    /// <summary>
+    /// The exact coverage, as for coordinates in 1/64 pixel, of polygons whose coordinates are any finite doubles in
+    /// pixels, each taken at its exact value.
+    /// </summary>
+    /// <param name="contours">Closed polygons, coordinates in pixels.</param>
+    /// <param name="box">A clip box in pixels (left, top, right, bottom), or null.</param>
+    /// <returns>Per pixel (column, row): the non-zero and the even-odd coverage, 0 to 1.</returns>
+    public static Dictionary<(int X, int Y), (double NonZero, double EvenOdd)> Areas(IReadOnlyList<(double X, double Y)[]> contours, (double Left, double Top, double Right, double Bottom)? box)
     {
-        var edges = new List<(long X0, long Y0, long X1, long Y1)>();
+        // The finest power of two any coordinate needs: every one is then a whole number of that unit.
+        var values = contours.SelectMany(contour => contour.SelectMany(point => new[] { point.X, point.Y })).ToList();
+        if (box is { } sides)
+        {
+            values.AddRange([sides.Left, sides.Top, sides.Right, sides.Bottom]);
+        }
+
+        var shift = values.Count == 0 ? 0 : int.Max(0, values.Max(value => -Dyadic(value).Exponent));
+        BigInteger Scaled(double value)
+        {
+            var (mantissa, exponent) = Dyadic(value);
+            return mantissa << (exponent + shift);
+        }
+
+        return Areas(
+            [.. contours.Select(contour => contour.Select(point => (Scaled(point.X), Scaled(point.Y))).ToArray())],
+            box is { } b ? (Scaled(b.Left), Scaled(b.Top), Scaled(b.Right), Scaled(b.Bottom)) : null,
+            BigInteger.One << shift);
+    }
+
+    /// <summary>A finite double as mantissa · 2^exponent exactly (0 as 0 · 2^0).</summary>
+    private static (BigInteger Mantissa, int Exponent) Dyadic(double value)
+    {
+        var bits = BitConverter.DoubleToInt64Bits(value);
+        var exponent = (int)((bits >> 52) & 0x7FF);
+        var mantissa = bits & 0xFFFFFFFFFFFFFL;
+        (mantissa, exponent) = exponent == 0 ? (mantissa, -1074) : (mantissa | (1L << 52), exponent - 1075);
+        if (mantissa == 0)
+        {
+            return (BigInteger.Zero, 0);
+        }
+
+        while ((mantissa & 1) == 0)
+        {
+            (mantissa, exponent) = (mantissa >> 1, exponent + 1);
+        }
+
+        return (bits < 0 ? -mantissa : mantissa, exponent);
+    }
+
+    private static Dictionary<(int X, int Y), (double NonZero, double EvenOdd)> Areas(IReadOnlyList<(BigInteger X, BigInteger Y)[]> contours, (BigInteger Left, BigInteger Top, BigInteger Right, BigInteger Bottom)? box, BigInteger unit)
+    {
+        var edges = new List<(BigInteger X0, BigInteger Y0, BigInteger X1, BigInteger Y1)>();
         foreach (var contour in contours)
         {
             for (var index = 0; index < contour.Length; index++)
@@ -45,12 +100,12 @@ internal static class ExactCoverage
             return [];
         }
 
-        var (minX, maxX) = (FloorDiv(all.Min(point => point.X), Unit), CeilDiv(all.Max(point => point.X), Unit));
-        var (minY, maxY) = (FloorDiv(all.Min(point => point.Y), Unit), CeilDiv(all.Max(point => point.Y), Unit));
-        var lines = new List<long>();
+        var (minX, maxX) = (FloorDiv(all.Min(point => point.X), unit), CeilDiv(all.Max(point => point.X), unit));
+        var (minY, maxY) = (FloorDiv(all.Min(point => point.Y), unit), CeilDiv(all.Max(point => point.Y), unit));
+        var lines = new List<BigInteger>();
         for (var row = minY; row <= maxY; row++)
         {
-            lines.Add(row * Unit);
+            lines.Add(row * unit);
         }
 
         if (box is { } clip)
@@ -67,7 +122,7 @@ internal static class ExactCoverage
 
         for (var column = minX; column <= maxX; column++)
         {
-            cuts.Add(new Fraction(column * Unit));
+            cuts.Add(new Fraction(column * unit));
         }
 
         if (box is { } sides)
@@ -81,7 +136,7 @@ internal static class ExactCoverage
             var a = edges[first];
             foreach (var line in lines)
             {
-                if (line > long.Min(a.Y0, a.Y1) && line < long.Max(a.Y0, a.Y1))
+                if (line > BigInteger.Min(a.Y0, a.Y1) && line < BigInteger.Max(a.Y0, a.Y1))
                 {
                     // x where the edge meets the horizontal line.
                     cuts.Add(new Fraction(a.X0) + new Fraction((line - a.Y0) * (a.X1 - a.X0), a.Y1 - a.Y0));
@@ -112,7 +167,7 @@ internal static class ExactCoverage
             var (left, right) = (slabs[index], slabs[index + 1]);
             var middle = (left + right) / new Fraction(2);
             var width = right - left;
-            var column = (int)FloorDiv(middle, Unit);
+            var column = (int)FloorDiv(middle, unit);
             if (box is { } inside && !(middle.CompareTo(new Fraction(inside.Left)) > 0 && middle.CompareTo(new Fraction(inside.Right)) < 0))
             {
                 continue;
@@ -122,7 +177,7 @@ internal static class ExactCoverage
             var crossing = new List<(Fraction Y, int Step)>();
             foreach (var edge in edges)
             {
-                if (middle.CompareTo(new Fraction(long.Min(edge.X0, edge.X1))) > 0 && middle.CompareTo(new Fraction(long.Max(edge.X0, edge.X1))) < 0)
+                if (middle.CompareTo(new Fraction(BigInteger.Min(edge.X0, edge.X1))) > 0 && middle.CompareTo(new Fraction(BigInteger.Max(edge.X0, edge.X1))) < 0)
                 {
                     var y = new Fraction(edge.Y0) + ((middle - new Fraction(edge.X0)) * new Fraction(edge.Y1 - edge.Y0, edge.X1 - edge.X0));
 
@@ -153,20 +208,20 @@ internal static class ExactCoverage
                     continue;
                 }
 
-                var row = (int)FloorDiv(centre, Unit);
+                var row = (int)FloorDiv(centre, unit);
                 var area = width * height;
                 var (nonZero, evenOdd) = result.TryGetValue((column, row), out var sum) ? sum : (Fraction.Zero, Fraction.Zero);
                 result[(column, row)] = (nonZero + area, int.IsOddInteger(winding) ? evenOdd + area : evenOdd);
             }
         }
 
-        var pixel = new Fraction(Unit * Unit);
+        var pixel = new Fraction(unit * unit);
         return result.ToDictionary(entry => entry.Key, entry => ((entry.Value.NonZero / pixel).ToDouble(), (entry.Value.EvenOdd / pixel).ToDouble()));
     }
 
     /// <summary>The x of a point two non-vertical edges have in common, strictly inside both x ranges; null when they do
     /// not meet there or run parallel.</summary>
-    private static Fraction? Crossing((long X0, long Y0, long X1, long Y1) a, (long X0, long Y0, long X1, long Y1) b)
+    private static Fraction? Crossing((BigInteger X0, BigInteger Y0, BigInteger X1, BigInteger Y1) a, (BigInteger X0, BigInteger Y0, BigInteger X1, BigInteger Y1) b)
     {
         // a(t) = A0 + t·(A1 − A0), b(u) = B0 + u·(B1 − B0); solve with Cramer's rule.
         var (rx, ry, sx, sy) = (a.X1 - a.X0, a.Y1 - a.Y0, b.X1 - b.X0, b.Y1 - b.Y0);
@@ -187,11 +242,11 @@ internal static class ExactCoverage
         return new Fraction(a.X0) + (t * new Fraction(rx));
     }
 
-    private static long FloorDiv(long value, long divisor) => (long)Math.Floor((double)value / divisor);
+    private static BigInteger FloorDiv(BigInteger value, BigInteger divisor) => BigInteger.Divide(value - (value.Sign < 0 ? divisor - 1 : 0), divisor);
 
-    private static long CeilDiv(long value, long divisor) => (long)Math.Ceiling((double)value / divisor);
+    private static BigInteger CeilDiv(BigInteger value, BigInteger divisor) => -FloorDiv(-value, divisor);
 
-    private static long FloorDiv(Fraction value, long divisor) => (long)BigInteger.Divide(value.Numerator - (value.Numerator.Sign < 0 ? (value.Denominator * divisor) - 1 : 0), value.Denominator * divisor);
+    private static BigInteger FloorDiv(Fraction value, BigInteger divisor) => FloorDiv(value.Numerator, value.Denominator * divisor);
 
     /// <summary>A rational number in lowest terms, denominator positive.</summary>
     private readonly struct Fraction : IComparable<Fraction>
@@ -207,7 +262,7 @@ internal static class ExactCoverage
             (Numerator, Denominator) = divisor.IsZero || divisor.IsOne ? (numerator, denominator) : (numerator / divisor, denominator / divisor);
         }
 
-        public Fraction(long value)
+        public Fraction(BigInteger value)
             : this(value, BigInteger.One)
         {
         }
