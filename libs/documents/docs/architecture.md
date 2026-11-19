@@ -815,7 +815,11 @@ Each is documented next to its code as well.
   `Refuse` the table is refused (`Documents.Layout.DoesNotFit`), and under `Slice` the content is laid out again above
   the bottom padding and breaks earlier: a cell with 30 pt bottom padding around a table whose rest on page 2 fits the
   page area gives `t34 t35 t36 t37 t39 t40 t41 t42` on page 2 in Chromium and `t34 t35 t36 t37`, then `t39 t40 t41 t42`
-  on page 3 under `Slice` (`a4-continued-cell-pad-bottom-30`; `PinnedDifferenceTests`). A block outside a table whose bottom padding does not fit below such a piece at the top of a
+  on page 3 under `Slice` (`a4-continued-cell-pad-bottom-30`; `PinnedDifferenceTests`). Under an outer table's
+  repeated header the page is printed without that header where the rest then fits, under every profile: an outer
+  header "O" above a cell with 30 pt bottom padding around a table of 19 one-line rows gives `O r10`..`r18` on page 2
+  in Chromium and `r10`..`r18` in the engine (`a4-continued-cell-pad-bottom-30-under-header`; `PinnedDifferenceTests`).
+  A block outside a table whose bottom padding does not fit below such a piece at the top of a
   page keeps the piece whole and breaks before its bottom padding and border, which start the next page with what
   follows below them (`SlicedBox`), as Chromium does: a block with 3 pt padding above and below a 177 pt image puts
   "after" on page 2, 3 pt lower than at the top of a page, in both (`a4-image-177-block-padding-3`;

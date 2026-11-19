@@ -103,4 +103,28 @@ public class PinnedDifferenceTests
         refused.Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
         Printed(body, MonolithicOverflow.Slice, parts).PageTexts.Should().Equal("H27 H28 H29 t30 t31 t32 t33", "t34 t35 t36 t37", "t39 t40 t41 t42");
     }
+
+    [Fact]
+    public void A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header()
+    {
+        // An outer table with a header row "O" and one body cell with 30 pt bottom padding, around a table of 19 one-line
+        // rows. Page 1 holds "O" and r0..r9. On page 2 the rest, r10..r18, fits below "O", but not with the outer cell's
+        // bottom padding below it. Chromium places it below "O" and lets the padding pass the page end (page 3 shows only
+        // the outer cell's grid lines). The engine never lets a cell's bottom padding pass the page end; without the header
+        // the rest and its padding fit, so the page goes on without "O", as a later page does that cannot hold the header
+        // and some body content (docs/architecture.md, "Known limits"; case a4-continued-cell-pad-bottom-30-under-header).
+        TablePart[] rows = [.. Enumerable.Range(0, 19).Select(i => (TablePart)TableRow([Cell([Paragraph($"r{i}")])]))];
+        var inner = Elements.Table(Columns(Fill(1)), [.. rows]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+        Element[] body = [Elements.Table(Columns(Fill(1)), [HeaderRow([Cell([Paragraph("O")])]), TableRow([Cell([inner]).PaddingBottom(30.Pt())])]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks()];
+        var chromium = PrintedPages.Chromium("a4-continued-cell-pad-bottom-30-under-header");
+
+        chromium.PageTexts.Should().Equal("O r0 r1 r2 r3 r4 r5 r6 r7 r8 r9", "O r10 r11 r12 r13 r14 r15 r16 r17 r18", "");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            foreach (var parts in Enum.GetValues<EmptyRowParts>())
+            {
+                Printed(body, overflow, parts).PageTexts.Should().Equal(["O r0 r1 r2 r3 r4 r5 r6 r7 r8 r9", "r10 r11 r12 r13 r14 r15 r16 r17 r18"], $"{overflow}/{parts}");
+            }
+        }
+    }
 }
