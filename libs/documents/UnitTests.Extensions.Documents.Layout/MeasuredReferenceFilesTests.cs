@@ -1028,6 +1028,30 @@ public class MeasuredReferenceFilesTests
         ["fr-row-later-page-padding-overflows.lines.txt"] = 10,
         ["fr-row-later-page-padding-overflows.print.txt"] = 29,
         ["fr-row-later-page-padding-overflows.words.txt"] = 16,
+        ["h-default-page.boxes.txt"] = 1,
+        ["h-default-page.lines.txt"] = 0,
+        ["h-default-page.print.txt"] = 3,
+        ["h-default-page.words.txt"] = 1,
+        ["h-kerning-auto.boxes.txt"] = 1,
+        ["h-kerning-auto.lines.txt"] = 0,
+        ["h-kerning-auto.print.txt"] = 4,
+        ["h-kerning-auto.words.txt"] = 3,
+        ["h-kerning-none.boxes.txt"] = 1,
+        ["h-kerning-none.lines.txt"] = 0,
+        ["h-kerning-none.print.txt"] = 4,
+        ["h-kerning-none.words.txt"] = 3,
+        ["h-kerning-normal.boxes.txt"] = 1,
+        ["h-kerning-normal.lines.txt"] = 0,
+        ["h-kerning-normal.print.txt"] = 4,
+        ["h-kerning-normal.words.txt"] = 3,
+        ["h-page-margin-fraction.boxes.txt"] = 1,
+        ["h-page-margin-fraction.lines.txt"] = 0,
+        ["h-page-margin-fraction.print.txt"] = 3,
+        ["h-page-margin-fraction.words.txt"] = 2,
+        ["h-page-margin-round.boxes.txt"] = 1,
+        ["h-page-margin-round.lines.txt"] = 1,
+        ["h-page-margin-round.print.txt"] = 4,
+        ["h-page-margin-round.words.txt"] = 2,
         ["kb-m1-kept-box-margin-in-padded-box.boxes.txt"] = 1,
         ["kb-m1-kept-box-margin-in-padded-box.lines.txt"] = 0,
         ["kb-m1-kept-box-margin-in-padded-box.print.txt"] = 7,
@@ -1180,7 +1204,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(288);
+        cases.Should().HaveCount(294);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");

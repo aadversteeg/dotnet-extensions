@@ -49,7 +49,9 @@ public class ReadBackAgreementTests
             poppler.Except(page.Words.Select(word => word.Text), StringComparer.Ordinal).Should().BeEmpty($"{caseName}, page {page.Number}: pdftotext finds no word PyMuPDF does not");
         }
 
-        lines.Select(fields => int.Parse(fields[0], CultureInfo.InvariantCulture)).Should().OnlyContain(number => number >= 1 && number <= print.Pages.Length, caseName);
+        // No word of pdftotext is on a page the print does not have (also when it finds none: case h-default-page has
+        // its text at the top edge of the page, where neither read-back counts a word as inside).
+        lines.Select(fields => int.Parse(fields[0], CultureInfo.InvariantCulture)).Where(number => number < 1 || number > print.Pages.Length).Should().BeEmpty(caseName);
 
         static string Key(int page, double x0, double y0, double x1, double y1) =>
             FormattableString.Invariant($"{page} {x0:0.00} {y0:0.00} {x1:0.00} {y1:0.00}");
