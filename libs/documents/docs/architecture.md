@@ -795,7 +795,10 @@ Each is documented next to its code as well.
   pass the page end. The engine has the same pages and words, but the piece in two slices (176.625 and 0.375 pt for a
   177 pt image in a cell with 3 pt padding), and what follows starts lower on the next page. Under `Refuse` such a piece
   is refused as before. A block outside a table whose bottom padding does not fit below such a piece at the top of a
-  page keeps the piece whole and lets the padding pass, as Chromium does.
+  page keeps the piece whole and breaks before its bottom padding and border, which start the next page with what
+  follows below them (`SlicedBox`), as Chromium does: a block with 3 pt padding above and below a 177 pt image puts
+  "after" on page 2, 3 pt lower than at the top of a page, in both (`a4-image-177-block-padding-3`;
+  `SliceAboveInsetTests`).
   Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
   Bottom padding of a block that does not fit below the last slice of a piece in it starts the next page, and what
   follows the block comes once, below it, as in Chromium (cases `a4-image-block-padding-60`,
