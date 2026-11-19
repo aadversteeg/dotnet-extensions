@@ -392,4 +392,36 @@ public class TextDecorationTests
             W(30, Text("xx AV To")),
             W(30, Text("xx AV").Underline(), Text(" To"))), "dl-end");
     }
+
+    /// <summary>Case dl-fraction: a block 10.5 px high, then paragraphs 20 pt wide of three lines, each line 18.4 px high as
+    /// Chromium keeps it (1,178/64 px), so the line tops lie off the whole pixel.</summary>
+    private static PageDocument Fraction() => Painted(500,
+    [
+        Block([]).PaddingTop(7.875.Pt()),
+        .. new[] { 12.0, 24.0 }.SelectMany(size => Lines.OrderBy(line => line == TextDecorationLine.Underline ? 0 : line == TextDecorationLine.Overline ? 1 : 2)
+            .Select(line => (Element)Decorated(Narrow(20, [Text("aa bb cc")]).FontSize(size.Pt()).LineHeight((1178 / 64.0 * 0.75).Pt()), line))),
+    ]);
+
+    [Fact]
+    public void Where_a_line_top_is_off_the_whole_pixel_each_line_lies_from_its_baseline_as_in_Chromium_and_moves_with_the_unrounded_baseline()
+    {
+        // Listed difference (docs/architecture.md, Known limits, "Text decoration"): Chromium paints each text baseline at a
+        // whole pixel and its lines from there; the engine keeps the baseline unrounded. In case dl-fraction every one of the 18
+        // lines lies the same distance from its own baseline in both, and each top differs from Chromium's by that baseline's
+        // rounding (at most half a pixel): e.g. the first underline at 31.875 (baseline 31.125), Chromium 32.25 (31.5).
+        var (mine, theirs) = (PrintedPages.Engine(Fraction()).Pages[0], PrintedPages.Chromium("dl-fraction").Pages[0]);
+
+        mine.Words.Select(word => word.Text).Should().Equal(theirs.Words.Select(word => word.Text));
+        mine.Rectangles.Should().HaveCount(18).And.HaveCount(theirs.Rectangles.Length);
+        for (var line = 0; line < 18; line++)
+        {
+            var (box, measured) = (mine.Rectangles[line], theirs.Rectangles[line]);
+            (box.Y0 - mine.Words[line].Baseline).Should().BeApproximately(measured.Y0 - theirs.Words[line].Baseline, 0.001, $"line {line + 1}");
+            (box.Y1 - box.Y0).Should().BeApproximately(measured.Y1 - measured.Y0, 0.001, $"line {line + 1}");
+            Math.Abs(theirs.Words[line].Baseline - mine.Words[line].Baseline).Should().BeLessThanOrEqualTo(0.375 + 0.001, $"line {line + 1}");
+        }
+
+        mine.Rectangles.Zip(theirs.Rectangles).Count(pair => Math.Abs(pair.First.Y0 - pair.Second.Y0) > 0.01).Should().Be(17,
+            "every top but one differs (the 24 pt line-through of its second line, whose baseline lies on a whole pixel in both)");
+    }
 }

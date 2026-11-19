@@ -29,8 +29,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// overline's top T above it, so these two follow the text of each piece (<c>dl-whose</c>: they step where the size
 /// changes). Under <see cref="FontMetricRounding.WholePixels"/> the thickness is floored to whole pixels, the overline's
 /// offset is floored T, and each top is rounded to a whole pixel ("Round to nearest pixel to match text", Blink
-/// <c>SnapYAxis</c>), counted from the line box's top where Chromium counts from the page; the two agree where line tops
-/// lie on whole pixels, as in every measured case. Under <see cref="FontMetricRounding.Exact"/> nothing is rounded.</para>
+/// <c>SnapYAxis</c>), counted from the line box's top, where Chromium paints the baseline at a whole pixel of the page and the line from
+/// there; equal where line tops lie on whole pixels, else the line moves with the unrounded baseline (case <c>dl-fraction</c>,
+/// listed in docs/architecture.md). Under <see cref="FontMetricRounding.Exact"/> nothing is rounded.</para>
 /// <para>Extent: from the piece's start across its advances, a widened space of a justified line included and a hanging
 /// preserved space with its whole advance (<see cref="ShapedGlyph.Overhang"/>, case <c>dl-space</c>: underlined past the
 /// line's end); a collapsible space removed at a line's end is not part of the piece, so it is not decorated. (CSS Text Decoration 3 §2
