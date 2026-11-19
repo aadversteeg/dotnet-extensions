@@ -131,6 +131,33 @@ public class SliceUnderHeaderTests
             .Should().AllBeEquivalentTo(caseName == "a4-header-row-image-row");
     }
 
+    [Fact]
+    public void A_line_spanning_two_rows_beside_an_image_under_an_empty_header_is_printed_whole_on_the_first_page()
+    {
+        // Case a4-header-empty-rowspan-line-image: two columns, an empty repeated header row, then "t20" in a cell over two
+        // rows beside an empty cell, and a 345 pt image in the second row. "t20" is printed whole on page 1, page 2 holds
+        // only the header and the grid, and the image is sliced from page 3, as in Chromium: the same pages and words, "t20"
+        // at Chromium's baseline, the image on page 3 at Chromium's height (0.375 pt further left). On page 4 the engine shows the rest of the
+        // image, 166.5 pt, and Chromium moves the image up a whole page area (the listed deviation above). This line was
+        // once sliced 0.375 + 14.625 pt over pages 2 and 3.
+        var table = Elements.Table(Columns(Fill(1), Fill(1)), [HeaderRow([Cell(""), Cell("")]), TableRow([Cell("t20").RowSpan(2), Cell("")]), TableRow([Cell([TallImage(345)])])])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+        var document = Run(Document([table], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(MonolithicOverflow.Slice).FontMetricRounding(FontMetricRounding.WholePixels));
+        var engine = PrintedPages.Engine(document);
+        var chromium = PrintedPages.Chromium("a4-header-empty-rowspan-line-image");
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.Pages[0].Words.Single().Should().Be(chromium.Pages[0].Words.Single());
+        var (image, chromiumImage) = (engine.Pages[2].Images.Single(), chromium.Pages[2].Images.Single());
+        (image.Y0, image.Y1).Should().Be((chromiumImage.Y0, chromiumImage.Y1));
+        image.X0.Should().Be(chromiumImage.X0 - 0.375, "the engine starts the second column's content half the 0.75 pt grid line earlier");
+        document.Pages[0].Items.OfType<ClipStart>().Should().BeEmpty("the line is not sliced");
+        var clips = document.Pages.Skip(2).SelectMany(page => page.Items.OfType<ClipStart>()).Select(clip => clip.Area.Size.Height).ToList();
+        clips.Should().Equal(178.5, 166.5);
+        chromium.Pages[3].Images.Single().Y0.Should().Be(chromium.Pages[2].Images.Single().Y0 - 180);
+    }
+
     /// <summary>A table with a one-line repeated header (15 pt) and one cell holding <paramref name="piece"/>, then
     /// "after", on a page area of 144 pt: 129 pt of room below the header.</summary>
     private static Document UnderOneLineHeader(Element piece, EmptyRowParts parts) =>

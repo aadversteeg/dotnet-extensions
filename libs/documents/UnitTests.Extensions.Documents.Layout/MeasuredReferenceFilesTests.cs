@@ -184,6 +184,10 @@ public class MeasuredReferenceFilesTests
         ["a4-header-cut-row-image-row.lines.txt"] = 31,
         ["a4-header-cut-row-image-row.print.txt"] = 60,
         ["a4-header-cut-row-image-row.words.txt"] = 20,
+        ["a4-header-empty-rowspan-line-image.boxes.txt"] = 5,
+        ["a4-header-empty-rowspan-line-image.lines.txt"] = 36,
+        ["a4-header-empty-rowspan-line-image.print.txt"] = 43,
+        ["a4-header-empty-rowspan-line-image.words.txt"] = 1,
         ["a4-header-image-150-image.boxes.txt"] = 3,
         ["a4-header-image-150-image.lines.txt"] = 25,
         ["a4-header-image-150-image.print.txt"] = 38,
@@ -1032,7 +1036,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(251);
+        cases.Should().HaveCount(252);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
