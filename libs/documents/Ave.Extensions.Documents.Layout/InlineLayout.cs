@@ -182,7 +182,9 @@ public static class InlineLayout
     /// <c>LineInfo::ComputeNeedsAccurateEndPosition</c>, core/layout/inline/line_info.cc): <c>start</c> does not, so the
     /// paragraph's glyphs are kept; <c>end</c>, <c>center</c> and <c>justify</c> do; and from the item the line ends in (Blink
     /// <c>NeedsAccurateEndPosition(const InlineItem&amp;)</c>, core/layout/inline/line_breaker.cc): a run with a text decoration
-    /// (<see cref="TextStyle.Decorations"/>) does, since its line ends where its last glyph ends. The engine lays out
+    /// (<see cref="TextStyle.Decorations"/>) does, since its line ends where its last glyph ends. The run of the space at the line
+    /// end decides (<see cref="GreedyLineBreaker"/>), as Chromium's print shows (case <c>dl-end</c>: "xx AV" shaped again when the
+    /// space lies in the underlined element, kerned with the space when it lies outside). The engine lays out
     /// left-to-right text only, so <see cref="TextAlign.Left"/> is <c>start</c> here; in right-to-left text it would be
     /// <c>end</c>.</summary>
     private static LineEndShaping[] LineEndAtSpace(IReadOnlyList<LineBoxes.Item> runs, TextAlign align) =>

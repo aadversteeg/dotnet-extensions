@@ -374,4 +374,22 @@ public class TextDecorationTests
         DecorationsOf(Model(Paragraph("ab").With(underlined)).Value, 0).Should().ContainSingle().Which.Color.Should().Be(Red);
         DecorationsOf(Model(Paragraph("ab").With(underlined).Overline()).Value, 0).Should().ContainSingle().Which.Line.Should().Be(TextDecorationLine.Overline);
     }
+
+    [Fact]
+    public void A_line_that_ends_in_a_decorated_run_at_a_space_is_shaped_again_like_Chromium()
+    {
+        // Lato kerns "V" with the space after it: "xx AV" is 29.790 pt kept with the paragraph's glyphs, 30.222 pt shaped again.
+        // Chromium (case dl-end) shapes the end again when the space at the line end lies in the decorated element (rows 1, 2,
+        // 5: the underline ends at 42.223; at 30 pt "AV" no longer fits), and keeps the kerning when the space lies outside it
+        // (rows 3, 7: 41.801, and "xx AV" fits in 30 pt as in the control row 6).
+        ParagraphElement W(double width, params Span[] spans) => Narrow(width, [.. spans]);
+        ShouldMatch(Painted(300,
+            W(40, Text("xx AV To").Underline()),
+            W(40, Text("xx AV ").Underline(), Text("To")),
+            W(40, Text("xx AV").Underline(), Text(" To")),
+            W(40, Text("xx AV To")),
+            W(30, Text("xx AV To").Underline()),
+            W(30, Text("xx AV To")),
+            W(30, Text("xx AV").Underline(), Text(" To"))), "dl-end");
+    }
 }
