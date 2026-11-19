@@ -255,8 +255,24 @@ h-default-page equal
 h-kerning-auto equal
 h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none at 2:74
 h-kerning-normal equal
+h-page-area-bottom equal
+h-page-area-continued equal
+h-page-area-half equal
+h-page-area-justify equal
+h-page-area-right equal
 h-page-margin-fraction equal
-h-page-margin-round open page 1 painted area: the pixel at (288, 12): Chromium paints it and the engine does not; the engine paints 6992 px #cccccc, Chromium 7011 px (print.txt)
+h-page-margin-half equal
+h-page-margin-round equal
+h-page-size-a3 equal
+h-page-size-a4 equal
+h-page-size-a4-landscape equal
+h-page-size-a5 equal
+h-page-size-b5 equal
+h-page-size-fraction equal
+h-page-size-hundred-px equal
+h-page-size-legal equal
+h-page-size-letter equal
+h-page-size-mm equal
 kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:133
 kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:120
 kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br at 8:85

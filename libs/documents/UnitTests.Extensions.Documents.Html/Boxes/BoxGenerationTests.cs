@@ -279,9 +279,19 @@ public class BoxGenerationTests
 
     [Theory]
     [InlineData("size: 300pt 174pt; margin: 12pt", 300, 174, 12, 12)]
-    // A4 landscape is 841.89 x 595.28 pt, printed 841.92 x 595.2; a top margin of 10 mm (37.8 px) is laid out at 38 px.
-    [InlineData("size: A4 landscape; margin: 10mm 20mm", 841.92, 595.2, 28.5, 72 / 25.4 * 20)]
+    // A4 landscape is 841.89 x 595.28 pt: whole points (842 x 595), then 1/300 inch. A top margin of 10 mm (37.8 px) is
+    // laid out at 38 px; the left one of 20 mm (75.6 px) at 76 px, and the area, 1122.52 - 151.16 px, is 972 px wide.
+    [InlineData("size: A4 landscape; margin: 10mm 20mm", 841.92, 594.96, 28.5, 841.92 - 786)]
     [InlineData("size: 200pt 100pt; margin-top: 6pt", 199.92, 100.08, 6, 0)]
+    [InlineData("size: A5", 420, 594.96, 0, 0)]
+    [InlineData("size: 595.5pt 842.25pt", 595.92, 841.92, 0, 595.92 - 595.5)]
+    [InlineData("size: 133.5px 100.5px", 100.08, 75.12, 0, 0)]
+    // 11.75 pt is 15.67 px: the area starts at 16 px and is 400 - 31.31 px, rounded up: 369 px, so it ends at 385 px.
+    [InlineData("size: 300pt 84pt; margin: 11.75pt", 300, 84, 12, 300 - 288.75)]
+    // Half a pixel: a 15.5 px margin starts the area at 16 px; 400.5 - 32 px leaves 368.5 px, an area of 369 px.
+    [InlineData("size: 300pt 84pt; margin: 11.625pt", 300, 84, 12, 300 - 288.75)]
+    [InlineData("size: 300.375pt 84pt; margin: 12pt", 300, 84, 12, 300 - 288.75)]
+    [InlineData("size: 300pt 100pt; margin: 10pt 10.3pt", 300, 100.08, 9.75, 300 - 290.25)]
     [InlineData("margin: 12pt; font-family: Lato; color: red; counter-reset: page", 612, 792, 12, 12)]
     public void A_page_rule_without_a_selector_gives_the_size_rounded_as_Chromium_prints_it_and_the_margins(string declarations, double width, double height, double top, double right)
     {
@@ -290,6 +300,20 @@ public class BoxGenerationTests
         page.Height.Points.Should().BeApproximately(height, 1e-9);
         page.Margins.Top.Points.Should().BeApproximately(top, 1e-9);
         page.Margins.Right.Points.Should().BeApproximately(right, 1e-9);
+    }
+
+    [Theory]
+    // 300 pt (400 px) with 10 pt margins (13.33 px): the area is 373.34 px, rounded up to 374 px (case h-page-area-bottom).
+    [InlineData("size: 300pt 300pt; margin: 10pt", 280.5)]
+    // 68 pt (90.67 px) with 12 pt margins: 58.67 px, rounded up to 59 px (case h-page-area-continued).
+    [InlineData("size: 300pt 68pt; margin: 12pt", 44.25)]
+    // A sheet smaller than the area: 1123 px (842.25 pt) on a sheet of 841.92 pt; the bottom margin is 0, not negative.
+    [InlineData("size: A4; margin: 0", 841.92)]
+    public void The_page_area_is_whole_pixels_rounded_up_from_what_the_margins_leave(string declarations, double areaHeight)
+    {
+        var page = Model(Doc("<p>a</p>", $"@page {{ {declarations} }}")).Page;
+        page.AreaHeight.Points.Should().BeApproximately(areaHeight, 1e-9);
+        page.Margins.Bottom.Points.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Theory]

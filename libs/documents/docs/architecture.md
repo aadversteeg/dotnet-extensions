@@ -617,11 +617,12 @@ element refused by its own rule is left out (`HtmlBoxGenerator`, remarks).
 **The page.** Without an `@page` rule the page is what Chromium prints with the reference tool's settings: US Letter,
 612 × 792 pt, no margins (case `h-default-page`). An `@page` rule without a selector gives `size` and the margins;
 declarations that reach only the page-margin boxes (inherited properties, the counters) have no effect; any other
-declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Chromium prints the
-sheet's sides rounded to 1/300 inch and lays out the left and top margins at whole CSS pixels (cases
-`h-page-margin-fraction`, `h-page-margin-round`, `f-theano-13-ab`, `fr-forced-margin-a4`); box generation does the
-same. Where Chromium ends the page area on the right and at the bottom with a margin that is not a whole pixel is not
-measured yet: those margins are kept as given.
+declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Box generation makes
+the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
+at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
+leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
+prints 594.96 × 841.92 pt). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
+area reaches past the sheet (cases `h-page-size-*`, `h-page-area-*`, `h-page-margin-*`).
 
 **The status file.** `tools/reference/chromium/html-status.txt` has one line per reference case, written by
 `UnitTests.Extensions.Documents.Html/Boxes/CaseStatusTests.cs` (with `DOCUMENTS_UPDATE_HTML_STATUS=1`): the case runs
