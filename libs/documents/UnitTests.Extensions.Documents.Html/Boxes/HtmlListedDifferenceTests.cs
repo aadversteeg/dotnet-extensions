@@ -43,4 +43,35 @@ public class HtmlListedDifferenceTests
         Chromium(name).Pages.Single().Words.Should().OnlyContain(word => System.Math.Abs(word.FontSize - (12 / scale)) < 0.005,
             "Chromium prints every word of the page shrunk by one factor");
     }
+
+    /// <summary>
+    /// Chromium shapes text across the border of an inline element when the font is the same, so the pair kerns as in
+    /// one run; the engine shapes each run of text alone (the model's runs end at the element's border). Line 1 of each
+    /// case is the same text in one run: there both agree.
+    /// </summary>
+    [Fact]
+    public void Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it()
+    {
+        // <p>To</p><p>T<span>o</span></p>: "To" ends at 22.176 kerned, 23.64 in the engine across the span.
+        // The engine draws the two runs of line 2 as two words: the line ends where its last word does.
+        var (engine, chromium) = (LineEnds(Engine("h-kern-span")), LineEnds(Chromium("h-kern-span")));
+        engine[0].Should().BeApproximately(chromium[0], HtmlCases.Bound);
+        chromium[1].Should().BeApproximately(chromium[0], 0.01, "Chromium kerns T and o across the span");
+        (engine[1] - chromium[1]).Should().BeGreaterThan(1, "the engine does not");
+
+        // <p> <b> x </b> <b> y </b> </p>, then <p><b>x y</b></p>: "y" starts at 18.633 in Chromium in both, 18.93 in the
+        // engine in the first (the space and the y are in two runs).
+        var (engineY, chromiumY) = (Starts(Engine("h-kern-bold-spaces"), "y"), Starts(Chromium("h-kern-bold-spaces"), "y"));
+        chromiumY[0].Should().BeApproximately(chromiumY[1], 0.01, "Chromium shapes the space and the y of two elements as one run");
+        engineY[1].Should().BeApproximately(chromiumY[1], HtmlCases.Bound);
+        (engineY[0] - chromiumY[0]).Should().BeGreaterThan(0.2, "the engine does not");
+    }
+
+    /// <summary>Where each line of the only page ends: its last word's end, lines in order.</summary>
+    private static double[] LineEnds(PrintedPages pages) =>
+        [.. pages.Pages.Single().Words.GroupBy(word => word.Baseline).OrderBy(line => line.Key).Select(line => line.Max(word => word.X1))];
+
+    /// <summary>Where each word of a text starts on the only page, in reading order.</summary>
+    private static double[] Starts(PrintedPages pages, string text) =>
+        [.. pages.Pages.Single().Words.Where(word => word.Text == text).Select(word => word.X0)];
 }

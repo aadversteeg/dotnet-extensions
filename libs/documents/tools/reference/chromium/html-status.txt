@@ -260,6 +260,8 @@ h-char-ps refused Documents.Html.Unsupported.Character U+2029 at 3:4
 h-char-tab equal
 h-default-page equal
 h-font-url-sheet equal
+h-kern-bold-spaces listed Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it: page 1 'y' x0 18.93, Chromium 18.633 (print.txt)
+h-kern-span listed Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it: page 1 'To' x1 23.64, Chromium 22.179 (print.txt)
 h-kerning-auto equal
 h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none at 2:74
 h-kerning-normal equal

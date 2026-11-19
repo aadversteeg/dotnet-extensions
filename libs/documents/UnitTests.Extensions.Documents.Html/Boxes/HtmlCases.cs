@@ -54,6 +54,8 @@ internal static class HtmlCases
         ["fr-old-blank-last-page"] = "An_empty_box_past_the_end_of_the_last_page_adds_no_page",
         ["h-wide-word-little"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
         ["h-wide-word-much"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
+        ["h-kern-span"] = "Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it",
+        ["h-kern-bold-spaces"] = "Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,

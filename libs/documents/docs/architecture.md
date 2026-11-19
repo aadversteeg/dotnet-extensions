@@ -676,6 +676,10 @@ Each is documented next to its code as well.
   factor of 1.5, and clips past it (`CalculateOverflowShrinkForPrinting`, pagination_utils.cc); the engine has no page
   scale and lets the content stick out (cases `h-wide-word-little`, `h-wide-word-much`, listed;
   `HtmlListedDifferenceTests`).
+- **Kerning across the border of an inline element (HTML):** Chromium shapes text across the border of an inline
+  element when the font is the same (`T<span>o</span>` kerns as `To`); the engine shapes each run alone, so such a pair
+  is not kerned (1.46 pt wider for "To" in Lato at 12 pt; cases `h-kern-span`, `h-kern-bold-spaces`, listed;
+  `HtmlListedDifferenceTests`).
 
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
