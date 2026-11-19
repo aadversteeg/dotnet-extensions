@@ -43,4 +43,15 @@ public sealed record TextFormat(
 
     /// <summary>Whether text wraps at its soft wrap opportunities (CSS <c>text-wrap-mode</c>, CSS Text 4, inherited).</summary>
     public TextWrapMode? TextWrapMode { get; init; }
+
+    /// <summary>The lines the element draws across its text (CSS <c>text-decoration-line</c> and <c>text-decoration-color</c>,
+    /// CSS Text Decoration 3 §2): not inherited, but passed on to all the text inside the element, in the element's own font.
+    /// Null when the element sets none.</summary>
+    public ValueList<TextDecorationFormat>? Decorations { get; init; }
 }
+
+/// <summary>One line an element draws across its text (CSS Text Decoration 3 §2.1).</summary>
+/// <param name="Line">The line.</param>
+/// <param name="Color">Its colour (<c>text-decoration-color</c>), or null for the element's text colour (the initial
+/// value, <c>currentcolor</c>).</param>
+public sealed record TextDecorationFormat(TextDecorationLine Line, Color? Color = null);

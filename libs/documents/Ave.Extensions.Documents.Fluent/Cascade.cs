@@ -43,6 +43,7 @@ internal static class Cascade
         LineHeight = own.Text.LineHeight ?? shared.Text.LineHeight,
         WhiteSpaceCollapse = own.Text.WhiteSpaceCollapse ?? shared.Text.WhiteSpaceCollapse,
         TextWrapMode = own.Text.TextWrapMode ?? shared.Text.TextWrapMode,
+        Decorations = own.Text.Decorations ?? shared.Text.Decorations,
     };
 
     /// <summary>The box values an element specifies; <paramref name="defaults"/> fills what neither the element nor its

@@ -1,3 +1,4 @@
+using System.Linq;
 using Ave.Extensions.Documents.Core;
 
 namespace Ave.Extensions.Documents.Fluent;
@@ -127,6 +128,40 @@ public static class TextModifiers
     /// <returns>A copy with the value set.</returns>
     public static T TextWrapMode<T>(this T element, TextWrapMode wrap) where T : IFormatted<T> =>
         element.WithText(element.Format.Text with { TextWrapMode = wrap });
+
+    /// <summary>Draws a line under the element's text (CSS <c>text-decoration-line: underline</c>, CSS Text Decoration 3 §2.1):
+    /// across all the text inside the element, at the place and in the thickness the element's own font gives, one straight
+    /// line also where the text inside changes size; not under an image. Set again, the colour is replaced.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="color">The line's colour (<c>text-decoration-color</c>); the element's text colour when not given.</param>
+    /// <returns>A copy with the line set.</returns>
+    public static T Underline<T>(this T element, Color? color = null) where T : IFormatted<T> =>
+        element.WithDecoration(new TextDecorationFormat(TextDecorationLine.Underline, color));
+
+    /// <summary>Draws a line through the element's text (CSS <c>text-decoration-line: line-through</c>): in the element's font
+    /// and painted over the glyphs; it follows the middle of the text inside where its size changes.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="color">The line's colour; the element's text colour when not given.</param>
+    /// <returns>A copy with the line set.</returns>
+    public static T LineThrough<T>(this T element, Color? color = null) where T : IFormatted<T> =>
+        element.WithDecoration(new TextDecorationFormat(TextDecorationLine.LineThrough, color));
+
+    /// <summary>Draws a line over the element's text (CSS <c>text-decoration-line: overline</c>): in the element's font, at the
+    /// top of the text inside.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="color">The line's colour; the element's text colour when not given.</param>
+    /// <returns>A copy with the line set.</returns>
+    public static T Overline<T>(this T element, Color? color = null) where T : IFormatted<T> =>
+        element.WithDecoration(new TextDecorationFormat(TextDecorationLine.Overline, color));
+
+    private static T WithDecoration<T>(this T element, TextDecorationFormat line) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with
+        {
+            Decorations = [.. (element.Format.Text.Decorations ?? []).Where(set => set.Line != line.Line), line],
+        });
 
     private static T WithText<T>(this T element, TextFormat text) where T : IFormatted<T> =>
         element.WithFormat(element.Format with { Text = text });

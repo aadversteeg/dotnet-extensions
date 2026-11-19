@@ -86,6 +86,14 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one of TextWrapMode.", wrap.ToString(), "text-wrap-mode", source);
         }
 
+        foreach (var line in format.Decorations ?? [])
+        {
+            if (line is null || !Enum.IsDefined(line.Line))
+            {
+                yield return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, "The text decoration line is not one of TextDecorationLine.", line?.Line.ToString() ?? "null", "text-decoration", source);
+            }
+        }
+
         // CSS Fragmentation 3 §3.3: "Only positive integers are allowed as values of orphans and widows."
         if (format.Orphans is int orphans and < 1)
         {

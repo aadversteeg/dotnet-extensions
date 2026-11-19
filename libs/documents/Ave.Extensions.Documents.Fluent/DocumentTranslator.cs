@@ -59,7 +59,7 @@ public static class DocumentTranslator
             },
             format.TextAlign ?? TextAlign.Left,
             format.Orphans ?? BoxStyle.Initial.Orphans,
-            format.Widows ?? BoxStyle.Initial.Widows);
+            format.Widows ?? BoxStyle.Initial.Widows).Decorated(format);
         var root = Children(document.Body, new NodeId(1), inherited).OnSuccessMap(children =>
             new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
         var page = PageStyle(document.Page, new NodeId(1 + document.Body.Sum(NodeCount)), inherited);
@@ -88,7 +88,7 @@ public static class DocumentTranslator
         public Inherited With(TextFormat format)
         {
             var fontSize = format.FontSize ?? Text.FontSize;
-            return new(
+            return new Inherited(
                 new TextStyle(
                     format.FontFamily ?? Text.FontFamily,
                     fontSize,
@@ -99,11 +99,40 @@ public static class DocumentTranslator
                     LineHeight = format.LineHeight?.Computed(fontSize) ?? Text.LineHeight,
                     WhiteSpaceCollapse = format.WhiteSpaceCollapse ?? Text.WhiteSpaceCollapse,
                     TextWrapMode = format.TextWrapMode ?? Text.TextWrapMode,
+                    Decorations = Text.Decorations,
                 },
                 format.TextAlign ?? Align,
                 format.Orphans ?? Orphans,
-                format.Widows ?? Widows);
+                format.Widows ?? Widows).Decorated(format);
         }
+
+        /// <summary>The decorations an element applies (CSS Text Decoration 3 §2: "When specified on or propagated to a
+        /// block container that establishes an inline formatting context, the decorations are propagated to an anonymous inline box
+        /// that wraps all the in-flow inline-level children"): those it gets from its ancestors, outermost first,
+        /// then its own lines in the order Chromium paints the lines of one box (underline, overline, line-through; case
+        /// <c>dl-lines</c>), each in this element's font, coloured as set or in its text colour.</summary>
+        public Inherited Decorated(TextFormat format) =>
+            format.Decorations is not { Count: > 0 } lines
+                ? this
+                : this with
+                {
+                    Text = Text with
+                    {
+                        Decorations =
+                        [
+                            .. Text.Decorations,
+                            .. lines.OrderBy(line => PaintOrder(line.Line)).Select(line =>
+                                new TextDecoration(line.Line, line.Color ?? Text.Color, Text.FontFamily, Text.FontSize, Text.FontWeight, Text.FontStyle)),
+                        ],
+                    },
+                };
+
+        private static int PaintOrder(TextDecorationLine line) => line switch
+        {
+            TextDecorationLine.Underline => 0,
+            TextDecorationLine.Overline => 1,
+            _ => 2,
+        };
     }
 
     /// <summary>
