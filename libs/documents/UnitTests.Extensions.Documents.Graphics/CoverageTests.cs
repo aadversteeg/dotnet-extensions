@@ -304,6 +304,24 @@ public class CoverageTests
         polygon.Should().HaveCount(Flattening.MaxPiecesPerCurve + 1);
     }
 
+    [Fact]
+    public void Known_limit_far_from_the_origin_a_pixel_can_be_one_8_bit_step_off()
+    {
+        // The same triangle at the origin and moved by 2^30 − 8 pixels on both axes: its points are multiples of 2^-20, so
+        // they are the same points exactly, and the box holds the whole triangle. The exact share of pixel (4, 4) is
+        // 0.272549028878163 (255 times that is 69.5000024), so 70 is right; at the origin it is 70. Far out the row
+        // integral interpolates x where an edge crosses a row line with only about 2^-22 of a pixel left in a double,
+        // and the pixel is drawn 69 with success. When that is repaired, this test changes to 70.
+        const double offset = (1 << 30) - 8;
+        (double X, double Y)[] triangle = [(6.0392045974731445, 0.3825511932373047), (3.751575469970703, 7.563164710998535), (6.058171272277832, 7.639092445373535)];
+        var near = Cover(Polygon(triangle), Affine.Identity, FillRule.NonZero, new PixelBox(0, 0, 8, 8));
+        var far = Canvas.Coverage(Polygon([.. triangle.Select(point => (point.X + offset, point.Y + offset))]), Affine.Identity, FillRule.NonZero, new PixelBox(offset, offset, offset + 8, offset + 8));
+
+        near.At(4, 4).Should().Be(70);
+        far.IsSuccess.Should().BeTrue();
+        far.Value.At((int)offset + 4, (int)offset + 4).Should().Be(69);
+    }
+
     private static double DistanceToPolyline(List<Vertex> polyline, double x, double y)
     {
         var best = double.PositiveInfinity;

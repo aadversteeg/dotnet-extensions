@@ -316,30 +316,42 @@ internal static class RasterComparison
 
     /// <summary>
     /// The page with every text baseline moved to the pixel row a viewer draws it on (<paramref name="row"/>, from the
-    /// baseline in pixels): MuPDF rounds a glyph's baseline to the nearest whole pixel, poppler floors it (measured,
-    /// tools/reference/raster/README.md). A test-side transformation of the page model, to show that this is all that
-    /// separates the engine's text from the viewer's.
+    /// baseline in pixels), for glyph runs whose em is at most <paramref name="largestEm"/> pixels: MuPDF rounds a
+    /// glyph's baseline to the nearest whole pixel up to an em of 256 pixels and draws a larger glyph at its exact place,
+    /// poppler floors it at every size (measured, tools/reference/raster/README.md). A test-side transformation of the page
+    /// model, to show that this is all that separates the engine's text from the viewer's.
     /// </summary>
     /// <param name="page">The page.</param>
     /// <param name="resolution">Pixels per inch.</param>
     /// <param name="row">The viewer's rule.</param>
+    /// <param name="largestEm">The largest em, in pixels, the viewer puts on a whole row (<see cref="MupdfLargestEmOnRow"/>,
+    /// <see cref="PopplerLargestEmOnRow"/>); a run with a larger em keeps its place.</param>
     /// <returns>The page with moved glyph runs.</returns>
-    public static Page BaselinesOnPixelRows(Page page, double resolution, Func<double, double> row)
+    public static Page BaselinesOnPixelRows(Page page, double resolution, Func<double, double> row, double largestEm)
     {
         var scale = resolution / 72;
         return page with
         {
-            Items = [.. page.Items.Select(item => item is GlyphRun run
+            Items = [.. page.Items.Select(item => item is GlyphRun run && run.FontSize * scale <= largestEm
                 ? run with { Origin = new Point(run.Origin.X, row(run.Origin.Y * scale) / scale) }
                 : item)],
         };
     }
 
-    /// <summary>MuPDF's row for a baseline: the nearest whole pixel, a half going down the page.</summary>
+    /// <summary>MuPDF's row for a baseline: the nearest whole pixel, a half going down the page (as MuPDF does at 72 and
+    /// 96 dpi; at 120 and 300 dpi it sends an exact half either way).</summary>
     public static double MupdfRow(double baseline) => Math.Floor(baseline + 0.5);
 
     /// <summary>Poppler's row for a baseline: the whole pixel above it (floored).</summary>
     public static double PopplerRow(double baseline) => Math.Floor(baseline);
+
+    /// <summary>The largest em, in pixels, whose baseline MuPDF puts on a whole row: 256. An em of 256.0001 pixels is drawn
+    /// at its exact place, at 72, 96 and 300 dpi and in Lato and Theano Didot alike (measured,
+    /// tools/reference/raster/README.md; <c>RasterReferenceTests</c> holds MuPDF to it).</summary>
+    public const double MupdfLargestEmOnRow = 256;
+
+    /// <summary>Poppler floors the baseline at every size measured (an em up to 833 pixels), so no run keeps its place.</summary>
+    public const double PopplerLargestEmOnRow = double.PositiveInfinity;
 
     /// <summary>The distance as the comparison above computes it, with the pixels <paramref name="leftOut"/> marks left out of
     /// the mean squared error and the counts over 32, 64 and 128 (the away-from-edges metric is the same).</summary>

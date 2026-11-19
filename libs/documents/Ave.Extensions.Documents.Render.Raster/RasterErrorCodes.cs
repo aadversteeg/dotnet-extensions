@@ -30,7 +30,11 @@ public static class RasterErrorCodes
 
     /// <summary>An image whose rectangle reaches so far from the page's origin, at the resolution asked for, that its
     /// pixel edges cannot be placed within a fraction of a pixel (beyond <c>Canvas.MaxImageReach</c>, 2^40 pixels; about
-    /// 7.9 × 10^11 pt at 96 dpi). The page model allows it and the PDF back-end writes it; the raster back-end refuses
-    /// it rather than draw it wrong. Metadata: Value (the reach in pixels).</summary>
+    /// 8.25 × 10^11 pt at 96 dpi). The page model allows it and the PDF back-end writes it; the raster back-end refuses
+    /// it rather than draw it wrong. The reach is counted from the page's origin, not from the page: along x it is
+    /// (|x| + width) × resolution / 72 for a rectangle at x, and the same along y. So an image centred on the origin
+    /// reaches 1.5 times its width and is refused from two thirds of the width an image that starts at the origin may
+    /// have; and an image that lies wholly off the page beyond the reach is refused although it would show nothing,
+    /// where a rectangle at the same place is drawn. Metadata: Value (the reach in pixels).</summary>
     public static readonly ErrorCode ImageOutOfReach = _ / "ImageOutOfReach";
 }

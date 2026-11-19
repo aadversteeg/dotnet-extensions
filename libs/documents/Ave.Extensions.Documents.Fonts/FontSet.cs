@@ -12,7 +12,8 @@ namespace Ave.Extensions.Documents.Fonts;
 /// the machine: output then depends only on the input, and a missing font is an error instead of a silent
 /// substitution.
 /// </summary>
-/// <param name="Fonts">The fonts, in the order the caller gave them.</param>
+/// <param name="Fonts">The fonts, in the order the caller gave them. A default array is an empty set; a set with a missing
+/// (null) font is refused by <see cref="Find(string, FontWeight, FontStyle)"/>.</param>
 public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
 {
     /// <summary>
@@ -33,10 +34,21 @@ public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
     /// <param name="family">The family name, for example <c>Lato</c>.</param>
     /// <param name="weight">The weight, for example <see cref="FontWeight.Bold"/>.</param>
     /// <param name="style">Upright or italic.</param>
-    /// <returns>The font, or a <see cref="FontErrorCodes.NotFound"/> error.</returns>
+    /// <returns>The font, or a <see cref="FontErrorCodes.NotFound"/> error, also when an entry of the set is missing
+    /// (null), whatever is asked for.</returns>
     public Result<TrueTypeFont, Error> Find(string family, FontWeight weight, FontStyle style)
     {
-        var match = Fonts.FirstOrDefault(font =>
+        var fonts = Items;
+        var missing = fonts.IndexOf(null!);
+        if (missing >= 0)
+        {
+            return Result<TrueTypeFont, Error>.Failure(
+                new Error(FontErrorCodes.NotFound, $"Font {missing + 1} of the font set is missing, so no font for family '{family}' is looked up.")
+                    .With(ErrorMetadataKeys.FontName, family)
+                    .With(ErrorMetadataKeys.Value, weight + StyleSuffix(style == FontStyle.Italic)));
+        }
+
+        var match = fonts.FirstOrDefault(font =>
             string.Equals(font.Names.Family, family, StringComparison.OrdinalIgnoreCase)
             && font.Metrics.WeightClass == weight.Value
             && font.Metrics.IsItalic == (style == FontStyle.Italic));
@@ -51,10 +63,13 @@ public sealed record FontSet(ImmutableArray<TrueTypeFont> Fonts)
                     .With(ErrorMetadataKeys.Value, weight + StyleSuffix(style == FontStyle.Italic)));
     }
 
+    /// <summary>The fonts, with a default array read as no fonts.</summary>
+    private ImmutableArray<TrueTypeFont> Items => Fonts.IsDefault ? [] : Fonts;
+
     private static string StyleSuffix(bool italic) => italic ? " italic" : string.Empty;
 
     private string Describe() =>
-        Fonts.IsEmpty
+        Items.IsEmpty
             ? "none"
-            : string.Join(", ", Fonts.Select(font => $"{font.Names.Family} {font.Metrics.WeightClass}{StyleSuffix(font.Metrics.IsItalic)}"));
+            : string.Join(", ", Items.Select(font => $"{font.Names.Family} {font.Metrics.WeightClass}{StyleSuffix(font.Metrics.IsItalic)}"));
 }

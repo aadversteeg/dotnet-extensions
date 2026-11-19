@@ -110,8 +110,9 @@ taller than a page sliced over pages, and a timesheet with tables over several p
 ## Preview images
 
 The raster back-end draws the same pages the PDF has, as pixels: glyphs as their outlines at their exact positions,
-rectangles and images, every edge anti-aliased by the exact share of the pixel it covers (exact where no two contours
-overlap inside a pixel; `docs/architecture.md` states the error where they do). Lay the document out once
+rectangles and images, every edge anti-aliased by the exact share of the pixel it covers, also where contours overlap
+or cross inside a pixel (a shape whose overlaps take more work than a fill may do is refused; `docs/architecture.md`
+states the limit). Lay the document out once
 and give the pages to both back-ends (with `invoice`, `fonts` and `options` from the example above):
 
 ```csharp

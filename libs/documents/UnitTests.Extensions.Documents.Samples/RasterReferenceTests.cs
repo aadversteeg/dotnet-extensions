@@ -63,9 +63,10 @@ public sealed class RasterReferenceTests
         /// error and the counts (<see cref="RasterComparison.ImageInteriors"/>).</summary>
         ImageInterior = 1,
 
-        /// <summary>Text baselines: the viewers draw a glyph's baseline on a whole pixel row (MuPDF the nearest, poppler the
-        /// one above), the engine where the page model puts it. Removed by drawing the engine's page again with every
-        /// baseline on the viewer's row (<see cref="RasterComparison.BaselinesOnPixelRows"/>).</summary>
+        /// <summary>Text baselines: the viewers draw a glyph's baseline on a whole pixel row (MuPDF the nearest, up to an em
+        /// of 256 pixels; poppler the one above, at every size), the engine where the page model puts it. Removed by drawing
+        /// the engine's page again with every such baseline on the viewer's row
+        /// (<see cref="RasterComparison.BaselinesOnPixelRows"/>).</summary>
         BaselineOnWholePixel = 2,
     }
 
@@ -79,7 +80,7 @@ public sealed class RasterReferenceTests
     private static readonly (string Name, double Resolution, int Page, string Raw, Cause Causes)[] NamedExceptions =
     [
         ("sample-c-sliced", 96, 2, "0 | 39.60 | 835 / 669 / 270 | 0 | 76.09 | 1218 / 957 / 564 | 0 | 18.11 | 628 / 371 / 83", Cause.ImageInterior),
-        ("sample-c-sliced", 96, 3, "0 | 79.33 | 1504 / 666 / 427 | 0 | 232.70 | 2323 / 1604 / 873 | 0 | 241.29 | 1895 / 1181 / 588", Cause.ImageInterior | Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 96, 3, "0 | 79.33 | 1504 / 666 / 427 | 0 | 232.70 | 2323 / 1604 / 873 | 0 | 241.29 | 1895 / 1181 / 588", Cause.BaselineOnWholePixel),
         ("sample-c-sliced", 96, 5, "0 | 83.40 | 1170 / 721 / 25 | 0 | 93.84 | 1517 / 750 / 28 | 0 | 26.25 | 856 / 140 / 0", Cause.BaselineOnWholePixel),
         ("sample-c-sliced", 96, 6, "0 | 9.25 | 121 / 81 / 4 | 0 | 45.33 | 862 / 813 / 4 | 0 | 42.72 | 757 / 736 / 0", Cause.BaselineOnWholePixel),
         ("sample-c-sliced", 96, 7, "0 | 26.82 | 993 / 484 / 37 | 0 | 70.31 | 1769 / 1512 / 150 | 0 | 48.91 | 1358 / 979 / 3", Cause.ImageInterior | Cause.BaselineOnWholePixel),
@@ -157,6 +158,41 @@ public sealed class RasterReferenceTests
         }
     }
 
+    /// <summary>
+    /// The size up to which MuPDF puts a glyph's baseline on a whole pixel row, which the baseline cause relies on
+    /// (<see cref="RasterComparison.MupdfLargestEmOnRow"/>): the letter "H" with its baseline on a whole row and 0.3
+    /// pixel below it gives two equal pages up to an em of 256 pixels; above it MuPDF draws the glyph at its exact place.
+    /// At 72 dpi, where a point is a pixel.
+    /// </summary>
+    [DockerTheory]
+    [InlineData(256, true)]
+    [InlineData(256.01, false)]
+    public void MuPDF_puts_a_baseline_on_a_whole_pixel_row_up_to_an_em_of_256_pixels(double em, bool onRow)
+    {
+        var font = TestFonts.Regular;
+        var glyph = font.GlyphFor(new Rune('H')).Value;
+        Page At(double fraction) => new(
+            new Size((1.2 * em) + 20, (2.5 * em) + 20),
+            [new GlyphRun(font, em, Color.Black, new Point(10, (2 * em) + 10 + fraction), [new PositionedGlyph(glyph, 0, "H")])]);
+        var pages = new PageDocument(new DocumentMetadata("baseline", null), [At(0), At(0.3)]);
+        var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-raster-").FullName;
+        try
+        {
+            File.WriteAllBytes(Path.Combine(folder, "document.pdf"), [.. PdfRenderer.Render(pages, new PdfRenderOptions(SampleOutput.Options.CreationDate)).Value]);
+            var (exitCode, output) = Docker.Run(
+                ["run", "--rm", .. Docker.UserArguments, "-v", $"{folder}:/work", ReferenceTools.Image, "mutool", "draw", "-q", "-r", "72", "-A", "8", "-o", "/work/mupdf-%d.png", "/work/document.pdf"],
+                TimeSpan.FromMinutes(2));
+            exitCode.Should().Be(0, output);
+            var drawn = Renders(folder, "mupdf-");
+
+            drawn[0].Pixels.SequenceEqual(drawn[1].Pixels).Should().Be(onRow, $"an em of {em} pixels, baselines 0.3 pixel apart");
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     private static void Compare(string name, PageDocument pages, double resolution)
     {
         var engine = PageRasterizer.Render(pages, new RasterOptions(resolution)).Value;
@@ -188,8 +224,16 @@ public sealed class RasterReferenceTests
                 var judged = toPoppler;
                 if ((name, resolution, index + 1) == (KnownException.Name, KnownException.Resolution, KnownException.Page))
                 {
-                    toPoppler.Over128.Should().BeLessThanOrEqualTo(KnownException.EngineToPoppler, "the known exception must not grow");
-                    between.Over128.Should().Be(KnownException.Viewers, "the known exception was measured against this count");
+                    if (toPoppler.Over128 > KnownException.EngineToPoppler)
+                    {
+                        breaches.Add(FormattableString.Invariant($"page {index + 1}: the known exception grew: {toPoppler.Over128} pixels over 128 steps from poppler, pinned {KnownException.EngineToPoppler}"));
+                    }
+
+                    if (between.Over128 != KnownException.Viewers)
+                    {
+                        breaches.Add(FormattableString.Invariant($"page {index + 1}: the viewers' count of the known exception changed: {between.Over128}, pinned {KnownException.Viewers}"));
+                    }
+
                     judged = toPoppler with { Over128 = between.Over128 };
                 }
 
@@ -206,8 +250,14 @@ public sealed class RasterReferenceTests
                 var named = NamedExceptions.Where(exception => (exception.Name, exception.Resolution, exception.Page) == (name, resolution, index + 1)).ToList();
                 if (named.Count == 1)
                 {
-                    // The row as measured, then the rule with its named causes removed.
-                    $"{toMupdf} | {toPoppler} | {between}".Should().Be(named[0].Raw, $"{name} page {index + 1} at {dpi} dpi is a named exception with these numbers");
+                    // The row as measured, then the rule with its named causes removed. A changed row is a breach, and the
+                    // comparison goes on, so one run reports every page that moved.
+                    var raw = $"{toMupdf} | {toPoppler} | {between}";
+                    if (raw != named[0].Raw)
+                    {
+                        breaches.Add($"page {index + 1}: a named exception with other numbers than pinned: {raw}, pinned {named[0].Raw}");
+                    }
+
                     var (m, p, b) = Adjusted(pages.Pages[index], resolution, named[0].Causes, mupdf[index], poppler[index], edges);
                     table.AppendLine(CultureInfo.InvariantCulture, $"| {name} | {dpi} | {index + 1} ({named[0].Causes} removed) | {m} | {p} | {b} |");
                     breaches.AddRange(RasterComparison.Breaches(m, p, b).Select(breach => $"page {index + 1} with {named[0].Causes} removed: {breach}"));
@@ -224,7 +274,8 @@ public sealed class RasterReferenceTests
                 File.AppendAllText(Path.Combine(outFolder, "distances.md"), table.ToString());
             }
 
-            breaches.Should().BeEmpty($"{name} at {dpi} dpi (first reference MuPDF, second poppler):\n{table}");
+            // Every breach in the message: the assertion itself names only the first.
+            breaches.Should().BeEmpty($"{name} at {dpi} dpi (first reference MuPDF, second poppler) has {breaches.Count} breaches:\n{string.Join("\n", breaches)}\n{table}");
         }
         finally
         {
@@ -238,17 +289,17 @@ public sealed class RasterReferenceTests
         Page page, double resolution, Cause causes,
         (int Width, int Height, int Channels, byte[] Pixels) mupdf, (int Width, int Height, int Channels, byte[] Pixels) poppler, (int Width, int Height, bool[] AtEdge) edges)
     {
-        (int, int, int, byte[]) Engine(Func<double, double> row)
+        (int, int, int, byte[]) Engine(Func<double, double> row, double largestEm)
         {
-            var drawn = causes.HasFlag(Cause.BaselineOnWholePixel) ? RasterComparison.BaselinesOnPixelRows(page, resolution, row) : page;
+            var drawn = causes.HasFlag(Cause.BaselineOnWholePixel) ? RasterComparison.BaselinesOnPixelRows(page, resolution, row, largestEm) : page;
             var image = PageRasterizer.Render(drawn, new RasterOptions(resolution)).Value;
             return (image.Width, image.Height, 4, image.Pixels.ToArray());
         }
 
         var leftOut = causes.HasFlag(Cause.ImageInterior) ? RasterComparison.ImageInteriors(page, resolution) : new bool[edges.Width * edges.Height];
         return (
-            RasterComparison.Compare(Engine(RasterComparison.MupdfRow), mupdf, edges, leftOut),
-            RasterComparison.Compare(Engine(RasterComparison.PopplerRow), poppler, edges, leftOut),
+            RasterComparison.Compare(Engine(RasterComparison.MupdfRow, RasterComparison.MupdfLargestEmOnRow), mupdf, edges, leftOut),
+            RasterComparison.Compare(Engine(RasterComparison.PopplerRow, RasterComparison.PopplerLargestEmOnRow), poppler, edges, leftOut),
             RasterComparison.Compare(mupdf, poppler, edges, leftOut));
     }
 

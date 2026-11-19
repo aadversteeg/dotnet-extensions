@@ -114,29 +114,27 @@ public class ClipBoxCoverageTests
     [MemberData(nameof(ClipThroughTheOverlap))]
     public void A_clip_edge_through_the_inside_of_two_overlapping_contours_cuts_them_exactly(FillRule rule, double top)
     {
-        // The clip's top edge runs through the overlap of the stem and the bar, where the winding number is 2: the fill rule
-        // is taken over the part of each cell inside the clip, so the row it crosses is exact. Exact everywhere except in
-        // the two cells where an edge of each contour crosses inside the clip, the stem's sides and the bar's bottom,
-        // (20, 23) and (26, 23): the known defect on main of overlapping contours (the doubly covered part counts
-        // twice), repaired in the raster follow-up; the same with and without the clip (pinned).
+        // The clip's top edge runs through the overlap of the stem and the bar, where the winding number is 2; every pixel
+        // is exact, also the two where an edge of each contour crosses inside the clip, the stem's sides and the bar's
+        // bottom, (20, 23) and (26, 23), with and without the clip (pinned: the exact areas, rounded).
         var box = new PixelBox(11.35, top, 29.85, 34.65);
         var path = Polygons(Stem, Bar);
         var mask = Canvas.Coverage(path, Affine.Identity, rule, box).Value;
         var whole = Canvas.Coverage(path, Affine.Identity, rule, new PixelBox(0, 0, 48, 48)).Value;
-        (int X, int Y)[] limit = [(20, 23), (26, 23)];
+        (int X, int Y)[] crossed = [(20, 23), (26, 23)];
 
-        ShouldMatch(mask, box, (l, t, r, b) => limit.Contains(((int)Math.Floor(l), (int)Math.Floor(t))) ? mask.At((int)Math.Floor(l), (int)Math.Floor(t)) / 255.0 : StemAndBar(rule, l, t, r, b));
-        limit.Select(cell => mask.At(cell.X, cell.Y)).Should().Equal(limit.Select(cell => whole.At(cell.X, cell.Y)));
-        limit.Select(cell => mask.At(cell.X, cell.Y)).Should().Equal((byte)255, (byte)178);
-        limit.Select(cell => Math.Round(255 * StemAndBar(rule, cell.X, cell.Y, cell.X + 1, cell.Y + 1), 1)).Should().Equal(rule == FillRule.NonZero ? [193.8, 147.9] : [132.6, 117.3]);
+        ShouldMatch(mask, box, (l, t, r, b) => StemAndBar(rule, l, t, r, b));
+        crossed.Select(cell => mask.At(cell.X, cell.Y)).Should().Equal(crossed.Select(cell => whole.At(cell.X, cell.Y)));
+        crossed.Select(cell => Math.Round(255 * StemAndBar(rule, cell.X, cell.Y, cell.X + 1, cell.Y + 1), 1)).Should().Equal(rule == FillRule.NonZero ? [193.8, 147.9] : [132.6, 117.3]);
+        crossed.Select(cell => mask.At(cell.X, cell.Y)).Should().Equal(rule == FillRule.NonZero ? [(byte)194, (byte)148] : [(byte)133, (byte)117]);
     }
 
     [Theory]
     [MemberData(nameof(Rules))]
     public void Overlapping_contours_inside_the_clip_are_covered_as_without_the_clip(FillRule rule)
     {
-        // Pixel (20, 18), crossed by an edge of each contour and wholly inside the clip (the known defect on main of
-        // overlapping contours), keeps the value it has without the clip; so does every pixel wholly inside the clip.
+        // Pixel (20, 18), crossed by an edge of each contour and wholly inside the clip, keeps the value it has without the
+        // clip; so does every pixel wholly inside the clip.
         var box = new PixelBox(11.35, 10.55, 29.85, 34.65);
         var path = Polygons(Stem, Bar);
         var mask = Canvas.Coverage(path, Affine.Identity, rule, box).Value;
@@ -159,60 +157,66 @@ public class ClipBoxCoverageTests
     public void A_winding_number_of_two_or_three_over_a_clipped_cell_follows_the_rule_over_that_part(FillRule rule, int copies)
     {
         // The same square two or three times, wound the same way: non-zero covers it, even-odd covers it for three copies and
-        // leaves it empty for two; a clip box with edges inside pixels cuts it. Every cell inside the square that the clip's
-        // edges cross is exact. (The cells the square's own edges cross hold the coinciding edges of the copies: the known
-        // defect on main of overlapping contours, with or without a clip, repaired in the raster follow-up; they are left
-        // out here.)
+        // leaves it empty for two; a clip box with edges inside pixels cuts it. Every pixel of the box is exact, also those
+        // the square's own edges cross, where the copies' edges coincide.
         var square = Rectangle(6.3, 5.2, 21.7, 19.6);
         var box = new PixelBox(9.45, 8.65, 16.25, 30.4);
         var mask = Canvas.Coverage(Polygons([.. Enumerable.Repeat(square, copies)]), Affine.Identity, rule, box).Value;
         var covered = rule == FillRule.NonZero || copies % 2 == 1;
-        var checkedCells = 0;
 
-        for (var y = 8; y < 19; y++)
-        {
-            for (var x = 9; x < 17; x++)
-            {
-                var (l, t, r, b) = (Math.Max(x, box.Left), Math.Max(y, box.Top), Math.Min(x + 1, box.Right), Math.Min(y + 1, box.Bottom));
-                var expected = covered ? 255 * (r - l) * (b - t) : 0;
-                Math.Abs(mask.At(x, y) - expected).Should().BeLessThanOrEqualTo(OneRounding, $"pixel ({x}, {y})");
-                checkedCells += (r - l) * (b - t) < 1 ? 1 : 0;
-            }
-        }
-
-        checkedCells.Should().Be((2 * 11) + 6, "the cells along the clip's left and right edges (rows 8 to 18) and its top (columns 10 to 15)");
+        ShouldMatch(mask, box, (l, t, r, b) => covered ? Geometry.AreaInBox(square, l, t, r, b) : 0);
+        mask.At(12, 19).Should().Be(covered ? (byte)153 : (byte)0, "row 19 is cut by the square's bottom, 0.6 of the pixel");
     }
 
     [Theory]
     [MemberData(nameof(Rules))]
-    public void Contours_of_opposite_direction_cut_by_the_clip_are_covered_exactly_where_their_edges_do_not_meet(FillRule rule)
+    public void Contours_of_opposite_direction_cut_by_the_clip_are_covered_exactly(FillRule rule)
     {
         // Two overlapping rectangles wound in opposite directions: the overlap has winding 0 under both rules. The clip's
-        // edges cut the overlap inside pixels; exact except where an edge of each contour crosses inside the clipped part
-        // of a cell, where the parts cancel (the documented limit): (12, 21) and (18, 21) here.
+        // edges cut the overlap inside pixels; exact everywhere, also at (12, 21) and (18, 21), where an edge of each
+        // contour crosses inside the clipped part of a cell and their parts used to cancel.
         var first = Rectangle(5.3, 6.2, 18.7, 21.4);
         var second = Rectangle(12.6, 12.8, 27.1, 28.3, reversed: true);
         var both = Rectangle(12.6, 12.8, 18.7, 21.4);
         var box = new PixelBox(8.35, 15.45, 24.65, 26.75);
         var mask = Canvas.Coverage(Polygons(first, second), Affine.Identity, rule, box).Value;
-        (int X, int Y)[] limit = [(12, 21), (18, 21)];
 
-        ShouldMatch(mask, box, (l, t, r, b) => limit.Contains(((int)Math.Floor(l), (int)Math.Floor(t)))
-            ? mask.At((int)Math.Floor(l), (int)Math.Floor(t)) / 255.0
-            : Geometry.AreaInBox(first, l, t, r, b) + Geometry.AreaInBox(second, l, t, r, b) - (2 * Geometry.AreaInBox(both, l, t, r, b)));
+        ShouldMatch(mask, box, (l, t, r, b) => Geometry.AreaInBox(first, l, t, r, b) + Geometry.AreaInBox(second, l, t, r, b) - (2 * Geometry.AreaInBox(both, l, t, r, b)));
     }
 
     [Theory]
     [MemberData(nameof(Rules))]
     public void A_clip_sliver_through_the_overlap_gives_its_area_and_no_more(FillRule rule)
     {
-        // A box 1e-9 pixel high through the overlap of the stem and the bar: every cell's part inside it is about 1e-9, its
-        // winding 2 there; the coverage is that tiny area (non-zero) or nothing (even-odd), never a blown-up value.
-        var box = new PixelBox(11.35, 21.3, 29.85, 21.3 + 1e-9);
-        var mask = Canvas.Coverage(Polygons(Stem, Bar), Affine.Identity, rule, box).Value;
+        // A box 10^-6 pixel high across the bar's bottom edge, inside the stem's height: in it the winding number is 0, 1
+        // and 2 side by side. Every cell gets the exact area of the shape inside the box (non-zero) or of its odd part
+        // (even-odd), compared as doubles to within the 10^-9 a flagged cell may keep (AreaRasterizer.KeepWithin): never
+        // the integral clamped over the whole cell nor the rule taken over the mean winding of the part, which are up to
+        // 2.4 × 10^-7 off here.
+        var box = new PixelBox(11.35, 23.4 - 4e-7, 29.85, 23.4 + 6e-7);
+        var polygons = Clipping.ToBox([Vertices(Stem), Vertices(Bar)], box);
+        var checkedCells = 0;
+        new AreaRasterizer().Rasterize(polygons, rule, box, (row, first, coverage) =>
+        {
+            for (var index = 0; index < coverage.Length; index++)
+            {
+                var x = first + index;
+                var (l, t, r, b) = (Math.Max(x, box.Left), Math.Max(row, box.Top), Math.Min(x + 1, box.Right), Math.Min(row + 1, box.Bottom));
+                var expected = InBox(Stem, l, t, r, b) + InBox(Bar, l, t, r, b) - ((rule == FillRule.NonZero ? 1 : 2) * InBox(Overlap, l, t, r, b));
+                Math.Abs(coverage[index] - expected).Should().BeLessThanOrEqualTo(AreaRasterizer.KeepWithin + 1e-15, $"pixel ({x}, {row}): {coverage[index]:R}, exact {expected:R}");
+                checkedCells++;
+            }
+        }).IsSuccess.Should().BeTrue();
 
-        mask.Values.Should().AllSatisfy(value => value.Should().Be(0));
+        checkedCells.Should().Be(17, "one row, columns 13 to 29: from the bar's left side to the box's right");
     }
+
+    /// <summary>The area of an axis-aligned rectangle (its corners 0 and 2) inside a box, as the product of two
+    /// differences: no cancellation for a tiny box far from the origin.</summary>
+    private static double InBox((double X, double Y)[] rectangle, double left, double top, double right, double bottom) =>
+        Math.Max(0, Math.Min(right, rectangle[2].X) - Math.Max(left, rectangle[0].X)) * Math.Max(0, Math.Min(bottom, rectangle[2].Y) - Math.Max(top, rectangle[0].Y));
+
+    private static List<Vertex> Vertices((double X, double Y)[] points) => [.. points.Select(point => new Vertex(point.X, point.Y))];
 
     [Theory]
     [MemberData(nameof(Rules))]

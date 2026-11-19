@@ -43,7 +43,7 @@ public static class FontErrorCodes
     /// Metadata: FontName, Value (the glyph id).</summary>
     public static readonly ErrorCode GlyphOutOfRange = _ / "GlyphOutOfRange";
 
-    /// <summary>No font in the font set matches the family and weight asked for.
+    /// <summary>No font in the font set matches the family and weight asked for, or the set has a missing (null) font.
     /// Metadata: FontName, Value (the weight), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode NotFound = _ / "NotFound";
 }

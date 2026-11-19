@@ -54,25 +54,30 @@ public class PageGeometryTests
         PageRasterizer.Render(new Page(new Size(width, height), [.. items]), new RasterOptions(resolution) { Background = Color.White }).Value;
 
     /// <summary>Every pixel shows the exact area of the boxes' union in it (two boxes at most: inclusion–exclusion), within
-    /// one step; where an edge of each of two overlapping boxes passes, within <paramref name="overlapBound"/>.</summary>
-    private static void ShouldShowExactly(RgbaImage image, Box[] boxes, double overlapBound = 1)
+    /// one step, also where an edge of each of two overlapping boxes passes.</summary>
+    private static void ShouldShowExactly(RgbaImage image, Box[] boxes)
     {
+        var bothEdges = 0;
         for (var y = 0; y < image.Height; y++)
         {
             for (var x = 0; x < image.Width; x++)
             {
                 var area = boxes.Sum(box => box.AreaIn(x, y));
-                var bothEdges = false;
                 if (boxes.Length == 2)
                 {
                     var (a, b) = (boxes[0], boxes[1]);
                     area -= new Box(Math.Max(a.X0, b.X0), Math.Max(a.Y0, b.Y0), Math.Min(a.X1, b.X1), Math.Min(a.Y1, b.Y1)) is var both && both.X0 < both.X1 && both.Y0 < both.Y1 ? both.AreaIn(x, y) : 0;
-                    bothEdges = a.HasEdgeIn(x, y) && b.HasEdgeIn(x, y);
+                    bothEdges += a.HasEdgeIn(x, y) && b.HasEdgeIn(x, y) ? 1 : 0;
                 }
 
                 var difference = Math.Abs(image.Pixels[((y * image.Width) + x) * 4] - (255 - (255 * area)));
-                difference.Should().BeLessThanOrEqualTo(bothEdges ? overlapBound : 1, $"pixel ({x}, {y}) covers {area:F4}");
+                difference.Should().BeLessThanOrEqualTo(1, $"pixel ({x}, {y}) covers {area:F4}");
             }
+        }
+
+        if (boxes.Length == 2)
+        {
+            bothEdges.Should().BePositive("the boxes overlap with an edge of each in some pixels");
         }
     }
 
@@ -80,13 +85,12 @@ public class PageGeometryTests
     public void A_glyph_whose_contours_overlap_fills_their_union_by_the_non_zero_rule()
     {
         // Ɨ at 48 pt, 150 dpi: the stem and the bar share a 9.4 × 7.4 px square, which the even-odd rule would leave
-        // empty. The exact-area accumulation adds the coverage of the two contours and clamps the sum at one. That is the
-        // union, except in a pixel that an edge of each contour crosses: there the part both cover is counted twice, up
-        // to a quarter of the pixel (64 steps), the limit docs/architecture.md states.
+        // empty. Every pixel shows the union, also those an edge of each contour crosses, where the winding number is 0,
+        // 1 and 2 side by side: within one step everywhere.
         const double scale = 150.0 / 72;
         var image = Draw(40, 60, 150, Run('Ɨ', 48, new Point(10.3, 50.2)));
 
-        ShouldShowExactly(image, [.. BarredI.Select(box => Placed(box, 48, 10.3, 50.2, scale))], overlapBound: 64);
+        ShouldShowExactly(image, [.. BarredI.Select(box => Placed(box, 48, 10.3, 50.2, scale))]);
     }
 
     [Fact]

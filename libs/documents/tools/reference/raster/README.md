@@ -56,8 +56,8 @@ for image interiors (below).
 
 ## Measured: the samples (2026-11-18)
 
-E = engine, M = MuPDF, P = poppler. In mean squared error the engine's distance to MuPDF is 0.19 to 0.34 of the
-viewers' distance to each other at 96 dpi and 0.17 to 0.50 at 300 dpi; its distance to poppler is 0.55 to 0.97 of it. At
+E = engine, M = MuPDF, P = poppler. In mean squared error the engine's distance to MuPDF is 0.20 to 0.34 of the
+viewers' distance to each other at 96 dpi and 0.17 to 0.49 at 300 dpi; its distance to poppler is 0.55 to 0.97 of it. At
 300 dpi the rule holds on 22 of 23 pages; the exception is
 page 1 of timesheet-edge.nl, where 12,753 pixels differ by more than 128 steps from poppler against 12,569 between the
 viewers, while the same page has 552 such pixels against MuPDF. The test pins that exception to those two numbers.
@@ -68,16 +68,16 @@ viewers, while the same page has 552 such pixels against MuPDF. The test pins th
 | sample-a-letter | 300 | 2 | 1 | 18.25 | 24336 / 13836 / 833 | 0 | 55.29 | 33533 / 24597 / 12477 | 1 | 101.39 | 41732 / 33350 / 20459 |
 | sample-a-letter | 96 | 1 | 1 | 107.78 | 19109 / 8557 / 123 | 0 | 266.48 | 29529 / 14978 / 3919 | 1 | 344.44 | 28498 / 13634 / 6077 |
 | sample-a-letter | 96 | 2 | 0 | 19.83 | 3913 / 1312 / 8 | 0 | 87.08 | 7208 / 4231 / 1442 | 0 | 100.88 | 6675 / 3923 / 1889 |
-| sample-b-long | 300 | 1 | 0 | 372.28 | 387139 / 243132 / 35486 | 0 | 638.19 | 456081 / 326609 / 112228 | 0 | 757.99 | 415726 / 312762 / 146568 |
-| sample-b-long | 300 | 2 | 0 | 383.32 | 400168 / 250747 / 36798 | 0 | 669.07 | 472867 / 339153 / 117937 | 0 | 787.82 | 429542 / 323136 / 153841 |
-| sample-b-long | 300 | 3 | 0 | 375.73 | 392937 / 246062 / 35961 | 0 | 657.57 | 465164 / 333759 / 115966 | 0 | 771.79 | 421948 / 317197 / 150401 |
-| sample-b-long | 300 | 4 | 0 | 397.05 | 413452 / 259312 / 38573 | 0 | 697.71 | 493155 / 353156 / 123078 | 0 | 820.00 | 446651 / 336021 / 159315 |
-| sample-b-long | 300 | 5 | 0 | 31.58 | 34530 / 21081 / 2724 | 0 | 59.64 | 41822 / 29701 / 10850 | 0 | 63.65 | 36824 / 27156 / 12204 |
-| sample-b-long | 96 | 1 | 0 | 342.47 | 60179 / 24603 / 267 | 0 | 858.42 | 87566 / 45222 / 12632 | 0 | 1069.98 | 86677 / 41677 / 18366 |
-| sample-b-long | 96 | 2 | 0 | 347.87 | 61062 / 25781 / 215 | 0 | 790.78 | 86020 / 42731 / 11352 | 0 | 1013.51 | 84395 / 39672 / 17215 |
-| sample-b-long | 96 | 3 | 0 | 340.66 | 60623 / 25523 / 186 | 0 | 784.40 | 85452 / 42510 / 11397 | 0 | 1013.27 | 83198 / 39529 / 17347 |
-| sample-b-long | 96 | 4 | 0 | 340.29 | 63068 / 24722 / 210 | 0 | 899.05 | 92104 / 47489 / 13700 | 0 | 1164.70 | 91967 / 45305 / 20291 |
-| sample-b-long | 96 | 5 | 0 | 21.51 | 4685 / 1588 / 3 | 0 | 79.53 | 7727 / 4068 / 1370 | 0 | 114.35 | 8132 / 4499 / 2086 |
+| sample-b-long | 300 | 1 | 0 | 371.77 | 386665 / 242916 / 35291 | 0 | 644.63 | 457329 / 328319 / 114106 | 0 | 763.36 | 417238 / 314358 / 148029 |
+| sample-b-long | 300 | 2 | 0 | 382.64 | 399536 / 250459 / 36538 | 0 | 677.66 | 474531 / 341433 / 120441 | 0 | 794.98 | 431558 / 325264 / 155789 |
+| sample-b-long | 300 | 3 | 0 | 374.88 | 392147 / 245702 / 35636 | 0 | 668.32 | 467244 / 336609 / 119096 | 0 | 780.74 | 424468 / 319857 / 152836 |
+| sample-b-long | 300 | 4 | 0 | 386.92 | 403694 / 253051 / 37225 | 0 | 689.23 | 483581 / 347057 / 122484 | 0 | 805.70 | 437814 / 329703 / 156937 |
+| sample-b-long | 300 | 5 | 0 | 41.20 | 43814 / 27126 / 3877 | 0 | 74.56 | 52644 / 37510 / 13322 | 0 | 83.33 | 47173 / 35070 / 16043 |
+| sample-b-long | 96 | 1 | 0 | 342.43 | 60220 / 24588 / 261 | 0 | 859.02 | 87786 / 45272 / 12647 | 0 | 1071.02 | 86979 / 41684 / 18358 |
+| sample-b-long | 96 | 2 | 0 | 347.72 | 61124 / 25770 / 215 | 0 | 791.50 | 86282 / 42791 / 11359 | 0 | 1014.92 | 84818 / 39679 / 17203 |
+| sample-b-long | 96 | 3 | 0 | 340.43 | 60715 / 25494 / 186 | 0 | 785.33 | 85787 / 42598 / 11417 | 0 | 1014.96 | 83681 / 39543 / 17335 |
+| sample-b-long | 96 | 4 | 0 | 338.27 | 62618 / 24686 / 204 | 0 | 896.70 | 91463 / 47510 / 13721 | 0 | 1159.24 | 90731 / 45072 / 20268 |
+| sample-b-long | 96 | 5 | 0 | 36.40 | 6620 / 2597 / 24 | 0 | 93.44 | 9787 / 4943 / 1389 | 0 | 116.14 | 9403 / 4457 / 2005 |
 | timesheet-edge.en | 300 | 1 | 0 | 14.30 | 23769 / 11005 / 552 | 0 | 73.56 | 50659 / 37346 / 12004 | 0 | 77.04 | 45563 / 33505 / 12230 |
 | timesheet-edge.en | 96 | 1 | 0 | 35.93 | 5817 / 2504 / 313 | 0 | 115.13 | 12217 / 8224 / 2036 | 0 | 162.68 | 12037 / 8616 / 2816 |
 | timesheet-edge.nl | 300 | 1 | 0 | 13.69 | 23398 / 10639 / 552 | 0 | 76.26 | 51627 / 38045 / 12753 | 0 | 78.45 | 46833 / 34192 / 12569 |
@@ -153,12 +153,25 @@ to smooth. What the numbers show:
 
 `sample-c-sliced` (eight pages of 300 × 204 pt: a logo and a 200 pt line sliced over pages, then a logo sliced in a table
 under its repeated header row; every slice clipped) joins the comparison. It is the only sample whose pages hold little
-but an image or a few lines of text. On the timesheet pages the viewers' distance to each other is large, because
-poppler snaps thin rectangles and draws heavier edges, and that distance is the allowance. A page with little but an
-image or a few text lines has no such allowance, so two differences that are present in every sample become visible:
-image interiors and baselines on whole pixels (below). Nine rows break the rule; each is a named exception in
-`RasterReferenceTests` (`NamedExceptions`): its raw numbers are pinned, and with its named causes removed the rule
-holds. A row that broke the rule with its causes removed would be an unknown difference; there is none.
+but an image or a few lines of text. On the timesheet pages the viewers' distance to each other is large, and that
+distance is the allowance. Most of it is text: where a line's baseline has a fraction of a half or more, MuPDF draws it
+one whole pixel row lower than poppler (below), and poppler's thin rectangles snapped to whole pixels are the smaller
+part. On page 1 of timesheet-long.en at 96 dpi the engine's mean squared error to poppler is 517.59; with its lines
+drawn on poppler's rows it is 74.67, which bounds everything else, rectangles included. A page whose baselines happen to
+have fractions below a half gets both viewers on the same row and so little allowance, while the engine is up to half
+a pixel from both: so for text the rule is as strict as the baselines' fractions make it, and where the viewers are a
+row apart a line drawn up to a row off has room to pass. On the sliced sample's pages with little but an image or a few
+text lines, two differences that are present in every sample become visible: image interiors and baselines on whole
+pixels (below). Nine rows break the rule; each is a named exception in `RasterReferenceTests` (`NamedExceptions`): its
+raw numbers are pinned, and with its named causes removed the rule holds. A row that broke the rule with its causes
+removed would be an unknown difference; there is none.
+
+The two causes are not part of the general rule, which stays the raw comparison: a cause is removed only on a named
+row where the raw rule fails, with that row's raw numbers pinned, and each named row has the fewest causes with which
+it holds. Made general, the image cause would judge no clip edge around an image to the pixel: the part it leaves out
+is grown by one pixel, and a clip edge one pixel off lies inside that ring. Such an edge is held by
+`ClipTests.An_image_half_outside_its_clip_shows_the_exact_area_of_its_part_inside`, which fails with the clip drawn one
+pixel taller or one pixel lower, as five other tests of `ClipTests` do.
 
 | Sample | dpi | Page | E–M away | E–M MSE | E–M over 32 / 64 / 128 | E–P away | E–P MSE | E–P over 32 / 64 / 128 | M–P away | M–P MSE | M–P over 32 / 64 / 128 |
 | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- |
@@ -185,8 +198,8 @@ interiors out where that cause is named, for all three pairs):
 | dpi | Page | Causes removed | E–M away | E–M MSE | E–M over 32 / 64 / 128 | E–P away | E–P MSE | E–P over 32 / 64 / 128 | M–P away | M–P MSE | M–P over 32 / 64 / 128 |
 | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- |
 | 96 | 2 | image interior | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 |
-| 96 | 3 | image interior and baseline | 0 | 7.57 | 149 / 0 / 0 | 0 | 17.73 | 464 / 2 / 0 | 0 | 333.93 | 1763 / 1111 / 535 |
-| 96 | 5 | baseline | 0 | 4.35 | 106 / 0 / 0 | 0 | 15.82 | 588 / 18 / 0 | 0 | 26.25 | 856 / 140 / 0 |
+| 96 | 3 | baseline | 0 | 48.74 | 664 / 445 / 427 | 0 | 65.29 | 1040 / 515 / 494 | 0 | 241.29 | 1895 / 1181 / 588 |
+| 96 | 5 | baseline | 0 | 4.02 | 62 / 0 / 0 | 0 | 15.82 | 588 / 18 / 0 | 0 | 26.25 | 856 / 140 / 0 |
 | 96 | 6 | baseline | 0 | 0.62 | 0 / 0 / 0 | 0 | 36.89 | 758 / 740 / 0 | 0 | 42.72 | 757 / 736 / 0 |
 | 96 | 7 | image interior and baseline | 0 | 0.55 | 0 / 0 / 0 | 0 | 23.15 | 220 / 202 / 0 | 0 | 26.46 | 219 / 198 / 0 |
 | 96 | 8 | baseline | 0 | 6.69 | 316 / 48 / 0 | 0 | 41.06 | 1144 / 787 / 0 | 0 | 47.58 | 1212 / 742 / 0 |
@@ -195,7 +208,8 @@ interiors out where that cause is named, for all three pairs):
 | 300 | 8 | image interior and baseline | 1 | 1.47 | 353 / 18 / 0 | 0 | 17.42 | 1411 / 726 / 334 | 1 | 19.38 | 1590 / 826 / 356 |
 
 Page 2 at 96 dpi is the logo alone: with its interior left out nothing of the page is compared, and the rule holds
-trivially; page 3 at 96 dpi holds with either cause removed alone, and both are on the page. With the painter planted
+trivially; page 3 at 96 dpi holds with either cause removed alone, and is named with the baseline alone, so its image
+slice is still judged against the viewers. With the painter planted
 to ignore the clip, the comparison fails after the causes are removed: page 2 at 96 dpi (engine to each viewer, mean
 squared error 3758.03 against 0.00, 4246 pixels over 128 against 0: the image drawn outside its clip) and page 7 at
 300 dpi (2084.62 against 21.24), and pages 2 to 5 at 300 dpi under the plain rule.
@@ -210,9 +224,10 @@ shows there.
 
 ### Cause: baselines on whole pixels
 
-Both viewers draw a glyph's baseline on a whole pixel row, the engine where the page model puts it. Measured on the
-engine's own PDF of lines of Lato 11 pt ("Hxgb") whose baselines lie at 0.1, 0.3, 0.476, 0.5, 0.6, 0.8 and 0.95 of a
-pixel, by the shift of each line's ink centre from the engine's, at 96 and 300 dpi:
+Both viewers draw a glyph's baseline on a whole pixel row, MuPDF up to an em of 256 pixels, poppler at every size; the
+engine draws it where the page model puts it. Measured on the engine's own PDF of lines of Lato 11 pt ("Hxgb") whose
+baselines lie at 0.1, 0.3, 0.476, 0.5, 0.6, 0.8 and 0.95 of a pixel, by the shift of each line's ink centre from the
+engine's, at 96 and 300 dpi:
 
 | Fraction | MuPDF 96 | poppler 96 | MuPDF 300 | poppler 300 |
 | ---: | ---: | ---: | ---: | ---: |
@@ -224,12 +239,27 @@ pixel, by the shift of each line's ink centre from the engine's, at 96 and 300 d
 | 0.8 | +0.191 | −0.812 | +0.197 | −0.810 |
 | 0.95 | +0.045 | −0.958 | +0.048 | −0.959 |
 
-So MuPDF draws the baseline on the nearest whole pixel row (a half goes down the page) and poppler on the row above it
-(it floors), at both resolutions. In the sliced sample, page 5's line has its baseline at 110.476 px at 96 dpi; both
+So MuPDF draws the baseline on the nearest whole pixel row and poppler on the row above it (it floors), at both
+resolutions. An exact half is not decided for MuPDF at every resolution: measured on lines of Lato at 6 to 200 pt, it
+went down the page in all 74 cases at 72 dpi and all 74 at 96 dpi, where half a pixel is an exact number of points
+(0.5 and 0.375 pt), and either way at 120 dpi (20 of 74 up) and 300 dpi (25 of 58 up), where it is not (0.3 and
+0.12 pt). The 0.5 line of the table above is one that went down; the comparison sends a half down
+(`RasterComparison.MupdfRow`).
+
+A larger glyph MuPDF draws at its exact place. Measured on the letter "H" with its baseline on a whole row and 0.3 pixel
+below it, two pages of one PDF: MuPDF's two pages are equal up to an em of 256 pixels and differ from an em of
+256.0001 pixels on (the second page's ink centre 0.17 to 0.31 pixel lower), at 72, 96 and 300 dpi, in Lato Regular
+and Theano Didot alike; ems of 100, 200, 230, 250, 255, 255.99 and 256 equal, 256.0001, 256.001, 256.01, 256.1, 256.5,
+257, 260 and 267 different. Poppler floors at every size measured (an em up to 833 pixels). The sliced sample's
+200 pt "W" has an em of 266.7 pixels at 96 dpi, so MuPDF draws it at its exact place, as the engine does.
+`RasterReferenceTests.MuPDF_puts_a_baseline_on_a_whole_pixel_row_up_to_an_em_of_256_pixels` holds MuPDF to that step.
+
+In the sliced sample, page 5's line has its baseline at 110.476 px at 96 dpi; both
 viewers draw it at 110 (ink centre row 105.33 in both, 105.82 in the engine, with equal ink). Removed by drawing the
-engine's page again from a page model in which every glyph run's baseline is on the viewer's row
-(`RasterComparison.BaselinesOnPixelRows`, `MupdfRow`, `PopplerRow`), a transformation of the test, not an option of the
-engine. The difference is there on every sample (`docs/architecture.md`, "Different from the viewers").
+engine's page again from a page model in which every glyph run's baseline is on the viewer's row, for MuPDF only the
+runs with an em of at most 256 pixels (`RasterComparison.BaselinesOnPixelRows`, `MupdfRow`, `PopplerRow`,
+`MupdfLargestEmOnRow`), a transformation of the test, not an option of the engine. The difference is there on every
+sample (`docs/architecture.md`, "Different from the viewers").
 
 ## Measured: rectangles that meet inside a pixel (2026-11-18)
 

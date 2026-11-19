@@ -159,30 +159,53 @@ public class PageRasterizerTests
     }
 
     [Fact]
-    public void A_rectangle_of_10_to_the_30_points_costs_what_a_page_sized_one_costs()
+    public void A_rectangle_of_10_to_the_30_points_allocates_at_most_16_KiB_more_than_a_page_sized_one_and_paints_the_same_pixels()
     {
-        // The work of a fill is bounded by the canvas, not by the shape: medians of several runs at 150 dpi.
+        // The shape is clipped to the canvas before any number becomes an integer, so the huge rectangle is drawn from the
+        // same polygon as the page-sized one. Held here: a render of the huge one allocates at most 16 KiB more than a
+        // render of the page-sized one, and paints the same pixels. Counted, not timed: the bytes allocated on this thread
+        // by a render (after one render of each, so that nothing is allocated once only). A clock under a loaded host
+        // says nothing.
+        //
+        // What the bytes see: a buffer that grows with the shape's width by more than 16 KiB. What they do not see: rows
+        // that follow the shape without allocating, the time a render takes, and a cost both renders pay alike. A missing clip changes the pixels, and the comparison of the pixels at the end catches it; the bytes
+        // alone do not.
+        //
+        // Measured (Linux x64, 2026-11-19): both shapes clip to the same four vertices and a render of either allocates
+        // the same bytes, 17,491,072; the difference made by the shape is 0. What varies is the runtime's count, for
+        // either shape alike: a render that does not start from a collection is counted up to 8.2 KB more or less now
+        // and then (Windows CI saw 6,368), and one that does, ±240 bytes in a few renders while other tests run alongside.
+        // So each measured render starts from a full collection, each shape is rendered five times in turn, and the
+        // medians are compared. The allowance, 16 KiB, lies above the largest step of the runtime's count seen on Linux
+        // x64 and Windows x64 (8,168 bytes).
         var huge = PageOf(595, 842, new FillRectangle(new Rect(new Point(-1e30, -1e30), new Size(2e30, 2e30)), Color.Black));
         var page = PageOf(595, 842, new FillRectangle(new Rect(new Point(0, 0), new Size(600, 850)), Color.Black));
+        var options = new RasterOptions(150);
 
-        double Median(Page subject)
+        long Allocated(Page subject)
         {
-            var times = new List<double>();
-            for (var run = 0; run < 7; run++)
-            {
-                var watch = System.Diagnostics.Stopwatch.StartNew();
-                PageRasterizer.Render(subject, new RasterOptions(150)).IsSuccess.Should().BeTrue();
-                times.Add(watch.Elapsed.TotalMilliseconds);
-            }
-
-            times.Sort();
-            return times[3];
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            PageRasterizer.Render(subject, options).IsSuccess.Should().BeTrue();
+            return GC.GetAllocatedBytesForCurrentThread() - before;
         }
 
-        var pageTime = Median(page);
-        var hugeTime = Median(huge);
-        hugeTime.Should().BeLessThan((pageTime * 2) + 20, $"huge {hugeTime:F1} ms, page {pageTime:F1} ms");
-        PageRasterizer.Render(huge, new RasterOptions(150)).Value.Pixels.Should().Equal(PageRasterizer.Render(page, new RasterOptions(150)).Value.Pixels);
+        PageRasterizer.Render(page, options).IsSuccess.Should().BeTrue();
+        PageRasterizer.Render(huge, options).IsSuccess.Should().BeTrue();
+        var (pageCounts, hugeCounts) = (new List<long>(), new List<long>());
+        for (var round = 0; round < 5; round++)
+        {
+            pageCounts.Add(Allocated(page));
+            hugeCounts.Add(Allocated(huge));
+        }
+
+        var (pageBytes, hugeBytes) = (pageCounts.Order().ElementAt(2), hugeCounts.Order().ElementAt(2));
+        hugeBytes.Should().BeLessThanOrEqualTo(
+            pageBytes + 16384,
+            $"huge {hugeBytes} bytes, page {pageBytes} bytes (medians; huge {string.Join(", ", hugeCounts)}; page {string.Join(", ", pageCounts)})");
+        PageRasterizer.Render(huge, options).Value.Pixels.Should().Equal(PageRasterizer.Render(page, options).Value.Pixels);
     }
 
     [Theory]
@@ -251,6 +274,8 @@ public class PageRasterizerTests
     [InlineData(595.2756, 841.8898, 96, 794, 1123)]
     [InlineData(612, 792, 72, 612, 792)]
     [InlineData(612, 792, 300, 2550, 3300)]
+    [InlineData(100.2, 50.1, 72, 101, 51)]
+    [InlineData(10.1, 20.3, 96, 14, 28)]
     [InlineData(0.0001, 0.0001, 96, 1, 1)]
     [InlineData(0.0001, 85.38173927570774, 5e-324, 1, 1)]
     [InlineData(2.23421391529693, 1, 5e-324, 1, 1)]
@@ -260,6 +285,28 @@ public class PageRasterizerTests
         PageRasterizer.PixelSize(new Size(width, height), resolution).Should().Be((pixelsAcross, pixelsDown));
         var image = Draw(PageOf(width, height), resolution);
         (image.Width, image.Height).Should().Be((pixelsAcross, pixelsDown));
+    }
+
+    [Theory]
+    [InlineData(double.NaN, 100, 72)]
+    [InlineData(100, double.NaN, 72)]
+    [InlineData(-100, 100, 72)]
+    [InlineData(100, -0.5, 72)]
+    [InlineData(0, 100, 72)]
+    [InlineData(0.00009, 100, 72)]
+    [InlineData(double.PositiveInfinity, 100, 72)]
+    [InlineData(100, double.NegativeInfinity, 72)]
+    [InlineData(3.5e38, 100, 72)]
+    [InlineData(100, 100, double.NaN)]
+    [InlineData(100, 100, 0)]
+    [InlineData(100, 100, -72)]
+    [InlineData(100, 100, double.PositiveInfinity)]
+    public void A_page_size_or_resolution_that_is_refused_has_no_pixels(double width, double height, double resolution)
+    {
+        PageRasterizer.PixelSize(new Size(width, height), resolution).Should().Be((0L, 0L));
+        var result = PageRasterizer.Render(PageOf(width, height), new RasterOptions(resolution));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().BeOneOf(RasterErrorCodes.InvalidPageModel, RasterErrorCodes.InvalidOptions);
     }
 
     [Fact]
@@ -448,5 +495,79 @@ public class PageRasterizerTests
         result.IsFailure.Should().BeTrue();
         result.Error.Is(FontErrorCodes.Parse._).Should().BeTrue();
         result.Error.Metadata!.Should().ContainKey(ErrorMetadataKeys.FontName);
+    }
+
+    /// <summary>A simple glyph of straight contours: one on-curve flag per point and 16-bit deltas, in design units.</summary>
+    private static byte[] Glyph(params (int X, int Y)[][] contours)
+    {
+        var builder = new BigEndianBuilder().UInt16(contours.Length).UInt16(0).UInt16(0).UInt16(0).UInt16(0);
+        var end = -1;
+        foreach (var contour in contours)
+        {
+            end += contour.Length;
+            builder.UInt16(end);
+        }
+
+        builder.UInt16(0);
+        var points = contours.SelectMany(contour => contour).ToArray();
+        builder.Bytes(points.Select(_ => (byte)0x01));
+        var previous = (X: 0, Y: 0);
+        foreach (var point in points)
+        {
+            builder.UInt16((point.X - previous.X) & 0xFFFF);
+            previous.X = point.X;
+        }
+
+        foreach (var point in points)
+        {
+            builder.UInt16((point.Y - previous.Y) & 0xFFFF);
+            previous.Y = point.Y;
+        }
+
+        return builder.ToArray();
+    }
+
+    /// <summary>A point of a glyph drawn at 31.25 points (2,000 units per em) at 72 dpi with its run's origin at
+    /// (0, 160): one design unit is 1/64 pixel, and (x, y) is the device pixel position.</summary>
+    private static (int X, int Y) Device(double x, double y) => ((int)(x * 64), (int)((160 - y) * 64));
+
+    private static (int X, int Y)[] DeviceRectangle(double left, double top, double right, double bottom) =>
+        [Device(left, top), Device(right, top), Device(right, bottom), Device(left, bottom)];
+
+    [Fact]
+    public void A_glyph_cut_by_the_page_s_right_edge_after_a_glyph_with_overlapping_pixels_is_drawn_as_alone()
+    {
+        // Glyph 1: two small triangles inside pixels (0, 5) and (10, 5), whose pixels the rasteriser flags. Glyph 2: three
+        // rectangles wound the same way, 25 pixels wide, put at x = 10 on a page 20 points wide, so the page's right edge
+        // cuts them on a whole column ten columns from their first. The page keeps one canvas for both glyphs; before the
+        // repair the second fill read what the first left in the canvas's rasteriser, and the render threw
+        // IndexOutOfRangeException.
+        byte[][] glyphs =
+        [
+            [],
+            Glyph(
+                [Device(0.25, 5.25), Device(0.75, 5.25), Device(0.5, 5.75)],
+                [Device(10.25, 5.25), Device(10.75, 5.25), Device(10.5, 5.75)]),
+            Glyph(DeviceRectangle(0, 0, 25, 150), DeviceRectangle(3.3125, 0, 5, 150), DeviceRectangle(3.625, 0, 5.5, 150)),
+        ];
+        var font = FontParser.Parse(FontFiles.WithGlyphs(TestFonts.Bytes("Lato-Regular.ttf"), glyphs)).Value;
+        GlyphRun Run(params (int Glyph, double X)[] placed) =>
+            new(font, 31.25, Color.Black, new Point(0, 160), [.. placed.Select(glyph => new PositionedGlyph(new GlyphId((ushort)glyph.Glyph), glyph.X, "x"))]);
+        var options = new RasterOptions(72) { Background = Color.White };
+        var both = PageOf(20, 200, Run((1, 0), (2, 10)));
+        var first = PageRasterizer.Render(PageOf(20, 200, Run((1, 0))), options).Value;
+        var second = PageRasterizer.Render(PageOf(20, 200, Run((2, 10))), options).Value;
+
+        foreach (var drawn in new[] { PageRasterizer.Render(both, options), PageRasterizer.Render(new PageDocument(Metadata, [both]), 1, options) })
+        {
+            drawn.IsSuccess.Should().BeTrue(drawn.IsFailure ? drawn.Error.Message : "");
+            var differ = Enumerable.Range(0, 20 * 200)
+                .Where(index => first.Pixels[index * 4] == 255 && drawn.Value.Pixels[index * 4] != second.Pixels[index * 4])
+                .Select(index => $"({index % 20},{index / 20})")
+                .ToList();
+            differ.Should().BeEmpty($"where the first glyph leaves white the page shows the second glyph alone; all that differ: {string.Join(" ", differ)}");
+        }
+
+        Red(second, 19, 100).Should().Be(0);
     }
 }

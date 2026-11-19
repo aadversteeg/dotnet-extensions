@@ -65,7 +65,10 @@ public static class DocumentRendering
     /// <param name="fonts">The fonts the document may use.</param>
     /// <param name="pageNumber">The page, counting from 1.</param>
     /// <param name="options">The resolution and background.</param>
-    /// <returns>The PNG file, or the error (<c>Documents.Raster.PageNotFound</c> for a page the document does not have).</returns>
+    /// <returns>The PNG file, or the error (<c>Documents.Raster.PageNotFound</c> for a page the document does not have). A
+    /// font whose licence forbids embedding (OS/2 fsType) is drawn: a PNG holds the glyphs' pixels, not the font. The
+    /// same document is refused by <see cref="ToPdf(Document, FontSet, PdfRenderOptions)"/>, which would embed the
+    /// font (<c>Documents.Pdf.Write.FontEmbeddingNotPermitted</c>).</returns>
     public static Result<ImmutableArray<byte>, Error> ToPng(this Document document, FontSet fonts, int pageNumber, RasterOptions options) =>
         document.ToPages(fonts).OnSuccessBind(pages => pages.ToPng(pageNumber, options));
 
@@ -74,7 +77,8 @@ public static class DocumentRendering
     /// <param name="pages">The pages.</param>
     /// <param name="pageNumber">The page, counting from 1.</param>
     /// <param name="options">The resolution and background.</param>
-    /// <returns>The PNG file, or the error.</returns>
+    /// <returns>The PNG file, or the error. A font whose licence forbids embedding is drawn, where
+    /// <see cref="ToPdf(PageDocument, PdfRenderOptions)"/> refuses it.</returns>
     public static Result<ImmutableArray<byte>, Error> ToPng(this PageDocument pages, int pageNumber, RasterOptions options) =>
         PageRasterizer.Render(pages, pageNumber, options).OnSuccessBind(Png);
 
