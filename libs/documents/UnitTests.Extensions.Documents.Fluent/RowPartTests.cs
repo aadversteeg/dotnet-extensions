@@ -200,8 +200,8 @@ public class RowPartTests
     }
 
     /// <summary>The a2-cells-end cases: "intro" with a 99 pt bottom margin, then rows of "t" beside a cell of two 8 pt blocks
-    /// (4 pt padding above and below, or a block and an 8 pt line "u"); line height 15 pt, so row t2's cells end 0.05 pt
-    /// above the page end and only the half of the line below the row passes it.</summary>
+    /// (4 pt padding above and below, or a block and an 8 pt line "u"); line height 15 pt, so row t2's cells end at the
+    /// page end (192 pt) and only the half of the line below the row passes it.</summary>
     private static Element[] CellsEnd(string caseName)
     {
         var text = caseName == "a2-cells-end-text";

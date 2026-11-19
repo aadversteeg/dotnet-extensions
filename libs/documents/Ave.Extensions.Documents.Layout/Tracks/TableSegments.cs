@@ -53,7 +53,10 @@ internal static class TableSegments
     /// segment's natural height of the cell, <see cref="Segment.Natural"/>): a cell whose natural height fits the slice
     /// ends there and is laid out in the whole slice; any other cell cannot end there and is laid out without the
     /// clearance. So a cut cell is laid out once per cut, never a second time to try the other height: in a cell of a
-    /// cell of a cell … a second layout at every level would double the work at every level (TableNestingCostTests). Returns
+    /// cell of a cell … a second layout at every level would double the work at every level (TableNestingCostTests). The
+    /// one second layout is <see cref="SlicedAboveBottomInset"/>'s, taken only under <see cref="MonolithicOverflow.Slice"/>
+    /// for a cell that starts the page and ends there taller than its room; it lets the content break, so the cell around
+    /// it no longer ends there and does not take it again. Returns
     /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
     /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
     /// itself; for a cell that keeps its break (its content broke at a breakpoint it chose,
@@ -95,6 +98,7 @@ internal static class TableSegments
         var endsInItsBottomEdge = endsAtTheCut && measured && !Fitting.Fits(natural!.Size.Height, sliceHeight)
             && Fitting.Fits(natural.Size.Height - SlicedBox.BottomInset(box.Style), sliceHeight);
         return LayOutIn(endsInSlice ? sliceHeight : sliceHeight - clearance)
+            .OnSuccessBind(whole => SlicedAboveBottomInset(table, box, whole, sliceHeight - inset, startsPage || belowHeader, LayOutIn, sliceHeight))
             .OnSuccessMap(result => result switch
             {
                 LayoutResult.Placed placed => (Stretch(Lowered(placed.Fragment, inset), sliceHeight, VerticalAlign.Top),
@@ -106,6 +110,30 @@ internal static class TableSegments
                     placed.Continuation is not null && placed.KeepsItsBreak && !endsInItsBottomEdge),
                 _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), endsInItsBottomEdge ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),
             });
+    }
+
+    /// <summary>
+    /// Under <see cref="MonolithicOverflow.Slice"/>, a cell that starts the page and ends there, but whose content and
+    /// bottom padding and border together do not fit the page (a piece that fits the page area alone, not with the insets
+    /// around it): the content is laid out once more in the room above the bottom inset, so the piece no longer fits and is
+    /// sliced (<see cref="MonolithicSlices"/>), starting the page as it does; its last slice and the bottom inset go to the
+    /// next page. The test is "the piece with its insets does not fit a page", not "the piece is taller than the page
+    /// area". Taken only when the content then breaks; otherwise the cell is as before (and refused or placed as the
+    /// table decides). Under <see cref="MonolithicOverflow.Refuse"/> nothing changes. Chromium does not slice here: it
+    /// places the piece whole at the top of the page and lets the bottom padding and border pass the page end
+    /// (docs/architecture.md, "Known limits"; reference case <c>d1-img177-pad3</c>).
+    /// </summary>
+    private static Result<LayoutResult, Error> SlicedAboveBottomInset(
+        TableGeometry table, Box box, LayoutResult whole, double room, bool startsPage, Func<double, Result<LayoutResult, Error>> layOutIn, double sliceHeight)
+    {
+        if (!startsPage || table.Environment.Profile.MonolithicOverflow != MonolithicOverflow.Slice
+            || whole is not LayoutResult.Placed { Continuation: null } placed || Fitting.Fits(placed.Fragment.Size.Height, room))
+        {
+            return Result<LayoutResult, Error>.Success(whole);
+        }
+
+        return layOutIn(sliceHeight - SlicedBox.BottomInset(box.Style))
+            .OnSuccessMap(sliced => sliced is LayoutResult.Placed { Continuation: not null } ? sliced : whole);
     }
 
     /// <summary>

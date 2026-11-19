@@ -68,12 +68,22 @@ public enum MonolithicOverflow
     Refuse,
 
     /// <summary>The content is sliced as Chromium prints it: placed whole at the top of the page, it shows there as far as
-    /// the page area reaches, and each following page shows the next page-area height of it, until its end; what follows
-    /// it starts right below that end. Each slice is clipped to its part of the page area (a page-model clip). In tagged
+    /// the page area reaches, and each following page shows the next part of it, as tall as the room it has there, until
+    /// its end; what follows it starts right below that end. Each slice is clipped
+    /// to its part of the page area (a page-model clip). In tagged
     /// PDF every slice of an image is content of its figure, whose alternative text is read once; the later slices of a
     /// line of text are pagination artifacts, so its text is read once. One piece is cut into at most 100 slices, one per page:
-    /// a piece that would need more (taller than 100 page areas) is refused with <c>Documents.Layout.TooManySlices</c>,
-    /// so the number of pages follows from the size of the input, not from the numbers in it.</summary>
+    /// a piece that would need more is refused with <c>Documents.Layout.TooManySlices</c> (a slice is as tall as the room
+    /// it has on its page, which under a repeated header or inside padding is less than the page area), so the number of
+    /// pages follows from the size of the input, not from the numbers in it. A document is cut into at most 1 000 slices,
+    /// all pieces together; one that would need more is refused with the same code. A piece in a table cell that fits the
+    /// page area but not with the cell's padding and grid lines is sliced too: the test is that the piece with its insets
+    /// does not fit a page; Chromium moves such a piece whole and lets the padding pass the page end
+    /// (docs/architecture.md, "Known limits"). This value can also change the pages of a document that has no piece
+    /// taller than a page: content below the top padding of boxes that start the page is cut at the deepest place only
+    /// under it, so such a document can have a page less than under <see cref="Refuse"/> (Chromium's pages, case
+    /// <c>a4-nested-padded-image-160</c>), and a document refused under <see cref="Refuse"/> for such a piece is laid
+    /// out.</summary>
     Slice,
 }
 
@@ -91,6 +101,7 @@ public enum EmptyRowParts
     /// <summary>A row is cut wherever its cells can break, also where a part shows nothing, as Chromium prints it
     /// (<c>tools/reference/chromium</c>, cases <c>a2-padded-blocks</c>, <c>a2-line-breaks</c> and <c>a3-mirror</c>); and a
     /// row whose cells all end on the page, with only the half of the grid line below it past the page end, is not cut
-    /// but moves to the next page whole, as Chromium does (cases <c>a2-cells-end*</c>).</summary>
+    /// but moves to the next page whole, as Chromium does (cases <c>a2-cells-end*</c>); so does a row whose lines all fit
+    /// but whose bottom padding or border passes the page end (case <c>a2-row-end-bottom-padding-30</c>).</summary>
     Allow,
 }

@@ -106,20 +106,20 @@ public class PageBreakProgressTests
         // repeated header it had no room, and the box broke before its first child as a last resort, which resumed where
         // it resumed: the table returned the token it was given, and the layout ended in Documents.Layout.EngineDefect.
         // A box that continues has no top border or padding on that page, so such a break leaves nothing of it there: it
-        // has no room instead, and the page goes on without the header (TablePage). Chromium prints H | a | (blank) |
-        // AFTER (case fr-header-pad-box-36): it does not repeat a header taller than a quarter of the page area, and it
-        // does not leave a page with only the header and the box's top border (both listed in docs/architecture.md).
-        UnderHeader(60, Bordered(Paragraph("a").PaddingBottom(36.Pt()))).Should().Be("H | H | H a |  | H | AFTER");
+        // has no room instead, and the page goes on without the header (TablePage). The 18 pt header is more than a
+        // quarter of the page area, so it is not repeated, and the engine prints Chromium's pages: H | a | (blank) |
+        // AFTER (case fr-header-pad-box-36).
+        UnderHeader(60, Bordered(Paragraph("a").PaddingBottom(36.Pt()))).Should().Be("H | a |  | AFTER");
         Chromium("fr-header-pad-box-36").Should().Be("H | a |  | AFTER");
     }
 
     [Theory]
-    [InlineData("top padding", "H | H |  | a | AFTER", "H |  |  | a | AFTER")]
-    [InlineData("grid lines", "H | H | a |  | H | AFTER", "H | a |  | AFTER")]
-    [InlineData("inner box", "H | H | H a |  | H | AFTER", null)]
+    [InlineData("top padding", "H |  |  | a | AFTER", "H |  |  | a | AFTER")]
+    [InlineData("grid lines", "H | a |  | AFTER", "H | a |  | AFTER")]
+    [InlineData("inner box", "H | a |  | AFTER", null)]
     public void The_same_with_top_padding_with_grid_lines_and_on_an_inner_box_is_printed(string shape, string engine, string? chromium)
     {
-        // Top padding as tall as the page area (fr-header-pad-top-36; Chromium's pages differ by the header rule again),
+        // Top padding as tall as the page area (fr-header-pad-top-36),
         // the same box in a table with grid lines (fr-header-pad-grid-36), and the padding on a box inside the bordered
         // one (not measured).
         var (cell, gridLines, caseName) = shape switch

@@ -88,40 +88,6 @@ public class ListedDifferenceTests
             Engine(78, 2, Paragraph("a0"), Paragraph("a1"), Paragraph("a2"), Block([]).MarginTop(30.Pt())));
     }
 
-    [Theory]
-    [InlineData(150, 18.75, "at")]
-    [InlineData(150, 19.5, "over")]
-    [InlineData(180, 26.25, "at")]
-    [InlineData(180, 27, "over")]
-    [InlineData(240, 41.25, "at")]
-    [InlineData(240, 42, "over")]
-    public void A_table_header_is_repeated_whatever_its_height(int area, double padding, string side)
-    {
-        // Chromium repeats a header only while it and its grid line are at most a quarter of the page area high
-        // (TableLayoutAlgorithm::GenerateFragment: the fragmentainer block size divided by 4); "at" is a header exactly a
-        // quarter high, "over" one 0.75 pt more. The engine repeats it on every page.
-        var table = Grid(Table([Fill()], [HeaderRow([Cell([Paragraph("h")]).PaddingBottom(padding.Pt())]), .. Enumerable.Range(0, 14).Select(row => (TablePart)TableRow([Cell([Paragraph($"r{row}")])]))]));
-        var engine = Engine(area + 24, 2, table);
-        var chromium = Chromium($"fr-old-header-quarter-{area}-{side}");
-
-        engine.Split(" | ").Skip(1).Should().OnlyContain(page => page.StartsWith("h ", StringComparison.Ordinal), "the engine repeats the header on every page");
-        chromium.Split(" | ").Skip(1).Should().OnlyContain(page => page.StartsWith("h ", StringComparison.Ordinal) == (side == "at"), "Chromium repeats it only up to a quarter of the page area");
-    }
-
-    [Fact]
-    public void Under_a_repeated_header_a_cell_whose_box_s_bottom_padding_moves_on_takes_a_page_more()
-    {
-        // A cell with a bordered box around "a", whose 20 pt bottom padding does not fit below it (page area 36 pt). The
-        // engine repeats the 18 pt header (Chromium does not: it is more than a quarter of the page area), and on page 2
-        // only the top border of the box fits below it, so page 2 holds the header and that border; Chromium prints "a"
-        // there. Without the header row both print a | (blank) | AFTER (fr-header-pad-none-36).
-        var table = Table([Fill()], [HeaderRow([Cell("H")]), TableRow([Cell([Block([Paragraph("a").PaddingBottom(20.Pt())]).Border(1.5.Pt(), Color.Black)])])])
-            .GridLines(0.Pt(), Color.Black).SplitLinesAtBreaks();
-        BothAre("fr-header-pad-box-20", "H | H | H a |  | AFTER", "H | a |  | AFTER", Engine(60, 1, table, Paragraph("AFTER")));
-        var alone = Table([Fill()], [TableRow([Cell([Block([Paragraph("a").PaddingBottom(36.Pt())]).Border(1.5.Pt(), Color.Black)])])]).GridLines(0.Pt(), Color.Black).SplitLinesAtBreaks();
-        BothAre("fr-header-pad-none-36", "a |  | AFTER", "a |  | AFTER", Engine(60, 1, alone, Paragraph("AFTER")));
-    }
-
     /// <summary>The documents of <see cref="Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own"/>:
     /// a0 a1 with keep-with-next inside two boxes with bottom padding (15 pt inside, 27 pt outside), then j0 j1 j2 and z.</summary>
     private static Element[] KeepWithNextAcrossPadding(string caseName)

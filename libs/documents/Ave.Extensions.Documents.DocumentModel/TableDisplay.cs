@@ -10,8 +10,8 @@ public enum TableDisplay
     /// <summary>Not a part of a table (the initial value).</summary>
     None,
 
-    /// <summary>The group of header rows, repeated on every page the table continues on (<c>table-header-group</c>,
-    /// CSS 2.1 §17.2).</summary>
+    /// <summary>The group of header rows, repeated on every page the table continues on when it is at most a quarter of
+    /// the page area, as Chromium (<c>table-header-group</c>, CSS 2.1 §17.2).</summary>
     HeaderGroup,
 
     /// <summary>A group of body rows (<c>table-row-group</c>).</summary>

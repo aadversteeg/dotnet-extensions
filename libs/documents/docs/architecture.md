@@ -164,13 +164,14 @@ structure kids) are records with private constructors, each in one file so the w
 ## Who checks what
 
 Every rule is checked in one place, by the layer that owns the reason for it; each check reports all its problems
-together, at the author's line where there is one.
+together, at the author's line where there is one. One problem is one error with its own code; two or more come as one
+error with the code `Aggregate` (Ave.Extensions.ErrorPaths), whose parts carry each problem's code.
 
 | Layer | Checks | Error codes |
 | --- | --- | --- |
 | front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values | `Documents.Input.*` |
-| layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, content that would need more than 100 slices, columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier` |
+| layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, content that would need more than 100 slices (one piece) or 1 000 (one document), columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
+| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes (and edges) within the range of a PDF real, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier`; while the structure tree is built (`Render.Pdf/Tagging/StructureTree.cs`), a node under two parents or a decorative node in the structure: `Documents.Pdf.Write.InvalidStructure` |
 | raster back-end (`Render.Raster/PageRasterizer.cs`) | the same page-model contract (`PageModel/PageModelRules.cs`); options with a positive finite resolution; a page of at most 2^26 pixels at that resolution; a page number of the document | `Documents.Raster.InvalidPageModel`, `InvalidOptions`, `TooLarge`, `PageNotFound` |
 | profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
@@ -310,7 +311,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | glyphs of one text | 64 per input glyph, at least 16 384 | `Typesetting/Shaping/GlyphSubstitution.cs` | `Documents.Typesetting.TooManyGlyphs` |
 | shaping operations of one text | 1 024 per input glyph, at least 65 536 | `Typesetting/Shaping/ShapingBudget.cs` | `Documents.Typesetting.TooMuchWork` |
 | cell span | 1 000 columns, 65 534 rows | `Core/TableSlots.cs` | `Documents.Input.Invalid.Table`; in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
-| every number of a page model (sizes, positions, font sizes, areas) | within ±3.403 × 10^38, the range of a PDF real (ISO 32000-1 Annex C, Table C.1) | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
+| every number of a page model (sizes, positions, font sizes, areas), and the edges computed from them (x + width, y + height, the place of a glyph, the height above the foot of the page) | within ±3.403 × 10^38, the range of a PDF real (ISO 32000-1 Annex C, Table C.1) | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
 | pixels of one page drawn as an image | 2^26 | `Render.Raster/PageRasterizer.cs`, `Graphics/Canvas.cs` | `Documents.Raster.TooLarge`; `Documents.Graphics.TooLarge` |
 | coordinates the graphics library draws with | ±10^150 after the transform; a clip box within ±2^30 pixels | `Graphics/Canvas.cs` | `Documents.Graphics.InvalidValue` |
 | PDF/UA grid of one table | the first row's width; 4 194 304 slots | `Render.Pdf/Tagging/TableRegularity.cs` | `Documents.Pdf.Conformance.PdfUa1.TableTooLarge` |
@@ -331,6 +332,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | nesting of composite glyphs | 64 levels | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | clips open one inside the other on a page, for both back-ends | 27 (in PDF one `q` each, plus the drawing's own: the 28 levels of ISO 32000-1 Annex C and ISO 19005-3 §6.1.13; the raster back-end takes the same) | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel` |
 | slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`) | 100, one per page | `Layout/MonolithicSlices.cs` | `Documents.Layout.TooManySlices` |
+| slices of one document, all pieces together (`MonolithicOverflow.Slice`) | 1 000, counted page by page; a document without a piece taller than the page area has none | `Layout/MonolithicSlices.cs`, `Layout/Paginator.cs` | `Documents.Layout.TooManySlices` (the message names the limit for one document) |
 
 Selector matching is linear in the selector's steps times the elements (`Css/Selectors/SelectorMatcher.cs`): per step
 and element it computes whether the steps up to it match, whether some ancestor's or earlier sibling's does, each
@@ -494,7 +496,11 @@ Each is documented next to its code as well.
   the page is refused (`Documents.Layout.DoesNotFit`; Chromium cuts it like a body row); a table row taller than the page
   only through its cells' padding is refused (Chromium prints it on a fresh page and lets the padding overflow); a table
   row without cells is refused as input (`Documents.Input.Invalid.Table`; Chromium lays it out with no height) — each
-  pinned with Chromium's pages in `ListedDifferenceTests`; a paragraph with a page counter that breaks across pages is re-broken with each page's
+  pinned with Chromium's pages in `ListedDifferenceTests`; under `EmptyRowParts.Avoid` and `MonolithicOverflow.Refuse`,
+  the defaults, a table row that continues from the page before, whose rest fills the page area with only the half of
+  its grid line below past the page end, is refused (`Documents.Layout.DoesNotFit`) when another row follows it (under
+  `Allow` the line passes the page end, as Chromium prints it; under `Slice` the rest is cut at the deepest place;
+  `RowEndTests`, `A_continued_row_whose_lines_fill_the_next_page_is_refused_under_Avoid`); a paragraph with a page counter that breaks across pages is re-broken with each page's
   number; a document that shows its page count is laid out at least twice (page-count fixpoint); one without is
   laid out once.
 - **Work in nested tables:** a box inside k nested tables is laid out up to 2k + 1 times on a page (each table
@@ -552,12 +558,7 @@ Each is documented next to its code as well.
   box kept together does not hide a better breakpoint before it (in Chromium it does, in one shape: `n0 n1 o0 o1 | p0`
   where the engine prints `n0 | n1 o0 o1 p0`); an empty box past the end of the last page adds no blank page; a paragraph that moved to a new page whole counts only
   its orphans before a break on that page, where Chromium counts its widows there too (it differs only where widows are
-  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). A table header is repeated on every page whatever its height; Chromium repeats it only
-  while the header and its grid line are at most a quarter of the page area high (the fragmentainer block size divided by
-  4, the page area rounded up to whole pixels first; a header exactly a quarter high repeats: measured at 150, 180 and
-  240 pt, limits 37.5, 45 and 60 pt; it also repeats only when the header group is `break-inside: avoid`, which the
-  browser's own style sheet sets for print), and above that limit it is an ordinary row group. Whether the engine gets
-  that rule as a layout policy is a question for stage 4. The rest of a cut cell aligned `middle` or `bottom` is aligned
+  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). The rest of a cut cell aligned `middle` or `bottom` is aligned
   in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
   (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
   the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
@@ -565,12 +566,11 @@ Each is documented next to its code as well.
   after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
   line, where Chromium prints all its lines on that page and lets the padding overflow (cases
   `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`).
-  Under a repeated header row, a cell whose box's bottom or top padding does not fit on a page with the box's content
-  takes the engine a page more than Chromium: with the header repeated (a listed rule above), a page holds the header
-  and only the top border of the box, where Chromium prints the box's first line (cases `fr-header-pad-box-20`,
-  `fr-header-pad-box-36`, `fr-header-pad-grid-36`, `fr-header-pad-top-36`); where Chromium repeats the header too, the
-  engine leaves the header alone on the first page, where Chromium cuts the row below it because its line fits and
-  only its padding does not (`fr-header-pad-box-72`). Without the header row both print the same pages
+  Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
+  the header is repeated, the engine leaves the header alone on the first page, where Chromium cuts the row below it
+  because its line fits and only its padding does not (`fr-header-pad-box-72`). Where the header is more than a quarter
+  of the page area, neither repeats it and both print the same pages (cases `fr-header-pad-box-20`,
+  `fr-header-pad-box-36`, `fr-header-pad-grid-36`, `fr-header-pad-top-36`), as they do without the header row
   (`fr-header-pad-none-36`). Padding taller than the page area with content after it is refused (the limit above;
   `fr-header-pad-box-50`).
   A keep-with-next on the last paragraph inside boxes whose bottom padding goes to a page of its own holds across that
@@ -582,29 +582,77 @@ Each is documented next to its code as well.
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
   continues without the header.
+- **Header rows are repeated only up to a quarter of the page area**, as Chromium prints them: a header taller than
+  that is shown on the table's first page only (`TablePage.RepeatsHeader`; `HeaderRepeatTests`, cases
+  `a6-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
+  90.0 and 90.75; cases `fr-old-header-quarter-*`: on 150, 180 and 240 pt a header with bottom padding exactly a quarter
+  high is repeated and one 0.75 pt higher is not). Chromium repeats a header only when the header group is
+  `break-inside: avoid`, which the browser's own style sheet sets for print. The limit is the one CSS Tables 3 §6.2
+  states for repeated headers ("up to one quarter for header rows"), and Chromium's: in
+  `third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc`, `TableLayoutAlgorithm::GenerateFragment`, a
+  header is not repeated when its block size is more than a quarter of the fragmentainer's, and one that was not
+  repeated on a fragment does not start repeating on a later one (read in the source of Chromium 150; the measured
+  browser is Chromium 159). The cases above are the check. The engine compares with the room the table has on the
+  later page: the page area for a table that continues at the top of the body, and for a table inside a cell that
+  continues, since a continued cell gives its content the page's whole height (`a6-nested-header-pad12-h2925`, a header
+  of 45.0 pt in a cell with 12 pt padding: repeated on every page in both). Under an outer table's repeated header the
+  room is the page area less that header, and Chromium too does not repeat a header of 42.75 pt there, while one of
+  39.75 pt is repeated in both (`a6-nested-under-header-h2400`, `a6-nested-under-header-h2700`). **Listed difference:**
+  the engine decides on every later page, so on the last page, where the rest of the outer cell is laid out with
+  unlimited room, the inner header of 42.75 pt is repeated again; Chromium does not start repeating after the first
+  page (`HeaderRepeatTests`).
 - **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
   cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
   rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
-  `EmptyRowParts.Allow` the engine cuts as Chromium does, also in one more respect: a row whose cells all end on the
+  `EmptyRowParts.Allow` the engine cuts where Chromium cuts in the measured cases, also in
+  one more respect: a row whose cells all end on the
   page, with only the half of the grid line below it past the page end, is not cut but moves to the next page whole
   (cases `a2-cells-end`, `a2-cells-end-header`, `a2-cells-end-text`: the one step of 42, one pixel apart with and
   without a repeated header row, where this decides; under `Avoid` the row moves whole as well, and keeps its cells'
   line on the page and is cut only where it cannot move, at the top of a page). The same pages and words (cases `a2-padded-blocks`, `a2-line-breaks`, `a3-mirror` and
   their whole-pixel forms `a2-padded-blocks-px`, `a3-mirror-px`, with `FontMetricRounding.WholePixels`; `RowPartTests`,
-  Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. Chromium paints grid
+  Fluent), and where every length is whole pixels the grid lines in the same places within 0.1 pt. A row whose lines all
+  fit on the page but whose bottom padding or border does not moves to the next page whole under both values, as
+  Chromium moves it (`a2-row-end-bottom-padding-30`, a cell of five lines with 30 pt bottom padding below six lines:
+  `a0`..`a5` on page 1 and `b0`..`b4`, `after` on page 2; `PinnedDifferenceTests`). Chromium paints grid
   lines at whole pixels, the engine where layout puts them; where lengths are not whole pixels they differ by up to
   0.5 pt (`a2-rowspan-blocks`, a cell over two rows beside 10 pt blocks; 0.25 pt in `a2-padded-blocks` and
   `a3-mirror`). Whether the engine paints grid lines at whole pixels is left to the HTML front-end's stage. With `Avoid`, the code front-end's default, a
   cut where a part shows nothing is a last resort: the row moves to the next page whole, and is cut there only where it
-  cannot move (at the top of a page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`); where a row
+  cannot move (at the top of a page), so no table is refused for it (`Tracks/TableBreaks.cs`, `CutShows`; one refusal
+  of a row whose line below does not fit is listed under "Layout" above); where a row
   shows nothing over more than a page this needs a page more than Chromium. Reason for that default: an empty strip of
   a row reads as a layout fault in a report, and avoiding it costs nothing where the row can move.
+- **A row that starts its page area, under `EmptyRowParts.Allow`, lets its grid line below pass the page end**, as
+  Chromium prints it (`TablePage.PassesOnlyByItsLineBelow`; `RowEndTests`, cases `a2-row-end*`). A unit that starts its
+  page area (a row that continues from the page before, or the first on the page, with no header row above it), whose
+  cells' content fits and whose line below does not, is placed whole; so is the first row of such a unit, and the page
+  then breaks before the next row (`TableBreaks.InsideUnit`). Without this, 95 of 2,100 small tables were refused under
+  `Allow` that `Avoid` lays out; now none is, and the 95 have Chromium's words on Chromium's pages. The whole line
+  passes the page area, both halves, as in Chromium: 192 to 192.75 pt on a page area that ends at 192 (with a 6 pt line,
+  192 to 198). Only grid lines and cell backgrounds pass, by at most the width of the line below the row; never a glyph
+  or an image. The table's fragment is as tall as the page area; the line is drawn past it, so what follows the table
+  starts on the next page. The limits, against Chromium:
+  (i) Chromium draws the overflowing line again at the top of the next page; when the table ends the document, that is
+  a page that holds only the line (`a2-row-end`: 3 pages in Chromium, 2 in the engine).
+  (ii) Content after the table starts higher than in Chromium, by the width of that line: at the top of the next page
+  in the engine, below the line drawn again in Chromium (a paragraph's baseline at 24.00 pt against 24.75 with a 0.75 pt
+  line, against 30.00 with a 6 pt line; `a2-row-end-after`, `a2-row-end-6pt-after`). The engine reserves no offset
+  without the line: a gap with no line would be a third behaviour.
+  (iii) At the break between the first row and the next, the engine draws half of the line on each page (192 to 192.375
+  and 12 to 12.375), where Chromium draws the whole line on both; content after it is 0.375 pt higher (1.125 pt below
+  the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
+  A cell background ends at the middle of the line below (192.375), where Chromium ends it at the line's outer edge
+  (192.75; `a2-row-end-background`). That is the table model's own rule, not new here; the 0.375 pt between lies under
+  the line, which hides it, as the engine has only solid, opaque lines (no dashed or translucent ones). Limits (i) to
+  (iii) and the background go away when borders are sliced at page breaks, noted for stage 4.
 - **Monolithic content taller than the page area is a policy** (`LayoutProfile.MonolithicOverflow`): refused by
-  default, or sliced as Chromium slices it (`Layout/MonolithicSlices.cs`): the same pages, the same image rectangles
-  and the content after the last slice in the same place where the piece stands alone on its pages, in a one-column
-  table and in a table inside a cell (cases `a4-image-first`, `a4-image-after-text`, `a4-line-after-text`,
-  `a4-image-single-cell`, `a4-image-nested-table`; `MonolithicSliceTests`, `SliceInTableTests`); the differences in
-  other table shapes are listed below. A piece is cut into at most 100 slices, one per page (`MonolithicSlices.MaxSlices`): 100 slices show the longest image the front-end accepts, 14 400 pt, on a page area of 144 pt, and a piece that needs more is `Documents.Layout.TooManySlices` (`MonolithicSliceLimitTests`). Each slice is clipped to
+  default, or sliced as Chromium slices it (`Layout/MonolithicSlices.cs`): the same pages and the same image
+  rectangles where the piece stands alone on its pages, in a one-column table and in a table inside a cell, and the
+  content after the last slice in the same place in the first three shapes (cases `a4-image-first`,
+  `a4-image-after-text`, `a4-line-after-text`, `a4-image-single-cell`, `a4-image-nested-table`; `MonolithicSliceTests`,
+  `SliceInTableTests`); in a table inside a cell the row after the slice stands lower than in Chromium (below the
+  last slice), and the differences in other table shapes are listed below. A piece is cut into at most 100 slices, one per page (`MonolithicSlices.MaxSlices`): 100 slices show the longest image the front-end accepts, 14 400 pt, on a page area of 144 pt, and a piece that needs more is `Documents.Layout.TooManySlices` (`MonolithicSliceLimitTests`). A document is cut into at most 1 000 slices, all pieces together (`MonolithicSlices.MaxSlicesPerDocument`): the limit per piece bounds the pages per piece, not the pages per input byte, since one paragraph of many tall lines takes up to 100 pages per line. The page that would bring the count past 1 000 is `Documents.Layout.TooManySlices` too, and its message names the limit for one document. Each slice is clipped to
   its part of the page area across the whole page width (Chromium clips only in the block direction). In tagged PDF
   every slice of an image is content of its figure, as the pages of a paragraph are content of the paragraph: each page
   shows another part of the image, the alternative text is on the figure and is read once. The later slices of a line
@@ -613,8 +661,8 @@ Each is documented next to its code as well.
   the document's author. Artifacts are graphics objects that are not part of the author's original content but rather
   are generated by the conforming writer in the course of pagination, layout, or other strictly mechanical processes."
   The lower part of a glyph is the author's content, so by the first sentence a later slice is real content; but the
-  first slice already delivers the line's text, and the later pages draw the same glyphs again, so as content the text
-  would be read twice. The engine marks them as artifacts so that the text is read once (PDF/UA-1 checkpoint 01-002,
+  first slice already delivers the line's text (it draws the whole line, clipped; ISO 32000-1 §14.8.2.2.3), and the
+  later pages draw the same glyphs again, so as content the text would be read twice. The engine marks them as artifacts so that the text is read once (PDF/UA-1 checkpoint 01-002,
   `docs/pdf-profiles-and-accessibility.md`). veraPDF passes PDF/A-3a and PDF/UA-1 on such a file (sample C, with a
   sliced image, a sliced line and a sliced image in a table under a header row). A sliced figure is on several pages,
   so it has no `/BBox` (ISO 32000-1 Table 344 asks for one only for a figure "appearing in
@@ -624,7 +672,14 @@ Each is documented next to its code as well.
   others (two columns, `a4-image-in-cell`; a table inside a cell, `a4-image-nested-table`). Where the content's cell
   does not start the page only because of the grid lines above it, the page is cut at the deepest place, inside every
   table around it, as Chromium cuts when no breakpoint is valid, so the slice starts at the top of the next page
-  (`ConstraintSpace.IsBelowStartInsets`, under `Slice` only). **Deliberate deviation from Chromium:** beside a sliced
+  (`ConstraintSpace.IsBelowStartInsets`, under `Slice` only). So `Slice` can change the pages of a document that has no
+  piece taller than a page: under `Refuse` that cut is not taken. **Listed difference:** `a4-nested-padded-image-160`
+  (a 160 pt image in a table inside a cell, each cell with 15 pt top padding) has 2 pages in Chromium and under `Slice`,
+  and 3 under `Refuse`, the default (`PinnedDifferenceTests`). In 600 random documents whose pieces each fit a page
+  (each laid out under `Refuse` and under `Slice`, with both values of `EmptyRowParts`), 1 under `Avoid` and 1 under
+  `Allow` had other pages under `Slice` than under `Refuse`, and 85 under `Avoid` (66 under `Allow`) that `Refuse`
+  refuses were laid out under `Slice` (the shape above, a piece that fits the page area but not with its cell's insets).
+  Taking the cut under `Refuse` too is left to later layout work. **Deliberate deviation from Chromium:** beside a sliced
   piece, the other cells of its row go on page by page beside the slices (cases `a4-image-beside-lines`,
   `a4-line-beside-lines`); Chromium holds their content back while the slices run and goes on with it below the end
   of the piece. In a cell that spans rows the pages follow from the rules for rows: the page breaks at the latest
@@ -634,12 +689,27 @@ Each is documented next to its code as well.
   Under a repeated header row the content is sliced right below the header, on a page after one that showed no body row
   other than slices of a piece that was itself sliced; after a page that did show one, the page holds only the header
   and the row moves on once. That page with only the header is Chromium's: the first slice starts on Chromium's page and
-  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`).
+  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
+  each with a header of at most a quarter of the page area; a taller header is not repeated (above), and the piece is
+  sliced as without a header.
   **Deliberate deviation from Chromium:** on the later pages the engine repeats the header above every slice and makes
   each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
   page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt
   of the content that are never shown (`a4-header-row-image-row`).
+  A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
+  grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
+  taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases
+  `a4-cell-pad3-image-177`, `a4-cell-pad3-line-177`, `a4-cell-image-179-5`). Before, 83 of 600 random documents whose
+  pieces each fit a page were refused under `Slice` for this shape. **Listed difference from Chromium:** Chromium does
+  not slice such a piece; it moves it whole to the top of the next page and lets the cell's bottom padding and grid line
+  pass the page end. The engine has the same pages and words, but the piece in two slices (176.625 and 0.375 pt for a
+  177 pt image in a cell with 3 pt padding), and what follows starts lower on the next page. Under `Refuse` such a piece
+  is refused as before. A block outside a table whose bottom padding does not fit below such a piece at the top of a
+  page keeps the piece whole and lets the padding pass, as Chromium does.
   Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
+  Bottom padding of a block that does not fit below the last slice of a piece in it starts the next page, and what
+  follows the block comes once, below it, as in Chromium (cases `a4-image-block-padding-60`,
+  `a4-image-block-padding-133`; `MonolithicSliceTests`).
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
   precomposed, decompose what it lacks), except: a base followed only by an enclosing mark (Me) is not decomposed
   (HarfBuzz counts Me as a mark); a cluster with a variation selector (U+FE00–U+FE0F) is normalized, where HarfBuzz

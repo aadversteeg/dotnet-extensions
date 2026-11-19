@@ -511,4 +511,41 @@ public class PageModelContractTests
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
     }
+
+    private const double Max = PageModelRules.MaxNumber;
+
+    public static TheoryData<string, DrawItem, double> ItemsWithAnEdgeOutOfRange => new()
+    {
+        { "clip, y + height", new ClipStart(new Rect(new Point(0, Max), new Size(5, Max))), 100 },
+        { "clip, above the foot", new ClipStart(new Rect(new Point(0, -Max / 2), new Size(5, 5))), Max },
+        { "filled rectangle, y + height", new FillRectangle(new Rect(new Point(0, Max), new Size(5, Max)), Color.Black), 100 },
+        { "filled rectangle, x + width", new FillRectangle(new Rect(new Point(-Max, 0), new Size(-Max, 5)), Color.Black), 100 },
+        { "image, y + height", new DrawImage(new Rect(new Point(0, -Max), new Size(5, -Max)), TestImages.Load("rgb8.png")), 100 },
+        { "image, above the foot", new DrawImage(new Rect(new Point(0, -Max / 2), new Size(5, 5)), TestImages.Load("rgb8.png")), Max },
+        { "glyph run, x of origin + glyph", Run("x") with { Origin = new Point(Max, 10), Glyphs = [Run("x").Glyphs[0] with { X = Max }] }, 100 },
+        { "glyph run, above the foot", Run("x") with { Origin = new Point(10, -Max / 2) }, Max },
+    };
+
+    [Theory]
+    [MemberData(nameof(ItemsWithAnEdgeOutOfRange))]
+    public void An_item_whose_numbers_are_in_range_but_whose_written_edge_is_not_breaks_the_contract(string kind, DrawItem item, double pageHeight)
+    {
+        // The writer would have refused it as Documents.Pdf.Write.InvalidNumber (it writes page height − y − height, and
+        // x + glyph x for a text position); the contract checks those edges, so the raster back-end refuses it too.
+        var page = new Page(new Size(100, pageHeight), item is ClipStart ? [item, ClipEnd.Instance] : [item]);
+
+        Refused(new PageDocument(new DocumentMetadata("t", null), [page])).Code.Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel, kind);
+    }
+
+    [Fact]
+    public void A_glyph_gap_that_is_no_PDF_number_at_the_run_s_font_size_is_refused_by_the_writer()
+    {
+        // The limit PageModelRules names: TJ gives the gap in thousandths of the font size (ISO 32000-1 §9.4.3), so 1e10 pt
+        // at a font size of 1e-30 is -1e43, beyond a PDF real. The contract passes it; the writer refuses it, not draws it.
+        var run = Run("xx") with { FontSize = 1e-30 };
+        var page = new Page(new Size(100, 100), [run with { Glyphs = [run.Glyphs[0], run.Glyphs[1] with { X = 1e10 }] }]);
+
+        PageModelRules.Check(page, PdfRenderErrorCodes.Write.InvalidPageModel).IsSuccess.Should().BeTrue();
+        Refused(new PageDocument(new DocumentMetadata("t", null), [page])).Code.Should().Be(PdfErrorCodes.Write.InvalidNumber);
+    }
 }

@@ -206,7 +206,8 @@ public static class Elements
     public static PageSetup Page(Length width, Length height) => new(width, height, Edges.Zero);
 
     /// <summary>
-    /// A table. The columns come first, then the rows: header rows (repeated on every page), body rows and row groups.
+    /// A table. The columns come first, then the rows: header rows (repeated on every page, when at most a quarter of the
+    /// page area), body rows and row groups.
     /// <code>
     /// Table(Columns(3.Cm(), Fill(1), Auto),
     ///     [
@@ -243,7 +244,8 @@ public static class Elements
     /// <summary>A column as wide as its content needs, up to its widest content.</summary>
     public static TrackSize Auto => TrackSize.Auto.Instance;
 
-    /// <summary>A header row: repeated at the top of every page the table continues on; its cells are header cells.</summary>
+    /// <summary>A header row: repeated at the top of every page the table continues on (header rows of at most a quarter of
+    /// the page area, as Chromium); its cells are header cells.</summary>
     /// <param name="cells">The cells.</param>
     /// <param name="callerFile">Filled in by the compiler.</param>
     /// <param name="callerLine">Filled in by the compiler.</param>

@@ -86,6 +86,39 @@ public class PageModelRulesTests
         }
     }
 
+    private const double Max = PageModelRules.MaxNumber;
+
+    public static TheoryData<string, DrawItem, double> ItemsWithAnEdgeOutOfRange => new()
+    {
+        { "clip, y + height", new ClipStart(new Rect(new Point(0, Max), new Size(5, Max))), 100 },
+        { "clip, x + width", new ClipStart(new Rect(new Point(Max, 0), new Size(Max, 5))), 100 },
+        { "clip, above the foot", new ClipStart(new Rect(new Point(0, -Max / 2), new Size(5, 5))), Max },
+        { "filled rectangle, y + height", new FillRectangle(new Rect(new Point(0, Max), new Size(5, Max)), Color.Black), 100 },
+        { "filled rectangle, x + width", new FillRectangle(new Rect(new Point(-Max, 0), new Size(-Max, 5)), Color.Black), 100 },
+        { "filled rectangle, above the foot", new FillRectangle(new Rect(new Point(0, -Max / 2), new Size(5, 5)), Color.Black), Max },
+        { "image, y + height", new DrawImage(new Rect(new Point(0, -Max), new Size(5, -Max)), TestImages.Load("rgb8.png")), 100 },
+        { "image, x + width", new DrawImage(new Rect(new Point(Max, 0), new Size(Max, 5)), TestImages.Load("rgb8.png")), 100 },
+        { "image, above the foot", new DrawImage(new Rect(new Point(0, -Max / 2), new Size(5, 5)), TestImages.Load("rgb8.png")), Max },
+        { "glyph run, x of origin + glyph", Run(new Point(Max, 10), x: Max), 100 },
+        { "glyph run, y of origin + glyph", Run(new Point(10, -Max), y: -Max), 100 },
+        { "glyph run, above the foot", Run(new Point(10, -Max / 2)), Max },
+    };
+
+    [Theory]
+    [MemberData(nameof(ItemsWithAnEdgeOutOfRange))]
+    public void An_item_whose_numbers_are_in_range_but_an_edge_is_not_is_a_breach(string kind, DrawItem item, double pageHeight)
+    {
+        // Each number is within ±MaxNumber; a far edge (x + width, y + height: 6.8e38), or the height above the foot of
+        // the page (3.4e38 − (−1.7e38) = 5.1e38), is not. The PDF back-end writes those, so the contract refuses them.
+        var page = new Page(new Size(100, pageHeight), item is ClipStart ? [item, ClipEnd.Instance] : [item]);
+
+        var result = PageModelRules.Check(new PageDocument(Metadata, [page]), Code);
+
+        result.IsFailure.Should().BeTrue(kind);
+        result.Error.Code.Should().Be(Code);
+        result.Error.Message.Should().Contain("an edge that is not a number within", kind);
+    }
+
     [Theory]
     [InlineData(3.403000000000001e38, "the font size 3.403000000000001E+38; that is above the limit of 3.403E+38.")]
     [InlineData(double.PositiveInfinity, "the font size Infinity; that is above the limit of 3.403E+38.")]

@@ -183,7 +183,7 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 6.10-2 | PDF/A-3b, PDF/A-3a | There shall be no PresSteps entry in any Page dictionary | cannot occur | No alternate presentations or presentation steps. |
 | 6.11-1 | PDF/A-3b, PDF/A-3a | The document catalog shall not contain the Requirements key | cannot occur | No /Requirements. |
 | 7.1-1 | PDF/UA-1 | Content marked as Artifact should not be present inside tagged content | by construction | Each content run is in exactly one marked-content sequence: a structure MCID or an Artifact, never one inside the other (PageContentStream). |
-| 7.1-2 | PDF/UA-1 | Tagged content should not be present inside content marked as Artifact | by construction | As 7.1-1; a structure marker inside an artifact is `Pdf.Write.InvalidStructure` (PageEvents). |
+| 7.1-2 | PDF/UA-1 | Tagged content should not be present inside content marked as Artifact | by construction | As 7.1-1; a structure marker inside an artifact is `Pdf.Write.InvalidPageModel` (PageModel `MarkerNesting`). |
 | 7.1-3 | PDF/UA-1 | Content shall be marked as Artifact or tagged as real content | checked | Content outside every structure node and artifact: `Pdf.Conformance.Tagged.UnmarkedContent` (Render.Pdf TaggingTests). |
 | 7.1-4 | PDF/UA-1 | Files shall have a Suspects value of false(ISO 32000-1:2008, Table 321) | by construction | No /Suspects is written. |
 | 7.1-5 | PDF/UA-1 | All non-standard structure types shall be mapped to the nearest functionally equivalent standard type, as defined in ISO 32000-1:2008, … | by construction | Only standard structure types; no role map. |

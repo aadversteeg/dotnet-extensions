@@ -18,7 +18,10 @@ public static class LayoutErrorCodes
     /// <summary>Monolithic content (an image, a line box) taller than the page area that the document's profile slices
     /// (<c>MonolithicOverflow.Slice</c>) and that would need more than 100 slices, one per page: a piece of content
     /// shows on at most 100 pages, so the number of pages stays bounded by the size of the input. Metadata: Node, Value
-    /// (the content's height and the height shown in 100 slices, in points), SourceFile, SourceLine.</summary>
+    /// (the content's height and the height shown in 100 slices, in points), SourceFile, SourceLine. Also content that
+    /// would bring the slices of the whole document past 1 000 (<c>MonolithicSlices.MaxSlicesPerDocument</c>); the
+    /// message says which of the two limits was passed. Metadata then: Node (the document's root), Value (the slices up
+    /// to the page that passes the limit, and the limit), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode TooManySlices = _ / "TooManySlices";
 
     /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.
