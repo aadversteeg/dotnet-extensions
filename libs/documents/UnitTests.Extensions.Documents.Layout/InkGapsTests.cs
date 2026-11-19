@@ -19,6 +19,11 @@ public class InkGapsTests
     private static (double Left, double Right)? Gap(double top, double bottom, params InkSegment[] outline) =>
         InkGaps.GapOf([.. outline], top, bottom, new InkOutlines());
 
+    /// <summary>What stays visible of a line from <paramref name="left"/> to <paramref name="right"/> once the gaps are cut out
+    /// of it across its whole height: <see cref="InkGaps.Cut"/> with one clip that reaches every row.</summary>
+    private static IReadOnlyList<(double Left, double Right)> Visible(double left, double right, List<(double Left, double Right)> gaps) =>
+        [.. InkGaps.Cut(left, right, 0, 1, [(0, 1, gaps)], new InkOutlines()).Select(piece => (piece.Left, piece.Right))];
+
     private static void ShouldBe((double Left, double Right)? gap, double left, double right)
     {
         gap.Should().NotBeNull();
@@ -71,14 +76,14 @@ public class InkGapsTests
     [Fact]
     public void Gaps_are_joined_in_one_pass_after_sorting_and_leave_the_pieces_between_them()
     {
-        var pieces = InkGaps.Visible(0, 100, [(60, 70), (10, 20), (15, 30), (95, 120), (-5, 2), (62, 65)]);
+        var pieces = Visible(0, 100, [(60, 70), (10, 20), (15, 30), (95, 120), (-5, 2), (62, 65)]);
 
         pieces.Should().Equal([(2.0, 10.0), (30.0, 60.0), (70.0, 95.0)]);
     }
 
     [Fact]
     public void A_line_wholly_inside_one_gap_leaves_nothing() =>
-        InkGaps.Visible(10, 20, [(0, 30)]).Should().BeEmpty();
+        Visible(10, 20, [(0, 30)]).Should().BeEmpty();
 
     [Fact]
     public void The_band_is_the_line_inset_by_half_a_pixel_and_each_gap_is_widened_by_the_thickness_up_to_13_pixels()
@@ -154,11 +159,11 @@ public class InkGapsTests
         var top = drawn[0].Offset.Y;
         InkGaps.Add(first, outlines, font, 24, 0, glyphs, 30, top, 2.4).IsSuccess.Should().BeTrue();
         InkGaps.Add(second, outlines, font, 24, 0, glyphs, 30, top, 2.2).IsSuccess.Should().BeTrue();
-        var alone = InkGaps.Visible(0, width, [.. second]);
-        var both = InkGaps.Visible(0, width, [.. first, .. second]);
+        var alone = Visible(0, width, [.. second]);
+        var both = Visible(0, width, [.. first, .. second]);
 
         both.Should().NotEqual(alone, "the earlier line's gaps are wider than the later one's");
-        drawn.Skip(InkGaps.Visible(0, width, [.. first]).Count).Select(piece => (piece.Offset.X, piece.Offset.X + ((RuleFragment)piece.Fragment).Size.Width))
+        drawn.Skip(Visible(0, width, [.. first]).Count).Select(piece => (piece.Offset.X, piece.Offset.X + ((RuleFragment)piece.Fragment).Size.Width))
             .Should().Equal(both);
     }
 

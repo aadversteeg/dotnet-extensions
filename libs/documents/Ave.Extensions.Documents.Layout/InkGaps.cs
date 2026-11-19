@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
@@ -105,17 +104,6 @@ internal static class InkGaps
 
         return Result<Unit, Error>.Success(Unit.Value);
     }
-
-    /// <summary>
-    /// What stays visible of a line from <paramref name="left"/> to <paramref name="right"/> once the gaps are cut out of it
-    /// across its whole height (<see cref="Cut"/> with one clip).
-    /// </summary>
-    /// <param name="left">The line's start.</param>
-    /// <param name="right">The line's end.</param>
-    /// <param name="gaps">The gaps, in any order.</param>
-    /// <returns>The visible pieces, left to right, each of positive width.</returns>
-    public static IReadOnlyList<(double Left, double Right)> Visible(double left, double right, List<(double Left, double Right)> gaps) =>
-        [.. Cut(left, right, 0, 1, [(0, 1, gaps)], new InkOutlines()).Select(piece => (piece.Left, piece.Right))];
 
     /// <summary>
     /// The visible rectangles of a line from (<paramref name="left"/>, <paramref name="top"/>) to (<paramref name="right"/>,
