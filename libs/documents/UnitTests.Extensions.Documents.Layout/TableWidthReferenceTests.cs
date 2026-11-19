@@ -7,7 +7,7 @@ namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// A table as wide as the width it is given (<see cref="BoxWidth.Stretch"/>) against Chromium's layout of the same
-/// tables with <c>width: 100%</c> (cases <c>tw-auto</c>, <c>tw-col</c>, <c>tw-insets</c>, <c>tw-fixed</c> in
+/// tables with <c>width: 100%</c> (cases <c>tw-auto</c>, <c>tw-col</c>, <c>tw-span</c>, <c>tw-insets</c>, <c>tw-fixed</c> in
 /// <c>tools/reference/chromium/cases</c>): a 300pt (400px) container, collapsed borders, Lato 10.5pt (14px, a size Chromium
 /// keeps exact), reference cells (<c>border: 0.75pt solid; padding: 2pt 4pt</c>) unless a case says otherwise.
 /// The width left over the columns' maximums goes to the auto columns in proportion to their maximums, or to the fixed
@@ -68,6 +68,9 @@ public class TableWidthReferenceTests
                 t.Cell("short", cell with { Border = cell.Border with { Left = new BorderSide(3.Pt(), Color.Black) } }),
                 t.Cell("a longer text", cell with { Border = cell.Border with { Right = new BorderSide(6.Pt(), Color.Black) } }),
                 t.Cell("mid")),
+            "span" or "span-wide" => TableModels.Page(300, 400, Stretched(t.Table(Autos(3), t.Body(
+                t.Row(t.Cell(name == "span" ? "a heading over both" : "a much wider heading that spans both columns", cell with { Span = new CellSpan(2, 1) }), t.Cell("third")),
+                t.Row(t.Cell("one"), t.Cell(name == "span" ? "two words" : "two"), t.Cell(name == "span" ? "third column" : "x")))))),
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "no such case"),
         };
     }
@@ -113,6 +116,36 @@ public class TableWidthReferenceTests
                 n + ChromiumLayout.FloatSlack,
                 $"{name} column {index}: ours {cells[index]} must be within {n} layout units of Chromium's {chromium[index]} "
                 + $"({textItems} ceiled text items, {(receives[index] ? "its own truncated share" : "no share")}{(index == last ? $", the {receivers - 1} other truncations" : string.Empty)})");
+        }
+
+        TableWidth(page).Should().BeApproximately(300, 1e-9, "the table is as wide as its container");
+    }
+
+    /// <summary>
+    /// A cell spanning the first two of three auto columns, above a row of three cells (case <c>tw-span</c>). Chromium
+    /// shares the spanning cell's widths over the spanned columns with the same distribution as the table's width
+    /// (<c>TrackSizing.SpreadOverSpan</c>), not in equal amounts. In <c>span</c> the heading is wider than the two
+    /// columns' maximums together, so they grow in proportion to their maximums; in <c>span-wide</c> the heading's maximum
+    /// is wider than the table, so the table's width lies between the columns' minimums and maximums and each grows in
+    /// proportion to max − min. n: the table's five ceiled text items, the column's own truncated share, and the other
+    /// two columns' truncations (a column may take a remainder at two levels: the span's and the table's).
+    /// </summary>
+    [Theory]
+    [InlineData("span", new[] { 179.402, 119.848, 56.156, 123.246, 119.848 })]
+    [InlineData("span-wide", new[] { 263.531, 35.719, 130.441, 133.090, 35.719 })]
+    public void A_cell_spanning_two_columns_shares_its_width_over_them_like_Chromium(string name, double[] chromium)
+    {
+        var page = Paginate(Document(name)).Single();
+
+        var cells = CellWidths(page);
+        cells.Should().HaveSameCount(chromium);
+        for (var index = 0; index < cells.Length; index++)
+        {
+            // The spanning cell (index 0) is two columns wide: twice the shares.
+            var n = 5 + (index == 0 ? 2 : 1) * 3;
+            ChromiumLayout.DifferenceInLayoutUnits(cells[index], chromium[index]).Should().BeLessThanOrEqualTo(
+                n + ChromiumLayout.FloatSlack,
+                $"{name} cell {index}: ours {cells[index]} must be within {n} layout units of Chromium's {chromium[index]} (5 ceiled text items, own share and two truncations per column)");
         }
 
         TableWidth(page).Should().BeApproximately(300, 1e-9, "the table is as wide as its container");

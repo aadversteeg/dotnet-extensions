@@ -18,9 +18,10 @@ namespace Ave.Extensions.Documents.Layout;
 /// §17.5.2.1): content never changes it; content wider than the column overflows the cell.</item>
 /// <item><b>Auto</b>: the AUTOMATIC table layout (CSS 2.1 §17.5.2.2): each column has a minimum (the widest
 /// min-content of its cells, "MCW") and a maximum (the widest max-content); a cell spanning several columns widens
-/// them so that together they hold it, "by approximately the same amount" — here exactly the same amount, over the
-/// spanned columns that are not fixed. The algorithm is not normative in CSS 2.1; the distribution of the space
-/// between minimum and maximum follows CSS Tables 3 (in proportion to max − min), which Chromium also does.</item>
+/// the spanned columns that are not fixed so that together they hold it. CSS 2.1 says "by approximately the same
+/// amount" in an algorithm that is not normative; the engine shares the cell's widths over the spanned columns as
+/// Chromium does (<see cref="SpreadOverSpan"/>), with the same distribution as the table's width. The distribution of
+/// the space between minimum and maximum follows CSS Tables 3 (in proportion to max − min), which Chromium also does.</item>
 /// <item><b>Fill</b>: CSS Grid's flexible length (<c>fr</c>, CSS Grid 1 §7.2.4: a share "of the leftover space"),
 /// with the minimum Grid gives <c>1fr</c> (<c>minmax(auto, 1fr)</c>: never narrower than its min-content) and the
 /// "Find the Size of an fr" loop of §11.7.1, which drops a fill column whose minimum is larger than its share and
@@ -57,13 +58,23 @@ internal static class TrackSizing
             max[cell.Column] = Math.Max(max[cell.Column], cell.Widths.MaxContent);
         }
 
-        // Step 2: spanning cells, narrowest span first, widen the spanned columns that are not fixed by equal amounts.
-        foreach (var cell in all.Where(cell => cell.Span > 1).OrderBy(cell => cell.Span))
+        // Step 2: spanning cells, narrowest span first and then by first column (Chromium's order), widen the spanned
+        // columns that are not fixed: the cell's minimum first, then its maximum over the widened minimums.
+        foreach (var cell in all.Where(cell => cell.Span > 1).OrderBy(cell => cell.Span).ThenBy(cell => cell.Column))
         {
             var spanned = Enumerable.Range(cell.Column, cell.Span).ToImmutableArray();
             var flexible = spanned.Where(index => columns[index] is not TrackSize.Fixed).ToImmutableArray();
-            Widen(min, spanned, flexible, cell.Widths.MinContent);
-            Widen(max, spanned, flexible, cell.Widths.MaxContent);
+            var lows = SpreadOverSpan(min, max, spanned, flexible, cell.Widths.MinContent);
+            foreach (var index in flexible)
+            {
+                min[index] = Math.Max(min[index], lows[index]);
+            }
+
+            var highs = SpreadOverSpan(min, max, spanned, flexible, cell.Widths.MaxContent);
+            foreach (var index in flexible)
+            {
+                max[index] = Math.Max(Math.Max(min[index], max[index]), highs[index]);
+            }
         }
 
         return [.. min.Zip(max, (low, high) => new IntrinsicWidths(low, Math.Max(low, high)))];
@@ -142,11 +153,7 @@ internal static class TrackSizing
             return;
         }
 
-        var weights = receivers.Sum(index => ranges[index].MaxContent);
-        foreach (var index in receivers)
-        {
-            widths[index] += weights > 0 ? leftover * ranges[index].MaxContent / weights : leftover / receivers.Length;
-        }
+        Share(widths, receivers, [.. ranges.Select(range => range.MaxContent)], leftover);
     }
 
     /// <summary>
@@ -182,19 +189,56 @@ internal static class TrackSizing
         }
     }
 
-    /// <summary>Widens the flexible columns of a span by equal amounts until the span is as wide as the cell. When every
-    /// spanned column is fixed, the content overflows instead (fixed means fixed).</summary>
-    private static void Widen(double[] sizes, ImmutableArray<int> spanned, ImmutableArray<int> flexible, double target)
+    /// <summary>
+    /// What a cell spanning several columns asks of each of them: the width distribution of CSS Tables 3 ("Distributing
+    /// width to columns", <c>#width-distribution-algorithm</c>) over the spanned columns, as Chromium applies it to a
+    /// spanning cell (<c>third_party/blink/renderer/core/layout/table/table_layout_utils.cc</c>,
+    /// <c>DistributeColspanCellToColumnsAuto</c>, which calls <c>DistributeInlineSizeToComputedInlineSizeAuto</c> once
+    /// for the cell's minimum and once for its maximum). When the spanned minimums hold the target, nothing changes;
+    /// when the spanned maximums hold it, the flexible columns grow from their minimum in proportion to max − min;
+    /// otherwise each starts at its maximum and the rest is shared in proportion to the maximums (in equal parts when
+    /// they are all zero). Fixed columns never grow (fixed means fixed: content overflows instead, as before).
+    /// </summary>
+    /// <returns>Per column of the table, the width the cell asks of it (only the flexible columns are filled in).</returns>
+    private static double[] SpreadOverSpan(double[] min, double[] max, ImmutableArray<int> spanned, ImmutableArray<int> flexible, double target)
     {
-        var missing = target - spanned.Sum(index => sizes[index]);
-        if (missing <= 0 || flexible.IsEmpty)
+        var sizes = new double[min.Length];
+        var lowest = spanned.Sum(index => min[index]);
+        if (target <= lowest || flexible.IsEmpty)
         {
-            return;
+            return sizes;
+        }
+
+        var highest = spanned.Sum(index => max[index]);
+        if (target <= highest)
+        {
+            var room = flexible.Sum(index => max[index] - min[index]);
+            foreach (var index in flexible)
+            {
+                sizes[index] = min[index] + (room <= 0 ? 0 : (target - lowest) * (max[index] - min[index]) / room);
+            }
+
+            return sizes;
         }
 
         foreach (var index in flexible)
         {
-            sizes[index] += missing / flexible.Length;
+            sizes[index] = max[index];
+        }
+
+        Share(sizes, flexible, max, target - highest);
+        return sizes;
+    }
+
+    /// <summary>Adds <paramref name="amount"/> to the receiving columns, each in proportion to its weight, or in equal
+    /// parts when the weights are all zero: the step above the max-content guess of the width distribution of CSS
+    /// Tables 3, for a table (<see cref="GrowPastMaximum"/>) and for a spanning cell (<see cref="SpreadOverSpan"/>).</summary>
+    private static void Share(double[] sizes, ImmutableArray<int> receivers, double[] weights, double amount)
+    {
+        var total = receivers.Sum(index => weights[index]);
+        foreach (var index in receivers)
+        {
+            sizes[index] += total > 0 ? amount * weights[index] / total : amount / receivers.Length;
         }
     }
 }
