@@ -153,12 +153,25 @@ to smooth. What the numbers show:
 
 `sample-c-sliced` (eight pages of 300 × 204 pt: a logo and a 200 pt line sliced over pages, then a logo sliced in a table
 under its repeated header row; every slice clipped) joins the comparison. It is the only sample whose pages hold little
-but an image or a few lines of text. On the timesheet pages the viewers' distance to each other is large, because
-poppler snaps thin rectangles and draws heavier edges, and that distance is the allowance. A page with little but an
-image or a few text lines has no such allowance, so two differences that are present in every sample become visible:
-image interiors and baselines on whole pixels (below). Nine rows break the rule; each is a named exception in
-`RasterReferenceTests` (`NamedExceptions`): its raw numbers are pinned, and with its named causes removed the rule
-holds. A row that broke the rule with its causes removed would be an unknown difference; there is none.
+but an image or a few lines of text. On the timesheet pages the viewers' distance to each other is large, and that
+distance is the allowance. Most of it is text: where a line's baseline has a fraction of a half or more, MuPDF draws it
+one whole pixel row lower than poppler (below), and poppler's thin rectangles snapped to whole pixels are the smaller
+part. On page 1 of timesheet-long.en at 96 dpi the engine's mean squared error to poppler is 517.59; with its lines
+drawn on poppler's rows it is 74.67, which bounds everything else, rectangles included. A page whose baselines happen to
+have fractions below a half gets both viewers on the same row and so little allowance, while the engine is up to half
+a pixel from both: so for text the rule is as strict as the baselines' fractions make it, and where the viewers are a
+row apart a line drawn up to a row off has room to pass. On the sliced sample's pages with little but an image or a few
+text lines, two differences that are present in every sample become visible: image interiors and baselines on whole
+pixels (below). Nine rows break the rule; each is a named exception in `RasterReferenceTests` (`NamedExceptions`): its
+raw numbers are pinned, and with its named causes removed the rule holds. A row that broke the rule with its causes
+removed would be an unknown difference; there is none.
+
+The two causes are not part of the general rule, which stays the raw comparison: a cause is removed only on a named
+row where the raw rule fails, with that row's raw numbers pinned, and each named row has the fewest causes with which
+it holds. Made general, the image cause would judge no clip edge around an image to the pixel: the part it leaves out
+is grown by one pixel, and a clip edge one pixel off lies inside that ring. Such an edge is held by
+`ClipTests.An_image_half_outside_its_clip_shows_the_exact_area_of_its_part_inside`, which fails with the clip drawn one
+pixel taller or one pixel lower, as five other tests of `ClipTests` do.
 
 | Sample | dpi | Page | E–M away | E–M MSE | E–M over 32 / 64 / 128 | E–P away | E–P MSE | E–P over 32 / 64 / 128 | M–P away | M–P MSE | M–P over 32 / 64 / 128 |
 | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- |
@@ -185,7 +198,7 @@ interiors out where that cause is named, for all three pairs):
 | dpi | Page | Causes removed | E–M away | E–M MSE | E–M over 32 / 64 / 128 | E–P away | E–P MSE | E–P over 32 / 64 / 128 | M–P away | M–P MSE | M–P over 32 / 64 / 128 |
 | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- | ---: | ---: | --- |
 | 96 | 2 | image interior | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 | 0 | 0.00 | 0 / 0 / 0 |
-| 96 | 3 | image interior and baseline | 0 | 7.57 | 149 / 0 / 0 | 0 | 17.73 | 464 / 2 / 0 | 0 | 333.93 | 1763 / 1111 / 535 |
+| 96 | 3 | baseline | 0 | 48.74 | 664 / 445 / 427 | 0 | 65.29 | 1040 / 515 / 494 | 0 | 241.29 | 1895 / 1181 / 588 |
 | 96 | 5 | baseline | 0 | 4.02 | 62 / 0 / 0 | 0 | 15.82 | 588 / 18 / 0 | 0 | 26.25 | 856 / 140 / 0 |
 | 96 | 6 | baseline | 0 | 0.62 | 0 / 0 / 0 | 0 | 36.89 | 758 / 740 / 0 | 0 | 42.72 | 757 / 736 / 0 |
 | 96 | 7 | image interior and baseline | 0 | 0.55 | 0 / 0 / 0 | 0 | 23.15 | 220 / 202 / 0 | 0 | 26.46 | 219 / 198 / 0 |
@@ -195,7 +208,8 @@ interiors out where that cause is named, for all three pairs):
 | 300 | 8 | image interior and baseline | 1 | 1.47 | 353 / 18 / 0 | 0 | 17.42 | 1411 / 726 / 334 | 1 | 19.38 | 1590 / 826 / 356 |
 
 Page 2 at 96 dpi is the logo alone: with its interior left out nothing of the page is compared, and the rule holds
-trivially; page 3 at 96 dpi holds with either cause removed alone, and both are on the page. With the painter planted
+trivially; page 3 at 96 dpi holds with either cause removed alone, and is named with the baseline alone, so its image
+slice is still judged against the viewers. With the painter planted
 to ignore the clip, the comparison fails after the causes are removed: page 2 at 96 dpi (engine to each viewer, mean
 squared error 3758.03 against 0.00, 4246 pixels over 128 against 0: the image drawn outside its clip) and page 7 at
 300 dpi (2084.62 against 21.24), and pages 2 to 5 at 300 dpi under the plain rule.
@@ -225,8 +239,12 @@ engine's, at 96 and 300 dpi:
 | 0.8 | +0.191 | −0.812 | +0.197 | −0.810 |
 | 0.95 | +0.045 | −0.958 | +0.048 | −0.959 |
 
-So MuPDF draws the baseline on the nearest whole pixel row (a half goes down the page) and poppler on the row above it
-(it floors), at both resolutions.
+So MuPDF draws the baseline on the nearest whole pixel row and poppler on the row above it (it floors), at both
+resolutions. An exact half is not decided for MuPDF at every resolution: measured on lines of Lato at 6 to 200 pt, it
+went down the page in all 74 cases at 72 dpi and all 74 at 96 dpi, where half a pixel is an exact number of points
+(0.5 and 0.375 pt), and either way at 120 dpi (20 of 74 up) and 300 dpi (25 of 58 up), where it is not (0.3 and
+0.12 pt). The 0.5 line of the table above is one that went down; the comparison sends a half down
+(`RasterComparison.MupdfRow`).
 
 A larger glyph MuPDF draws at its exact place. Measured on the letter "H" with its baseline on a whole row and 0.3 pixel
 below it, two pages of one PDF: MuPDF's two pages are equal up to an em of 256 pixels and differ from an em of

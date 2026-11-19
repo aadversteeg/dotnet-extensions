@@ -253,9 +253,9 @@ to each other is small); each is pinned with its numbers and holds the rule once
 interiors or baselines on whole pixels (`RasterReferenceTests`, `NamedExceptions`).
 
 **Different from the viewers: baselines on whole pixels.** Both viewers draw a glyph's baseline on a whole pixel row,
-MuPDF on the nearest (a half goes down the page) up to an em of 256 pixels, poppler on the one above (it floors) at
-every size, at 96 and at 300 dpi alike; MuPDF draws a larger glyph at its exact place, and the engine draws every glyph
-where the page model puts it. So a line of text can lie up to half a pixel (MuPDF) or up to one
+MuPDF on the nearest (an exact half down the page at 72 and 96 dpi, either way at 120 and 300 dpi) up to an em of 256
+pixels, poppler on the one above (it floors) at every size, at 96 and at 300 dpi alike; MuPDF draws a larger glyph at
+its exact place, and the engine draws every glyph where the page model puts it. So a line of text can lie up to half a pixel (MuPDF) or up to one
 pixel (poppler) from the viewers' place; it never moves a line. Measured on lines of Lato 11 pt with baselines at
 fractions 0.1 to 0.95 of a pixel, and on the sliced sample: page 5's line has its baseline at 110.476 px at 96 dpi,
 both viewers draw it at 110 (ink centre row 105.33 in both, 105.82 in the engine, with equal ink;

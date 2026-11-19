@@ -338,7 +338,8 @@ internal static class RasterComparison
         };
     }
 
-    /// <summary>MuPDF's row for a baseline: the nearest whole pixel, a half going down the page.</summary>
+    /// <summary>MuPDF's row for a baseline: the nearest whole pixel, a half going down the page (as MuPDF does at 72 and
+    /// 96 dpi; at 120 and 300 dpi it sends an exact half either way).</summary>
     public static double MupdfRow(double baseline) => Math.Floor(baseline + 0.5);
 
     /// <summary>Poppler's row for a baseline: the whole pixel above it (floored).</summary>

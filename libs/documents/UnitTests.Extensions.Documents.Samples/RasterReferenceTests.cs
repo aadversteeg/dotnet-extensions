@@ -80,7 +80,7 @@ public sealed class RasterReferenceTests
     private static readonly (string Name, double Resolution, int Page, string Raw, Cause Causes)[] NamedExceptions =
     [
         ("sample-c-sliced", 96, 2, "0 | 39.60 | 835 / 669 / 270 | 0 | 76.09 | 1218 / 957 / 564 | 0 | 18.11 | 628 / 371 / 83", Cause.ImageInterior),
-        ("sample-c-sliced", 96, 3, "0 | 79.33 | 1504 / 666 / 427 | 0 | 232.70 | 2323 / 1604 / 873 | 0 | 241.29 | 1895 / 1181 / 588", Cause.ImageInterior | Cause.BaselineOnWholePixel),
+        ("sample-c-sliced", 96, 3, "0 | 79.33 | 1504 / 666 / 427 | 0 | 232.70 | 2323 / 1604 / 873 | 0 | 241.29 | 1895 / 1181 / 588", Cause.BaselineOnWholePixel),
         ("sample-c-sliced", 96, 5, "0 | 83.40 | 1170 / 721 / 25 | 0 | 93.84 | 1517 / 750 / 28 | 0 | 26.25 | 856 / 140 / 0", Cause.BaselineOnWholePixel),
         ("sample-c-sliced", 96, 6, "0 | 9.25 | 121 / 81 / 4 | 0 | 45.33 | 862 / 813 / 4 | 0 | 42.72 | 757 / 736 / 0", Cause.BaselineOnWholePixel),
         ("sample-c-sliced", 96, 7, "0 | 26.82 | 993 / 484 / 37 | 0 | 70.31 | 1769 / 1512 / 150 | 0 | 48.91 | 1358 / 979 / 3", Cause.ImageInterior | Cause.BaselineOnWholePixel),
