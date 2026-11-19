@@ -165,7 +165,9 @@ public sealed class Canvas
     /// <param name="clip">Only what lies inside this box is painted; null for the whole canvas.</param>
     /// <returns>Unit, or <c>Documents.Graphics.InvalidValue</c> for a value out of range (see the class remarks), or
     /// <c>Documents.Graphics.TooMuchWork</c> for a shape whose exact coverage takes more work than
-    /// <see cref="MaxFillWork"/>, <see cref="MaxCanvasWork"/> or <see cref="MaxRowPieces"/> allow (nothing painted).</returns>
+    /// <see cref="MaxFillWork"/>, <see cref="MaxCanvasWork"/> or <see cref="MaxRowPieces"/> allow (nothing painted), or
+    /// <c>Documents.Graphics.InexactCoverage</c>, a guard no shape is known to reach: the fill stopped part way, and after
+    /// it the canvas's content is not defined and the canvas is not to be used.</returns>
     /// <exception cref="ArgumentNullException">The path is null.</exception>
     public Result<Unit, Error> Fill(Path path, Affine transform, FillRule rule, Color color, PixelBox? clip = null)
     {
@@ -352,8 +354,10 @@ public sealed class Canvas
             : null;
 
     /// <summary>Checks the values, then hands each row of the coverage of a path inside a box to <paramref name="row"/>;
-    /// the work charged, or the rasteriser's error. A null <paramref name="admit"/> is for a convex shape (an image's
-    /// outline), which needs no flagged cells.</summary>
+    /// the work charged, or the rasteriser's error. A null <paramref name="admit"/> is for an image's outline, a
+    /// rectangle under an affine transform: one convex polygon, which winds around every point 0 times or once (one
+    /// way), so the winding number in a cell takes 0 and one other value only and the integral is its exact coverage
+    /// (<see cref="AreaRasterizer.RasterizeConvex"/>): no flags, no arrangement and no charge.</summary>
     private static Result<long, Error> CoverageRows(AreaRasterizer rasterizer, Path path, Affine transform, FillRule rule, PixelBox box, Func<long, Error?>? admit, CoverageRow row)
     {
         if (!Enum.IsDefined(rule))
@@ -436,6 +440,8 @@ public sealed class Canvas
             return;
         }
 
+        // The preimage is a parallelogram, clipped to the image's box still convex: winding 0 or ±1 everywhere, so the
+        // integral is its exact overlap with each image pixel (AreaRasterizer.RasterizeConvex), with no flags and no charge.
         _preimagePolygons.Clear();
         _preimagePolygons.Add(clipped);
         _sampler.RasterizeConvex(_preimagePolygons, FillRule.NonZero, imageBox, sample);

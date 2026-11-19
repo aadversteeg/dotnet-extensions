@@ -310,15 +310,15 @@ internal sealed class AreaRasterizer
         }
     }
 
-    /// <summary>An error <c>Documents.Graphics.TooMuchWork</c> with the work asked for and the limit.</summary>
+    /// <summary>An error <c>Documents.Graphics.TooMuchWork</c> with the work asked for and the limit: Value
+    /// <c>asked&gt;limit</c>.</summary>
     /// <param name="message">What was asked for.</param>
     /// <param name="value">The amount asked for.</param>
     /// <param name="limit">The limit.</param>
     /// <returns>The error.</returns>
     public static Error TooMuchWork(string message, long value, long limit) =>
         new Error(GraphicsErrorCodes.TooMuchWork, message)
-            .With(ErrorMetadataKeys.Value, value.ToString(CultureInfo.InvariantCulture))
-            .With(GraphicsErrorCodes.Limit, limit.ToString(CultureInfo.InvariantCulture));
+            .With(ErrorMetadataKeys.Value, string.Create(CultureInfo.InvariantCulture, $"{value}>{limit}"));
 
     /// <summary>The cells of the polygons inside the area that the flag rule (<see cref="CellFlags"/>) flags: column and
     /// row of each, row by row from the top, and whether the cell is two-sided (<see cref="CellFlags.IsTwoSided"/>), so

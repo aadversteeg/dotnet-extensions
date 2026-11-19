@@ -496,6 +496,53 @@ public class OverlapCoverageTests(ITestOutputHelper output)
         classified.Should().BeEmpty($"each shape's pixel lies on a known side of a border of the rule; all that do not: {string.Join("; ", classified)}");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_rotated_image_quad_is_exact_without_flags_or_a_charge(bool clipped)
+    {
+        // An image's outline as the canvas draws it (AreaRasterizer.RasterizeConvex: no flags, no arrangement, no charge):
+        // a rectangle under a rotation and a scale, one convex quad, so its winding number is 0 or one value of one sign.
+        // Its integral is the exact area in every pixel under both rules, with and without a clip box whose sides lie in
+        // pixels (the clipped quad is still convex).
+        var breaches = new List<string>();
+        var compared = 0;
+        foreach (var angle in new[] { 0.0, 0.1, 0.5, Math.PI / 4, 1.0, 2.2, 3.0, 4.4 })
+        {
+            var (c, n) = (Math.Cos(angle), Math.Sin(angle));
+            (double X, double Y) Corner(double u, double v) => (4 + (u * c) - (v * n), 4 + (u * n) + (v * c));
+            var quad = Points(Corner(-2.7, -1.9), Corner(2.7, -1.9), Corner(2.7, 1.9), Corner(-2.7, 1.9));
+            (long, long, long, long)? cut = clipped ? Box(1.40625, 1.734375, 6.21875, 5.890625) : null;
+            var exact = ExactCoverage.Areas([quad], cut);
+            var box = cut is { } b ? new PixelBox(b.Item1 / 64.0, b.Item2 / 64.0, b.Item3 / 64.0, b.Item4 / 64.0) : Whole;
+            var polygons = Clipping.ToBox([[.. quad.Select(point => new Vertex(point.X / 64.0, point.Y / 64.0))]], box);
+            foreach (var rule in new[] { FillRule.NonZero, FillRule.EvenOdd })
+            {
+                var coverage = new Dictionary<(int X, int Y), double>();
+                new AreaRasterizer().RasterizeConvex(polygons, rule, box, (row, first, values) =>
+                {
+                    for (var index = 0; index < values.Length; index++)
+                    {
+                        coverage[(first + index, row)] = values[index];
+                    }
+                });
+                foreach (var cell in coverage.Keys.Union(exact.Keys))
+                {
+                    var expected = exact.TryGetValue(cell, out var areas) ? (rule == FillRule.NonZero ? areas.NonZero : areas.EvenOdd) : 0;
+                    var actual = coverage.TryGetValue(cell, out var value) ? value : 0;
+                    compared++;
+                    if (!(Math.Abs(actual - expected) <= Rounding))
+                    {
+                        breaches.Add($"angle {angle} {rule} cell {cell}: {actual:R} instead of {expected:R}");
+                    }
+                }
+            }
+        }
+
+        breaches.Should().BeEmpty($"every cell must be exact; all breaches: {string.Join("; ", breaches)}");
+        compared.Should().BeGreaterThan(clipped ? 300 : 600);
+    }
+
     [Fact]
     public void The_exact_areas_of_a_simple_polygon_match_its_clipped_shoelace_areas()
     {

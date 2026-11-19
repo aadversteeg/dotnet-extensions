@@ -48,8 +48,11 @@ public class WorkLimitTests
     private static void ShouldBeTooMuchWork(Error error, long limit)
     {
         error.Code.Should().Be(GraphicsErrorCodes.TooMuchWork);
-        long.Parse(error.Metadata![GraphicsErrorCodes.Limit].ToString()!, System.Globalization.CultureInfo.InvariantCulture).Should().Be(limit);
-        long.Parse(error.Metadata![ErrorMetadataKeys.Value].ToString()!, System.Globalization.CultureInfo.InvariantCulture).Should().BeGreaterThan(limit);
+        // Value: the work asked for and the limit, "asked>limit".
+        var parts = error.Metadata![ErrorMetadataKeys.Value].ToString()!.Split('>');
+        parts.Should().HaveCount(2);
+        long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture).Should().Be(limit);
+        long.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture).Should().BeGreaterThan(limit);
     }
 
     [Fact]
