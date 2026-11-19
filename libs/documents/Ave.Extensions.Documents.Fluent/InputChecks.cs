@@ -76,6 +76,29 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LineHeight, $"The line height must not be negative, and at most {InputLimits.MaxLength} (as a length, a number or a percentage of 100).", lineHeight.Describe(), "line-height", source);
         }
 
+        if (format.WhiteSpaceCollapse is { } collapse && !Enum.IsDefined(collapse))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The white-space-collapse value is not one of WhiteSpaceCollapse.", collapse.ToString(), "white-space-collapse", source);
+        }
+
+        if (format.TextWrapMode is { } wrap && !Enum.IsDefined(wrap))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one of TextWrapMode.", wrap.ToString(), "text-wrap-mode", source);
+        }
+
+        if (format.DecorationSkipInk is { } skip && !Enum.IsDefined(skip))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, "The text-decoration-skip-ink value is not one of TextDecorationSkipInk.", skip.ToString(), "text-decoration-skip-ink", source);
+        }
+
+        foreach (var line in format.Decorations ?? [])
+        {
+            if (line is null || !Enum.IsDefined(line.Line))
+            {
+                yield return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, "The text decoration line is not one of TextDecorationLine.", line?.Line.ToString() ?? "null", "text-decoration", source);
+            }
+        }
+
         // CSS Fragmentation 3 §3.3: "Only positive integers are allowed as values of orphans and widows."
         if (format.Orphans is int orphans and < 1)
         {
@@ -169,6 +192,10 @@ internal static class InputChecks
     /// <summary>A span got a shared style that sets box properties; a span has no box, so they cannot apply.</summary>
     public static Error BoxPropertiesOnSpan(SourceLocation source) =>
         Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, "A span has no box and no lines: its style may not set margin, padding, background or text alignment.", "Style", "style", source);
+
+    /// <summary>The span of an image in a line has no text and no box of its own: formatting belongs on the image.</summary>
+    public static Error FormatOnImageSpan(SourceLocation source) =>
+        Problem(DocumentErrorCodes.Input.Invalid.NotApplicable, "The span of an image in a line shows no text: format the image instead (InlineImage(Image(file).Margin(...))).", "Style", "style", source);
 
     /// <summary>A page break with nothing after it in its list has nothing to move to the next page.</summary>
     public static Error TrailingPageBreak(SourceLocation source) =>

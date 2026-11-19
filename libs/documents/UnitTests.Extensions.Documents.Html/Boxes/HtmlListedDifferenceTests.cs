@@ -45,29 +45,6 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
-    /// Chromium shapes text across the border of an inline element when the font is the same, so the pair kerns as in
-    /// one run; the engine shapes each run of text alone (the model's runs end at the element's border). Line 1 of each
-    /// case is the same text in one run: there both agree.
-    /// </summary>
-    [Fact]
-    public void Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it()
-    {
-        // <p>To</p><p>T<span>o</span></p>: "To" ends at 22.176 kerned, 23.64 in the engine across the span.
-        // The engine draws the two runs of line 2 as two words: the line ends where its last word does.
-        var (engine, chromium) = (LineEnds(Engine("h-kern-span")), LineEnds(Chromium("h-kern-span")));
-        engine[0].Should().BeApproximately(chromium[0], HtmlCases.Bound);
-        chromium[1].Should().BeApproximately(chromium[0], 0.01, "Chromium kerns T and o across the span");
-        (engine[1] - chromium[1]).Should().BeGreaterThan(1, "the engine does not");
-
-        // <p> <b> x </b> <b> y </b> </p>, then <p><b>x y</b></p>: "y" starts at 18.633 in Chromium in both, 18.93 in the
-        // engine in the first (the space and the y are in two runs).
-        var (engineY, chromiumY) = (Starts(Engine("h-kern-bold-spaces"), "y"), Starts(Chromium("h-kern-bold-spaces"), "y"));
-        chromiumY[0].Should().BeApproximately(chromiumY[1], 0.01, "Chromium shapes the space and the y of two elements as one run");
-        engineY[1].Should().BeApproximately(chromiumY[1], HtmlCases.Bound);
-        (engineY[0] - chromiumY[0]).Should().BeGreaterThan(0.2, "the engine does not");
-    }
-
-    /// <summary>
     /// A4 without margins (the default page): Chromium's page area is 794 x 1123 px (595.5 x 842.25 pt), the page size
     /// rounded up to whole pixels, and reaches past the sheet it prints, 594.96 x 841.92 pt; the model holds no page area
     /// larger than the sheet, so the engine's ends at the sheet. Text and backgrounds end 0.54 pt short on the right, and
@@ -90,11 +67,56 @@ public class HtmlListedDifferenceTests
         Engine("h-page-a4-zero-lines").Pages.Should().HaveCount(2, "the engine's page area is 1122.56 px high");
     }
 
+    /// <summary>
+    /// A ligature across the border of an inline element in the same font: Chromium forms it and its print maps the glyph
+    /// to the first run's characters only (<c>f&lt;span&gt;i&lt;/span&gt;x</c> reads "fx"); the engine's glyph keeps every
+    /// character it shows, so the text can be copied and searched (docs/architecture.md, the rule for shaping across runs).
+    /// With Chromium's two words read as the engine's, the case is equal: the text is the whole difference.
+    /// </summary>
+    [Fact]
+    public void A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run()
+    {
+        var (engine, chromium) = (Engine("sr-same-font"), Chromium("sr-same-font"));
+        chromium.Pages.Single().Text.Should().Contain("fix fx office ofce");
+        engine.Pages.Single().Text.Should().NotContain("fx").And.NotContain("ofce");
+        HtmlCases.Difference(engine, Read(chromium, text => text switch { "fx" => "fix", "ofce" => "office", _ => text })).Should().BeNull();
+    }
+
+    /// <summary>
+    /// A zero width non-joiner (U+200C) in a word: Chromium's print keeps it in the PDF's text, the engine's PDF does not
+    /// (it draws no glyph for it; its PDF read back with <c>positions.py</c> reads "To", "T" "o", "T" "o" "T" for case
+    /// <c>sr-zwnj</c>). With the non-joiners taken out of Chromium's words the case is equal, positions included, but for
+    /// one fact of the read-back: the end of a word that ends in the non-joiner. Lato's own advance for U+200C is 0, but
+    /// Chromium's PDF lists widths only for the glyphs of "T" and "o" and gives every other glyph its default width
+    /// (<c>/DW 256</c>, 3.072 pt at 12 pt), so PyMuPDF reads the non-joiner as a character 3.072 pt wide at its own origin:
+    /// one that leads a word starts where the "o" starts and ends inside it (the word is 19.090 to 25.894, as wide as
+    /// "o"), and one that ends a word starts after the kerned "o" (22.947) and reaches 26.019, past the next "T" at 22.957.
+    /// That end is left out; every other fact of the case is compared.
+    /// </summary>
+    [Fact]
+    public void A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it()
+    {
+        var (engine, chromium) = (Engine("sr-zwnj"), Chromium("sr-zwnj"));
+        chromium.Pages.Single().Words.Select(word => word.Text).Should().Equal("T\u200Co", "T", "\u200Co", "T", "o\u200C", "T");
+        var trailing = chromium.Pages.Single().Words.Single(word => word.Text == "o\u200C");
+        var mine = engine.Pages.Single().Words.Last(word => word.Text == "o");
+        trailing.X1.Should().BeGreaterThan(chromium.Pages.Single().Words[^1].X0, "the read-back's non-joiner reaches past the next word's start");
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select(word => word with
+            {
+                Text = word.Text.Replace("\u200C", string.Empty, StringComparison.Ordinal),
+                X1 = word == trailing ? mine.X1 : word.X1,
+            })],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull();
+    }
+
+    /// <summary>Chromium's print with each word's text read through <paramref name="text"/>.</summary>
+    private static PrintedPages Read(PrintedPages pages, Func<string, string> text) =>
+        new([.. pages.Pages.Select(page => page with { Words = [.. page.Words.Select(word => word with { Text = text(word.Text) })] })]);
+
     /// <summary>Where each line of the only page ends: its last word's end, lines in order.</summary>
     private static double[] LineEnds(PrintedPages pages) =>
         [.. pages.Pages.Single().Words.GroupBy(word => word.Baseline).OrderBy(line => line.Key).Select(line => line.Max(word => word.X1))];
-
-    /// <summary>Where each word of a text starts on the only page, in reading order.</summary>
-    private static double[] Starts(PrintedPages pages, string text) =>
-        [.. pages.Pages.Single().Words.Where(word => word.Text == text).Select(word => word.X0)];
 }

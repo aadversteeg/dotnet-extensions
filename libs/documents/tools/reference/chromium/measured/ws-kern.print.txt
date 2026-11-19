@@ -1,0 +1,15 @@
+page 1 300.000 300.000
+word 1 12.000 24.426 25.500 12.000 To #000000 Lato-Regular
+word 1 12.000 19.092 43.500 12.000 T #000000 Lato-Regular
+word 1 17.625 24.429 43.500 12.000 o #cc0000 Lato-Regular
+word 1 12.000 19.092 61.500 12.000 T #000000 Lato-Regular
+word 1 17.625 24.429 61.500 12.000 o #cc0000 Lato-Regular
+word 1 12.000 19.092 79.500 12.000 T #000000 Lato-Regular
+word 1 17.625 24.429 79.500 12.000 o #cc0000 Lato-Regular
+word 1 12.000 19.092 97.500 12.000 T #000000 Lato-Regular
+word 1 17.625 24.429 97.500 12.000 o #cc0000 Lato-Regular
+word 1 12.000 19.092 115.500 12.000 T #000000 Lato-Regular
+word 1 17.625 24.429 115.500 12.000 o #cc0000 Lato-Regular
+word 1 12.000 19.092 133.500 12.000 T #000000 Lato-Regular
+word 1 17.625 24.429 133.500 12.000 o #cc0000 Lato-Regular
+word 1 12.000 17.976 151.500 12.000 x #000000 Lato-Regular
