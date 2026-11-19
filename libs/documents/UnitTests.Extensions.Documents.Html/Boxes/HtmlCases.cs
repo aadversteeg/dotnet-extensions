@@ -41,7 +41,8 @@ internal static class HtmlCases
 
     /// <summary>
     /// The cases whose difference is a listed limit of layout, pinned by name in the code front-end's tests
-    /// (<c>ListedDifferenceTests</c> of <c>UnitTests.Extensions.Documents.Fluent</c>; docs/architecture.md, "Known limits"):
+    /// (<c>ListedDifferenceTests</c> of <c>UnitTests.Extensions.Documents.Fluent</c>) or in <see cref="HtmlListedDifferenceTests"/>
+    /// (docs/architecture.md, "Known limits"):
     /// the status file says <c>listed</c>, the test name and the first difference, so the case must still differ, and
     /// differ first in the same fact by the same amount.
     /// </summary>
@@ -51,6 +52,8 @@ internal static class HtmlCases
         ["fr-old-forced-in-keep-together"] = "A_forced_break_inside_a_box_kept_together_moves_the_whole_box_first",
         ["fr-old-empty-box-past-end"] = "An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page",
         ["fr-old-blank-last-page"] = "An_empty_box_past_the_end_of_the_last_page_adds_no_page",
+        ["h-wide-word-little"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
+        ["h-wide-word-much"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,

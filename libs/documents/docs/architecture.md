@@ -672,6 +672,11 @@ picture; grep a code or a property for the cases it holds back.
 
 Each is documented next to its code as well.
 
+- **Content wider than the page area (HTML):** Chromium shrinks the whole print by the widest page's overflow, up to a
+  factor of 1.5, and clips past it (`CalculateOverflowShrinkForPrinting`, pagination_utils.cc); the engine has no page
+  scale and lets the content stick out (cases `h-wide-word-little`, `h-wide-word-much`, listed;
+  `HtmlListedDifferenceTests`).
+
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
   borders; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut

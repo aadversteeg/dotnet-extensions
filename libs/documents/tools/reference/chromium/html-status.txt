@@ -286,6 +286,8 @@ h-page-size-legal equal
 h-page-size-letter equal
 h-page-size-mm equal
 h-root-display-none equal
+h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.022, Chromium 290.241 (print.txt)
+h-wide-word-much listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 reads 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after', Chromium 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after' (print.txt)
 kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:133
 kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:120
 kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br at 8:85
