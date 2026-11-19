@@ -726,6 +726,12 @@ Each is documented next to its code as well.
   of 1/64 pixel (`a2-row-end-first-row-cut`, 12 lines of 14.9375 pt: `x0`..`x9`, then `x10 x11 after`). The engine
   prints neither; both belong with the slicing of borders at page breaks. Under `Avoid` the engine cuts such a row as
   a last resort at the top of a page (listed above, `fr-f4-padding-page-start`; `RowEndTests`, `A_table_that_starts_the_page_with_a_first_row_that_fits_but_for_its_line_below_is_refused_under_Allow`).
+  The rule is not for a table that starts lower on the page: below a paragraph such a first row moves to the next
+  page with its table, as in Chromium (`a2-row-end-below-paragraph`). Nor for a table that continues below an outer
+  table's repeated header row, which does not start the page: under `Avoid` the row is cut below the header as Chromium
+  cuts it (`a2-row-end-nested-under-header`). (v) Under `Allow` the engine does not take that cut; that page goes on
+  without the outer header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and
+  Chromium repeats the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`).
   A cell background ends at the middle of the line below (192.375), where Chromium ends it at the line's outer edge
   (192.75; `a2-row-end-background`). That is the table model's own rule, not new here; the 0.375 pt between lies under
   the line, which hides it, as the engine has only solid, opaque lines (no dashed or translucent ones). Limits (i) to
