@@ -174,7 +174,7 @@ f-theano-13-ab equal
 f-theano-9 equal
 f-tiny listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0t1t2t3t4t5t6t7t8t9t10t11t12t13t14t15t16t17t18t19t20t21t22t23t24t25t26t27t28t29t30t31t32t33t34t35t36t37t38t39t40t41t42t43t44t45t46t47t48t49 after', Chromium 'after' (print.txt)
 f-tiny-038 listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34 t35 t36 t37 t38 t39 t40 t41 t42 t43 t44 t45 t46 t47 t48 t49 after', Chromium 'after' (print.txt)
-font-sizes refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap at 6:6
+font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal
 fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value display: table at 3:41
@@ -321,11 +321,11 @@ hb-two-three equal
 hb-white-space equal
 hi-attributes equal
 hi-inline refused Documents.Html.Unsupported.Rendering img at 3:7
-hw-nowrap refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap at 3:1
-hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+hw-nowrap open page 1 'aa' x1 23.928, Chromium 21.335 (print.txt)
+hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 hw-pre-line equal
-hw-pre-wrap refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
-hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+hw-pre-wrap equal
+hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1
 ii-baseline refused Documents.Html.Unsupported.Rendering img at 3:7
 ii-breaks refused Documents.Html.Unsupported.Value width: 6pt at 3:1
@@ -394,27 +394,27 @@ tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
 tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
-ws-border refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:6
-ws-break-spaces refused Documents.Css.Unsupported.Value white-space: break-spaces at 3:11
+ws-border refused Documents.Html.Unsupported.Value width: 6pt at 6:1
+ws-break-spaces equal
 ws-forced refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-hang-break-spaces refused Documents.Css.Unsupported.Value white-space: break-spaces at 3:21
+ws-hang-break-spaces refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-normal refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-pre refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-pre-wrap refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-image refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-image refused Documents.Html.Unsupported.Rendering img at 3:33
 ws-image-border refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ws-intrinsic refused Documents.Html.Unsupported.Value display: table at 3:1
-ws-justify refused Documents.Css.Unsupported.Value white-space: break-spaces at 5:21
+ws-justify refused Documents.Html.Unsupported.Value width: 60pt at 3:1
 ws-justify-nbsp refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-kern refused Documents.Css.Unsupported.Value white-space: break-spaces at 9:28
+ws-kern equal
 ws-lead refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ws-longhands refused Documents.Css.Unsupported.Value white-space-collapse: preserve-spaces at 5:11
 ws-normal equal
-ws-nowrap refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap at 3:1
+ws-nowrap equal
 ws-overflow refused Documents.Html.Unsupported.Value width: 100pt at 3:1
-ws-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-pre equal
 ws-pre-line equal
-ws-pre-wrap refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-pre-wrap equal
 ws-soft refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
-ws-table refused Documents.Css.Unsupported.Value white-space: break-spaces at 12:23
+ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
+ws-table refused Documents.Html.Unsupported.Value display: table at 3:1

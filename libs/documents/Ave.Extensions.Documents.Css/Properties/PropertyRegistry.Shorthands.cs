@@ -672,7 +672,7 @@ public static partial class PropertyRegistry
 
     /// <summary>white-space (CSS Text 4 §3): the CSS 2 keywords, each a pair of white-space-collapse and text-wrap-mode
     /// (normal = collapse wrap, pre = preserve nowrap, nowrap = collapse nowrap, pre-wrap = preserve wrap, pre-line =
-    /// preserve-breaks wrap; break-spaces keeps spaces the layout does not), or the longhands' values in any order.</summary>
+    /// preserve-breaks wrap, break-spaces = break-spaces wrap), or the longhands' values in any order.</summary>
     private static ShorthandParse ParseWhiteSpace(ValueReader reader)
     {
         static ShorthandParse Pair(string collapse, string wrap) =>
@@ -687,7 +687,7 @@ public static partial class PropertyRegistry
                 "nowrap" => Pair("collapse", "nowrap"),
                 "pre-wrap" => Pair("preserve", "wrap"),
                 "pre-line" => Pair("preserve-breaks", "wrap"),
-                _ => ShorthandParse.Refused($"'white-space: {CssSerializer.Shortened(keyword)}' is not supported"),
+                _ => Pair("break-spaces", "wrap"),
             };
         }
 

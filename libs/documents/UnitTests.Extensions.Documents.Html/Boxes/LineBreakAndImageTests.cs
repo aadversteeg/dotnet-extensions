@@ -1,5 +1,6 @@
 using System.IO;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Css;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html;
 using Ave.Extensions.Documents.Html.Boxes;
@@ -11,8 +12,9 @@ using Ave.Extensions.Functional;
 
 namespace UnitTests.Extensions.Documents.Html.Boxes;
 
-/// <summary>Box generation of <c>br</c> (the model's forced line break) and of a block-level <c>img</c> (an image box);
-/// the reference cases <c>hb-*</c> and <c>hi-*</c> hold Chromium's prints.</summary>
+/// <summary>Box generation of <c>br</c> (the model's forced line break), of <c>white-space</c> (how text collapses and
+/// wraps) and of <c>img</c> (an image box, or an image in a line); the reference cases <c>hb-*</c>, <c>hw-*</c> and
+/// <c>hi-*</c> hold Chromium's prints.</summary>
 public class LineBreakAndImageTests
 {
     private const string LineSeparator = "\u2028";
@@ -87,32 +89,100 @@ public class LineBreakAndImageTests
         ((Box)div.Children[2]).Children.OfType<TextRun>().Select(run => run.Text).Should().Equal(LineSeparator);
     }
 
-    [Fact]
-    public void Under_pre_line_each_line_feed_of_the_text_is_a_forced_line_break_and_the_spaces_still_collapse_in_layout()
+    /// <summary>The white-space shorthand and its longhands to the text style (CSS Text 4 §3, §3.1, §6.1), inherited
+    /// into a span.</summary>
+    [Theory]
+    [InlineData("", WhiteSpaceCollapse.Collapse, TextWrapMode.Wrap)]
+    [InlineData("white-space:normal", WhiteSpaceCollapse.Collapse, TextWrapMode.Wrap)]
+    [InlineData("white-space:nowrap", WhiteSpaceCollapse.Collapse, TextWrapMode.NoWrap)]
+    [InlineData("white-space:pre", WhiteSpaceCollapse.Preserve, TextWrapMode.NoWrap)]
+    [InlineData("white-space:pre-wrap", WhiteSpaceCollapse.Preserve, TextWrapMode.Wrap)]
+    [InlineData("white-space:pre-line", WhiteSpaceCollapse.PreserveBreaks, TextWrapMode.Wrap)]
+    [InlineData("white-space:break-spaces", WhiteSpaceCollapse.BreakSpaces, TextWrapMode.Wrap)]
+    [InlineData("white-space-collapse:collapse", WhiteSpaceCollapse.Collapse, TextWrapMode.Wrap)]
+    [InlineData("white-space-collapse:preserve", WhiteSpaceCollapse.Preserve, TextWrapMode.Wrap)]
+    [InlineData("white-space-collapse:preserve-breaks", WhiteSpaceCollapse.PreserveBreaks, TextWrapMode.Wrap)]
+    [InlineData("white-space-collapse:break-spaces", WhiteSpaceCollapse.BreakSpaces, TextWrapMode.Wrap)]
+    [InlineData("text-wrap-mode:wrap", WhiteSpaceCollapse.Collapse, TextWrapMode.Wrap)]
+    [InlineData("text-wrap-mode:nowrap", WhiteSpaceCollapse.Collapse, TextWrapMode.NoWrap)]
+    [InlineData("white-space:preserve nowrap", WhiteSpaceCollapse.Preserve, TextWrapMode.NoWrap)]
+    [InlineData("white-space:collapse nowrap", WhiteSpaceCollapse.Collapse, TextWrapMode.NoWrap)]
+    [InlineData("white-space:preserve-breaks wrap", WhiteSpaceCollapse.PreserveBreaks, TextWrapMode.Wrap)]
+    [InlineData("white-space:nowrap break-spaces", WhiteSpaceCollapse.BreakSpaces, TextWrapMode.NoWrap)]
+    public void White_space_maps_to_how_the_text_collapses_and_wraps(string style, WhiteSpaceCollapse collapse, TextWrapMode wrap)
     {
-        var p = (Box)Body(Doc("<p style=\"white-space:pre-line\">a  b\n  c<span>d\ne</span></p><p>f\ng</p>")).Children[0];
+        var p = (Box)Body(Doc($"<p style=\"{style}\">a  b<span>c</span></p>")).Children.Single();
 
-        p.Children.OfType<TextRun>().Select(run => run.Text).Should().Equal("a  b\u2028  c", string.Empty, "d\u2028e");
-        ((Box)Body(Doc("<p>f\ng</p>")).Children.Single()).Children.OfType<TextRun>().Single().Text.Should().Be("f\ng", "white-space: normal keeps the line feed for collapsing");
-    }
-
-    [Fact]
-    public void Under_pre_line_a_line_feed_between_block_boxes_is_refused_and_white_space_without_one_is_dropped()
-    {
-        var refusal = Refusal(Doc("<div style=\"white-space:pre-line\"><p>a</p>\n<p>b</p></div>"));
-        (refusal.Code, Property(refusal)).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "white-space-collapse"));
-
-        ((Box)Body(Doc("<div style=\"white-space:pre-line\"><p>a</p> <p>b</p></div>")).Children.Single()).Children.Should().HaveCount(2);
+        p.Children.OfType<TextRun>().Should().AllSatisfy(run => (run.Style.WhiteSpaceCollapse, run.Style.TextWrapMode).Should().Be((collapse, wrap)));
+        (p.Style.Text!.WhiteSpaceCollapse, p.Style.Text.TextWrapMode).Should().Be((collapse, wrap), "the strut's style is the block's");
     }
 
     [Theory]
-    [InlineData("white-space:pre", "white-space-collapse")]
-    [InlineData("white-space:pre-wrap", "white-space-collapse")]
-    [InlineData("white-space:nowrap", "text-wrap-mode")]
-    [InlineData("text-wrap-mode:nowrap", "text-wrap-mode")]
-    [InlineData("white-space-collapse:preserve", "white-space-collapse")]
-    public void Preserved_spaces_and_text_that_does_not_wrap_are_refused_where_there_is_text(string style, string property) =>
-        Boxes(Doc($"<p style=\"{style}\">a  b</p>")).Error.Parts().Select(Property).Should().Contain(property);
+    [InlineData("preserve-spaces")]
+    [InlineData("discard")]
+    public void The_white_space_collapse_values_that_are_not_built_are_refused_with_their_place(string value)
+    {
+        var refusal = Refusal(Doc($"<p>a</p>\n<p style=\"white-space-collapse:{value}\">a  b</p>"));
+
+        (refusal.Code, Property(refusal), refusal.Metadata![ErrorMetadataKeys.Value]).Should().Be((CssErrorCodes.Unsupported.Value, "white-space-collapse", value));
+        refusal.Metadata[ErrorMetadataKeys.SourceLine].Should().Be(2);
+    }
+
+    [Fact]
+    public void Text_goes_to_the_model_as_written_and_layout_collapses_it_by_its_mode()
+    {
+        var p = (Box)Body(Doc("<p style=\"white-space:pre-line\">a  b\n  c<span>d\ne</span></p>")).Children[0];
+
+        p.Children.OfType<TextRun>().Select(run => run.Text).Should().Equal("a  b\n  c", string.Empty, "d\ne");
+    }
+
+    [Theory]
+    [InlineData("white-space:pre", "preserve")]
+    [InlineData("white-space:pre-wrap", "preserve")]
+    [InlineData("white-space:break-spaces", "break-spaces")]
+    [InlineData("white-space-collapse:preserve", "preserve")]
+    public void A_tab_where_spaces_are_preserved_is_refused_at_its_text(string style, string value)
+    {
+        var refusal = Refusal(Doc($"<p>a</p>\n<p style=\"{style}\">ab\tc</p>"));
+
+        (refusal.Code, Property(refusal), refusal.Metadata![ErrorMetadataKeys.Value], refusal.Metadata[ErrorMetadataKeys.Offset]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "white-space-collapse", value, 2));
+        (refusal.Metadata[ErrorMetadataKeys.SourceLine], refusal.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((2, 13 + style.Length), "the start of the text");
+    }
+
+    [Theory]
+    [InlineData("white-space:pre-line")]
+    [InlineData("white-space:nowrap")]
+    [InlineData("")]
+    public void A_tab_where_spaces_collapse_is_a_space(string style) =>
+        ((Box)Body(Doc($"<p style=\"{style}\">a\tb</p>")).Children.Single()).Children.OfType<TextRun>().Single().Text.Should().Be("a\tb");
+
+    [Theory]
+    [InlineData("white-space:pre-line", "\n", "preserve-breaks")]
+    [InlineData("white-space:pre", " ", "preserve")]
+    [InlineData("white-space:pre-wrap", "\n", "preserve")]
+    [InlineData("white-space:break-spaces", " ", "break-spaces")]
+    public void White_space_between_block_boxes_that_its_mode_preserves_is_refused(string style, string between, string value)
+    {
+        var refusal = Refusal(Doc($"<div style=\"{style}\"><p>a</p>{between}<p>b</p></div>"));
+
+        (refusal.Code, Property(refusal), refusal.Metadata![ErrorMetadataKeys.Value]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "white-space-collapse", value));
+    }
+
+    [Theory]
+    [InlineData("white-space:pre-line", " ")]
+    [InlineData("white-space:nowrap", "\n")]
+    [InlineData("", "\n")]
+    public void White_space_between_block_boxes_that_collapses_away_is_dropped(string style, string between) =>
+        ((Box)Body(Doc($"<div style=\"{style}\"><p>a</p>{between}<p>b</p></div>")).Children.Single()).Children.Should().HaveCount(2);
+
+    [Theory]
+    [InlineData("white-space:pre", " ", true)]
+    [InlineData("white-space:break-spaces", " ", true)]
+    [InlineData("white-space:pre-line", "\n", true)]
+    [InlineData("white-space:pre-line", " ", false)]
+    [InlineData("white-space:nowrap", " \n", false)]
+    public void A_block_of_white_space_only_has_lines_where_its_mode_preserves_any_of_it(string style, string text, bool lines) =>
+        ((Box)Body(Doc($"<p style=\"{style}\">{text}</p><p>z</p>")).Children[0]).Layout.Should().Be(lines ? LayoutAlgorithmId.Inline : LayoutAlgorithmId.Flow);
 
     [Fact]
     public void A_block_level_img_is_an_image_box_with_its_computed_size_and_its_alt_text_as_the_figure_s()

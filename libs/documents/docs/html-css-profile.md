@@ -83,7 +83,7 @@ names nothing.
 | `text-wrap-mode` | yes | `wrap` | `wrap \| nowrap` | CSS Text 4 §6.1 |
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
 | `vertical-align` | no | `baseline` | `baseline \| top \| middle \| bottom` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
-| `white-space-collapse` | yes | `collapse` | `collapse \| preserve \| preserve-breaks` | CSS Text 4 §3.1 |
+| `white-space-collapse` | yes | `collapse` | `collapse \| preserve \| preserve-breaks \| break-spaces` | CSS Text 4 §3.1 |
 | `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
 

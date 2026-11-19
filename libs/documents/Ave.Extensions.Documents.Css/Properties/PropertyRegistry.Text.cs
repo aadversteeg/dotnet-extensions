@@ -25,7 +25,7 @@ public static partial class PropertyRegistry
             "inline-level and table-cell boxes", "CSS 2.1 §10.8.1; CSS Inline 3 §4");
 
         yield return Keywords(
-            "white-space-collapse", inherited: true, "collapse", ["collapse", "preserve", "preserve-breaks"], ["discard", "preserve-spaces", "break-spaces"],
+            "white-space-collapse", inherited: true, "collapse", ["collapse", "preserve", "preserve-breaks", "break-spaces"], ["discard", "preserve-spaces"],
             "text", "CSS Text 4 §3.1");
 
         yield return Keywords("text-wrap-mode", inherited: true, "wrap", ["wrap", "nowrap"], [], "text", "CSS Text 4 §6.1");

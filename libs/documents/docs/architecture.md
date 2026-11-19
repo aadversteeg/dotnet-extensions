@@ -608,7 +608,7 @@ start tag, with the property and the value) only where it would change the print
 | `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
 | `box-sizing`, table and list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, no table or list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
-| `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve-breaks` (each line feed a forced line break: case `hw-pre-line`), `wrap`; any on an element without text | `preserve`, `nowrap` where text is; a line feed between block boxes under `preserve-breaks` |
+| `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line` | `none`; any on an element without content | underline (links: the next packages) |
 | `vertical-align` | `baseline`; any on a block box | other values on an inline box |
 | `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
@@ -622,8 +622,7 @@ Elements whose rendering no property says are refused by their own rule (`Docume
 (cases `hb-*`). A block-level `img` is a box of the image algorithm: its file from a `data:` URL or through the resource
 resolver against the document's base URL, its computed width and height (the attributes are presentational hints), its
 alt text as the figure's description and an empty alt as decorative (case `hi-attributes`); an image that does not come
-or does not decode, and an `img` inside a line of text, are refused (`Rendering`). The others are refused through their values: tables and lists by `display`, `pre` by
-`white-space-collapse`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
+or does not decode, and an `img` inside a line of text, are refused (`Rendering`). The others are refused through their values: tables and lists by `display`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
 at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed

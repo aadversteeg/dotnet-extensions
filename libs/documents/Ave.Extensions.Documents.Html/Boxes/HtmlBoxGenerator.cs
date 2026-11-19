@@ -453,9 +453,11 @@ public static partial class HtmlBoxGenerator
                         return;
                     }
 
+                    var preservedTab = RefusePreservedTab(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        frame.Target.Add(new TextRun(NewId(), WithPreservedBreaks(text.Style, Characters(text.Text)), style, Source(text.Text.Position)));
+                        var data = Characters(text.Text);
+                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, Source(text.Text.Position)));
                     }
 
                     break;
@@ -505,9 +507,10 @@ public static partial class HtmlBoxGenerator
                 children, Source(block.Element.Element.Position)));
         }
 
-        /// <summary>Lines for inline content with something to draw; else an empty block (white space only).</summary>
+        /// <summary>Lines for inline content with something to draw; else an empty block (white space that collapses away,
+        /// CSS 2.1 §9.4.2: a line box with no text and no preserved white space is treated as not there).</summary>
         private static (LayoutAlgorithmId Layout, ValueList<Node> Children) Content(List<Node> runs) =>
-            runs.All(run => run is TextRun text && text.Text.All(IsCollapsible))
+            runs.All(run => run is TextRun text && text.Text.All(c => CollapsesUnder(c, text.Style.WhiteSpaceCollapse)))
                 ? (LayoutAlgorithmId.Flow, [])
                 : (LayoutAlgorithmId.Inline, [.. runs]);
 
@@ -598,7 +601,7 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The text style of an element's text and of its lines' strut: its face (<see cref="FontMatcher"/>), size,
-        /// colour and line height; null after a missing face was reported.</summary>
+        /// colour, line height and how its white space collapses and wraps; null after a missing face was reported.</summary>
         private TextStyle? TextStyleOf(StyledElement element)
         {
             if (_text.TryGetValue(element, out var known))
@@ -620,6 +623,8 @@ public static partial class HtmlBoxGenerator
                     face.Value.Metrics.IsItalic ? CoreFontStyle.Italic : CoreFontStyle.Normal)
                 {
                     LineHeight = LineHeightOf(element.Style[PropertyRegistry.LineHeight], size),
+                    WhiteSpaceCollapse = CollapseOf(element.Style),
+                    TextWrapMode = WrapOf(element.Style),
                 };
             }
 

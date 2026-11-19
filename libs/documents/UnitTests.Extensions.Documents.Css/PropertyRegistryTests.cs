@@ -78,6 +78,8 @@ public class PropertyRegistryTests
     [InlineData("vertical-align", "super", "Refused")]
     [InlineData("white-space-collapse", "preserve-breaks", "Valid")]
     [InlineData("white-space-collapse", "preserve-spaces", "Refused")]
+    [InlineData("white-space-collapse", "discard", "Refused")]
+    [InlineData("white-space-collapse", "break-spaces", "Valid")]
     [InlineData("break-before", "column", "Refused")]
     [InlineData("orphans", "0", "Invalid")]
     [InlineData("margin-top", "3q", "Valid")]

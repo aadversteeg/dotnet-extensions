@@ -170,10 +170,8 @@ internal static class BoxProperties
         yield return new("widows", "every value", (_, _) => null);
 
         // CSS Text 3 §4.1.1 and CSS Text 4 §6.1: collapsing and wrapping, read where text is.
-        yield return new("white-space-collapse", "collapse, preserve-breaks (segment breaks as forced line breaks); preserve on an element without text",
-            (value, facts) => IsKeyword(value, "collapse") || IsKeyword(value, "preserve-breaks") || !facts.HasText ? null : "preserved spaces and tabs are not drawn in this version");
-        yield return new("text-wrap-mode", "wrap; nowrap on an element without text of its own",
-            (value, facts) => IsKeyword(value, "wrap") || !facts.DrawsText ? null : "text that does not wrap is not drawn in this version");
+        yield return new("white-space-collapse", "collapse, preserve, preserve-breaks, break-spaces (a tab where spaces are preserved is refused at its text)", (_, _) => null);
+        yield return new("text-wrap-mode", "wrap, nowrap", (_, _) => null);
         yield return new("unicode-bidi", "both values: isolate has no effect in left-to-right text, the only direction", (_, _) => null);
         yield return new("vertical-align", "baseline; any value on a block box (it applies to inline boxes and table cells)",
             (value, facts) => IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version");
