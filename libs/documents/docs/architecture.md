@@ -630,7 +630,10 @@ non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1)
 elements, then of the first row's cells, as fixed columns, and the columns without a width share what is left
 (fill columns of weight 1); percentages as fill columns of that weight, when no column has a length and they add up
 to 100% with the columns without a width. In the automatic layout only what does not depend on the content: column
-lengths and one column without a width. The table's width is `100%`. Refused (`Documents.Html.Unsupported.Table`,
+lengths and one column without a width. The table's width is `100%`. A limit of both: a fill column is never narrower
+than its content's min-content width and a fixed column never wider than its width, where Chromium lets content
+overflow a column of the fixed layout and widens a column with a width in the automatic layout to its min-content;
+the two agree while the content fits its column. Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
 (§17.2.1); a table part on another element than its HTML element; captions, footer groups, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
