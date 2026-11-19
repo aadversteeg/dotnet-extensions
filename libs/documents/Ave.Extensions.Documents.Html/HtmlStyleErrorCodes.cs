@@ -75,8 +75,9 @@ public static class HtmlStyleErrorCodes
 
         /// <summary>A character in the text that is not drawn: a control character other than tab, line feed and carriage
         /// return (Chromium draws form feed and next line, U+0085, as a missing glyph one em wide), the line and
-        /// paragraph separators (a space that does not collapse), a noncharacter or half of a surrogate pair. Metadata: Value (the code point), Offset (in the text), SourceFile, SourceLine,
-        /// SourceColumn (where the text starts).</summary>
+        /// paragraph separators (a space that does not collapse), a noncharacter or half of a surrogate pair. One
+        /// per text that holds any: Value (the first such code point), Offset (its place in the text), Count (how many
+        /// the text holds), SourceFile, SourceLine, SourceColumn (where the text starts).</summary>
         public static readonly ErrorCode Character = _ / "Character";
     }
 

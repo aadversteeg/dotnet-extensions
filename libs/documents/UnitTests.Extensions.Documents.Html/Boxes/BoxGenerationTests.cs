@@ -334,10 +334,25 @@ public class BoxGenerationTests
         refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Character);
         refusal.Metadata![ErrorMetadataKeys.Value].Should().Be(codePoint);
         refusal.Metadata[ErrorMetadataKeys.Offset].Should().Be(2);
+        refusal.Metadata[ErrorMetadataKeys.Count].Should().Be(1);
         refusal.Metadata.Should().ContainKey(ErrorMetadataKeys.SourceLine);
 
         var warned = Boxes(html, UnsupportedPolicy.Warn);
         warned.Value.Diagnostics.Select(error => error.Code).Should().Contain(HtmlStyleErrorCodes.Unsupported.Character);
+        Texts((Box)((Box)warned.Value.Document.Root.Children.Single()).Children.Single()).Should().Be("aabb");
+    }
+
+    [Fact]
+    public void A_text_with_many_characters_that_are_not_drawn_gives_one_refusal_with_their_count()
+    {
+        var html = Doc($"<p>aa{new string('\f', 100_000)}bb</p>");
+        var refusal = Refusals(html).Single();
+        refusal.Metadata![ErrorMetadataKeys.Value].Should().Be("U+000C");
+        refusal.Metadata[ErrorMetadataKeys.Offset].Should().Be(2);
+        refusal.Metadata[ErrorMetadataKeys.Count].Should().Be(100_000);
+
+        var warned = Boxes(html, UnsupportedPolicy.Warn);
+        warned.Value.Diagnostics.Count(error => error.Code == HtmlStyleErrorCodes.Unsupported.Character).Should().Be(1);
         Texts((Box)((Box)warned.Value.Document.Root.Children.Single()).Children.Single()).Should().Be("aabb");
     }
 

@@ -176,35 +176,66 @@ public static class HtmlBoxGenerator
         private static bool IsCollapsible(char c) => c is ' ' or '\t' or '\n' or '\r';
 
         /// <summary>
-        /// The text of a run, with every character that is not drawn refused, and under <see cref="UnsupportedPolicy.Warn"/>
+        /// The text of a run, with the characters that are not drawn refused, and under <see cref="UnsupportedPolicy.Warn"/>
         /// left out: a control character other than tab, line feed and carriage return, a noncharacter, half of a
         /// surrogate pair, and the line and paragraph separators. Measured (cases <c>h-char-*</c>): Chromium draws form
         /// feed and next line (U+0085) as a missing glyph one em wide, which the engine has no glyph for, and the
         /// separators as a space that does not collapse with the spaces beside it, where layout would break the line
-        /// (UAX #14 class BK).
+        /// (UAX #14 class BK). One pass over the text and at most one refusal per text, as the parser keeps its own
+        /// diagnostics bounded: it names the first such character, its offset and how many the text holds.
         /// </summary>
         private string Characters(HtmlText text)
         {
             var data = text.Data;
-            var removed = 0;
-            while (NotDrawn(data) is { } at)
+            var first = -1;
+            for (var i = 0; i < data.Length && first < 0; i += Length(data, i))
             {
-                var length = char.IsHighSurrogate(data[at]) && at + 1 < data.Length && char.IsLowSurrogate(data[at + 1]) ? 2 : 1;
-                var codePoint = length == 2 ? char.ConvertToUtf32(data[at], data[at + 1]) : data[at];
-                var error = new Error(HtmlStyleErrorCodes.Unsupported.Character, $"The character U+{codePoint:X4} is not drawn in this version: only text, tab, line feed and carriage return are.")
-                    .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, at + removed);
-                Refusals.Add(error.WithSource(_sourceName, text.Position));
-                data = data.Remove(at, length);
-                removed += length;
+                first = IsDrawn(data, i) ? -1 : i;
             }
 
-            return data;
-
-            static int? NotDrawn(string data)
+            if (first < 0)
             {
-                var forbidden = TextCharacters.IndexOfForbidden(data);
-                var index = data.AsSpan().IndexOfAny(['\v', '\f', '\u0085', '\u2028', '\u2029']);
-                return index >= 0 && (forbidden is null || index < forbidden) ? index : forbidden;
+                return data;
+            }
+
+            var kept = new System.Text.StringBuilder(data.Length);
+            kept.Append(data, 0, first);
+            var count = 0;
+            for (var i = first; i < data.Length;)
+            {
+                var length = Length(data, i);
+                if (IsDrawn(data, i))
+                {
+                    kept.Append(data, i, length);
+                }
+                else
+                {
+                    count++;
+                }
+
+                i += length;
+            }
+
+            var codePoint = Length(data, first) == 2 ? char.ConvertToUtf32(data[first], data[first + 1]) : data[first];
+            var others = count == 1 ? string.Empty : $" ({count.ToString(CultureInfo.InvariantCulture)} such characters in this text)";
+            var error = new Error(HtmlStyleErrorCodes.Unsupported.Character, $"The character U+{codePoint:X4} is not drawn in this version{others}: only text, tab, line feed and carriage return are.")
+                .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, first).With(ErrorMetadataKeys.Count, count);
+            Refusals.Add(error.WithSource(_sourceName, text.Position));
+            return kept.ToString();
+
+            // A surrogate pair is one character; a lone surrogate is one code unit.
+            static int Length(string data, int i) => char.IsHighSurrogate(data[i]) && i + 1 < data.Length && char.IsLowSurrogate(data[i + 1]) ? 2 : 1;
+
+            static bool IsDrawn(string data, int i)
+            {
+                var unit = data[i];
+                if (Length(data, i) == 2)
+                {
+                    return (char.ConvertToUtf32(unit, data[i + 1]) & 0xFFFE) != 0xFFFE;
+                }
+
+                return !char.IsSurrogate(unit)
+                    && (unit is '\t' or '\n' or '\r' || !(char.IsControl(unit) || unit is '\u2028' or '\u2029' || unit is >= '\uFDD0' and <= '\uFDEF' || (unit & 0xFFFE) == 0xFFFE));
             }
         }
 
