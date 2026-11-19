@@ -17,18 +17,30 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
 
     /// <summary>Makes a style from the computed value of every longhand, by <see cref="PropertyDefinition.Index"/>, the
     /// custom properties and where the font size came from.</summary>
-    internal ComputedStyle(CssValue[] values, IReadOnlyDictionary<string, CssTokens> custom, FontSizeSource fontSizeSource)
+    internal ComputedStyle(CssValue[] values, IReadOnlyDictionary<string, CssTokens> custom, FontSizeSource fontSizeSource, CssValue?[]? widthsBehindStyle = null)
     {
         _values = values;
         CustomProperties = custom;
         FontSizeSource = fontSizeSource;
+        _widthsBehindStyle = widthsBehindStyle;
     }
+
+    private readonly CssValue?[]? _widthsBehindStyle;
 
     /// <summary>The initial style: every property at its initial value, no custom properties.</summary>
     public static ComputedStyle Initial { get; } = new([.. PropertyRegistry.Longhands.Select(property => property.Initial)], FrozenDictionary<string, CssTokens>.Empty, Properties.FontSizeSource.Medium);
 
     /// <summary>Where the font size comes from (<see cref="Properties.FontSizeSource"/>), for the children's sizes.</summary>
     internal FontSizeSource FontSizeSource { get; }
+
+    /// <summary>The border width an element's child takes with <c>inherit</c>: the computed width, or, where the border
+    /// style is none or hidden and the computed width therefore zero, the width as computed without that rule. Chromium
+    /// 159 copies that width (<c>BorderTopWidth::ApplyInherit</c> in longhands_custom.cc takes
+    /// <c>BorderTopWidthInternal</c> since the CSS Working Group resolved issue 11494; measured: a p with
+    /// <c>border-width: inherit</c> in a div with <c>border-width: 5px</c> and no border style has 5px).</summary>
+    /// <param name="property">One of the four border widths.</param>
+    internal CssValue WidthBehindStyle(PropertyDefinition property) =>
+        _widthsBehindStyle?[PropertyRegistry.BorderWidthSide(property)] ?? _values[property.Index];
 
     /// <summary>The computed custom properties, by name (with the two hyphens).</summary>
     public IReadOnlyDictionary<string, CssTokens> CustomProperties { get; }

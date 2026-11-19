@@ -201,11 +201,24 @@ public static partial class PropertyRegistry
         var style = context.Own(Find($"border-{side}-style")!) as CssKeyword;
         if (style is { Name: "none" or "hidden" })
         {
+            if (SnappedLineWidth(value, context).Value is { } behind)
+            {
+                context.KeepWidthBehindStyle(Array.IndexOf(Sides, side), behind);
+            }
+
             return new CssLength(Length.Zero);
         }
 
         return SnappedLineWidth(value, context);
     }
+
+    /// <summary>Whether the property is one of the four border widths, whose computed value depends on the element's own
+    /// border style (CSS Backgrounds 3 §3.3).</summary>
+    internal static bool IsBorderWidth(PropertyDefinition property) =>
+        property.Name is "border-top-width" or "border-right-width" or "border-bottom-width" or "border-left-width";
+
+    /// <summary>The side of a border width: top 0, right 1, bottom 2, left 3.</summary>
+    internal static int BorderWidthSide(PropertyDefinition property) => Array.IndexOf(Sides, property.Name.Substring("border-".Length, property.Name.Length - "border-".Length - "-width".Length));
 
     /// <summary>A &lt;line-width&gt; computed and snapped as Chromium snaps border widths (thin, medium and thick are
     /// 1px, 3px and 5px; above 0 and below 1px is 1px; else floored to whole pixels). outline-width computes the same,

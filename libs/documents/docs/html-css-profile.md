@@ -75,7 +75,7 @@ names nothing.
 | `padding-top` | no | `0pt` | `<length-percentage [0,∞]>` | CSS Box Model 3 §5.2 |
 | `print-color-adjust` | yes | `economy` | `economy \| exact` | CSS Color Adjust 1 §3.1 |
 | `table-layout` | no | `auto` | `auto \| fixed` | CSS 2.1 §17.5.2 |
-| `text-align` | yes | `start` | `start \| end \| left \| right \| center \| justify \| match-parent \| -webkit-left \| -webkit-right \| -webkit-center` | CSS Text 3 §6.1 |
+| `text-align` | yes | `start` | `start \| end \| left \| right \| center \| justify \| -webkit-left \| -webkit-right \| -webkit-center` | CSS Text 3 §6.1 |
 | `text-decoration-color` | no | `currentcolor` | `<color>` | CSS Text Decoration 3 §2.3 |
 | `text-decoration-line` | no | `none` | `none \| underline` | CSS Text Decoration 3 §2.1 |
 | `text-decoration-style` | no | `solid` | `solid` | CSS Text Decoration 3 §2.2 |

@@ -30,6 +30,16 @@ internal sealed class ComputeContext
     /// <summary>The parent's computed style, or null for the root.</summary>
     public ComputedStyle? Parent { get; }
 
+    /// <summary>Per side (top, right, bottom, left), the border width the element holds behind a border style of none or
+    /// hidden, whose computed width is zero; null where the style shows the width (see
+    /// <see cref="ComputedStyle.WidthBehindStyle"/>).</summary>
+    public CssValue?[]? WidthsBehindStyle { get; private set; }
+
+    /// <summary>Keeps the width a border style of none or hidden makes zero, for an <c>inherit</c> of a child.</summary>
+    /// <param name="side">The side's index: top 0, right 1, bottom 2, left 3.</param>
+    /// <param name="width">The width as computed without the style rule.</param>
+    public void KeepWidthBehindStyle(int side, CssValue width) => (WidthsBehindStyle ??= new CssValue?[4])[side] = width;
+
     /// <summary>The root element's computed font size in points, for <c>rem</c> (CSS Values 4 §6.1.1); for the root
     /// itself its own, once computed.</summary>
     public double RootFontSize => IsRoot ? FontSize : _rootFontSize;

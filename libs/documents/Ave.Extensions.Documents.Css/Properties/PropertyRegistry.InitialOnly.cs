@@ -188,15 +188,24 @@ public static partial class PropertyRegistry
         const float Trivial = 9.5367431640625E-07f; // 2^-20: 8 × the single-precision machine epsilon 2^-23
         static double RatioComponent(double value) => (float)value > Trivial ? System.Math.Min(value, float.MaxValue) : 0;
 
+        // A math function's NaN is 0 and its result is clamped to the component's range [0, ∞] (CSS Values 4 §10.9,
+        // §10.12; Chromium 159, measured: 'auto calc(0/0)' and 'auto calc(-1)' are auto 0 / 1).
+        double? Component()
+        {
+            var math = reader.Peek is Syntax.FunctionValue;
+            var number = reader.Number();
+            return math && number is { } value && (double.IsNaN(value) || value < 0) ? 0 : number;
+        }
+
         var first = reader.Keyword("auto") is not null;
         var auto = first;
         CssRatio? ratio = null;
-        if (reader.Number() is { } width && width >= 0)
+        if (Component() is { } width && width >= 0)
         {
             var height = 1.0;
             if (reader.Delim('/'))
             {
-                if (reader.Number() is not { } second || second < 0)
+                if (Component() is not { } second || second < 0)
                 {
                     return ParsedValue.Invalid("not a value of aspect-ratio");
                 }

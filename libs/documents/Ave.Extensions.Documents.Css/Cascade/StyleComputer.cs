@@ -167,7 +167,7 @@ public sealed class StyleComputer
 
         Adjust(context, own?.ResetsLegacyAlignment == true);
 
-        var style = new ComputedStyle([.. PropertyRegistry.Longhands.Select(property => context.Own(property)!)], custom, context.FontSizeSource);
+        var style = new ComputedStyle([.. PropertyRegistry.Longhands.Select(property => context.Own(property)!)], custom, context.FontSizeSource, context.WidthsBehindStyle);
         if (element.IsRoot)
         {
             _rootFontSize = ((CssLength)style[PropertyRegistry.FontSize]).Points;
@@ -587,6 +587,7 @@ public sealed class StyleComputer
         var waiting = new Stack<string>();
         var needed = new List<string>();
         var neededSet = new HashSet<string>(StringComparer.Ordinal);
+        var cyclic = new HashSet<string>(StringComparer.Ordinal);
         foreach (var start in pending.Keys)
         {
             if (state.ContainsKey(start))
@@ -598,17 +599,38 @@ public sealed class StyleComputer
             while (waiting.Count > 0 && _failure is null && !_budget.Exhausted)
             {
                 var name = waiting.Peek();
+                if (cyclic.Contains(name))
+                {
+                    waiting.Pop();
+                    state[name] = true;
+                    continue;
+                }
+
                 state[name] = false;
                 var (entry, declaration) = pending[name];
                 needed.Clear();
                 neededSet.Clear();
-                var cycle = !Needs(entry.Values, pending, state, result, needed, neededSet);
-                if (cycle)
+                if (!Needs(entry.Values, pending, state, result, needed, neededSet, out var cycleWith))
                 {
+                    // Every property that waits, from the one this value needs back to this one, is a member of the
+                    // cycle (the waiting ones are the path of the search; Chromium 159 leaves each member without a
+                    // value, measured: '--a: var(--b); --b: var(--a)' falls back for both).
+                    foreach (var member in waiting)
+                    {
+                        if (state.TryGetValue(member, out var memberDone) && !memberDone && cyclic.Add(member))
+                        {
+                            result.Remove(member);
+                            Report(pending[member].Declaration, CssErrorCodes.Unsupported.Value, $"The custom property '{CssSerializer.Shortened(member)}' is part of a cycle of var() references; Chromium does not resolve every such cycle as CSS Variables 1 says, so it is refused and has no value.");
+                        }
+
+                        if (member == cycleWith)
+                        {
+                            break;
+                        }
+                    }
+
                     waiting.Pop();
                     state[name] = true;
-                    result.Remove(name);
-                    Report(declaration, CssErrorCodes.Unsupported.Value, $"The custom property '{CssSerializer.Shortened(name)}' is part of a cycle of var() references; Chromium does not resolve every such cycle as CSS Variables 1 says, so it is refused and has no value.");
                     continue;
                 }
 
@@ -660,9 +682,10 @@ public sealed class StyleComputer
     }
 
     /// <summary>The pending properties a value needs before it can be substituted, in order (see <see cref="Resolve"/>);
-    /// false when it needs one that is itself waiting: a cycle.</summary>
-    private bool Needs(IReadOnlyList<ComponentValue> values, Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending, Dictionary<string, bool> state, ImmutableDictionary<string, CssTokens>.Builder result, List<string> needed, HashSet<string> neededSet)
+    /// false when it needs one that is itself waiting: a cycle, through <paramref name="cycleWith"/>.</summary>
+    private bool Needs(IReadOnlyList<ComponentValue> values, Dictionary<string, (CustomEntry Value, PreparedDeclaration Declaration)> pending, Dictionary<string, bool> state, ImmutableDictionary<string, CssTokens>.Builder result, List<string> needed, HashSet<string> neededSet, out string? cycleWith)
     {
+        cycleWith = null;
         var lists = new Stack<IReadOnlyList<ComponentValue>>();
         lists.Push(values);
         while (lists.Count > 0)
@@ -676,6 +699,7 @@ public sealed class StyleComputer
                     case FunctionValue function when function.IsNamed("var") && VarSubstitution.ArgumentsOf(function) is var (name, fallback):
                         if (pending.ContainsKey(name) && state.TryGetValue(name, out var done) && !done)
                         {
+                            cycleWith = name;
                             return false;
                         }
 
@@ -833,8 +857,10 @@ public sealed class StyleComputer
     /// <item>CSS Overflow 3 §3.1, as Chromium 159 applies it: when one axis is neither visible nor clip, visible on the
     /// other computes to auto (which the engine does not support: refused). Chromium keeps clip beside hidden, where
     /// the specification says hidden (measured, corpus case properties), and so does the engine.</item>
-    /// <item>An element the front-end marks (<see cref="ElementDeclarations.ResetsLegacyAlignment"/>): text-align
-    /// -webkit-left, -webkit-center and -webkit-right compute to start.</item>
+    /// <item>An element the front-end marks (<see cref="ElementDeclarations.ResetsLegacyAlignment"/>) whose display is not
+    /// none: text-align -webkit-left, -webkit-center and -webkit-right compute to start (Chromium 159 adjusts an HTML
+    /// element only when it is displayed: <c>StyleAdjuster::AdjustComputedStyle</c> calls
+    /// <c>AdjustStyleForHTMLElement</c> when display is not none, style_adjuster.cc; measured).</item>
     /// </list></summary>
     private void Adjust(ComputeContext context, bool resetsLegacyAlignment)
     {
@@ -861,6 +887,7 @@ public sealed class StyleComputer
         }
 
         if (resetsLegacyAlignment
+            && context.Own(PropertyRegistry.Display) is not CssKeyword { Name: "none" }
             && context.Own(PropertyRegistry.TextAlign) is CssKeyword { Name: "-webkit-left" or "-webkit-center" or "-webkit-right" })
         {
             context.Set(PropertyRegistry.TextAlign, new CssKeyword("start"));
@@ -868,12 +895,16 @@ public sealed class StyleComputer
     }
 
     /// <summary>initial, inherit and unset (§7.3.1, §7.3.2); null for unset. font-size goes through its compute
-    /// function either way, because a keyword-derived size depends on the element's own family.</summary>
+    /// function either way, because a keyword-derived size depends on the element's own family; an inherited border width
+    /// is the parent's width behind its style (<see cref="ComputedStyle.WidthBehindStyle"/>) through the width's own
+    /// compute function, because it is zero while the element's own border style is none or hidden (CSS Backgrounds 3
+    /// §3.3).</summary>
     private static CssValue? Keyword(string keyword, PropertyDefinition property, ComputeContext context) => (keyword, property == PropertyRegistry.FontSize) switch
     {
         ("initial", true) => PropertyRegistry.ComputeFontSize(new CssKeyword("medium"), context).Value,
         ("inherit", true) => PropertyRegistry.InheritFontSize(context),
         ("initial", false) => InitialOf(property, context),
+        ("inherit", false) when PropertyRegistry.IsBorderWidth(property) => property.Compute(context.Parent?.WidthBehindStyle(property) ?? property.Initial, context).Value,
         ("inherit", false) => context.Inherited(property),
         _ => null,
     };

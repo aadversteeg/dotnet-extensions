@@ -15,7 +15,7 @@ public static partial class PropertyRegistry
             ComputeColor);
 
         yield return new PropertyDefinition(
-            "text-align", inherited: true, new CssKeyword("start"), "block containers", "start | end | left | right | center | justify | match-parent | -webkit-left | -webkit-right | -webkit-center",
+            "text-align", inherited: true, new CssKeyword("start"), "block containers", "start | end | left | right | center | justify | -webkit-left | -webkit-right | -webkit-center",
             PropertySupport.Supported, "CSS Text 3 §6.1",
             ParseTextAlign,
             ComputeTextAlign);
@@ -99,23 +99,18 @@ public static partial class PropertyRegistry
 
         return reader.Count == 1 && reader.Peek is Syntax.CssToken { Kind: Syntax.CssTokenKind.String }
             ? ParsedValue.Refused("text-align with a string is not supported")
-            : OneKeyword(reader, "text-align", ["start", "end", "left", "right", "center", "justify", "match-parent", "-webkit-left", "-webkit-right", "-webkit-center"], ["justify-all", "-webkit-match-parent", "-webkit-auto"]);
+            : OneKeyword(reader, "text-align", ["start", "end", "left", "right", "center", "justify", "-webkit-left", "-webkit-right", "-webkit-center"], ["justify-all", "-webkit-match-parent", "-webkit-auto"]);
     }
 
-    /// <summary>The computed text-align: <c>match-parent</c> is the parent's computed value (CSS Text 3 §6.1 resolves
-    /// start and end against the parent's direction; Chromium 159 keeps them as they are, measured, and the engine is
-    /// left-to-right only, where start is left); <c>-internal-ave-th-center</c> is center when the parent's value is
-    /// start, else the parent's value.</summary>
+    /// <summary>The computed text-align: <c>-internal-ave-th-center</c> is center when the parent's value is start, else
+    /// the parent's value. <c>match-parent</c> (CSS Text 3 §6.1) is not a value: Chromium 159 does not parse it
+    /// (css_parser_fast_paths.cc, CSSTextAlignMatchParentEnabled; measured: <c>text-align: match-parent</c> after
+    /// <c>text-align: right</c> leaves right).</summary>
     private static ComputedResult ComputeTextAlign(CssValue value, ComputeContext context)
     {
         var parent = context.Inherited(TextAlign) as CssKeyword;
         return value switch
         {
-            CssKeyword { Name: "match-parent" } => parent?.Name switch
-            {
-                HeaderCenter => new CssKeyword("center"),
-                _ => parent ?? new CssKeyword("start"),
-            },
             CssKeyword { Name: HeaderCenter } => parent is null or { Name: "start" } ? new CssKeyword("center") : parent,
             _ => value,
         };

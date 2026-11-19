@@ -224,7 +224,10 @@ public static partial class PropertyRegistry
                         return ParsedValue.Invalid($"'{CssSerializer.Shortened(word.Text)}' cannot be a font family name without quotes");
                     }
 
-                    if (words.Count == 1 && GenericFamilies.Contains(InfraAscii.ToLower(words[0])))
+                    // Chromium 159 also reads -webkit-body as a generic family here (ConsumeGenericFamily of
+                    // css_parsing_utils.cc takes the keywords serif to math of css_value_keywords.json5), so
+                    // 'font: 12px -webkit-body a' is dropped (measured).
+                    if (words.Count == 1 && (GenericFamilies.Contains(InfraAscii.ToLower(words[0])) || InfraAscii.ToLower(words[0]) == "-webkit-body"))
                     {
                         return ParsedValue.Invalid($"the generic family '{CssSerializer.Shortened(words[0])}' cannot start a font family name");
                     }

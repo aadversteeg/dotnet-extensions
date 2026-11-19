@@ -379,12 +379,18 @@ public static partial class PropertyRegistry
     /// <summary>background (CSS Backgrounds 3 §2.10): one layer with a colour and no image. An image, a position, a size
     /// or several layers are refused. One box sets both background-origin and background-clip, two set them in that
     /// order (§2.10; Chromium 159, measured: <c>background: red padding-box</c> clips to the padding box); each
-    /// component comes at most once, so a third box or a second attachment is invalid.</summary>
+    /// component comes at most once, so a third box or a second attachment is invalid; &lt;repeat-style&gt; is one or two
+    /// keywords side by side (Chromium 159 drops <c>blue repeat repeat repeat</c> and <c>repeat blue repeat</c>,
+    /// measured).</summary>
     private static ShorthandParse ParseBackground(ValueReader reader)
     {
         var values = new Dictionary<string, CssValue>();
+        var position = 0;
+        var repeats = 0;
+        var repeatAt = -1;
         foreach (var item in reader.Remaining)
         {
+            position++;
             if (item is CssToken { Kind: CssTokenKind.Comma })
             {
                 return ShorthandParse.Refused("several background layers are not supported");
@@ -418,8 +424,18 @@ public static partial class PropertyRegistry
                     "scroll" => "background-attachment",
                     _ => values.ContainsKey("background-origin") ? "background-clip" : "background-origin",
                 };
-                // <repeat-style> takes one or two keywords (repeat repeat is repeat); the rest come once.
-                if (values.ContainsKey(longhand) && longhand != "background-repeat")
+                // <repeat-style> takes one or two keywords side by side (repeat repeat is repeat); the rest come once.
+                if (longhand == "background-repeat")
+                {
+                    repeats++;
+                    if (repeats > 2 || (repeats == 2 && repeatAt != position - 1))
+                    {
+                        return ShorthandParse.Invalid("not a value of background");
+                    }
+
+                    repeatAt = position;
+                }
+                else if (values.ContainsKey(longhand))
                 {
                     return ShorthandParse.Invalid("not a value of background");
                 }
