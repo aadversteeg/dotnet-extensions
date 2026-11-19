@@ -31,7 +31,9 @@ public static class WhiteSpaceCollapsing
     /// within the same inline formatting context—is collapsed". The space is kept in the run where the sequence starts. For
     /// Latin text a segment break becomes a space (§4.1.3).</item>
     /// <item><see cref="WhiteSpaceCollapse.PreserveBreaks"/>: the same for spaces and tabs, but a line feed is a preserved segment
-    /// break, a forced line break: it becomes the line separator U+2028, the model's forced break, and the collapsible spaces
+    /// break, a forced line break (§4.1.3: "segment breaks are not collapsible and are instead transformed into a preserved line
+    /// feed"; CSS Text 4 §5.1: "preserved segment breaks … must be treated as forced line breaks"): it becomes the line
+    /// separator U+2028, the model's forced break, and the collapsible spaces
     /// after it are removed ("Any sequence of collapsible spaces and tabs immediately preceding or following a segment break is
     /// removed"); the spaces before it end the line and go there (§4.1.2), so they are not looked for again here.</item>
     /// <item><see cref="WhiteSpaceCollapse.Preserve"/>: nothing collapses; a space stays a space that is not collapsible, so it

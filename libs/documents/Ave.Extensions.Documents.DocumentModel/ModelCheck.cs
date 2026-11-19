@@ -219,7 +219,8 @@ public static class ModelCheck
             : null;
 
     /// <summary>No tab in a run whose white space is preserved: a preserved tab moves the text to the next tab stop (CSS Text 3
-    /// §4.2, "Tab Character Size"; Chromium 159 prints it so, case <c>ws-tab</c>), and tab stops are not built. Where white
+    /// §4.1.2: "each preserved tab is rendered as a horizontal shift that lines up the start edge of the next glyph with the
+    /// next tab stop"; Chromium 159 prints it so, case <c>ws-tab</c>), and tab stops are not built. Where white
     /// space collapses a tab is a space, as before.</summary>
     private static Error? PreservedTab(TextRun run) =>
         run.Style.WhiteSpaceCollapse == WhiteSpaceCollapse.Preserve && run.Text is { } text && text.IndexOf('\t', System.StringComparison.Ordinal) is var offset and >= 0

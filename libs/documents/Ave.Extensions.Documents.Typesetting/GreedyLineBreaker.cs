@@ -142,7 +142,10 @@ public static class GreedyLineBreaker
     /// every run with the initial values.
     /// </summary>
     /// <remarks>
-    /// THE RULE FOR PRESERVED SPACES AT A LINE'S ENDS (CSS Text 3 §4.1.2, "Phase II: Trimming and Positioning"), as Chromium
+    /// THE RULE FOR PRESERVED SPACES AT A LINE'S ENDS (CSS Text 3 §4.1.2, "Phase II: Trimming and Positioning": "the UA must
+    /// (unconditionally) hang this sequence, unless the sequence is followed by a forced line break, in which case it must
+    /// conditionally hang the sequence instead"; §8.2, a glyph that conditionally hangs "is not considered when measuring the
+    /// line's contents for fit; however, any part of it that does not fit is considered to hang"), as Chromium
     /// does it (Blink <c>LineInfo::ComputeTrailingSpaceWidth</c>, core/layout/inline/line_info.cc): a preserved space is not
     /// removed at the start of a line (case <c>ws-pre-wrap</c>: "   lead" starts three spaces in; <c>ws-lead</c>: spaces alone
     /// before a soft wrap make a line of their own). At the end of a line the preserved spaces hang (<see cref="ShapedGlyph.Hangs"/>):
@@ -152,7 +155,8 @@ public static class GreedyLineBreaker
     /// fit ("conditional", Chromium: "only the part of the trailing spaces that overflow the line actually hang"; cases
     /// <c>ws-hang-pre-wrap</c> and <c>ws-forced</c>: "aa" and four spaces right-aligned in a wide line ends the spaces' width
     /// before the edge, with twenty spaces in a 40pt line "aa" starts at the left edge). So the min-content width does not
-    /// count them and the max-content width does (case <c>ws-intrinsic</c>).
+    /// count them and the max-content width does (§8.2: "not taken into account when computing min-content sizes …, but they
+    /// are taken into account for max-content sizes"; case <c>ws-intrinsic</c>).
     /// </remarks>
     /// <param name="runs">The shaped glyphs of each run, in order, after white-space collapsing.</param>
     /// <param name="modes">The white-space properties of each run, in order (a run without an entry has the initial values).</param>
