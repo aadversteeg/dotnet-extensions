@@ -160,6 +160,8 @@ public class BoxGenerationTests
     [Theory]
     [InlineData("1.5", 12, 18)]
     [InlineData("1.3", 11, 19.0625 * 0.75)]
+    // 1.21 x 11 pt is 1135.79 layout units: floored to 1135, where rounding would give 1136.
+    [InlineData("1.21", 11, 1135 * 0.75 / 64)]
     [InlineData("13.3pt", 10, 17.734375 * 0.75)]
     public void The_line_height_is_given_in_Chromium_s_layout_unit(string value, int size, double points)
     {
@@ -329,7 +331,8 @@ public class BoxGenerationTests
         }
 
         var css = "@font-face { font-family: Display; src: url(theano.ttf) format('truetype') } @font-face { font-family: Unused; src: url(none.ttf) } p { font-family: Display }";
-        var result = Boxes(Doc("<p>a</p><p>b</p>", css), resources: Resolver);
+        // Two family lists that both take the Display face: the file is still asked for once.
+        var result = Boxes(Doc("<p>a</p><p style=\"font-family: Display, serif\">b</p>", css), resources: Resolver);
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         asked.Should().Equal("theano.ttf");
         result.Value.Fonts.Fonts.Select(font => font.Names.Family).Should().Contain("Theano Didot");
