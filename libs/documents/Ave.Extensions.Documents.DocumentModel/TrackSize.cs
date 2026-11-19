@@ -35,14 +35,15 @@ public abstract record TrackSize
 
     /// <summary>
     /// A column of the automatic table layout with a given width, as Chromium lays out a <c>col</c> length in a table of
-    /// <c>table-layout: auto</c>: the width is the column's preferred size (CSS Sizing 3 §3.1, "the preferred size
-    /// properties", <c>width</c>), not a fixed one. Its maximum is the larger of the width and its cells' min-content
+    /// <c>table-layout: auto</c>: the width is the column's preferred size (CSS Sizing 3 §3.1.1, "Preferred Size
+    /// Properties": <c>width</c> specifies "the preferred width"), not a fixed one. Its maximum is the larger of the width and its cells' min-content
     /// (a cell's max-content does not widen it); its minimum is its cells' min-content, so a table too narrow for the
     /// widths shrinks it towards its content, after the auto columns are at their minimum. Width left over the
     /// columns' maximums reaches it only in a table without auto columns. Chromium:
     /// <c>third_party/blink/renderer/core/layout/table/table_layout_algorithm_types.cc</c>,
     /// <c>TableTypes::CreateColumn</c> and <c>TableTypes::Column::Encompass</c> (a "constrained" column). Unlike
-    /// <see cref="Fixed"/>, content never overflows it.
+    /// <see cref="Fixed"/>, content never overflows it. CSS Tables 3 §3.8.2 would make the width a minimum as well; the
+    /// engine follows Chromium there.
     /// </summary>
     /// <param name="Width">The preferred width of the column's cells, border box; zero or more.</param>
     public sealed record Preferred(Length Width) : TrackSize

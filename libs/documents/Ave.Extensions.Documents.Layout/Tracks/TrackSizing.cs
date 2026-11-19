@@ -28,7 +28,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// table too narrow for every width it shrinks below its width once the auto columns are at their minimum; it takes
 /// width past the maximums only in a table without auto columns. Chromium: <c>TableTypes::Column::Encompass</c>
 /// (<c>table_layout_algorithm_types.cc</c>) and the guesses of <c>DistributeInlineSizeToComputedInlineSizeAuto</c>
-/// (<c>table_layout_utils.cc</c>): min, specified (constrained columns at their maximum), max, above max.</item>
+/// (<c>table_layout_utils.cc</c>): min, specified (constrained columns at their maximum), max, above max. CSS Tables 3
+/// §3.8.2 makes the width a minimum too; the engine follows Chromium (<c>docs/architecture.md</c>, deliberate
+/// deviations).</item>
 /// <item><b>Fill</b>: CSS Grid's flexible length (<c>fr</c>, CSS Grid 1 §7.2.4: a share "of the leftover space"),
 /// with the minimum Grid gives <c>1fr</c> (<c>minmax(auto, 1fr)</c>: never narrower than its min-content) and the
 /// "Find the Size of an fr" loop of §11.7.1, which drops a fill column whose minimum is larger than its share and

@@ -658,6 +658,14 @@ Each is documented next to its code as well.
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
   stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
   continues without the header.
+- **A column with a given width in the automatic table layout follows Chromium, not CSS Tables 3,** for its minimum
+  (`TrackSize.Preferred`). CSS Tables 3 §3.8.2 gives a table-column the outer min-content width "max(min-width,
+  width)", so a `col` length would be a minimum and a table too narrow for its lengths would overflow. Chromium
+  (`table_layout_algorithm_types.cc`, `TableTypes::CreateColumn`: the column's minimum is its `min-width`, its width
+  only its maximum) shrinks such a column towards its cells' min-content instead (case `tw-pref`, `squeeze`: a 120pt
+  column printed 96.492pt wide in a 150pt table). The engine follows the measured browser: the faithful-subset rule
+  takes Chromium as the reference. The maximum agrees in both: the larger of the width and the cells' min-content
+  (§3.8.2, "max(min-width, width, min-content width, min(max-width, width))").
 - **Header rows are repeated only up to a quarter of the page area**, as Chromium prints them: a header taller than
   that is shown on the table's first page only (`TablePage.RepeatsHeader`; `HeaderRepeatTests`, cases
   `a6-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
