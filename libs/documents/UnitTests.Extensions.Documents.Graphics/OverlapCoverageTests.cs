@@ -374,7 +374,7 @@ public class OverlapCoverageTests(ITestOutputHelper output)
     /// <summary>
     /// Thin strokes as text has them, 1/64 to 1.5 pixels wide and 3 to 7 long, vertical, horizontal or at any angle, wound
     /// either way, each one contour of four corners: one stroke alone, two parallel strokes with a gap of 1/64 to 1.5
-    /// pixels between them (wound the same way or not), or two strokes that cross; every third shape under a clip box with
+    /// pixels between them (wound the same way or not), or two strokes that cross; every fourth shape under a clip box with
     /// sides inside pixels. Most flagged pixels hold the two sides of one stroke or of the gap between two.
     /// </summary>
     internal static IEnumerable<Shape> Strokes(int seed, int count)

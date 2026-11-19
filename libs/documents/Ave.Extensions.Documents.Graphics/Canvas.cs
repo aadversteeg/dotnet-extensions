@@ -82,11 +82,11 @@ public sealed class Canvas
     /// a few kilobytes of path can put thousands of edges through one pixel. Text and drawings use far less. Measured on
     /// the development host (2026-11-19): of eight fonts at 12 pixels per em, every glyph filled on its own, the largest
     /// glyph takes 248,985 units (DejaVu Sans 2.37), 539 times under this limit; of the engine's samples the largest page
-    /// takes 6.83 × 10^5 units at 96 dpi (<see cref="MaxCanvasWork"/> is 393 times that). About 11 ns a unit there: a fill
-    /// at this limit takes about 1.7 s, a canvas at its limit about 3.6 s. Refused, for example: a thousand thin bars
-    /// through one pixel (7.4 × 10^9 units), one contour crossing itself in one pixel with 1,001 edges (5.0 × 10^8); a
-    /// refusal comes before the work, in milliseconds. The PDF back-end writes such a page; a viewer draws it with its
-    /// own rasteriser.
+    /// takes 6.83 × 10^5 units at 96 dpi (<see cref="MaxCanvasWork"/> is 393 times that). About 9 ns a unit there: a fill
+    /// just inside this limit (1.34 × 10^8 units) took 1.23 s, a canvas filled to its limit (2.63 × 10^8 units) 2.38 s.
+    /// Refused, for example: a thousand thin bars through one pixel (7.4 × 10^9 units), one contour crossing itself in
+    /// one pixel with 1,001 edges (5.0 × 10^8); a refusal comes before the work, in milliseconds. The PDF back-end writes
+    /// such a page; a viewer draws it with its own rasteriser.
     /// </remarks>
     public const long MaxFillWork = 1L << 27;
 
@@ -169,8 +169,9 @@ public sealed class Canvas
     /// <returns>Unit, or <c>Documents.Graphics.InvalidValue</c> for a value out of range (see the class remarks), or
     /// <c>Documents.Graphics.TooMuchWork</c> for a shape whose exact coverage takes more work than
     /// <see cref="MaxFillWork"/>, <see cref="MaxCanvasWork"/> or <see cref="MaxRowPieces"/> allow (nothing painted), or
-    /// <c>Documents.Graphics.InexactCoverage</c>, a guard no shape is known to reach: the fill stopped part way, and after
-    /// it the canvas's content is not defined and the canvas is not to be used.</returns>
+    /// <c>Documents.Graphics.InexactCoverage</c>, a guard that none of the shapes measured reaches (see
+    /// <see cref="GraphicsErrorCodes.InexactCoverage"/>): the fill stopped part way, and after it the canvas's content is
+    /// not defined and the canvas is not to be used.</returns>
     /// <exception cref="ArgumentNullException">The path is null.</exception>
     public Result<Unit, Error> Fill(Path path, Affine transform, FillRule rule, Color color, PixelBox? clip = null)
     {

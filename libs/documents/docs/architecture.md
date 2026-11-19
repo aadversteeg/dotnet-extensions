@@ -187,7 +187,7 @@ painting order; markers draw nothing.
 | Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, images mapped onto their rectangle as PDF maps an image's unit square |
 | composition | `ToPng`, `ToPngPages`, `ToImages` on a document or on its pages (`ToPages`) |
 
-Choices, each stated at its code: coverage is exact for straight edges, to the rounding of doubles, in every pixel and
+Choices, each stated at its code: coverage is exact for straight edges, to 10^-9, in every pixel and
 for both fill rules, also where contours overlap or cross inside a pixel, a contour crosses itself, or a clip box's side
 runs between them (`Graphics/AreaRasterizer.cs`). The integral of the winding number over a pixel gives its coverage
 wherever the winding number takes at most two values there, 0 and one other or two of one sign; a pixel where it may take
@@ -291,8 +291,8 @@ is painted: the work of a pixel where contours may overlap grows with the cube o
 one page) and `Canvas.MaxRowPieces` (2^18 pieces in the flagged pixels of one row) bound it; `Documents.Graphics.TooMuchWork` from the canvas and from the raster
 back-end, which reports a glyph's refused fill for its page. A two-sided pixel costs no units. Measured on the
 development host: the largest glyph of eight fonts at 12 pixels per em takes 248,985 units (539 times under the fill
-limit), the largest sample page 6.83 × 10^5 units at 96 dpi (393 times under the canvas limit); a fill at its limit
-takes about 1.7 s, a page at the canvas limit about 3.6 s; a thousand thin bars through one pixel ask 7.4 × 10^9 units
+limit), the largest sample page 6.83 × 10^5 units at 96 dpi (393 times under the canvas limit); a fill just inside its
+limit took 1.23 s, a canvas filled to its limit 2.38 s (about 9 ns a unit); a thousand thin bars through one pixel ask 7.4 × 10^9 units
 and are refused in about 50 ms. The PDF back-end writes such a page as the page model says, and a viewer draws it with
 its own rasteriser. A font whose licence forbids embedding (OS/2 fsType) is drawn by the raster back-end, since a PNG
 holds pixels and no font, and refused by the PDF back-end (`Documents.Pdf.Write.FontEmbeddingNotPermitted`), so

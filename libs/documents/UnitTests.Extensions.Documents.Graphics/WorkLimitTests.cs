@@ -112,7 +112,7 @@ public class WorkLimitTests
     [Fact]
     public void The_fills_of_one_canvas_share_one_limit()
     {
-        // Each star has a charge just below the fill limit; eight of them fit the canvas limit, the ninth does not and is
+        // Each star has a charge just below the fill limit; two of them fit the canvas limit, the third does not and is
         // not painted, and a fill of a plain shape after it still is.
         var canvas = Canvas.Create(21, 21, Color.White).Value;
         var star = StarInOnePixel(639, 319);

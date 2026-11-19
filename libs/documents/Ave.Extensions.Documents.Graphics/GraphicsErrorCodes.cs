@@ -32,7 +32,8 @@ public static class GraphicsErrorCodes
     public static readonly ErrorCode TooMuchWork = _ / "TooMuchWork";
 
     /// <summary>A pixel whose exact coverage could not be established: the pieces of edges in it and the integral of the
-    /// winding number over it do not agree to 2^-10 (a guard; no shape is known that reaches it). The fill stops at that
+    /// winding number over it do not agree to 2^-10 (a guard against a wrong piece of an edge; none of the shapes measured
+    /// reaches it, and a pixel is right because its pieces are made right, not because of the guard). The fill stops at that
     /// pixel's row: the rows above it have been painted, its row and the rows below it not. After this error the canvas's
     /// content is not defined and the canvas is not to be used. Metadata: Value (the pixel, x,y).</summary>
     public static readonly ErrorCode InexactCoverage = _ / "InexactCoverage";
