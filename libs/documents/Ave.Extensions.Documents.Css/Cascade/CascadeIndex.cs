@@ -414,7 +414,7 @@ public sealed class CascadeIndex
                     {
                         case CssToken { Kind: CssTokenKind.CloseParen or CssTokenKind.CloseSquare or CssTokenKind.CloseCurly or CssTokenKind.BadString or CssTokenKind.BadUrl }:
                             return true;
-                        // env() and attr() without an argument (measured: '@supports (--y: env())' and its negation false).
+                        // env() and attr() without an argument (measured: '@supports (--y: env())' is false and its negation true).
                         case FunctionValue function when (function.IsNamed("env") || function.IsNamed("attr"))
                                                          && function.Values.All(item => item is CssToken { Kind: CssTokenKind.Whitespace }):
                             return true;

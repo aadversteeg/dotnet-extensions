@@ -55,7 +55,7 @@ internal static class PresentationalHints
         ("meta", "", "http-equiv=Content-Security-Policy in head; name=color-scheme with a content other than normal or light"),
         ("link", "", "charset other than utf-8 (on any link)"),
         ("every other element (h1–h6, lists, sections, phrasing, custom and unknown elements) but button, select and textarea", "align (middle as center, or one text-align value)", ""),
-        ("every element but embed", "hidden (display: none; until-found: content-visibility: hidden)", ""),
+        ("every element but embed", "hidden (display: none)", "hidden=until-found (its hint content-visibility: hidden is outside this profile)"),
         ("every element", "", "contenteditable (empty, true or plaintext-only), autofocus"),
     ];
 

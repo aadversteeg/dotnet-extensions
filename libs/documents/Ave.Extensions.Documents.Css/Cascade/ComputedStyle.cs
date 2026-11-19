@@ -37,7 +37,8 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
     /// style is none or hidden and the computed width therefore zero, the width as computed without that rule. Chromium
     /// copies that width (<c>BorderTopWidth::ApplyInherit</c> in longhands_custom.cc, read in the Chromium 150 source, takes
     /// <c>BorderTopWidthInternal</c> since the CSS Working Group resolved issue 11494; measured in 159: a p with
-    /// <c>border-width: inherit</c> in a div with <c>border-width: 5px</c> and no border style has 5px).</summary>
+    /// <c>border-style: solid; border-width: inherit</c> in a div with <c>border-width: 5px</c> and no border style has
+    /// 5px; without a border style of its own the p's width computes to 0).</summary>
     /// <param name="property">One of the four border widths.</param>
     internal CssValue WidthBehindStyle(PropertyDefinition property) =>
         _widthsBehindStyle?[PropertyRegistry.BorderWidthSide(property)] ?? _values[property.Index];

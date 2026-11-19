@@ -328,7 +328,7 @@ Each was checked against Chromium 159's print rendering; the values that change 
 - Math functions: calc(), min(), max(), clamp(); a result that still mixes a length and a percentage after computing is refused. Refused: abs(), acos(), asin(), atan(), atan2(), calc-size(), cos(), exp(), hypot(), log(), mod(), pow(), progress(), random(), rem(), round(), sibling-count(), sibling-index(), sign(), sin(), sqrt(), tan(), and typed arithmetic (multiplying or dividing dimensions).
 - Colours: the 148 named colours, transparent, currentcolor, #rgb, #rgba, #rrggbb, #rrggbbaa, rgb(), rgba(), hsl(), hsla(); system colours activetext, canvas, canvastext, linktext, visitedtext. Refused: -webkit-image-set(), color(), color-mix(), contrast-color(), device-cmyk(), hwb(), lab(), lch(), light-dark(), oklab(), oklch(), relative colour syntax.
 - Custom properties and var() (CSS Variables 1), with fallbacks; missing values make the property unset, as in a browser; revert and revert-layer made by substitution roll the cascade back. Refused: a cycle of var() references (Chromium does not make every member invalid), a '!' inside a var(), env(), attr(), if().
-- CSS-wide keywords initial, inherit, unset, revert and revert-layer (CSS Cascade 5 §7.3). An important revert-layer rolls back to the normal declarations of its layer and below (§7.3.5); in the style attribute it also rolls back the attribute's normal declarations, as in Chromium 159.
+- CSS-wide keywords initial, inherit, unset, revert and revert-layer (CSS Cascade 5 §7.3). An important revert-layer rolls back the normal declarations of its own layer, of the later layers and the unlayered ones too, so the value comes from the layers below it (§7.3.5); in the style attribute it also rolls back the attribute's normal declarations, as in Chromium 159.
 
 ## Selectors
 
@@ -474,5 +474,5 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 | meta |  | http-equiv=Content-Security-Policy in head; name=color-scheme with a content other than normal or light |
 | link |  | charset other than utf-8 (on any link) |
 | every other element (h1–h6, lists, sections, phrasing, custom and unknown elements) but button, select and textarea | align (middle as center, or one text-align value) |  |
-| every element but embed | hidden (display: none; until-found: content-visibility: hidden) |  |
+| every element but embed | hidden (display: none) | hidden=until-found (its hint content-visibility: hidden is outside this profile) |
 | every element |  | contenteditable (empty, true or plaintext-only), autofocus |
