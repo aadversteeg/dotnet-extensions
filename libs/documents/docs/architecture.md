@@ -662,21 +662,28 @@ Each is documented next to its code as well.
   that is shown on the table's first page only (`TablePage.RepeatsHeader`; `HeaderRepeatTests`, cases
   `a6-header-quarter-*`: on a page area of 180 pt a header of 45.0 pt is repeated and one of 45.75 pt is not, on 360 pt
   90.0 and 90.75; cases `fr-old-header-quarter-*`: on 150, 180 and 240 pt a header with bottom padding exactly a quarter
-  high is repeated and one 0.75 pt higher is not). Chromium repeats a header only when the header group is
-  `break-inside: avoid`, which the browser's own style sheet sets for print. The limit is the one CSS Tables 3 §6.2
-  states for repeated headers ("up to one quarter for header rows"), and Chromium's: in
-  `third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc`, `TableLayoutAlgorithm::GenerateFragment`, a
-  header is not repeated when its block size is more than a quarter of the fragmentainer's, and one that was not
-  repeated on a fragment does not start repeating on a later one (read in the source of Chromium 150; the measured
-  browser is Chromium 159). The cases above are the check. The engine compares with the room the table has on the
-  later page: the page area for a table that continues at the top of the body, and for a table inside a cell that
-  continues, since a continued cell gives its content the page's whole height (`a6-nested-header-pad12-h2925`, a header
-  of 45.0 pt in a cell with 12 pt padding: repeated on every page in both). Under an outer table's repeated header the
-  room is the page area less that header, and Chromium too does not repeat a header of 42.75 pt there, while one of
-  39.75 pt is repeated in both (`a6-nested-under-header-h2400`, `a6-nested-under-header-h2700`). **Listed difference:**
-  the engine decides on every later page, so on the last page, where the rest of the outer cell is laid out with
-  unlimited room, the inner header of 42.75 pt is repeated again; Chromium does not start repeating after the first
-  page (`HeaderRepeatTests`).
+  high is repeated and one 0.75 pt higher is not). The limit is the one CSS Tables 3 §6.2 states for repeated headers
+  ("up to one quarter for header rows"), and Chromium's: in
+  `third_party/blink/renderer/core/layout/table/table_layout_algorithm.cc`, `TableLayoutAlgorithm::GenerateFragment`
+  (read in the source of Chromium 150; the measured browser is Chromium 159), a header group is repeated when two
+  conditions hold: its block size is at most a quarter of the fragmentainer's block size, and its `break-inside` has an
+  applicable `avoid` value. The engine checks the first condition only. Its header rows have no `break-inside` value
+  of their own in this respect: they are repeated as the header groups of the measured cases, which carry no
+  `break-inside` in their documents and which Chromium repeats. The decision is made once, where the table's first
+  fragment is laid out, and the table's break token carries it to its later pages
+  (`TracksBreakToken.RepeatsHeader`): a header not repeated on the first page is never repeated later, as in Chromium,
+  which does not start repeating on a later fragment. The fragmentainer's block size is the height of the page area
+  (`ConstraintSpace.FragmentainerBlockSize`): it does not depend on where the table starts on its first page
+  (`HeaderDecisionTests`), and the measurement of a cut table cell with unlimited height carries the value of the page
+  it measures for, so a table inside a cell decides there as on the page. Under an outer table's repeated header the
+  page area is less by that header, as Chromium reserves its room for the rows below it
+  (`ConstraintSpaceBuilder::ReserveSpaceInFragmentainer`): on a page area of 180 pt below an outer header of one line a
+  nested header of 39.75 pt is repeated and one of 42.75 pt is not, in both (`a6-nested-under-header-h2400`,
+  `a6-nested-under-header-h2700`, `a6-nested-under-header-h2700-n16`; 42.75 pt is less than a quarter of 180 pt and
+  more than a quarter of 180 pt less the outer header). A nested header of 45.0 pt in a cell with 12 pt padding is a
+  quarter of the page area and is repeated on every page (`a6-nested-header-pad12-h2925`); one of 60 pt is shown on page
+  1 only, whatever the last page holds (`a6-nested-header-h4425-n14`, `-n16`, `-n20`, `-n26`: 7, 9, 2 and 8 rows on the
+  last page, where 7 fit below the header).
 - **Empty row parts are a policy, not a deviation** (`LayoutProfile.EmptyRowParts`). Chromium cuts a row wherever its
   cells can break, so a page may end with a part of a row that shows nothing (a row of empty padded blocks after other
   rows) or start with one (the rest of a row whose text ended on the page before; case `a3-mirror`). With
@@ -731,7 +738,13 @@ Each is documented next to its code as well.
   table's repeated header row, which does not start the page: under `Avoid` the row is cut below the header as Chromium
   cuts it (`a2-row-end-nested-under-header`). (v) Under `Allow` the engine does not take that cut; that page goes on
   without the outer header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and
-  Chromium repeats the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`).
+  Chromium repeats the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`). With
+  13.875 pt of top padding the same holds under `Slice`, and under `Refuse` the document is refused
+  (`Documents.Layout.DoesNotFit`; `a2-row-end-nested-under-header-13875`). With 9 lines below 12 pt of top padding the
+  rest of the inner table fits below the repeated header but for the outer table's bottom line: Chromium repeats the
+  header and lets that line pass the page end (and draws it again on a third page that shows nothing else), and the
+  engine goes on without the header under every profile (`H a0`..`a9`, `x0`..`x8 after`;
+  `a2-row-end-nested-under-header-end`).
   A cell background ends at the middle of the line below (192.375), where Chromium ends it at the line's outer edge
   (192.75; `a2-row-end-background`). That is the table model's own rule, not new here; the 0.375 pt between lies under
   the line, which hides it, as the engine has only solid, opaque lines (no dashed or translucent ones). Limits (i) to
@@ -768,7 +781,8 @@ Each is documented next to its code as well.
   and 3 under `Refuse`, the default (`PinnedDifferenceTests`). In 600 random documents whose pieces each fit a page
   (each laid out under `Refuse` and under `Slice`, with both values of `EmptyRowParts`), 1 under `Avoid` and 1 under
   `Allow` had other pages under `Slice` than under `Refuse`, and 85 under `Avoid` (66 under `Allow`) that `Refuse`
-  refuses were laid out under `Slice` (the shape above, a piece that fits the page area but not with its cell's insets).
+  refuses were laid out under `Slice` (the shape above, a piece that fits the page area but not with its cell's insets;
+  a continued cell whose rest fits the page area only without its bottom padding is another such shape, listed below).
   Taking the cut under `Refuse` too is left to later layout work. **Deliberate deviation from Chromium:** beside a sliced
   piece, the other cells of its row go on page by page beside the slices (cases `a4-image-beside-lines`,
   `a4-line-beside-lines`); Chromium holds their content back while the slices run and goes on with it below the end
@@ -794,7 +808,14 @@ Each is documented next to its code as well.
   not slice such a piece; it moves it whole to the top of the next page and lets the cell's bottom padding and grid line
   pass the page end. The engine has the same pages and words, but the piece in two slices (176.625 and 0.375 pt for a
   177 pt image in a cell with 3 pt padding), and what follows starts lower on the next page. Under `Refuse` such a piece
-  is refused as before. A block outside a table whose bottom padding does not fit below such a piece at the top of a
+  is refused as before. **Listed difference from Chromium:** the same holds for content that fits the page area only
+  without its cell's bottom padding when the cell continues from the page before. Chromium places the rest of the
+  cell on the page and lets the padding pass the page end; the engine never lets a cell's bottom padding pass the
+  page end, and records no breakpoint inside content that continues from the page before (`FlowLayout`), so under
+  `Refuse` the table is refused (`Documents.Layout.DoesNotFit`), and under `Slice` the content is laid out again above
+  the bottom padding and breaks earlier: a cell with 30 pt bottom padding around a table whose rest on page 2 fits the
+  page area gives `t34 t35 t36 t37 t39 t40 t41 t42` on page 2 in Chromium and `t34 t35 t36 t37`, then `t39 t40 t41 t42`
+  on page 3 under `Slice` (`a4-continued-cell-pad-bottom-30`; `PinnedDifferenceTests`). A block outside a table whose bottom padding does not fit below such a piece at the top of a
   page keeps the piece whole and breaks before its bottom padding and border, which start the next page with what
   follows below them (`SlicedBox`), as Chromium does: a block with 3 pt padding above and below a 177 pt image puts
   "after" on page 2, 3 pt lower than at the top of a page, in both (`a4-image-177-block-padding-3`;
