@@ -5,13 +5,17 @@ namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// The Chromium reference data is complete: every case in <c>tools/reference/chromium/cases</c> has its four measured
-/// files, and every measured file has exactly the number of lines it had when it was measured (pinned here), so a file
+/// files (and a fifth, its ink gaps, where its print skips ink), and every measured file has exactly the number of lines it had when it was measured (pinned here), so a file
 /// that is missing, emptied or cut short fails this test even where no other test reads it (the <c>words</c>,
 /// <c>boxes</c> and <c>lines</c> files are kept for comparing a new measurement, the <c>print</c> files are read by the
 /// reference tests). After a deliberate new measurement, update the numbers with the files.
 /// </summary>
 public class MeasuredReferenceFilesTests
 {
+    /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
+    /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
+    private static readonly string[] InkCases = ["dl-skip", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
+
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
     {
@@ -1276,6 +1280,62 @@ public class MeasuredReferenceFilesTests
         ["sr-zwnj.lines.txt"] = 0,
         ["sr-zwnj.print.txt"] = 7,
         ["sr-zwnj.words.txt"] = 3,
+        ["sk-extreme.boxes.txt"] = 1,
+        ["sk-extreme.ink.txt"] = 148,
+        ["sk-extreme.lines.txt"] = 11,
+        ["sk-extreme.print.txt"] = 34,
+        ["sk-extreme.words.txt"] = 22,
+        ["sk-lato-bold.boxes.txt"] = 1,
+        ["sk-lato-bold.ink.txt"] = 24,
+        ["sk-lato-bold.lines.txt"] = 6,
+        ["sk-lato-bold.print.txt"] = 25,
+        ["sk-lato-bold.words.txt"] = 18,
+        ["sk-lato.boxes.txt"] = 1,
+        ["sk-lato.ink.txt"] = 26,
+        ["sk-lato-italic.boxes.txt"] = 1,
+        ["sk-lato-italic.ink.txt"] = 28,
+        ["sk-lato-italic.lines.txt"] = 6,
+        ["sk-lato-italic.print.txt"] = 25,
+        ["sk-lato-italic.words.txt"] = 18,
+        ["sk-lato.lines.txt"] = 6,
+        ["sk-lato.print.txt"] = 25,
+        ["sk-lato.words.txt"] = 18,
+        ["sk-misc.boxes.txt"] = 1,
+        ["sk-misc.ink.txt"] = 39,
+        ["sk-misc.lines.txt"] = 8,
+        ["sk-misc.print.txt"] = 22,
+        ["sk-misc.words.txt"] = 12,
+        ["sk-nest.boxes.txt"] = 1,
+        ["sk-nest.ink.txt"] = 69,
+        ["sk-nest.lines.txt"] = 12,
+        ["sk-nest.print.txt"] = 22,
+        ["sk-nest.words.txt"] = 9,
+        ["sk-size.boxes.txt"] = 1,
+        ["sk-size.ink.txt"] = 47,
+        ["sk-size.lines.txt"] = 11,
+        ["sk-size.print.txt"] = 23,
+        ["sk-size.words.txt"] = 11,
+        ["sk-space.boxes.txt"] = 1,
+        ["sk-space.ink.txt"] = 48,
+        ["sk-space.lines.txt"] = 6,
+        ["sk-space.print.txt"] = 20,
+        ["sk-space.words.txt"] = 13,
+        ["sk-theano.boxes.txt"] = 1,
+        ["sk-theano.ink.txt"] = 49,
+        ["sk-theano.lines.txt"] = 6,
+        ["sk-theano.print.txt"] = 25,
+        ["sk-theano.words.txt"] = 18,
+        ["sk-touch.boxes.txt"] = 1,
+        ["sk-touch.ink.txt"] = 38,
+        ["sk-touch.lines.txt"] = 16,
+        ["sk-touch.print.txt"] = 33,
+        ["sk-touch.words.txt"] = 8,
+        ["sk-whose.boxes.txt"] = 1,
+        ["sk-whose.ink.txt"] = 27,
+        ["sk-whose.lines.txt"] = 12,
+        ["sk-whose.print.txt"] = 28,
+        ["sk-whose.words.txt"] = 15,
+        ["dl-skip.ink.txt"] = 10,
         ["versions.txt"] = 5,
         ["widths-exact.boxes.txt"] = 19,
         ["widths-exact.lines.txt"] = 20,
@@ -1392,9 +1452,10 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(341);
+        cases.Should().HaveCount(352);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
-            .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
+            .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
+            "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
     }
 
