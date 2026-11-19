@@ -25,20 +25,20 @@ public class TextCostTests(ITestOutputHelper output)
     /// <summary>The paragraph shaped once, then broken with the layout's wiring: every piece shaped again under the
     /// paragraph's budget. Counted: what the breaker hands the reshaper, the operations all pieces charged, the bytes the
     /// breaking allocated.</summary>
-    private static Work Break(string text, double fontSize, double width)
+    private static Work Break(string text, double fontSize, double width, RunWhiteSpace? mode = null)
     {
         var font = TestFonts.Regular;
         var glyphs = Shaper.Shape(text, font, fontSize).Value;
         var (characters, calls) = (0L, 0L);
         LineShapingBudget? seen = null;
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var lines = GreedyLineBreaker.BreakLines([[.. glyphs]], width, (_, piece, showsHyphen, budget) =>
+        var lines = GreedyLineBreaker.BreakLines([[.. glyphs]], [mode ?? RunWhiteSpace.Initial], width, (_, piece, showsHyphen, budget) =>
         {
             seen = budget;
             characters += piece.Length;
             calls++;
             return Shaper.ShapeLinePiece(piece, font, fontSize, showsHyphen, budget);
-        });
+        }, LineEndShaping.KeepParagraphGlyphs);
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         lines.IsSuccess.Should().BeTrue(lines.IsFailure ? lines.Error.ToString() : string.Empty);
         return new Work(characters, calls, seen?.Shaping.Spent ?? 0, bytes);
@@ -65,6 +65,25 @@ public class TextCostTests(ITestOutputHelper output)
         // The input `para 8000 h=14000 w=300 fs=2`: hundreds of lines on one page, each candidate measured.
         Break(Words(500), 2, 276);
         Linearly("words", 4000, Break(Words(4000), 2, 276), Break(Words(8000), 2, 276));
+    }
+
+    [Fact]
+    public void Preserved_spaces_that_hang_at_every_line_end_are_broken_in_linear_work()
+    {
+        // Words with runs of preserved spaces between them, in a narrow paragraph: every line ends with spaces that hang.
+        static string Spaced(int count) => string.Join("        ", Enumerable.Range(0, count).Select(index => "word" + index % 10));
+        var preserved = new RunWhiteSpace(Ave.Extensions.Documents.Core.WhiteSpaceCollapse.Preserve);
+        Break(Spaced(100), 2, 20, preserved);
+        Linearly("hanging spaces", 2000, Break(Spaced(2000), 2, 20, preserved), Break(Spaced(4000), 2, 20, preserved));
+    }
+
+    [Fact]
+    public void A_nowrap_line_of_many_words_is_broken_in_linear_work()
+    {
+        // One line of thousands of words that may not wrap, far wider than its paragraph.
+        var nowrap = new RunWhiteSpace(Ave.Extensions.Documents.Core.WhiteSpaceCollapse.Collapse, Ave.Extensions.Documents.Core.TextWrapMode.NoWrap);
+        Break(Words(100), 2, 50, nowrap);
+        Linearly("nowrap", 2000, Break(Words(2000), 2, 50, nowrap), Break(Words(4000), 2, 50, nowrap));
     }
 
     [Fact]

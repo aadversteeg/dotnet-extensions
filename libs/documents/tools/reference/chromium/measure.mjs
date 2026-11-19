@@ -14,8 +14,8 @@
 // height in points of every table cell, every element with an id and every grid item, laid out with print media;
 // widths of a box do not depend on pagination), <case>.lines.txt (one line per filled rectangle, such as a piece of a
 // grid line: "page x0 y0 x1 y1 height", points, origin top left), <case>.print.txt (the print's pages, words with their
-// baselines, filled rectangles and images, read from the PDF by positions.py: README.md, "Print positions") and
-// versions.txt.
+// baselines, filled rectangles and images, read from the PDF by positions.py: README.md, "Print positions"), for a print
+// with a decoration line cut around ink <case>.ink.txt (ink.py: the line, its gaps and its visible pieces) and versions.txt.
 // The engine's tests pin numbers measured this way; see README.md for which test uses which case.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -68,7 +68,18 @@ async function print() {
   const page = await browser.newPage();
   for (const name of names) {
     await page.goto(pathToFileURL(join(cases, `${name}.html`)).href);
-    await page.evaluate(() => document.fonts.ready);
+    // Chromium prints with a fallback font, without a word, when a font file of the case does not load (a copy of this
+    // folder without the family's assets/fonts beside it did that): document.fonts.ready settles for a failed face too.
+    // Layout first, so every face the text needs has been asked for, then stop on any face that failed.
+    const failed = await page.evaluate(async () => {
+      void document.body.offsetHeight;
+      await document.fonts.ready;
+      return [...document.fonts].filter((face) => face.status !== 'loaded' && face.status !== 'unloaded')
+        .map((face) => `${face.family} ${face.weight} ${face.style}: ${face.status}`);
+    });
+    if (failed.length > 0) {
+      throw new Error(`${name}: a font of the case did not load (${failed.join('; ')}); is assets/fonts beside this folder?`);
+    }
     await page.pdf({ path: join(out, `${name}.pdf`), preferCSSPageSize: true, printBackground: true });
     // Box sizes as laid out for print (1 CSS px = 0.75pt): every table cell, every element with an id, and every item
     // of a grid (the fr columns).
@@ -77,7 +88,8 @@ async function print() {
       .filter((element) => element.matches('td, th, [id]') || getComputedStyle(element.parentElement ?? element).display === 'grid')
       .map((element) => {
       const box = element.getBoundingClientRect();
-      const label = element.id || (element.textContent ?? '').trim().slice(0, 24);
+      // A line feed in the text (preserved by white-space: pre) would end the file's line: it becomes a space.
+      const label = element.id || (element.textContent ?? '').trim().slice(0, 24).replaceAll('\n', ' ');
       return `${element.tagName.toLowerCase()} ${(box.width * 0.75).toFixed(3)} ${(box.height * 0.75).toFixed(3)} ${label}`;
       }));
     writeFileSync(join(out, `${name}.boxes.txt`), boxes.join('\n') + '\n');

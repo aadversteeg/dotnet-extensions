@@ -58,7 +58,7 @@ public static class GreedyLineBreaker
     /// <param name="availableWidth">The width of the line box, in points.</param>
     /// <returns>The lines, top to bottom; empty when the paragraph has no visible text.</returns>
     public static ValueList<TextLine> BreakLines(IReadOnlyList<ValueList<ShapedGlyph>> runs, double availableWidth) =>
-        Break(runs, availableWidth, reshape: null, LineEndShaping.KeepParagraphGlyphs).Value;
+        Break(runs, [], availableWidth, reshape: null, _ => LineEndShaping.KeepParagraphGlyphs).Value;
 
     /// <summary>
     /// Breaks the shaped runs of one paragraph into lines no wider than <paramref name="availableWidth"/>.
@@ -80,6 +80,9 @@ public static class GreedyLineBreaker
     /// A segment that ends in a soft hyphen goes on the line only when it fits with that hyphen — LIMIT: so a line may
     /// end one segment earlier than it would if the segment after it also fitted, which would make the hyphen
     /// unnecessary.</item>
+    /// <item>An atomic inline (<see cref="ShapedGlyph.IsAtomicInline"/>, an image in the line) is a piece of its own: a line
+    /// may break before and after it (<see cref="LineBreaking.BreakableSegments.Split"/>), it is never shaped again, and it
+    /// is wider than nothing only by its own advance.</item>
     /// <item>A piece wider than the whole line is put on a line of its own and overflows it: there is no break
     /// opportunity inside it, and <c>overflow-wrap: normal</c> does not break words (CSS Text 3 §5.4).</item>
     /// <item>THE RULE FOR SHAPING AT A BREAK, Chromium's (Blink <c>ShapingLineBreaker::ShapeLine</c>: "Unless the break
@@ -88,7 +91,9 @@ public static class GreedyLineBreaker
     /// paragraph's glyphs except at an end that is not safe to break — a place the shaper marked
     /// (<see cref="ShapedGlyph.UnsafeToBreak"/>: a kerning pair, a mark on its base, as HarfBuzz marks them,
     /// hb-buffer.h <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>) or a place inside a cluster (a ligature across a soft hyphen or a
-    /// zero width space). There the text from that end to the nearest safe place is shaped again on its own, with
+    /// zero width space); the start of a run that the paragraph shaped with the run before it is such a place when the
+    /// shaper marked it. There the text from that end to the nearest safe place, or to the run's own border, is shaped
+    /// again on its own, with
     /// <paramref name="reshape"/>: the start of a wrapped line without what went before, the end of a line without what
     /// follows. So a line can differ from shaping its text alone: the middle keeps the paragraph's glyphs, and the half of a
     /// ligature cut at the end is shaped without the rest. At a collapsible space the end is kept or shaped again before
@@ -113,7 +118,7 @@ public static class GreedyLineBreaker
     /// <param name="reshape">Shapes a piece of a run again as a line shows it.</param>
     /// <returns>The lines, top to bottom (empty when the paragraph has no visible text), or a shaping error.</returns>
     public static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<ValueList<ShapedGlyph>> runs, double availableWidth, LineShaper reshape) =>
-        Break(runs, availableWidth, reshape, LineEndShaping.KeepParagraphGlyphs);
+        Break(runs, [], availableWidth, reshape, _ => LineEndShaping.KeepParagraphGlyphs);
 
     /// <summary>
     /// Breaks the shaped runs of one paragraph into lines no wider than <paramref name="availableWidth"/>, doing
@@ -128,12 +133,65 @@ public static class GreedyLineBreaker
     /// <returns>The lines, top to bottom (empty when the paragraph has no visible text), or a shaping error.</returns>
     public static Result<ValueList<TextLine>, Error> BreakLines(
         IReadOnlyList<ValueList<ShapedGlyph>> runs, double availableWidth, LineShaper reshape, LineEndShaping atSpace) =>
-        Break(runs, availableWidth, reshape, atSpace);
+        Break(runs, [], availableWidth, reshape, _ => atSpace);
 
-    private static Result<ValueList<TextLine>, Error> Break(IReadOnlyList<ValueList<ShapedGlyph>> runs, double availableWidth, LineShaper? reshape, LineEndShaping atSpace)
+    /// <summary>
+    /// Breaks the shaped runs of one paragraph into lines no wider than <paramref name="availableWidth"/>, each run by its
+    /// white-space properties (<paramref name="modes"/>); otherwise as
+    /// <see cref="BreakLines(IReadOnlyList{ValueList{ShapedGlyph}}, double, LineShaper, LineEndShaping)"/>, which breaks
+    /// every run with the initial values.
+    /// </summary>
+    /// <remarks>
+    /// THE RULE FOR PRESERVED SPACES AT A LINE'S ENDS (CSS Text 3 §4.1.2, "Phase II: Trimming and Positioning": "the UA must
+    /// (unconditionally) hang this sequence, unless the sequence is followed by a forced line break, in which case it must
+    /// conditionally hang the sequence instead"; §8.2, a glyph that conditionally hangs "is not considered when measuring the
+    /// line's contents for fit; however, any part of it that does not fit is considered to hang"), as Chromium
+    /// does it (Blink <c>LineInfo::ComputeTrailingSpaceWidth</c>, core/layout/inline/line_info.cc): a preserved space is not
+    /// removed at the start of a line (case <c>ws-pre-wrap</c>: "   lead" starts three spaces in; <c>ws-lead</c>: spaces alone
+    /// before a soft wrap make a line of their own). At the end of a line the preserved spaces hang (<see cref="ShapedGlyph.Hangs"/>):
+    /// they are not measured for fit, and their advance is only the part that stays inside the line. At a soft wrap that is
+    /// nothing, they hang whole ("unconditional"; <c>ws-hang-pre-wrap</c>: right-aligned and justified lines end with the
+    /// word before them at the edge). Before a forced break and at the paragraph's end they hang only as far as they do not
+    /// fit ("conditional", Chromium: "only the part of the trailing spaces that overflow the line actually hang"; cases
+    /// <c>ws-hang-pre-wrap</c> and <c>ws-forced</c>: "aa" and four spaces right-aligned in a wide line ends the spaces' width
+    /// before the edge, with twenty spaces in a 40pt line "aa" starts at the left edge). So the min-content width does not
+    /// count them and the max-content width does (§8.2: "not taken into account when computing min-content sizes …, but they
+    /// are taken into account for max-content sizes"; case <c>ws-intrinsic</c>).
+    /// </remarks>
+    /// <param name="runs">The shaped glyphs of each run, in order, after white-space collapsing.</param>
+    /// <param name="modes">The white-space properties of each run, in order (a run without an entry has the initial values).</param>
+    /// <param name="availableWidth">The width of the line box, in points.</param>
+    /// <param name="reshape">Shapes a piece of a run again as a line shows it.</param>
+    /// <param name="atSpace">What is done at a line end at a collapsible space.</param>
+    /// <returns>The lines, top to bottom (empty when the paragraph has no visible text), or a shaping error.</returns>
+    public static Result<ValueList<TextLine>, Error> BreakLines(
+        IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper reshape, LineEndShaping atSpace) =>
+        Break(runs, modes, availableWidth, reshape, _ => atSpace);
+
+    /// <summary>
+    /// Breaks the shaped runs of one paragraph into lines as
+    /// <see cref="BreakLines(IReadOnlyList{ValueList{ShapedGlyph}}, IReadOnlyList{RunWhiteSpace}, double, LineShaper, LineEndShaping)"/>,
+    /// with what is done at a line end at a collapsible space given per run (<paramref name="atSpace"/>): the run of that
+    /// space decides, as Chromium asks the item the line ends in whether it needs an accurate end position (Blink
+    /// <c>NeedsAccurateEndPosition(const InlineItem&amp;)</c>, core/layout/inline/line_breaker.cc: an item with a text
+    /// decoration does).
+    /// </summary>
+    /// <param name="runs">The shaped glyphs of each run, in order, after white-space collapsing.</param>
+    /// <param name="modes">The white-space properties of each run, in order (a run without an entry has the initial values).</param>
+    /// <param name="availableWidth">The width of the line box, in points.</param>
+    /// <param name="reshape">Shapes a piece of a run again as a line shows it.</param>
+    /// <param name="atSpace">What is done at a line end at a collapsible space, per run, in order (a run without an entry
+    /// keeps the paragraph's glyphs).</param>
+    /// <returns>The lines, top to bottom (empty when the paragraph has no visible text), or a shaping error.</returns>
+    public static Result<ValueList<TextLine>, Error> BreakLines(
+        IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper reshape, IReadOnlyList<LineEndShaping> atSpace) =>
+        Break(runs, modes, availableWidth, reshape, run => run < atSpace.Count ? atSpace[run] : LineEndShaping.KeepParagraphGlyphs);
+
+    private static Result<ValueList<TextLine>, Error> Break(
+        IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper? reshape, Func<int, LineEndShaping> atSpace)
     {
-        var paragraph = BreakableSegments.Split(runs, canShapeAgain: reshape is not null);
-        var shaping = new LineEnds(paragraph, reshape, reshape is null ? null : new LineShapingBudget(paragraph.Text.Length), atSpace);
+        var paragraph = BreakableSegments.Split(runs, modes, canShapeAgain: reshape is not null);
+        var shaping = new LineEnds(paragraph, reshape, reshape is null ? null : new LineShapingBudget(paragraph.Text.Length), atSpace, availableWidth);
         var lines = ImmutableArray.CreateBuilder<TextLine>();
         var segments = paragraph.Segments;
         var candidates = new List<int>();
@@ -158,7 +216,7 @@ public static class GreedyLineBreaker
                         return Result<ValueList<TextLine>, Error>.Failure(taken.Error);
                     }
 
-                    Add(lines, taken.Value.Glyphs, forced: false);
+                    Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false);
                     lineStart = segments[taken.Value.Segment].Start;
                     occupied = false;
                     candidates.Clear();
@@ -189,7 +247,7 @@ public static class GreedyLineBreaker
                         return Result<ValueList<TextLine>, Error>.Failure(taken.Error);
                     }
 
-                    Add(lines, taken.Value.Glyphs, forced: false);
+                    Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false);
                     lineStart = segments[taken.Value.Segment].Start;
                     occupied = false;
                     candidates.Clear();
@@ -197,7 +255,7 @@ public static class GreedyLineBreaker
                     continue;
                 }
 
-                Add(lines, line.Value, forced: true);
+                Add(lines, paragraph.Rules, line.Value, forced: true);
                 lineStart = segment.End;
                 occupied = false;
                 candidates.Clear();
@@ -217,7 +275,7 @@ public static class GreedyLineBreaker
 
             if (candidates.Count == 0 || Fitting.Fits(last.Value.Sum(glyph => glyph.Glyph.Advance), availableWidth))
             {
-                Add(lines, last.Value, forced: false);
+                Add(lines, paragraph.Rules, last.Value, forced: false);
                 return Result<ValueList<TextLine>, Error>.Success(lines.ToImmutable());
             }
 
@@ -228,7 +286,7 @@ public static class GreedyLineBreaker
                 return Result<ValueList<TextLine>, Error>.Failure(taken.Error);
             }
 
-            Add(lines, taken.Value.Glyphs, forced: false);
+            Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false);
             var restart = taken.Value.Segment;
             lineStart = segments[restart].Start;
             candidates.RemoveAll(candidate => candidate <= restart);
@@ -237,11 +295,11 @@ public static class GreedyLineBreaker
 
     private static bool EndsWithSoftHyphen(BreakableSegments.Paragraph paragraph, int end) => end > 0 && paragraph.Text[end - 1] == SoftHyphen;
 
-    /// <summary>Adds a line, one segment per consecutive stretch of the same run, unless nothing visible and no forced break
-    /// is on it.</summary>
-    private static void Add(ImmutableArray<TextLine>.Builder lines, List<BreakableSegments.RunGlyph> all, bool forced)
+    /// <summary>Adds a line, one segment per consecutive stretch of the same run, unless nothing visible, no preserved space
+    /// and no forced break is on it.</summary>
+    private static void Add(ImmutableArray<TextLine>.Builder lines, BreakableSegments.LineEndRules rules, List<BreakableSegments.RunGlyph> all, bool forced)
     {
-        if (!all.Exists(glyph => glyph.Glyph.IsLineBreak || !BreakableSegments.IsBlank(glyph.Glyph)))
+        if (!all.Exists(glyph => glyph.Glyph.IsLineBreak || !rules.IsBlank(glyph.Run, glyph.Glyph)))
         {
             return;
         }
@@ -275,7 +333,7 @@ public static class GreedyLineBreaker
 
     /// <summary>The lines of one paragraph: their widths measured with the paragraph's glyphs, and their glyphs with the
     /// ends shaped again (THE RULE FOR SHAPING AT A BREAK).</summary>
-    private sealed class LineEnds(BreakableSegments.Paragraph paragraph, LineShaper? reshape, LineShapingBudget? budget, LineEndShaping atSpace)
+    private sealed class LineEnds(BreakableSegments.Paragraph paragraph, LineShaper? reshape, LineShapingBudget? budget, Func<int, LineEndShaping> atSpace, double availableWidth)
     {
         private readonly ImmutableArray<BreakableSegments.Placed> _glyphs = paragraph.Glyphs;
 
@@ -376,16 +434,45 @@ public static class GreedyLineBreaker
                 var line = new List<BreakableSegments.RunGlyph>(parts.Last - parts.First);
                 AddWithoutSpaces(line, parts.First, parts.LeadingEnd);
                 line.AddRange(middle);
+                var trailing = line.Count;
                 AddWithoutSpaces(line, parts.TrailingStart, parts.Last);
+                Hang(line, trailing, conditionally: parts.BodyEnd < parts.Last || end == paragraph.Text.Length);
                 return line;
             });
+        }
+
+        /// <summary>The preserved spaces among the line's trailing glyphs (from <paramref name="trailing"/> on) hang: at a soft
+        /// wrap their advance is 0; before a forced break or at the paragraph's end (<paramref name="conditionally"/>) they keep
+        /// the part of their advance that still fits in the line (THE RULE FOR PRESERVED SPACES AT A LINE'S ENDS).</summary>
+        private void Hang(List<BreakableSegments.RunGlyph> line, int trailing, bool conditionally)
+        {
+            var rules = paragraph.Rules;
+            if (!line.Skip(trailing).Any(glyph => rules.Hangs(glyph.Run, glyph.Glyph)))
+            {
+                return;
+            }
+
+            var room = availableWidth - line.Take(trailing).Sum(glyph => glyph.Glyph.Advance);
+            for (var index = trailing; index < line.Count; index++)
+            {
+                var (run, glyph) = (line[index].Run, line[index].Glyph);
+                if (!rules.Hangs(run, glyph))
+                {
+                    room -= glyph.Advance;
+                    continue;
+                }
+
+                var kept = conditionally ? Math.Clamp(room, 0, glyph.Advance) : 0;
+                room -= kept;
+                line[index] = line[index] with { Glyph = glyph with { Advance = kept, Hangs = true, Overhang = glyph.Advance - kept } };
+            }
         }
 
         private void AddWithoutSpaces(List<BreakableSegments.RunGlyph> line, int from, int to)
         {
             for (var index = from; index < to; index++)
             {
-                if (!_glyphs[index].Glyph.IsSpace)
+                if (!paragraph.Rules.IsCollapsibleSpace(_glyphs[index].Run, _glyphs[index].Glyph))
                 {
                     line.Add(Plain(_glyphs[index]));
                 }
@@ -462,13 +549,13 @@ public static class GreedyLineBreaker
         }
 
         /// <summary>True when the line keeps the paragraph's glyphs at its end although that place is not safe to break: it
-        /// ends at a collapsible space, with <see cref="LineEndShaping.KeepParagraphGlyphs"/>, and not before a forced break
+        /// ends at a collapsible space whose run has <see cref="LineEndShaping.KeepParagraphGlyphs"/>, and not before a forced break
         /// or at the paragraph's end (<see cref="LineEndShaping"/>).</summary>
         private bool KeepsEnd(Parts parts, int end) =>
-            atSpace == LineEndShaping.KeepParagraphGlyphs
-            && parts.BodyEnd == parts.Last
+            parts.BodyEnd == parts.Last
             && end < paragraph.Text.Length
-            && paragraph.HasSpace(parts.TrailingStart, parts.BodyEnd);
+            && paragraph.HasSpace(parts.TrailingStart, parts.BodyEnd)
+            && atSpace(_glyphs[parts.TrailingStart].Run) == LineEndShaping.KeepParagraphGlyphs;
 
         private List<BreakableSegments.RunGlyph> Range(int from, int to)
         {
@@ -481,9 +568,12 @@ public static class GreedyLineBreaker
             return glyphs;
         }
 
-        /// <summary>The text from <paramref name="from"/> to <paramref name="to"/> shaped again, one piece per run it crosses
-        /// (shaping never joins two runs); the last piece shows the hyphen when <paramref name="hyphen"/>. Every character
-        /// handed to the reshaper is charged to the paragraph's budget first.</summary>
+        /// <summary>The text from <paramref name="from"/> to <paramref name="to"/> shaped again, one piece per run it crosses:
+        /// the end of a line is shaped again within its run, also where the paragraph shaped that run with the run before or
+        /// after it, as Chromium shapes a line's end again within one item's result (<c>ShapingLineBreaker::ShapeLine</c>;
+        /// case <c>sr-line-left</c>: a wrapped line's first "T" is shaped without the "o" of the next run). The last piece
+        /// shows the hyphen when <paramref name="hyphen"/>. Every character handed to the reshaper is charged to the
+        /// paragraph's budget first.</summary>
         private Result<IEnumerable<BreakableSegments.RunGlyph>, Error> Pieces(int from, int to, bool hyphen)
         {
             if (!budget!.SpendCharacters(to - from))

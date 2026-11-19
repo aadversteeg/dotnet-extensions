@@ -1,0 +1,25 @@
+page 1 300.000 499.920
+word 1 12.000 41.556 27.000 12.000 gjpqy #000000 TheanoDidot-Regular
+word 1 44.652 60.576 27.000 12.000 Qx #000000 TheanoDidot-Regular
+word 1 63.672 76.212 27.000 12.000 ab #000000 TheanoDidot-Regular
+word 1 79.308 89.400 27.000 12.000 fy #000000 TheanoDidot-Regular
+word 1 12.000 43.488 51.000 12.000 ÅÉÎÔ #000000 TheanoDidot-Regular
+word 1 46.584 61.968 51.000 12.000 Ñx #000000 TheanoDidot-Regular
+word 1 65.064 81.060 51.000 12.000 Hb #000000 TheanoDidot-Regular
+word 1 12.000 41.556 75.000 12.000 gjpqy #000000 TheanoDidot-Regular
+word 1 44.652 60.576 75.000 12.000 Qx #000000 TheanoDidot-Regular
+word 1 12.000 71.112 114.750 24.000 gjpqy #000000 TheanoDidot-Regular
+word 1 77.304 109.152 114.750 24.000 Qx #000000 TheanoDidot-Regular
+word 1 115.344 140.424 114.750 24.000 ab #000000 TheanoDidot-Regular
+word 1 146.616 166.800 114.750 24.000 fy #000000 TheanoDidot-Regular
+word 1 12.000 74.976 162.750 24.000 ÅÉÎÔ #000000 TheanoDidot-Regular
+word 1 81.168 111.936 162.750 24.000 Ñx #000000 TheanoDidot-Regular
+word 1 118.128 150.120 162.750 24.000 Hb #000000 TheanoDidot-Regular
+word 1 12.000 71.112 210.750 24.000 gjpqy #000000 TheanoDidot-Regular
+word 1 77.304 109.152 210.750 24.000 Qx #000000 TheanoDidot-Regular
+rect 1 12.000 27.750 89.391 28.500 #000000
+rect 1 12.000 41.250 81.059 42.000 #000000
+rect 1 12.000 71.250 60.574 72.000 #000000
+rect 1 12.000 116.250 166.781 118.500 #000000
+rect 1 12.000 141.750 150.117 144.000 #000000
+rect 1 12.000 203.250 109.148 205.500 #000000

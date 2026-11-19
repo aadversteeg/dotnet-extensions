@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
@@ -88,7 +87,7 @@ public static partial class HtmlBoxGenerator
                 return inline;
             }
 
-            return Absolute(source, DocumentBase()) is { } url && options.Resources?.Invoke(url) is { } resource ? resource.Bytes : null;
+            return Urls.Absolute(source, DocumentBase()) is { } url && options.Resources?.Invoke(url) is { } resource ? resource.Bytes : null;
         }
 
         private string? DocumentBase()
@@ -97,7 +96,7 @@ public static partial class HtmlBoxGenerator
             {
                 _documentBaseRead = true;
                 var href = BaseHref(styled.Root);
-                _documentBase = href is null ? options.BaseUrl : Absolute(href.Trim(), options.BaseUrl) ?? options.BaseUrl;
+                _documentBase = href is null ? options.BaseUrl : Urls.Absolute(href.Trim(), options.BaseUrl) ?? options.BaseUrl;
             }
 
             return _documentBase;
@@ -126,30 +125,6 @@ public static partial class HtmlBoxGenerator
             }
 
             return null;
-        }
-
-        /// <summary>A URL resolved against a base, as the style resolver resolves style sheet URLs: only a URL with a scheme
-        /// is absolute (URL Standard §4.4; on Unix, <see cref="Uri"/> takes "/a.png" for a file path); without a base a
-        /// relative URL is passed on as written; null when it does not resolve.</summary>
-        private static string? Absolute(string url, string? baseUrl)
-        {
-            if (HasScheme(url))
-            {
-                return Uri.TryCreate(url, UriKind.Absolute, out var absolute) ? absolute.AbsoluteUri : null;
-            }
-
-            if (baseUrl is null)
-            {
-                return url;
-            }
-
-            return HasScheme(baseUrl) && Uri.TryCreate(baseUrl, UriKind.Absolute, out var root) && Uri.TryCreate(root, url, out var resolved) ? resolved.AbsoluteUri : null;
-        }
-
-        private static bool HasScheme(string url)
-        {
-            var colon = url.IndexOf(':', StringComparison.Ordinal);
-            return colon > 0 && char.IsAsciiLetter(url[0]) && url[..colon].All(c => char.IsAsciiLetterOrDigit(c) || c is '+' or '-' or '.');
         }
     }
 }

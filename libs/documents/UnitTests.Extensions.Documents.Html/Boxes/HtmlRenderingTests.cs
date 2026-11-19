@@ -26,13 +26,68 @@ public class HtmlRenderingTests
     {
         var pages = HtmlRendering.ToPages(Html, Options);
         pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
-        PrintedPages.Engine(pages.Value).PageTexts.Should().Equal("Hello");
+        PrintedPages.Engine(pages.Value.Output).PageTexts.Should().Equal("Hello");
+        pages.Value.Diagnostics.Should().BeEmpty();
 
         var pdf = HtmlRendering.ToPdf(Html, Options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 19, 12, 0, 0, TimeSpan.Zero)));
-        Encoding.ASCII.GetString([.. pdf.Value.Take(5)]).Should().Be("%PDF-");
-        HtmlRendering.ToPng(Html, Options, 1, new RasterOptions(72)).Value.Take(4).Should().Equal(0x89, (byte)'P', (byte)'N', (byte)'G');
-        HtmlRendering.ToPngPages(Html, Options, new RasterOptions(72)).Value.Should().ContainSingle();
-        HtmlRendering.ToImages(Html, Options, new RasterOptions(72)).Value.Single().Width.Should().Be(300);
+        Encoding.ASCII.GetString([.. pdf.Value.Output.Take(5)]).Should().Be("%PDF-");
+        HtmlRendering.ToPng(Html, Options, 1, new RasterOptions(72)).Value.Output.Take(4).Should().Equal(0x89, (byte)'P', (byte)'N', (byte)'G');
+        HtmlRendering.ToPngPages(Html, Options, new RasterOptions(72)).Value.Output.Should().ContainSingle();
+        HtmlRendering.ToImages(Html, Options, new RasterOptions(72)).Value.Output.Single().Width.Should().Be(300);
+    }
+
+    [Theory]
+    // No option: A4 with no margins (210 x 297 mm print as 594.96 x 841.92 pt), portrait.
+    [InlineData("", false, 594.96, 841.92, 0)]
+    [InlineData("@page { size: auto }", false, 594.96, 841.92, 0)]
+    // Media queries see the page without rules (here A4), not the page the rules make, as Chromium does (measured, cases
+    // h-media-page-size-*).
+    [InlineData("@page { size: landscape }", false, 841.92, 594.96, 0)]
+    // The caller's page, 300 x 198 pt with 12 pt margins: its size, its margins, and media queries on its page area
+    // (276 x 174 pt).
+    [InlineData("", true, 300, 198, 12 + 30)]
+    [InlineData("@page { size: auto; margin: 0 }", true, 300, 198, 30)]
+    [InlineData("@page { size: portrait }", true, 198, 300, 12 + 30)]
+    [InlineData("@page { size: 96pt 150pt }", true, 96, 150, 12 + 30)]
+    public void Without_a_page_rule_the_page_is_the_caller_s_and_media_queries_see_it(string pageRule, bool callersPage, double width, double height, double firstWordX)
+    {
+        var html = "<!doctype html><html><head><style>@font-face { font-family: Body; src: url(lato.ttf) } body { font-family: Body; margin: 0 }" +
+                   $" @media (max-height: 200pt) {{ p {{ margin-left: 30pt }} }} {pageRule}</style></head><body><p>Hello</p></body></html>";
+        var options = callersPage
+            ? Options with { Style = Options.Style with { Page = new(300.Pt(), 198.Pt(), new Edges(12.Pt(), 12.Pt(), 12.Pt(), 12.Pt())) } }
+            : Options;
+
+        var page = PrintedPages.Engine(HtmlRendering.ToPages(html, options).Value.Output).Pages.Single();
+
+        page.Width.Should().BeApproximately(width, 1e-6);
+        page.Height.Should().BeApproximately(height, 1e-6);
+        page.Words.Single().X0.Should().BeApproximately(firstWordX, 1e-6);
+    }
+
+    [Fact]
+    public void Under_warn_every_entry_returns_its_output_with_a_diagnostic_for_everything_left_out_or_changed()
+    {
+        // What is left out or changed: the image, the quotation (its words), white-space: nowrap, the table and its cells,
+        // visibility: hidden (drawn), the float, the list item's marker.
+        const string Body = "<p>before</p><p>keep <img src=\"x.png\" alt=\"ALT\"> this <q>quoted words</q> and <span style=\"white-space:nowrap\">no wrap</span></p>" +
+            "<table><tr><td>cell one</td><td>cell two</td></tr></table><p style=\"visibility:hidden\">secret</p><p style=\"float:right\">floated</p><ul><li>item</li></ul>";
+        var html = Html.Replace("<p>Hello</p>", Body, StringComparison.Ordinal);
+        var warn = Options with { Style = Options.Style with { Unsupported = UnsupportedPolicy.Warn } };
+        HtmlRendering.ToPages(html, Options).IsFailure.Should().BeTrue("the same document is refused by default");
+
+        var pages = HtmlRendering.ToPages(html, warn);
+
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+        var values = pages.Value.Diagnostics.Select(error => error.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.Value, out var value) ? value as string : null).ToList();
+        values.Should().Contain(["img", "q", "nowrap", "hidden", "right"]);
+        values.Should().Contain(value => value != null && value.StartsWith("table", StringComparison.Ordinal));
+        values.Should().Contain(value => value != null && value.StartsWith("list-item", StringComparison.Ordinal));
+        pages.Value.Diagnostics.Should().OnlyContain(error => error.Metadata != null && error.Metadata.ContainsKey(ErrorMetadataKeys.SourceLine));
+        var pdf = HtmlRendering.ToPdf(html, warn, new PdfRenderOptions(new DateTimeOffset(2026, 11, 19, 12, 0, 0, TimeSpan.Zero)));
+        pdf.Value.Diagnostics.Should().Equal(pages.Value.Diagnostics);
+        HtmlRendering.ToPng(html, warn, 1, new RasterOptions(72)).Value.Diagnostics.Should().Equal(pages.Value.Diagnostics);
+        HtmlRendering.ToPngPages(html, warn, new RasterOptions(72)).Value.Diagnostics.Should().Equal(pages.Value.Diagnostics);
+        HtmlRendering.ToImages(html, warn, new RasterOptions(72)).Value.Diagnostics.Should().Equal(pages.Value.Diagnostics);
     }
 
     [Fact]

@@ -16,9 +16,23 @@ namespace Ave.Extensions.Documents.Typesetting;
 /// <param name="YOffset">How far the glyph is drawn ABOVE the baseline, in points (font convention, y up).</param>
 public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, double XOffset = 0, double YOffset = 0)
 {
-    /// <summary>True for the glyph of a collapsed space U+0020: removed at the start and end of a line
-    /// (CSS Text 3 §4.1.2), and stretched by justification.</summary>
+    /// <summary>True for the glyph of a space U+0020: removed at the start and end of a line (CSS Text 3 §4.1.2) when it is
+    /// collapsible, hanging at the end when it is preserved (<see cref="Hangs"/>), and stretched by justification.</summary>
     public bool IsSpace => Text == " ";
+
+    /// <summary>
+    /// True for a preserved space at the end of a line that hangs (CSS Text 3 §4.1.2, "Phase II: Trimming and Positioning"):
+    /// its advance is only the part of it that stays inside the line, which is nothing at a soft wrap, and it is no
+    /// justification opportunity. Set by line breaking (<see cref="GreedyLineBreaker"/>).
+    /// </summary>
+    public bool Hangs { get; init; }
+
+    /// <summary>
+    /// For a glyph that hangs (<see cref="Hangs"/>), the part of its advance that lies past the line's end: its advance as
+    /// shaped minus <see cref="Advance"/>, the part it keeps; 0 for every other glyph. A text decoration is drawn across the
+    /// whole advance of a hanging space, inside the line and past its end (Chromium's print, case <c>dl-space</c>).
+    /// </summary>
+    public double Overhang { get; init; }
 
     /// <summary>True for a default-ignorable character (a soft hyphen, a joiner, a zero width space, …): its advance
     /// is 0 and it is not drawn, but it stays in the text for line breaking. The Unicode Standard §5.21.6, "Characters
@@ -45,4 +59,22 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// (<see cref="GreedyLineBreaker"/>).
     /// </summary>
     public bool UnsafeToBreak { get; init; }
+
+    /// <summary>
+    /// True for the stand-in of an atomic inline (an image in a line of text; CSS Display 3, Appendix A, "atomic inline"): the
+    /// object replacement character U+FFFC in the paragraph's text, as Chromium puts one in its inline text for every
+    /// atomic inline (Blink <c>InlineItemsBuilder::AppendAtomicInline</c>, core/layout/inline/inline_items_builder.cc). Its
+    /// advance is the width of the inline's margin box; it is never shaped, draws no glyph, and has a break opportunity
+    /// before and after it (<see cref="LineBreaking.BreakableSegments.Split"/>). Made by <see cref="AtomicInline"/>.
+    /// </summary>
+    public bool IsAtomicInline { get; init; }
+
+    /// <summary>The object replacement character U+FFFC, which stands for an atomic inline in a paragraph's text.</summary>
+    public const char ObjectReplacementCharacter = '￼';
+
+    /// <summary>The stand-in of an atomic inline (<see cref="IsAtomicInline"/>) of the given width.</summary>
+    /// <param name="advance">The width of the atomic inline's margin box, in points.</param>
+    /// <returns>The glyph.</returns>
+    public static ShapedGlyph AtomicInline(double advance) =>
+        new(default, advance, ObjectReplacementCharacter.ToString()) { IsAtomicInline = true };
 }

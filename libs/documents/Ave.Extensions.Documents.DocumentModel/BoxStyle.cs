@@ -66,6 +66,12 @@ public sealed record BoxStyle
     /// <c>grid-template-columns</c>); empty for every other box.</summary>
     public ValueList<TrackSize> Columns { get; init; } = [];
 
+    /// <summary>How wide a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> is when none of its columns is a
+    /// <see cref="TrackSize.Fill"/> column (CSS 2.1 §17.5.2.2, CSS Sizing 3 §3.2): <see cref="BoxWidth.Auto"/>, the CSS
+    /// initial value, unless set. With a fill column the box always takes the width it is given, so both values mean
+    /// the same. Ignored for every other box.</summary>
+    public BoxWidth Width { get; init; }
+
     /// <summary>The table part this box is (CSS Display 3 §2.4), or <see cref="TableDisplay.None"/>: a row group or a row
     /// of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>.</summary>
     public TableDisplay TableDisplay { get; init; }
@@ -98,6 +104,25 @@ public enum BoxDecorationBreak
     /// and Chromium does not implement it for collapsed borders (it paints half the line on each side of a break).
     /// A row fits when it fits with the whole line below it.</summary>
     Clone,
+}
+
+/// <summary>
+/// The values of <see cref="BoxStyle.Width"/>, named after the CSS <c>width</c> values they follow, for a table whose
+/// columns do not fill the width it is given.
+/// </summary>
+public enum BoxWidth
+{
+    /// <summary>As wide as its columns need, never wider than the width it is given (<c>width: auto</c>; CSS 2.1
+    /// §17.5.2.2: "use max(MAX, CAPMIN)" when that is less than the containing block). Width left over the columns'
+    /// maximum widths stays empty.</summary>
+    Auto,
+
+    /// <summary>As wide as the width it is given (<c>width: stretch</c>, CSS Sizing 3 §3.2: the margin box matches the
+    /// containing block; for a table without horizontal margins this is <c>width: 100%</c>). The width left over the
+    /// columns' maximum widths is shared over the auto columns in proportion to their maximum widths, or over the fixed
+    /// columns in proportion to their widths when the table has no auto column (CSS Tables 3 §3.9.3.2, "Distributing
+    /// excess width to columns": "increased in proportion to max-content width", as Chromium implements it).</summary>
+    Stretch,
 }
 
 /// <summary>The values of <c>break-before</c> and <c>break-after</c> (CSS Fragmentation 3 §3.1) that this version

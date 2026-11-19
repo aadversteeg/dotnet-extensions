@@ -37,4 +37,26 @@ public sealed record TextFormat(
     /// <summary>The line height (CSS <c>line-height</c>, inherited): on a paragraph also the height of its strut, the least
     /// height of its lines.</summary>
     public LineHeightValue? LineHeight { get; init; }
+
+    /// <summary>How white space collapses (CSS <c>white-space-collapse</c>, CSS Text 4, inherited).</summary>
+    public WhiteSpaceCollapse? WhiteSpaceCollapse { get; init; }
+
+    /// <summary>Whether text wraps at its soft wrap opportunities (CSS <c>text-wrap-mode</c>, CSS Text 4, inherited).</summary>
+    public TextWrapMode? TextWrapMode { get; init; }
+
+    /// <summary>Whether underlines and overlines leave gaps around the glyphs' ink (CSS <c>text-decoration-skip-ink</c>, CSS Text
+    /// Decoration 4 §2.10.4, inherited): the value of the text decides, not that of the element that draws the line.</summary>
+    public TextDecorationSkipInk? DecorationSkipInk { get; init; }
+
+    /// <summary>The lines the element draws across its text (CSS <c>text-decoration-line</c> and <c>text-decoration-color</c>,
+    /// CSS Text Decoration 3 §2): not inherited, but passed on to all the text inside the element, in the element's own font.
+    /// A line set on the document's text format is passed on to every element, the page header and footer included. Null when
+    /// the element sets none.</summary>
+    public ValueList<TextDecorationFormat>? Decorations { get; init; }
 }
+
+/// <summary>One line an element draws across its text (CSS Text Decoration 3 §2.1).</summary>
+/// <param name="Line">The line.</param>
+/// <param name="Color">Its colour (<c>text-decoration-color</c>), or null for the element's text colour (the initial
+/// value, <c>currentcolor</c>).</param>
+public sealed record TextDecorationFormat(TextDecorationLine Line, Color? Color = null);

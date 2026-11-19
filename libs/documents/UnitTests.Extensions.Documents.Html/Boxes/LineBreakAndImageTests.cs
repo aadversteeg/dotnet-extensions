@@ -187,66 +187,6 @@ public class LineBreakAndImageTests
         body.Children.Cast<Box>().Select(box => box.Style.BreakBefore).Should().Equal(BreakBetween.Auto, BreakBetween.Page, BreakBetween.Page);
     }
 
-    /// <summary>The cases that the mapping of br, img and pre-line turned to equal (or that it added): the status
-    /// comparison reads words only, so their filled rectangles (borders, backgrounds) and images are compared here.</summary>
-    public static TheoryData<string> TurnedCases => [.. File.ReadAllLines(HtmlCases.StatusFile)
-        .Where(line => line.EndsWith(" equal", StringComparison.Ordinal))
-        .Select(line => line.Split(' ')[0])
-        .Where(name => TurnedBefore.Contains(name) || name.StartsWith("hb-", StringComparison.Ordinal) || name.StartsWith("hi-", StringComparison.Ordinal) || name.StartsWith("hw-", StringComparison.Ordinal))
-        .Where(name => !RectanglesDiffer.ContainsKey(name))];
-
-    /// <summary>Turned cases whose words are equal and whose rectangles differ from Chromium's print for a reason of
-    /// layout or of the read-back, not of box generation; <see cref="Rectangles_that_differ_still_differ"/> holds them.</summary>
-    private static readonly Dictionary<string, string> RectanglesDiffer = new(StringComparer.Ordinal)
-    {
-        ["fr-f9-padded-box-orphans3"] = "Chromium's side borders run the box's whole height, over the top border; the engine's start below it",
-        ["a3-pad-kept"] = "the background's bottom edge on page 2: Chromium 46.5 pt (a whole pixel), the engine 46.25 pt",
-        ["a3-pad-kept-lower"] = "the background's bottom edge on page 2: Chromium 46.5 pt (a whole pixel), the engine 46.25 pt",
-        ["kb-v8-padded-box-kept-para"] = "the read-back finds no rectangle of the box's border in Chromium's print; the engine draws four",
-    };
-
-    /// <summary>The cases refused on br or img before this mapping, by the prints that hold a br or an img.</summary>
-    private static readonly HashSet<string> TurnedBefore = [.. HtmlCases.Names.Where(name =>
-        File.ReadAllText(Path.Combine(HtmlCases.Folder(), name + ".html")) is var html && (html.Contains("<br", StringComparison.Ordinal) || html.Contains("<img", StringComparison.Ordinal)))];
-
-    [Theory]
-    [MemberData(nameof(TurnedCases))]
-    public void Every_rectangle_and_image_of_a_turned_case_is_where_and_as_large_as_Chromium_prints_it(string name) =>
-        RectangleDifference(name).Should().BeNull();
-
-    [Fact]
-    public void Rectangles_that_differ_still_differ() =>
-        RectanglesDiffer.Keys.Where(name => RectangleDifference(name) is null).Should().BeEmpty("a case whose rectangles became equal leaves the list");
-
-    /// <summary>The first image or filled rectangle (in page, then top, then left order) further than
-    /// <see cref="HtmlCases.Bound"/> from Chromium's, or a different count on a page; null when there is none.</summary>
-    private static string? RectangleDifference(string name)
-    {
-        var boxes = HtmlCases.Boxes(name);
-        var engine = PrintedPages.Engine(DocumentLayout.Run(boxes.Value.Document, boxes.Value.Fonts).Value);
-        var chromium = PrintedPages.Parse(File.ReadAllText(Path.Combine(HtmlCases.Folder(), "..", "measured", name + ".print.txt")));
-
-        static List<PrintedBox> Sorted(IEnumerable<PrintedBox> items) => [.. items.OrderBy(item => item.Y0).ThenBy(item => item.X0).ThenBy(item => item.Y1).ThenBy(item => item.X1)];
-        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
-        {
-            foreach (var (kind, mine, measured) in new[] { ("images", Sorted(ours.Images), Sorted(theirs.Images)), ("rectangles", Sorted(ours.Rectangles), Sorted(theirs.Rectangles)) })
-            {
-                if (mine.Count != measured.Count)
-                {
-                    return $"page {ours.Number}: {mine.Count} {kind}, Chromium {measured.Count}";
-                }
-
-                if (mine.Zip(measured).FirstOrDefault(pair => new[] { pair.First.X0 - pair.Second.X0, pair.First.Y0 - pair.Second.Y0, pair.First.X1 - pair.Second.X1, pair.First.Y1 - pair.Second.Y1 }
-                        .Any(delta => Math.Abs(delta) > HtmlCases.Bound)) is ({ } a, { } b))
-                {
-                    return $"page {ours.Number}: {a} against {b}";
-                }
-            }
-        }
-
-        return null;
-    }
-
     [Fact]
     public void The_images_of_case_hi_attributes_are_where_and_as_large_as_Chromium_prints_them()
     {

@@ -1,0 +1,29 @@
+div 300.000 18.234 w-two
+table 300.000 18.234 two
+td 98.766 17.484 short
+td 200.484 17.484 a longer text
+div 300.000 18.234 w-three
+table 300.000 18.234 three
+td 45.867 17.484 one
+td 100.617 17.484 two words
+td 152.766 17.484 three words here
+div 300.000 30.984 w-wrap
+table 300.000 30.984 wrap
+td 133.980 30.234 alpha beta gamma delta e
+td 37.043 30.234 one two
+td 128.227 30.234 iota kappa lambda mu nu 
+div 300.000 18.234 w-empty
+table 300.000 18.234 empty
+td 90.750 17.484 short
+td 24.258 17.484 
+td 184.242 17.484 a longer text
+div 300.000 12.750 w-zero
+table 300.000 12.750 zero
+td 88.090 12.750 short
+td 0.000 12.750 
+td 211.910 12.750 a longer text
+div 300.000 0.000 w-allzero
+table 300.000 0.000 allzero
+td 99.996 0.000 
+td 99.996 0.000 
+td 100.008 0.000 

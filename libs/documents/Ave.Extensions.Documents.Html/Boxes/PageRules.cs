@@ -60,7 +60,7 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
             var values = declaration.Value.Where(value => value is not CssToken { Kind: CssTokenKind.Whitespace }).ToList();
             switch (declaration.Name)
             {
-                case "size" when Size(values) is { } size:
+                case "size" when Size(values, page) is { } size:
                     (width, height) = size;
                     break;
                 case "margin" when values.Count is >= 1 and <= 4 && values.Select(Points).ToList() is var sides && sides.All(side => side is not null):
@@ -97,26 +97,50 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
     }
 
     /// <summary>
-    /// The page as Chromium 159 lays it out and prints it: the sheet's sides rounded to 1/300 inch (<see cref="Printed"/>),
-    /// the left and top margins rounded to whole CSS pixels. Measured on the text, which Chromium does not move to whole
-    /// pixels across the line: left margins of 11.5 pt and 11.75 pt (15.33 and 15.67 px) put the first word at 15 and
-    /// 16 px (cases <c>h-page-margin-fraction</c>, <c>h-page-margin-round</c>), 10 pt (13.33 px) at 13 px (case
-    /// <c>f-theano-13-ab</c>). The right and bottom margins are kept as given: where the page area ends is not settled
-    /// by these cases (Chromium paints rectangles at whole pixels, so a background's right edge does not tell).
-    /// Half a pixel exactly is not measured: it is rounded away from zero here.
+    /// The page as Chromium 159 lays it out and prints it. Blink lays the page out in CSS pixels held in units of 1/64
+    /// pixel: the page box is the size rounded to 1/64 px (<c>DesiredPageContainingBlockSize</c>, pagination_utils.cc),
+    /// a margin is cut to 1/64 px (a fixed length made a <c>LayoutUnit</c>). The page area starts at the left and top
+    /// margins rounded to a whole pixel, half up, and its size is what the margins leave, rounded up to a whole pixel
+    /// (<c>SnappedBorderBoxRect</c> in page_container_layout_algorithm.cc;
+    /// <c>PageBorderBoxLayoutAlgorithm::CreateConstraintSpaceForPageArea</c> in page_border_box_layout_algorithm.cc).
+    /// The sheet is the page box in points, rounded twice (<see cref="Printed"/>). The engine's right and bottom margins
+    /// are what the sheet leaves beside that page area; where the area reaches past the sheet (no margin, a size that is
+    /// not whole pixels) they are 0 and the engine's page area is the smaller by less than a pixel: a listed difference
+    /// (measured on A4 without margins, cases <c>h-page-a4-zero-*</c>; 1 px margins remove it, <c>h-page-a4-margin-px</c>).
+    /// Measured: cases
+    /// <c>h-page-margin-round</c> (11.75 pt margins: area from 16 px to 385 px), <c>h-page-margin-half</c> (15.5 px
+    /// margins: left at 16 px), <c>h-page-area-half</c> (368.5 px left: 369 px), <c>h-page-area-right</c>,
+    /// <c>h-page-area-justify</c> (right edges), <c>h-page-area-bottom</c> (29 lines of 12.89 px fit 374 px).
     /// </summary>
     private static PageStyle Pixels(Length width, Length height, Edges margins)
     {
-        static Length Px(Length length) => Length.FromPoints(System.Math.Round(length.Points / 0.75, System.MidpointRounding.AwayFromZero) * 0.75);
-        return new PageStyle(Printed(width), Printed(height), margins with { Top = Px(margins.Top), Left = Px(margins.Left) });
+        static double Px(Length length) => length.Points / 0.75;
+        static double Rounded(double px) => System.Math.Round(px * 64, System.MidpointRounding.AwayFromZero) / 64;
+        static double Cut(double px) => System.Math.Truncate(px * 64) / 64;
+        var (boxWidth, boxHeight) = (Rounded(Px(width)), Rounded(Px(height)));
+        var (top, right, bottom, left) = (Cut(Px(margins.Top)), Cut(Px(margins.Right)), Cut(Px(margins.Bottom)), Cut(Px(margins.Left)));
+        var (x, y) = (System.Math.Floor(left + 0.5), System.Math.Floor(top + 0.5));
+        var (areaWidth, areaHeight) = (System.Math.Ceiling(boxWidth - left - right), System.Math.Ceiling(boxHeight - top - bottom));
+        var (sheetWidth, sheetHeight) = (Printed(boxWidth * 0.75), Printed(boxHeight * 0.75));
+        static Length Points(double points) => Length.FromPoints(System.Math.Max(0, points));
+        return new PageStyle(sheetWidth, sheetHeight, new Edges(
+            Points(y * 0.75),
+            Points(sheetWidth.Points - ((x + areaWidth) * 0.75)),
+            Points(sheetHeight.Points - ((y + areaHeight) * 0.75)),
+            Points(x * 0.75)));
     }
 
     /// <summary>
-    /// A page side as Chromium 159 prints it: rounded to the nearest 1/300 inch (measured: a 200 × 100 pt page prints
-    /// 199.92 × 100.08 pt, case <c>f-theano-13-ab</c>; 595 × 842 pt prints 594.96 × 841.92 pt, case
-    /// <c>fr-forced-margin-a4</c>; sides that are whole 1/300 inch, such as 300 pt and 174 pt, print as they are).
+    /// A side of the page box as Chromium 159 prints it: rounded to whole points (<c>gfx::ToRoundedSize</c> in
+    /// <c>PrintRenderFrameHelper::PrintPageInternal</c>, print_render_frame_helper.cc), then to whole 1/300 inch
+    /// (<c>SkPDFDocument::onBeginPage</c> rounds the page to device pixels at the raster resolution of 300 dpi that
+    /// <c>MakePdfDocument</c>, printing/common/metafile_utils.cc, sets; the media box is those pixels again in points).
+    /// Measured: A4 (595.28 pt) prints 594.96, A5's 419.53 pt prints 420 (1/300 inch alone gives 419.52), 595.5 pt prints
+    /// 595.92 (case <c>h-page-size-fraction</c>), 100.5 px (75.375 pt) prints 75.12 (case <c>h-page-size-hundred-px</c>).
     /// </summary>
-    internal static Length Printed(Length side) => Length.FromPoints(System.Math.Round(side.Points * 300 / 72, System.MidpointRounding.AwayFromZero) * 72 / 300);
+    /// <param name="points">The side in points, from the page box in units of 1/64 px.</param>
+    internal static Length Printed(double points) =>
+        Length.FromPoints(System.Math.Round(System.Math.Round(points, System.MidpointRounding.AwayFromZero) * 300 / 72, System.MidpointRounding.AwayFromZero) * 72 / 300);
 
     /// <summary>
     /// Declarations in an <c>@page</c> rule that cannot change the print while page-margin boxes are refused: the
@@ -130,12 +154,14 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
         || (Css.Properties.PropertyRegistry.FindShorthand(name) is { } shorthand && shorthand.Longhands.All(longhand => Css.Properties.PropertyRegistry.Find(longhand) is { Inherited: true }));
 
     /// <summary>The value of <c>size</c> (§7.1): auto, one or two lengths, a page size with or without an orientation, or
-    /// an orientation alone; null for anything else.</summary>
-    private static (Length Width, Length Height)? Size(List<ComponentValue> values)
+    /// an orientation alone; null for anything else. <c>auto</c> is the size of the page without rules, an orientation
+    /// alone turns that page if it has the other one (<c>DesiredPageContainingBlockSize</c>, pagination_utils.cc;
+    /// measured on US Letter, cases <c>h-page-size-auto</c>, <c>h-page-landscape</c>, <c>h-page-portrait</c>).</summary>
+    private static (Length Width, Length Height)? Size(List<ComponentValue> values, PageStyle page)
     {
         if (values is [CssToken { Kind: CssTokenKind.Ident } auto] && InfraAscii.EqualsIgnoreCase(auto.Text, "auto"))
         {
-            return (Length.FromPoints(612), Length.FromPoints(792));
+            return (page.Width, page.Height);
         }
 
         var lengths = values.Select(Points).ToList();
@@ -168,8 +194,13 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
             }
         }
 
-        var (width, height) = named ?? (612, 792);
-        return landscape == true ? (Length.FromPoints(height), Length.FromPoints(width)) : (Length.FromPoints(width), Length.FromPoints(height));
+        if (named is not { } paper)
+        {
+            var (shorter, longer) = page.Width.Points <= page.Height.Points ? (page.Width, page.Height) : (page.Height, page.Width);
+            return landscape == true ? (longer, shorter) : (shorter, longer);
+        }
+
+        return landscape == true ? (Length.FromPoints(paper.Height), Length.FromPoints(paper.Width)) : (Length.FromPoints(paper.Width), Length.FromPoints(paper.Height));
     }
 
     /// <summary>An absolute length of 0 or more (or the number 0), in points; null for anything else.</summary>

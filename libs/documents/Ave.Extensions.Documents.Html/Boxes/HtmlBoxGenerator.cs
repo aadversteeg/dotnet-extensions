@@ -35,8 +35,9 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// left out with its content. A missing font face and boxes nested deeper than the model allows
 /// (<see cref="ModelLimits.MaxNestingDepth"/>) fail under both: there is nothing to draw them with.</para>
 /// <para>The page (CSS Paged Media 3 §3, §7): the <c>size</c> and margins of <c>@page</c> rules without a selector;
-/// without them, what Chromium 159 prints with the reference tool's settings: US Letter, 612 × 792 pt, no margins
-/// (measured: case <c>h-default-page</c> of <c>tools/reference/chromium</c>). The layout policies are Chromium's
+/// without them, the caller's page (<see cref="StyledHtmlDocument.Page"/>, from <see cref="HtmlStyleOptions.Page"/>), as
+/// Chromium prints on the paper of the print call (measured: case <c>h-default-page</c> of
+/// <c>tools/reference/chromium</c>, printed on US Letter, 612 × 792 pt, no margins). The layout policies are Chromium's
 /// (<see cref="LayoutProfile"/>: <see cref="MonolithicOverflow.Slice"/>, <see cref="EmptyRowParts.Allow"/>,
 /// <see cref="FontMetricRounding.WholePixels"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
 /// root element's language (§3.2.6.2).</para>
@@ -51,10 +52,6 @@ public static partial class HtmlBoxGenerator
         ["wbr"] = "a line break opportunity",
         ["q"] = "quotation marks generated before and after its content",
     };
-
-    /// <summary>The page Chromium 159 prints without an <c>@page</c> rule in the reference tool's settings: US Letter, no
-    /// margins (measured, case <c>h-default-page</c>).</summary>
-    internal static PageStyle DefaultPage { get; } = new(Length.FromPoints(612), Length.FromPoints(792), default);
 
     /// <summary>Chromium's layout policies, which the HTML front-end follows.</summary>
     public static LayoutProfile ChromiumProfile { get; } = new()
@@ -137,9 +134,18 @@ public static partial class HtmlBoxGenerator
 
         public StyledDocument Generate()
         {
+            var metadata = new DocumentMetadata(Title(styled.Root), null) { Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language };
+            if (Display(styled.Root) == "none")
+            {
+                // CSS Display 3 §2.5: the root with display: none generates no box at all. Chromium prints one empty page
+                // on the paper of the print call, and the @page rules have no effect (measured, case
+                // h-root-display-none: an @page of 300 x 100 pt prints US Letter, 612 x 792 pt).
+                var empty = new Box(NewId(), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [], Source(styled.Root.Element.Position));
+                return new StyledDocument(metadata, new PageRules(_sourceName, Refusals).Apply([], styled.Page), empty) { Profile = ChromiumProfile };
+            }
+
             var root = Build(styled.Root);
             var page = Page();
-            var metadata = new DocumentMetadata(Title(styled.Root), null) { Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language };
             return new StyledDocument(metadata, page, root) { Profile = ChromiumProfile };
         }
 
@@ -161,7 +167,76 @@ public static partial class HtmlBoxGenerator
             _ => "block",
         };
 
-        private static bool IsCollapsibleOnly(StyledNode node) => node is StyledText text && text.Text.Data.All(c => c is ' ' or '\t' or '\n' or '\r');
+        private static bool IsCollapsibleOnly(StyledNode node) => node is StyledText text && text.Text.Data.All(IsCollapsible);
+
+        /// <summary>The white space that collapses (CSS Text 3 §4.1.1: space, tab, segment breaks; the HTML parser turns a
+        /// CR LF pair into one line feed and keeps a lone CR from a character reference, which Chromium prints as a
+        /// space, case <c>h-char-cr</c>).</summary>
+        private static bool IsCollapsible(char c) => c is ' ' or '\t' or '\n' or '\r';
+
+        /// <summary>
+        /// The text of a run, with the characters that are not drawn refused, and under <see cref="UnsupportedPolicy.Warn"/>
+        /// left out: a control character other than tab, line feed and carriage return, a noncharacter, half of a
+        /// surrogate pair, and the line and paragraph separators. Measured (cases <c>h-char-*</c>): Chromium draws form
+        /// feed and next line (U+0085) as a missing glyph one em wide, which the engine has no glyph for, and the
+        /// separators as a space that does not collapse with the spaces beside it, where layout would break the line
+        /// (UAX #14 class BK). One pass over the text and at most one refusal per text, as the parser keeps its own
+        /// diagnostics bounded: it names the first such character, its offset and how many the text holds.
+        /// </summary>
+        private string Characters(HtmlText text)
+        {
+            var data = text.Data;
+            var first = -1;
+            for (var i = 0; i < data.Length && first < 0; i += Length(data, i))
+            {
+                first = IsDrawn(data, i) ? -1 : i;
+            }
+
+            if (first < 0)
+            {
+                return data;
+            }
+
+            var kept = new System.Text.StringBuilder(data.Length);
+            kept.Append(data, 0, first);
+            var count = 0;
+            for (var i = first; i < data.Length;)
+            {
+                var length = Length(data, i);
+                if (IsDrawn(data, i))
+                {
+                    kept.Append(data, i, length);
+                }
+                else
+                {
+                    count++;
+                }
+
+                i += length;
+            }
+
+            var codePoint = Length(data, first) == 2 ? char.ConvertToUtf32(data[first], data[first + 1]) : data[first];
+            var others = count == 1 ? string.Empty : $" ({count.ToString(CultureInfo.InvariantCulture)} such characters in this text)";
+            var error = new Error(HtmlStyleErrorCodes.Unsupported.Character, $"The character U+{codePoint:X4} is not drawn in this version{others}: only text, tab, line feed and carriage return are.")
+                .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, first).With(ErrorMetadataKeys.Count, count);
+            Refusals.Add(error.WithSource(_sourceName, text.Position));
+            return kept.ToString();
+
+            // A surrogate pair is one character; a lone surrogate is one code unit.
+            static int Length(string data, int i) => char.IsHighSurrogate(data[i]) && i + 1 < data.Length && char.IsLowSurrogate(data[i + 1]) ? 2 : 1;
+
+            static bool IsDrawn(string data, int i)
+            {
+                var unit = data[i];
+                if (Length(data, i) == 2)
+                {
+                    return (char.ConvertToUtf32(unit, data[i + 1]) & 0xFFFE) != 0xFFFE;
+                }
+
+                return !char.IsSurrogate(unit)
+                    && (unit is '\t' or '\n' or '\r' || !(char.IsControl(unit) || unit is '\u2028' or '\u2029' || unit is >= '\uFDD0' and <= '\uFDEF' || (unit & 0xFFFE) == 0xFFFE));
+            }
+        }
 
         /// <summary>
         /// Checks a rendered element once, the first time it is met: its own rule, then every computed value. True when
@@ -224,11 +299,9 @@ public static partial class HtmlBoxGenerator
                         var (box, forcedAfter) = Finish(block);
                         if (stack.Count == 0)
                         {
+                            // A forced break after the last box of the document has no page to start: Chromium prints no
+                            // empty page after it (measured, cases h-break-after-last, h-break-after-last-nested).
                             result = box;
-                            if (forcedAfter)
-                            {
-                                Refuse(HtmlStyleErrorCodes.Unsupported.Value, "'break-after: page' after the last box of the document is not drawn in this version.", "page", block.Element.Element.Position, "break-after");
-                            }
                         }
                         else
                         {
@@ -382,7 +455,7 @@ public static partial class HtmlBoxGenerator
 
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        frame.Target.Add(new TextRun(NewId(), WithPreservedBreaks(text.Style, text.Text.Data), style, Source(text.Text.Position)));
+                        frame.Target.Add(new TextRun(NewId(), WithPreservedBreaks(text.Style, Characters(text.Text)), style, Source(text.Text.Position)));
                     }
 
                     break;
@@ -434,7 +507,7 @@ public static partial class HtmlBoxGenerator
 
         /// <summary>Lines for inline content with something to draw; else an empty block (white space only).</summary>
         private static (LayoutAlgorithmId Layout, ValueList<Node> Children) Content(List<Node> runs) =>
-            runs.All(run => run is TextRun text && text.Text.All(c => c is ' ' or '\t' or '\n' or '\r'))
+            runs.All(run => run is TextRun text && text.Text.All(IsCollapsible))
                 ? (LayoutAlgorithmId.Flow, [])
                 : (LayoutAlgorithmId.Inline, [.. runs]);
 
@@ -599,7 +672,7 @@ public static partial class HtmlBoxGenerator
         private PageStyle Page()
         {
             var page = new PageRules(_sourceName, Refusals);
-            return page.Apply(styled.PageRules, DefaultPage);
+            return page.Apply(styled.PageRules, styled.Page);
         }
     }
 }
