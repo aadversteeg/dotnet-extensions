@@ -61,6 +61,67 @@ public class ChromiumBehaviourTests
         Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
 
     [Theory]
+    // Measured in Chromium 159.0.8154.6. Presentational keywords are compared without trimming; valign and the align of
+    // other elements are read as one CSS value, with initial, inherit and unset; a legacy colour loses the white space
+    // Chromium strips.
+    [InlineData("<table id=t align=\" center\"><tr><td>c</td></tr></table>", "t", "margin-left", "0px")]
+    [InlineData("<table id=t align=\"\u3000center\"><tr><td>c</td></tr></table>", "t", "margin-left", "0px")]
+    [InlineData("<p>x<img id=t src=\"data:,\" width=4 height=4 align=\" top\"></p>", "t", "vertical-align", "baseline")]
+    [InlineData("<hr id=t align=\" left\" width=50>", "t", "margin-left", "auto")]
+    [InlineData("<table><caption id=t align=left>c</caption><tr><td>d</td></tr></table>", "t", "caption-side", "top")]
+    [InlineData("<table><tr><td id=t valign=initial>c</td></tr></table>", "t", "vertical-align", "baseline")]
+    [InlineData("<table><tr><td id=t valign=\" top\">c</td></tr></table>", "t", "vertical-align", "top")]
+    [InlineData("<table><tr><td id=t valign=bogus>c</td></tr></table>", "t", "vertical-align", "middle")]
+    [InlineData("<table id=t bgcolor=\"\u3000red\"><tr><td>c</td></tr></table>", "t", "background-color", "rgb(255, 0, 0)")]
+    [InlineData("<div style=\"text-align: right\"><ul id=t align=initial><li>i</li></ul></div>", "t", "text-align", "start")]
+    [InlineData("<div style=\"text-align: right\"><table><tr><th id=t align=initial>h</th></tr></table></div>", "t", "text-align", "start")]
+    [InlineData("<div style=\"text-align: right\"><center id=t align=inherit>c</center></div>", "t", "text-align", "right")]
+    [InlineData("<div style=\"text-align: right\"><center id=t align=unset>c</center></div>", "t", "text-align", "right")]
+    [InlineData("<div style=\"text-align: right\"><center id=t align=revert>c</center></div>", "t", "text-align", "-webkit-center")]
+    [InlineData("<div style=\"font-family: monospace\"><font id=t face=initial>f</font></div>", "t", "font-family", "monospace")]
+    // inherit takes the parent's border width also where the parent's border style is none, and the element's own
+    // style none makes it zero.
+    [InlineData("<style>div { border-width: 5px } p { border-style: solid; border-width: inherit }</style><div><p id=t>p</p></div>", "t", "border-top-width", "5px")]
+    [InlineData("<style>div { border: 3px solid } p { border-width: inherit }</style><div><p id=t>p</p></div>", "t", "border-top-width", "0px")]
+    [InlineData("<style>div { border-width: 1em; font-size: 10px } p { border-style: solid; border-width: inherit; font-size: 20px }</style><div><p id=t>p</p></div>", "t", "border-top-width", "10px")]
+    [InlineData("<style>html { border-width: 1px 2px } body { border: inherit; border-style: solid }</style><body id=t>d", "t", "border-left-width", "2px")]
+    [InlineData("<style>div { border-width: 5px } p { border-style: none; border-width: inherit } span { border-style: solid; border-width: inherit; display: block }</style><div><p>p<span id=t>s</span></p></div>", "t", "border-top-width", "5px")]
+    // The cell padding in a table and the hidden attribute are hints, so revert rolls them back.
+    [InlineData("<style>td { padding: revert }</style><table><tr><td id=t>c</td></tr></table>", "t", "padding-left", "0px")]
+    [InlineData("<style>td { padding: revert-layer }</style><table><tr><td id=t>c</td></tr></table>", "t", "padding-left", "1px")]
+    [InlineData("<table cellpadding=70000><tr><td id=t>c</td></tr></table>", "t", "padding-left", "65535px")]
+    [InlineData("<style>p { display: revert }</style><p id=t hidden>p</p>", "t", "display", "block")]
+    [InlineData("<style>span { display: revert }</style><span id=t hidden>s</span>", "t", "display", "inline")]
+    [InlineData("<table><tr id=t hidden><td>c</td></tr></table>", "t", "display", "none")]
+    [InlineData("<style>tr { display: revert }</style><table><tr id=t hidden><td>c</td></tr></table>", "t", "display", "table-row")]
+    // Values Chromium does not parse: the declaration is dropped.
+    [InlineData("<style>p { background: green; background: blue repeat repeat repeat }</style><p id=t>p", "t", "background-color", "rgb(0, 128, 0)")]
+    [InlineData("<style>p { background: green; background: repeat blue repeat }</style><p id=t>p", "t", "background-color", "rgb(0, 128, 0)")]
+    [InlineData("<style>div { text-align: right } p { text-align: center; text-align: match-parent }</style><div><p id=t>p</p></div>", "t", "text-align", "center")]
+    [InlineData("<div style=\"text-align: right\"><ul><li id=t>i</li></ul></div>", "t", "text-align", "right")]
+    [InlineData("<style>p { font: 20px fantasy; font: 12px -webkit-body a }</style><p id=t>p", "t", "font-size", "20px")]
+    // A table that is not displayed keeps the -webkit- alignment it inherits.
+    [InlineData("<style>table { display: none }</style><div align=center><table id=t><tr><td>c</td></tr></table></div>", "t", "text-align", "-webkit-center")]
+    [InlineData("<div align=center><table id=t hidden><tr><td>c</td></tr></table></div>", "t", "text-align", "-webkit-center")]
+    // A math function in aspect-ratio: NaN is 0, a negative result is clamped to 0.
+    [InlineData("<style>div { aspect-ratio: auto calc(0/0) }</style><div id=t>d</div>", "t", "aspect-ratio", "auto 0 / 1")]
+    [InlineData("<style>div { aspect-ratio: auto calc(-1) }</style><div id=t>d</div>", "t", "aspect-ratio", "auto 0 / 1")]
+    [InlineData("<style>div { aspect-ratio: calc(0/0) auto }</style><div id=t>d</div>", "t", "aspect-ratio", "auto 0 / 1")]
+    // A substituted revert-layer that is important rolls back to the user-agent value.
+    [InlineData("<style>p { margin: 3px } div p { margin-left: var(--x, revert-layer) !important }</style><div><p id=t>p</p></div>", "t", "margin-left", "0px")]
+    public void The_value_on_rare_input_is_Chromiums(string body, string id, string property, string chromium) =>
+        Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
+
+    [Theory]
+    // Chromium 159 floats the table (float: inline-start, " left"): refused as left and right are.
+    [InlineData("<table align=inline-start><tr><td>c</td></tr></table>")]
+    [InlineData("<table align=\" left\"><tr><td>c</td></tr></table>")]
+    // " bottom" is caption-side bottom.
+    [InlineData("<table><caption align=\" bottom\">c</caption><tr><td>d</td></tr></table>")]
+    public void A_presentational_attribute_Chromium_reads_as_a_value_the_engine_does_not_support_is_refused(string body) =>
+        Refusals(Styled(Doctype + body, MeasuredPage)).Should().Contain(error => error.Code == HtmlStyleErrorCodes.Unsupported.Attribute);
+
+    [Theory]
     // An important revert-layer rolls back as if no rules were in its layer or between the layer's normal and important
     // levels (CSS Cascade 5 §7.3.5): written, through var(), in a shorthand, in all, in a custom property; in the style
     // attribute it rolls back the attribute's declarations only. Measured in Chromium 159.0.8154.6.

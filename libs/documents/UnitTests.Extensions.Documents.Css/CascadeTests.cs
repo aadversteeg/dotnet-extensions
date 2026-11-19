@@ -217,6 +217,29 @@ public class CascadeTests
         computed[root["x"]].CustomProperties.Should().NotContainKey("--a");
     }
 
+    [Theory]
+    // Chromium 159 leaves every member of a cycle without a value (measured: both fallbacks are used); a property that
+    // only uses a member is not one, it names a property with no value.
+    [InlineData("p { --a: var(--b); --b: var(--a); --c: var(--a) }", new[] { "--a", "--b" })]
+    [InlineData("p { --a: var(--b, red); --b: var(--a, red) }", new[] { "--a", "--b" })]
+    [InlineData("p { --a: var(--b); --b: var(--c); --c: var(--a) }", new[] { "--a", "--b", "--c" })]
+    [InlineData("p { --x: var(--a); --a: var(--b); --b: var(--a) }", new[] { "--a", "--b" })]
+    public void Every_member_of_a_cycle_is_reported_as_the_cycle(string css, string[] members)
+    {
+        var root = Doc(E("p", A("id", "x")));
+        var computed = Compute(root, css);
+
+        var cycle = computed.Coded(CssErrorCodes.Unsupported.Value).Where(error => error.Message.Contains("part of a cycle")).Select(error => error.Message).ToList();
+        cycle.Should().HaveCount(members.Length);
+        foreach (var member in members)
+        {
+            cycle.Should().ContainSingle(message => message.Contains($"'{member}'"));
+            computed[root["x"]].CustomProperties.Should().NotContainKey(member);
+        }
+
+        computed.Coded(CssErrorCodes.Invalid.ComputedValue).Should().NotContain(error => members.Any(member => error.Message.Contains($"'{member}'")));
+    }
+
     [Fact]
     public void A_var_that_does_not_fit_the_property_makes_it_unset_not_the_previous_declaration()
     {

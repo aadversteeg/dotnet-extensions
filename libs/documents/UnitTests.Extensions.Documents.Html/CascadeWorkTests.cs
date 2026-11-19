@@ -85,9 +85,9 @@ public class CascadeWorkTests
 
     // The work of the documents above, counted on this engine (the user agent's sheet included); a change of what is
     // charged where changes them.
-    private const long PlainDocument = 268;
+    private const long PlainDocument = 248;
     private const long MatchedRule = 5;
-    private const long DescendantDocument = 330;
+    private const long DescendantDocument = 306;
 
     [Fact]
     public void Every_size_of_the_memo_gives_the_same_result()

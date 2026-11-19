@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.IO;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css;
@@ -15,7 +14,7 @@ namespace UnitTests.Extensions.Documents.Html;
 /// as text in Chromium's serialisation (<see cref="ComputedText"/>); exact, except where a stated rule says otherwise:
 /// <list type="bullet">
 /// <item>line-height as a number: Chromium returns the used value, number × font size, even unrendered; that product
-/// is compared.</item>
+/// of the computed values, written as Chromium writes a length, is compared.</item>
 /// </list>
 /// Each value is one of three outcomes: equal; refused, when the engine refuses the element or one around it (a
 /// refusal at its start tag or one of its attributes: an element outside v0, a form control, a refused presentational
@@ -30,21 +29,21 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
     /// orientation (a feature outside v0) and a var() that puts 4px into color (Chromium makes it invalid at
     /// computed-value time, the engine cannot tell that from a value beyond the profile: the refusal policy in
     /// docs/architecture.md), and a cycle of var() references (Chromium does not make every member of a cycle
-    /// invalid); fonts-tables-lists has break-after: always and selectors has [type=CHECKME s], both of which
-    /// Chromium 159 drops and the engine refuses; elements has every element outside v0, one refusal each. The values
+    /// invalid; both members are refused); fonts-tables-lists has break-after: always, selectors has [type=CHECKME s]
+    /// and properties has text-align: match-parent, which Chromium 159 drops and the engine refuses; elements has every element outside v0, one refusal each. The values
     /// are equal in all of them, as the warnings-only resolution shows. hints-gaps and ua-extra hold elements and
     /// attributes outside v0 among the ones they test, refused one by one.</summary>
     private static readonly Dictionary<string, (int Values, int Equal, int Refused, int Refusals)> Pinned = new()
     {
-        ["cascade"] = (5_327, 5_327, 0, 3),
+        ["cascade"] = (5_327, 5_327, 0, 4),
         ["elements"] = (18_143, 12_815, 5_328, 36),
         ["fonts-tables-lists"] = (16_703, 16_703, 0, 1),
         ["hints"] = (16_847, 16_847, 0, 0),
         ["hints-gaps"] = (12_527, 11_951, 576, 4),
-        ["properties"] = (16_415, 16_415, 0, 0),
+        ["properties"] = (16_415, 16_415, 0, 1),
         ["selectors"] = (8_783, 8_783, 0, 1),
         ["ua-bare"] = (10_079, 10_079, 0, 0),
-        ["ua-extra"] = (15_551, 13_967, 1_584, 4),
+        ["ua-extra"] = (15_551, 15_263, 288, 2),
     };
 
     public static TheoryData<string> Cases =>
@@ -83,7 +82,9 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
             var engine = element.Value(property);
             if (property == "line-height" && element.Style[Ave.Extensions.Documents.Css.Properties.PropertyRegistry.LineHeight] is Ave.Extensions.Documents.Css.Values.CssNumber number)
             {
-                engine = ComputedText.Pixels(number.Value * double.Parse(element.Value("font-size")[..^2], CultureInfo.InvariantCulture));
+                // The product of the number and the font size as computed, not as written with six significant digits
+                // (a font size of 13.3333px from 16px / 1.2 times 2 is 26.6667px, as in Chromium).
+                engine = ComputedText.Pixels(number.Value * ((Ave.Extensions.Documents.Css.Values.CssLength)element.Style[Ave.Extensions.Documents.Css.Properties.PropertyRegistry.FontSize]).Points / 0.75);
             }
 
             if (engine == chromium)
