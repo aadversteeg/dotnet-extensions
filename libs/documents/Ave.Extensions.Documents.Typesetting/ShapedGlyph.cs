@@ -47,7 +47,7 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     public bool UnsafeToBreak { get; init; }
 
     /// <summary>
-    /// True for the stand-in of an atomic inline (an image in a line of text; CSS Display 3 §2.1, "atomic inline"): the
+    /// True for the stand-in of an atomic inline (an image in a line of text; CSS Display 3, Appendix A, "atomic inline"): the
     /// object replacement character U+FFFC in the paragraph's text, as Chromium puts one in its inline text for every
     /// atomic inline (Blink <c>InlineItemsBuilder::AppendAtomicInline</c>, core/layout/inline/inline_items_builder.cc). Its
     /// advance is the width of the inline's margin box; it is never shaped, draws no glyph, and has a break opportunity

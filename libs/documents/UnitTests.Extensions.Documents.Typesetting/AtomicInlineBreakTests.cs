@@ -7,7 +7,7 @@ namespace UnitTests.Extensions.Documents.Typesetting;
 /// <summary>
 /// The stand-in of an atomic inline in the line breaker (<see cref="ShapedGlyph.AtomicInline"/>): the object replacement
 /// character U+FFFC with a fixed advance, and a break opportunity before and after it whatever is beside it (CSS Text 3
-/// §5.1), also where UAX #14 alone has none.
+/// §5.5), also where UAX #14 alone has none.
 /// </summary>
 public class AtomicInlineBreakTests
 {

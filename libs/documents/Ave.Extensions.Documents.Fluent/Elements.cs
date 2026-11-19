@@ -328,7 +328,7 @@ public static class Elements
         new(new ImageFile(file), null, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
 
     /// <summary>
-    /// An image in a line of text, as a span of a paragraph (an atomic inline, CSS Display 3 §2.1, as HTML's <c>img</c> in
+    /// An image in a line of text, as a span of a paragraph (an atomic inline, CSS Display 3, Appendix A, as HTML's <c>img</c> in
     /// a line): <c>Paragraph([Text("Signed "), InlineImage(Image(file).Alt("Signature").Height(12.Pt())), Text(" today")])</c>.
     /// The image is made and checked as any image (size, alternative text, margins, padding, border); its margin box sits
     /// on the baseline, it never breaks, and a line may break before and after it. The span itself takes no formatting:

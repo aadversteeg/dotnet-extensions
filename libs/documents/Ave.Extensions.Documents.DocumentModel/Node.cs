@@ -19,7 +19,7 @@ public abstract record Node(NodeId Id, SourceLocation Source);
 /// Which children a box may have depends on its algorithm: <see cref="LayoutAlgorithmId.Flow"/> stacks child
 /// boxes, <see cref="LayoutAlgorithmId.Inline"/> sets inline runs in lines (a block container whose content is an
 /// inline formatting context, CSS 2.1 §9.2.1), and among them boxes laid out by <see cref="LayoutAlgorithmId.Image"/>, each
-/// an atomic inline (an image in a line of text, CSS Display 3 §2.1), <see cref="LayoutAlgorithmId.Tracks"/> lays out row groups of rows of
+/// an atomic inline (an image in a line of text, CSS Display 3, Appendix A), <see cref="LayoutAlgorithmId.Tracks"/> lays out row groups of rows of
 /// cells, <see cref="LayoutAlgorithmId.Image"/> holds one image. The algorithm reports an error for children it
 /// cannot lay out.
 /// </remarks>

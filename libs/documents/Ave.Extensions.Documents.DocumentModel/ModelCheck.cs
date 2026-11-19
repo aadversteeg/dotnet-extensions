@@ -128,7 +128,7 @@ public static class ModelCheck
     }
 
     /// <summary>
-    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3 §2.1), which this version accepts only when
+    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3, Appendix A), which this version accepts only when
     /// laid out by <see cref="LayoutAlgorithmId.Image"/> (an image in a line of text), and only with the initial page break
     /// properties: <c>break-before</c>, <c>break-after</c> and <c>break-inside</c> apply to block-level boxes (CSS
     /// Fragmentation 3 §3.1, §3.2), and an atomic inline never breaks, so a value there could only be lost. The child box

@@ -20,9 +20,9 @@ internal static class LineBoxes
     public sealed record ShapedRun(InlineRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs) : Item;
 
     /// <summary>
-    /// An atomic inline (CSS Display 3 §2.1): a child box of the paragraph laid out by its own algorithm, one item of the
-    /// line that is never broken. On the line it is its margin box (CSS 2.1 §10.8.1: "for replaced elements, inline-block
-    /// elements, and inline-table elements, the height is the height of their margin box").
+    /// An atomic inline (CSS Display 3, Appendix A): a child box of the paragraph laid out by its own algorithm, one item of
+    /// the line that is never broken. On the line it is its margin box (CSS 2.1 §10.8: "For replaced elements, inline-block
+    /// elements, and inline-table elements, this is the height of their margin box").
     /// </summary>
     /// <param name="Box">The child box.</param>
     /// <param name="Fragment">Its fragment, once laid out at the paragraph's width; null while only measured.</param>
@@ -97,9 +97,9 @@ internal static class LineBoxes
     /// moved right or to the centre, or justified by widening its word separators; an atomic inline is none (case
     /// <c>ii-align</c>: in "one", image, "two" the justified line widens only the space after "two").
     /// <para>THE RULE FOR AN ATOMIC INLINE ON THE LINE: its margin box sits with its bottom on the baseline and reaches as
-    /// high above it as it is tall (CSS 2.1 §10.8.1, the margin box; §10.8 'vertical-align': "baseline: Align the baseline of
-    /// the box with the baseline of the parent box. If the box does not have a baseline, align the bottom margin edge with
-    /// the parent's baseline"), as Chromium synthesizes the baseline of an image off its margin box's bottom edge (Blink
+    /// high above it as it is tall (CSS 2.1 §10.8, the margin box; §10.8.1, 'vertical-align': "baseline: Align the baseline
+    /// of the box with the baseline of the parent box. If the box does not have a baseline, align the bottom margin edge
+    /// with the parent's baseline"), as Chromium synthesizes the baseline of an image off its margin box's bottom edge (Blink
     /// <c>LogicalBoxFragment::BaselineMetrics</c>, core/layout/logical_box_fragment.cc). So it makes the line taller when it
     /// is taller than the strut's part above the baseline, never below it; its margins count above, below and beside it
     /// (case <c>ii-baseline</c>).</para>

@@ -13,8 +13,8 @@ using static Ave.Extensions.Documents.Fluent.Elements;
 namespace UnitTests.Extensions.Documents.Fluent;
 
 /// <summary>
-/// An image in a line of text (an atomic inline, CSS Display 3 §2.1) as Chromium lays it out: its margin box on the
-/// baseline (CSS 2.1 §10.8.1), a break opportunity before and after it whatever is beside it (CSS Text 3 §5.1), no
+/// An image in a line of text (an atomic inline, CSS Display 3, Appendix A) as Chromium lays it out: its margin box on the
+/// baseline (CSS 2.1 §10.8, §10.8.1), a break opportunity before and after it whatever is beside it (CSS Text 3 §5.5), no
 /// expansion opportunity, and its outer width in the paragraph's intrinsic widths. Cases <c>ii-*</c>: Lato 12 pt on 18 pt
 /// lines, the same documents written with the code front-end; the images keep their aspect ratio.
 /// </summary>
@@ -180,6 +180,20 @@ public class InlineImageTests
 
         engine.Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-b", "a", "-b", "a-", "b", "x");
         PrintedPages.Chromium("ii-hyphen").Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-", "b", "a", "-", "b", "a-", "b", "x");
+    }
+
+    [Fact]
+    public void A_line_breaks_beside_an_image_also_next_to_a_joiner_or_another_no_break_space_like_Chromium()
+    {
+        // A DELIBERATE DEVIATION from CSS Text 3 §5.5 ("with the exception of U+00A0 NO-BREAK SPACE, there must be no soft
+        // wrap opportunity between atomic inlines and adjacent characters belonging to the Unicode GL, WJ, or ZWJ line
+        // breaking classes"), as Chromium breaks there (ii-joiners). The engine's words leave the invisible joiners out.
+        static string Visible(string text) => text.Replace("\u2060", string.Empty, StringComparison.Ordinal).Replace("\u200D", string.Empty, StringComparison.Ordinal);
+        var engine = Engine(300, [.. new[] { "\u2060", "\u200D", "\u202F", "\u2007" }.Select(joiner => (Element)Narrow(6, [Text("abc" + joiner), In(Fig(8.4)), Text(joiner + "def")])), Paragraph("x")]);
+        var chromium = PrintedPages.Chromium("ii-joiners").Pages[0];
+
+        engine.Pages[0].Lines.Select(line => (line.Baseline, Visible(line.Text))).Should().Equal(chromium.Lines.Select(line => (line.Baseline, Visible(line.Text))));
+        engine.Pages[0].Images.Select(image => image.Y1).Should().Equal(chromium.Images.Select(image => image.Y1));
     }
 
     private static TableElement Cells(ImageElement image) =>

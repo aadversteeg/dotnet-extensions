@@ -88,7 +88,7 @@ public static class InlineLayout
     /// at forced breaks (CSS Sizing 3 §5.2 leaves the details to CSS 2.1). Both come from the same line breaker as layout: break
     /// with no width at all (every break opportunity is taken) and with unlimited width. Border and padding are added. An
     /// atomic inline counts with its margin box at its own min-content width in the first and its max-content width in the
-    /// second (CSS Sizing 3 §5.1: an inline's contribution is its outer size), measured by its own algorithm once (case
+    /// second (its min-content and max-content contributions, CSS Sizing 3 §5.1), measured by its own algorithm once (case
     /// <c>ii-table</c>: an image and its margins widen both widths of a table column).
     /// </summary>
     /// <param name="environment">The fonts, algorithms and current page.</param>
@@ -176,8 +176,9 @@ public static class InlineLayout
     /// </summary>
     /// <remarks>
     /// THE RULE FOR AN ATOMIC INLINE AMONG THE RUNS: a child box laid out by <see cref="LayoutAlgorithmId.Image"/> is an
-    /// atomic inline (CSS Display 3 §2.1: "An inline-level box that is replaced (such as an image) or that establishes a new
-    /// formatting context … and which cannot split across lines"), one item of the line (<see cref="LineBoxes.AtomicInline"/>).
+    /// atomic inline (CSS Display 3, Appendix A: "An inline-level box that is replaced (such as an image) or that establishes
+    /// a new formatting context (such as an inline-block or inline-table) and cannot split across lines"), one item of the
+    /// line (<see cref="LineBoxes.AtomicInline"/>).
     /// For white-space collapsing it is the object replacement character U+FFFC, as in Chromium's inline text (Blink
     /// <c>InlineItemsBuilder::AppendAtomicInline</c>): not a space, so a space on each side of it is kept (case
     /// <c>ii-baseline</c>: "ab", a space, the image, a space, "cd"), and a space at a line end next to it goes as at any line

@@ -305,13 +305,16 @@ internal static class BreakableSegments
 
     /// <summary>
     /// THE RULE FOR BREAKING AT AN ATOMIC INLINE: the opportunities of UAX #14, plus one before and one after every atomic
-    /// inline (<see cref="ShapedGlyph.IsAtomicInline"/>), whatever is beside it. CSS Text 3 §5.1: "For Web-compatibility
+    /// inline (<see cref="ShapedGlyph.IsAtomicInline"/>), whatever is beside it. CSS Text 3 §5.5: "For Web-compatibility
     /// there is a soft wrap opportunity before and after each replaced element or other atomic inline, even when adjacent
     /// to a character that would normally suppress them, including U+00A0 NO-BREAK SPACE." As Chromium breaks there (Blink
     /// <c>LineBreaker::CanBreakAfterAtomicInline</c> and <c>LineBreaker::CanBreakAfter</c>, core/layout/inline/line_breaker.cc:
     /// "Atomic inlines have break opportunities before and after, even when the adjacent character is U+00A0 NO-BREAK SPACE
     /// character"), also between letters and before closing punctuation, where UAX #14 alone has none for U+FFFC (LB12 GL ×,
-    /// LB13 × CL; case <c>ii-breaks</c>). One pass over the text.
+    /// LB13 × CL; case <c>ii-breaks</c>). Also beside a character of the classes GL, WJ and ZWJ, where the same section goes on
+    /// "with the exception of U+00A0 NO-BREAK SPACE, there must be no soft wrap opportunity between atomic inlines and
+    /// adjacent characters belonging to the Unicode GL, WJ, or ZWJ line breaking classes": Chromium breaks there (case
+    /// <c>ii-joiners</c>), a deliberate deviation (docs/architecture.md). One pass over the text.
     /// </summary>
     /// <param name="opportunities">The UAX #14 opportunities, in text order.</param>
     /// <param name="glyphs">The paragraph's glyphs with their places.</param>
