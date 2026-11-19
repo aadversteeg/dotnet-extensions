@@ -320,10 +320,16 @@ public static class HtmlStyleResolver
             }
 
             var style = computed.Value;
-            if (html.IsHtml("img") && IsSizedInline(style) && !ImageIsThere(html, out var source))
+            if (html.IsHtml("img") && IsSizedInline(style) && Image(html, out var source) is var image && image != ImageState.There)
             {
                 RefuseBrokenImage(element, source);
-                if (FallbackLosesItsSizes(html, style))
+                if (image == ImageState.Unknown && FallbackLosesItsSizes(html, style))
+                {
+                    // Bytes the engine does not read as an image (a GIF, an SVG, or no image at all; or no resolver to
+                    // ask): Chromium keeps the sizes when it shows them, and makes them auto when it does not.
+                    RefuseUnknownImage(html, source);
+                }
+                else if (image == ImageState.Missing && FallbackLosesItsSizes(html, style))
                 {
                     // Computed again with the three sizes auto as the last important declarations of the style
                     // attribute, which no author rule overrides (CSS Cascade 5 §6.2, element-attached declarations):
@@ -473,37 +479,70 @@ public static class HtmlStyleResolver
 
         /// <summary>Whether an img's image is there: its bytes start as a PNG or a JPEG, the body of a <c>data:</c> URL
         /// or what the caller's resolver gives for its src; whether they decode is checked when the image is read.</summary>
-        private bool ImageIsThere(HtmlElement html, out string? source)
+        /// <summary>Whether an img's image is there, missing, or bytes the engine cannot tell: there is no src, an empty
+        /// one, a URL the resolver gives nothing for, or a <c>data:</c> URL of another type than an image, is missing;
+        /// a resource that is neither a PNG nor a JPEG (a GIF or an SVG Chromium shows, or no image at all), a data: URL
+        /// of an image type that is neither, or a URL with no resolver to ask, is unknown.</summary>
+        private ImageState Image(HtmlElement html, out string? source)
         {
             source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
             if (string.IsNullOrEmpty(source))
             {
-                return false;
+                return ImageState.Missing;
             }
 
             if (DataUrl.Body(source) is { } inline)
             {
-                return IsImage(inline);
+                return IsImage(inline) ? ImageState.There
+                    : InfraAscii.ToLower(source[5..].Split(',', ';')[0].Trim(' ', '\t', '\n', '\f', '\r')).StartsWith("image/", StringComparison.Ordinal) ? ImageState.Unknown
+                    : ImageState.Missing;
             }
 
             if (Absolute(source, _documentBase) is not { } url)
             {
-                return false;
+                return ImageState.Missing;
             }
 
-            if (!_images.TryGetValue(url, out var there))
+            if (options.Resources is null)
             {
-                there = options.Resources?.Invoke(url) is { } resource && IsImage(resource.Bytes);
-                _images[url] = there;
+                return ImageState.Unknown;
             }
 
-            return there;
+            if (!_images.TryGetValue(url, out var state))
+            {
+                state = options.Resources(url) is { } resource ? (IsImage(resource.Bytes) ? ImageState.There : ImageState.Unknown) : ImageState.Missing;
+                _images[url] = state;
+            }
+
+            return state;
 
             static bool IsImage(ReadOnlyMemory<byte> bytes) => ImageSignatures.Any(signature => bytes.Span.StartsWith(signature));
         }
 
-        /// <summary>Whether the resolver gave an image, by URL: it is asked once per URL.</summary>
-        private readonly Dictionary<string, bool> _images = new(StringComparer.Ordinal);
+        private enum ImageState
+        {
+            There,
+            Missing,
+            Unknown,
+        }
+
+        /// <summary>What the resolver gave for an image, by URL: it is asked once per URL.</summary>
+        private readonly Dictionary<string, ImageState> _images = new(StringComparer.Ordinal);
+
+        /// <summary>Refuses an inline img with a size whose image the engine cannot tell is there, when Chromium would
+        /// make its sizes auto if it is not: the computed values depend on whether Chromium shows the image.</summary>
+        private void RefuseUnknownImage(HtmlElement html, string? source)
+        {
+            if (html.Attribute("alt") is { Length: > 0 })
+            {
+                return;
+            }
+
+            var at = html.Attributes.FirstOrDefault(item => item.LocalName == "src")?.Position ?? html.Position;
+            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{InputQuote.Of(source ?? string.Empty)}' is neither a PNG nor a JPEG image (or no resource resolver was given), so whether Chromium 159 shows it, with its width, height and aspect-ratio, or its fallback, where they compute to auto, is not known; that is not supported.")
+                .With(ErrorMetadataKeys.Value, "src")
+                .WithSource(_sourceName, at));
+        }
 
         private static bool IsAuto(ComputedStyle style, string property) => style.Find(property) is Css.Values.CssKeyword { Name: "auto" };
 

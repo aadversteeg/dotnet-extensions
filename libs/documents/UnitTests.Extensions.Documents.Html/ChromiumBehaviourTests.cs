@@ -93,8 +93,11 @@ public class ChromiumBehaviourTests
 
     private static HtmlStyleOptions Refusing { get; } = MeasuredPage with { Unsupported = UnsupportedPolicy.Refuse };
 
+    /// <summary>A resolver that has no resource: every image it is asked for is missing.</summary>
+    private static HtmlStyleOptions NothingThere { get; } = Refusing with { Resources = _ => null, BaseUrl = "https://example.org/" };
+
     [Theory]
-    // An inline image that is not there (no resolver in these tests), with no alt text: its width, height and
+    // An inline image that is not there (the resolver has nothing), with no alt text: its width, height and
     // aspect-ratio compute to auto unless it has both sizes, or an aspect-ratio and one size; whatever the author wrote,
     // important or in a layer. No src, or a src of white space only, is not an image that failed. Measured in Chromium
     // 159.0.8154.6; accepted in the default mode.
@@ -117,7 +120,28 @@ public class ChromiumBehaviourTests
     [InlineData("<p><img id=t width=10></p>", "width", "10px")]
     [InlineData("<p><img id=t src=\"  \" width=10></p>", "width", "10px")]
     public void A_missing_image_keeps_or_loses_its_sizes_as_in_Chromium(string body, string property, string chromium) =>
-        Styled(Doctype + body, Refusing).ById("t").Value(property).Should().Be(chromium);
+        Styled(Doctype + body, NothingThere).ById("t").Value(property).Should().Be(chromium);
+
+    [Theory]
+    // Bytes the engine does not read as an image (Chromium shows a GIF with its sizes), a data: URL of such an image,
+    // or no resolver to ask: whether the sizes stay is not known, so the image is refused where they would change.
+    [InlineData("<p><img src=x.gif width=10></p>", true)]
+    [InlineData("<p><img src=\"data:image/gif;base64,R0lGODlhAQABAAAAACw=\" width=10></p>", true)]
+    [InlineData("<p><img src=x.gif width=10 height=10></p>", false)]
+    [InlineData("<p><img src=x.gif width=10 style=\"display: block\"></p>", false)]
+    public void An_image_the_engine_cannot_read_is_refused_where_its_sizes_depend_on_it(string body, bool refused)
+    {
+        HtmlResource? Gif(string url) => url == "https://example.org/x.gif" ? new HtmlResource("GIF89a"u8.ToArray()) : null;
+        foreach (var options in new[] { Refusing with { Resources = Gif, BaseUrl = "https://example.org/" }, Refusing })
+        {
+            var result = Resolve(Doctype + body, options);
+            result.IsFailure.Should().Be(refused, body);
+            if (refused)
+            {
+                (result.Error.Code == ErrorCodes.Aggregate ? result.Error.Parts() : [result.Error]).Should().Contain(error => error.Message.Contains("neither a PNG nor a JPEG", StringComparison.Ordinal));
+            }
+        }
+    }
 
     [Theory]
     // align on an element without a rule of its own: middle is center, any other value is read as text-align (no
