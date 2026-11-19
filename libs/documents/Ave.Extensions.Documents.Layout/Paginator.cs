@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -36,10 +35,15 @@ public static class Paginator
     /// </remarks>
     /// <param name="environment">The fonts and algorithms.</param>
     /// <param name="document">The document.</param>
-    /// <returns>One fragment per page, or the first layout error.</returns>
-    /// <exception cref="InvalidOperationException">An algorithm broke the layout contract (see
-    /// <see cref="LayOutPages"/>). Without this check pagination could loop forever.</exception>
-    public static Result<ValueList<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document)
+    /// <returns>One fragment per page, or the first layout error. The model is checked first (<see cref="ModelCheck"/>:
+    /// the value ranges and the nesting limit the front-end enforces), because a model may be built by hand. An algorithm that broke the layout contract (see
+    /// <see cref="LayOutPages"/>) gives <see cref="LayoutErrorCodes.EngineDefect"/>: without this check pagination could
+    /// loop forever.</returns>
+    public static Result<ValueList<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document) =>
+        ModelCheck.Check(document).OnSuccessBind(checkedDocument => PaginateChecked(environment, checkedDocument));
+
+    /// <summary>The work of <see cref="Paginate"/> on a model that passed <see cref="ModelCheck"/>.</summary>
+    private static Result<ValueList<PageFragment>, Error> PaginateChecked(LayoutEnvironment environment, StyledDocument document)
     {
         // The document's policies are the ones its front-end chose; every algorithm reads them from the environment. A
         // model without a profile gets the default one.
@@ -98,8 +102,9 @@ public static class Paginator
     /// the footer area. The areas are laid out first (they may show the page number), and the root box goes in the
     /// height they leave, as the root of the block formatting context, with its own margins inside.
     /// </summary>
-    /// <exception cref="InvalidOperationException">An algorithm reported NoRoom at the start of a page, or returned
-    /// the token it was given.</exception>
+    /// <remarks>An algorithm that reports NoRoom at the start of a page, or returns the token it was given, broke the
+    /// layout contract: <see cref="LayoutErrorCodes.EngineDefect"/>, a defect of the engine, never an answer for a
+    /// document.</remarks>
     private static Result<ValueList<PageFragment>, Error> LayOutPages(LayoutEnvironment environment, StyledDocument document, int pageCount)
     {
         var page = document.Page;
@@ -145,13 +150,13 @@ public static class Paginator
                     return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.DoesNotFit(document.Root, bodyHeight - top));
                 }
 
-                throw new InvalidOperationException("A layout algorithm returned NoRoom at the start of a page; it must place content or fail.");
+                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.EngineDefect(document.Root, "reported no room at the start of a page"));
             }
 
             var placement = outcome.Value.Value;
             if (placement.Continuation is not null && placement.Continuation == token)
             {
-                throw new InvalidOperationException("A layout algorithm made no progress: it returned the break token it was given.");
+                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.EngineDefect(document.Root, "made no progress: it returned the break token it was given"));
             }
 
             var origin = new Point(page.Margins.Left.Points, page.Margins.Top.Points);

@@ -102,6 +102,8 @@ public class HarfBuzzCorpusTests(ITestOutputHelper output)
         }
 
         failed.Should().BeEmpty();
+        lines.Should().HaveCount(47, "every corpus line in every font was shaped");
+        lines.Sum(line => line.Glyphs).Should().Be(2688, "every line was shaped whole");
     }
 
     private static Line Compare(HarfBuzzReference reference, string fontName, TrueTypeFont font, byte[] fontFile, string language, string script, string text)

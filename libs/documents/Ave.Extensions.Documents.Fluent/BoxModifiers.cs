@@ -121,8 +121,10 @@ public static class BoxModifiers
 
     /// <summary>Sets the fewest lines of a paragraph a page may hold before a break inside it (CSS <c>orphans</c>,
     /// CSS Fragmentation 3 §3.3; inherited, like <c>TextAlign</c>). The initial value is 2, as in CSS. A page break that
-    /// leaves fewer is taken only when no better one exists; a paragraph with fewer lines than orphans and widows
-    /// together then moves to the next page whole.</summary>
+    /// leaves fewer lines on the page is taken only when no better breakpoint exists, so the paragraph moves to the next
+    /// page whole when a break before it is possible; where too few lines follow the break (<c>widows</c>), lines move
+    /// to the next page with it as long as <c>orphans</c> stay; a paragraph too short for both keeps its orphans
+    /// (Chromium's rule). For the whole document: <see cref="Orphans(Document, int)"/>.</summary>
     /// <typeparam name="T">The element or style type.</typeparam>
     /// <param name="element">The block, paragraph or style.</param>
     /// <param name="lines">The number of lines, at least 1.</param>
@@ -138,6 +140,23 @@ public static class BoxModifiers
     /// <returns>A copy with widows set.</returns>
     public static T Widows<T>(this T element, int lines) where T : IBoxFormatted<T> =>
         element.WithFormat(element.Format with { Text = element.Format.Text with { Widows = lines } });
+
+    /// <summary>Sets orphans for the whole document: every paragraph inherits it unless it or a box around it sets its
+    /// own (CSS <c>orphans</c> on the root). The initial value is 2, as in CSS; <c>Orphans(1)</c> gives back the pages of
+    /// 0.1.0-preview.2, which had no orphans rule.</summary>
+    /// <param name="document">The document.</param>
+    /// <param name="lines">The number of lines, at least 1.</param>
+    /// <returns>A copy with orphans set.</returns>
+    public static Document Orphans(this Document document, int lines) =>
+        document with { Format = document.Format with { Text = document.Format.Text with { Orphans = lines } } };
+
+    /// <summary>Sets widows for the whole document, as <see cref="Orphans(Document, int)"/> does orphans; <c>Widows(1)</c>
+    /// gives back the pages of 0.1.0-preview.2.</summary>
+    /// <param name="document">The document.</param>
+    /// <param name="lines">The number of lines, at least 1.</param>
+    /// <returns>A copy with widows set.</returns>
+    public static Document Widows(this Document document, int lines) =>
+        document with { Format = document.Format with { Text = document.Format.Text with { Widows = lines } } };
 
     /// <summary>Sets a solid border on all four sides (CSS <c>border</c>). A side set with <see cref="BorderTop{T}"/>
     /// and the like wins over it.</summary>

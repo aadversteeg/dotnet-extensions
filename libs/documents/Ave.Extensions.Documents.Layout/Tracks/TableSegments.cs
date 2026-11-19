@@ -49,19 +49,30 @@ internal static class TableSegments
     /// slice when it is complete or nothing of it fits. A cell whose content goes on past the cut keeps
     /// <paramref name="clearance"/> free above the cut (clone keeps it clear of the line drawn there,
     /// <see cref="TablePage"/>); a cell that ends in the slice needs no clearance, since its own box already holds the half
-    /// of the line below it (<see cref="CellLayoutBox"/>). So the cell is laid out in the whole slice first, and only when
-    /// it does not end there again, without the clearance. Returns the fragment, stretched to the slice, where the cell
-    /// continues, and the appeal of the break inside the cell's content (its own keep rules, orphans and widows):
-    /// perfect for a cell that ends in the slice or places nothing of itself. A cell is laid out as starting the page
-    /// (<see cref="ConstraintSpace.IsAtPageStart"/>) only when <paramref name="startsPage"/> says nothing lies above it on
-    /// the page; every other cell may always leave its content for the next page.
+    /// of the line below it (<see cref="CellLayoutBox"/>). Which of the two the cell is, its measured fragment says (the
+    /// segment's natural height of the cell, <see cref="Segment.Natural"/>): a cell whose natural height fits the slice
+    /// ends there and is laid out in the whole slice; any other cell cannot end there and is laid out without the
+    /// clearance. So a cut cell is laid out once per cut, never a second time to try the other height: in a cell of a
+    /// cell of a cell … a second layout at every level would double the work at every level (TableNestingCostTests). Returns
+    /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
+    /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
+    /// itself; for a cell that keeps its break (its content broke at a breakpoint it chose,
+    /// <see cref="LayoutResult.Placed.KeepsItsBreak"/>: the row keeps that break too, as Chromium follows such a break,
+    /// case <c>fr-f9-cell-orphans3</c>) the kept appeal, perfect unless the break lies inside a box kept together
+    /// (<see cref="LayoutResult.Placed.KeptAppeal"/>, cases <c>kb-n5-*</c>, <c>kb-n6-*</c>); a last resort for a cell whose lines all fit the slice and only its bottom padding
+    /// or its share of the grid line below it does not, where its last row is the one the cut is in
+    /// (<paramref name="endsAtTheCut"/>; Chromium never breaks a cell before its bottom padding: the row moves whole when
+    /// it can, cases <c>fr-f4-*</c>). A cell is laid out as starting the page (<see cref="ConstraintSpace.IsAtPageStart"/>)
+    /// only when <paramref name="startsPage"/> says nothing lies above it on the page; every other cell may always leave
+    /// its content for the next page.
     /// </summary>
     /// <remarks>A fresh cell whose content starts the page below a repeated header row (<paramref name="belowHeader"/>,
     /// see <see cref="TablePage"/>) is laid out without the half of the line above it and lowered by it afterwards, as a
     /// reopened cell is: its content starts the page, so content taller than the page area is sliced from right below
     /// that line, where a whole cell's content starts.</remarks>
-    internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal), Error> Slice(
-        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool startsPage = false, bool belowHeader = false, bool belowStartInsets = false)
+    internal static Result<(BoxFragment Fragment, CellBreak Next, BreakAppeal Appeal, bool KeepsItsBreak), Error> Slice(
+        TableGeometry table, Segment segment, ActiveCell cell, double sliceHeight, double clearance = 0, bool endsAtTheCut = false,
+        bool startsPage = false, bool belowHeader = false, bool belowStartInsets = false)
     {
         var info = table.Grid.Cells[cell.Cell];
         var lineAbove = belowHeader && cell.Token is null;
@@ -69,23 +80,31 @@ internal static class TableSegments
         var width = table.CellWidth(info);
         if (cell.IsComplete)
         {
-            return Result<(BoxFragment, CellBreak, BreakAppeal), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true), BreakAppeal.Perfect));
+            return Result<(BoxFragment, CellBreak, BreakAppeal, bool), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true), BreakAppeal.Perfect, false));
         }
 
         var inset = ReopenedInset(table, segment, cell) + (lineAbove ? LineAboveInside(table, segment, cell) : 0);
         Result<LayoutResult, Error> LayOutIn(double height) =>
             table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: startsPage || belowHeader, IsNewFormattingContext: true)
             {
+                KeepsBottomInset = true,
                 IsBelowStartInsets = belowStartInsets && !(startsPage || belowHeader),
             }, cell.Token);
-        return LayOutIn(sliceHeight)
-            .OnSuccessBind(whole => clearance <= 0 || whole is LayoutResult.Placed { Continuation: null } ? Result<LayoutResult, Error>.Success(whole) : LayOutIn(sliceHeight - clearance))
+        var measured = segment.Natural.TryGetValue(cell.Cell, out var natural);
+        var endsInSlice = clearance <= 0 || (measured && Fitting.Fits(natural!.Size.Height, sliceHeight));
+        var endsInItsBottomEdge = endsAtTheCut && measured && !Fitting.Fits(natural!.Size.Height, sliceHeight)
+            && Fitting.Fits(natural.Size.Height - SlicedBox.BottomInset(box.Style), sliceHeight);
+        return LayOutIn(endsInSlice ? sliceHeight : sliceHeight - clearance)
             .OnSuccessMap(result => result switch
             {
                 LayoutResult.Placed placed => (Stretch(Lowered(placed.Fragment, inset), sliceHeight, VerticalAlign.Top),
                     new CellBreak(cell.Cell, placed.Continuation, placed.Continuation is null),
-                    placed.Continuation is null ? BreakAppeal.Perfect : placed.Appeal),
-                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), BreakAppeal.Perfect),
+                    placed.Continuation is null ? BreakAppeal.Perfect
+                    : endsInItsBottomEdge ? BreakAppeal.LastResort
+                    : placed.KeepsItsBreak ? placed.KeptAppeal
+                    : placed.Appeal,
+                    placed.Continuation is not null && placed.KeepsItsBreak && !endsInItsBottomEdge),
+                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), endsInItsBottomEdge ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),
             });
     }
 

@@ -17,7 +17,9 @@ internal static class InFlowChild
     /// <param name="Continuation">Where the child resumes on the next page, or null when it is complete.</param>
     /// <param name="Appeal">How good the break inside the child is (see <see cref="LayoutResult.Placed"/>).</param>
     /// <param name="BestBreak">For a complete child, the best breakpoint inside it (see <see cref="LayoutResult.Placed.BestBreak"/>).</param>
-    public sealed record Placement(PlacedFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal, EarlyBreak? BestBreak = null);
+    /// <param name="KeepsItsBreak">For a child that breaks, whether it keeps its break (<see cref="LayoutResult.Placed.KeepsItsBreak"/>).</param>
+    /// <param name="KeptAppeal">For a child that keeps its break, that break's appeal for the comparison (<see cref="LayoutResult.Placed.KeptAppeal"/>).</param>
+    public sealed record Placement(PlacedFragment Fragment, BreakToken? Continuation, BreakAppeal Appeal, EarlyBreak? BestBreak = null, bool KeepsItsBreak = false, BreakAppeal KeptAppeal = BreakAppeal.Perfect);
 
     /// <summary>Lays out <paramref name="child"/> with the top of its BORDER box at <paramref name="top"/>.</summary>
     /// <remarks>
@@ -68,7 +70,7 @@ internal static class InFlowChild
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch
         {
             LayoutResult.Placed placed => Maybe.From(new Placement(
-                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation, placed.Appeal, placed.BestBreak)),
+                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation, placed.Appeal, placed.BestBreak, placed.KeepsItsBreak, placed.KeptAppeal)),
             _ => Maybe<Placement>.None,
         });
     }

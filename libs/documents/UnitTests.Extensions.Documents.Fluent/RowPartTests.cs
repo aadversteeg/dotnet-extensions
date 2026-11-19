@@ -79,7 +79,7 @@ public class RowPartTests
     [Fact]
     public void A_row_whose_rest_would_show_nothing_on_the_next_page_moves_whole()
     {
-        // The mirror of the strip (review 36): each row is a line of text beside two empty blocks with 4 pt padding. The
+        // The mirror of the strip: each row is a line of text beside two empty blocks with 4 pt padding. The
         // page end falls below t1's text but inside its second block: Chromium cuts there, so page 2 starts with an empty
         // 9 pt part of t1. The engine moves t1 to page 2 whole: the default policy, Avoid (see the class).
         TableElement Rows() => Table(Columns(Fill(1), Fill(1)),
@@ -238,16 +238,38 @@ public class RowPartTests
     }
 
     [Fact]
-    public void With_empty_row_parts_avoided_the_cells_keep_their_line_on_the_page_and_the_row_is_cut()
+    public void With_empty_row_parts_avoided_a_row_whose_cells_end_on_the_page_but_not_its_line_moves_whole_as_in_Chromium()
     {
-        // The default policy keeps each cell's half of the line below on the page: the cell breaks before its last block, so
-        // row t2 is cut, its text on page 1 and the line "u" on page 2, where Chromium moves the row whole (Allow follows
-        // Chromium, above).
+        // The same document under the default policy: cutting row t2 where its cells keep their half of the line below on
+        // the page would leave the line "u" for page 2, and that cut is a last resort (TableBreaks.Take), so the row moves
+        // to page 2 whole, as Chromium prints it (case a2-cells-end-text).
         var engine = PrintedWith(EmptyRowParts.Avoid, CellsEnd("a2-cells-end-text"));
+        var chromium = PrintedPages.Chromium("a2-cells-end-text");
 
-        engine.Pages[0].Words.Select(word => word.Text).Should().Contain("t2");
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.Pages[1].Words.Select(word => word.Text).Should().StartWith(["t2", "u"]);
+    }
+
+    [Fact]
+    public void With_empty_row_parts_avoided_a_row_that_cannot_move_keeps_its_cells_line_on_the_page_and_is_cut()
+    {
+        // Where the row cannot move whole, the last resort is taken: a table at the top of the first page, its first row
+        // "t" beside a cell of two 85.6 pt paddings and the line "u" (6 pt on 8 pt), so the cells end 0.05 pt above the
+        // page end and only the half of the line below the row passes it. The cells keep their half line on the page and
+        // break earlier: the row is cut, "t" on page 1, "u" at the top of page 2, nothing past the page area. A listed
+        // difference (docs/architecture.md, as case fr-f4-padding-page-start): Chromium's print of this document (case
+        // a2-cells-end-page-top) leaves page 1 blank, prints the row whole on page 2 (its cells 179.941 pt high, the line
+        // below it at 191.25 to 192 pt) and "after a" on page 3.
+        CellElement Second() => Cell([Block([]).PaddingTop(85.6.Pt()).PaddingBottom(85.6.Pt()), Paragraph("u").FontSize(6.Pt()).LineHeight(8.Pt())]);
+        var table = Table(Columns(Fill(1), Fill(1)), [TableRow([Cell("t"), Second()]), TableRow([Cell("after"), Cell("a")])])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+
+        var engine = PrintedWith(EmptyRowParts.Avoid, [table]);
+
+        engine.PageTexts.Should().Equal("t", "u after a");
         engine.Pages[1].Words.Select(word => word.Text).Should().StartWith(["u"]);
-        PrintedPages.Chromium("a2-cells-end-text").Pages[1].Words.Select(word => word.Text).Should().StartWith(["t2", "u"]);
+        engine.Pages[0].Rectangles.Should().AllSatisfy(box => box.Y1.Should().BeLessThanOrEqualTo(192 + 1e-9, "the page area ends at 192 pt"));
+        PrintedPages.Chromium("a2-cells-end-page-top").PageTexts.Should().Equal(string.Empty, "t u", "after a");
     }
 
     [Theory]
@@ -255,7 +277,7 @@ public class RowPartTests
     [InlineData(true)]
     public void Rows_beside_two_padded_empty_blocks_never_leave_a_part_that_shows_nothing_at_a_page_end_or_start(bool clone)
     {
-        // The mirror, swept (review 36 found it in 237 of 2 400 documents): every page end over two rows.
+        // The mirror, swept (it was in 237 of 2 400 random documents): every page end over two rows.
         TableElement Rows()
         {
             var table = Table(Columns(Fill(1), Fill(1)),
@@ -278,7 +300,7 @@ public class RowPartTests
     [InlineData(0.0, 8.0)]
     public void Text_hidden_under_a_thick_line_does_not_count_as_shown_in_the_row_below_it(double first, double second)
     {
-        // Review 36: units of two rows beside a five-word cell that spans them, an 8 pt line under one row of each unit,
+        // Units of two rows beside a five-word cell that spans them, an 8 pt line under one row of each unit,
         // clone; with 5 pt top padding in the spanning cell a page ended with the 8 pt line and the closing line under it,
         // because the cell's text reached 1 pt into the row below, where the thick line covers it. The visible part of a
         // row starts under the line above it, so that row is not cut there: no part of a row that shows nothing, for every

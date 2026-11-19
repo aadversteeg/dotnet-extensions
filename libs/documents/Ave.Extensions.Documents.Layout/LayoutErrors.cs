@@ -39,6 +39,29 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(height))
             .WithSource(content.Source);
 
+    /// <summary>A layout algorithm broke the layout contract (<see cref="LayoutErrorCodes.EngineDefect"/>).</summary>
+    /// <param name="box">The box whose algorithm broke it.</param>
+    /// <param name="contract">Which contract, for the message and the metadata.</param>
+    public static Error EngineDefect(Box box, string contract) =>
+        new Error(
+                LayoutErrorCodes.EngineDefect,
+                $"A defect of the layout engine: the algorithm of the {box.Role} made at {box.Source} {contract}. The document is not at fault.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, contract)
+            .WithSource(box.Source);
+
+    /// <summary>A break token the box's algorithm cannot have returned for it (<see cref="LayoutErrorCodes.InvalidBreakToken"/>).</summary>
+    /// <param name="box">The box the token was given with.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="reason">What does not belong to the box, for the message.</param>
+    public static Error InvalidBreakToken(Box box, BreakToken token, string reason) =>
+        new Error(
+                LayoutErrorCodes.InvalidBreakToken,
+                $"{Describe(box)} cannot resume from the {token.GetType().Name} it was given: {reason}. A break token resumes only the box whose layout returned it.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, token.GetType().Name)
+            .WithSource(box.Source);
+
     /// <summary>Content taller than the page area that would need more than <see cref="MonolithicSlices.MaxSlices"/>
     /// slices.</summary>
     /// <param name="box">The box the content belongs to.</param>

@@ -33,7 +33,9 @@ internal enum ShapingLimit
 /// costing time and memory without bound. HarfBuzz likewise bounds a buffer by a length limit and an operations limit
 /// (hb-limits.hh, applied in <c>hb_buffer_t::enter</c>); it counts its operations its own way, so the numbers below bound
 /// the same kind of work, not the same amount.
-/// The budget is the state of one call of <see cref="Shaper.Shape"/>; it is created for it and never shared.
+/// The budget is the state of one call of <see cref="Shaper.Shape(string, Fonts.TrueTypeFont, double)"/>, created for
+/// it; or of all the pieces of one paragraph that the line breaker shapes again, which share one
+/// (<see cref="LineShapingBudget"/>).
 /// </summary>
 internal sealed class ShapingBudget
 {
@@ -75,6 +77,9 @@ internal sealed class ShapingBudget
 
     /// <summary>The operations limit of this text.</summary>
     public long OperationLimit { get; }
+
+    /// <summary>The operations spent so far.</summary>
+    public long Spent => OperationLimit - _operationsLeft;
 
     /// <summary>The limit the text reached, or null while it is inside both.</summary>
     public ShapingLimit? Exceeded { get; private set; }

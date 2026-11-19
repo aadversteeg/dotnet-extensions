@@ -1,6 +1,7 @@
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.TestSupport;
 using static Ave.Extensions.Documents.Fluent.Elements;
 
 namespace UnitTests.Extensions.Documents.Fluent;
@@ -134,4 +135,40 @@ public class ModifierTests
     }
 
     private static int CurrentLine([System.Runtime.CompilerServices.CallerLineNumber] int line = 0) => line;
+    [Fact]
+    public void Orphans_and_widows_set_on_the_document_reach_every_paragraph()
+    {
+        // .Orphans() and .Widows() on Document: getting the pages of 0.1.0-preview.2 back
+        // (no orphans or widows rule) needed a Block around everything.
+        var document = Document([Paragraph("a"), Block([Paragraph("b")]).Orphans(3)], Page(200.Pt(), 200.Pt()), title: "T", language: "en")
+            .FontFamily("Lato").Orphans(1).Widows(1);
+
+        var model = DocumentTranslator.ToModel(document).Value;
+        var first = (Box)model.Root.Children[0];
+        var inner = (Box)((Box)model.Root.Children[1]).Children[0];
+        (first.Style.Orphans, first.Style.Widows).Should().Be((1, 1));
+        (inner.Style.Orphans, inner.Style.Widows).Should().Be((3, 1), "a box's own value wins over the document's");
+    }
+
+    [Fact]
+    public void The_text_format_record_keeps_its_positional_shape_and_holds_the_new_values_in_its_body()
+    {
+        // Binary compatibility with 0.1.0-preview.2: six positional values; orphans, widows and line height are body
+        // properties.
+        var format = new TextFormat("Lato", 9.Pt(), null, null, null, null) { Orphans = 3, Widows = 4, LineHeight = new LineHeightValue.Number(1.5) };
+
+        typeof(TextFormat).GetConstructors().Should().ContainSingle(constructor => constructor.GetParameters().Length == 6);
+        (format.Orphans, format.Widows, format.LineHeight).Should().Be((3, 4, new LineHeightValue.Number(1.5)));
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(-1.0)]
+    public void An_image_s_text_values_are_checked_as_any_element_s(double lineHeight)
+    {
+        // An image's line height and every other text value are checked.
+        var document = Document([Image(TestImages.Bytes("rgb8.png")).Decorative().LineHeight(lineHeight)], Page(200.Pt(), 200.Pt()), title: "T", language: "en").FontFamily("Lato");
+
+        DocumentTranslator.ToModel(document).Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LineHeight);
+    }
 }
