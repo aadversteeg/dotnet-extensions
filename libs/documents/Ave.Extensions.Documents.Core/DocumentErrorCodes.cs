@@ -57,6 +57,10 @@ public static class DocumentErrorCodes
             /// number, or larger than the front-end allows. Metadata: Value, Property.</summary>
             public static readonly ErrorCode LineHeight = _ / "LineHeight";
 
+            /// <summary>A <c>white-space-collapse</c> or <c>text-wrap-mode</c> value its enum does not have. Metadata: Value,
+            /// Property.</summary>
+            public static readonly ErrorCode WhiteSpace = _ / "WhiteSpace";
+
             /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
             /// positive integers are allowed"). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Orphans = _ / "Orphans";
@@ -135,6 +139,10 @@ public static class DocumentErrorCodes
             /// another algorithm than the image algorithm, or one with page break properties, which apply to block-level
             /// boxes only. Metadata: Value, Property.</summary>
             public static readonly ErrorCode AtomicInline = _ / "AtomicInline";
+
+            /// <summary>A tab in a run whose white space is preserved (<c>white-space-collapse: preserve</c>): it would move
+            /// the text to the next tab stop, and tab stops are not built. Metadata: Value, Property, Offset.</summary>
+            public static readonly ErrorCode PreservedTab = _ / "PreservedTab";
         }
     }
 }

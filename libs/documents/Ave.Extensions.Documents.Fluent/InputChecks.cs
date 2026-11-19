@@ -76,6 +76,11 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LineHeight, $"The line height must not be negative, and at most {InputLimits.MaxLength} (as a length, a number or a percentage of 100).", lineHeight.Describe(), "line-height", source);
         }
 
+        if (format.WhiteSpaceCollapse is { } collapse && !Enum.IsDefined(collapse))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The white-space-collapse value is not one of WhiteSpaceCollapse.", collapse.ToString(), "white-space-collapse", source);
+        }
+
         // CSS Fragmentation 3 §3.3: "Only positive integers are allowed as values of orphans and widows."
         if (format.Orphans is int orphans and < 1)
         {

@@ -22,7 +22,7 @@ public static class InlineLayout
     /// <summary>The Inline algorithm; see <see cref="LayoutAlgorithm"/> for the contract.</summary>
     /// <remarks>
     /// Steps: resolve every run to text (a page counter becomes the number of the page being laid out, or the page
-    /// count, from <see cref="LayoutEnvironment.Page"/>) → collapse white space (CSS Text 3 §4.1.1) → resolve each run's
+    /// count, from <see cref="LayoutEnvironment.Page"/>) → collapse white space by each run's mode (CSS Text 3 §4.1.1) → resolve each run's
     /// font and shape the runs that share a font as one text (<see cref="ShapingGroups"/>) → break into lines (greedy, at UAX #14 opportunities) → stack line boxes from the line the
     /// token names until the next one does not fit. A page break may fall between any two lines (class B
     /// breakpoints, CSS Fragmentation 3 §4.1), under <c>orphans</c> and <c>widows</c> (<see cref="BreakWhereFull"/>).
@@ -140,12 +140,17 @@ public static class InlineLayout
     /// shaped: both its edges are safe places to break, so the breaker never asks for it again; if it did, it gets the same
     /// glyph.</remarks>
     private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, TextAlign align) =>
-        GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], width, (run, text, showsHyphen, budget) => runs[run] switch
+        GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs), width, (run, text, showsHyphen, budget) => runs[run] switch
             {
                 LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, shaped.Run.Style.FontSize.Points, showsHyphen, budget).MapError(error => error.WithSource(shaped.Run.Source)),
                 var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
             },
             LineEndAtSpace(align));
+
+    /// <summary>The white-space properties of each item for the line breaker: a run's from its style; an atomic inline has no
+    /// spaces, so the initial values.</summary>
+    private static RunWhiteSpace[] WhiteSpaceOf(IReadOnlyList<LineBoxes.Item> runs) =>
+        [.. runs.Select(item => item is LineBoxes.ShapedRun shaped ? new RunWhiteSpace(shaped.Run.Style.WhiteSpaceCollapse) : RunWhiteSpace.Initial)];
 
     /// <summary>What the line breaker does at a line end at a collapsible space (<see cref="LineEndShaping"/>), from the
     /// paragraph's alignment, as Chromium decides whether a line "needs an accurate end position" (Blink
@@ -158,7 +163,7 @@ public static class InlineLayout
 
     /// <summary>
     /// True when the box's text makes at least one line box: some text is left after white-space collapsing.
-    /// A paragraph of only spaces has no line boxes (CSS 2.1 §9.4.2), which makes it an empty box for margin
+    /// A paragraph of only collapsible spaces has no line boxes (CSS 2.1 §9.4.2), which makes it an empty box for margin
     /// collapsing (<see cref="MarginCollapsing.IsEmpty"/>). A page counter always shows digits, and an atomic inline always
     /// makes a line (CSS 2.1 §9.4.2: line boxes that contain no "replaced elements" among other content are the ones that
     /// do not exist).
@@ -166,7 +171,7 @@ public static class InlineLayout
     /// <param name="box">An inline box.</param>
     /// <returns>Whether it has line boxes.</returns>
     public static bool HasLineBoxes(Box box) =>
-        box.Children.Any(child => child is CounterRun or Box || (child is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text)));
+        box.Children.Any(child => child is CounterRun or Box || (child is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text, text.Style.WhiteSpaceCollapse)));
 
     /// <summary>
     /// Resolves every run to its text, collapses white space over the whole paragraph, finds each run's font, then shapes
@@ -195,7 +200,9 @@ public static class InlineLayout
                     : "inline layout needs text runs and images as children."));
         }
 
-        var collapsed = WhiteSpaceCollapsing.Collapse([.. box.Children.Select(child => child is InlineRun run ? TextOf(run, environment.Page) : ObjectReplacement)]);
+        var collapsed = WhiteSpaceCollapsing.Collapse([.. box.Children.Select(child => child is InlineRun run
+            ? (TextOf(run, environment.Page), run.Style.WhiteSpaceCollapse)
+            : (ObjectReplacement, WhiteSpaceCollapse.Collapse))]);
 
         // The paragraph in stretches: the runs between two atomic inlines are shaped in groups, an atomic inline is an item
         // of its own.

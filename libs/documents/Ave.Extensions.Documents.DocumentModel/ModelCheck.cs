@@ -77,7 +77,7 @@ public static class ModelCheck
             var problem = node switch
             {
                 Box box => Box(box),
-                TextRun run => Text(run.Style, run) ?? Characters(run),
+                TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
                 ImageNode image => ImageSize(image),
                 _ => null,
@@ -176,7 +176,7 @@ public static class ModelCheck
     }
 
     /// <summary>Text values: a family name that is not blank, a positive font size of at most
-    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, and a line height that is not negative, finite and at most
+    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, a white-space value of its enum, and a line height that is not negative, finite and at most
     /// that long (as a number: at most that many times the font size).</summary>
     private static Error? Text(TextStyle style, Node node)
     {
@@ -195,6 +195,11 @@ public static class ModelCheck
             return Problem(DocumentErrorCodes.Input.Invalid.FontWeight, "The font weight must be 1–1000.", style.FontWeight.ToString()!, "font-weight", node);
         }
 
+        if (!System.Enum.IsDefined(style.WhiteSpaceCollapse))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The white-space-collapse value is not one the model has.", style.WhiteSpaceCollapse.ToString(), "white-space-collapse", node);
+        }
+
         var lineHeight = style.LineHeight switch
         {
             LineHeight.Factor factor => (double?)factor.Value,
@@ -210,6 +215,15 @@ public static class ModelCheck
     private static Error? Characters(TextRun run) =>
         run.Text is { } text && TextCharacters.IndexOfForbidden(text) is { } offset
             ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Text, $"The text holds a character text cannot hold at position {offset} (a control character, a noncharacter or half of a surrogate pair).", text, "text", run)
+                .With(ErrorMetadataKeys.Offset, offset)
+            : null;
+
+    /// <summary>No tab in a run whose white space is preserved: a preserved tab moves the text to the next tab stop (CSS Text 3
+    /// §4.2, "Tab Character Size"; Chromium 159 prints it so, case <c>ws-tab</c>), and tab stops are not built. Where white
+    /// space collapses a tab is a space, as before.</summary>
+    private static Error? PreservedTab(TextRun run) =>
+        run.Style.WhiteSpaceCollapse == WhiteSpaceCollapse.Preserve && run.Text is { } text && text.IndexOf('\t', System.StringComparison.Ordinal) is var offset and >= 0
+            ? (Error?)Problem(DocumentErrorCodes.Input.Unsupported.PreservedTab, $"A run whose white space is preserved holds a tab at position {offset}; tab stops are not built.", text, "white-space-collapse", run)
                 .With(ErrorMetadataKeys.Offset, offset)
             : null;
 

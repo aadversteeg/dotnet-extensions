@@ -37,4 +37,18 @@ public class DocumentModelTextTests
         page.AreaWidth.Points.Should().BeApproximately(210.Mm().Points - 2 * 2.Cm().Points, 1e-9);
         page.AreaHeight.Points.Should().BeApproximately(297.Mm().Points - 2 * 2.Cm().Points, 1e-9);
     }
+
+    [Fact]
+    public void A_run_whose_white_space_does_not_collapse_says_so_and_one_that_collapses_says_nothing()
+    {
+        var text = new TextStyle("Lato", 11.Pt(), FontWeight.Regular, Color.Black);
+        var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
+            [new TextRun(new NodeId(2), "a", text with { WhiteSpaceCollapse = WhiteSpaceCollapse.PreserveBreaks }, Here),
+             new TextRun(new NodeId(3), "b", text, Here)], Here);
+        var written = DocumentModelText.Write(new StyledDocument(new DocumentMetadata("T", null), new PageStyle(210.Mm(), 297.Mm(), Edges.All(2.Cm())),
+            new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [paragraph], Here)));
+
+        written.Split('\n').Where(line => line.Contains("white-space-collapse=preserve-breaks", StringComparison.Ordinal)).Should().ContainSingle()
+            .Which.Should().Contain("\"a\"");
+    }
 }

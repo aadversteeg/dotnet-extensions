@@ -79,5 +79,9 @@ public static class LineJustification
         };
     }
 
-    private static bool IsWordSeparator(ShapedGlyph glyph) => WordSeparators.Contains(glyph.Text);
+    /// <summary>A word separator that does not hang at the line's end (<see cref="ShapedGlyph.Hangs"/>): a hanging space is
+    /// outside the line, so it does not widen (case <c>ws-hang-pre-wrap</c>, justified lines: the word before it ends at
+    /// the right edge). A preserved space inside the line widens as any space (case
+    /// <c>ws-justify</c>: both spaces of a double space widen).</summary>
+    private static bool IsWordSeparator(ShapedGlyph glyph) => !glyph.Hangs && WordSeparators.Contains(glyph.Text);
 }

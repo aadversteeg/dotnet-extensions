@@ -37,4 +37,7 @@ public sealed record TextFormat(
     /// <summary>The line height (CSS <c>line-height</c>, inherited): on a paragraph also the height of its strut, the least
     /// height of its lines.</summary>
     public LineHeightValue? LineHeight { get; init; }
+
+    /// <summary>How white space collapses (CSS <c>white-space-collapse</c>, CSS Text 4, inherited).</summary>
+    public WhiteSpaceCollapse? WhiteSpaceCollapse { get; init; }
 }

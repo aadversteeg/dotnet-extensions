@@ -55,8 +55,9 @@ public class InlineImageTests
     /// <summary>A paragraph whose content box is <paramref name="width"/> wide on the 276 pt page area.</summary>
     private static ParagraphElement Narrow(double width, ValueList<Span> spans) => Paragraph(spans).PaddingRight((276 - width).Pt());
 
-    /// <summary>The breaches of THE COMPARISON on every page; the words' texts and the image count must be equal.</summary>
-    private static List<string> Breaches(PrintedPages engine, PrintedPages chromium, bool halfPixelBaselines)
+    /// <summary>The breaches of THE COMPARISON on every page; the words' texts and the image count must be equal. A word
+    /// may lie <paramref name="extraUnits"/> layout units further (a caller's reason).</summary>
+    internal static List<string> Breaches(PrintedPages engine, PrintedPages chromium, bool halfPixelBaselines, double extraUnits = 0)
     {
         engine.Pages.Should().HaveCount(chromium.Pages.Length);
         var breaches = new List<string>();
@@ -78,7 +79,7 @@ public class InlineImageTests
                 var x = ChromiumLayout.DifferenceInLayoutUnits(word.X0, measured.X0);
                 var y = ChromiumLayout.DifferenceInLayoutUnits(word.Baseline, measured.Baseline);
                 var baselineBound = LinesAbove(word.Baseline) + 1 + (halfPixelBaselines ? 0.375 / ChromiumLayout.LayoutUnit : 0);
-                if (x > ItemsBefore(word.X0, word.Baseline) + 1 || y > baselineBound)
+                if (x > ItemsBefore(word.X0, word.Baseline) + 1 + extraUnits || y > baselineBound)
                 {
                     breaches.Add($"page {page + 1} word '{word.Text}': x {x:0.00} LU (engine {word.X0:0.000}, Chromium {measured.X0:0.000}), baseline {y:0.00} LU (engine {word.Baseline:0.000}, Chromium {measured.Baseline:0.000})");
                 }

@@ -14,4 +14,16 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// <summary>The line height (CSS 2.1 §10.8.1, <c>line-height</c>, inherited); <see cref="LineHeight.Normal"/>, the
     /// initial value, unless set.</summary>
     public LineHeight LineHeight { get; init; } = LineHeight.Normal.Instance;
+
+    /// <summary>
+    /// How the run's white space is collapsed (CSS Text 4, <c>white-space-collapse</c>, inherited); <see
+    /// cref="WhiteSpaceCollapse.Collapse"/>, the initial value, unless set. Under <see cref="WhiteSpaceCollapse.Preserve"/> and
+    /// <see cref="WhiteSpaceCollapse.PreserveBreaks"/> a line feed U+000A in the text is a preserved segment break: a forced
+    /// line break, the same as the line separator U+2028 that is the model's forced break in every mode (white-space
+    /// collapsing turns the one into the other). Two forms remain because they say different things: U+2028 breaks the line
+    /// whatever the mode, a line feed only where the mode preserves it (elsewhere it is a space), as the text of an HTML
+    /// source is written. Under <see cref="WhiteSpaceCollapse.Preserve"/> a tab is refused (<see cref="ModelCheck"/>): tab
+    /// stops are not built.
+    /// </summary>
+    public WhiteSpaceCollapse WhiteSpaceCollapse { get; init; } = WhiteSpaceCollapse.Collapse;
 }

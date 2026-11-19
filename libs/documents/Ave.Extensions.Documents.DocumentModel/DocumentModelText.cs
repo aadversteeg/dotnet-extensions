@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
@@ -102,7 +103,13 @@ public static class DocumentModelText
 
     private static string StyleText(TextStyle style) =>
         $"{style.FontFamily} {style.FontSize} w{style.FontWeight}{(style.FontStyle == FontStyle.Italic ? " italic" : string.Empty)} {style.Color}"
-        + (style.LineHeight is LineHeight.Normal ? string.Empty : $" line-height={style.LineHeight}");
+        + (style.LineHeight is LineHeight.Normal ? string.Empty : $" line-height={style.LineHeight}")
+        + (style.WhiteSpaceCollapse == WhiteSpaceCollapse.Collapse ? string.Empty : $" white-space-collapse={Kebab(style.WhiteSpaceCollapse)}");
+
+    /// <summary>A value's CSS keyword: <c>PreserveBreaks</c> is <c>preserve-breaks</c>.</summary>
+    private static string Kebab<T>(T value)
+        where T : struct, Enum =>
+        string.Concat(value.ToString().Select((character, index) => char.IsUpper(character) && index > 0 ? $"-{char.ToLowerInvariant(character)}" : char.ToLowerInvariant(character).ToString()));
 
     private static string CounterName(PageCounter counter) => counter == PageCounter.PageNumber ? "page" : "pages";
 

@@ -16,9 +16,16 @@ namespace Ave.Extensions.Documents.Typesetting;
 /// <param name="YOffset">How far the glyph is drawn ABOVE the baseline, in points (font convention, y up).</param>
 public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, double XOffset = 0, double YOffset = 0)
 {
-    /// <summary>True for the glyph of a collapsed space U+0020: removed at the start and end of a line
-    /// (CSS Text 3 §4.1.2), and stretched by justification.</summary>
+    /// <summary>True for the glyph of a space U+0020: removed at the start and end of a line (CSS Text 3 §4.1.2) when it is
+    /// collapsible, hanging at the end when it is preserved (<see cref="Hangs"/>), and stretched by justification.</summary>
     public bool IsSpace => Text == " ";
+
+    /// <summary>
+    /// True for a preserved space at the end of a line that hangs (CSS Text 3 §4.1.2, "Phase II: Trimming and Positioning"):
+    /// its advance is only the part of it that stays inside the line, which is nothing at a soft wrap, and it is no
+    /// justification opportunity. Set by line breaking (<see cref="GreedyLineBreaker"/>).
+    /// </summary>
+    public bool Hangs { get; init; }
 
     /// <summary>True for a default-ignorable character (a soft hyphen, a joiner, a zero width space, …): its advance
     /// is 0 and it is not drawn, but it stays in the text for line breaking. The Unicode Standard §5.21.6, "Characters
