@@ -140,28 +140,27 @@ public class PageRasterizerTests
     [Fact]
     public void A_rectangle_of_10_to_the_30_points_costs_what_a_page_sized_one_costs()
     {
-        // The work of a fill is bounded by the canvas, not by the shape: medians of several runs at 150 dpi.
+        // The work of a fill is bounded by the canvas, not by the shape: the shape is clipped to the canvas before any
+        // number becomes an integer, so the huge rectangle is drawn from the same polygon as the page-sized one, with the
+        // same rows and buffers. Counted, not timed: the bytes allocated on this thread by a render (after one render of
+        // each, so that nothing is allocated once only), which the rasteriser's buffers would follow if its rows or
+        // columns followed the shape. A clock under a loaded host says nothing.
         var huge = PageOf(595, 842, new FillRectangle(new Rect(new Point(-1e30, -1e30), new Size(2e30, 2e30)), Color.Black));
         var page = PageOf(595, 842, new FillRectangle(new Rect(new Point(0, 0), new Size(600, 850)), Color.Black));
+        var options = new RasterOptions(150);
 
-        double Median(Page subject)
+        long Allocated(Page subject)
         {
-            var times = new List<double>();
-            for (var run = 0; run < 7; run++)
-            {
-                var watch = System.Diagnostics.Stopwatch.StartNew();
-                PageRasterizer.Render(subject, new RasterOptions(150)).IsSuccess.Should().BeTrue();
-                times.Add(watch.Elapsed.TotalMilliseconds);
-            }
-
-            times.Sort();
-            return times[3];
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            PageRasterizer.Render(subject, options).IsSuccess.Should().BeTrue();
+            return GC.GetAllocatedBytesForCurrentThread() - before;
         }
 
-        var pageTime = Median(page);
-        var hugeTime = Median(huge);
-        hugeTime.Should().BeLessThan((pageTime * 2) + 20, $"huge {hugeTime:F1} ms, page {pageTime:F1} ms");
-        PageRasterizer.Render(huge, new RasterOptions(150)).Value.Pixels.Should().Equal(PageRasterizer.Render(page, new RasterOptions(150)).Value.Pixels);
+        PageRasterizer.Render(page, options).IsSuccess.Should().BeTrue();
+        PageRasterizer.Render(huge, options).IsSuccess.Should().BeTrue();
+        var (pageBytes, hugeBytes) = (Allocated(page), Allocated(huge));
+        hugeBytes.Should().BeLessThanOrEqualTo(pageBytes + 4096, $"huge {hugeBytes} bytes, page {pageBytes} bytes");
+        PageRasterizer.Render(huge, options).Value.Pixels.Should().Equal(PageRasterizer.Render(page, options).Value.Pixels);
     }
 
     [Theory]
