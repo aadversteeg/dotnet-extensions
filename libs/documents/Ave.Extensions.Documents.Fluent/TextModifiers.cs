@@ -129,6 +129,17 @@ public static class TextModifiers
     public static T TextWrapMode<T>(this T element, TextWrapMode wrap) where T : IFormatted<T> =>
         element.WithText(element.Format.Text with { TextWrapMode = wrap });
 
+    /// <summary>Sets whether underlines and overlines leave gaps around the glyphs' ink (CSS <c>text-decoration-skip-ink</c>, CSS
+    /// Text Decoration 4 §2.10.4, inherited): <see cref="TextDecorationSkipInk.Auto"/>, the initial value, cuts an underline or
+    /// overline where a glyph's outline crosses it, as Chromium does; <see cref="TextDecorationSkipInk.None"/> draws every line
+    /// whole. The value of the text decides, not that of the element that draws the line. A line-through is never cut.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="skipInk">The value.</param>
+    /// <returns>A copy with the value set.</returns>
+    public static T TextDecorationSkipInk<T>(this T element, TextDecorationSkipInk skipInk) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { DecorationSkipInk = skipInk });
+
     /// <summary>Draws a line under the element's text (CSS <c>text-decoration-line: underline</c>, CSS Text Decoration 3 §2.1):
     /// across all the text inside the element, at the place and in the thickness the element's own font gives, one straight
     /// line also where the text inside changes size; not under an image. Set again, the colour is replaced.</summary>

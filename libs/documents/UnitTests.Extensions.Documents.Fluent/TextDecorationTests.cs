@@ -15,7 +15,8 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <summary>
 /// Underline, line-through and overline as Chromium draws them (CSS Text Decoration 3 §2): cases <c>dl-*</c>, Lato 12 pt on
 /// 18 pt lines unless a row says otherwise, the same documents written with the code front-end, under
-/// <see cref="FontMetricRounding.WholePixels"/>.
+/// <see cref="FontMetricRounding.WholePixels"/>, all with <c>text-decoration-skip-ink: none</c> as the cases set it (the gaps
+/// of <c>auto</c>: <see cref="SkipInkTests"/>).
 /// </summary>
 /// <remarks>
 /// THE COMPARISON: the words as <see cref="InlineImageTests"/> compares them (a decoration moves no word and no baseline); and
@@ -38,7 +39,7 @@ public class TextDecorationTests
 
     private static Result<PageDocument, Error> Laid(double pageHeight, Func<StyledDocument, StyledDocument> change, params Element[] body) =>
         DocumentTranslator.ToModel(Document([.. body], Page(300.Pt(), pageHeight.Pt()).Margin(12.Pt()), title: "Title", language: "en")
-                .FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt()).FontMetricRounding(FontMetricRounding.WholePixels))
+                .FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt()).TextDecorationSkipInk(TextDecorationSkipInk.None).FontMetricRounding(FontMetricRounding.WholePixels))
             .OnSuccessBind(model => DocumentLayout.Run(change(model), Fonts));
 
     private static PageDocument Painted(double pageHeight, params Element[] body) => Painted(pageHeight, model => model, body);
@@ -304,17 +305,6 @@ public class TextDecorationTests
         }).OfType<string>();
 
         order.Should().Equal("artifact", "line", "end", "artifact", "line", "end", "text", "artifact", "line", "end");
-    }
-
-    [Fact]
-    public void An_underline_is_one_whole_line_where_Chromium_leaves_gaps_for_descenders_by_default()
-    {
-        // LIMIT (docs/architecture.md): text-decoration-skip-ink: auto, Chromium's initial value, clips the underline of
-        // "gjpqy Hxg" at five glyphs (case dl-skip, an even-odd clip around one filled rectangle); the engine draws it whole.
-        var lines = Painted(300, Paragraph("gjpqy Hxg").FontSize(24.Pt()).LineHeight(48.Pt()).Underline()).Pages[0].Items;
-
-        lines.OfType<FillRectangle>().Should().ContainSingle().Which.Area.Size.Width.Should().BeApproximately(105.738, 0.05);
-        lines.OfType<ClipStart>().Should().BeEmpty();
     }
 
     private static Result<StyledDocument, Error> Model(params Element[] body) =>

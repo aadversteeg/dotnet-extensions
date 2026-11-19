@@ -44,6 +44,10 @@ public sealed record TextFormat(
     /// <summary>Whether text wraps at its soft wrap opportunities (CSS <c>text-wrap-mode</c>, CSS Text 4, inherited).</summary>
     public TextWrapMode? TextWrapMode { get; init; }
 
+    /// <summary>Whether underlines and overlines leave gaps around the glyphs' ink (CSS <c>text-decoration-skip-ink</c>, CSS Text
+    /// Decoration 4 §2.10.4, inherited): the value of the text decides, not that of the element that draws the line.</summary>
+    public TextDecorationSkipInk? DecorationSkipInk { get; init; }
+
     /// <summary>The lines the element draws across its text (CSS <c>text-decoration-line</c> and <c>text-decoration-color</c>,
     /// CSS Text Decoration 3 §2): not inherited, but passed on to all the text inside the element, in the element's own font.
     /// A line set on the document's text format is passed on to every element, the page header and footer included. Null when

@@ -6,6 +6,8 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Typesetting;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Layout;
 
@@ -121,8 +123,10 @@ internal static class LineBoxes
     /// the line's height nor its width.</para>
     /// <param name="empty">The paragraph's runs that put no glyph on any line and lie on this one (<see cref="EmptyRunsByLine"/>):
     /// their inline boxes count for the line's height all the same.</param>
-    /// <returns>The line fragment with its text fragments.</returns>
-    public static LineFragment Build(TextLine broken, IReadOnlyList<Item> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding, IReadOnlyList<ShapedRun>? empty = null)
+    /// <param name="outlines">The glyph outlines decoded for the paragraph, for the gaps a decoration leaves around ink.</param>
+    /// <returns>The line fragment with its text fragments, or the error of a glyph outline a decoration cannot read.</returns>
+    public static Result<LineFragment, Error> Build(
+        TextLine broken, IReadOnlyList<Item> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding, InkOutlines outlines, IReadOnlyList<ShapedRun>? empty = null)
     {
         var (line, offset) = LineJustification.Place(broken, width, align, isLastLine);
         var pieces = line.Segments
@@ -157,15 +161,21 @@ internal static class LineBoxes
             if (item is ShapedRun { Decorations.Count: > 0 } decorated)
             {
                 // The piece's text was added last: its underlines and overlines go before it, its line-throughs after it.
-                var (before, after) = TextDecorations.Of(decorated.Decorations, x, segment.Glyphs, above, extent.Ascent, rounding);
-                children.InsertRange(children.Count - 1, before);
-                children.AddRange(after);
+                var ink = new TextDecorations.Ink(decorated.Font, decorated.Run.Style.FontSize.Points, decorated.Run.Style.DecorationSkipInk, outlines);
+                var lines = TextDecorations.Of(decorated.Decorations, x, segment.Glyphs, above, extent.Ascent, rounding, ink);
+                if (lines.IsFailure)
+                {
+                    return Result<LineFragment, Error>.Failure(lines.Error.WithSource(decorated.Run.Source));
+                }
+
+                children.InsertRange(children.Count - 1, lines.Value.Before);
+                children.AddRange(lines.Value.After);
             }
 
             x += segment.Width;
         }
 
-        return new LineFragment(new Size(x, above + below), children.ToImmutable());
+        return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()));
     }
 
     /// <summary>

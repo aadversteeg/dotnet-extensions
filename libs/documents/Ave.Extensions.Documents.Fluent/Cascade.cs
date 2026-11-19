@@ -43,6 +43,7 @@ internal static class Cascade
         LineHeight = own.Text.LineHeight ?? shared.Text.LineHeight,
         WhiteSpaceCollapse = own.Text.WhiteSpaceCollapse ?? shared.Text.WhiteSpaceCollapse,
         TextWrapMode = own.Text.TextWrapMode ?? shared.Text.TextWrapMode,
+        DecorationSkipInk = own.Text.DecorationSkipInk ?? shared.Text.DecorationSkipInk,
         Decorations = own.Text.Decorations ?? shared.Text.Decorations,
     };
 

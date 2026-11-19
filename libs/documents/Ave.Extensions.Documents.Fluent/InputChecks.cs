@@ -86,6 +86,11 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one of TextWrapMode.", wrap.ToString(), "text-wrap-mode", source);
         }
 
+        if (format.DecorationSkipInk is { } skip && !Enum.IsDefined(skip))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, "The text-decoration-skip-ink value is not one of TextDecorationSkipInk.", skip.ToString(), "text-decoration-skip-ink", source);
+        }
+
         foreach (var line in format.Decorations ?? [])
         {
             if (line is null || !Enum.IsDefined(line.Line))

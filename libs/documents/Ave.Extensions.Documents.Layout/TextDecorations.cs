@@ -4,6 +4,8 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Typesetting;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Layout;
 
@@ -47,8 +49,8 @@ namespace Ave.Extensions.Documents.Layout;
 /// <c>dl-lines</c>). Chromium paints the underline and the overline of one decorating box together, outermost box first;
 /// CSS 2.1 paints every underline before every overline. The two differ only where nested boxes draw both; the order here
 /// is Chromium's, a deliberate deviation from CSS (docs/architecture.md).</para>
-/// <para>LIMIT: <c>text-decoration-skip-ink: auto</c>, Chromium's initial value, leaves gaps in an underline or overline where
-/// a glyph crosses it; here every line is whole (docs/architecture.md, "Known limits").</para>
+/// <para>Gaps: under <c>text-decoration-skip-ink: auto</c>, the initial value, an underline or overline leaves gaps where a
+/// glyph's ink crosses it (<see cref="InkGaps"/>, THE RULE FOR THE GAPS AROUND A GLYPH'S INK); a line-through stays whole.</para>
 /// </remarks>
 internal static class TextDecorations
 {
@@ -58,48 +60,100 @@ internal static class TextDecorations
     public sealed record Resolved(TextDecoration Decoration, TrueTypeFont Font);
 
     /// <summary>The rectangles one piece's decorations draw, in line coordinates: those painted before the piece's glyphs
-    /// (underlines, overlines) and those painted after them (line-throughs).</summary>
+    /// (underlines, overlines) and those painted after them (line-throughs). Under <see cref="TextDecorationSkipInk.Auto"/> an
+    /// underline or overline is the pieces left of its rectangle once the gaps around the piece's glyphs are cut out of it
+    /// (<see cref="InkGaps"/>, THE RULE FOR THE GAPS AROUND A GLYPH'S INK), each its own rectangle in the line's place in the
+    /// paint order.</summary>
     /// <param name="decorations">The piece's decorations, in order.</param>
     /// <param name="x">The piece's start.</param>
     /// <param name="glyphs">The piece's glyphs.</param>
     /// <param name="baseline">The line's baseline, from the line box's top.</param>
     /// <param name="ascent">The ascent of the piece's own font, as the line box takes it.</param>
     /// <param name="rounding">How the fonts' metrics are taken (the document's profile).</param>
-    /// <returns>The rectangles before and after the glyphs; none when the piece has no width.</returns>
-    public static (IReadOnlyList<PlacedFragment> Before, IReadOnlyList<PlacedFragment> After) Of(
-        IReadOnlyList<Resolved> decorations, double x, IReadOnlyList<ShapedGlyph> glyphs, double baseline, double ascent, FontMetricRounding rounding)
+    /// <param name="ink">The piece's own font, size and <c>text-decoration-skip-ink</c>, and the paragraph's decoded outlines.</param>
+    /// <returns>The rectangles before and after the glyphs (none when the piece has no width), or the error of a glyph
+    /// outline that cannot be decoded.</returns>
+    public static Result<(IReadOnlyList<PlacedFragment> Before, IReadOnlyList<PlacedFragment> After), Error> Of(
+        IReadOnlyList<Resolved> decorations, double x, IReadOnlyList<ShapedGlyph> glyphs, double baseline, double ascent, FontMetricRounding rounding, Ink ink)
     {
         if (decorations.Count == 0)
         {
-            return ([], []);
+            return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Success(([], []));
         }
 
-        // One pass over the piece's glyphs, made only for a decorated piece; then one rectangle per decoration.
+        // One pass over the piece's glyphs, made only for a decorated piece; then one rectangle per decoration, or for an
+        // underline or overline that skips ink one pass over the outline of each glyph and the pieces left between the gaps.
         var width = glyphs.Sum(glyph => glyph.Advance + glyph.Overhang);
         if (width <= 0)
         {
-            return ([], []);
+            return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Success(([], []));
         }
 
         var whole = rounding == FontMetricRounding.WholePixels;
-        PlacedFragment Rule(Resolved resolved)
+        var before = new List<PlacedFragment>();
+        var after = new List<PlacedFragment>();
+        var cut = new List<(double Top, double Bottom, List<(double Left, double Right)> Gaps)>();
+        foreach (var resolved in decorations)
         {
             var size = resolved.Decoration.FontSize.Points;
             var thickness = System.Math.Max(size / 10, CssPixels.Points);
             var shown = whole ? CssPixels.Floor(thickness) : thickness;
             var textTop = baseline - ascent;
-            var top = resolved.Decoration.Line switch
+            var computed = resolved.Decoration.Line switch
             {
                 TextDecorationLine.Underline => baseline + System.Math.Max(1, System.Math.Ceiling(thickness / CssPixels.Points / 2)) * CssPixels.Points,
                 TextDecorationLine.LineThrough => textTop + 2 * Ascent(resolved.Font, size, whole) / 3 - thickness / 2,
                 _ => textTop - shown,
             };
-            return new PlacedFragment(new Point(x, whole ? Snapped(top) : top), new RuleFragment(resolved.Decoration.Color, new Size(width, shown)));
+            var top = whole ? Snapped(computed) : computed;
+            var color = resolved.Decoration.Color;
+            if (resolved.Decoration.Line == TextDecorationLine.LineThrough)
+            {
+                after.Add(new PlacedFragment(new Point(x, top), new RuleFragment(color, new Size(width, shown))));
+                continue;
+            }
+
+            if (ink.SkipInk != TextDecorationSkipInk.Auto)
+            {
+                before.Add(new PlacedFragment(new Point(x, top), new RuleFragment(color, new Size(width, shown))));
+                continue;
+            }
+
+            var own = new List<(double Left, double Right)>();
+            var added = InkGaps.Add(own, ink.Outlines, ink.Font, ink.Size, x, glyphs, baseline, top, thickness);
+            if (added.IsFailure)
+            {
+                return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Failure(added.Error);
+            }
+
+            // The clips of the lines painted before this one stay in force where they reach it.
+            var (clipTop, clipBottom) = InkGaps.ClipExtent(top, thickness);
+            cut.Add((clipTop, clipBottom, own));
+            var gaps = new List<(double Left, double Right)>();
+            foreach (var (earlierTop, earlierBottom, earlier) in cut)
+            {
+                if (earlierTop < top + shown && top < earlierBottom)
+                {
+                    gaps.AddRange(earlier);
+                }
+            }
+
+            foreach (var (left, right) in InkGaps.Visible(x, x + width, gaps))
+            {
+                before.Add(new PlacedFragment(new Point(left, top), new RuleFragment(color, new Size(right - left, shown))));
+            }
         }
 
-        return ([.. decorations.Where(resolved => resolved.Decoration.Line != TextDecorationLine.LineThrough).Select(Rule)],
-            [.. decorations.Where(resolved => resolved.Decoration.Line == TextDecorationLine.LineThrough).Select(Rule)]);
+        return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Success((before, after));
     }
+
+    /// <summary>What the gaps around a piece's ink are cut from: the piece's own font and size, its
+    /// <see cref="TextStyle.DecorationSkipInk"/>, and the outlines decoded for the paragraph.</summary>
+    /// <param name="Font">The piece's font.</param>
+    /// <param name="Size">The piece's font size, in points.</param>
+    /// <param name="SkipInk">The piece's <c>text-decoration-skip-ink</c>.</param>
+    /// <param name="Outlines">The paragraph's decoded outlines.</param>
+    public sealed record Ink(TrueTypeFont Font, double Size, TextDecorationSkipInk SkipInk, InkOutlines Outlines);
 
     /// <summary>A line's top rounded to the nearest whole pixel, a half pixel down (Blink <c>SnapYAxis</c>: "floorf(y + 0.5f)").</summary>
     private static double Snapped(double top) => System.Math.Floor(top / CssPixels.Points + 0.5) * CssPixels.Points;

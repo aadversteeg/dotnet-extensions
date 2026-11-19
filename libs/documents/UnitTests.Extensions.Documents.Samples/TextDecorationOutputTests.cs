@@ -17,13 +17,14 @@ namespace UnitTests.Extensions.Documents.Samples;
 /// <summary>
 /// Underlined and struck-through text through every back-end: in the page model each line is a filled rectangle inside a
 /// layout artifact within the paragraph, never its content; the tagged PDF keeps the paragraph's text whole and passes
-/// veraPDF; the raster back-end draws the line where the page model puts it.
+/// veraPDF; the raster back-end draws the line where the page model puts it. Under <c>text-decoration-skip-ink: auto</c>, the
+/// initial value, each piece left between the gaps around the glyphs' ink is such a rectangle in an artifact of its own.
 /// </summary>
 public class TextDecorationOutputTests
 {
     private static readonly Color Red = new(0xCC, 0x00, 0x00);
 
-    private static Document Decorated() =>
+    private static Document Decorated(TextDecorationSkipInk skipInk = TextDecorationSkipInk.None) =>
         Document(
             [
                 Paragraph("Above the line."),
@@ -31,20 +32,21 @@ public class TextDecorationOutputTests
             ],
             Page(400.Pt(), 200.Pt()).Margin(20.Pt()),
             title: "Text decoration",
-            language: "en").FontFamily("Lato");
+            language: "en").FontFamily("Lato").TextDecorationSkipInk(skipInk);
 
-    private static ImmutableArray<(string Name, Document Document)> Cases { get; } = [("text-decoration", Decorated())];
+    private static ImmutableArray<(string Name, Document Document)> Cases { get; } =
+        [("text-decoration", Decorated()), ("text-decoration-skip-ink", Decorated(TextDecorationSkipInk.Auto))];
 
-    private static Page Laid() => DocumentTranslator.ToModel(Decorated()).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).Value.Pages[0];
+    private static Page Laid(TextDecorationSkipInk skipInk = TextDecorationSkipInk.None) =>
+        DocumentTranslator.ToModel(Decorated(skipInk)).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).Value.Pages[0];
 
-    [Fact]
-    public void Each_line_is_a_filled_rectangle_in_a_layout_artifact_inside_the_paragraph()
-    {
-        var items = Laid().Items.SkipWhile(item => item is not StructureStart { Role.StandardStructureType: "P" }).Skip(1)
+    private static List<DrawItem> SecondParagraph(TextDecorationSkipInk skipInk) =>
+        [.. Laid(skipInk).Items.SkipWhile(item => item is not StructureStart { Role.StandardStructureType: "P" }).Skip(1)
             .SkipWhile(item => item is not StructureStart { Role.StandardStructureType: "P" }).Skip(1)
-            .TakeWhile(item => item is not StructureEnd).ToList();
+            .TakeWhile(item => item is not StructureEnd)];
 
-        items.OfType<FillRectangle>().Should().HaveCount(4, "three underlined pieces and one line-through");
+    private static void EachRectangleIsAnArtifact(List<DrawItem> items)
+    {
         for (var index = 0; index < items.Count; index++)
         {
             if (items[index] is FillRectangle)
@@ -53,6 +55,26 @@ public class TextDecorationOutputTests
                 items[index + 1].Should().Be(ArtifactEnd.Instance);
             }
         }
+    }
+
+    [Fact]
+    public void Each_piece_left_between_the_gaps_around_ink_is_a_filled_rectangle_in_a_layout_artifact_and_a_line_through_stays_whole()
+    {
+        var (whole, cut) = (SecondParagraph(TextDecorationSkipInk.None), SecondParagraph(TextDecorationSkipInk.Auto));
+
+        cut.OfType<FillRectangle>().Count().Should().BeGreaterThan(whole.OfType<FillRectangle>().Count(), "the descenders of \"p\", \"g\" and \"y\" cut the underline");
+        cut.OfType<FillRectangle>().Where(fill => fill.Color == Color.Black).Should().ContainSingle("one whole line-through");
+        EachRectangleIsAnArtifact(cut);
+        cut.OfType<GlyphRun>().Should().HaveCount(3);
+    }
+
+    [Fact]
+    public void Each_line_is_a_filled_rectangle_in_a_layout_artifact_inside_the_paragraph()
+    {
+        var items = SecondParagraph(TextDecorationSkipInk.None);
+
+        items.OfType<FillRectangle>().Should().HaveCount(4, "three underlined pieces and one line-through");
+        EachRectangleIsAnArtifact(items);
 
         items.OfType<GlyphRun>().Should().HaveCount(3);
     }
@@ -86,7 +108,7 @@ public class TextDecorationOutputTests
     [Trait("Category", "Reference")]
     [InlineData("3a")]
     [InlineData("ua1")]
-    public void An_underlined_paragraph_passes_veraPDF(string flavour)
+    public void An_underlined_paragraph_passes_veraPDF_with_whole_lines_and_with_lines_cut_around_ink(string flavour)
     {
         var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-text-decoration-").FullName;
         try
