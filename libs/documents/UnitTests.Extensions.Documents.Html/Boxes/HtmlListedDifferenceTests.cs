@@ -74,7 +74,7 @@ public class HtmlListedDifferenceTests
     /// With Chromium's two words read as the engine's, the case is equal: the text is the whole difference.
     /// </summary>
     [Fact]
-    public void A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_the_first_run_s()
+    public void A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run()
     {
         var (engine, chromium) = (Engine("sr-same-font"), Chromium("sr-same-font"));
         chromium.Pages.Single().Text.Should().Contain("fix fx office ofce");
@@ -85,15 +85,31 @@ public class HtmlListedDifferenceTests
     /// <summary>
     /// A zero width non-joiner (U+200C) in a word: Chromium's print keeps it in the PDF's text, the engine's PDF does not
     /// (it draws no glyph for it; its PDF read back with <c>positions.py</c> reads "To", "T" "o", "T" "o" "T" for case
-    /// <c>sr-zwnj</c>). With the non-joiners taken out of Chromium's words the texts agree.
+    /// <c>sr-zwnj</c>). With the non-joiners taken out of Chromium's words the case is equal, positions included, but for
+    /// one fact of the read-back: the end of a word that ends in the non-joiner. Lato's own advance for U+200C is 0, but
+    /// Chromium's PDF lists widths only for the glyphs of "T" and "o" and gives every other glyph its default width
+    /// (<c>/DW 256</c>, 3.072 pt at 12 pt), so PyMuPDF reads the non-joiner as a character 3.072 pt wide at its own origin:
+    /// one that leads a word starts where the "o" starts and ends inside it (the word is 19.090 to 25.894, as wide as
+    /// "o"), and one that ends a word starts after the kerned "o" (22.947) and reaches 26.019, past the next "T" at 22.957.
+    /// That end is left out; every other fact of the case is compared.
     /// </summary>
     [Fact]
     public void A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it()
     {
         var (engine, chromium) = (Engine("sr-zwnj"), Chromium("sr-zwnj"));
         chromium.Pages.Single().Words.Select(word => word.Text).Should().Equal("T\u200Co", "T", "\u200Co", "T", "o\u200C", "T");
-        engine.Pages.Single().Words.Select(word => word.Text).Should().Equal(
-            Read(chromium, text => text.Replace("\u200C", string.Empty, StringComparison.Ordinal)).Pages.Single().Words.Select(word => word.Text));
+        var trailing = chromium.Pages.Single().Words.Single(word => word.Text == "o\u200C");
+        var mine = engine.Pages.Single().Words.Last(word => word.Text == "o");
+        trailing.X1.Should().BeGreaterThan(chromium.Pages.Single().Words[^1].X0, "the read-back's non-joiner reaches past the next word's start");
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select(word => word with
+            {
+                Text = word.Text.Replace("\u200C", string.Empty, StringComparison.Ordinal),
+                X1 = word == trailing ? mine.X1 : word.X1,
+            })],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull();
     }
 
     /// <summary>Chromium's print with each word's text read through <paramref name="text"/>.</summary>
