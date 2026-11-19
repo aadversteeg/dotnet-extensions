@@ -100,6 +100,11 @@ public class ChromiumBehaviourTests
     [InlineData("<style>div { text-align: right } p { text-align: center; text-align: match-parent }</style><div><p id=t>p</p></div>", "t", "text-align", "center")]
     [InlineData("<div style=\"text-align: right\"><ul><li id=t>i</li></ul></div>", "t", "text-align", "right")]
     [InlineData("<style>p { font: 20px fantasy; font: 12px -webkit-body a }</style><p id=t>p", "t", "font-size", "20px")]
+    // A var() fallback with a ] or } that closes nothing is no declaration value: the declaration is dropped.
+    [InlineData("<style>p { color: green; color: var(--x,]) }</style><p id=t>p", "t", "color", "rgb(0, 128, 0)")]
+    [InlineData("<style>p { color: green; color: var(--x,red }) }</style><p id=t>p", "t", "color", "rgb(0, 128, 0)")]
+    [InlineData("<style>p { color: green; color: var(--x,f(])) }</style><p id=t>p", "t", "color", "rgb(0, 128, 0)")]
+    [InlineData("<style>p { --y: green; --y: var(--x,]); color: var(--y, blue) }</style><p id=t>p", "t", "color", "rgb(0, 128, 0)")]
     // A table that is not displayed keeps the -webkit- alignment it inherits.
     [InlineData("<style>table { display: none }</style><div align=center><table id=t><tr><td>c</td></tr></table></div>", "t", "text-align", "-webkit-center")]
     [InlineData("<div align=center><table id=t hidden><tr><td>c</td></tr></table></div>", "t", "text-align", "-webkit-center")]
@@ -111,6 +116,23 @@ public class ChromiumBehaviourTests
     [InlineData("<style>p { margin: 3px } div p { margin-left: var(--x, revert-layer) !important }</style><div><p id=t>p</p></div>", "t", "margin-left", "0px")]
     public void The_value_on_rare_input_is_Chromiums(string body, string id, string property, string chromium) =>
         Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
+
+    [Theory]
+    // Text in a supports test that is no declaration is <general-enclosed> for Chromium 159: unknown, so the condition
+    // and its negation are both false (measured). The engine refuses such a condition and takes it as false.
+    [InlineData("color: var(--x,])")]
+    [InlineData("margin: var(--x) }")]
+    [InlineData("color: var(--x) !")]
+    [InlineData("color: var(--x) url(a b)")]
+    [InlineData("--y: env()")]
+    [InlineData("--y: attr()")]
+    public void A_supports_test_that_is_no_declaration_holds_neither_way(string test)
+    {
+        var styled = Styled(Doctype + $"<style>p {{ color: green }} @supports ({test}) {{ p {{ color: red }} }} @supports not ({test}) {{ p {{ color: blue }} }}</style><p id=t>p", MeasuredPage);
+
+        styled.ById("t").Value("color").Should().Be("rgb(0, 128, 0)");
+        Refusals(styled).Should().Contain(error => error.Code == CssErrorCodes.Unsupported.AtRule);
+    }
 
     [Theory]
     // Chromium 159 floats the table (float: inline-start, " left"): refused as left and right are.
