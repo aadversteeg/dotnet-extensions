@@ -125,6 +125,7 @@ public static partial class HtmlBoxGenerator
         private readonly string _sourceName = styled.SourceName;
         private readonly Dictionary<StyledElement, HashSet<string>> _refused = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<StyledElement, TextStyle?> _text = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<StyledElement, TextStyle?> _decorated = new(ReferenceEqualityComparer.Instance);
         private int _nextId;
         private bool _tooDeep;
 
@@ -600,9 +601,24 @@ public static partial class HtmlBoxGenerator
             return value is CssColorValue { Color: var color } && color.Alpha == 1 ? new Color(Channel(color.Red), Channel(color.Green), Channel(color.Blue)) : null;
         }
 
-        /// <summary>The text style of an element's text and of its lines' strut: its face (<see cref="FontMatcher"/>), size,
-        /// colour, line height and how its white space collapses and wraps; null after a missing face was reported.</summary>
+        /// <summary>The text style of an element's text and of its lines' strut: its face, size, colour, line height and
+        /// white space (<see cref="FaceStyleOf"/>), the decorations applied to it (<see cref="Decorations"/>) and whether
+        /// they skip the glyphs' ink; null after a missing face was reported.</summary>
         private TextStyle? TextStyleOf(StyledElement element)
+        {
+            if (_decorated.TryGetValue(element, out var known))
+            {
+                return known;
+            }
+
+            var style = FaceStyleOf(element) is { } face ? face with { Decorations = Decorations(element), DecorationSkipInk = SkipInkOf(element) } : null;
+            _decorated[element] = style;
+            return style;
+        }
+
+        /// <summary>An element's face (<see cref="FontMatcher"/>), size, colour, line height and how its white space
+        /// collapses and wraps, without decorations; null after a missing face was reported.</summary>
+        private TextStyle? FaceStyleOf(StyledElement element)
         {
             if (_text.TryGetValue(element, out var known))
             {

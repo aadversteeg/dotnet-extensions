@@ -24,7 +24,7 @@ public class RefusalPolicyTests
     [InlineData("color-scheme: light dark")]
     [InlineData("color: -webkit-link")]
     [InlineData("font-size: -webkit-xxx-large")]
-    [InlineData("text-decoration-line: spelling-error")]
+    [InlineData("text-decoration-line: underline underline")]
     [InlineData("color: 12px")]
     public void A_value_the_grammar_does_not_read_is_refused_in_the_authors_words(string declaration)
     {

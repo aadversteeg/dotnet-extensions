@@ -37,7 +37,8 @@ public static partial class HtmlBoxGenerator
         /// Appendix A; CSS 2.1 §10.3.2, §10.6.2) among the runs, at its place in the text, as the block-level image is made:
         /// its file, computed size, alt text, margins, padding, border and background. Its margin box sits on the baseline
         /// (CSS 2.1 §10.8.1, <c>vertical-align: baseline</c>), and it wraps as the text of the element it lies in, whose
-        /// computed text values are the image box's text style (so a <c>nowrap</c> element around it holds). Refused, with
+        /// computed text values are the image box's text style (so a <c>nowrap</c> element around it holds), without the
+        /// decorations of the text around it. Refused, with
         /// the value and the start tag: another <c>vertical-align</c> (not built), and a <c>break-before</c>,
         /// <c>break-after</c> or <c>break-inside</c> other than <c>auto</c> (they apply to block-level boxes only, CSS
         /// Fragmentation 3 §3.1, and an atomic inline never breaks). <c>display: inline-block</c> is refused by its value.
@@ -72,7 +73,8 @@ public static partial class HtmlBoxGenerator
                 return;
             }
 
-            var style = BoxStyleOf(element) with { BreakBefore = BreakBetween.Auto, BreakAfter = BreakBetween.Auto, BreakInside = BreakInside.Auto, Text = text };
+            // CSS Text Decoration 3 §2: decorations are not propagated into an atomic inline, so the image's text style has none.
+            var style = BoxStyleOf(element) with { BreakBefore = BreakBetween.Auto, BreakAfter = BreakBetween.Auto, BreakInside = BreakInside.Auto, Text = text with { Decorations = [] } };
             if (ImageBox(element, style) is { } box)
             {
                 frame.Target.Add(box);

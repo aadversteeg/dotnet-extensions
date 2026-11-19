@@ -136,20 +136,20 @@ d-strut equal
 d-strut-normal equal
 d-typo-lato equal
 d-typo-theano equal
-dl-end refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-fraction refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-height refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-image refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-join refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lato refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lato-bold refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lato-italic refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lines refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-nest refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-skip refused Documents.Css.Unsupported.Property text-decoration-skip-ink: auto at 4:87
-dl-space refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-theano refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-whose refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-end refused Documents.Html.Unsupported.Value width: 40pt at 5:1
+dl-fraction refused Documents.Html.Unsupported.Value height: 7.875pt at 5:1
+dl-height equal
+dl-image equal
+dl-join equal
+dl-lato equal
+dl-lato-bold equal
+dl-lato-italic equal
+dl-lines equal
+dl-nest open page 1 painted area: the pixel at (39.75, 26.25): the engine paints it #000000, Chromium #cc0000; the engine paints 518 px #000000, Chromium 519 px (print.txt)
+dl-skip equal
+dl-space refused Documents.Html.Unsupported.Value width: 40pt at 6:1
+dl-theano equal
+dl-whose equal
 f-lato-10 equal
 f-lato-11 equal
 f-lato-13 equal
@@ -368,18 +368,18 @@ mf4-line-0 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-075 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-150 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-225 refused Documents.Html.Unsupported.Value display: table at 7:1
-sk-extreme refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:46
-sk-lato refused Documents.Css.Unsupported.Value text-decoration: overline at 6:66
-sk-lato-bold refused Documents.Css.Unsupported.Value text-decoration: overline at 6:84
-sk-lato-italic refused Documents.Css.Unsupported.Value text-decoration: overline at 6:86
-sk-misc refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:18
-sk-nest refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
-sk-part refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
-sk-size refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
+sk-extreme open page 1 'gạọụ' x1 53.504, Chromium 54.417 (print.txt)
+sk-lato equal
+sk-lato-bold equal
+sk-lato-italic equal
+sk-misc refused Documents.Html.Unsupported.Value width: 60pt at 6:1
+sk-nest equal
+sk-part equal
+sk-size equal
 sk-space refused Documents.Html.Unsupported.Value width: 120pt at 5:1
-sk-theano refused Documents.Css.Unsupported.Value text-decoration: overline at 6:76
-sk-touch refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:18
-sk-whose refused Documents.Css.Unsupported.Property text-decoration-skip-ink: auto at 4:299
+sk-theano equal
+sk-touch equal
+sk-whose equal
 sr-counter refused Documents.Css.Unsupported.Selector The selector '::after' is not supported. at 2:98
 sr-font-changes equal
 sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1

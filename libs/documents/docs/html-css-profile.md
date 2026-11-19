@@ -78,7 +78,8 @@ names nothing.
 | `table-layout` | no | `auto` | `auto \| fixed` | CSS 2.1 §17.5.2 |
 | `text-align` | yes | `start` | `start \| end \| left \| right \| center \| justify \| -webkit-left \| -webkit-right \| -webkit-center` | CSS Text 3 §6.1 |
 | `text-decoration-color` | no | `currentcolor` | `<color>` | CSS Text Decoration 3 §2.3 |
-| `text-decoration-line` | no | `none` | `none \| underline` | CSS Text Decoration 3 §2.1 |
+| `text-decoration-line` | no | `none` | `none \| [ underline \|\| overline \|\| line-through ]` | CSS Text Decoration 3 §2.1 |
+| `text-decoration-skip-ink` | yes | `auto` | `auto \| none` | CSS Text Decoration 4 §2.10.4 |
 | `text-decoration-style` | no | `solid` | `solid` | CSS Text Decoration 3 §2.2 |
 | `text-wrap-mode` | yes | `wrap` | `wrap \| nowrap` | CSS Text 4 §6.1 |
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
@@ -173,6 +174,8 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `text-rendering` | `auto` | `auto` | SVG 2 §11.9 |
 | `text-shadow` | `none` | `none` | CSS Text Decoration 3 §4 |
 | `text-transform` | `none` | `none` | CSS Text 3 §2.1 |
+| `text-underline-offset` | `auto` | `auto` | CSS Text Decoration 4 §2.8 |
+| `text-underline-position` | `auto` | `auto` | CSS Text Decoration 3 §2.5 |
 | `text-wrap-style` | `auto` | `auto` | CSS Text 4 §6.2 |
 | `top` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
 | `transform` | `none` | `none` | CSS Transforms 1 §5 |

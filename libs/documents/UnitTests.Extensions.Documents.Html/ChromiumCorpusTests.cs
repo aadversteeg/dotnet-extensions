@@ -35,15 +35,15 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
     /// attributes outside v0 among the ones they test, refused one by one.</summary>
     private static readonly Dictionary<string, (int Values, int Equal, int Refused, int Refusals)> Pinned = new()
     {
-        ["cascade"] = (5_327, 5_327, 0, 4),
-        ["elements"] = (18_143, 12_815, 5_328, 36),
-        ["fonts-tables-lists"] = (16_703, 16_703, 0, 1),
-        ["hints"] = (16_847, 16_847, 0, 0),
-        ["hints-gaps"] = (12_527, 11_951, 576, 4),
-        ["properties"] = (16_415, 16_415, 0, 1),
-        ["selectors"] = (8_783, 8_783, 0, 1),
-        ["ua-bare"] = (10_079, 10_079, 0, 0),
-        ["ua-extra"] = (15_551, 15_263, 288, 2),
+        ["cascade"] = (5_438, 5_438, 0, 4),
+        ["elements"] = (18_521, 13_376, 5_145, 34),
+        ["fonts-tables-lists"] = (17_051, 17_051, 0, 1),
+        ["hints"] = (17_198, 17_198, 0, 0),
+        ["hints-gaps"] = (12_788, 12_200, 588, 4),
+        ["properties"] = (16_757, 16_757, 0, 1),
+        ["selectors"] = (8_966, 8_966, 0, 1),
+        ["ua-bare"] = (10_289, 10_289, 0, 0),
+        ["ua-extra"] = (15_875, 15_581, 294, 2),
     };
 
     public static TheoryData<string> Cases =>

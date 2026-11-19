@@ -49,7 +49,8 @@ internal static class BoxProperties
         "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image", "max-height",
         "min-height", "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
         "quotes", "right", "row-gap", "tab-size", "text-align-last", "text-decoration-thickness", "text-indent",
-        "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-transform", "text-wrap-style", "top",
+        "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-transform", "text-underline-offset",
+        "text-underline-position", "text-wrap-style", "top",
         "transform", "visibility", "word-break", "word-spacing", "writing-mode", "z-index",
     ];
 
@@ -176,11 +177,15 @@ internal static class BoxProperties
         yield return new("vertical-align", "baseline; any value on a block box (it applies to inline boxes and table cells)",
             (value, facts) => IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version");
 
-        // CSS Text Decoration 3 §2.
-        yield return new("text-decoration-line", "none; any value on an element without content",
-            (value, facts) => IsKeyword(value, "none") || !facts.HasChildren ? null : "text decoration is not drawn in this version");
-        yield return new("text-decoration-color", "every value: no effect while text-decoration-line is none (any other line is refused)", (_, _) => null);
-        yield return new("text-decoration-style", "every value: no effect while text-decoration-line is none (any other line is refused)", (_, _) => null);
+        // CSS Text Decoration 3 §2, CSS Text Decoration 4 §2.10.4: the lines go to the text of the element and of every
+        // element inside it (HtmlBoxGenerator.Decorations.cs); the style sheet accepts only the solid style, the automatic
+        // thickness, underline position and offset, and refuses skip-ink: all.
+        yield return new("text-decoration-line", "none, or underline, overline and line-through in any combination", (_, _) => null);
+        yield return new("text-decoration-color", "a colour of alpha 1, or currentcolor; any colour where text-decoration-line is none",
+            (value, facts) => IsKeyword(facts.Style[PropertyRegistry.Find("text-decoration-line")!], "none") || Alpha(Resolved(value, facts.Style)) == 1
+                ? null : "a decoration colour with an alpha other than 1 is not drawn");
+        yield return new("text-decoration-style", "solid, the only value the style sheet accepts", (_, _) => null);
+        yield return new("text-decoration-skip-ink", "auto, none", (_, _) => null);
 
         // CSS Fragmentation 3 §3.1, §3.2, §5.4; break properties apply to block-level boxes only.
         yield return new("break-before", "every value (avoid-page as avoid); no effect on an inline box", (_, _) => null);

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
 namespace Ave.Extensions.Documents.Css.Properties;
@@ -37,10 +38,9 @@ public static partial class PropertyRegistry
             "all elements", "CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text");
 
         yield return new PropertyDefinition(
-            "text-decoration-line", inherited: false, new CssKeyword("none"), "all elements", "none | underline", PropertySupport.Supported,
+            "text-decoration-line", inherited: false, new CssKeyword("none"), "all elements", "none | [ underline || overline || line-through ]", PropertySupport.Supported,
             "CSS Text Decoration 3 §2.1",
-            reader => reader.Count == 1 ? OneKeyword(reader, "text-decoration-line", ["none", "underline"], ["overline", "line-through", "blink"])
-                : AllKeywords(reader, ["underline", "overline", "line-through", "blink"]) ? ParsedValue.Refused("more than one text decoration line is not supported") : ParsedValue.Invalid("not a value of text-decoration-line"),
+            ParseTextDecorationLine,
             AsSpecified);
 
         yield return Keywords(
@@ -52,26 +52,63 @@ public static partial class PropertyRegistry
             reader => Whole(reader, reader.Color(), "text-decoration-color"),
             AsSpecified);
 
+        // Inherited; the value of the text decides, not that of the decorating box.
+        yield return Keywords("text-decoration-skip-ink", inherited: true, "auto", ["auto", "none"], ["all"], "all elements", "CSS Text Decoration 4 §2.10.4");
+
         yield return Keywords(
             "print-color-adjust", inherited: true, "economy", ["economy", "exact"], [], "all elements", "CSS Color Adjust 1 §3.1");
     }
 
-    /// <summary>Whether every value is one of these keywords.</summary>
-    private static bool AllKeywords(ValueReader reader, string[] keywords)
+    /// <summary>The lines a decoration draws.</summary>
+    private static readonly string[] DecorationLines = ["underline", "overline", "line-through"];
+
+    /// <summary>The other values of text-decoration-line CSS defines: <c>blink</c> (CSS Text Decoration 3 §2.1, drawn as
+    /// nothing by browsers) and the error lines of CSS Text Decoration 4, which the engine does not draw.</summary>
+    private static readonly string[] RefusedDecorationLines = ["blink", "spelling-error", "grammar-error"];
+
+    /// <summary>text-decoration-line (CSS Text Decoration 3 §2.1): <c>none</c>, or each of underline, overline and
+    /// line-through at most once, in any order; the value is the one keyword, or the list of them as written.</summary>
+    private static ParsedValue ParseTextDecorationLine(ValueReader reader)
     {
-        var mark = reader.Mark;
-        var all = true;
+        if (reader.Count == 1 && reader.Keyword("none") is not null)
+        {
+            return ParsedValue.Of(new CssKeyword("none"));
+        }
+
+        var lines = new List<CssValue>();
+        var refused = new List<string>();
         while (!reader.AtEnd)
         {
-            if (reader.Keyword(keywords) is null)
+            if (reader.Keyword(DecorationLines) is { } line)
             {
-                all = false;
-                break;
+                if (lines.Contains(new CssKeyword(line)))
+                {
+                    return ParsedValue.Invalid("a line of text-decoration-line given twice");
+                }
+
+                lines.Add(new CssKeyword(line));
+            }
+            else if (reader.Keyword(RefusedDecorationLines) is { } other)
+            {
+                if (refused.Contains(other))
+                {
+                    return ParsedValue.Invalid("a line of text-decoration-line given twice");
+                }
+
+                refused.Add(other);
+            }
+            else
+            {
+                return ParsedValue.Invalid("not a value of text-decoration-line");
             }
         }
 
-        reader.Reset(mark);
-        return all;
+        if (refused.Count > 0)
+        {
+            return ParsedValue.Refused($"'text-decoration-line: {CssSerializer.Shortened(refused[0])}' is not supported");
+        }
+
+        return ParsedValue.Of(lines.Count == 1 ? lines[0] : new CssList([.. lines], CommaSeparated: false));
     }
 
     /// <summary>The computed colour (CSS Color 4 §3.1, §6.4): <c>currentcolor</c> in <c>color</c> itself is the inherited
@@ -97,7 +134,7 @@ public static partial class PropertyRegistry
             return ParsedValue.Of(new CssKeyword(HeaderCenter));
         }
 
-        return reader.Count == 1 && reader.Peek is Syntax.CssToken { Kind: Syntax.CssTokenKind.String }
+        return reader.Count == 1 && reader.Peek is CssToken { Kind: CssTokenKind.String }
             ? ParsedValue.Refused("text-align with a string is not supported")
             : OneKeyword(reader, "text-align", ["start", "end", "left", "right", "center", "justify", "-webkit-left", "-webkit-right", "-webkit-center"], ["justify-all", "-webkit-match-parent", "-webkit-auto"]);
     }

@@ -175,7 +175,6 @@ public class BoxGenerationTests
     [InlineData("<table><tr><td>a</td></tr></table>", "display")]
     [InlineData("<pre>a\tb</pre>", "white-space-collapse")]
     [InlineData("<hr>", "border-top-style")]
-    [InlineData("<p><a href=\"x\">a</a></p>", "text-decoration-line")]
     [InlineData("<p><span style=\"vertical-align:top\">a</span></p>", "vertical-align")]
     public void An_element_whose_user_agent_rendering_is_not_drawn_is_refused_through_its_values(string body, string property) =>
         Refusals(Doc(body)).Select(Property).Should().Contain(property);
