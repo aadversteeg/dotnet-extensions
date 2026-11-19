@@ -172,6 +172,31 @@ public class ArgumentRuleTests
         mask.Error.Metadata![ErrorMetadataKeys.Value].Should().Be(size.Replace(" x ", "x", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData(8192, 8192)]
+    [InlineData(67108864, 0)]
+    [InlineData(0, 67108864)]
+    public void A_mask_of_the_most_pixels_and_as_wide_as_a_side_may_be_is_made(double right, double bottom)
+    {
+        // 2^26 pixels in all, or 2^26 on a side with no rows: the limits themselves, one more is refused (below).
+        var mask = Canvas.Coverage(Path.Rectangle(1, 1, 2, 2), Affine.Identity, FillRule.NonZero, new PixelBox(0, 0, right, bottom));
+
+        mask.IsSuccess.Should().BeTrue();
+        (mask.Value.Width, mask.Value.Height).Should().Be(((int)right, (int)bottom));
+    }
+
+    [Theory]
+    [InlineData(8192, 8193, "8192 x 8193")]
+    [InlineData(67108865, 0, "67108865 x 0")]
+    [InlineData(0, 67108865, "0 x 67108865")]
+    public void A_mask_one_pixel_over_a_limit_is_too_large(double right, double bottom, string size)
+    {
+        var mask = Canvas.Coverage(Path.Rectangle(1, 1, 2, 2), Affine.Identity, FillRule.NonZero, new PixelBox(0, 0, right, bottom));
+
+        mask.Error.Code.Should().Be(GraphicsErrorCodes.TooLarge);
+        mask.Error.Message.Should().StartWith(size + " pixels");
+    }
+
     [Fact]
     public void Values_out_of_range_are_error_values()
     {

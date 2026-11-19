@@ -499,18 +499,22 @@ public class OverlapCoverageTests(ITestOutputHelper output)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void A_rotated_image_quad_is_exact_without_flags_or_a_charge(bool clipped)
+    public void A_rotated_or_sheared_image_quad_is_exact_without_flags_or_a_charge(bool clipped)
     {
         // An image's outline as the canvas draws it (AreaRasterizer.RasterizeConvex: no flags, no arrangement, no charge):
-        // a rectangle under a rotation and a scale, one convex quad, so its winding number is 0 or one value of one sign.
-        // Its integral is the exact area in every pixel under both rules, with and without a clip box whose sides lie in
-        // pixels (the clipped quad is still convex).
+        // a rectangle under a shear, a rotation and a scale, one convex quad, so its winding number is 0 or one value of
+        // one sign. Its integral is the exact area in every pixel under both rules, with and without a clip box whose
+        // sides lie in pixels (the clipped quad is still convex).
         var breaches = new List<string>();
         var compared = 0;
-        foreach (var angle in new[] { 0.0, 0.1, 0.5, Math.PI / 4, 1.0, 2.2, 3.0, 4.4 })
+        var shapes = new (double Angle, double Shear)[]
+        {
+            (0.0, 0), (0.1, 0), (0.5, 0), (Math.PI / 4, 0), (1.0, 0), (2.2, 0), (3.0, 0), (4.4, 0), (0.0, 0.6), (0.5, -0.8), (2.2, 1.3),
+        };
+        foreach (var (angle, shear) in shapes)
         {
             var (c, n) = (Math.Cos(angle), Math.Sin(angle));
-            (double X, double Y) Corner(double u, double v) => (4 + (u * c) - (v * n), 4 + (u * n) + (v * c));
+            (double X, double Y) Corner(double u, double v) => (4 + ((u + (shear * v)) * c) - (v * n), 4 + ((u + (shear * v)) * n) + (v * c));
             var quad = Points(Corner(-2.7, -1.9), Corner(2.7, -1.9), Corner(2.7, 1.9), Corner(-2.7, 1.9));
             (long, long, long, long)? cut = clipped ? Box(1.40625, 1.734375, 6.21875, 5.890625) : null;
             var exact = ExactCoverage.Areas([quad], cut);
@@ -533,7 +537,7 @@ public class OverlapCoverageTests(ITestOutputHelper output)
                     compared++;
                     if (!(Math.Abs(actual - expected) <= Rounding))
                     {
-                        breaches.Add($"angle {angle} {rule} cell {cell}: {actual:R} instead of {expected:R}");
+                        breaches.Add($"angle {angle} shear {shear} {rule} cell {cell}: {actual:R} instead of {expected:R}");
                     }
                 }
             }

@@ -27,9 +27,13 @@ public class ImageResamplingTests
         return new RgbaImage(width, height, ImmutableArray.Create(pixels));
     }
 
-    /// <summary>The exact pixel (r, g, b, a) the rule gives at device pixel (x, y): Σ area·α·c / Σ area·α and Σ area·α.</summary>
-    private static (double R, double G, double B, double A) Expected(RgbaImage image, Affine transform, int x, int y)
+    /// <summary>The exact pixel (r, g, b, a) the rule gives at device pixel (x, y): Σ area·α·c / Σ area·α and Σ area·α,
+    /// each area taken inside the pixel and, when there is one, the clip box.</summary>
+    private static (double R, double G, double B, double A) Expected(RgbaImage image, Affine transform, int x, int y, PixelBox? clip = null)
     {
+        var (left, top, right, bottom) = clip is { } box
+            ? (double.Max(x, box.Left), double.Max(y, box.Top), double.Min(x + 1, box.Right), double.Min(y + 1, box.Bottom))
+            : (x, y, x + 1, y + 1);
         double weight = 0, red = 0, green = 0, blue = 0;
         for (var row = 0; row < image.Height; row++)
         {
@@ -42,7 +46,7 @@ public class ImageResamplingTests
                     (transform.MapX(column + 1, row + 1), transform.MapY(column + 1, row + 1)),
                     (transform.MapX(column, row + 1), transform.MapY(column, row + 1)),
                 };
-                var area = Geometry.AreaInPixel(corners, x, y);
+                var area = Geometry.AreaInBox(corners, left, top, right, bottom);
                 if (area == 0)
                 {
                     continue;
@@ -60,17 +64,17 @@ public class ImageResamplingTests
         return weight == 0 ? (0, 0, 0, 0) : (red / weight, green / weight, blue / weight, weight * 255);
     }
 
-    private static void ShouldFollowTheRule(RgbaImage image, Affine transform, int width, int height)
+    private static void ShouldFollowTheRule(RgbaImage image, Affine transform, int width, int height, PixelBox? clip = null)
     {
         var canvas = Canvas.Create(width, height, null).Value;
-        canvas.DrawImage(image, transform);
+        canvas.DrawImage(image, transform, clip).IsSuccess.Should().BeTrue();
         var drawn = canvas.ToImage();
 
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
             {
-                var (r, g, b, a) = Expected(image, transform, x, y);
+                var (r, g, b, a) = Expected(image, transform, x, y, clip);
                 var offset = ((y * width) + x) * 4;
                 Math.Abs(drawn.Pixels[offset + 3] - a).Should().BeLessThanOrEqualTo(1, $"alpha of pixel ({x}, {y})");
                 if (a >= 1)
@@ -133,6 +137,102 @@ public class ImageResamplingTests
         var transform = new Affine(cos, sin, -sin, cos, 9.3, 8.6);
 
         ShouldFollowTheRule(image, transform, 19, 18);
+    }
+
+    [Theory]
+    [InlineData(1.6, 0, 0.9, 1.2)]
+    [InlineData(1.6, 0.3, 0, 1.2)]
+    [InlineData(0, 1.4, -1.1, 0)]
+    public void An_image_with_one_shear_term_follows_the_rule(double a, double b, double c, double d)
+    {
+        // One of b and c is zero, the other not (or a quarter turn, a = d = 0): the preimage of a device pixel is not a
+        // rectangle, so the image is sampled through its corners, not per axis.
+        var image = Pattern(4, 4, 7, transparent: false);
+
+        ShouldFollowTheRule(image, new Affine(a, b, c, d, 6.45, 0.7), 18, 8);
+    }
+
+    [Theory]
+    [InlineData(30, 1.4)]
+    [InlineData(-71, 0.8)]
+    public void A_rotated_image_under_a_clip_box_with_its_sides_inside_pixels_follows_the_rule(double degrees, double factor)
+    {
+        // Every side of the clip box cuts pixels: a pixel on a side shows the image's mean over the part of the pixel inside
+        // the box, with that part's share of the pixel as its alpha.
+        var image = Pattern(5, 4, 12, transparent: true);
+        var (cos, sin) = (Math.Cos(degrees * Math.PI / 180) * factor, Math.Sin(degrees * Math.PI / 180) * factor);
+
+        ShouldFollowTheRule(image, new Affine(cos, sin, -sin, cos, 9.3, 8.6), 19, 18, new PixelBox(4.3, 3.65, 14.4, 12.2));
+    }
+
+    [Fact]
+    public void A_sheared_image_under_a_clip_box_with_its_sides_inside_pixels_follows_the_rule()
+    {
+        var image = Pattern(4, 4, 13, transparent: true);
+
+        ShouldFollowTheRule(image, new Affine(1.6, 0.3, 0.9, 1.2, 0.45, 0.7), 12, 8, new PixelBox(1.25, 0.6, 9.7, 6.35));
+    }
+
+    [Theory]
+    [InlineData(0, 274877906943, true)]
+    [InlineData(0, 274877906944, false)]
+    [InlineData(274877906943, 0, true)]
+    [InlineData(274877906944, 0, false)]
+    public void The_reach_counts_the_shear_of_the_image_s_far_side(double b, double c, bool drawn)
+    {
+        // A 4 x 4 image at the origin, unscaled, sheared by c along x (or b along y): its grid reaches 4 + 4·c pixels (or
+        // 4 + 4·b), 2^40 for c = 2^38 - 1, which is drawn, and one shear step more is refused.
+        var canvas = Canvas.Create(4, 4, Color.White).Value;
+
+        canvas.DrawImage(Pattern(4, 4, 1, transparent: false), new Affine(1, b, c, 1, 0, 0)).IsSuccess.Should().Be(drawn);
+    }
+
+    [Fact]
+    public void An_image_without_rotation_or_shear_is_drawn_per_axis_as_through_its_corners()
+    {
+        // The per-axis path (no rotation or shear) against the path through the pixel's corners, on the same images: the
+        // same transform with a shear of 5e-324, which moves no point of the image by more than 5e-324 × its height in
+        // pixels and sends it through the corners. Enlarged, reduced, mirrored, with fractional offsets and clip boxes,
+        // with transparency, near the device origin and far from it. Measured: 78 of the 23,760 bytes differ, each by one
+        // 8-bit step, none by more.
+        var opaque = Pattern(7, 5, 21, transparent: false);
+        var transparent = Pattern(7, 5, 22, transparent: true);
+        var large = Pattern(40, 30, 23, transparent: false);
+        var cases = new (RgbaImage Image, Affine Transform, PixelBox? Clip)[]
+        {
+            (opaque, new Affine(3.7, 0, 0, 3.7, 0.3, 0.6), null),
+            (transparent, new Affine(3.7, 0, 0, 2.1, 0.3, 0.6), new PixelBox(1.3, 0.7, 20.6, 9.2)),
+            (large, new Affine(0.37, 0, 0, 0.41, 0.25, 0.85), null),
+            (opaque, new Affine(-1.3, 0, 0, 1.1, 9.2, 0.4), new PixelBox(0.5, 0.5, 8.75, 5.25)),
+            (transparent, new Affine(1.7, 0, 0, -0.6, 0.35, 3.8), null),
+            (opaque, new Affine(1e6, 0, 0, 1e6, -3.2e6 + 0.3, -2.1e6 + 0.7), new PixelBox(0.1, 0.2, 29.9, 21.8)),
+            (opaque, new Affine(3e8 + 0.3, 0, 0, 2e8 + 0.7, -6e8 - 0.6, -4e8 - 1.3), null),
+            (transparent, new Affine(7.3e10, 0, 0, 5.1e10, -2.19e11 - 0.37, -1.02e11 - 0.21), new PixelBox(0.6, 0.6, 29.4, 21.4)),
+            (large, new Affine(0.73, 0, 0, 0.73, 1e5 - 0.29, -2e5 + 0.43), null),
+        };
+        var (worst, differing, compared) = (0, 0, 0);
+        var where = "none";
+        foreach (var (image, transform, clip) in cases)
+        {
+            var perAxis = Canvas.Create(30, 22, null).Value;
+            var corners = Canvas.Create(30, 22, null).Value;
+            var sheared = new Affine(transform.A, transform.B, double.Epsilon, transform.D, transform.E, transform.F);
+            perAxis.DrawImage(image, transform, clip).IsSuccess.Should().BeTrue();
+            corners.DrawImage(image, sheared, clip).IsSuccess.Should().BeTrue();
+            var (one, other) = (perAxis.ToImage().Pixels, corners.ToImage().Pixels);
+            compared += one.Length;
+            for (var index = 0; index < one.Length; index++)
+            {
+                var difference = Math.Abs(one[index] - other[index]);
+                differing += difference > 0 ? 1 : 0;
+                if (difference > worst)
+                {
+                    (worst, where) = (difference, $"{transform}, byte {index}: {one[index]} per axis, {other[index]} through the corners");
+                }
+            }
+        }
+
+        worst.Should().BeLessThanOrEqualTo(1, $"{differing} of {compared} bytes differ; the largest difference: {where}");
     }
 
     [Theory]

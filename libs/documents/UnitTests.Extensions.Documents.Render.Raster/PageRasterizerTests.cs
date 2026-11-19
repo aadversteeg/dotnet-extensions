@@ -229,6 +229,8 @@ public class PageRasterizerTests
     [InlineData(595.2756, 841.8898, 96, 794, 1123)]
     [InlineData(612, 792, 72, 612, 792)]
     [InlineData(612, 792, 300, 2550, 3300)]
+    [InlineData(100.2, 50.1, 72, 101, 51)]
+    [InlineData(10.1, 20.3, 96, 14, 28)]
     [InlineData(0.0001, 0.0001, 96, 1, 1)]
     [InlineData(0.0001, 85.38173927570774, 5e-324, 1, 1)]
     [InlineData(2.23421391529693, 1, 5e-324, 1, 1)]

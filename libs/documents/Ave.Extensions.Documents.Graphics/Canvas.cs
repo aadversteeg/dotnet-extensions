@@ -454,10 +454,11 @@ public sealed class Canvas
     /// </summary>
     /// <remarks>
     /// Exact within <see cref="MaxImageReach"/>, far from the image's origin too. Along an axis, the box's two ends are
-    /// taken relative to the image's grid line nearest to the box, mapped forward to the device as the image's own edges are; a box that lies between
-    /// two grid lines gets its whole length in that pixel, computed from the box's own width, not as a difference of two
-    /// positions. So an image enlarged so much that the page shows a small part of one of its pixels keeps every box's
-    /// area, where mapping the corners back to the image one by one would round them all to the same point.
+    /// taken relative to the image's grid line nearest to the box, mapped forward to the device as the image's own edges
+    /// are; a box that lies between two grid lines gets its whole length in that pixel, computed from the box's own
+    /// width, not as a difference of two positions. It is a faster path for the same result: mapping the box's corners
+    /// back to the image (<see cref="SamplePreimage"/>) gives the same pixels within the reach, measured to one 8-bit
+    /// step at most.
     /// </remarks>
     private void SampleAxisAligned(PixelBox cell, Affine imageToDevice, Weights weights)
     {
