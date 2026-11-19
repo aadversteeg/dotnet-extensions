@@ -56,18 +56,38 @@ public class PieceEndTests
     }
 
     /// <summary>A coordinate from <paramref name="low"/> to <paramref name="high"/>: a whole number, one rounding step
-    /// beside one (either way), within 1/256 of one, or a random double.</summary>
-    private static double Coordinate(Random random, int low, int high) => random.Next(10) switch
+    /// beside one (either way), up to four rounding steps beside one (either way, beside 0 a denormal), within 1/256 of
+    /// one, or a random double.</summary>
+    private static double Coordinate(Random random, int low, int high) => random.Next(12) switch
     {
         < 3 => random.Next(low, high + 1),
         < 5 => Beside(random.Next(low, high + 1), up: false),
         < 7 => Beside(random.Next(low, high + 1), up: true),
-        < 8 => random.Next(low, high + 1) + ((random.NextDouble() - 0.5) / 128),
+        < 9 => Steps(random.Next(low, high + 1), random.Next(-4, 5)),
+        < 10 => random.Next(low, high + 1) + ((random.NextDouble() - 0.5) / 128),
         _ => low + (random.NextDouble() * (high - low)),
     };
 
     /// <summary>One rounding step beside a whole number other than 0 (beside 0 lie denormals, another kind of input).</summary>
     private static double Beside(int whole, bool up) => whole == 0 ? 0 : up ? Math.BitIncrement(whole) : Math.BitDecrement(whole);
+
+    /// <summary><paramref name="steps"/> rounding steps beside a whole number, up for a positive count and down for a
+    /// negative one; beside 0 that is a denormal.</summary>
+    private static double Steps(int whole, int steps)
+    {
+        double value = whole;
+        for (; steps > 0; steps--)
+        {
+            value = Math.BitIncrement(value);
+        }
+
+        for (; steps < 0; steps++)
+        {
+            value = Math.BitDecrement(value);
+        }
+
+        return value;
+    }
 
     [Fact]
     public void Corner_points_on_and_one_rounding_step_beside_pixel_lines_give_the_exact_coverage()
@@ -146,5 +166,46 @@ public class PieceEndTests
         // Exact coverage of pixel (1, 1): 0.354681, 90.44 of 255; drawn as 91 before the repair.
         var mask = Canvas.Coverage(PathOf(Known().Select(row => ((double X, double Y)[][])row[1]).ElementAt(3)), Affine.Identity, rule, new PixelBox(0, 0, 8, 8)).Value;
         mask.Values[(1 * 8) + 1].Should().Be(90);
+    }
+
+    /// <summary>Shapes whose pieces are cut at a column where the kept end of an edge and the interpolated one lie a
+    /// rounding apart, on the two sides of a pixel line: the height of each cut must come from the kept ends. With the
+    /// heights from the interpolated ends the first is refused with <c>Documents.Graphics.InexactCoverage</c> and the
+    /// others are drawn with success and a pixel at 0 whose exact coverage is up to 1.</summary>
+    public static TheoryData<string, (double X, double Y)[][], (double, double, double, double)> CutAtAColumn() => new()
+    {
+        { "triangle beside the top left corner", [[(0, 1.0000000000000007), (1.0000000000000007, 2e-323), (2.000000034670316, 1.5e-323)]], (0, 0, 4, 2) },
+        { "three contours, pixel (2, 0)", [[(2e-323, 0.9999999999999998), (0.9999999999999996, 1.0000000000000004), (1.0, 1.9999999999999991), (2.0000000051614317, 2.0000000000000018)], [(1.0000000000000004, 1.5e-323), (2e-323, 1.0005501015812872), (-0.3448155440133138, -0.05629171945913314), (2.0000000000000004, 5e-324)], [(3.346657376432166, 2.998308733104872), (2.0000000000000013, 1.9999999999999991), (3.0000000000000004, 1.0), (2.0, 0.9997087604252127)]], (0, 0, 3, 2) },
+        { "four contours", [[(2e-323, 0.9999999999999997), (-1e-323, 1.000016159448169), (2.9999999999999996, 1.0)], [(1e-323, 1.0000000000000002), (3.9999999999999987, 1.0000000000000004), (5e-324, 3.0), (-2e-323, 4.789474170957936e-05)], [(0.12810513057192097, 3.1325686844683105), (4.478928035813816, 1.6177164458752222), (0.9999999999999996, 1.9999999999999993), (5.999999999999999, 3.0)], [(2.0000000010444494, 2.9999999999999996), (6.000000000000003, -1.5e-323), (2.0000000000000004, 5e-324), (0.47096872398209233, 2.671733529154087), (5e-324, 3.0000000000000004)]], (0, 0, 6, 3) },
+        { "two contours along column 1", [[(0.9999852632016062, 5e-324), (0.9999999999999996, 0.9999999999999996), (1.0000000000000007, 2.9999999999999982), (1.0000000000000009, 1.5e-323)], [(1.025787581701664, 4.981822714201092), (0.9999999999999999, 1.9999999999999996), (1.000000187112697, 3.0), (2.0000000071133948, 3.0000000000000018)]], (0, 0, 2, 4) },
+    };
+
+    [Theory]
+    [MemberData(nameof(CutAtAColumn))]
+    public void A_piece_cut_at_a_column_beside_its_kept_end_takes_the_height_of_the_kept_ends(string name, (double X, double Y)[][] contours, (double Left, double Top, double Right, double Bottom) box)
+    {
+        var breaches = new List<string>();
+        Compare(name, contours, box, breaches);
+        breaches.Should().BeEmpty($"every pixel is exact; all breaches: {string.Join("; ", breaches)}");
+        foreach (var rule in new[] { FillRule.NonZero, FillRule.EvenOdd })
+        {
+            var canvas = Canvas.Create((int)box.Right, (int)box.Bottom, Color.White).Value;
+            var fill = canvas.Fill(PathOf(contours), Affine.Identity, rule, Color.Black);
+            fill.IsSuccess.Should().BeTrue(fill.IsFailure ? fill.Error.Message : "");
+        }
+    }
+
+    [Theory]
+    [InlineData(FillRule.NonZero)]
+    [InlineData(FillRule.EvenOdd)]
+    public void Pixel_2_0_of_the_three_contours_gets_its_exact_coverage(FillRule rule)
+    {
+        // The exact share of pixel (2, 0), from exact fractions of the input doubles; 0 when the cut heights come from
+        // the interpolated ends.
+        var contours = (((double X, double Y)[][])CutAtAColumn().ElementAt(1)[1]);
+        ExactCoverage.Areas(contours, (0, 0, 3, 2))[(2, 0)].NonZero.Should().Be(0.00014559121135541237);
+        var (coverage, error) = Rasterize(contours, (0, 0, 3, 2), rule);
+        error.Should().BeNull();
+        coverage[(2, 0)].Should().BeApproximately(0.00014559121135541237, AreaRasterizer.KeepWithin);
     }
 }
