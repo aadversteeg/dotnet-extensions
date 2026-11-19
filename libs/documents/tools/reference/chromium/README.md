@@ -50,6 +50,13 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
 `out/*.txt` over it after a deliberate re-measurement.
 
+The cases load their fonts from the family's `assets/fonts` by relative URL. Where a font file does not load, Chromium
+prints the case with a fallback font without a word (a copy of this folder without `assets/fonts` beside it printed
+seven cases in Liberation Serif, and their prints were committed so: `a4-cell-image-179-5`, `a4-cell-pad3-image-177`,
+`a4-cell-pad3-line-177` and the four `a6-header-quarter-*`, since measured again). So `measure.mjs` lays the case out,
+waits for `document.fonts.ready` and stops when a font face of the case failed to load. A copy of the tool needs the
+family's `assets/fonts` four folders above `cases/`.
+
 ## Print positions
 
 For rules about pages (where a page starts, where it breaks, what moves to the next page) the reference is Chromium's
@@ -58,8 +65,9 @@ one line per item, in points, origin at the top left of the page (y down), three
 
 ```
 page <page> <width> <height>
-word <page> <x0> <x1> <baseline> <font size> <text>
-rect <page> <x0> <y0> <x1> <y1>
+word <page> <x0> <x1> <baseline> <font size> <text> <colour> <face>
+rect <page> <x0> <y0> <x1> <y1> <colour>
+stroke <page> <x0> <y0> <x1> <y1> <colour>
 image <page> <x0> <y0> <x1> <y1>
 ```
 
@@ -67,7 +75,14 @@ A word is a run of characters without white space on one baseline. Its extent is
 first character to the origin of its last plus that character's advance), and its height is its baseline, so neither
 depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. `rect` is a filled rectangle
 (a background, a border, a grid line, or a marker box a case draws on purpose to show where a box is); `image` is the
-area an image is drawn into, which reaches past the page when the page shows only a slice of it.
+area an image is drawn into, which reaches past the page when the page shows only a slice of it. A colour is
+`#rrggbb`, with the opacity as a fourth byte (`#rrggbbaa`) where it is not 1. The face is the PostScript name of the
+font a word is drawn with, without the subset tag (`ABCDEF+`) of the PDF: it names the font file, and with it the
+weight and the style (synthetic bold or italic would not show). A `stroke` line is one of the four bands a stroked
+rectangle paints: Chromium strokes a border of one colour and style on all four sides as one rectangle path
+(`kb-v8-padded-box-kept-para`, `kb-v9-padded-box-kept-table-row`, `fr-header-cell-margin`), and `positions.py` writes
+the top and bottom band across the outer width and the left and right band between them, in drawing order among the
+`rect` lines; any other stroke stops the read-back. `lines.txt` (`rectangles.py`) keeps fills only.
 
 The tests read these files through `PrintedPages` in the test-support project, which gives the engine's page model the
 same form (`PrintedPages.Engine`), so a test compares the two page by page. What the tests compare: the words of each
@@ -76,13 +91,18 @@ page exactly, in every test that reads a print file; the distance between baseli
 (case `fr-positions`) and the first baseline in `LineBoxReferenceTests`; the bottom padding's rectangle in
 `BottomPaddingTests`; the page-relative baseline in the page-start tests. Other positions in the print files (most
 rectangles, image areas, x positions in tables) are measured and kept, and pinned only by their line counts
-(`MeasuredReferenceFilesTests`) and by the agreement of the two read-backs (`ChromiumReferenceTests`). The harness takes any
+(`MeasuredReferenceFilesTests`) and by the agreement of the two read-backs (`ChromiumReferenceTests`). Every case that the
+HTML front-end draws is compared on every fact of its `print`, `lines`, `words` and `boxes` files, each with its bound
+(`CaseStatusTests` and `HtmlCases` in `UnitTests.Extensions.Documents.Html`; docs/architecture.md, "The status file").
+The harness takes any
 HTML with an `@page` rule, so whole documents can be measured the same way as the small cases.
 
 Chromium snaps more than layout units when it prints, which a case must allow for:
 
-- the page margins and the page size become whole CSS pixels (a 10 pt margin prints as 13 px = 9.75 pt), so the cases
-  that pin page breaks use sizes that are whole pixels (multiples of 0.75 pt; 12 pt margins, page areas of 150 or 180 pt);
+- the page area starts at the left and top margins rounded to whole CSS pixels (a 10 pt margin prints as 13 px =
+  9.75 pt) and its size is rounded up to whole pixels; the sheet is the page size in whole points, then in whole
+  1/300 inch (A4 prints 594.96 × 841.92 pt). So the cases that pin page breaks use sizes that are whole pixels
+  (multiples of 0.75 pt; 12 pt margins, page areas of 150 or 180 pt);
 - with `line-height: normal` the line height is the font's ascent, descent and line gap each rounded to whole pixels:
   Lato at 12 pt (16 px, no line gap) is 16 + 3 = 19 px (14.25 pt) where the font's own values give 19.2 px (14.4 pt).
   Every inline box's ascent and descent are rounded so, under any line height, and the half-leading above it is
@@ -228,6 +248,7 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `fr-header-pad-*` | a table with a header row and one cell holding a bordered box around "a", whose bottom (or top) padding is as tall as the page area or does not fit with it (page areas 36 and 72 pt, 18 pt lines), then "AFTER"; and the same without the header row: neither Chromium nor the engine repeats the 18 pt header on the 36 pt area (more than a quarter of it), and both print the box's line on page 2; on the 72 pt area both repeat it and Chromium cuts the row on page 1 (listed) | `PageBreakProgressTests`, `HeaderRepeatTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `fr-pad-*`, `fr-border-*` | bottom padding and borders that do not fit below a box's content (page areas 60, 54, 44, 96 and 818.25 pt; `figure.png` is a 7 × 10 px picture): the box breaks before them and they start the next page; lower on a page the box moves whole; a box with a breakpoint inside breaks there and keeps that break against orphans, widows or a keep-with-next inside it (a box or paragraph kept together moves whole instead, cases `kb-*`); a box that continues moves only its border | `BottomPaddingTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `fr-keep-*` | keep rules next to content that continues from the page before (page areas 45 and 90 pt): they never reach back into a continued paragraph or box; inside a box at a page end the paragraph before the keep is split | `BottomPaddingTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `h-default-page`, `h-kerning-*`, `h-page-*`, `h-root-display-none`, `h-char-*`, `h-break-after-last*`, `h-font-url-sheet` | facts the HTML front-end takes from Chromium's print: the page without an `@page` rule (US Letter, 612 × 792 pt, no margins, with the settings of `measure.mjs`); `font-kerning: auto` and `normal` print the same kerned text, `none` does not; page margins that are not whole CSS pixels (11, 11.5 and 11.75 pt) put the page area's left and top edge at a whole pixel, rounded. `h-page-size-*`, `h-page-area-*`, `h-page-margin-half`: the sheet of named sizes and lengths (whole points, then 1/300 inch) and where the page area ends (its size rounded up to whole pixels: right-aligned and justified text, a background, the last line of a page, half a pixel). `h-page-size-auto`, `h-page-landscape`, `h-page-portrait`, `h-page-default-media`: the page and the media of a document without a size of its own are the paper of the print call. `h-media-page-size-*`: media queries see that paper also where `@page` sets another size. `h-page-a4-*`: A4 without margins, whose page area reaches past the sheet (listed), and with 1 px margins (equal). `h-root-display-none`: one empty page of that paper. `h-char-*`: characters the HTML parser lets through (form feed prints as a missing glyph, the line and paragraph separators as a space that does not collapse; carriage return and tab as a space). `h-break-after-last*`: no page after a forced break after the last box. `h-font-url-sheet`: a font URL is resolved against the sheet that declares it (`cases/sheets/`). All cases are also read through the HTML front-end, one status line each in `html-status.txt` | `BoxGenerationTests`, `CaseStatusTests` (`UnitTests.Extensions.Documents.Html`) |
 | `kb-n*`, `kb-m*`, `kb-v8-*`, `kb-v9-*`, `kb-t*`, `kb-s*` | a break inside a box or paragraph kept together against a better break before the box. Form A (page area 150 pt, 18 pt lines, `orphans` and `widows` 1, `n12` 2): "i" with a bottom margin, then a kept box (or a kept paragraph, in a padded box, in a table cell, three paragraphs, a box around a padded box) whose content fits and whose bottom padding or border does not, then "z": Chromium moves the box whole (`i | a0 a1 a2 z`); the controls (not kept `n9`, fitting `n1c`, a kept table that ends above the padding `n11`) break inside. The same where the box has bottom padding 12 pt around a kept box (`m1`) or a kept paragraph (`m2`) whose bottom margin of 30 pt passes the page end: Chromium moves the box whole (`i | a0 a1 a2 z`). Form A in a table (`kb-t*`): the padded box holds a table of three rows whose row group is kept together; the best break lies between two rows of the group, and Chromium moves the box whole (`t1`: `i | r0 r1 r2 z`); a break before the kept group's first row (`t2`: `i r0 | r1 r2 z`) and a group not kept (`t3`: `i r0 r1 | r2 z`) stay inside. Form B (page area 180 pt, `orphans` and `widows` 2): a kept box whose best break lies before a box with keep-with-next inside it; Chromium breaks before the kept box (or inside the paragraph kept with it), and keeps the inner break where the outer box is not kept (`s1`, `s8`, `s9`). Fonts from `assets/` | `KeptBoxBreakTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `fr-kwn-pad-*` | keep-with-next on the last paragraph inside two boxes with bottom padding (15 pt inside, 27 pt outside) that goes to a page of its own, then a paragraph of three lines and "z" (page area 54 pt, 18 pt lines, `orphans` and `widows` 2, or 1 where the name says so): Chromium breaks before the paragraph and page 3 holds only the padding, the engine holds the keep across the padding and breaks the paragraph (listed); the same pages with the keep on the outer box, with `orphans` 1, without padding or without the keep | `ListedDifferenceTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `fr-moved-para-*` | two lines, then a paragraph of five lines with `widows` 4 (or 3, the control) that moves to page 2 whole and breaks there (page area 54 pt, 18 pt lines, `orphans` 2): Chromium counts the widows on that page too and breaks where it is full (`a0 a1 a2 | a3 a4`), the engine counts only the orphans (`a0 a1 | a2 a3 a4`; listed); with `widows` 3 both print the same | `ListedDifferenceTests` (`UnitTests.Extensions.Documents.Fluent`) |

@@ -30,10 +30,10 @@ public class AssemblyRulesTests
         ["Ave.Extensions.Documents.Fluent"] = ["Core", "Fonts", "Images", "DocumentModel"],
         ["Ave.Extensions.Documents.Html.Parsing"] = ["Core"],
         ["Ave.Extensions.Documents.Css"] = ["Core"],
-        ["Ave.Extensions.Documents.Html"] = ["Core", "Html.Parsing", "Css"],
+        ["Ave.Extensions.Documents.Html"] = ["Core", "Html.Parsing", "Css", "DocumentModel", "Fonts", "Images"],
 
         // The composition package: the one place a front-end, the layout and a back-end meet.
-        ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "Graphics", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Render.Raster", "Fluent"],
+        ["Ave.Extensions.Documents"] = ["Core", "Fonts", "Images", "Graphics", "DocumentModel", "PageModel", "Typesetting", "Pdf", "Layout", "Render.Pdf", "Render.Raster", "Fluent", "Html.Parsing", "Css", "Html"],
     };
 
     /// <summary>The names of the product libraries (the layer list), for the rules on other things than assemblies.</summary>

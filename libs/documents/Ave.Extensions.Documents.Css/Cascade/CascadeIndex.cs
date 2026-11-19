@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
@@ -80,16 +81,18 @@ public sealed class CascadeIndex
     /// <param name="media">The media to evaluate <c>@media</c> and <c>@import</c> conditions for.</param>
     /// <param name="imports">Loads the sheets <c>@import</c> names; null when the caller follows no imports (each import
     /// is then reported and skipped).</param>
+    /// <param name="baseUrls">The base URL of each style sheet, for the <c>@font-face</c> rules it declares
+    /// (<see cref="FontFaceRule.BaseUrl"/>); null to leave them without one.</param>
     /// <returns>The index, with the diagnostics of building it: invalid declarations and conditions, refused or skipped
     /// imports. Unsupported and ignored properties are reported when they apply, by <see cref="StyleComputer"/>. Past a
     /// limit (more style sheets than <see cref="CssInputLimits.MaxStyleSheets"/>, more entries than
     /// <see cref="CssInputLimits.MaxCascadeEntries"/>, selectors nested deeper than
     /// <see cref="CssInputLimits.MaxSelectorNesting"/>) building stops, and the result is the limit's error.</returns>
-    public static Result<CssResult<CascadeIndex>, Error> Build(IEnumerable<CascadeSheet> sheets, MediaContext media, StyleSheetLoader? imports)
+    public static Result<CssResult<CascadeIndex>, Error> Build(IEnumerable<CascadeSheet> sheets, MediaContext media, StyleSheetLoader? imports, Func<StyleSheet, string?>? baseUrls = null)
     {
         var budget = CascadeBudget.ForNextIndex ?? new CascadeBudget();
         CascadeBudget.ForNextIndex = null;
-        var builder = new Builder(media, imports, budget);
+        var builder = new Builder(media, imports, budget, baseUrls);
         foreach (var sheet in sheets)
         {
             if (builder.Failure is not null)
@@ -146,7 +149,7 @@ public sealed class CascadeIndex
     }
 
     /// <summary>Flattens rules into the index (one cascade's worth of mutable state).</summary>
-    private sealed class Builder(MediaContext media, StyleSheetLoader? imports, CascadeBudget budget)
+    private sealed class Builder(MediaContext media, StyleSheetLoader? imports, CascadeBudget budget, Func<StyleSheet, string?>? baseUrls)
     {
         private readonly HashSet<StyleSheet> _importing = new(ReferenceEqualityComparer.Instance);
         private int _order;
@@ -268,7 +271,7 @@ public sealed class CascadeIndex
                         lists.Push((Walk(sheet.Rules), sheet.Context, sheet.Sheet));
                         break;
                     case FontFaceRule fontFace:
-                        FontFaces.Add(fontFace);
+                        FontFaces.Add(baseUrls is null ? fontFace : fontFace with { BaseUrl = baseUrls(current.Sheet) });
                         break;
                     case PageRule page:
                         Pages.Add(new CascadedPageRule(page, current.Origin));

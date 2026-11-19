@@ -441,7 +441,7 @@ CSS text  ──CssParser.ParseStyleSheet──▶ StyleSheet ┴─ HtmlStyleRe
 
 Three libraries, each below the next: `Html.Parsing` (Core only) is the HTML Standard's parser; `Css` (Core only)
 knows nothing about HTML, and matches selectors on `IStyleElement`, which the HTML front-end implements; `Html`
-(Core, Html.Parsing, Css) does style resolution. Stage 4 adds box generation to `Html`.
+(Core, Html.Parsing, Css) does style resolution, and box generation with DocumentModel and Fonts (next section).
 
 Where each rule lives:
 
@@ -550,16 +550,142 @@ Known limits of stage 3 (also in the profile document):
   blocks as well as text; `border-style: inset` and `outset` (hr, table border) are drawn in two shades by Chromium;
   `overflow: hidden | clip` (hr, img) clips; `aspect-ratio: auto` with a ratio (the width and height attributes of
   img) gives a ratio to an element that is not replaced; `unicode-bidi: isolate` is accepted as it changes nothing in
-  left-to-right text. Stage 4 implements these or refuses them.
-- Until stage 4 the code front-end keeps its own cascade (`Fluent/Cascade.cs`: own style, shared style, table cell
+  left-to-right text. Box generation (next section) aligns text with the `-webkit-*` values (a descendant block is as
+  wide as its container while sizes are refused, so aligning it changes nothing), refuses `inset` and `outset` borders
+  that have a width, `overflow: hidden | clip` and `aspect-ratio` with a ratio on a block box, and draws `isolate` as
+  `normal`.
+- The code front-end keeps its own cascade (`Fluent/Cascade.cs`: own style, shared style, table cell
   defaults, inherited) with its own initial values and its own list of what inherits, beside the property registry
   the HTML front-end reads. The facts both hold, the initial font size (12pt) and the heading sizes (2, 1.5, 1.17, 1,
   0.83 and 0.67 em), are tied by `UnitTests.Extensions.Documents.Architecture/FrontEndFactsTests.cs`; the rest is not
-  tied until stage 4 reads the registry for both.
+  tied: box generation reads the registry for the HTML front-end only, and a later package ties the code front-end to
+  it.
+
+## HTML front-end (stage 4: box generation)
+
+```
+StyledHtmlDocument ──HtmlBoxGenerator.Generate──▶ HtmlBoxes (StyledDocument + FontSet) ──DocumentLayout.Run──▶ PageDocument
+HTML text ──HtmlRendering.ToPages / ToPdf / ToPng (composition package)──▶ the same, in one call
+```
+
+Every `HtmlRendering` entry returns its output beside the diagnostics of parsing, style resolution and box generation
+(`HtmlRendered<T>`), so under `UnsupportedPolicy.Warn` a caller sees each refusal and what was left out or changed for
+it.
+
+Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
+Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
+`FontMetricRounding.WholePixels`). In this first package it draws `display: block`, `inline` and `none`, text, the box
+properties of block boxes and the page size and margins; every other computed value is refused by name.
+
+Where each rule lives:
+
+| Rule | Place |
+| --- | --- |
+| block, inline and none; anonymous block boxes (CSS 2.1 §9.2.1.1); white space between blocks makes no box (§9.2.2.1); roles (h1–h6, p); the walk with an explicit stack; ids in pre-order; the nesting limit | `Html/Boxes/HtmlBoxGenerator.cs` |
+| white-space collapsing across inline element boundaries (CSS Text 3 §4.1.1) | inline layout (`Typesetting/WhiteSpaceCollapsing.cs`), for both front-ends: box generation hands the text on as written, and each inline element starts with an empty run in its style, which carries its line height (CSS 2.1 §10.8.1) |
+| which computed values are drawn, and every refusal | `Html/Boxes/BoxProperties.cs`, one row per registry longhand |
+| font matching: `@font-face` (TrueType, through the resolver, loaded when first needed), then the caller's fonts; first family with a face; exact weight and style | `Html/Boxes/FontMatcher.cs` |
+| `@page`: size and margins of rules without a selector, Chromium's rounding of the page | `Html/Boxes/PageRules.cs` |
+| line height in Chromium's layout unit (a length rounded to 1/64 px, a number times the font size floored to it) | `HtmlBoxGenerator.LineHeightOf` |
+
+**The refusal table.** `BoxProperties.Rows` holds one row per longhand of the property registry: what is drawn, and
+where a value has no effect, the condition. A value is refused (`Documents.Html.Unsupported.Value`, at the element's
+start tag, with the property and the value) only where it would change the print. In short:
+
+| Properties | Drawn | Refused |
+| --- | --- | --- |
+| `display` | `block`, `inline`, `none` | every other type (lists, tables, …: the next packages) |
+| margins | lengths of 0 or more; `auto` as 0 (width is auto); on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
+| padding, border widths | lengths on a block box | percentages; any on an inline box |
+| border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
+| `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
+| `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply) | other values on a block box |
+| `box-sizing`, table and list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, no table or list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
+| `white-space-collapse`, `text-wrap-mode` | `collapse`, `wrap`; any on an element without text | `preserve`, `nowrap` where text is |
+| `text-decoration-line` | `none`; any on an element without content | underline (links: the next packages) |
+| `vertical-align` | `baseline`; any on a block box | other values on an inline box |
+| `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
+| `font-kerning` | `auto`, `normal` (Chromium kerns with both: cases `h-kerning-*`) | `none` (refused by the registry) |
+| break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box, none after the last box, as Chromium prints it) but a font size of 0 | a font size of 0; a family without a face (`Font`) |
+| the properties supported only at their initial value | the initial value | any other (the registry already refuses it) |
+
+Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`): `br`,
+`wbr`, `img`, `q`. The others are refused through their values: tables and lists by `display`, `pre` by
+`white-space-collapse`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
+(in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
+`ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
+at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed
+and U+0085 as a missing glyph), the line and paragraph separators (Chromium prints a space that does not collapse), a
+noncharacter, half of a surrogate pair (cases `h-char-*`). Under `UnsupportedPolicy.Warn` a refused value is
+replaced by the model's initial value of what it sets, a refused display type is laid out as a block box, and an
+element refused by its own rule is left out (`HtmlBoxGenerator`, remarks).
+
+**The page.** Without an `@page` rule the page is the caller's, as Chromium prints on the paper of the print call:
+`HtmlStyleOptions.Page`, by default A4 with no margins; media queries and viewport units see its page area, `size:
+auto` takes its size and a bare `portrait` or `landscape` turns it (the case test passes US Letter, 612 × 792 pt, no
+margins, which the reference tool prints on: cases `h-default-page`, `h-page-size-auto`, `h-page-landscape`,
+`h-page-portrait`, `h-page-default-media`). Media queries see that page also where an `@page` rule sets another
+size, as Chromium evaluates them (cases `h-media-page-size-narrow`, `h-media-page-size-wide`). A root element with `display: none` generates no box: one empty page of
+the caller's page, whatever the `@page` rules say (case `h-root-display-none`). An `@page` rule without a selector gives `size` and the margins;
+declarations that reach only the page-margin boxes (inherited properties, the counters) have no effect; any other
+declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Box generation makes
+the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
+at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
+leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
+prints 594.96 × 841.92 pt). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
+area reaches past the sheet (cases `h-page-size-*`, `h-page-area-*`, `h-page-margin-*`).
+
+**The status file.** `tools/reference/chromium/html-status.txt` has one line per reference case, written by
+`UnitTests.Extensions.Documents.Html/Boxes/CaseStatusTests.cs` (with `DOCUMENTS_UPDATE_HTML_STATUS=1`): the case runs
+through the whole HTML path unchanged and its pages are compared with every file measured for the case
+(`HtmlCases`, where each comparison names its file and bound; `HtmlCases.Bound` is 0.1 pt):
+
+- `measured/<case>.print.txt`, the print read back from the PDF: the same pages of the same size, the same words on
+  each page in the same order, each word's start, end and font size within 0.1 pt, its baseline within 0.1 pt, and
+  its colour and face (the PostScript name of the font, which names the font file and with it the weight and the
+  style); the same area painted in each colour by the rectangles, filled or stroked (each pixel takes the colour of
+  the last rectangle over it; a stroked rectangle is read back as the four bands it paints), and the same image areas
+  in drawing order, each edge within 0.1 pt;
+- `<case>.lines.txt`, the filled rectangles read back by a second script, with the bands of the print's strokes: the
+  same painted area, colour not compared (the file has none);
+- `<case>.words.txt`, the words read back by poppler: the same words inside the page, each start and end within
+  0.1 pt, and the line box poppler gives it (the baseline less the face's ascender, plus its descender) within 0.1 pt;
+- `<case>.boxes.txt`, the boxes measured in the page: the height of each box named by an element id within 0.1 pt.
+  Not the width: the tool measures the boxes in the 1280 px browser window, not in the printed page.
+
+Baselines and the edges of rectangles and images are compared at the whole pixel where Chromium paints them (every
+rectangle and image edge in the committed prints is a whole pixel), so a difference smaller than half a pixel there
+can stay hidden; x positions, font sizes and box heights are compared as they are. A face in a print that is not a
+font file the case loads fails `MeasuredFaceTests`: Chromium prints with a fallback font, without a word, when a font
+file does not load.
+
+A line reads `<case> equal`; `<case> refused <code> <property: value or element> at <line>:<column>` (the first
+refusal, counted as one by its exact code: the next packages' work list); `<case> listed <test>: <difference>` for a
+difference of layout already listed and pinned by that test of the code front-end, which must stay the same
+difference; or `<case> open <difference>` for a known difference, engine against Chromium, that is not fixed yet (no
+pull request while one is open). The status is the line's second field. A case that lays out and differs otherwise
+fails the test, and so does a status that changes without the file; writing the file anew makes no case `open` that
+the committed file does not already name. To read it: `cut -d' ' -f2 html-status.txt | sort | uniq -c` gives the
+picture; grep a code or a property for the cases it holds back.
 
 ## Known limits (all stages)
 
 Each is documented next to its code as well.
+
+- **Content wider than the page area (HTML):** Chromium shrinks the whole print by the widest page's overflow, up to a
+  factor of 1.5, and clips past it (`CalculateOverflowShrinkForPrinting`, pagination_utils.cc); the engine has no page
+  scale and lets the content stick out (cases `h-wide-word-little`, `h-wide-word-much`, listed;
+  `HtmlListedDifferenceTests`).
+- **The page area past the sheet (HTML):** Chromium rounds the page area up to whole pixels even where it then reaches
+  past the printed sheet, as on A4 without margins, the default page (794 × 1123 px, 595.5 × 842.25 pt, on a sheet of
+  594.96 × 841.92 pt); the model holds no page area larger than its sheet, so the engine's ends at the sheet: 0.54 pt
+  narrower and 0.33 pt lower (cases `h-page-a4-zero-*`, listed; `HtmlListedDifferenceTests`). A right margin of 0.53 pt
+  and a bottom margin of 0.39 pt or more remove the difference (case `h-page-a4-margin-px`).
+- **Kerning across the border of an inline element (HTML):** Chromium shapes text across the border of an inline
+  element when the font is the same (`T<span>o</span>` kerns as `To`); the engine shapes each run alone, so such a pair
+  is not kerned (1.46 pt wider for "To" in Lato at 12 pt; cases `h-kern-span`, `h-kern-bold-spaces`, listed;
+  `HtmlListedDifferenceTests`).
 
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured

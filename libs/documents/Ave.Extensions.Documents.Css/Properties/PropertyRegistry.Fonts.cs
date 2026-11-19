@@ -68,6 +68,11 @@ public static partial class PropertyRegistry
             ParseFontWeight,
             ComputeFontWeight);
 
+        // normal prints as auto: Chromium 159 kerns with both (measured: cases h-kerning-auto, h-kerning-normal and
+        // h-kerning-none of tools/reference/chromium), and the engine always applies the font's kerning.
+        yield return Keywords("font-kerning", inherited: true, "auto", ["auto", "normal"], ["none"], "all elements and text",
+            "CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured)");
+
         yield return new PropertyDefinition(
             "font-style", inherited: true, new CssKeyword("normal"), "all elements and text", "normal | italic", PropertySupport.Supported,
             "CSS Fonts 4 §2.4",
