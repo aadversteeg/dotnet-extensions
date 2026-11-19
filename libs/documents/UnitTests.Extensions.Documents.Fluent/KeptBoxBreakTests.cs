@@ -15,7 +15,8 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <c>fr-pad-against-keep</c>, <c>fr-keep-inside-box</c> in <see cref="BottomPaddingTests"/>), and a break inside a box or
 /// paragraph kept together loses to a better breakpoint before the box, which then moves whole: the cases <c>kb-*</c> of
 /// <c>tools/reference/chromium</c>, in two forms. Form A: the kept content fits on the page and its box's bottom padding
-/// or border does not (page area 150 pt, 18 pt lines, <c>orphans</c> and <c>widows</c> 1). Form B: no padding, a kept box
+/// or border does not, or the kept content's bottom margin inside a padded box passes the page end (page area 150 pt,
+/// 18 pt lines, <c>orphans</c> and <c>widows</c> 1). Form B: no padding, a kept box
 /// whose break lies before a box with keep-with-next inside it (page area 180 pt, <c>orphans</c> and <c>widows</c> 2).
 /// </summary>
 public class KeptBoxBreakTests
@@ -71,6 +72,8 @@ public class KeptBoxBreakTests
             "kb-t1-kept-row-group-in-padded-box" => (1, [After(63), Block([Groups(RowGroup([Row("r0"), Row("r1"), Row("r2")]).KeepTogether())]).Padding(9.Pt())]),
             "kb-t2-kept-row-group-after-a-row" => (1, [After(63), Block([Groups(RowGroup([Row("r0")]), RowGroup([Row("r1"), Row("r2")]).KeepTogether())]).Padding(9.Pt())]),
             "kb-t3-row-group-not-kept-control" => (1, [After(63), Block([Groups(RowGroup([Row("r0"), Row("r1"), Row("r2")]))]).Padding(9.Pt())]),
+            "kb-m1-kept-box-margin-in-padded-box" => (1, [After(63), Block([Block([a.MarginBottom(30.Pt())]).KeepTogether()]).PaddingBottom(12.Pt())]),
+            "kb-m2-kept-para-margin-in-padded-box" => (1, [After(63), Block([a.MarginBottom(30.Pt()).KeepTogether()]).PaddingBottom(12.Pt())]),
             _ => (1, [After(63), Block([Rows("r0", "r1", "r2").KeepTogether()]).Padding(9.Pt()).Border(0.75.Pt(), Color.Black)]),
         };
     }
@@ -94,12 +97,15 @@ public class KeptBoxBreakTests
     [InlineData("kb-t1-kept-row-group-in-padded-box")]
     [InlineData("kb-t2-kept-row-group-after-a-row")]
     [InlineData("kb-t3-row-group-not-kept-control")]
+    [InlineData("kb-m1-kept-box-margin-in-padded-box")]
+    [InlineData("kb-m2-kept-para-margin-in-padded-box")]
     public void Kept_content_whose_box_s_bottom_inset_does_not_fit_moves_whole_where_a_better_break_lies_before_it(string caseName)
     {
         // The box's content fits on page 1 and its bottom padding or border does not. Kept together (the box, its paragraph,
         // a box around it, in a cell or not): the break inside it violates the keep, the break before it after "i" is
         // perfect, and the box moves whole (i | a0 a1 a2 z). Not kept (n9), or fitting (n1c), or a kept table that ends
-        // before the padding (n11): the box breaks inside as before.
+        // before the padding (n11): the box breaks inside as before. The same where the kept content's own bottom margin
+        // stays inside the padded box and passes the page end (m1, m2): the box moves whole.
         var (orphansAndWidows, body) = FormA(caseName);
 
         Engine(174, orphansAndWidows, [.. body, Paragraph("z")]).Should().Be(Chromium(caseName), $"the pages as Chromium prints {caseName}");
