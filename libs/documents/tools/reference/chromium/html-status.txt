@@ -256,7 +256,7 @@ h-kerning-auto equal
 h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none at 2:74
 h-kerning-normal equal
 h-page-margin-fraction equal
-h-page-margin-round open page 1 rectangle 1 x1 288 (laid out at 288.25), Chromium 288.75 (print.txt)
+h-page-margin-round open page 1 painted area: the pixel at (288, 12): Chromium paints it and the engine does not; the engine paints 6992 px, Chromium 7011 px (print.txt)
 kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:133
 kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:120
 kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br at 8:85

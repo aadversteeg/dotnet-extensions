@@ -202,8 +202,8 @@ internal static class HtmlCases
     /// number of pages of the same size (within 0.001 pt, the file's precision); on each page the same words in the same
     /// order, each with its start and end (<see cref="PrintedWord.X0"/>, <see cref="PrintedWord.X1"/>) and its font size
     /// within <see cref="Bound"/>, and its baseline after <see cref="WholePixel"/> within <see cref="Bound"/>; the same
-    /// filled rectangles in drawing order and the same image areas, each edge after <see cref="WholePixel"/> within
-    /// <see cref="Bound"/>.
+    /// area painted by filled rectangles (<see cref="PaintedDifference"/>); the same image areas in drawing order, each
+    /// edge after <see cref="WholePixel"/> within <see cref="Bound"/>.
     /// </summary>
     public static string? Difference(PrintedPages engine, PrintedPages chromium)
     {
@@ -237,7 +237,7 @@ internal static class HtmlCases
                 }
             }
 
-            if ((Areas($"page {ours.Number} rectangle", ours.Rectangles, theirs.Rectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images)) is { } area)
+            if ((PaintedDifference(ours, ours.Rectangles, theirs.Rectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images)) is { } area)
             {
                 return area + " (print.txt)";
             }
@@ -246,32 +246,74 @@ internal static class HtmlCases
         return null;
     }
 
-    /// <summary>The first difference between the engine's filled rectangles, over all pages in drawing order, and the
-    /// rectangles <c>lines.txt</c> holds (<c>page x0 y0 x1 y1 height</c>, read back by <c>rectangles.py</c>): the same
-    /// page, each edge after <see cref="WholePixel"/> within <see cref="Bound"/>, and the height between the snapped edges
-    /// within <see cref="Bound"/>.</summary>
+    /// <summary>The first difference between the area the engine's filled rectangles paint and the area of the rectangles
+    /// <c>lines.txt</c> holds (<c>page x0 y0 x1 y1 height</c>, read back by <c>rectangles.py</c>; the height is y1 less y0
+    /// of the same line, nothing of its own), page by page as <see cref="PaintedDifference"/> compares them.</summary>
     private static string? RectangleDifference(PrintedPages engine, List<string[]> rows)
     {
-        var ours = engine.Pages.SelectMany(page => page.Rectangles).ToList();
-        if (ours.Count != rows.Count)
+        var measured = rows.Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))).ToList();
+        if (measured.FirstOrDefault(box => box.Page < 1 || box.Page > engine.Pages.Length) is { } beyond)
         {
-            return $"{ours.Count} rectangles, Chromium {rows.Count} (lines.txt)";
+            return $"a rectangle on page {beyond.Page}, the engine has {engine.Pages.Length} pages (lines.txt)";
         }
 
-        foreach (var (box, (row, index)) in ours.Zip(rows.Select((row, index) => (row, index + 1))))
+        foreach (var page in engine.Pages)
         {
-            var at = $"rectangle {index}";
-            var found = (int.Parse(row[0], CultureInfo.InvariantCulture) == box.Page ? null : $"{at} on page {box.Page}, Chromium {row[0]}")
-                ?? Snapped(at, "x0", box.X0, Number(row[1])) ?? Snapped(at, "y0", box.Y0, Number(row[2]))
-                ?? Snapped(at, "x1", box.X1, Number(row[3])) ?? Snapped(at, "y1", box.Y1, Number(row[4]))
-                ?? Far(at, "height", WholePixel(box.Y1) - WholePixel(box.Y0), Number(row[5]));
-            if (found is not null)
+            if (PaintedDifference(page, page.Rectangles, [.. measured.Where(box => box.Page == page.Number)]) is { } found)
             {
                 return found + " (lines.txt)";
             }
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The first difference between the area two sets of filled rectangles paint on a page: the whole pixels of the page
+    /// (0.75 pt) that any of them covers, each edge after <see cref="WholePixel"/>, so an edge within <see cref="Bound"/>
+    /// of Chromium's after snapping covers the same pixels. The area is compared, not each rectangle: Chromium cuts a
+    /// border into other rectangles than the engine, which paint the same pixels (case <c>fr-f9-padded-box-orphans3</c>:
+    /// Chromium's side borders run over the top border, from 93 pt down, the engine's start below it, at 93.75 pt). The
+    /// measured files hold no colour, so the area is one for every colour; the number and the order of the rectangles are
+    /// not compared.
+    /// </summary>
+    private static string? PaintedDifference(PrintedPage page, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
+    {
+        var (engine, chromium) = (Painted(page, ours), Painted(page, theirs));
+        var columns = (int)Math.Round(page.Width / 0.75, MidpointRounding.AwayFromZero);
+        for (var cell = 0; cell < engine.Length; cell++)
+        {
+            if (engine[cell] != chromium[cell])
+            {
+                var (x, y) = (cell % columns * 0.75, cell / columns * 0.75);
+                var who = engine[cell] ? "the engine paints it and Chromium does not" : "Chromium paints it and the engine does not";
+                return $"page {page.Number} painted area: the pixel at ({Of(x)}, {Of(y)}): {who}; the engine paints {engine.Count(painted => painted)} px, " +
+                    $"Chromium {chromium.Count(painted => painted)} px";
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The whole pixels of a page that rectangles cover, row by row from the top left, each edge after
+    /// <see cref="WholePixel"/> and cut at the page's edges.</summary>
+    private static bool[] Painted(PrintedPage page, IReadOnlyList<PrintedBox> boxes)
+    {
+        static int Pixel(double length) => (int)Math.Round(length / 0.75, MidpointRounding.AwayFromZero);
+        var (columns, rows) = (Pixel(page.Width), Pixel(page.Height));
+        var cells = new bool[columns * rows];
+        foreach (var box in boxes)
+        {
+            for (var y = Math.Max(0, Pixel(box.Y0)); y < Math.Min(rows, Pixel(box.Y1)); y++)
+            {
+                for (var x = Math.Max(0, Pixel(box.X0)); x < Math.Min(columns, Pixel(box.X1)); x++)
+                {
+                    cells[y * columns + x] = true;
+                }
+            }
+        }
+
+        return cells;
     }
 
     /// <summary>
@@ -413,8 +455,8 @@ internal static class HtmlCases
         return null;
     }
 
-    /// <summary>The first rectangle or image of a page whose edges after <see cref="WholePixel"/> are not within
-    /// <see cref="Bound"/> of Chromium's; or a different count.</summary>
+    /// <summary>The first image of a page whose edges after <see cref="WholePixel"/> are not within <see cref="Bound"/> of
+    /// Chromium's, in drawing order; or a different count.</summary>
     private static string? Areas(string at, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
     {
         if (ours.Count != theirs.Count)

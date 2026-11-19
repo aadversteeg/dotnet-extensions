@@ -76,7 +76,12 @@ page exactly, in every test that reads a print file; the distance between baseli
 (case `fr-positions`) and the first baseline in `LineBoxReferenceTests`; the bottom padding's rectangle in
 `BottomPaddingTests`; the page-relative baseline in the page-start tests. Other positions in the print files (most
 rectangles, image areas, x positions in tables) are measured and kept, and pinned only by their line counts
-(`MeasuredReferenceFilesTests`) and by the agreement of the two read-backs (`ChromiumReferenceTests`). The harness takes any
+(`MeasuredReferenceFilesTests`) and by the agreement of the two read-backs (`ChromiumReferenceTests`). Every case that the
+HTML front-end draws is compared on every fact of its `print`, `lines`, `words` and `boxes` files, each with its bound
+(`CaseStatusTests` and `HtmlCases` in `UnitTests.Extensions.Documents.Html`; docs/architecture.md, "The status file").
+The read-backs keep filled drawings only: a border that Chromium strokes as one rectangle is in none of the files
+(`kb-v8-padded-box-kept-para`, whose four sides are 0.75 pt solid black; the prints of `kb-v9-padded-box-kept-table-row`
+and `fr-header-cell-margin` hold one stroke each too). The harness takes any
 HTML with an `@page` rule, so whole documents can be measured the same way as the small cases.
 
 Chromium snaps more than layout units when it prints, which a case must allow for:
