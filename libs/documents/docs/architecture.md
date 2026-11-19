@@ -718,7 +718,9 @@ Each is documented next to its code as well.
   or an image. The table's fragment is as tall as the page area; the line is drawn past it, so what follows the table
   starts on the next page. The limits, against Chromium:
   (i) Chromium draws the overflowing line again at the top of the next page; when the table ends the document, that is
-  a page that holds only the line (`a2-row-end`: 3 pages in Chromium, 2 in the engine).
+  a page that holds only the line (`a2-row-end`: 3 pages in Chromium, 2 in the engine). Where only the outer half of
+  the line passes, in a table that starts the page, that last page in Chromium shows nothing at all
+  (`a2-row-end-first-row-half-alone`: 2 pages in Chromium, 1 in the engine; `RowEndTests`).
   (ii) Content after the table starts higher than in Chromium, by the width of that line: at the top of the next page
   in the engine, below the line drawn again in Chromium (a paragraph's baseline at 24.00 pt against 24.75 with a 0.75 pt
   line, against 30.00 with a 6 pt line; `a2-row-end-after`, `a2-row-end-6pt-after`). The engine reserves no offset
@@ -726,13 +728,23 @@ Each is documented next to its code as well.
   (iii) At the break between the first row and the next, the engine draws half of the line on each page (192 to 192.375
   and 12 to 12.375), where Chromium draws the whole line on both; content after it is 0.375 pt higher (1.125 pt below
   the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
-  (iv) A table that itself starts at the top of a page with such a first row is refused under `Allow`
-  (`Documents.Layout.DoesNotFit`). Chromium leaves that page empty and prints the row whole on the next one
-  (`a2-row-end-first-row`, a cell of 11 lines below 14.25 pt top padding, then a row "after": a blank page,
-  `x0`..`x10`, `after`), or cuts the row between its lines where they are a hair taller than the page area in its unit
-  of 1/64 pixel (`a2-row-end-first-row-cut`, 12 lines of 14.9375 pt: `x0`..`x9`, then `x10 x11 after`). The engine
-  prints neither; both belong with the slicing of borders at page breaks. Under `Avoid` the engine cuts such a row as
-  a last resort at the top of a page (listed above, `fr-f4-padding-page-start`; `RowEndTests`, `A_table_that_starts_the_page_with_a_first_row_that_fits_but_for_its_line_below_is_refused_under_Allow`).
+  (iv) A table that itself starts at the top of a page with such a first row: Chromium prints it in three ways. Where
+  the content ends within half the grid line of the page end, so that only the outer half of the line below passes,
+  it places the row whole; the engine does the same under `Allow` (`TablePage.PassesOnlyByItsLineBelow`: the row up to
+  the middle of its line below fits), with Chromium's pages and words in the six measured places, a table at the top of
+  the page, in a block, after an empty block, after a forced break, on page 2 after text and beside a second column,
+  and with a second row after the first, where the page breaks between the rows and the line is split there (limit
+  (iii)) (`a2-row-end-first-row-half-*`, a cell of 11 lines below 13.875 pt top padding: `x0`..`x10`, then `below` or
+  `after`; `RowEndTests`). Content after such a table starts higher than in Chromium, as in limit (ii). Where the content ends at the page end, Chromium
+  leaves that page empty and prints the row whole on the next one (`a2-row-end-first-row`, 11 lines below 14.25 pt top
+  padding, then a row "after": a blank page, `x0`..`x10`, `after`), or cuts the row between its lines where they are a
+  hair taller than the page area in its unit of 1/64 pixel (`a2-row-end-first-row-cut`, 12 lines of 14.9375 pt:
+  `x0`..`x9`, then `x10 x11 after`). The engine prints neither of these two and refuses the document under `Allow`
+  (`Documents.Layout.DoesNotFit`); both belong with the slicing of borders at page breaks. Under `Avoid` the engine
+  cuts such a row as a last resort at the top of a page, in all three shapes (listed above, `fr-f4-padding-page-start`;
+  `RowEndTests`, `A_table_that_starts_the_page_with_a_first_row_that_fits_but_for_its_line_below_is_refused_under_Allow`).
+  With nothing after the table, Chromium ends the document with a second page that shows nothing, and the engine has
+  one page (`a2-row-end-first-row-half-alone`; limit (i)).
   The rule is not for a table that starts lower on the page: below a paragraph such a first row moves to the next
   page with its table, as in Chromium (`a2-row-end-below-paragraph`). Nor for a table that continues below an outer
   table's repeated header row, which does not start the page: under `Avoid` the row is cut below the header as Chromium

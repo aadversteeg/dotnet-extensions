@@ -14,7 +14,8 @@ namespace UnitTests.Extensions.Documents.Fluent;
 /// <summary>
 /// Under <see cref="EmptyRowParts.Allow"/>, in a table that continues from the page before, a unit that starts its page
 /// area (a row that continues from the page before, or the first on the page), whose cells' content fits and whose grid
-/// line below does not, is placed whole, and that line passes the page end, as Chromium prints it (<c>TablePage.PassesOnlyByItsLineBelow</c>; the first row of such a
+/// line below does not, is placed whole, and that line passes the page end, as Chromium prints it; in a table that
+/// starts the page, a first row whose line below passes by its outer half only (<c>TablePage.PassesOnlyByItsLineBelow</c>; the first row of such a
 /// unit too, <c>TableBreaks.InsideUnit</c>). Against Chromium's print (<c>tools/reference/chromium</c>, cases
 /// <c>a2-row-end*</c>), and with the limits of docs/architecture.md, "Known limits", pinned. Page area 276 × 180 pt, Lato
 /// 12 pt, line height 15 pt, 0.75 pt grid lines split at breaks.
@@ -233,10 +234,11 @@ public class RowEndTests
     [InlineData("a2-row-end-first-row-cut", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "x10 x11 after")]
     public void A_table_that_starts_the_page_with_a_first_row_that_fits_but_for_its_line_below_is_refused_under_Allow(string caseName, params string[] chromiumPages)
     {
-        // Limit, docs/architecture.md: the rule is for a table that continues from the page before. Chromium prints such a
-        // first row otherwise: it leaves the first page empty and prints the row whole on the next, or, where the 12 lines
-        // in its unit of 1/64 pixel are a hair taller than the page area, cuts the row before its last two lines. The
-        // engine prints neither and refuses the document under Allow; under Avoid it cuts the row as before.
+        // Limit, docs/architecture.md: in a table that starts the page the rule places a first row whose line below passes
+        // the page end by its outer half only (the test below). Where the content ends at the page end, Chromium leaves the
+        // first page empty and prints the row whole on the next, or, where the 12 lines in its unit of 1/64 pixel are a hair
+        // taller than the page area, cuts the row before its last two lines. The engine prints neither and refuses the
+        // document under Allow; under Avoid it cuts the row as before.
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {
             var result = Run(FirstRow(caseName), EmptyRowParts.Allow, overflow);
@@ -246,6 +248,64 @@ public class RowEndTests
         }
 
         PrintedPages.Chromium(caseName).PageTexts.Should().Equal(chromiumPages);
+    }
+
+    /// <summary>A one-row table whose cell has 11 lines below 13.875 pt top padding, so that the row up to the middle of
+    /// its line below is the page area exactly and only the outer half of that line passes the page end, in the place
+    /// <paramref name="caseName"/> names, then a paragraph "below" (cases <c>a2-row-end-first-row-half-*</c>); in
+    /// <c>-second-row</c> a row "after" follows instead, in <c>-alone</c> nothing.</summary>
+    private static Element[] HalfLine(string caseName)
+    {
+        TableElement Table(params CellElement[] cells) => Grid(cells.Length + 1, TableRow([Cell([Lines("x", 11)]).PaddingTop(13.875.Pt()), .. cells]));
+        return caseName switch
+        {
+            "a2-row-end-first-row-half-top" => [Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-block" => [Block([Table()]), Paragraph("below")],
+            "a2-row-end-first-row-half-emptyblock" => [Block([]), Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-break" => [Paragraph("i0"), Block([]), PageBreak(), Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-page2" => [Lines("i", 12), Table(), Paragraph("below")],
+            "a2-row-end-first-row-half-2col" => [Table(Cell("b")), Paragraph("below")],
+            "a2-row-end-first-row-half-second-row" => [Grid(1, TableRow([Cell([Lines("x", 11)]).PaddingTop(13.875.Pt())]), TableRow([Cell("after")]))],
+            "a2-row-end-first-row-half-alone" => [Table()],
+            _ => throw new ArgumentException(caseName, nameof(caseName)),
+        };
+    }
+
+    [Theory]
+    [InlineData("a2-row-end-first-row-half-top")]
+    [InlineData("a2-row-end-first-row-half-block")]
+    [InlineData("a2-row-end-first-row-half-emptyblock")]
+    [InlineData("a2-row-end-first-row-half-break")]
+    [InlineData("a2-row-end-first-row-half-page2")]
+    [InlineData("a2-row-end-first-row-half-2col")]
+    [InlineData("a2-row-end-first-row-half-second-row")]
+    public void A_table_that_starts_the_page_places_a_first_row_whole_whose_line_below_passes_the_page_end_by_its_outer_half_under_Allow_as_in_Chromium(string caseName)
+    {
+        // The row's content ends 0.375 pt above the page end and the middle of its line below is the page end. Chromium
+        // places the row whole on the page and lets the outer half of the line pass; what follows starts the next page.
+        // The engine does the same under Allow, in a table that starts the page wherever it stands; a first row whose
+        // content ends at the page end, or cut a hair lower, is still refused (the test above). With a second row the page
+        // breaks between the two rows, where the line is split and its upper half fits, so that shape had Chromium's pages
+        // without the rule as well.
+        var chromium = PrintedPages.Chromium(caseName);
+
+        chromium.PageTexts[^1].Should().Be(caseName.EndsWith("second-row", StringComparison.Ordinal) ? "after" : "below");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            Printed(HalfLine(caseName), overflow).PageTexts.Should().Equal(chromium.PageTexts, overflow.ToString());
+        }
+    }
+
+    [Fact]
+    public void A_table_that_starts_the_page_and_ends_the_document_with_such_a_first_row_has_a_page_less_than_in_Chromium()
+    {
+        // Limit, docs/architecture.md, row end (i): the same row with nothing after the table. Chromium ends the document
+        // with a second page that shows nothing; the engine has the one page.
+        PrintedPages.Chromium("a2-row-end-first-row-half-alone").PageTexts.Should().Equal("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "");
+        foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
+        {
+            Printed(HalfLine("a2-row-end-first-row-half-alone"), overflow).PageTexts.Should().Equal(["x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10"], overflow.ToString());
+        }
     }
 
     [Fact]

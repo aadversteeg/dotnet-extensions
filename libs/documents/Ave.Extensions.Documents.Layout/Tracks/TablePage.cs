@@ -459,8 +459,10 @@ internal static class TablePage
     /// line below does not, is placed whole; the line passes the page area, by at most its width. Moving the row would gain
     /// nothing, and cutting it would put words on other pages than Chromium does (cases a2-row-end*). Chromium draws the
     /// overflowing line again at the top of the next page; the engine does not slice borders (docs/architecture.md, Known
-    /// limits). A table that starts at the top of the page with such a first row is not placed so: Chromium leaves that
-    /// page empty or cuts the row between its lines there (cases a2-row-end-first-*), and the engine refuses it
+    /// limits). In a table that itself starts at the top of the page, the first row is placed so only when the row up to
+    /// the middle of its line below fits, so that only the outer half of the line passes: Chromium places that row whole
+    /// (cases a2-row-end-first-row-half-*). Where only the content fits, Chromium leaves that page empty or cuts the row
+    /// between its lines (cases a2-row-end-first-row, a2-row-end-first-row-cut), and the engine refuses the table
     /// (docs/architecture.md, Known limits).
     /// </summary>
     /// <param name="table">The table.</param>
@@ -471,10 +473,9 @@ internal static class TablePage
     /// <returns>True when it is placed whole and its line below passes the page area.</returns>
     internal static bool PassesOnlyByItsLineBelow(TableGeometry table, Content content, double bottom, int row, double height) =>
         table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
-        && table.ContinuesFromPageBefore
         && table.IsAtPageStart
         && content.Rows.IsEmpty
-        && Fitting.Fits(bottom - LineBelowShare(table, row), height);
+        && Fitting.Fits(table.ContinuesFromPageBefore ? bottom - LineBelowShare(table, row) : bottom, height);
 
     /// <summary>
     /// The table's fragment as tall as the page area where a unit placed whole lets its line below pass the page end

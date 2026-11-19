@@ -136,6 +136,38 @@ public class MeasuredReferenceFilesTests
         ["a2-row-end-first-row-cut.lines.txt"] = 9,
         ["a2-row-end-first-row-cut.print.txt"] = 24,
         ["a2-row-end-first-row-cut.words.txt"] = 13,
+        ["a2-row-end-first-row-half-2col.boxes.txt"] = 2,
+        ["a2-row-end-first-row-half-2col.lines.txt"] = 7,
+        ["a2-row-end-first-row-half-2col.print.txt"] = 22,
+        ["a2-row-end-first-row-half-2col.words.txt"] = 13,
+        ["a2-row-end-first-row-half-alone.boxes.txt"] = 1,
+        ["a2-row-end-first-row-half-alone.lines.txt"] = 4,
+        ["a2-row-end-first-row-half-alone.print.txt"] = 17,
+        ["a2-row-end-first-row-half-alone.words.txt"] = 11,
+        ["a2-row-end-first-row-half-block.boxes.txt"] = 1,
+        ["a2-row-end-first-row-half-block.lines.txt"] = 4,
+        ["a2-row-end-first-row-half-block.print.txt"] = 18,
+        ["a2-row-end-first-row-half-block.words.txt"] = 12,
+        ["a2-row-end-first-row-half-break.boxes.txt"] = 1,
+        ["a2-row-end-first-row-half-break.lines.txt"] = 4,
+        ["a2-row-end-first-row-half-break.print.txt"] = 20,
+        ["a2-row-end-first-row-half-break.words.txt"] = 13,
+        ["a2-row-end-first-row-half-emptyblock.boxes.txt"] = 1,
+        ["a2-row-end-first-row-half-emptyblock.lines.txt"] = 4,
+        ["a2-row-end-first-row-half-emptyblock.print.txt"] = 18,
+        ["a2-row-end-first-row-half-emptyblock.words.txt"] = 12,
+        ["a2-row-end-first-row-half-page2.boxes.txt"] = 1,
+        ["a2-row-end-first-row-half-page2.lines.txt"] = 4,
+        ["a2-row-end-first-row-half-page2.print.txt"] = 31,
+        ["a2-row-end-first-row-half-page2.words.txt"] = 24,
+        ["a2-row-end-first-row-half-second-row.boxes.txt"] = 2,
+        ["a2-row-end-first-row-half-second-row.lines.txt"] = 8,
+        ["a2-row-end-first-row-half-second-row.print.txt"] = 22,
+        ["a2-row-end-first-row-half-second-row.words.txt"] = 12,
+        ["a2-row-end-first-row-half-top.boxes.txt"] = 1,
+        ["a2-row-end-first-row-half-top.lines.txt"] = 4,
+        ["a2-row-end-first-row-half-top.print.txt"] = 18,
+        ["a2-row-end-first-row-half-top.words.txt"] = 12,
         ["a2-row-end-first-row.boxes.txt"] = 2,
         ["a2-row-end-first-row.lines.txt"] = 8,
         ["a2-row-end-first-row.print.txt"] = 23,
@@ -1148,7 +1180,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(280);
+        cases.Should().HaveCount(288);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Order(StringComparer.Ordinal), "four files per case, the versions, and Chromium's words of the generated a2-row-end family (RowEndTests)");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
