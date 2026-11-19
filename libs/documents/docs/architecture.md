@@ -698,6 +698,9 @@ Each is documented next to its code as well.
   is refused as before. A block outside a table whose bottom padding does not fit below such a piece at the top of a
   page keeps the piece whole and lets the padding pass, as Chromium does.
   Only images and line boxes are sliced; padding or borders taller than a page are refused under either value.
+  Bottom padding of a block that does not fit below the last slice of a piece in it starts the next page, and what
+  follows the block comes once, below it, as in Chromium (cases `a4-image-block-padding-60`,
+  `a4-image-block-padding-133`; `MonolithicSliceTests`).
 - **Text:** Unicode normalization before shaping follows HarfBuzz's default (compose a base and a mark the font has
   precomposed, decompose what it lacks), except: a base followed only by an enclosing mark (Me) is not decomposed
   (HarfBuzz counts Me as a mark); a cluster with a variation selector (U+FE00–U+FE0F) is normalized, where HarfBuzz

@@ -106,6 +106,29 @@ public class MonolithicSliceTests
         Baseline(chromium, "after").Should().Be(chromiumTop + shown);
     }
 
+    [Theory]
+    [InlineData(60, 3, 48 + 60)]
+    [InlineData(133, 4, 133)]
+    public void What_follows_a_sliced_image_and_its_block_s_bottom_padding_is_printed_once_where_Chromium_prints_it(int padding, int page, double below)
+    {
+        // The image sliced 180, 180 and 48 pt in a block with bottom padding, then "after". 60 pt fit below the last slice,
+        // so "after" comes on page 3, 48 + 60 pt below the top of the page area; 133 pt do not fit in the 132 pt left, so
+        // the padding starts page 4 and "after" comes below it. (What followed such a block was once on no page.) Chromium
+        // paints a baseline at the nearest whole pixel: 133 pt below the top is 157 pt, which it paints at 156.75 pt.
+        var caseName = $"a4-image-block-padding-{padding}";
+        var engine = Printed(Block([TallImage()]).PaddingBottom(padding.Pt()), Paragraph("after"));
+        var chromium = PrintedPages.Chromium(caseName);
+        var engineTop = Printed(Paragraph("after")).Pages[0].Words[0].Baseline;
+        var chromiumTop = PrintedPages.Chromium("a1-text-before").Pages[0].Words[0].Baseline;
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.Pages.Should().HaveCount(page);
+        engine.Pages.SelectMany(printed => printed.Words).Select(word => (word.Text, word.Page)).Should().Equal(("after", page));
+        engine.Pages.SelectMany(printed => printed.Images).Should().Equal(chromium.Pages.SelectMany(printed => printed.Images));
+        Baseline(engine, "after").Should().BeApproximately(engineTop + below, 1e-9);
+        Baseline(chromium, "after").Should().Be(Math.Round((chromiumTop + below) * 4 / 3, MidpointRounding.AwayFromZero) * 3 / 4);
+    }
+
     [Fact]
     public void A_sliced_line_is_drawn_on_each_page_where_Chromium_draws_it()
     {
