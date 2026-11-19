@@ -78,3 +78,13 @@ table 157.805 48.469 span-pref
 td 157.055 30.234 Supercalifragilisticexpi
 td 104.695 17.484 a
 td 52.359 17.484 b
+div 300.000 35.719 w-span-spec-a
+table 75.375 35.719 span-spec-a
+td 74.625 17.484 abcdefghij
+td 60.000 17.484 a
+td 14.625 17.484 b
+div 69.750 35.719 w-span-spec-f
+table 69.750 35.719 span-spec-f
+td 69.000 17.484 abcdefghij
+td 54.375 17.484 a
+td 14.625 17.484 b

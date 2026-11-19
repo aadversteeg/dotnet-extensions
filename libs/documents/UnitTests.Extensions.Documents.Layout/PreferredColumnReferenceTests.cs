@@ -57,6 +57,8 @@ public class PreferredColumnReferenceTests
                 t.Row(t.Cell("a much wider heading over both columns", span), t.Cell("third")), t.Row(t.Cell("one"), t.Cell("two"), t.Cell("x"))),
             "span-min" => Page(150, [Pref(60), Auto], t.Row(t.Cell("Supercalifragilisticexpialidocious", span)), t.Row(t.Cell("a"), t.Cell("b"))),
             "span-pref" => Page(300, [Pref(60), Pref(30)], t.Row(t.Cell("Supercalifragilisticexpialidocious and more", span)), t.Row(t.Cell("a"), t.Cell("b"))),
+            "span-spec" => Page(name.EndsWith("-a", StringComparison.Ordinal) ? 300 : 69.75, [Pref(60), Auto],
+                t.Row(t.Cell("abcdefghij", span)), t.Row(t.Cell("a"), t.Cell("b"))),
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "no such case"),
         };
     }
@@ -70,7 +72,9 @@ public class PreferredColumnReferenceTests
     /// preferred columns keep their width (<c>squeeze-auto</c>, <c>narrow-f</c>, <c>span-f</c>); without auto columns a
     /// 100% table shares the rest over the preferred columns in proportion to their maximums (<c>all-f</c>); a cell
     /// spanning a preferred and an auto column widens the auto column (<c>span</c>), one spanning only preferred columns
-    /// widens them in proportion to their maximums for its minimum and not for its maximum (<c>span-pref</c>).
+    /// widens them in proportion to their maximums for its minimum and not for its maximum (<c>span-pref</c>); a cell
+    /// whose minimum the preferred columns hold at their width raises the preferred column's minimum only as far as
+    /// needed, so a narrow table can still shrink it (<c>span-spec</c>).
     /// The tolerance n counts each snapped input once: one ceiled text item per cell with text (the paddings are
     /// truncated alike in every column and a 0.75pt border is a whole pixel), the column's own truncated share, and one
     /// for a remainder or a container width Chromium truncates (200pt and 100pt are not whole pixels). It does not count
@@ -94,6 +98,8 @@ public class PreferredColumnReferenceTests
     [InlineData("span-a", new[] { 197.203, 30.387, 60.000, 137.203, 30.387 }, 228.340)]
     [InlineData("span-f", new[] { 255.867, 43.383, 60.000, 195.867, 43.383 }, 300)]
     [InlineData("span-pref-a", new[] { 157.055, 104.695, 52.359 }, 157.805)]
+    [InlineData("span-spec-a", new[] { 74.625, 60.000, 14.625 }, 75.375)]
+    [InlineData("span-spec-f", new[] { 69.000, 54.375, 14.625 }, 69.750)]
     public void A_column_with_a_given_width_in_the_automatic_layout_is_sized_like_Chromium(string name, double[] chromium, double table)
     {
         var page = Paginate(Document(name)).Single();
