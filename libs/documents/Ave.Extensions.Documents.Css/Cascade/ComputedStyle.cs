@@ -35,8 +35,8 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
 
     /// <summary>The border width an element's child takes with <c>inherit</c>: the computed width, or, where the border
     /// style is none or hidden and the computed width therefore zero, the width as computed without that rule. Chromium
-    /// 159 copies that width (<c>BorderTopWidth::ApplyInherit</c> in longhands_custom.cc takes
-    /// <c>BorderTopWidthInternal</c> since the CSS Working Group resolved issue 11494; measured: a p with
+    /// copies that width (<c>BorderTopWidth::ApplyInherit</c> in longhands_custom.cc, read in the Chromium 150 source, takes
+    /// <c>BorderTopWidthInternal</c> since the CSS Working Group resolved issue 11494; measured in 159: a p with
     /// <c>border-width: inherit</c> in a div with <c>border-width: 5px</c> and no border style has 5px).</summary>
     /// <param name="property">One of the four border widths.</param>
     internal CssValue WidthBehindStyle(PropertyDefinition property) =>

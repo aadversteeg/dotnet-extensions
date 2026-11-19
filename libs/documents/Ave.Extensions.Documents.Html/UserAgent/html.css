@@ -32,8 +32,8 @@ noframes, param, rp, script, style, template, title {
   display: none;
 }
 
-/* The hidden attribute is a presentational hint, as in Chromium 159 (HTMLElement::CollectStyleForPresentationAttribute,
-   html_element.cc): display: none, or content-visibility: hidden for until-found, at the level of the author's
+/* The hidden attribute is a presentational hint, as in Chromium (HTMLElement::CollectStyleForPresentationAttribute,
+   html_element.cc, read in the Chromium 150 source; measured in 159): display: none, or content-visibility: hidden for until-found, at the level of the author's
    declarations, so revert rolls it back (measured). */
 
 embed[hidden] { display: inline; height: 0; width: 0; }
@@ -151,8 +151,8 @@ h6 { margin-block: 2.33em; font-size: 0.67em; }
 
 /* §15.3.7 Lists */
 dir, dd, dl, dt, menu, ol, ul { display: block; }
-/* §15.3.7 gives li text-align: match-parent; Chromium 159 does not parse that value (css_parser_fast_paths.cc,
-   CSSTextAlignMatchParentEnabled), so its li inherits text-align as every other element does. */
+/* §15.3.7 gives li text-align: match-parent; Chromium 159 does not parse that value (measured; css_parser_fast_paths.cc,
+   CSSTextAlignMatchParentEnabled, read in the Chromium 150 source), so its li inherits text-align as every other element does. */
 li { display: list-item; }
 
 dir, dl, menu, ol, ul { margin-block: 1em; }
@@ -193,8 +193,9 @@ table {
   border-collapse: separate;
   text-indent: initial;
 }
-/* In a table the cell padding is the table's presentational hint (see the hints); Chromium 159 html.css. */
-td:not(table td), th:not(table th) { padding: 1px; }
+/* A cell's padding is its table's presentational hint, not a rule here: 1px by default, 0px after an author's revert
+   (measured). A td or th with no table around it (only a tree made in code has one) is refused, as no hint gives it
+   the padding Chromium 159 gives it (measured: 1px that an author's revert keeps). */
 th { font-weight: bold; }
 
 /* §15.3.8: th is centred when its parent's text-align is the initial value. */

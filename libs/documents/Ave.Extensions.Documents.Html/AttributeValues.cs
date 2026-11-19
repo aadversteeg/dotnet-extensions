@@ -110,7 +110,7 @@ internal static class AttributeValues
     /// a legacy colour value (HTML §2.3.6.4): ASCII white space and the code points whose bidirectional class is white
     /// space (U+1680, U+2000 to U+200A, U+2028, U+205F, U+3000), as <c>String::StripWhiteSpace</c> does in
     /// <c>HTMLElement::ParseColorWithLegacyRules</c> (html_element.cc, with <c>IsSpaceOrNewline</c> of wtf/text/unicode.h;
-    /// measured: bgcolor="&#x3000;red" is red).</summary>
+    /// read in the Chromium 150 source; measured in 159: bgcolor="&#x3000;red" is red).</summary>
     private static string StripWhiteSpace(string value)
     {
         static bool IsSpace(char c) => c <= 0x7F

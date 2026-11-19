@@ -553,8 +553,8 @@ public static class HtmlStyleResolver
             && !(IsAuto(style, "width") && IsAuto(style, "height") && IsAuto(style, "aspect-ratio"));
 
         /// <summary>Whether an inline img with a size whose image is not there loses its width, height and
-        /// aspect-ratio, as Chromium 159 computes them (html_image_fallback_helper.cc, <c>AdjustHostStyle</c> and
-        /// <c>TreatImageAsReplaced</c>; HTML Standard §15.4.2): it shows its fallback (a src that is empty or names no
+        /// aspect-ratio, as Chromium 159 computes them (measured; html_image_fallback_helper.cc, <c>AdjustHostStyle</c> and
+        /// <c>TreatImageAsReplaced</c>, read in the Chromium 150 source; HTML Standard §15.4.2): it shows its fallback (a src that is empty or names no
         /// image, or alt text with no image; measured: no src, or a src of white space only, with no alt text is no
         /// fallback), and it is not treated as a replaced element, which it is when it has no alt text and both a width
         /// and a height, or an aspect-ratio and one of them. Its three sizes then compute to auto after the

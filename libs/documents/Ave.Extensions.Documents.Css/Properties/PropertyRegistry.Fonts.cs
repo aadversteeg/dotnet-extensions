@@ -224,9 +224,9 @@ public static partial class PropertyRegistry
                         return ParsedValue.Invalid($"'{CssSerializer.Shortened(word.Text)}' cannot be a font family name without quotes");
                     }
 
-                    // Chromium 159 also reads -webkit-body as a generic family here (ConsumeGenericFamily of
-                    // css_parsing_utils.cc takes the keywords serif to math of css_value_keywords.json5), so
-                    // 'font: 12px -webkit-body a' is dropped (measured).
+                    // Chromium also reads -webkit-body as a generic family here (ConsumeGenericFamily of
+                    // css_parsing_utils.cc takes the keywords serif to math of css_value_keywords.json5; read in the
+                    // Chromium 150 source), so 'font: 12px -webkit-body a' is dropped (measured in 159).
                     if (words.Count == 1 && (GenericFamilies.Contains(InfraAscii.ToLower(words[0])) || InfraAscii.ToLower(words[0]) == "-webkit-body"))
                     {
                         return ParsedValue.Invalid($"the generic family '{CssSerializer.Shortened(words[0])}' cannot start a font family name");
@@ -283,8 +283,9 @@ public static partial class PropertyRegistry
     }
 
     /// <summary>The computed weight: bolder and lighter step from the parent's weight by the table of CSS Fonts 4 §2.2.1;
-    /// a number is kept in quarters, cut toward zero, as Chromium 159 keeps a weight in a fixed-point value with two
-    /// fractional bits (platform/fonts/font_selection_types.h, FontSelectionValue; measured: 100.6 is 100.5, 999.99 is
+    /// a number is kept in quarters, cut toward zero, as Chromium keeps a weight in a fixed-point value with two
+    /// fractional bits (platform/fonts/font_selection_types.h, FontSelectionValue, read in the Chromium 150 source;
+    /// measured in 159: 100.6 is 100.5, 999.99 is
     /// 999.75, calc(0.1234567 * 400) is 49.25).</summary>
     private static ComputedResult ComputeFontWeight(CssValue value, ComputeContext context)
     {

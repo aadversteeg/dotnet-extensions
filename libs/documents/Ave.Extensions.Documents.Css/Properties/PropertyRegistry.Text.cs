@@ -104,7 +104,7 @@ public static partial class PropertyRegistry
 
     /// <summary>The computed text-align: <c>-internal-ave-th-center</c> is center when the parent's value is start, else
     /// the parent's value. <c>match-parent</c> (CSS Text 3 §6.1) is not a value: Chromium 159 does not parse it
-    /// (css_parser_fast_paths.cc, CSSTextAlignMatchParentEnabled; measured: <c>text-align: match-parent</c> after
+    /// (css_parser_fast_paths.cc, CSSTextAlignMatchParentEnabled, read in the Chromium 150 source; measured: <c>text-align: match-parent</c> after
     /// <c>text-align: right</c> leaves right).</summary>
     private static ComputedResult ComputeTextAlign(CssValue value, ComputeContext context)
     {

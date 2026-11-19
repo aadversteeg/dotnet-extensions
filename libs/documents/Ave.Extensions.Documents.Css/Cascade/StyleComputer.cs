@@ -858,9 +858,10 @@ public sealed class StyleComputer
     /// other computes to auto (which the engine does not support: refused). Chromium keeps clip beside hidden, where
     /// the specification says hidden (measured, corpus case properties), and so does the engine.</item>
     /// <item>An element the front-end marks (<see cref="ElementDeclarations.ResetsLegacyAlignment"/>) whose display is not
-    /// none: text-align -webkit-left, -webkit-center and -webkit-right compute to start (Chromium 159 adjusts an HTML
+    /// none: text-align -webkit-left, -webkit-center and -webkit-right compute to start (Chromium adjusts an HTML
     /// element only when it is displayed: <c>StyleAdjuster::AdjustComputedStyle</c> calls
-    /// <c>AdjustStyleForHTMLElement</c> when display is not none, style_adjuster.cc; measured).</item>
+    /// <c>AdjustStyleForHTMLElement</c> when display is not none, style_adjuster.cc, read in the Chromium 150 source;
+    /// measured in 159).</item>
     /// </list></summary>
     private void Adjust(ComputeContext context, bool resetsLegacyAlignment)
     {

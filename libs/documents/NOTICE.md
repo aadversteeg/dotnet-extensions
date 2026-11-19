@@ -120,8 +120,9 @@ and CSS Paged Media 3 (editor's drafts read 2026-11-18); no code was copied or p
 (`Css/Values/Colors.cs`, `HslToRgb`) is the textbook formula with the chroma (C = (1 − |2L − 1|) · S, the hue's sector,
 the match value m = L − C / 2), not the sample code of CSS Color 4. Where the engine follows Chromium 159 rather than a
 draft (which names are identifiers, which pseudo-classes may follow a pseudo-element), Chromium was measured through
-Playwright (`tools/reference/chromium/computed-style`). For some rules Chromium's source (BSD-3-Clause) was read, and the
-code comments cite it by file and function; no Chromium code was copied or ported.
+Playwright (`tools/reference/chromium/computed-style`). For some rules Chromium's source (BSD-3-Clause) was read, in the Chromium 150 tree;
+the behaviour is measured in Chromium 159. The code comments cite the source by file and function; no Chromium code
+was copied or ported.
 
 ## Test suites
 

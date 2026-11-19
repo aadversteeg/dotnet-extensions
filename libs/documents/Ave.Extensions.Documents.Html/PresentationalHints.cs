@@ -42,7 +42,7 @@ internal static class PresentationalHints
         ("caption", "align=top", "align=bottom"),
         ("col, colgroup", "width, align (-webkit-left/right/center, or one text-align value)", ""),
         ("thead, tbody, tfoot, tr", "height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign", "background"),
-        ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535) and border (1px inset, or solid with bordercolor)", "background"),
+        ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535) and border (1px inset, or solid with bordercolor)", "background; a td or th with no table around it (only a tree made in code has one)"),
         ("div, p", "align (-webkit-left/right/center, or one text-align value)", ""),
         ("hr", "align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width", ""),
         ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG)"),
@@ -164,7 +164,8 @@ internal static class PresentationalHints
             Refuse("contenteditable", "makes the text wrap as editable text");
         }
 
-        // Chromium 159 (HTMLTablePartElement::CollectStyleForPresentationAttribute, html_table_part_element.cc): top,
+        // Chromium (HTMLTablePartElement::CollectStyleForPresentationAttribute, html_table_part_element.cc, read in the
+        // Chromium 150 source; measured in 159): top,
         // middle, bottom and baseline compared ASCII case-insensitively without trimming, any other value read as
         // vertical-align (" top" is top, "sub" is sub; measured). An identifier that is none of vertical-align's
         // keywords (VerticalAlign::ParseSingleValue, longhands_custom.cc: baseline to -webkit-baseline-middle of
@@ -186,7 +187,8 @@ internal static class PresentationalHints
             }
         }
 
-        // Chromium 159 (HTMLElement::CollectStyleForPresentationAttribute, html_element.cc): hidden is display: none, or
+        // Chromium (HTMLElement::CollectStyleForPresentationAttribute, html_element.cc, read in the Chromium 150 source;
+        // measured in 159): hidden is display: none, or
         // content-visibility: hidden when it is until-found (ASCII case-insensitive), on every HTML element but embed,
         // which maps hidden itself (HTMLEmbedElement). As a hint, an author's revert rolls it back (measured).
         if (Attr("hidden") is { } hiddenValue && html.LocalName != "embed")
@@ -248,7 +250,8 @@ internal static class PresentationalHints
                     }
                 }
 
-                // Chromium 159 (HTMLTableElement::CollectStyleForPresentationAttribute, html_table_element.cc): center,
+                // Chromium (HTMLTableElement::CollectStyleForPresentationAttribute, html_table_element.cc, read in the
+                // Chromium 150 source; measured in 159): center,
                 // compared ASCII case-insensitively without trimming, centres the table; any other value is read as
                 // float (" center" is no float, " left" floats; measured).
                 if (Attr("align") is { } tableAlign && InfraAscii.ToLower(tableAlign) == "center")
@@ -263,8 +266,8 @@ internal static class PresentationalHints
 
                 break;
             case "caption":
-                // Chromium 159 (HTMLTableCaptionElement::CollectStyleForPresentationAttribute,
-                // html_table_caption_element.cc) reads the value as caption-side: " bottom" is bottom, left, right and
+                // Chromium (HTMLTableCaptionElement::CollectStyleForPresentationAttribute,
+                // html_table_caption_element.cc, read in the Chromium 150 source; measured in 159) reads the value as caption-side: " bottom" is bottom, left, right and
                 // "\u3000bottom" are no value (measured).
                 if (Attr("align") is { } captionAlign && InfraAscii.ToLower(CssTrim(captionAlign)) == "bottom")
                 {
@@ -295,7 +298,15 @@ internal static class PresentationalHints
                     hints.Add(("white-space", "nowrap"));
                 }
 
-                CellHints(element, hints);
+                if (!CellHints(element, hints))
+                {
+                    // Only a tree made in code has one: the parser puts every cell in a table. Chromium 159 gives it a
+                    // padding of 1px that an author's revert keeps (measured through script), which no hint gives.
+                    refused.Add(new Error(HtmlStyleErrorCodes.Unsupported.Element, $"The element <{html.LocalName}> with no table around it is not supported.")
+                        .With(ErrorMetadataKeys.Value, html.LocalName)
+                        .WithSource(sourceName, html.Position));
+                }
+
                 break;
             case "div":
                 BlockAlign();
@@ -537,7 +548,8 @@ internal static class PresentationalHints
     /// <summary>The hints a cell gets from its table (§15.3.8): the cellpadding of the table it is a cell of (the
     /// nearest table around it) as padding; and, when that table has a border attribute that is not zero and the cell's
     /// row is a child of the table or of one of its row groups, a 1px inset border.</summary>
-    private static void CellHints(StyleElement cell, List<(string, string)> hints)
+    /// <returns>False when the cell has no table around it, and no hints.</returns>
+    private static bool CellHints(StyleElement cell, List<(string, string)> hints)
     {
         var table = cell.Parent;
         while (table is not null && !(table.IsHtml && table.LocalName == "table"))
@@ -547,7 +559,7 @@ internal static class PresentationalHints
 
         if (table is null)
         {
-            return;
+            return false;
         }
 
         // Chromium 159 (HTMLTableElement::ParseAttribute and CreateSharedCellStyle, html_table_element.cc): the padding of
@@ -573,6 +585,8 @@ internal static class PresentationalHints
             hints.Add(("border-style", table.Element.Attribute("bordercolor") is { Length: > 0 } ? "solid" : "inset"));
             hints.Add(("border-color", "inherit"));
         }
+
+        return true;
     }
 
     /// <summary>§15.3.11: align, color, noshade, size and width of hr, as Chromium 159 maps them (measured; it differs

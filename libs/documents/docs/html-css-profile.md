@@ -461,7 +461,7 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 | caption | align=top | align=bottom |
 | col, colgroup | width, align (-webkit-left/right/center, or one text-align value) |  |
 | thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign | background |
-| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535) and border (1px inset, or solid with bordercolor) | background |
+| td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535) and border (1px inset, or solid with bordercolor) | background; a td or th with no table around it (only a tree made in code has one) |
 | div, p | align (-webkit-left/right/center, or one text-align value) |  |
 | hr | align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width |  |
 | img | width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom | align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG) |

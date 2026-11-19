@@ -182,8 +182,9 @@ public static partial class PropertyRegistry
     /// keeps it (measured: <c>1e999/1</c> is <c>3.40282e+38 / 1</c>).</summary>
     private static ParsedValue ParseAspectRatio(ValueReader reader)
     {
-        // Chromium 159 keeps the ratio as two single-precision floats in a gfx::SizeF, which makes a component of 8
-        // float epsilons (2^-20) or less 0 (ui/gfx/geometry/size_f.h, SizeF::clamp; measured: 0.0000001/1 is 0 / 1,
+        // Chromium keeps the ratio as two single-precision floats in a gfx::SizeF, which makes a component of 8
+        // float epsilons (2^-20) or less 0 (ui/gfx/geometry/size_f.h, SizeF::clamp, read in the Chromium 150 source;
+        // measured in 159: 0.0000001/1 is 0 / 1,
         // 2^-20 is 0, 0.000000954 stays). Other numbers keep their value (opacity: 0.0000001 is 1e-07).
         const float Trivial = 9.5367431640625E-07f; // 2^-20: 8 × the single-precision machine epsilon 2^-23
         static double RatioComponent(double value) => (float)value > Trivial ? System.Math.Min(value, float.MaxValue) : 0;
