@@ -107,7 +107,8 @@ public static class TextModifiers
     /// <summary>Sets how white space collapses (CSS <c>white-space-collapse</c>, CSS Text 4, inherited):
     /// <see cref="Core.WhiteSpaceCollapse.Preserve"/> keeps every space and makes a line feed a forced line break (with
     /// wrapping, <c>white-space: pre-wrap</c>), <see cref="Core.WhiteSpaceCollapse.PreserveBreaks"/> collapses spaces but makes a
-    /// line feed a forced line break (<c>pre-line</c>). A tab in preserved text is refused when the document is laid out: tab
+    /// line feed a forced line break (<c>pre-line</c>), <see cref="Core.WhiteSpaceCollapse.BreakSpaces"/> keeps every space as
+    /// <c>Preserve</c> but lets none hang: spaces take their room at a line's end and may wrap (<c>break-spaces</c>). A tab in preserved text is refused when the document is laid out: tab
     /// stops are not built.</summary>
     /// <typeparam name="T">The element or style type.</typeparam>
     /// <param name="element">The element or style.</param>

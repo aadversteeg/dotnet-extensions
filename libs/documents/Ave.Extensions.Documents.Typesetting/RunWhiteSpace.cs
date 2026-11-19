@@ -13,9 +13,13 @@ public readonly record struct RunWhiteSpace(WhiteSpaceCollapse Collapse, TextWra
     /// <summary>The CSS initial values: white space collapses, and text wraps.</summary>
     public static RunWhiteSpace Initial => new(WhiteSpaceCollapse.Collapse);
 
-    /// <summary>True when the run's spaces are preserved (<see cref="WhiteSpaceCollapse.Preserve"/>): not collapsible, so
-    /// not removed at a line's start.</summary>
-    public bool PreservesSpaces => Collapse == WhiteSpaceCollapse.Preserve;
+    /// <summary>True when the run's spaces are preserved (<see cref="WhiteSpaceCollapse.Preserve"/>,
+    /// <see cref="WhiteSpaceCollapse.BreakSpaces"/>): not collapsible, so not removed at a line's start.</summary>
+    public bool PreservesSpaces => WhiteSpaceCollapsing.PreservesSpaces(Collapse);
+
+    /// <summary>True when the run's spaces never hang and a line may break after each of them
+    /// (<see cref="WhiteSpaceCollapse.BreakSpaces"/>).</summary>
+    public bool BreaksSpaces => Collapse == WhiteSpaceCollapse.BreakSpaces;
 
     /// <summary>True when the run's text wraps at its soft wrap opportunities (<see cref="TextWrapMode.Wrap"/>).</summary>
     public bool Wraps => Wrap == TextWrapMode.Wrap;

@@ -228,7 +228,7 @@ public static class ModelCheck
     /// next tab stop"; Chromium 159 prints it so, case <c>ws-tab</c>), and tab stops are not built. Where white
     /// space collapses a tab is a space, as before.</summary>
     private static Error? PreservedTab(TextRun run) =>
-        run.Style.WhiteSpaceCollapse == WhiteSpaceCollapse.Preserve && run.Text is { } text && text.IndexOf('\t', System.StringComparison.Ordinal) is var offset and >= 0
+        run.Style.WhiteSpaceCollapse is WhiteSpaceCollapse.Preserve or WhiteSpaceCollapse.BreakSpaces && run.Text is { } text && text.IndexOf('\t', System.StringComparison.Ordinal) is var offset and >= 0
             ? (Error?)Problem(DocumentErrorCodes.Input.Unsupported.PreservedTab, $"A run whose white space is preserved holds a tab at position {offset}; tab stops are not built.", text, "white-space-collapse", run)
                 .With(ErrorMetadataKeys.Offset, offset)
             : null;

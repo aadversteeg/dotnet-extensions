@@ -41,8 +41,15 @@ internal static class BreakableSegments
         /// <summary>True for a space that hangs at a line's end (CSS Text 3 §4.1.2): a preserved space of a run that wraps. A
         /// preserved space of a run that does not wrap (<c>white-space: pre</c>) does not hang: it takes its room as any glyph
         /// (Chromium, <c>LineInfo::ComputeTrailingSpaceWidth</c>: "We don't hang"; case <c>ws-hang-pre</c>: "aa" and four spaces
-        /// right-aligned end the spaces' width before the edge).</summary>
-        public bool Hangs(int run, ShapedGlyph glyph) => glyph.IsSpace && Of(run).PreservesSpaces && Of(run).Wraps;
+        /// right-aligned end the spaces' width before the edge). A space of <c>break-spaces</c> does not hang either (CSS Text 3
+        /// §4.1.2: such spaces "cannot hang nor have their advance width collapsed"; case <c>ws-hang-break-spaces</c>).</summary>
+        public bool Hangs(int run, ShapedGlyph glyph) => glyph.IsSpace && Of(run).PreservesSpaces && !Of(run).BreaksSpaces && Of(run).Wraps;
+
+        /// <summary>True for a space after which a line may break whatever follows: a space of <c>break-spaces</c> (CSS Text 3
+        /// §3, the value <c>break-spaces</c>), also between two spaces, where UAX #14 has an opportunity only after the last
+        /// (LB18). Chromium breaks so (case <c>ws-hang-break-spaces</c>: a line starts with the spaces that no longer fit on the
+        /// one before, and the min-content width of "aa" and four spaces is "aa" and one space, case <c>ws-table</c>).</summary>
+        public bool BreaksAfter(int run, ShapedGlyph glyph) => glyph.IsSpace && Of(run).BreaksSpaces;
 
         /// <summary>True when a line may break at a soft wrap opportunity after a character of <paramref name="run"/>: the run
         /// wraps (THE RULE FOR NOWRAP, <see cref="Split"/>).</summary>
@@ -330,7 +337,7 @@ internal static class BreakableSegments
         var segments = ImmutableArray.CreateBuilder<Segment>();
         var start = 0;
         var cursor = 0;
-        foreach (var opportunity in WithAtomicInlines(UnicodeLineBreaking.Find(text), placed, text.Length))
+        foreach (var opportunity in WithAtomicInlines(UnicodeLineBreaking.Find(text), placed, text.Length, rules))
         {
             // THE RULE FOR NOWRAP: a soft wrap opportunity belongs to the run of the character before it, and is not taken when
             // that run does not wrap (CSS Text 4 §5.1, text-wrap-mode; forced breaks break "regardless of the text-wrap-mode
@@ -380,8 +387,9 @@ internal static class BreakableSegments
     /// <param name="opportunities">The UAX #14 opportunities, in text order.</param>
     /// <param name="glyphs">The paragraph's glyphs with their places.</param>
     /// <param name="length">The text's length.</param>
+    /// <param name="rules">The runs' rules, for the opportunities after the spaces of <c>break-spaces</c>.</param>
     /// <returns>All opportunities, in text order, each once.</returns>
-    private static IEnumerable<BreakOpportunity> WithAtomicInlines(ImmutableArray<BreakOpportunity> opportunities, ImmutableArray<Placed> glyphs, int length)
+    private static IEnumerable<BreakOpportunity> WithAtomicInlines(ImmutableArray<BreakOpportunity> opportunities, ImmutableArray<Placed> glyphs, int length, LineEndRules rules)
     {
         var mandatory = new bool?[length + 1];
         foreach (var opportunity in opportunities)
@@ -392,6 +400,12 @@ internal static class BreakableSegments
         foreach (var glyph in glyphs.Where(glyph => glyph.Glyph.IsAtomicInline))
         {
             mandatory[glyph.Start] ??= false;
+            mandatory[glyph.End] ??= false;
+        }
+
+        // The same pass adds the opportunity after every space of break-spaces (LineEndRules.BreaksAfter).
+        foreach (var glyph in glyphs.Where(glyph => rules.BreaksAfter(glyph.Run, glyph.Glyph)))
+        {
             mandatory[glyph.End] ??= false;
         }
 

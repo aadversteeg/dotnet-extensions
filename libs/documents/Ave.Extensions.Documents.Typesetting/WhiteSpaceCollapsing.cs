@@ -36,7 +36,7 @@ public static class WhiteSpaceCollapsing
     /// separator U+2028, the model's forced break, and the collapsible spaces
     /// after it are removed ("Any sequence of collapsible spaces and tabs immediately preceding or following a segment break is
     /// removed"); the spaces before it end the line and go there (§4.1.2), so they are not looked for again here.</item>
-    /// <item><see cref="WhiteSpaceCollapse.Preserve"/>: nothing collapses; a space stays a space that is not collapsible, so it
+    /// <item><see cref="WhiteSpaceCollapse.Preserve"/> and <see cref="WhiteSpaceCollapse.BreakSpaces"/>: nothing collapses; a space stays a space that is not collapsible, so it
     /// neither collapses with a collapsible space beside it nor stops one from being kept (case <c>ws-border</c>: "a ", two
     /// preserved spaces, "b" shows three spaces), and a line feed is a forced line break, U+2028. A carriage return is "treated
     /// identically to spaces (U+0020) in all respects" (§4), so it is a preserved space. A tab is refused before
@@ -67,7 +67,7 @@ public static class WhiteSpaceCollapsing
             var collapsed = new StringBuilder(run.Length);
             foreach (var character in run)
             {
-                if (mode == WhiteSpaceCollapse.Preserve || (mode == WhiteSpaceCollapse.PreserveBreaks && character == '\n'))
+                if (PreservesSpaces(mode) || (mode == WhiteSpaceCollapse.PreserveBreaks && character == '\n'))
                 {
                     var isBreak = character == '\n';
                     collapsed.Append(isBreak ? LineSeparator : character == '\r' ? ' ' : character);
@@ -111,10 +111,17 @@ public static class WhiteSpaceCollapsing
     /// <returns>Whether only white space that collapses is in it.</returns>
     public static bool IsAllCollapsible(string text, WhiteSpaceCollapse mode) => mode switch
     {
-        WhiteSpaceCollapse.Preserve => text.Length == 0,
+        WhiteSpaceCollapse.Preserve or WhiteSpaceCollapse.BreakSpaces => text.Length == 0,
         WhiteSpaceCollapse.PreserveBreaks => text.All(character => character != '\n' && IsCollapsible(character)),
         _ => text.All(IsCollapsible),
     };
 
     private static bool IsCollapsible(char character) => character is ' ' or '\t' or '\n' or '\r';
+
+    /// <summary>True for the modes that keep every space: <see cref="WhiteSpaceCollapse.Preserve"/> and
+    /// <see cref="WhiteSpaceCollapse.BreakSpaces"/>, which "is identical to that of preserve, except that" its spaces never
+    /// hang (CSS Text 4 §4.1).</summary>
+    /// <param name="mode">A mode.</param>
+    /// <returns>Whether it keeps every space.</returns>
+    public static bool PreservesSpaces(WhiteSpaceCollapse mode) => mode is WhiteSpaceCollapse.Preserve or WhiteSpaceCollapse.BreakSpaces;
 }

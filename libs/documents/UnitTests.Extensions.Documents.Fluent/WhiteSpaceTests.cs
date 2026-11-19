@@ -32,6 +32,7 @@ public class WhiteSpaceTests
     private const WhiteSpaceCollapse Collapse = WhiteSpaceCollapse.Collapse;
     private const WhiteSpaceCollapse Preserve = WhiteSpaceCollapse.Preserve;
     private const WhiteSpaceCollapse PreserveBreaks = WhiteSpaceCollapse.PreserveBreaks;
+    private const WhiteSpaceCollapse BreakSpaces = WhiteSpaceCollapse.BreakSpaces;
     private const TextWrapMode Wrap = TextWrapMode.Wrap;
     private const TextWrapMode NoWrap = TextWrapMode.NoWrap;
 
@@ -96,6 +97,7 @@ public class WhiteSpaceTests
     [Theory]
     [InlineData("ws-pre", Preserve, NoWrap)]
     [InlineData("ws-pre-wrap", Preserve, Wrap)]
+    [InlineData("ws-break-spaces", BreakSpaces, Wrap)]
     [InlineData("ws-pre-line", PreserveBreaks, Wrap)]
     [InlineData("ws-nowrap", Collapse, NoWrap)]
     [InlineData("ws-normal", Collapse, Wrap)]
@@ -206,7 +208,6 @@ public class WhiteSpaceTests
 
     [Fact]
     public void Kerning_crosses_a_border_where_only_the_white_space_or_the_wrap_mode_changes_like_Chromium() =>
-        // The case's seventh paragraph is break-spaces (not built): one line at 133.5.
         ShouldMatch(Engine(300,
             Paragraph("To"),
             Paragraph([Text("T"), R("o")]),
@@ -214,17 +215,16 @@ public class WhiteSpaceTests
             Paragraph([Text("T"), R("o", Collapse, NoWrap)]),
             Paragraph([Text("T"), R("o", Preserve)]),
             Paragraph([Text("T"), R("o", PreserveBreaks)]),
-            Gap(1),
-            X), Chromium("ws-kern", 133.5));
+            Paragraph([Text("T"), R("o", BreakSpaces)]),
+            X), PrintedPages.Chromium("ws-kern"));
 
     [Fact]
     public void The_longhand_values_Chromium_prints_are_the_model_s_and_preserve_spaces_and_discard_print_as_collapse() =>
-        // The case's fourth paragraph is break-spaces (not built): two lines at 115.5 and 133.5.
         ShouldMatch(Engine(500,
             P(Preserve, "a   b\nc"),
             P(Collapse, "a   b\nc"),
             P(PreserveBreaks, "a   b\nc"),
-            Gap(2),
+            P(BreakSpaces, "a   b\nc"),
             P(Collapse, "a   b\nc"),
             P(Collapse, "a   b\nc"),
             P(Collapse, "aa bb", 6, wrap: NoWrap),
@@ -232,7 +232,7 @@ public class WhiteSpaceTests
             P(Preserve, "aa  bb", 6, wrap: NoWrap),
             P(Collapse, "aa  bb", 6, wrap: NoWrap),
             P(PreserveBreaks, "aa  bb", 6),
-            X), Chromium("ws-longhands", 115.5, 133.5));
+            X), PrintedPages.Chromium("ws-longhands"));
 
     [Fact]
     public void Preserved_spaces_hang_at_a_soft_wrap_and_take_the_room_that_is_left_at_the_paragraph_end_like_Chromium()
@@ -245,6 +245,17 @@ public class WhiteSpaceTests
         });
 
         ShouldMatch(Engine(600, [.. body]), PrintedPages.Chromium("ws-hang-pre-wrap"), aligned: true);
+    }
+
+    [Fact]
+    public void Spaces_of_break_spaces_take_their_room_and_wrap_like_Chromium()
+    {
+        var body = new[] { TextAlign.Left, TextAlign.Right, TextAlign.Center, TextAlign.Justify }.SelectMany(align => new Element[]
+        {
+            P(BreakSpaces, "aa bb          cc dd", 40, align), P(BreakSpaces, "aa    ", 120, align), P(BreakSpaces, "aa bb cc dd ee ff gg", 40, align), X,
+        });
+
+        ShouldMatch(Engine(600, [.. body]), PrintedPages.Chromium("ws-hang-break-spaces"), aligned: true);
     }
 
     [Fact]
@@ -284,10 +295,10 @@ public class WhiteSpaceTests
 
     [Fact]
     public void Every_preserved_space_inside_a_justified_line_widens_like_Chromium() =>
-        // The case's third paragraph is break-spaces (not built): two lines at 97.5 and 115.5.
         ShouldMatch(Engine(300,
-            P(Preserve, "a  b c dd ee ff gg hh", 60, TextAlign.Justify), P(Preserve, "a b c dd ee ff gg hh", 60, TextAlign.Justify), Gap(2), X),
-            Chromium("ws-justify", 97.5, 115.5));
+            P(Preserve, "a  b c dd ee ff gg hh", 60, TextAlign.Justify), P(Preserve, "a b c dd ee ff gg hh", 60, TextAlign.Justify),
+            P(BreakSpaces, "a  b c dd ee ff gg hh", 60, TextAlign.Justify), X),
+            PrintedPages.Chromium("ws-justify"));
 
     /// <summary>The min-content and max-content widths of a paragraph of one text in a mode.</summary>
     private static IntrinsicWidths Measured(WhiteSpaceCollapse mode, string text, TextWrapMode wrap = Wrap) => Measured(Paragraph([Text(text)]).WhiteSpaceCollapse(mode).TextWrapMode(wrap));
@@ -308,10 +319,13 @@ public class WhiteSpaceTests
     [InlineData(Preserve, "aa    ", 12.680, 24.973)]
     [InlineData(PreserveBreaks, "aa   bb\ncc", null, 29.191)]
     [InlineData(Preserve, "aa   \nbb", null, 21.902)]
+    // break-spaces: the spaces never hang, and a line may break after each (ws-table: the minimum is "aa" and one space).
+    [InlineData(BreakSpaces, "aa    ", 15.750, 24.973)]
     // Text that does not wrap: its minimum is its widest line (cases ws-table: a nowrap and a pre cell, squeezed and not).
     [InlineData(Collapse, "aa bb cc", 43.617, 43.617, NoWrap)]
     [InlineData(Preserve, "aa  bb\ncc", 32.262, 32.262, NoWrap)]
-    [InlineData(Preserve, "aa    ", null, 24.973, NoWrap)]
+    // Preserved spaces that do not wrap never hang, so they count for the minimum too (ws-intrinsic, the last table).
+    [InlineData(Preserve, "aa    ", 24.973, 24.973, NoWrap)]
     public void Hanging_spaces_count_for_the_maximum_width_but_not_for_the_minimum_like_Chromium(WhiteSpaceCollapse mode, string text, double? minimumCell, double maximumCell, TextWrapMode wrap = Wrap)
     {
         var widths = Measured(mode, text, wrap);

@@ -72,4 +72,28 @@ public class PreservedSpaceBreakTests
         glyphs.Take(6).Where(glyph => glyph.IsSpace).Should().HaveCount(3).And.OnlyContain(glyph => glyph.Advance == 4.0 / 3, "the free 2 points go to the three spaces inside the line");
         glyphs.Skip(6).Should().OnlyContain(glyph => glyph.Hangs && glyph.Advance == 0, "none go to the spaces that hang");
     }
+
+    private static readonly RunWhiteSpace BreakingSpaces = new(WhiteSpaceCollapse.BreakSpaces);
+
+    [Fact]
+    public void Spaces_of_break_spaces_take_their_room_and_a_line_breaks_between_them()
+    {
+        var lines = Break("ab    cd", 4, BreakingSpaces);
+
+        Texts(lines).Should().Equal("ab  ", "  cd");
+        lines.Select(line => line.Width).Should().Equal(4, 4);
+        lines.SelectMany(line => line.Segments).SelectMany(segment => segment.Glyphs).Should().OnlyContain(glyph => !glyph.Hangs);
+    }
+
+    [Fact]
+    public void A_space_that_ends_a_justified_line_gets_no_share()
+    {
+        var line = Break("a b  cd", 5, BreakingSpaces)[0];
+        Texts([line]).Should().Equal("a b  ");
+
+        var (placed, _) = LineJustification.Place(line, 6, TextAlign.Justify, isLastLine: false);
+
+        var glyphs = placed.Segments.SelectMany(segment => segment.Glyphs).ToList();
+        glyphs.Select(glyph => glyph.Advance).Should().Equal(1, 1.5, 1, 1.5, 1);
+    }
 }

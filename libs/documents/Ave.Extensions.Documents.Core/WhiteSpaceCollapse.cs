@@ -18,4 +18,8 @@ public enum WhiteSpaceCollapse
 
     /// <summary>Spaces collapse, but a line feed is a forced line break (<c>preserve-breaks</c>; <c>white-space: pre-line</c>).</summary>
     PreserveBreaks,
+
+    /// <summary>As <see cref="Preserve"/>, but a space never hangs: it takes its room at a line's end, and a line may break after
+    /// every space, also between two spaces (<c>break-spaces</c>; <c>white-space: break-spaces</c>).</summary>
+    BreakSpaces,
 }
