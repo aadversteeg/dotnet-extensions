@@ -41,7 +41,8 @@ internal static class HtmlCases
 
     /// <summary>
     /// The cases whose difference is a listed limit of layout, pinned by name in the code front-end's tests
-    /// (<c>ListedDifferenceTests</c> of <c>UnitTests.Extensions.Documents.Fluent</c>) or in <see cref="HtmlListedDifferenceTests"/>
+    /// (<c>ListedDifferenceTests</c>, <c>PinnedDifferenceTests</c> and <c>PageBreakProgressTests</c> of
+    /// <c>UnitTests.Extensions.Documents.Fluent</c>) or in <see cref="HtmlListedDifferenceTests"/>
     /// (docs/architecture.md, "Known limits"):
     /// the status file says <c>listed</c>, the test name and the first difference, so the case must still differ, and
     /// differ first in the same fact by the same amount.
@@ -59,6 +60,9 @@ internal static class HtmlCases
         ["h-page-a4-zero-lines"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["sr-same-font"] = "A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run",
         ["sr-zwnj"] = "A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it",
+        ["a4-continued-cell-pad-bottom-30-under-header"] = "A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header",
+        ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_is_refused",
+        ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -92,6 +96,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Font.ToString(),
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Table.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -397,14 +402,19 @@ internal static class HtmlCases
 
     /// <summary>
     /// The first difference between the engine's boxes and the sizes measured in the page (<c>boxes.txt</c>: <c>tag width
-    /// height label</c>, the label the element's id where it has one): the height of the box of the element with that id,
-    /// within <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>). The width is not compared:
+    /// height label</c>, the label the element's id where it has one): the height of the box of the element, within
+    /// <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>). The width is not compared:
     /// <c>measure.mjs</c> measures the boxes in the browser window (1280 px wide) with print media, not in the printed
     /// page, so a block is as wide as the window (960 pt in <c>fr-empty-span</c>, whose page is 300 pt wide). The box is
     /// found by its source line: the first box written on the line of the element, which must be the first element that
-    /// starts on that line (an element later on the line, a span inside it, has no box before the element's own). A box
-    /// the file names without an id, one whose element does not start its line, and one on more than one page are
-    /// differences: the comparison does not skip them.
+    /// starts on that line (an element later on the line, a span inside it, has no box before the element's own). A table
+    /// cell (<c>td</c>, <c>th</c>; <c>measure.mjs</c> writes every cell, in document order, with its id or the start of its
+    /// text) is found by the same rule among the cells: the file's n-th cell is the document's n-th cell element, and its
+    /// box the cell box written on its line in the same place among the cells that start on that line (a cell often shares
+    /// its line with its row and the cells beside it); its height is compared on every page it is on, since a header row
+    /// is repeated whole and a cell cut by a page break is a difference. A box the file names without an id that is not a
+    /// cell, one whose element does not start its line, and one on more than one page are differences: the comparison
+    /// does not skip them.
     /// </summary>
     private static string? BoxDifference(string name, HtmlBoxes boxes, List<string[]> rows)
     {
@@ -420,9 +430,27 @@ internal static class HtmlCases
             return $"the pages for the boxes failed: {pages.Error.Code} (boxes.txt)";
         }
 
+        var cells = elements.Where(IsCell).ToList();
+        var cellRows = rows.Count(row => row[0] is "td" or "th");
+        if (cellRows != cells.Count)
+        {
+            return $"{cellRows} cells, the document {cells.Count} (boxes.txt)";
+        }
+
+        var cellIndex = 0;
         foreach (var row in rows)
         {
             var label = row.Length > 3 ? string.Join(' ', row[3..]) : string.Empty;
+            if (row[0] is "td" or "th")
+            {
+                if (CellDifference(boxes.Document.Root, pages.Value, cells, cells[cellIndex++], row, label) is { } different)
+                {
+                    return different + " (boxes.txt)";
+                }
+
+                continue;
+            }
+
             var element = elements.Where(element => element.Attribute("id") == label).ToList();
             if (element.Count != 1 || elements.First(other => other.Position.Line == element[0].Position.Line) != element[0])
             {
@@ -439,6 +467,69 @@ internal static class HtmlCases
             if (Far($"box '{label}'", "height", fragments[0]!.Size.Height, Number(row[2])) is { } found)
             {
                 return found + " (boxes.txt)";
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsCell(HtmlElement element) => element.Namespace == ElementNamespace.Html && element.LocalName is "td" or "th";
+
+    /// <summary>The difference of one cell of <c>boxes.txt</c> (<see cref="BoxDifference"/>): the same tag and, where the
+    /// element has an id, the same label; the cell box in the same place among the cells written on the element's line,
+    /// on at least one page, of the measured height on each.</summary>
+    private static string? CellDifference(Box root, IReadOnlyList<PageFragment> pages, List<HtmlElement> cells, HtmlElement cell, string[] row, string label)
+    {
+        var at = $"box {row[0]} '{label}'";
+        if (cell.LocalName != row[0] || (cell.Attribute("id") is { } id && id != label))
+        {
+            return $"{at} is the document's <{cell.LocalName}> '{cell.Attribute("id")}' at line {cell.Position.Line}";
+        }
+
+        var line = cell.Position.Line;
+        var place = cells.Where(other => other.Position.Line == line).ToList().IndexOf(cell);
+        var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role == SemanticRole.TableHeaderCell)).ElementAtOrDefault(place);
+        var fragments = box is null ? [] : pages.Select(page => Find(page.Root.Fragment, box.Id)).OfType<BoxFragment>().ToList();
+        if (fragments.Count == 0)
+        {
+            return $"{at} has no cell box on any page";
+        }
+
+        return fragments.Select(fragment => Far(at, "height", fragment.Size.Height, Number(row[2]))).FirstOrDefault(found => found is not null);
+    }
+
+    /// <summary>Every box of the model, in document order, with an explicit stack.</summary>
+    private static IEnumerable<Box> Boxes(Box root)
+    {
+        var stack = new Stack<Box>([root]);
+        while (stack.Count > 0)
+        {
+            var box = stack.Pop();
+            yield return box;
+            foreach (var child in box.Children.OfType<Box>().Reverse())
+            {
+                stack.Push(child);
+            }
+        }
+    }
+
+    /// <summary>The first fragment of a page of the box with the id, in document order, or null.</summary>
+    private static BoxFragment? Find(Fragment root, NodeId id)
+    {
+        var stack = new Stack<Fragment>([root]);
+        while (stack.Count > 0)
+        {
+            if (stack.Pop() is BoxFragment box)
+            {
+                if (box.Box.Id == id)
+                {
+                    return box;
+                }
+
+                foreach (var child in box.Children.Reverse())
+                {
+                    stack.Push(child.Fragment);
+                }
             }
         }
 
