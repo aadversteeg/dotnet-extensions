@@ -114,6 +114,10 @@ public class ChromiumBehaviourTests
     [InlineData("<style>div { aspect-ratio: calc(0/0) auto }</style><div id=t>d</div>", "t", "aspect-ratio", "auto 0 / 1")]
     // A substituted revert-layer that is important rolls back to the user-agent value.
     [InlineData("<style>p { margin: 3px } div p { margin-left: var(--x, revert-layer) !important }</style><div><p id=t>p</p></div>", "t", "margin-left", "0px")]
+    // A presentational hint stays under a revert-layer in the style attribute, which rolls back the attribute only.
+    [InlineData("<p id=t align=\"center\" style=\"text-align: revert-layer\">x</p>", "t", "text-align", "-webkit-center")]
+    [InlineData("<table><tr><td id=t width=\"100\" style=\"width: revert-layer\">y</td></tr></table>", "t", "width", "100px")]
+    [InlineData("<table><tr><td id=t bgcolor=\"#ff0000\" style=\"background-color: revert-layer\">y</td></tr></table>", "t", "background-color", "rgb(255, 0, 0)")]
     public void The_value_on_rare_input_is_Chromiums(string body, string id, string property, string chromium) =>
         Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
 
@@ -155,6 +159,29 @@ public class ChromiumBehaviourTests
         var styled = Styled(Doctype + $"<table cellpadding={new string('9', 400)}><tr><td id=t>c</td></tr></table>", MeasuredPage);
 
         styled.ById("t").Value("padding-left").Should().Be("0px");
+    }
+
+    [Theory]
+    // Two elements that share a declaration and differ in a custom property it reads, in a fallback, inside a function
+    // or a block, or as its second name: each gets the value of its own (measured in Chromium 159.0.8154.6).
+    [InlineData(".a{--b: green} .c{--b: blue} p{color: var(--a, var(--b))}", "color", "rgb(0, 0, 255)")]
+    [InlineData(".a{--r: 255; --w: 10px} .c{--r: 0; --w: 20px} p{color: rgb(var(--r), 0, 0); margin-top: calc(var(--w) + 1px)}", "color", "rgb(0, 0, 0)")]
+    [InlineData(".a{--r: 255; --w: 10px} .c{--r: 0; --w: 20px} p{color: rgb(var(--r), 0, 0); margin-top: calc(var(--w) + 1px)}", "margin-top", "21px")]
+    [InlineData(".a{--w: 10px} .c{--w: 20px} p{margin-top: calc((var(--w)) + 1px)}", "margin-top", "21px")]
+    [InlineData("body{--x: 1px} .a{--y: 10px} .c{--y: 20px} p{margin-top: calc(var(--x) + var(--y))}", "margin-top", "21px")]
+    public void Elements_that_share_a_declaration_take_the_values_of_their_own_custom_properties(string css, string property, string chromium) =>
+        Styled(Doctype + $"<style>{css}</style><p class=a>x</p><p class=c id=t>y</p>", MeasuredPage).ById("t").Value(property).Should().Be(chromium);
+
+    [Theory]
+    [InlineData("revert")]
+    [InlineData("revert-layer")]
+    public void A_custom_property_that_becomes_a_roll_back_keyword_by_substitution_is_refused(string keyword)
+    {
+        // Chromium 159 rolls the custom property back, so the p takes the body's green (measured); the engine does
+        // not roll a custom property back, and refuses it.
+        var html = Doctype + $"<style>body {{ --a: green }} #t {{ --e:; --a: var(--e) {keyword}; color: var(--a, red) }}</style><p id=t>x";
+
+        Refusals(Styled(html, MeasuredPage)).Should().ContainSingle(error => error.Code == CssErrorCodes.Unsupported.Value && error.Message.Contains($"becomes '{keyword}'"));
     }
 
     [Theory]

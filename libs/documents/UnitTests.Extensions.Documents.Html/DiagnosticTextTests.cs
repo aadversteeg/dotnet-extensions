@@ -36,6 +36,20 @@ public class DiagnosticTextTests
     }
 
     [Fact]
+    public void Past_the_limit_the_summary_counts_the_refusals_a_style_sheet_left_out_and_names_the_first_refusal_dropped()
+    {
+        // A style sheet with 10 001 unknown at-rules: its reader keeps 10 000 and counts one more, a refusal; and two
+        // refusals after 20 000 stray end tags: the summary names the first of them.
+        var sheet = Diagnostics("<!DOCTYPE html><title>t</title><style>" + Repeat("@foo{}", 10_001) + "</style>")[^1];
+        var two = Diagnostics("<!DOCTYPE html><title>t</title>" + Repeat("</b>", 20_000) + "<p style='zoom:2'>x</p><p style='zoom:3'>y</p>")[^1];
+
+        sheet.Metadata![ErrorMetadataKeys.Refusals].Should().Be(1);
+        sheet.Message.Should().StartWith("1 more diagnostics are left out, 1 of them refusals");
+        two.Metadata![ErrorMetadataKeys.Refusals].Should().Be(2);
+        two.Message.Should().Contain("(the first: 'zoom: 2'");
+    }
+
+    [Fact]
     public void Past_the_limit_an_event_handler_is_counted_as_a_refusal()
     {
         // The event-handler attributes of an element are refused together; past the limit they are counted as

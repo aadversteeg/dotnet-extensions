@@ -343,6 +343,55 @@ public class CascadeWorkTests
     }
 
     [Fact]
+    public void The_memo_never_holds_more_than_its_limit()
+    {
+        var html = Doc("div > .a + .b ~ .c{color:red} p+p+p{padding-top:1px} section p{--v:1}", Repeat("<section><div><p class=a><p class=b><p class=c></div></section>", 20));
+        var full = Counted(html).Budget.Memo;
+
+        foreach (var memo in new[] { 0L, 1, 7, full / 2, full - 1 })
+        {
+            var (result, budget) = Counted(html, new CascadeBudget { MaxMemo = memo });
+            result.IsSuccess.Should().BeTrue();
+            budget.Memo.Should().BeLessThanOrEqualTo(memo, $"memo {memo} of {full}");
+        }
+    }
+
+    [Fact]
+    public void The_work_limit_ends_one_matching_call_with_a_small_memo()
+    {
+        // A chain of ~ over 60 siblings with a memo of 64 facts: past the memo the facts are computed again, inside the
+        // work limit, so the call ends at the limit and not after millions of steps.
+        var (result, budget) = Counted(Doc("u ~ i ~ i ~ i ~ i ~ b{color:red}", Repeat("<i></i>", 60) + "<b></b>"), new CascadeBudget { MaxWork = 3_000, MaxMemo = 64 });
+
+        result.Error.Code.Should().Be(CssErrorCodes.TooLarge);
+        budget.Work.Should().BeLessThanOrEqualTo(3_000 + 100);
+    }
+
+    [Fact]
+    public void Every_work_limit_below_the_work_of_a_document_fails_with_the_work_limits_error()
+    {
+        // A rule whose :not() argument is where the limit can be passed, and a value that would be refused as too deep
+        // if the rule were kept: a match must not be kept past the limit, so every smaller limit gives TooLarge.
+        const string html = "<!DOCTYPE html><html class=a style=\"--d: ((((((((((((((((((((((((((((((((((((((((1px))))))))))))))))))))))))))))))))))))))))\"><head class=a><style class=a>:not(.a) { margin-left: calc(((((((((((((((((((((((((((((((var(--d)))))))))))))))))))))))))))))))) }</style></head><body class=a></body></html>";
+        var work = Work(html);
+
+        for (var limit = 1L; limit < work; limit++)
+        {
+            Counted(html, new CascadeBudget { MaxWork = limit }).Result.Error.Code.Should().Be(CssErrorCodes.TooLarge, $"limit {limit} of {work}");
+        }
+    }
+
+    [Fact]
+    public void The_cascade_charges_each_candidate_it_walks_past_a_roll_back()
+    {
+        // Each further rule p{color:revert} costs the same 18 steps; one of them is the look at its candidate, which
+        // the cascade walks past once an earlier one has rolled the author's declarations back.
+        static string Reverts(int n) => Doc(Repeat("p{color:revert}", n), "<p id=last>x");
+
+        (Work(Reverts(2_000)) - Work(Reverts(1_000))).Should().Be(18 * 1_000);
+    }
+
+    [Fact]
     public void A_chain_of_one_compound_through_next_sibling_is_linear_in_the_siblings()
     {
         // p + p + … + p (2 000 steps) on twice and four times as many siblings: a run length per element.

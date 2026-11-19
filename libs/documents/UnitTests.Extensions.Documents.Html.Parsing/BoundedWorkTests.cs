@@ -214,6 +214,18 @@ public class BoundedWorkTests
     }
 
     [Theory]
+    [InlineData("<div></div>", 200_000)]
+    [InlineData("x<!---->", 270_000)]
+    public void The_clones_of_a_selected_option_count_towards_the_element_and_node_limits(string unit, int count)
+    {
+        // 200 000 elements, or 540 000 nodes, are inside the limits; their clones in one selectedcontent are not.
+        var content = "<option selected>" + Repeat(unit, count) + "</option></select>";
+
+        HtmlParser.Parse("<!DOCTYPE html><select>" + content).IsSuccess.Should().BeTrue();
+        HtmlParser.Parse("<!DOCTYPE html><select><button><selectedcontent></selectedcontent></button>" + content).Error.Code.Should().Be(HtmlErrorCodes.TooLarge);
+    }
+
+    [Theory]
     [InlineData("<p>", 500, 20_000)]
     [InlineData("<select><option selected>", 0, 0)]
     public void Elements_the_parser_makes_again_count_towards_the_element_limit(string start, int formatting, int paragraphs)
