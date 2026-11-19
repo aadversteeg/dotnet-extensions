@@ -12,7 +12,8 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// The four layout algorithms are public, and so are the break tokens a caller hands them: a caller can build a token,
 /// change one with <c>with</c>, or pass the token one box returned to another box. No such value makes an algorithm
 /// throw. A token of another algorithm's kind, or one whose position the box does not have (a child, line, row or cell
-/// outside it, a height shown that is negative or not finite), is the error <c>Documents.Layout.InvalidBreakToken</c>,
+/// outside it, a height shown that is negative, not finite, or the whole height of the sliced image or line or more),
+/// is the error <c>Documents.Layout.InvalidBreakToken</c>,
 /// naming the box. Pagination never meets it: it hands each box the token that box's own layout returned.
 /// </summary>
 public class BreakTokenCheckTests
@@ -154,16 +155,93 @@ public class BreakTokenCheckTests
         ShouldBeInvalid(() => TracksLayout.Layout(Environment, table, Space(), other.Continuation), table.Id.ToString(), "the token of a table of three rows");
     }
 
-    [Fact]
-    public void The_slice_token_of_a_taller_image_does_not_make_another_image_throw()
+    private static readonly LayoutEnvironment Slicing = Environment with { Profile = LayoutProfile.Default with { MonolithicOverflow = MonolithicOverflow.Slice } };
+
+    /// <summary>The token a 300 pt image returns after its first slice of 80 pt.</summary>
+    private static BreakToken TallImageToken()
     {
-        var slicing = Environment with { Profile = LayoutProfile.Default with { MonolithicOverflow = MonolithicOverflow.Slice } };
-        var tall = ImageLayout.Layout(slicing, ImageBox(1, 300.Pt()), Space(), null).Value.Should().BeOfType<LayoutResult.Placed>().Subject;
-        tall.Continuation.Should().BeOfType<ImageBreakToken>().Which.Shown.Should().BeGreaterThan(22.5);
+        var tall = ImageLayout.Layout(Slicing, ImageBox(1, 300.Pt()), Space(), null).Value.Should().BeOfType<LayoutResult.Placed>().Subject;
+        tall.Continuation.Should().BeOfType<ImageBreakToken>().Which.Shown.Should().Be(80);
+        return tall.Continuation!;
+    }
 
-        var act = () => ImageLayout.Layout(slicing, ImageBox(), Space(), tall.Continuation);
+    [Fact]
+    public void The_slice_token_of_a_taller_image_is_the_error_of_a_shorter_image()
+    {
+        // 80 pt shown of the image, which is less high, would leave a last slice of negative height.
+        ShouldBeInvalid(() => ImageLayout.Layout(Slicing, ImageBox(), Space(), TallImageToken()), "#1", "the token of a 300 pt image");
+    }
 
-        act.Should().NotThrow();
+    [Fact]
+    public void A_height_shown_of_a_whole_line_or_more_is_the_error_of_the_paragraph()
+    {
+        // The line of "a b" is 12 pt high: nothing of it is left after 12 pt.
+        ShouldBeInvalid(() => InlineLayout.Layout(Slicing, Paragraph(1, "a b"), Space(), new InlineBreakToken(0) { Shown = 1_000_000_000, Slices = 99 }), "#1", "a billion points shown");
+        ShouldBeInvalid(() => InlineLayout.Layout(Slicing, Paragraph(1, "a b"), Space(), new InlineBreakToken(0) { Shown = LineBoxHeight, Slices = 1 }), "#1", "the line's height shown");
+    }
+
+    [Fact]
+    public void A_flow_token_that_holds_the_slice_token_of_a_taller_image_is_the_error_of_the_image()
+    {
+        var box = Flow(10, [ImageBox()]);
+
+        ShouldBeInvalid(() => FlowLayout.Layout(Slicing, box, Space(), new FlowBreakToken(0, TallImageToken())), "#1", "a flow token around the token of a 300 pt image");
+    }
+
+    [Fact]
+    public void A_slice_token_that_leaves_part_of_the_content_is_accepted()
+    {
+        var image = ImageLayout.Layout(Slicing, ImageBox(1, 300.Pt()), Space(), TallImageToken()).Value.Should().BeOfType<LayoutResult.Placed>().Subject;
+        image.Continuation.Should().BeOfType<ImageBreakToken>().Which.Shown.Should().Be(160);
+
+        var line = InlineLayout.Layout(Slicing, Paragraph(1, "a b"), Space(), new InlineBreakToken(0) { Shown = LineBoxHeight - 1, Slices = 1 });
+        line.Value.Should().BeOfType<LayoutResult.Placed>().Which.Fragment.Size.Height.Should().BeApproximately(1, 1e-9, "the last 1 pt of the line");
+    }
+
+    /// <summary>A table without header rows whose grid lines are split at a break (<see cref="BoxDecorationBreak.Slice"/>)
+    /// given the token "continue at row 0": there is no row above the page's first row, so the page starts with the
+    /// table's top line, as at the table's start. The token is laid out as no token is, at every height, at the page
+    /// start and below it, with and without grid lines.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void A_token_for_row_0_of_a_table_without_header_rows_lays_the_table_out_from_its_top(bool gridLines)
+    {
+        foreach (var rows in new[] { 1, 2 })
+        {
+            foreach (var height in new[] { 150, 40, 30, 14, 10, 1 })
+            {
+                foreach (var atStart in new[] { true, false })
+                {
+                    var name = $"{rows} rows, {(gridLines ? "grid lines" : "no lines")}, {height} pt, {(atStart ? "at the page start" : "below it")}";
+                    var space = new ConstraintSpace(180, height, IsAtPageStart: atStart);
+                    var t = new TableModels();
+                    var cell = gridLines ? TableModels.ReferenceCell : BoxStyle.Initial;
+                    var table = t.Table([new TrackSize.Fill(1)], t.Body([.. Enumerable.Range(0, rows).Select(row => t.Row(t.Cell($"r{row}", cell)))]));
+                    table = table with { Style = table.Style with { DecorationBreak = BoxDecorationBreak.Slice } };
+
+                    var resumed = ((Func<Result<LayoutResult, Error>>)(() => TracksLayout.Layout(Environment, table, space, new TracksBreakToken(0, [], RowIsSplit: false))))
+                        .Should().NotThrow(name).Subject;
+                    var started = TracksLayout.Layout(Environment, table, space, null);
+
+                    resumed.IsSuccess.Should().Be(started.IsSuccess, name);
+                    if (started.IsFailure)
+                    {
+                        resumed.Error.Code.Should().Be(started.Error.Code, name);
+                    }
+                    else if (started.Value is LayoutResult.Placed placed)
+                    {
+                        var other = resumed.Value.Should().BeOfType<LayoutResult.Placed>(name).Subject;
+                        other.Fragment.Size.Should().Be(placed.Fragment.Size, name);
+                        (other.Continuation as TracksBreakToken)?.NextRow.Should().Be((placed.Continuation as TracksBreakToken)?.NextRow, name);
+                    }
+                    else
+                    {
+                        resumed.Value.Should().BeOfType(started.Value.GetType(), name);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>Positions a box may legitimately be given are not refused: the next page of a paragraph breaks its

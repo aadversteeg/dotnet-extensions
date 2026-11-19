@@ -59,7 +59,8 @@ public static class InlineLayout
     /// <summary>Why a paragraph cannot resume from <paramref name="token"/>, or null when it can: a token of another
     /// algorithm, a negative line index, or a height shown that no slices can have shown (negative, not finite, or shown
     /// without a slice). A line index past the last line is a position the paragraph can be given: the next page breaks
-    /// its lines again in that page's width, and the paragraph is then complete.</summary>
+    /// its lines again in that page's width, and the paragraph is then complete. A height shown that is the line's whole
+    /// height or more is refused where the line is known, by <see cref="MonolithicSlices.Next"/>.</summary>
     private static string? InvalidToken(BreakToken token) => token switch
     {
         not InlineBreakToken => "it is the token of another layout algorithm",
@@ -191,7 +192,7 @@ public static class InlineLayout
             if (shown > 0 || (placed.Count == 0 && slices && !Fitting.Fits(line.Size.Height, contentHeight)))
             {
                 var sliceCount = index == firstLine ? start.Slices : 0;
-                var next = MonolithicSlices.Next(box, line, shown, sliceCount, contentHeight);
+                var next = MonolithicSlices.Next(box, start, line, shown, sliceCount, contentHeight);
                 if (next.IsFailure || next.Value.HasNoValue)
                 {
                     return next.IsFailure ? Result<Maybe<SlicedBox.Content>, Error>.Failure(next.Error) : SlicedBox.NothingFits;

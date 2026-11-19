@@ -405,19 +405,20 @@ internal static class TablePage
         : new LineAt(above, below, CollapsedBorders.LineContext.Interior, y, LinePart.UpperHalf);
 
     /// <summary>The line that starts a page after a break between rows, resolved from the row before the break and the
-    /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down. With
-    /// clone after a cut inside the table's first row there is no row before: the line is the table's top line.</summary>
+    /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down. When
+    /// the page starts at the table's first row there is no row before (with clone after a cut inside that row, or a
+    /// token for row 0 of a table without header rows): the line is the table's top line.</summary>
     private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context)
     {
-        if (!IsCloned(table))
+        if (firstRow == 0)
         {
-            return new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
+            var top = new CollapsedBorders.LineContext(true, false, new HashSet<int>());
+            return new LineAt(null, firstRow, top, table.HorizontalWidth(null, firstRow, top) / 2);
         }
 
-        var (above, lineContext) = firstRow == 0
-            ? ((int?)null, new CollapsedBorders.LineContext(true, false, new HashSet<int>()))
-            : (firstRow - 1, context);
-        return new LineAt(above, firstRow, lineContext, table.HorizontalWidth(above, firstRow, lineContext) / 2);
+        return IsCloned(table)
+            ? new LineAt(firstRow - 1, firstRow, context, table.HorizontalWidth(firstRow - 1, firstRow, context) / 2)
+            : new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
     }
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,

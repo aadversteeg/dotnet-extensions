@@ -36,9 +36,9 @@ public static class LayoutErrorCodes
 
     /// <summary>A break token a layout algorithm cannot have returned for the box it is given: a token of another
     /// algorithm's kind, or a position the box does not have (a child, line, row or cell outside it, a height shown that is
-    /// negative or not finite). Only a caller of the algorithms themselves (<c>FlowLayout.Layout</c> and the other three)
-    /// meets it: pagination hands each box the token that box's own layout returned. Metadata: Node, Value (the token's
-    /// type), SourceFile, SourceLine.</summary>
+    /// negative, not finite, or the whole height of the sliced image or line or more). Only a caller of the algorithms
+    /// themselves (<c>FlowLayout.Layout</c> and the other three) meets it: pagination hands each box the token that box's
+    /// own layout returned. Metadata: Node, Value (the token's type), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode InvalidBreakToken = _ / "InvalidBreakToken";
 
     /// <summary>A defect of the engine, never a property of the document: a layout algorithm broke the contract every

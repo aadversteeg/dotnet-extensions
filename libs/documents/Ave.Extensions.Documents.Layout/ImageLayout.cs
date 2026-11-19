@@ -46,7 +46,7 @@ public static class ImageLayout
                 return SlicedBox.NothingFits;
             }
 
-            return MonolithicSlices.Next(box, new ImageFragment(image, size), shown, slices, height).OnSuccessBind(next => next.HasNoValue
+            return MonolithicSlices.Next(box, incoming ?? ImageBreakToken.Instance, new ImageFragment(image, size), shown, slices, height).OnSuccessBind(next => next.HasNoValue
                 ? SlicedBox.NothingFits
                 : SlicedBox.Placed(
                     [new PlacedFragment(new Point(0, 0), next.Value.Slice)],
