@@ -63,6 +63,7 @@ internal static class HtmlCases
         ["a4-continued-cell-pad-bottom-30-under-header"] = "A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header",
         ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_is_refused",
         ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
+        ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -72,8 +73,10 @@ internal static class HtmlCases
     public static readonly IReadOnlySet<string> Accepted = new HashSet<string>(StringComparer.Ordinal) { "equal", "listed", "refused", "open" };
 
     /// <summary>The codes that are a refusal of the HTML path, by their exact code: what the CSS stage and the HTML
-    /// front-end refuse to draw (<see cref="CssErrorCodes.Unsupported"/>, <see cref="HtmlStyleErrorCodes.Unsupported"/>).
-    /// Any other error, also another code under the same parent, is a failure of the case.</summary>
+    /// front-end refuse to draw (<see cref="CssErrorCodes.Unsupported"/>, <see cref="HtmlStyleErrorCodes.Unsupported"/>),
+    /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
+    /// and the source line of the box, where Chromium prints the content past the page end). Any other error, also
+    /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -97,6 +100,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        LayoutErrorCodes.DoesNotFit.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -167,25 +171,13 @@ internal static class HtmlCases
         var boxes = Boxes(name);
         if (boxes.IsFailure)
         {
-            var first = boxes.Error.Parts().First();
-            var metadata = first.Metadata;
-            var what = metadata is { } named && named.TryGetValue(ErrorMetadataKeys.Property, out var property)
-                ? $"{property}: {named[ErrorMetadataKeys.Value]}"
-                : metadata is { } other && other.TryGetValue(ErrorMetadataKeys.Value, out var value) ? $"{value}" : first.Message;
-            if (!Refusals.Contains(first.Code.ToString()))
-            {
-                return $"failed {first.Code} {first.Message}";
-            }
-
-            return metadata is { } placed && placed.TryGetValue(ErrorMetadataKeys.SourceLine, out var line) && placed.TryGetValue(ErrorMetadataKeys.SourceColumn, out var column)
-                ? $"refused {first.Code} {what} at {line}:{column}"
-                : $"failed {first.Code} {what}: a refusal without its line and column";
+            return Refusal(boxes.Error);
         }
 
         var pages = DocumentLayout.Run(boxes.Value.Document, boxes.Value.Fonts);
         if (pages.IsFailure)
         {
-            return $"failed {pages.Error.Code} {pages.Error.Message}";
+            return Refusal(pages.Error);
         }
 
         if (!File.Exists(Measured(name) + ".print.txt"))
@@ -204,6 +196,34 @@ internal static class HtmlCases
             (null, true) => "different equal to Chromium, but listed as a difference",
             ({ } found, true) => $"listed {listed}: {found}",
             ({ } found, false) => committed == "open" ? $"open {found}" : $"different {found}",
+        };
+    }
+
+    /// <summary>
+    /// The status of a case whose path ended in an error: <c>refused code what at position</c> where the first part is a
+    /// refusal (<see cref="Refusals"/>) that says where in the source it is, otherwise <c>failed</c>. The position of the
+    /// front-end's refusals is a line and a column; layout's is the line of the box, the only place a box keeps
+    /// (<see cref="SourceLocation"/>).
+    /// </summary>
+    private static string Refusal(Error error)
+    {
+        var first = error.Parts().First();
+        var metadata = first.Metadata;
+        var what = metadata is { } named && named.TryGetValue(ErrorMetadataKeys.Property, out var property)
+            ? $"{property}: {named[ErrorMetadataKeys.Value]}"
+            : metadata is { } other && other.TryGetValue(ErrorMetadataKeys.Value, out var value) ? $"{value}" : first.Message;
+        if (!Refusals.Contains(first.Code.ToString()))
+        {
+            return $"failed {first.Code} {first.Message}";
+        }
+
+        var line = metadata is { } lined && lined.TryGetValue(ErrorMetadataKeys.SourceLine, out var number) ? number : null;
+        var column = metadata is { } columned && columned.TryGetValue(ErrorMetadataKeys.SourceColumn, out var at) ? at : null;
+        return (line, column) switch
+        {
+            ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit => $"refused {first.Code} {what} at {line}",
+            _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }
 

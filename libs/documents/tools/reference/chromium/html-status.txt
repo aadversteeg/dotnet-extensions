@@ -16,7 +16,7 @@ a1-text-before equal
 a2-blank-part refused Documents.Html.Unsupported.Rendering br at 3:73
 a2-cells-end open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
 a2-cells-end-header open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
-a2-cells-end-page-top failed Documents.Layout.DoesNotFit The table made at a2-cells-end-page-top.html:3 does not fit in the 180pt left for it on the page and cannot be broken; nothing before it on the page can move to a later page.
+a2-cells-end-page-top refused Documents.Layout.DoesNotFit 180 at 3
 a2-cells-end-text open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
 a2-line-breaks refused Documents.Html.Unsupported.Rendering br at 3:62
 a2-padded-blocks open box td '' height 164.625, Chromium 200.438 (boxes.txt)
@@ -208,10 +208,10 @@ fr-forced-margin equal
 fr-forced-margin-a4 equal
 fr-forced-padded equal
 fr-forced-table open page 2 painted area: the pixel at (12, 152.25): Chromium paints it and the engine does not; the engine paints 0 px #000000, Chromium 392 px (print.txt)
-fr-header-cell-margin failed Documents.Layout.DoesNotFit The table made at fr-header-cell-margin.html:3 does not fit in the 36pt left for it on the page and cannot be broken; nothing before it on the page can move to a later page.
+fr-header-cell-margin refused Documents.Layout.DoesNotFit 36 at 3
 fr-header-pad-box-20 open page 2 painted area: the pixel at (12, 31.5): the engine paints it and Chromium does not; the engine paints 920 px #000000, Chromium 832 px (print.txt)
 fr-header-pad-box-36 open page 2 painted area: the pixel at (12, 31.5): the engine paints it and Chromium does not; the engine paints 920 px #000000, Chromium 832 px (print.txt)
-fr-header-pad-box-50 failed Documents.Layout.DoesNotFit The table made at fr-header-pad-box-50.html:8 does not fit in the 36pt left for it on the page and cannot be broken; nothing before it on the page can move to a later page.
+fr-header-pad-box-50 refused Documents.Layout.DoesNotFit 36 at 8
 fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: 4 pages, Chromium 3 (print.txt)
 fr-header-pad-grid-36 open page 2 painted area: the pixel at (12.75, 32.25): the engine paints it and Chromium does not; the engine paints 1374 px #000000, Chromium 1290 px (print.txt)
 fr-header-pad-none-36 open page 1 painted area: the pixel at (12, 31.5): the engine paints it and Chromium does not; the engine paints 920 px #000000, Chromium 832 px (print.txt)
@@ -370,6 +370,8 @@ sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
+tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'b' x0 173.796, Chromium 108.492 (print.txt)
+tl-fixed-width-auto equal
 tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1
