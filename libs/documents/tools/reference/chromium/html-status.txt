@@ -321,6 +321,7 @@ hb-two-three equal
 hb-white-space equal
 hi-attributes equal
 hi-inline equal
+hi-stretch refused Documents.Html.Unsupported.Value width: 40pt 10pt at 4:10
 hw-nowrap listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aa' x1 23.928, Chromium 21.335 (print.txt)
 hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 hw-pre-line equal

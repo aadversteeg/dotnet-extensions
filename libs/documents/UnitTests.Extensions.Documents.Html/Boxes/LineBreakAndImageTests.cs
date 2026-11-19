@@ -187,12 +187,12 @@ public class LineBreakAndImageTests
     [Fact]
     public void A_block_level_img_is_an_image_box_with_its_computed_size_and_its_alt_text_as_the_figure_s()
     {
-        var body = Body(Doc("<img src=\"figure.png\" alt=\"chart\" width=\"35\" style=\"height:60pt;margin-top:3pt\"><img src=\"figure.png\" alt=\"\"><img src=\"figure.png\">"));
+        var body = Body(Doc("<img src=\"figure.png\" alt=\"chart\" width=\"35\" style=\"height:37.5pt;margin-top:3pt\"><img src=\"figure.png\" alt=\"\"><img src=\"figure.png\">"));
 
         var boxes = body.Children.Cast<Box>().ToList();
         boxes.Select(box => box.Layout).Should().AllBeEquivalentTo(LayoutAlgorithmId.Image);
         var image = (ImageNode)boxes[0].Children.Single();
-        (image.Width?.Points, image.Height?.Points, image.Image.PixelWidth, image.Image.PixelHeight).Should().Be(((double?)26.25, (double?)60.0, 7, 10));
+        (image.Width?.Points, image.Height?.Points, image.Image.PixelWidth, image.Image.PixelHeight).Should().Be(((double?)26.25, (double?)37.5, 7, 10));
         boxes[0].Style.Margin.Top.Points.Should().Be(3);
         boxes[0].Role.Should().Be(SemanticRole.Figure("chart"));
         boxes[1].Role.Should().Be(SemanticRole.Decorative, "an empty alt says the image is decorative");
@@ -303,5 +303,26 @@ public class LineBreakAndImageTests
         {
             new[] { ours.X0 - theirs.X0, ours.Y0 - theirs.Y0, ours.X1 - theirs.X1, ours.Y1 - theirs.Y1 }.Should().AllSatisfy(delta => Math.Abs(delta).Should().BeLessThanOrEqualTo(HtmlCases.Bound));
         }
+    }
+    [Theory]
+    [InlineData("<img src=\"figure.png\" style=\"display:block;width:40pt;height:10pt\" alt=\"f\">", "40pt 10pt")]
+    [InlineData("<img src=\"figure.png\" width=\"20\" height=\"60\" style=\"display:block\" alt=\"f\">", "15pt 45pt")]
+    [InlineData("<p>a <img src=\"figure.png\" style=\"width:40pt;height:10pt\" alt=\"f\"></p>", "40pt 10pt")]
+    public void An_img_given_a_width_and_a_height_in_another_ratio_than_its_own_is_refused_with_both_at_its_start_tag(string body, string sizes)
+    {
+        var refusal = Refusal(Doc("<p>a</p>\n" + body));
+
+        (refusal.Code, Property(refusal), refusal.Metadata![ErrorMetadataKeys.Value]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "width", sizes));
+        refusal.Metadata[ErrorMetadataKeys.SourceLine].Should().Be(2);
+    }
+    [Theory]
+    [InlineData("width:14pt;height:20pt")]
+    [InlineData("width:8.4pt;height:12pt")]
+    [InlineData("width:14pt")]
+    [InlineData("height:20pt")]
+    public void An_img_given_sizes_in_its_own_ratio_or_one_size_is_drawn(string style)
+    {
+        var image = (Box)Body(Doc($"<img src=\"figure.png\" style=\"display:block;{style}\" alt=\"f\">")).Children.Single();
+        image.Layout.Should().Be(LayoutAlgorithmId.Image);
     }
 }

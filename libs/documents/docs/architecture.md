@@ -622,7 +622,8 @@ Elements whose rendering no property says are refused by their own rule (`Docume
 (cases `hb-*`). A block-level `img` is a box of the image algorithm: its file from a `data:` URL or through the resource
 resolver against the document's base URL, its computed width and height (the attributes are presentational hints), its
 alt text as the figure's description and an empty alt as decorative (case `hi-attributes`); an image that does not come
-or does not decode is refused (`Rendering`). An `img` inside a line of text (`display: inline`) is the same image box
+or does not decode is refused (`Rendering`), and so is a width and a height in another ratio than the image's own, which
+Chromium stretches the image to and the image algorithm does not (`Value`, case `hi-stretch`). An `img` inside a line of text (`display: inline`) is the same image box
 among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
 in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
 break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: tables and lists by `display`, `hr` by its `inset` border, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`

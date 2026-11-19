@@ -88,7 +88,8 @@ public static partial class HtmlBoxGenerator
         /// (the attributes are presentational hints for them, §15.4.3), a length or auto, which the image's natural size and
         /// ratio fill in. The alt text describes the figure in the structure (§4.8.4.4); an empty one makes the image
         /// decorative. An image that does not come or does not decode is refused: Chromium then shows its alt text or
-        /// nothing, which is not drawn in this version.
+        /// nothing, which is not drawn in this version. So is a width and a height in another ratio than the image's own,
+        /// which Chromium stretches the image to.
         /// </summary>
         /// <returns>The box; null when the image is refused.</returns>
         private Box? ImageBox(StyledElement element, BoxStyle style)
@@ -111,8 +112,20 @@ public static partial class HtmlBoxGenerator
                 return null;
             }
 
+            // CSS 2.1 §10.3.2, §10.6.2: with both sizes given, Chromium stretches the image to them (case hi-stretch); the
+            // image algorithm keeps the image's own ratio, so a pair of sizes in another ratio is refused.
+            var (width, height) = (Size(element, "width"), Size(element, "height"));
+            var (pixelWidth, pixelHeight) = (decoded.Value.PixelWidth, decoded.Value.PixelHeight);
+            if (width is { } w && height is { } h && Math.Abs((w.Points * pixelHeight) - (h.Points * pixelWidth)) > 1e-9 * w.Points * pixelHeight)
+            {
+                var sizes = $"{Value(element, "width")} {Value(element, "height")}";
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"The <img> is given a width and a height ({sizes}) in another ratio than its image's own ({pixelWidth} x {pixelHeight} px); Chromium stretches the image to them, which is not drawn in this version: the image keeps its ratio.",
+                    sizes, html.Position, "width");
+                return null;
+            }
+
             var id = NewId();
-            var image = new ImageNode(NewId(), decoded.Value, Size(element, "width"), Size(element, "height"), Source(html.Position));
+            var image = new ImageNode(NewId(), decoded.Value, width, height, Source(html.Position));
             var alt = html.Attribute("alt");
             var role = alt is { Length: 0 } ? SemanticRole.Decorative : SemanticRole.Figure(alt);
             return new Box(id, role, LayoutAlgorithmId.Image, style, [image], Source(html.Position));
