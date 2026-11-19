@@ -77,7 +77,7 @@ public static class ModelCheck
             var problem = node switch
             {
                 Box box => Box(box),
-                TextRun run => Text(run.Style, run) ?? Characters(run),
+                TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
                 ImageNode image => ImageSize(image),
                 _ => null,
@@ -87,11 +87,17 @@ public static class ModelCheck
                 return problem;
             }
 
+            if (node is Box paragraph && paragraph.Layout == LayoutAlgorithmId.Inline && AtomicInlines(paragraph) is { } atomic)
+            {
+                return atomic;
+            }
+
             if (node is Box parent)
             {
                 // A child box is one level deeper, except the parts of a table: a table is one level with its row groups,
                 // rows and cells (the front-end counts a table, or a row of blocks, as one element), and the content of a
-                // cell is the next level. Runs and images are content of their box, no level of their own.
+                // cell is the next level. Runs and images are content of their box, no level of their own; a box among the runs of
+                // an inline box (an image in a line) is one level deeper, as any child box.
                 var isRow = parent.Style.TableDisplay == TableDisplay.Row;
                 foreach (var child in parent.Children)
                 {
@@ -121,6 +127,34 @@ public static class ModelCheck
             ?? (style.Text is { } strut ? Text(strut, box) : null);
     }
 
+    /// <summary>
+    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3, Appendix A), which this version accepts only when
+    /// laid out by <see cref="LayoutAlgorithmId.Image"/> (an image in a line of text), and only with the initial page break
+    /// properties: <c>break-before</c>, <c>break-after</c> and <c>break-inside</c> apply to block-level boxes (CSS
+    /// Fragmentation 3 §3.1, §3.2), and an atomic inline never breaks, so a value there could only be lost. The child box
+    /// is one nesting level deeper, as any child box.
+    /// </summary>
+    private static Error? AtomicInlines(Box paragraph)
+    {
+        var initial = BoxStyle.Initial;
+        foreach (var child in paragraph.Children)
+        {
+            if (child is Box other && other.Layout != LayoutAlgorithmId.Image)
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "A box among the text runs of an inline box must be laid out by the image algorithm (an image in a line); other boxes are not supported in a line.",
+                    other.Layout.ToString(), "layout", other);
+            }
+
+            if (child is Box box && (box.Style.BreakBefore != initial.BreakBefore || box.Style.BreakAfter != initial.BreakAfter || box.Style.BreakInside != initial.BreakInside))
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An image in a line of text has no page break properties: they apply to block-level boxes only.",
+                    $"{box.Style.BreakBefore}/{box.Style.BreakAfter}/{box.Style.BreakInside}", "break", box);
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and positive.</summary>
     private static Error? Columns(Box box)
     {
@@ -143,7 +177,7 @@ public static class ModelCheck
     }
 
     /// <summary>Text values: a family name that is not blank, a positive font size of at most
-    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, and a line height that is not negative, finite and at most
+    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, a white-space value of its enum, valid decorations (<see cref="Decorations"/>), and a line height that is not negative, finite and at most
     /// that long (as a number: at most that many times the font size).</summary>
     private static Error? Text(TextStyle style, Node node)
     {
@@ -162,6 +196,26 @@ public static class ModelCheck
             return Problem(DocumentErrorCodes.Input.Invalid.FontWeight, "The font weight must be 1–1000.", style.FontWeight.ToString()!, "font-weight", node);
         }
 
+        if (!System.Enum.IsDefined(style.WhiteSpaceCollapse))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The white-space-collapse value is not one the model has.", style.WhiteSpaceCollapse.ToString(), "white-space-collapse", node);
+        }
+
+        if (!System.Enum.IsDefined(style.TextWrapMode))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.WhiteSpace, "The text-wrap-mode value is not one the model has.", style.TextWrapMode.ToString(), "text-wrap-mode", node);
+        }
+
+        if (!System.Enum.IsDefined(style.DecorationSkipInk))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, "The text-decoration-skip-ink value is not one the model has.", style.DecorationSkipInk.ToString(), "text-decoration-skip-ink", node);
+        }
+
+        if (Decorations(style, node) is { } decoration)
+        {
+            return decoration;
+        }
+
         var lineHeight = style.LineHeight switch
         {
             LineHeight.Factor factor => (double?)factor.Value,
@@ -173,10 +227,51 @@ public static class ModelCheck
             : null;
     }
 
+    /// <summary>At most <see cref="ModelLimits.MaxDecorations"/> decorations, each with a line of its enum and a decorating font
+    /// held to the rules of a run's own font: a family name that is not blank, a positive font size of at most
+    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000.</summary>
+    private static Error? Decorations(TextStyle style, Node node)
+    {
+        if (style.Decorations.Count > ModelLimits.MaxDecorations)
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, $"A run carries {style.Decorations.Count} text decorations; at most {ModelLimits.MaxDecorations} are allowed.",
+                style.Decorations.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), "text-decoration", node);
+        }
+
+        foreach (var decoration in style.Decorations)
+        {
+            var problem = decoration switch
+            {
+                null => "A text decoration is missing.",
+                _ when !System.Enum.IsDefined(decoration.Line) => "The text decoration line is not one the model has.",
+                _ when string.IsNullOrWhiteSpace(decoration.FontFamily) => "The font family of a text decoration is empty.",
+                _ when !IsPositiveAndBounded(decoration.FontSize) => $"The font size of a text decoration must be a positive number of at most {ModelLimits.MaxLength}.",
+                _ when !decoration.FontWeight.IsValid => "The font weight of a text decoration must be 1–1000.",
+                _ => null,
+            };
+            if (problem is not null)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.TextDecoration, problem, decoration?.ToString() ?? "null", "text-decoration", node);
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>Only characters text may hold (<see cref="TextCharacters"/>).</summary>
     private static Error? Characters(TextRun run) =>
         run.Text is { } text && TextCharacters.IndexOfForbidden(text) is { } offset
             ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Text, $"The text holds a character text cannot hold at position {offset} (a control character, a noncharacter or half of a surrogate pair).", text, "text", run)
+                .With(ErrorMetadataKeys.Offset, offset)
+            : null;
+
+    /// <summary>No tab in a run whose white space is preserved: a preserved tab moves the text to the next tab stop (CSS Text 3
+    /// §4.1.2: "each preserved tab is rendered as a horizontal shift that lines up the start edge of the next glyph with the
+    /// next tab stop"; Chromium 159 prints it so, case <c>ws-tab</c>), and tab stops are not built. Where white
+    /// space collapses a tab is a space, as before.</summary>
+    private static Error? PreservedTab(TextRun run) =>
+        run.Style.WhiteSpaceCollapse is WhiteSpaceCollapse.Preserve or WhiteSpaceCollapse.BreakSpaces && run.Text is { } text && text.IndexOf('\t', System.StringComparison.Ordinal) is var offset and >= 0
+            ? (Error?)Problem(DocumentErrorCodes.Input.Unsupported.PreservedTab, $"A run whose white space is preserved holds a tab at position {offset}; tab stops are not built.", text, "white-space-collapse", run)
                 .With(ErrorMetadataKeys.Offset, offset)
             : null;
 

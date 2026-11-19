@@ -136,6 +136,20 @@ d-strut refused Documents.Html.Unsupported.Rendering br at 3:75
 d-strut-normal refused Documents.Html.Unsupported.Rendering br at 3:58
 d-typo-lato refused Documents.Html.Unsupported.Rendering br at 4:6
 d-typo-theano refused Documents.Html.Unsupported.Rendering br at 4:33
+dl-end refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-fraction refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-height refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-image refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-join refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-lato refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-lato-bold refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-lato-italic refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-lines refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-nest refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-skip refused Documents.Css.Unsupported.Property text-decoration-skip-ink: auto at 4:87
+dl-space refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-theano refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
+dl-whose refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
 f-lato-10 refused Documents.Html.Unsupported.Rendering br at 4:29
 f-lato-11 refused Documents.Html.Unsupported.Rendering br at 4:29
 f-lato-13 refused Documents.Html.Unsupported.Rendering br at 4:29
@@ -260,8 +274,8 @@ h-char-ps refused Documents.Html.Unsupported.Character U+2029 at 3:4
 h-char-tab equal
 h-default-page equal
 h-font-url-sheet equal
-h-kern-bold-spaces listed Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it: page 1 'y' x0 18.93, Chromium 18.633 (print.txt)
-h-kern-span listed Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it: page 1 'To' x1 23.64, Chromium 22.179 (print.txt)
+h-kern-bold-spaces equal
+h-kern-span equal
 h-kerning-auto equal
 h-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none at 2:74
 h-kerning-normal equal
@@ -296,6 +310,15 @@ h-page-size-mm equal
 h-root-display-none equal
 h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.022, Chromium 290.241 (print.txt)
 h-wide-word-much listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 reads 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after', Chromium 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after' (print.txt)
+ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1
+ii-baseline refused Documents.Html.Unsupported.Rendering img at 3:7
+ii-breaks refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ii-height refused Documents.Html.Unsupported.Rendering img at 3:7
+ii-hyphen refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ii-joiners refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ii-page refused Documents.Html.Unsupported.Rendering img at 4:9
+ii-table refused Documents.Html.Unsupported.Value display: table at 3:1
+ii-wrap refused Documents.Html.Unsupported.Value width: 100pt at 3:1
 kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:133
 kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:120
 kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br at 8:85
@@ -329,6 +352,24 @@ mf4-line-0 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-075 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-150 refused Documents.Html.Unsupported.Value display: table at 7:1
 mf4-line-225 refused Documents.Html.Unsupported.Value display: table at 7:1
+sk-extreme refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:46
+sk-lato refused Documents.Css.Unsupported.Value text-decoration: overline at 6:66
+sk-lato-bold refused Documents.Css.Unsupported.Value text-decoration: overline at 6:84
+sk-lato-italic refused Documents.Css.Unsupported.Value text-decoration: overline at 6:86
+sk-misc refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:18
+sk-nest refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
+sk-part refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
+sk-size refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
+sk-space refused Documents.Html.Unsupported.Value width: 120pt at 5:1
+sk-theano refused Documents.Css.Unsupported.Value text-decoration: overline at 6:76
+sk-touch refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:18
+sk-whose refused Documents.Css.Unsupported.Property text-decoration-skip-ink: auto at 4:299
+sr-counter refused Documents.Css.Unsupported.Selector The selector '::after' is not supported. at 2:98
+sr-font-changes equal
+sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
+sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
+sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
+sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
 tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1
@@ -337,3 +378,27 @@ tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
 tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
+ws-border refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:6
+ws-break-spaces refused Documents.Css.Unsupported.Value white-space: break-spaces at 3:11
+ws-forced refused Documents.Css.Unsupported.Value white-space: pre-line at 11:23
+ws-hang-break-spaces refused Documents.Css.Unsupported.Value white-space: break-spaces at 3:21
+ws-hang-normal refused Documents.Html.Unsupported.Value width: 40pt at 3:1
+ws-hang-pre refused Documents.Html.Unsupported.Value width: 40pt at 3:1
+ws-hang-pre-wrap refused Documents.Html.Unsupported.Value width: 40pt at 3:1
+ws-image refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-image-border refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ws-intrinsic refused Documents.Css.Unsupported.Value white-space: pre-line at 7:23
+ws-justify refused Documents.Css.Unsupported.Value white-space: break-spaces at 5:21
+ws-justify-nbsp refused Documents.Html.Unsupported.Value width: 40pt at 3:1
+ws-kern refused Documents.Css.Unsupported.Value white-space: pre-line at 8:28
+ws-lead refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ws-longhands refused Documents.Css.Unsupported.Value white-space-collapse: preserve-spaces at 5:11
+ws-normal equal
+ws-nowrap refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap at 3:1
+ws-overflow refused Documents.Html.Unsupported.Value width: 100pt at 3:1
+ws-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-pre-line refused Documents.Css.Unsupported.Value white-space: pre-line at 3:11
+ws-pre-wrap refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-soft refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-table refused Documents.Css.Unsupported.Value white-space: break-spaces at 12:23

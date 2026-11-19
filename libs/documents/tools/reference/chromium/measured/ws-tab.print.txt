@@ -1,0 +1,10 @@
+page 1 300.000 199.920
+word 1 12.000 17.964 25.500 12.000 a #000000 Lato-Regular
+word 1 36.586 43.306 25.500 12.000 b #000000 Lato-Regular
+word 1 12.000 66.167 43.500 12.000 abcdefghij #000000 Lato-Regular
+word 1 85.734 92.454 43.500 12.000 b #000000 Lato-Regular
+word 1 12.000 17.964 61.500 12.000 a #000000 Lato-Regular
+word 1 36.586 43.306 61.500 12.000 b #000000 Lato-Regular
+word 1 12.000 17.964 79.500 12.000 a #000000 Lato-Regular
+word 1 21.036 27.756 79.500 12.000 b #000000 Lato-Regular
+word 1 12.000 17.976 97.500 12.000 x #000000 Lato-Regular

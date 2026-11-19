@@ -1,3 +1,4 @@
+using System.Linq;
 using Ave.Extensions.Documents.Core;
 
 namespace Ave.Extensions.Documents.Fluent;
@@ -103,6 +104,75 @@ public static class TextModifiers
     /// <returns>A copy with the line height set.</returns>
     public static T LineHeightNormal<T>(this T element) where T : IFormatted<T> =>
         element.WithText(element.Format.Text with { LineHeight = LineHeightValue.Normal.Instance });
+
+    /// <summary>Sets how white space collapses (CSS <c>white-space-collapse</c>, CSS Text 4, inherited):
+    /// <see cref="Core.WhiteSpaceCollapse.Preserve"/> keeps every space and makes a line feed a forced line break (with
+    /// wrapping, <c>white-space: pre-wrap</c>), <see cref="Core.WhiteSpaceCollapse.PreserveBreaks"/> collapses spaces but makes a
+    /// line feed a forced line break (<c>pre-line</c>), <see cref="Core.WhiteSpaceCollapse.BreakSpaces"/> keeps every space as
+    /// <c>Preserve</c> but lets none hang: spaces take their room at a line's end and may wrap (<c>break-spaces</c>). A tab in preserved text is refused when the document is laid out: tab
+    /// stops are not built.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="collapse">The value.</param>
+    /// <returns>A copy with the value set.</returns>
+    public static T WhiteSpaceCollapse<T>(this T element, WhiteSpaceCollapse collapse) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { WhiteSpaceCollapse = collapse });
+
+    /// <summary>Sets whether text wraps at its soft wrap opportunities (CSS <c>text-wrap-mode</c>, CSS Text 4, inherited):
+    /// <see cref="Core.TextWrapMode.NoWrap"/> keeps the text on one line up to a forced break (with preserved spaces,
+    /// <c>white-space: pre</c>; with collapsing ones, <c>nowrap</c>); a line wider than its box overflows it. A table column with
+    /// such text is at least as wide as its line.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="wrap">The value.</param>
+    /// <returns>A copy with the value set.</returns>
+    public static T TextWrapMode<T>(this T element, TextWrapMode wrap) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { TextWrapMode = wrap });
+
+    /// <summary>Sets whether underlines and overlines leave gaps around the glyphs' ink (CSS <c>text-decoration-skip-ink</c>, CSS
+    /// Text Decoration 4 §2.10.4, inherited): <see cref="TextDecorationSkipInk.Auto"/>, the initial value, cuts an underline or
+    /// overline where a glyph's outline crosses it, as Chromium does; <see cref="TextDecorationSkipInk.None"/> draws every line
+    /// whole. The value of the text decides, not that of the element that draws the line. A line-through is never cut.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="skipInk">The value.</param>
+    /// <returns>A copy with the value set.</returns>
+    public static T TextDecorationSkipInk<T>(this T element, TextDecorationSkipInk skipInk) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with { DecorationSkipInk = skipInk });
+
+    /// <summary>Draws a line under the element's text (CSS <c>text-decoration-line: underline</c>, CSS Text Decoration 3 §2.1):
+    /// across all the text inside the element, at the place and in the thickness the element's own font gives, one straight
+    /// line also where the text inside changes size; not under an image. Set again, the colour is replaced.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="color">The line's colour (<c>text-decoration-color</c>); the element's text colour when not given.</param>
+    /// <returns>A copy with the line set.</returns>
+    public static T Underline<T>(this T element, Color? color = null) where T : IFormatted<T> =>
+        element.WithDecoration(new TextDecorationFormat(TextDecorationLine.Underline, color));
+
+    /// <summary>Draws a line through the element's text (CSS <c>text-decoration-line: line-through</c>): in the element's font
+    /// and painted over the glyphs; it follows the middle of the text inside where its size changes.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="color">The line's colour; the element's text colour when not given.</param>
+    /// <returns>A copy with the line set.</returns>
+    public static T LineThrough<T>(this T element, Color? color = null) where T : IFormatted<T> =>
+        element.WithDecoration(new TextDecorationFormat(TextDecorationLine.LineThrough, color));
+
+    /// <summary>Draws a line over the element's text (CSS <c>text-decoration-line: overline</c>): in the element's font, at the
+    /// top of the text inside.</summary>
+    /// <typeparam name="T">The element or style type.</typeparam>
+    /// <param name="element">The element or style.</param>
+    /// <param name="color">The line's colour; the element's text colour when not given.</param>
+    /// <returns>A copy with the line set.</returns>
+    public static T Overline<T>(this T element, Color? color = null) where T : IFormatted<T> =>
+        element.WithDecoration(new TextDecorationFormat(TextDecorationLine.Overline, color));
+
+    private static T WithDecoration<T>(this T element, TextDecorationFormat line) where T : IFormatted<T> =>
+        element.WithText(element.Format.Text with
+        {
+            Decorations = [.. (element.Format.Text.Decorations ?? []).Where(set => set.Line != line.Line), line],
+        });
 
     private static T WithText<T>(this T element, TextFormat text) where T : IFormatted<T> =>
         element.WithFormat(element.Format with { Text = text });

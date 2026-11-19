@@ -44,7 +44,9 @@ public sealed record ImageFragment(ImageNode Image, Size Size) : Fragment(Size);
 
 /// <summary>
 /// A filled rectangle that belongs to no box of its own: one segment of a resolved table grid line in the collapsing
-/// border model (CSS 2.1 §17.6.2), centred on the line between two cells.
+/// border model (CSS 2.1 §17.6.2), centred on the line between two cells; or a text decoration line across one piece of a
+/// run (CSS Text Decoration 3 §2), a child of the line box next to the text it decorates
+/// (<see cref="TextDecorations"/>). The painter draws it as a layout artifact, never as content.
 /// </summary>
 /// <param name="Color">The line colour.</param>
 /// <param name="Size">The rectangle.</param>
@@ -52,7 +54,8 @@ public sealed record RuleFragment(Color Color, Size Size) : Fragment(Size);
 
 /// <summary>A line box (CSS 2.1 §9.4.2): one line of a paragraph.</summary>
 /// <param name="Size">The line's content width and its height (CSS 2.1 §10.8).</param>
-/// <param name="Children">The text fragments on the line, left to right.</param>
+/// <param name="Children">The text fragments and atomic inlines on the line, left to right, and the text decoration lines
+/// of each text fragment around it, in painting order (<see cref="RuleFragment"/>).</param>
 public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size);
 
 /// <summary>

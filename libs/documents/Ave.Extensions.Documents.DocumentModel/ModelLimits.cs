@@ -18,6 +18,14 @@ public static class ModelLimits
     public const int MaxNestingDepth = 64;
 
     /// <summary>
+    /// The most decorations one run may carry (<see cref="TextStyle.Decorations"/>): 16. Each decorating box around a run adds
+    /// one per line it draws, and layout makes one rectangle per decoration for each piece of the run on a line, so without a
+    /// limit the work for one run grows with the nesting, not with the size of the text. Sixteen is four nested boxes that each
+    /// draw all three lines, with room to spare. More is <c>Documents.Input.Invalid.TextDecoration</c>.
+    /// </summary>
+    public const int MaxDecorations = 16;
+
+    /// <summary>
     /// The longest length a document may hold: 14 400 pt (200 inches), the largest page side ISO 32000-1 names (Annex C,
     /// the limit on page size). It holds for a page side, a page margin, a margin, a padding, a border width, a font
     /// size, a fixed column width, a line height given as a length, an image's width and height and a header or footer

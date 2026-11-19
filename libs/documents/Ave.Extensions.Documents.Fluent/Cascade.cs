@@ -41,6 +41,10 @@ internal static class Cascade
         Orphans = own.Text.Orphans ?? shared.Text.Orphans,
         Widows = own.Text.Widows ?? shared.Text.Widows,
         LineHeight = own.Text.LineHeight ?? shared.Text.LineHeight,
+        WhiteSpaceCollapse = own.Text.WhiteSpaceCollapse ?? shared.Text.WhiteSpaceCollapse,
+        TextWrapMode = own.Text.TextWrapMode ?? shared.Text.TextWrapMode,
+        DecorationSkipInk = own.Text.DecorationSkipInk ?? shared.Text.DecorationSkipInk,
+        Decorations = own.Text.Decorations ?? shared.Text.Decorations,
     };
 
     /// <summary>The box values an element specifies; <paramref name="defaults"/> fills what neither the element nor its

@@ -57,8 +57,8 @@ internal static class HtmlCases
         ["h-page-a4-zero-right"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["h-page-a4-zero-justify"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["h-page-a4-zero-lines"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
-        ["h-kern-span"] = "Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it",
-        ["h-kern-bold-spaces"] = "Text_is_not_kerned_across_the_border_of_an_inline_element_as_Chromium_kerns_it",
+        ["sr-same-font"] = "A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run",
+        ["sr-zwnj"] = "A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -350,8 +350,9 @@ internal static class HtmlCases
     /// The first difference between the engine's words and the words poppler reads back (<c>words.txt</c>: <c>page xMin
     /// yMin xMax yMax text</c>, the text as HTML). Poppler finds the words inside the page (the baseline after
     /// <see cref="WholePixel"/> on the page, and a font size above it), as <c>ReadBackAgreementTests</c> finds for
-    /// Chromium's: their number per page is the engine's. Each is an engine word on the same page with the same text
-    /// (matched by text and nearest start, since poppler writes them in its own reading order) whose start and end are
+    /// Chromium's: their number per page is the engine's, its words joined as poppler joins them
+    /// (<see cref="PrintedPage.JoinedWords"/>). Each is an engine word on the same page with the same text (matched by
+    /// text and nearest start, since poppler writes them in its own reading order) whose start and end are
     /// within <see cref="Bound"/> of <c>xMin</c> and <c>xMax</c>, and whose line box, the snapped baseline less the
     /// ascender and plus the descender of the face's line metrics (<see cref="FontMetrics.Line"/>: the typographic ones
     /// where the face sets USE_TYPO_METRICS, as Chromium writes them into the PDF's font descriptor; measured with Theano
@@ -361,7 +362,7 @@ internal static class HtmlCases
     {
         foreach (var page in engine.Pages)
         {
-            var inside = Joined(page.Words).Where(word => WholePixel(word.Baseline) <= page.Height && WholePixel(word.Baseline) - word.FontSize >= 0).ToList();
+            var inside = page.JoinedWords.Select(joined => joined.Word).Where(word => WholePixel(word.Baseline) <= page.Height && WholePixel(word.Baseline) - word.FontSize >= 0).ToList();
             var poppler = rows.Where(row => int.Parse(row[0], CultureInfo.InvariantCulture) == page.Number).ToList();
             if (inside.Count != poppler.Count)
             {
@@ -537,17 +538,18 @@ internal static class HtmlCases
     private static double WholePixel(double length) => Math.Round(length / 0.75, MidpointRounding.AwayFromZero) * 0.75;
 
     /// <summary>
-    /// The engine's words as the read-backs of Chromium's PDF find them: two runs of glyphs that touch on one baseline at
-    /// the same font size, in the same face and colour, with no white space between (text on both sides of an inline
-    /// element's edge), are one word; PyMuPDF starts a new span, and <c>positions.py</c> a new word, where the font, the
-    /// size or the colour changes.
+    /// The engine's words as PyMuPDF finds them in Chromium's PDF (<c>positions.py</c>, <c>print.txt</c>): two runs of
+    /// glyphs on one baseline at the same font size, in the same face and colour, with no white space between
+    /// (<see cref="PrintedPage.WordGap"/>: text on both sides of an inline element's edge, kerned or not), are one word;
+    /// PyMuPDF starts a new span, and <c>positions.py</c> a new word, where the font, the size or the colour changes.
+    /// Poppler's words (<c>words.txt</c>) join across a change of face or colour too: <see cref="PrintedPage.JoinedWords"/>.
     /// </summary>
     private static List<PrintedWord> Joined(IEnumerable<PrintedWord> words)
     {
         var joined = new List<PrintedWord>();
         foreach (var word in words)
         {
-            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && Math.Abs(last.X1 - word.X0) < 1e-6
+            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.WordGap
                 && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour)
             {
                 joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text };
