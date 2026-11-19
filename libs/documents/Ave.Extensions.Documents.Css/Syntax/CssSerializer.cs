@@ -26,7 +26,7 @@ internal static class CssSerializer
     }
 
     /// <summary>The most characters of one input name or value a diagnostic quotes.</summary>
-    public const int MaxQuotedCharacters = 100;
+    public const int MaxQuotedCharacters = InputQuote.MaxCharacters;
 
     /// <summary>The text of component values for a message: trimmed, at most <see cref="MaxQuotedCharacters"/>
     /// characters (a value can be megabytes).</summary>
@@ -34,16 +34,7 @@ internal static class CssSerializer
 
     /// <summary>Text from the input for a message: itself, or its first <see cref="MaxQuotedCharacters"/> characters
     /// followed by <c>…</c>; a cut never splits a surrogate pair.</summary>
-    public static string Shortened(string text)
-    {
-        if (text.Length <= MaxQuotedCharacters)
-        {
-            return text;
-        }
-
-        var length = char.IsHighSurrogate(text[MaxQuotedCharacters - 1]) ? MaxQuotedCharacters - 1 : MaxQuotedCharacters;
-        return text.Substring(0, length) + "…";
-    }
+    public static string Shortened(string text) => InputQuote.Of(text);
 
     /// <summary>What kind of text the last write ended with, for the comment rule of §10.</summary>
     private enum Piece

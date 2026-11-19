@@ -20,4 +20,9 @@
     <InternalsVisibleTo Include="UnitTests.Extensions.Documents.Html.Parsing" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The diagnostics' quoting rule, one source for the three front-end packages. -->
+    <Compile Include="..\Shared\InputQuote.cs" Link="InputQuote.cs" />
+  </ItemGroup>
+
 </Project>

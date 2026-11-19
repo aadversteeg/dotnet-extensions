@@ -1,4 +1,7 @@
-namespace Ave.Extensions.Documents.Html;
+namespace Ave.Extensions.Documents;
+
+// One source file, compiled into Css, Html.Parsing and Html as an internal class of each (a linked Compile item in
+// each project file): one rule for the three packages, and no type shared between them.
 
 /// <summary>
 /// A value from the input as a diagnostic quotes it: at most <see cref="MaxCharacters"/> characters, and a mark
