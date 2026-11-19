@@ -22,10 +22,11 @@ public class LineBreakAndImageTests
     private static string Doc(string body, string css = "") =>
         $"<!doctype html><html lang=\"en\"><head><title>t</title><style>body {{ font-family: Lato; margin: 0 }} img {{ display: block }} {css}</style></head><body>{body}</body></html>";
 
-    /// <summary>Serves figure.png (7 x 10 px) at every URL ending in "figure.png", and bytes that start as a PNG and do not
+    /// <summary>Serves figure.png (7 x 10 px) at every URL ending in "figure.png" but those under "/wrong/", and bytes that start as a PNG and do not
     /// decode at "broken.png".</summary>
     private static HtmlResource? Resources(string url) =>
-        url.EndsWith("figure.png", StringComparison.Ordinal) ? new HtmlResource(Figure)
+        url.Contains("/wrong/", StringComparison.Ordinal) ? null
+        : url.EndsWith("figure.png", StringComparison.Ordinal) ? new HtmlResource(Figure)
         : url.EndsWith("broken.png", StringComparison.Ordinal) ? new HtmlResource(Figure.AsMemory(0, 40))
         : null;
 
@@ -48,19 +49,19 @@ public class LineBreakAndImageTests
     [Fact]
     public void A_br_is_a_forced_line_break_in_its_own_text_style()
     {
-        var p = (Box)Body(Doc("<p>a<span style=\"font-size:20pt\">b<br>c</span><br>d</p>")).Children.Single();
+        var p = (Box)Body(Doc("<p>a<span style=\"font-size:20pt\">b<br>c</span><br>d<span><br style=\"font-size:30pt\"></span></p>")).Children.Single();
 
         var runs = p.Children.OfType<TextRun>().ToList();
-        runs.Select(run => run.Text).Should().Equal("a", string.Empty, "b", LineSeparator, "c", LineSeparator, "d");
-        runs.Where(run => run.Text == LineSeparator).Select(run => run.Style.FontSize.Points).Should().Equal(20, 12);
+        runs.Select(run => run.Text).Should().Equal("a", string.Empty, "b", LineSeparator, "c", LineSeparator, "d", string.Empty, LineSeparator);
+        runs.Where(run => run.Text == LineSeparator).Select(run => run.Style.FontSize.Points).Should().Equal(20, 12, 30);
         p.Layout.Should().Be(LayoutAlgorithmId.Inline);
     }
 
     [Fact]
     public void A_br_with_display_none_is_nothing_and_a_block_level_br_is_refused_at_its_start_tag()
     {
-        var p = (Box)Body(Doc("<p>a<br style=\"display:none\">b</p>")).Children.Single();
-        p.Children.OfType<TextRun>().Select(run => run.Text).Should().Equal("a", "b");
+        var p = (Box)Body(Doc("<p>a<br style=\"display:none\">b<span><br style=\"display:none\"></span></p>")).Children.Single();
+        p.Children.OfType<TextRun>().Select(run => run.Text).Should().Equal("a", "b", string.Empty);
 
         var refusal = Refusal(Doc("<p>a</p>\n<br style=\"display:block\">"));
         (refusal.Code, Property(refusal)).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "display"));
@@ -136,9 +137,12 @@ public class LineBreakAndImageTests
         var data = "data:image/png;base64," + Convert.ToBase64String(Figure);
         Body(Doc($"<img src=\"{data}\" alt=\"a\">"), baseUrl: null).Children.Should().ContainSingle();
 
-        // The base element's href is the base of the img's URL (the resolver serves only ".../figure.png").
-        Body(Doc("<img src=\"figure.png\" alt=\"a\">").Replace("<title>", "<base href=\"https://example.com/x/\"><title>", StringComparison.Ordinal))
+        // The base element's href, not the document's URL, is the base of the img's URL (the resolver serves nothing
+        // under "/wrong/").
+        var img = Doc("<img src=\"figure.png\" alt=\"a\">");
+        Body(img.Replace("<title>", "<base href=\"https://example.com/x/\"><title>", StringComparison.Ordinal), baseUrl: "file:///wrong/t.html")
             .Children.Should().ContainSingle();
+        Boxes(img, baseUrl: "file:///wrong/t.html").IsFailure.Should().BeTrue();
     }
 
     [Theory]
@@ -178,7 +182,7 @@ public class LineBreakAndImageTests
     [Fact]
     public void A_forced_break_after_an_image_is_a_forced_break_before_the_next_box()
     {
-        var body = Body(Doc("<p>a</p><img src=\"figure.png\" alt=\"a\" style=\"break-before:page;break-after:page\"><p>b</p>"));
+        var body = Body(Doc("<p style=\"break-after:page\">a</p><img src=\"figure.png\" alt=\"a\" style=\"break-after:page\"><p>b</p>"));
 
         body.Children.Cast<Box>().Select(box => box.Style.BreakBefore).Should().Equal(BreakBetween.Auto, BreakBetween.Page, BreakBetween.Page);
     }
