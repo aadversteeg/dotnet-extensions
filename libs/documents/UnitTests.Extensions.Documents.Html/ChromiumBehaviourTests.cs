@@ -118,6 +118,46 @@ public class ChromiumBehaviourTests
         Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
 
     [Theory]
+    // Measured in Chromium 159.0.8154.6. A cellpadding beyond 2,147,483,647 is no integer, so 0.
+    [InlineData("<table cellpadding=2147483647><tr><td id=t>c</td></tr></table>", "t", "padding-left", "65535px")]
+    [InlineData("<table cellpadding=2147483648><tr><td id=t>c</td></tr></table>", "t", "padding-left", "0px")]
+    [InlineData("<table cellpadding=4294967296><tr><td id=t>c</td></tr></table>", "t", "padding-left", "0px")]
+    [InlineData("<table cellpadding=\"+2147483648\"><tr><td id=t>c</td></tr></table>", "t", "padding-left", "0px")]
+    [InlineData("<table cellpadding=\"2147483648.5\"><tr><td id=t>c</td></tr></table>", "t", "padding-left", "0px")]
+    [InlineData("<table cellpadding=\"2147483647.9\"><tr><td id=t>c</td></tr></table>", "t", "padding-left", "65535px")]
+    [InlineData("<table cellpadding=-2147483649><tr><td id=t>c</td></tr></table>", "t", "padding-left", "0px")]
+    // A substitution function in a presentational attribute makes no hint, also when the custom property is set.
+    [InlineData("<div style=\"--v: bottom\"><table><tr><td id=t valign=\"var(--v, top)\">c</td></tr></table></div>", "t", "vertical-align", "middle")]
+    [InlineData("<div style=\"--v: bottom\"><table><tr><td id=t valign=\"var(--v)\">c</td></tr></table></div>", "t", "vertical-align", "middle")]
+    [InlineData("<div style=\"--n: 3\"><table><tr><td id=t valign=\"calc(var(--n) * 1px)\">c</td></tr></table></div>", "t", "vertical-align", "middle")]
+    [InlineData("<table><tr><td id=t valign=\"env(x, top)\">c</td></tr></table>", "t", "vertical-align", "middle")]
+    [InlineData("<div style=\"--x: center\"><div id=t align=\"var(--x)\">d</div></div>", "t", "text-align", "start")]
+    [InlineData("<p id=t align=\"var(--x, center)\">p</p>", "t", "text-align", "start")]
+    [InlineData("<div style=\"--x: right\"><table><tr><td id=t align=\"var(--x)\">c</td></tr></table></div>", "t", "text-align", "start")]
+    [InlineData("<div style=\"--f: monospace\"><font id=t face=\"var(--f)\">f</font></div>", "t", "font-size", "16px")]
+    [InlineData("<div style=\"--f: monospace\"><font id=t face=\"serif, var(--f)\">f</font></div>", "t", "font-family", "\"Times New Roman\"")]
+    // A colour attribute of white space only is black: the empty value is tested before the white space is stripped.
+    [InlineData("<table><tr><td id=t bgcolor=\" \">c</td></tr></table>", "t", "background-color", "rgb(0, 0, 0)")]
+    [InlineData("<table><tr><td id=t bgcolor=\"\u3000\">c</td></tr></table>", "t", "background-color", "rgb(0, 0, 0)")]
+    [InlineData("<table><tr><td id=t bgcolor=\"\u2003\">c</td></tr></table>", "t", "background-color", "rgb(0, 0, 0)")]
+    [InlineData("<table id=t bgcolor=\" \"><tr><td>c</td></tr></table>", "t", "background-color", "rgb(0, 0, 0)")]
+    [InlineData("<body id=t bgcolor=\"\t\">b", "t", "background-color", "rgb(0, 0, 0)")]
+    [InlineData("<hr id=t color=\" \">", "t", "border-top-color", "rgb(0, 0, 0)")]
+    [InlineData("<body link=\"\u3000\"><a id=t href=x>a</a>", "t", "color", "rgb(0, 0, 0)")]
+    [InlineData("<table><tr><td id=t bgcolor=\"\">c</td></tr></table>", "t", "background-color", "rgba(0, 0, 0, 0)")]
+    public void A_presentational_attribute_with_a_large_integer_a_substitution_or_only_white_space_is_Chromiums(string body, string id, string property, string chromium) =>
+        Styled(Doctype + body, MeasuredPage).ById(id).Value(property).Should().Be(chromium);
+
+    [Fact]
+    public void A_cellpadding_of_400_digits_is_no_integer()
+    {
+        // Measured in Chromium 159.0.8154.6: 0px.
+        var styled = Styled(Doctype + $"<table cellpadding={new string('9', 400)}><tr><td id=t>c</td></tr></table>", MeasuredPage);
+
+        styled.ById("t").Value("padding-left").Should().Be("0px");
+    }
+
+    [Theory]
     // Text in a supports test that is no declaration is <general-enclosed> for Chromium 159: unknown, so the condition
     // and its negation are both false (measured). The engine refuses such a condition and takes it as false.
     [InlineData("color: var(--x,])")]

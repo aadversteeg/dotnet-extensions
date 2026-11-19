@@ -37,7 +37,14 @@ internal static class AttributeValues
     /// <summary>"Rules for parsing integers" (§2.3.4.1): leading white space, an optional sign, digits; what follows the
     /// digits is ignored (<c>5abc</c> is 5, <c>7.9</c> is 7). Null for an error; the magnitude is clamped to
     /// int.MaxValue.</summary>
-    public static long? Integer(string input)
+    public static long? Integer(string input) => Integer(input, overflowIsError: false);
+
+    /// <summary>"Rules for parsing integers" (§2.3.4.1) into a 32-bit integer, as Chromium 159 reads a cellpadding: null
+    /// also when the magnitude is beyond int.MaxValue (measured: cellpadding="2147483647" is 65,535 px; "2147483648",
+    /// "+2147483648", "2147483648abc", "2147483648.5" and 400 nines are 0).</summary>
+    public static long? Int32Integer(string input) => Integer(input, overflowIsError: true);
+
+    private static long? Integer(string input, bool overflowIsError)
     {
         var position = SkipWhitespace(input, 0);
         var negative = false;
@@ -52,7 +59,17 @@ internal static class AttributeValues
         while (position < input.Length && char.IsAsciiDigit(input[position]))
         {
             // Very long numbers are a parse result too; clamp instead of overflowing.
-            value = Math.Min(value * 10 + (input[position] - '0'), int.MaxValue);
+            value = value * 10 + (input[position] - '0');
+            if (value > int.MaxValue)
+            {
+                if (overflowIsError)
+                {
+                    return null;
+                }
+
+                value = int.MaxValue;
+            }
+
             position++;
         }
 
@@ -132,13 +149,26 @@ internal static class AttributeValues
     }
 
     /// <summary>"Rules for parsing a legacy color value" (§2.3.6): a named colour, <c>#rgb</c>, or any other text read
-    /// as hex digits in the forgiving way browsers have always done; null for an error (empty, or transparent).</summary>
+    /// as hex digits in the forgiving way browsers have always done; null for an error (empty, or transparent). Chromium
+    /// 159 tests for the empty value before it strips the white space, so a value of white space only is black
+    /// (measured: bgcolor=" ", "&#x3000;" and "&#x2003;" on td, table, tr and body, color on font and hr, and body
+    /// text and link are rgb(0, 0, 0); bgcolor="" is no colour).</summary>
     public static CssColor? LegacyColor(string value)
     {
-        var input = StripWhiteSpace(value);
-        if (input.Length == 0 || InfraAscii.EqualsIgnoreCase(input, "transparent"))
+        if (value.Length == 0)
         {
             return null;
+        }
+
+        var input = StripWhiteSpace(value);
+        if (InfraAscii.EqualsIgnoreCase(input, "transparent"))
+        {
+            return null;
+        }
+
+        if (input.Length == 0)
+        {
+            return new CssColor(0, 0, 0, 1);
         }
 
         if (CssColor.Named(input) is { } named)

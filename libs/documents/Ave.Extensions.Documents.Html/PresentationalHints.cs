@@ -42,7 +42,7 @@ internal static class PresentationalHints
         ("caption", "align=top", "align=bottom"),
         ("col, colgroup", "width, align (-webkit-left/right/center, or one text-align value)", ""),
         ("thead, tbody, tfoot, tr", "height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign", "background"),
-        ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535) and border (1px inset, or solid with bordercolor)", "background; a td or th with no table around it (only a tree made in code has one)"),
+        ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535; 0 when that integer is beyond 2,147,483,647) and border (1px inset, or solid with bordercolor)", "background; a td or th with no table around it (only a tree made in code has one)"),
         ("div, p", "align (-webkit-left/right/center, or one text-align value)", ""),
         ("hr", "align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width", ""),
         ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG)"),
@@ -470,8 +470,44 @@ internal static class PresentationalHints
         return parsed.Value is [var only] && endedByText && !only.Important && only.Name == property
                && !only.Value.All(value => value is CssToken { Kind: CssTokenKind.Whitespace })
                && (!IsWideKeyword(only) || (wideKeywords && WideKeyword(only) is "initial" or "inherit" or "unset"))
+               && !HasSubstitution(only.Value)
             ? only
             : null;
+    }
+
+    /// <summary>The functions that substitute a value (CSS Variables 1, CSS Environment Variables 1, CSS Values 5).</summary>
+    private static readonly string[] SubstitutionFunctions = ["var", "env", "attr", "if", "inherit"];
+
+    /// <summary>Whether a value holds a substitution function at any depth. Chromium 159 makes no hint of such an
+    /// attribute (measured: valign="var(--v, top)", "calc(var(--n) * 1px)", "env(x, top)", "if(…)", align="var(--x)",
+    /// face="var(--f)" and "serif, var(--f)" are no hint, also with the custom property set). A walk with its own
+    /// stack, so the depth of the input costs no recursion.</summary>
+    private static bool HasSubstitution(ValueList<ComponentValue> values)
+    {
+        var pending = new Stack<ValueList<ComponentValue>>();
+        pending.Push(values);
+        while (pending.Count > 0)
+        {
+            foreach (var value in pending.Pop())
+            {
+                switch (value)
+                {
+                    case FunctionValue function:
+                        if (SubstitutionFunctions.Any(function.IsNamed))
+                        {
+                            return true;
+                        }
+
+                        pending.Push(function.Values);
+                        break;
+                    case SimpleBlock block:
+                        pending.Push(block.Values);
+                        break;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether the text holds a ';' outside a string, a comment and an escape (CSS Syntax 3 §4.3).</summary>
@@ -562,12 +598,14 @@ internal static class PresentationalHints
             return false;
         }
 
-        // Chromium 159 (HTMLTableElement::ParseAttribute and CreateSharedCellStyle, html_table_element.cc): the padding of
-        // a cell in a table is the table's hint, 1px without a cellpadding or with an empty one; a cellpadding that is not
-        // empty is the integer it starts with, at least 0 and at most 65,535, and 0 when it has none (-1 and abc are 0,
-        // 10% is 10; measured); 0 is no hint. As a hint, an author's revert rolls it back to 0 (measured).
+        // Chromium (HTMLTableElement::ParseAttribute and CreateSharedCellStyle, html_table_element.cc, read in the
+        // Chromium 150 source; measured in 159): the padding of a cell in a table is the table's hint, 1px without a
+        // cellpadding or with an empty one; a cellpadding that is not empty is the integer it starts with, at least 0 and
+        // at most 65,535, and 0 when it has none or when the integer is beyond 2,147,483,647 (-1 and abc are 0, 10% is
+        // 10, 70000 is 65,535, 2147483648 is 0; measured); 0 is no hint. As a hint, an author's revert rolls it back to
+        // 0 (measured).
         var pixels = table.Element.Attribute("cellpadding") is { Length: > 0 } cellpadding
-            ? Math.Min(ushort.MaxValue, Math.Max(0, AttributeValues.Integer(cellpadding) ?? 0))
+            ? Math.Min(ushort.MaxValue, Math.Max(0, AttributeValues.Int32Integer(cellpadding) ?? 0))
             : 1;
         if (pixels != 0)
         {
