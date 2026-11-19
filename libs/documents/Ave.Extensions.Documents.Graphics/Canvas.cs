@@ -52,6 +52,10 @@ public sealed class Canvas
 
     /// <summary>The largest distance from the origin, in each direction, of a clip box of <see cref="Coverage"/>, in
     /// pixels: 2^30, so every pixel index fits a 32-bit integer.</summary>
+    /// <remarks>Coverage is exact to 10^-9 within about 2^22 pixels of the origin (2^23 along x alone). Beyond that the
+    /// error grows with the distance, and the fill still succeeds: measured at most 3.5 × 10^-9 at 2^24 pixels,
+    /// 1.4 × 10^-8 at 2^26 and 1.1 × 10^-7 near this limit, where an 8-bit value can be one step off (14 of 12.8 million).
+    /// A known limit, to be repaired (<see cref="AreaRasterizer"/>).</remarks>
     public const double MaxPixelCoordinate = 1 << 30;
 
     /// <summary>
@@ -321,7 +325,8 @@ public sealed class Canvas
     /// <param name="transform">From the path's coordinates to device pixels.</param>
     /// <param name="rule">The fill rule.</param>
     /// <param name="clip">The box, within ±<see cref="MaxPixelCoordinate"/>; the mask covers the pixels from ⌊left⌋,
-    /// ⌊top⌋ to ⌈right⌉, ⌈bottom⌉, at most <see cref="MaxPixels"/> in all and on each side.</param>
+    /// ⌊top⌋ to ⌈right⌉, ⌈bottom⌉, at most <see cref="MaxPixels"/> in all and on each side. Within about 2^22 pixels of
+    /// the origin the coverage is exact to 10^-9; farther out less so (<see cref="MaxPixelCoordinate"/>).</param>
     /// <returns>The mask, or <c>Documents.Graphics.InvalidValue</c> / <c>TooLarge</c>, or
     /// <c>Documents.Graphics.TooMuchWork</c> for a shape whose exact coverage takes more work than
     /// <see cref="MaxFillWork"/> or <see cref="MaxRowPieces"/> allow.</returns>

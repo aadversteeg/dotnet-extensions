@@ -187,8 +187,8 @@ painting order; markers draw nothing.
 | Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, images mapped onto their rectangle as PDF maps an image's unit square |
 | composition | `ToPng`, `ToPngPages`, `ToImages` on a document or on its pages (`ToPages`) |
 
-Choices, each stated at its code: coverage is exact for straight edges, to 10^-9, in every pixel and
-for both fill rules, also where contours overlap or cross inside a pixel, a contour crosses itself, or a clip box's side
+Choices, each stated at its code: coverage is exact for straight edges, to 10^-9 within about 2^22 pixels of the
+origin (see the limits below), in every pixel and for both fill rules, also where contours overlap or cross inside a pixel, a contour crosses itself, or a clip box's side
 runs between them (`Graphics/AreaRasterizer.cs`). The integral of the winding number over a pixel gives its coverage
 wherever the winding number takes at most two values there, 0 and one other or two of one sign; a pixel where it may take
 more is flagged from the pieces of edges in it (`Graphics/CellFlags.cs`: one run of consecutive edges of one polygon,
@@ -298,7 +298,13 @@ development host: the largest glyph of eight fonts at 12 pixels per em takes 248
 limit), the largest sample page 6.83 × 10^5 units at 96 dpi (393 times under the canvas limit); a fill just inside its
 limit took 1.23 s, a canvas filled to its limit 2.38 s (about 9 ns a unit); a thousand thin bars through one pixel ask 7.4 × 10^9 units
 and are refused in about 50 ms. The PDF back-end writes such a page as the page model says, and a viewer draws it with
-its own rasteriser. A font whose licence forbids embedding (OS/2 fsType) is drawn by the raster back-end, since a PNG
+its own rasteriser. Far from the origin coverage is less exact, and the fill still succeeds: it is exact to 10^-9
+within about 2^22 pixels of the origin (2^23 along x alone), which covers every canvas up to 2^22 pixels on a side;
+beyond that the error grows with the distance, measured at most 3.5 × 10^-9 at 2^24 pixels, 1.4 × 10^-8 at 2^26 (6.9 ×
+10^-9 along x alone, as wide as a canvas may be) and 1.1 × 10^-7 near `Canvas.MaxPixelCoordinate` (2^30), where an 8-bit
+value can be one step off (14 of 12.8 million). The row integral interpolates x where an edge crosses a row line, and
+far out a double keeps few bits of a pixel. A known limit, to be repaired
+(`CoverageTests.Known_limit_far_from_the_origin_a_pixel_can_be_one_8_bit_step_off`). A font whose licence forbids embedding (OS/2 fsType) is drawn by the raster back-end, since a PNG
 holds pixels and no font, and refused by the PDF back-end (`Documents.Pdf.Write.FontEmbeddingNotPermitted`), so
 `ToPng` draws a document that `ToPdf` refuses. JPEG: arithmetic coding, 12-bit, lossless and four components are refused, as when a
 PDF embeds them. Encoding a PNG costs more than drawing the page (about 50 ms at 96 dpi, 500 ms at 300 dpi for an A4

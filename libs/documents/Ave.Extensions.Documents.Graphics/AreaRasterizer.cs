@@ -39,9 +39,15 @@ internal delegate void CoverageRow(int row, int firstColumn, ReadOnlySpan<double
 /// a winding number of two neighbouring values after all and keeps its integral, by the argument there. Every other
 /// flagged cell gets its coverage from the exact arrangement of its pieces (<see cref="CellArrangement"/>): the area where
 /// the winding number is not 0, or is odd, inside the cell and the area. It keeps the integral's value where the two
-/// differ by at most <see cref="KeepWithin"/>, so a cell that was right keeps its bits. So the coverage of every cell is
-/// exact to 10^-9: a cell that is not flagged and a two-sided one to the rounding of doubles, an arranged one to
-/// <see cref="KeepWithin"/>, the most by which the value it keeps may differ from its exact area.</para>
+/// differ by at most <see cref="KeepWithin"/>, so a cell that was right keeps its bits. So a cell that is not flagged and
+/// a two-sided one are exact to the rounding of doubles, an arranged one to that and <see cref="KeepWithin"/>, the most
+/// by which the value it keeps may differ from its exact area. Within about 2^22 pixels of the origin (2^23 along x
+/// alone) every cell measured is exact to 10^-9, so every canvas up to 2^22 pixels on a side is (an A4 page at 600 dpi
+/// is 4,961 × 7,016). Beyond it the rounding grows with the distance: where an edge crosses a row line the integral
+/// interpolates its x, and far out a double keeps few bits of a pixel (about 2^-22 near 2^30). Measured through
+/// <see cref="Canvas.Coverage"/>, all with success: at most 1.7 × 10^-9 at 2^23 pixels on both axes, 3.5 × 10^-9 at
+/// 2^24, 1.4 × 10^-8 at 2^26 and 1.1 × 10^-7 near 2^30, where 14 of 12.8 million 8-bit values are one step off. A known
+/// limit, to be repaired.</para>
 /// <para><b>The pieces of a cell, and the guard.</b> The arrangement is right because its pieces are: each piece kept
 /// lies in its cell's closed box, and an end on a side of the cell lies on it exactly (<see cref="Ends"/>), so the
 /// arrangement sees every place where a run of pieces leaves or enters the cell. It is anchored on the cell's integral a:
