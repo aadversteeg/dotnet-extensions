@@ -105,6 +105,12 @@ public class TableBoxTests
     [InlineData("<colgroup span=\"2\"></colgroup><col style=\"width:5pt\"><tr><td>a</td><td>b</td><td>c</td></tr>", "fixed", "", "1fr 1fr 5pt", BoxWidth.Stretch)]
     [InlineData("<col style=\"width:30pt\"><col style=\"width:0pt\"><tr><td>a</td><td>b</td></tr>", "fixed", "", "30pt 0pt", BoxWidth.Stretch)]
     [InlineData("<tr><td colspan=2>a</td></tr><tr><td>b</td><td>c</td></tr>", "fixed", "", "1fr 1fr", BoxWidth.Stretch)]
+    // Percent columns of the fixed layout: shares of the width (without other columns scaled to fill it), and beside
+    // columns without a width the rest shared equally (Chromium, cases tp-*).
+    [InlineData("<col style=\"width:14.29%\"><col style=\"width:85.71%\"><tr><td>a</td><td>b</td></tr>", "fixed", "", "14.29fr 85.71fr", BoxWidth.Stretch)]
+    [InlineData("<col style=\"width:20%\"><col style=\"width:30%\"><tr><td>a</td><td>b</td></tr>", "fixed", "", "40fr 60fr", BoxWidth.Stretch)]
+    [InlineData("<col style=\"width:30%\"><col><col style=\"width:20%\"><col><tr><td>a</td><td>b</td><td>c</td><td>d</td></tr>", "fixed", "", "30fr 25fr 20fr 25fr", BoxWidth.Stretch)]
+    [InlineData("<col span=2 style=\"width:25%\"><col style=\"width:50%\"><tr><td>a</td><td>b</td><td>c</td></tr>", "fixed", "", "25fr 25fr 50fr", BoxWidth.Stretch)]
     // Automatic layout: a column element's length is the column's preferred width, a column without one is sized by
     // its content; width auto (also with table-layout: fixed, which Chromium takes only at a width other than auto)
     // is as wide as the columns need, width 100% takes the container's width.
@@ -211,7 +217,11 @@ public class TableBoxTests
     [InlineData("<table style=\"margin-left:10pt\"><tr><td>a</td></tr></table>", "", "margin-left", "10pt")]
     [InlineData("<table style=\"width:auto;margin-right:10pt\"><tr><td>a</td></tr></table>", "", "margin-right", "10pt")]
     [InlineData("<table style=\"width:auto;margin-left:auto\"><tr><td>a</td></tr></table>", "", "margin-left", "auto")]
-    [InlineData("<table><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "", "width", "50%")]
+    [InlineData("<table><col style=\"width:50pt\"><col style=\"width:50%\"><tr><td>a</td><td>b</td></tr></table>", "", "width", "50%")]
+    [InlineData("<table><col style=\"width:60%\"><col style=\"width:40%\"><col><tr><td>a</td><td>b</td><td>c</td></tr></table>", "", "width", "60%")]
+    [InlineData("<table><col style=\"width:0%\"><col><tr><td>a</td><td>b</td></tr></table>", "", "width", "0%")]
+    [InlineData("<table><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "table { width: auto }", "width", "50%")]
+    [InlineData("<table><colgroup style=\"width:25%\" span=2></colgroup><tr><td>a</td><td>b</td></tr></table>", "", "width", "25%")]
     [InlineData("<table><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "table { table-layout: auto }", "width", "50%")]
     [InlineData("<table><tr><td style=\"width:10pt\">a</td></tr></table>", "", "width", "10pt")]
     [InlineData("<table><tr><td style=\"width:10pt\">a</td></tr></table>", "table { table-layout: auto }", "width", "10pt")]

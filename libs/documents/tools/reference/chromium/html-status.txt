@@ -397,6 +397,16 @@ tf-top-border equal
 tf-two equal
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.485, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
+tp-beside-auto equal
+tp-beside-length refused Documents.Html.Unsupported.Value width: 30% at 4:42
+tp-col-span equal
+tp-colgroup refused Documents.Html.Unsupported.Value width: 25% at 4:8
+tp-length-table refused Documents.Html.Unsupported.Value width: 240pt at 4:1
+tp-outer-border equal
+tp-sum-100 equal
+tp-sum-above equal
+tp-sum-below equal
+tp-thirds equal
 tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1

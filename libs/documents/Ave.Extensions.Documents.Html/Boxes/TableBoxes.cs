@@ -61,7 +61,8 @@ internal enum TablePart
 /// elements as fixed columns, and the width left shared equally over the columns without one (fill columns of weight
 /// 1). In the automatic table layout a column element's length is the column's preferred width and a column without
 /// one is sized by its content. The table's width is <c>auto</c> (as wide as its columns need) or <c>100%</c> (its
-/// container's width). Percent columns and widths on cells and column groups are refused.</para>
+/// container's width). Percent columns are drawn in the fixed layout (<c>PercentColumns</c>); widths on cells and
+/// column groups are refused.</para>
 /// <para>The parts follow CSS 2.1 §17.5: internal table elements have no margins; rows and row groups no padding; the
 /// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A row span ends with its row
 /// group (HTML Standard §4.9.12.1). The table breaks with <see cref="BoxDecorationBreak.Slice"/>: layout splits a grid
@@ -113,8 +114,8 @@ public static partial class HtmlBoxGenerator
 
     private sealed partial class Run
     {
-        /// <summary>Per table: per column, the width its column element gives, or null for none (auto).</summary>
-        private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span)>> _columns = new(ReferenceEqualityComparer.Instance);
+        /// <summary>Per table: per column element, the width it gives (null for none, auto), its span and its start tag.</summary>
+        private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span, TextPosition Position)>> _columns = new(ReferenceEqualityComparer.Instance);
 
         /// <summary>The boxes of the footer groups, which their table draws after its other row groups.</summary>
         private readonly HashSet<NodeId> _footers = [];
@@ -225,14 +226,14 @@ public static partial class HtmlBoxGenerator
                 : [];
             if (children.Count == 0)
             {
-                columns.Add((Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
+                columns.Add((Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), element.Element.Position));
                 return;
             }
 
             foreach (var column in children)
             {
                 Check(column, isBlock: true);
-                columns.Add((Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
+                columns.Add((Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), column.Element.Position));
             }
         }
 
@@ -461,15 +462,24 @@ public static partial class HtmlBoxGenerator
                 return (Equal(count), width);
             }
 
-            var lengths = new CssLength?[count];
+            var widths = new CssValue?[count];
+            var places = new TextPosition[count];
             var next = 0;
-            foreach (var (length, span) in given)
+            foreach (var (value, span, position) in given)
             {
-                Array.Fill(lengths, length as CssLength, next, span);
+                Array.Fill(widths, value, next, span);
+                Array.Fill(places, position, next, span);
                 next += span;
             }
 
-            if (stretch && Value(table, "table-layout") is CssKeyword { Name: "fixed" })
+            var isFixed = stretch && Value(table, "table-layout") is CssKeyword { Name: "fixed" };
+            if (PercentColumns(widths, places, isFixed) is { } shares)
+            {
+                return (shares, width);
+            }
+
+            var lengths = widths.Select(value => value as CssLength).ToArray();
+            if (isFixed)
             {
                 // §17.5.2.1: the widths of the column elements, exact, and the width left over shared equally by the
                 // columns without one (fill columns of weight 1); with no such column the table's width left over goes to
@@ -479,6 +489,54 @@ public static partial class HtmlBoxGenerator
 
             // §17.5.2.2: a column length is the column's preferred width, a column without one is sized by its content.
             return ([.. lengths.Select(length => length is null ? TrackSize.Auto.Instance : (TrackSize)new TrackSize.Preferred(length.Value))], width);
+        }
+
+        /// <summary>
+        /// The columns of a table with percent columns (CSS 2.1 §17.5.2.1, where a percentage is of the table's width), as
+        /// Chromium's fixed layout sizes them (<c>SynchronizeAssignableTableInlineSizeAndColumnsFixed</c>,
+        /// table_layout_utils.cc): a percentage is of the width the columns share, the table's width less its outer half
+        /// borders in the collapsing model (case <c>tp-outer-border</c>). Without a column of another kind the percent
+        /// columns grow or shrink in proportion to fill that width (sums below and above 100, cases <c>tp-sum-below</c>,
+        /// <c>tp-sum-above</c>); beside columns without a width each keeps its percentage and those columns share the rest
+        /// equally (<c>tp-beside-auto</c>). Both are fill columns whose weights are the shares of the width, so layout
+        /// divides the width exactly where Chromium cuts each share to 1/64 px and gives the remainder to the last column.
+        /// A span repeats the percentage over its columns (<c>tp-col-span</c>). Refused, at the column element, and then
+        /// read as a column without a width: a percent column outside the fixed layout of a table of width <c>100%</c>
+        /// (Chromium's automatic layout has other rules); beside a column of a length, which Chromium widens to what the
+        /// percentages leave (<c>tp-beside-length</c>); and percentages of 100 or more beside a column without a width,
+        /// which Chromium leaves no width. Null when the table has no percent column or it was refused.
+        /// </summary>
+        private ValueList<TrackSize>? PercentColumns(CssValue?[] widths, TextPosition[] places, bool isFixed)
+        {
+            var first = Array.FindIndex(widths, value => value is CssPercentage);
+            if (first < 0)
+            {
+                return null;
+            }
+
+            var total = widths.Sum(value => value is CssPercentage percent ? percent.Value : 0);
+            var others = widths.Count(value => value is null);
+            var reason = !isFixed ? "a percent column is drawn only in the fixed table layout (table-layout: fixed) of a table of width 100% in this version"
+                : Array.Exists(widths, value => value is CssLength) ? "a percent column beside a column of a length is not drawn in this version"
+                : others > 0 && total >= 100 ? "percent columns of 100% or more beside a column without a width are not drawn in this version"
+                : null;
+            if (reason is not null)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'width: {widths[first]}' on a column element is not drawn: {reason}.", widths[first]!.ToString()!, places[first], "width");
+                for (var i = 0; i < widths.Length; i++)
+                {
+                    widths[i] = widths[i] is CssPercentage ? null : widths[i];
+                }
+
+                return null;
+            }
+
+            return [.. widths.Select(value => (TrackSize)new TrackSize.Fill(value switch
+            {
+                CssPercentage percent when others == 0 => percent.Value * 100 / total,
+                CssPercentage percent => percent.Value,
+                _ => (100 - total) / others,
+            }))];
         }
 
         private static ValueList<TrackSize> Equal(int count) => [.. Enumerable.Repeat((TrackSize)new TrackSize.Fill(1), count)];

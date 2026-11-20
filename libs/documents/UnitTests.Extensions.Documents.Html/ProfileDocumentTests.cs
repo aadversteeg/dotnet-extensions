@@ -85,6 +85,12 @@ public class ProfileDocumentTests
         Line("computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,");
         Line("so `clip` beside `visible` is accepted and kept, as in Chromium.");
         Line();
+        Line("`width` on a table part: a table is drawn at `auto` or `100%`; a `col` takes a length, or a percentage in the fixed");
+        Line("layout (`table-layout: fixed` on a table of width `100%`) when every other column is a percentage or has no width");
+        Line("and, beside a column without a width, the percentages add up to less than 100. A percentage on a `col` of the");
+        Line("automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body");
+        Line("rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).");
+        Line();
         Line("### Supported at the initial value only");
         Line();
         Line("What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and");

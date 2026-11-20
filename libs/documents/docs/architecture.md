@@ -662,11 +662,22 @@ columns without one share what is left (fill columns of weight 1). A table of wi
 need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
 it; the two agree while the content fits its column (case `tl-fixed-fill-wide-word`, listed;
-`HtmlListedDifferenceTests`). Refused (`Documents.Html.Unsupported.Table`,
+`HtmlListedDifferenceTests`). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
+a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
+(case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
+(`tp-sum-100`, `tp-sum-below`, `tp-sum-above`, `tp-thirds`); beside columns without a width each keeps its percentage
+and those columns share the rest equally (`tp-beside-auto`); a span gives each of its columns the percentage
+(`tp-col-span`). Each is a fill column whose weight is its share, so layout divides the width exactly where Chromium cuts
+each share to 1/64 px and gives the last column the remainder (less than 0.012 pt per column). Refused at the column
+element (`Value`): a percent column in the automatic layout, beside a column of a length (Chromium widens the length
+columns to what the percentages leave, `tp-beside-length`), and percentages of 100 or more beside a column without a
+width (Chromium gives that column no width); a percent column, like a fill column, is never narrower than its
+content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
 (§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
-a column in which no cell starts; percent columns, a width on a cell or a column group, a table width other than
+a column in which no cell starts; the percent columns named above, a width on a cell or a column group (`tp-colgroup`), a table width other than
 `auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
@@ -748,6 +759,14 @@ Each is documented next to its code as well.
   footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
   `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
   (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
+- **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
+  without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
+  column without a width they are refused, as are widths on cells and column groups. A percent column is never
+  narrower than its content's min-content width, where Chromium lets the content overflow (as for a fill column,
+  `tl-fixed-fill-wide-word`). The percentages are of the table's width less its outer half borders; the engine takes
+  that half border from the widest border at the table's edge, Chromium from the first row, so in a table whose rows
+  have outer borders of different widths the columns start up to half the difference apart (the cases have one border
+  width).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 
