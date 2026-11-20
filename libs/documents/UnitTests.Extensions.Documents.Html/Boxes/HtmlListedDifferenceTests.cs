@@ -74,7 +74,7 @@ public class HtmlListedDifferenceTests
     {
         var (engine, chromium) = (Engine("h-page-a4-zero-right").Pages.Single(), Chromium("h-page-a4-zero-right").Pages.Single());
         (chromium.Width, engine.Width).Should().Be((594.96, 594.96));
-        chromium.Rectangles.Single().X1.Should().Be(595.5, "Chromium's page area is 794 px wide");
+        chromium.Rectangles.Single().X1.Should().Be(595.2, "Chromium draws it to 595.5, its page area 794 px wide, under a clip that ends at 595.2, past the sheet");
         engine.Rectangles.Single().X1.Should().BeApproximately(594.96, 1e-6, "the engine's ends at the sheet");
 
         LineEnds(Chromium("h-page-a4-zero-justify"))[0].Should().BeApproximately(595.5, 0.01);

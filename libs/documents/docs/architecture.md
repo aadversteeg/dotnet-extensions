@@ -133,6 +133,7 @@ policies today:
 | monolithic overflow: an image or a line box taller than the page area, at the top of a page | `Refuse` (`Documents.Layout.DoesNotFit`); `Slice` (Chromium: sliced over the pages it needs, at most 100, each slice clipped; every slice of an image is content of its figure, later slices of a line are pagination artifacts) | `Layout/MonolithicSlices.cs`, `ImageLayout.cs`, `InlineLayout.cs`, `PagePainter.cs` | CSS Fragmentation 3 §4.4 ("the UA may also fragment the contents of monolithic elements by slicing the element's graphical representation"); checked against Chromium's print (cases `a4-*`) |
 | font metric rounding: a font's ascent, descent and line gap at its size, for `line-height: normal`, the strut and the baseline's place in a line | `Exact`; `WholePixels` (Chromium: each rounded to a whole CSS pixel, half away from zero, the half-leading above floored to a whole pixel) | `Layout/LineBoxes.cs` (`InlineExtent`, `CssPixels`) | CSS 2.1 §10.8.1 leaves the metrics to the user agent; Chromium `font_metrics.cc`, `simple_font_data.cc`, `line_utils.cc`; checked against Chromium's print (cases `f-lato-*`, `f-mixed-lato`: every line within 1/64 pixel; the Theano Didot cases and `f-mixed` are measured and wait for the typographic metrics, USE_TYPO_METRICS) |
 | empty row parts: a cut of a table row where one part shows nothing | `Avoid` (such a cut is a last resort: the row moves whole where it can); `Allow` (Chromium: a row is cut wherever its cells can break) | `Tracks/TableBreaks.cs` (`Cut`, `CutShows`) | CSS leaves where a row breaks to the user agent; checked against Chromium's print (cases `a2-*`, `a3-mirror`) |
+| body clip: what a page's body draws past its area (the page area less the header and footer areas) | `None`; `BodyArea` (Chromium: the body is drawn under a clip to its area, the page area's own size from its rounded start, `PageStyle.BodyClipInset`; the header and footer areas are not clipped) | `Layout/Paginator.cs` (the clip), `Layout/PagePainter.cs` (`PaintPage`) | Chromium's print (`tools/reference/chromium`, `visible.py`: one rectangle clip per page; `mf4-line-0`, `b2-split-row`, `pm-tall-over`); ISO 32000-1 §8.5.4 |
 
 The whole algorithms and the other rules:
 
@@ -600,7 +601,8 @@ it.
 
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
-`FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
+`BodyClip.BodyArea`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -743,6 +745,18 @@ through the whole HTML path unchanged and its pages are compared with every file
   0.1 pt, and the line box poppler gives it (the baseline less the face's ascender, plus its descender) within 0.1 pt;
 - `<case>.boxes.txt`, the boxes measured in the page: the height of each box named by an element id within 0.1 pt.
   Not the width: the tool measures the boxes in the 1280 px browser window, not in the printed page.
+
+Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
+(ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole
+pixel, its own size, not rounded up as layout takes it), while the page-margin boxes are drawn before it, outside any
+clip. It still draws what passes that clip: a grid line past the page end, a cut cell's side lines or an image slice
+drawn again offset up by the page area's height. So the read-backs (`visible.py`, used by `positions.py`,
+`rectangles.py` and `ink.py`) write each rectangle and image area cut to the clips it is drawn under, and leave out what
+lies wholly outside them; the engine's pages are read through their page-model clips by the same rule
+(`PrintedPages.Engine`, `PrintedPages.Visible`). Words are compared whole: no word of a measured print lies wholly
+outside its clip. The engine clips the body to its area under `LayoutProfile.BodyClip` (`BodyArea`, the HTML front-end's
+value; `None`, the code front-end's default, clips nothing); the header and footer areas, where the HTML front-end puts
+the page-margin boxes, are not clipped, as Chromium draws tall margin-box content over the body (`pm-tall-over`).
 
 Baselines and the edges of rectangles and images are compared at the whole pixel where Chromium paints them (every
 rectangle and image edge in the committed prints is a whole pixel), so a difference smaller than half a pixel there
@@ -998,8 +1012,8 @@ Each is documented next to its code as well.
   line passed, and on a page of its own when the table ends the document (`a2-row-end`, `a2-row-end-after`,
   `a2-row-end-6pt`, `a2-row-end-6pt-after`, `a2-row-end-6pt-part-after`, `a2-row-end-first-row-half-*`;
   `TableEndOverflowTests`). Chromium draws those lines again offset up by the page area's height and clips the page to
-  its area; the case comparison counts what it draws in the top margin, so the painted cases stay open by that margin
-  alone. Under `EndsOnPage`, the code front-end's default, the table ends on the page. The limits of that default,
+  its area, so its print does not show what it draws in the top margin; the engine clips the body the same way
+  (`LayoutProfile.BodyClip`, below), and the comparison reads both as they show. Under `EndsOnPage`, the code front-end's default, the table ends on the page. The limits of that default,
   against Chromium:
   (i) Chromium draws the overflowing line again at the top of the next page; when the table ends the document, that is
   a page that holds only the line (`a2-row-end`: 3 pages in Chromium, 2 in the engine). Where only the outer half of

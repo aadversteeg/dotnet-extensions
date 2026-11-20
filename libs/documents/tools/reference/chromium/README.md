@@ -42,7 +42,7 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `<case>.boxes.txt`: width and height in points of every table cell, every element with an id and every grid item,
   laid out for print (1 CSS px = 0.75 pt);
 - `<case>.lines.txt`: every filled rectangle as `page x0 y0 x1 y1 height`, in points, origin top left
-  (`rectangles.py`, PyMuPDF): the pieces of the grid lines;
+  (`rectangles.py`, PyMuPDF): the pieces of the grid lines, each the part the print shows (see "Print positions");
 - `<case>.print.txt`: where the print put things, page by page, read from the PDF alone (`positions.py`, PyMuPDF; see
   "Print positions" below);
 - `<case>.ink.txt`, only for a print that has one: each underline or overline that Chromium cuts around the glyphs' ink
@@ -52,6 +52,8 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   rectangle around one glyph's ink. A clip that cuts out a rectangle over only part of the line's height (the clip of an
   earlier line of the same text) is written as `gap page x0 x1 y0 y1`, and the line then as `part page x0 y0 x1 y1`, its
   visible rectangles, columns of equal rows joined; a clip that leaves out anything but one rectangle is written as `uneven`;
+  a clip that is one rectangle (the page area's) cuts no gap: the line is written as the part inside it, as `print.txt`
+  holds it;
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
@@ -82,7 +84,12 @@ A word is a run of characters without white space on one baseline. Its extent is
 first character to the origin of its last plus that character's advance), and its height is its baseline, so neither
 depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. `rect` is a filled rectangle
 (a background, a border, a grid line, or a marker box a case draws on purpose to show where a box is); `image` is the
-area an image is drawn into, which reaches past the page when the page shows only a slice of it. A colour is
+area an image is drawn into. A `rect`, `stroke` or `image` line is the part the print shows: the PDF draws each of
+them under the clips open around it, and Chromium opens one clip per page around the page's body (the page area, less
+the areas of the page-margin boxes, which it draws before it, outside any clip), yet draws what passes that clip all the
+same (a grid line past the page end, a cell's or an image's slice drawn again offset up by the page area's height). So
+each is cut to the rectangle its clips leave, and one that lies wholly outside it is not written (`visible.py`; `lines.txt`
+the same). Words are written whole. A colour is
 `#rrggbb`, with the opacity as a fourth byte (`#rrggbbaa`) where it is not 1. The face is the PostScript name of the
 font a word is drawn with, without the subset tag (`ABCDEF+`) of the PDF: it names the font file, and with it the
 weight and the style (synthetic bold or italic would not show). A `stroke` line is one of the four bands a stroked
@@ -129,9 +136,10 @@ from them:
 pwsh -NoProfile -File measure.ps1 -CaseFolder documents
 ```
 
-and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`. The timesheets' prints have an
-`ink.txt` too: Chromium clips the right end of the table's grey lines at x 567.105, 0.105 pt into the right border, and
-`ink.py` reads such a clip as it reads a decoration line cut around ink.
+and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`. In the timesheets Chromium
+clips the right end of the table's grey lines at x 567.105, 0.105 pt into the right border: the page area's own width
+from its start rounded to a whole pixel, where layout rounds the width up. `print.txt` and `lines.txt` hold those lines
+cut there (see "Print positions").
 
 The HTML front-end reads the documents as it reads the cases, with the same comparison (`CaseStatusTests`,
 `UnitTests.Extensions.Documents.Html`): one status line per document in `documents/html-status.txt`, in the form of

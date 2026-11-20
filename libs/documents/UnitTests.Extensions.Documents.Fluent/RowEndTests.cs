@@ -434,12 +434,13 @@ public class RowEndTests
         // Limit (i), docs/architecture.md, under TableEndOverflow.EndsOnPage, the default: the whole bottom line, 192 to
         // 192.75, on page 2 in both. Chromium draws the overflowing border again on a page 3 that holds only that line; the
         // table ends the document, and the engine ends with page 2. Under ContinuesOnNextPage it draws that page 3 too
-        // (TableEndOverflowTests).
+        // (TableEndOverflowTests). Chromium draws its line under its clip to the page area, so its print shows nothing
+        // below 192 (the measured files hold what shows); the engine, under BodyClip.None, the default, shows the line.
         var engine = Printed(Smallest());
         var chromium = PrintedPages.Chromium("a2-row-end");
 
         engine.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.75);
-        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.75);
+        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192);
         chromium.Pages.Should().HaveCount(3);
         chromium.Pages[2].Words.Should().BeEmpty();
         chromium.Pages[2].Rectangles.Should().NotBeEmpty();
@@ -481,9 +482,10 @@ public class RowEndTests
         var engine = PrintedPages.Engine(result.Value);
         var chromium = PrintedPages.Chromium("a2-row-end-6pt");
 
+        // Both draw the whole line, 192 to 198; Chromium's clip to the page area shows none of it (BodyClip.BodyArea), the engine's default shows it.
         engine.PageTexts.Should().Equal(chromium.PageTexts.Where(text => text.Length > 0));
         engine.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(198);
-        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(198);
+        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192);
         PastTheArea(result.Value, EmptyRowParts.Allow, 6).Should().BeEmpty();
         PastTheArea(result.Value, EmptyRowParts.Allow, 3).Should().NotBeEmpty("the whole line passes, not half of it");
     }
@@ -492,7 +494,8 @@ public class RowEndTests
     public void A_cell_background_ends_at_the_middle_of_the_line_below_where_Chromium_ends_it_at_its_outer_edge()
     {
         // The table model's own rule, not new here: a cell's box ends at the middle of its grid lines. The 0.375 pt between
-        // is under the opaque line (the engine has no dashed or translucent lines), so the pages look the same.
+        // is under the opaque line (the engine has no dashed or translucent lines), so the pages look the same. Chromium's
+        // print shows its background only to the page area's end, 192, where its clip cuts it.
         var light = new Color(0xc8, 0xdc, 0xff);
         var body = new Element[] { Lines("a", 1), Table(Columns(Fill(1)), [TableRow([Cell([Lines("b", 22)]).Background(light)])]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks() };
         var result = Run(body, EmptyRowParts.Allow);
@@ -500,7 +503,7 @@ public class RowEndTests
         var chromium = PrintedPages.Chromium("a2-row-end-background");
 
         background.Max(fill => fill.Area.Origin.Y + fill.Area.Size.Height).Should().Be(192.375);
-        chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 200).Max(box => box.Y1).Should().Be(192.75);
+        chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 200).Max(box => box.Y1).Should().Be(192);
         PrintedPages.Engine(result.Value).PageTexts.Should().Equal(chromium.PageTexts.Where(text => text.Length > 0));
         PastTheArea(result.Value, EmptyRowParts.Allow, 0.75).Should().BeEmpty();
     }
@@ -521,6 +524,7 @@ public class RowEndTests
         // and draws it again at the top of page 3, so "after" is 0.375 pt higher than in Chromium (+1.125 below the top of
         // the page against +1.5). That is under TableEndOverflow.EndsOnPage, the default; under ContinuesOnNextPage page 3
         // takes the passed part of the upper half again and "after" is where Chromium prints it (TableEndOverflowTests).
+        // Chromium's clip to the page area shows nothing of its line below 192.
         var engine = Printed(Spanning());
         var chromium = PrintedPages.Chromium("a2-row-end-span");
         var engineAfter = Printed(Spanning(after: true));
@@ -532,7 +536,7 @@ public class RowEndTests
         engine.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.375);
         engine.Pages[2].Rectangles.Where(box => box.X1 - box.X0 > 100).Min(box => box.Y0).Should().Be(12.375);
         engine.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(13.125);
-        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.75);
+        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192);
         After(engineAfter).Should().Be(24 + 1.125);
         After(chromiumAfter).Should().Be(24 + 1.5);
     }
