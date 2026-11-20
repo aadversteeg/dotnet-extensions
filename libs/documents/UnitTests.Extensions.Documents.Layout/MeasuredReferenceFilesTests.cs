@@ -820,6 +820,18 @@ public class MeasuredReferenceFilesTests
         ["fr-cell-first-line-block-fits.lines.txt"] = 8,
         ["fr-cell-first-line-block-fits.print.txt"] = 13,
         ["fr-cell-first-line-block-fits.words.txt"] = 3,
+        ["fr-cut-row-between-aligned-rows.boxes.txt"] = 6,
+        ["fr-cut-row-between-aligned-rows.lines.txt"] = 20,
+        ["fr-cut-row-between-aligned-rows.print.txt"] = 53,
+        ["fr-cut-row-between-aligned-rows.words.txt"] = 31,
+        ["fr-cut-row-three-pages-bottom.boxes.txt"] = 2,
+        ["fr-cut-row-three-pages-bottom.lines.txt"] = 13,
+        ["fr-cut-row-three-pages-bottom.print.txt"] = 62,
+        ["fr-cut-row-three-pages-bottom.words.txt"] = 46,
+        ["fr-cut-row-uncut-bottom-cell.boxes.txt"] = 2,
+        ["fr-cut-row-uncut-bottom-cell.lines.txt"] = 10,
+        ["fr-cut-row-uncut-bottom-cell.print.txt"] = 24,
+        ["fr-cut-row-uncut-bottom-cell.words.txt"] = 12,
         ["fr-empty-span-trailing-space.boxes.txt"] = 2,
         ["fr-empty-span-trailing-space.lines.txt"] = 0,
         ["fr-empty-span-trailing-space.print.txt"] = 3,
@@ -936,6 +948,18 @@ public class MeasuredReferenceFilesTests
         ["fr-forced-padded.lines.txt"] = 0,
         ["fr-forced-padded.print.txt"] = 6,
         ["fr-forced-padded.words.txt"] = 3,
+        ["fr-forced-table-header.boxes.txt"] = 2,
+        ["fr-forced-table-header.lines.txt"] = 7,
+        ["fr-forced-table-header.print.txt"] = 14,
+        ["fr-forced-table-header.words.txt"] = 4,
+        ["fr-forced-table-in-box.boxes.txt"] = 1,
+        ["fr-forced-table-in-box.lines.txt"] = 6,
+        ["fr-forced-table-in-box.print.txt"] = 12,
+        ["fr-forced-table-in-box.words.txt"] = 3,
+        ["fr-forced-table-row-fits.boxes.txt"] = 2,
+        ["fr-forced-table-row-fits.lines.txt"] = 8,
+        ["fr-forced-table-row-fits.print.txt"] = 15,
+        ["fr-forced-table-row-fits.words.txt"] = 4,
         ["fr-forced-table.boxes.txt"] = 1,
         ["fr-forced-table.lines.txt"] = 6,
         ["fr-forced-table.print.txt"] = 12,
@@ -2141,7 +2165,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(524);
+        cases.Should().HaveCount(530);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
