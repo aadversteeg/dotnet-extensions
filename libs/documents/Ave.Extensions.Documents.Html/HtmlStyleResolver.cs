@@ -146,7 +146,16 @@ public static class HtmlStyleResolver
             }
 
             Keep(computer.Diagnostics.Where((_, i) => !_renamed.Contains(i)));
-            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) { Page = options.Page } : null;
+            var pages = Limit is null ? PageContextCascade.Compute(index, root.Style, options.Values) : Result<PageContexts, Error>.Success(PageContexts.None);
+            if (pages.IsFailure)
+            {
+                // The page contexts share the document's cascade budget: a limit there is the document's.
+                Keep(pages.Error);
+                Limit ??= pages.Error;
+                return null;
+            }
+
+            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) { Page = options.Page, PageContexts = pages.Value } : null;
         }
 
         /// <summary>Keeps a diagnostic, at most <see cref="HtmlInputLimits.MaxDiagnostics"/> in all (the parts are capped

@@ -9,8 +9,8 @@ namespace Ave.Extensions.Documents.DocumentModel;
 /// </summary>
 public sealed record LayoutProfile
 {
-    /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>
-    /// and <see cref="FontMetricRounding.Exact"/>.</summary>
+    /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
+    /// <see cref="FontMetricRounding.Exact"/> and <see cref="SplitLineHalves.Exact"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -22,6 +22,34 @@ public sealed record LayoutProfile
     /// <summary>Whether a font's ascent, descent and line gap are used as they are or rounded to whole pixels as Chromium
     /// rounds them (<see cref="DocumentModel.FontMetricRounding"/>).</summary>
     public FontMetricRounding FontMetricRounding { get; init; } = FontMetricRounding.Exact;
+
+    /// <summary>How thick the half of a grid line is drawn where a page break between table rows splits the line
+    /// (<see cref="DocumentModel.SplitLineHalves"/>).</summary>
+    public SplitLineHalves SplitLineHalves { get; init; } = SplitLineHalves.Exact;
+}
+
+/// <summary>
+/// How thick each half of a horizontal grid line of a table is drawn where a page break between two rows splits the line
+/// at its centre (<c>BoxDecorationBreak.Slice</c>): the upper half ends one page, the lower half starts the next. Only the
+/// paint follows the policy: each half takes its exact width in layout under either value, so content is where it is
+/// under <see cref="Exact"/>. A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// </summary>
+public enum SplitLineHalves
+{
+    /// <summary>Each half is drawn as thick as it is: half the line's width.</summary>
+    Exact,
+
+    /// <summary>
+    /// A half thinner than one pixel is drawn one pixel thick, from its top edge down, as Chromium prints it; a thicker
+    /// half is drawn as it is. Measured against Chromium's print (<c>tools/reference/chromium</c>): with a line of
+    /// 0.75 pt (1 px) each half is half a pixel and prints as one whole pixel from the pixel nearest to its top
+    /// (cases <c>a2-cells-end</c>, <c>b5-row-span-kept-cell</c>, <c>a2-row-end-first-row-half-second-row</c>); with
+    /// 1.5 pt (2 px) each half is one pixel (<c>a2-row-break-line-1-5pt</c>); with 2.25 pt (3 px) the halves are 1.5 px,
+    /// each edge on the nearest pixel, so 1 px at the end of the page and 2 px at the start of the next
+    /// (<c>a2-row-break-line-2-25pt</c>); with 6 pt each half is 4 px (<c>a2-row-break-line-6pt</c>). A one-pixel half drawn
+    /// from the half's top edge covers the same pixel as Chromium's once both edges are put on whole pixels.
+    /// </summary>
+    AtLeastOnePixel,
 }
 
 /// <summary>
@@ -48,8 +76,9 @@ public enum FontMetricRounding
     /// (a length or a percentage rounded to it, a number times the font size floored), so pages can differ; a front-end
     /// that follows Chromium gives the line height in that unit, and then the pages are Chromium's (cases
     /// <c>f-length-*</c>, <c>f-letter-*</c>, <c>f-number-1501</c>). Chromium also paints each text baseline at a whole
-    /// pixel, which moves ink by at most half a pixel and never a line; the engine does not (docs/architecture.md,
-    /// "Against Chromium").
+    /// pixel, the nearest one, half up, which moves ink by at most half a pixel and never a line (case
+    /// <c>pm-snap-pitch</c>: lines 20.5 px apart from a top at 19.5 px have their baselines painted at 35 and 55 px); the
+    /// engine does not (docs/architecture.md, "Against Chromium").
     /// </summary>
     WholePixels,
 }

@@ -84,7 +84,7 @@ paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with th
 is left. When the document shows its page count, it repeats the whole document until that count settles (at most 5
 passes); otherwise one pass is all.
 
-The four algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
+The five algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
 that another box's layout returned. Each algorithm checks the token it is given, and a token it cannot have returned for
 the box — another algorithm's kind, a child, line, row or cell the box does not have, a height shown that is negative,
 not finite, or the whole height of the sliced image or line or more — is the error `Documents.Layout.InvalidBreakToken`,
@@ -93,9 +93,29 @@ carry its grid over to another table (`BreakTokenCheckTests`). The token types k
 caller can pass one box's token to another box, so closing the constructors would not close the hole. Pagination never
 meets the error: it hands each box the token that box's own layout returned.
 
+**The row of page-margin boxes** (`Layout/MarginBoxesLayout.cs`, id `margin-boxes`) lays out the generated boxes of one
+page edge side by side, CSS Paged Media 3 §5.3.2: each child carries its place in the row (`BoxStyle.MarginBoxPlace`:
+start, center, end), and a box that is not generated is no child. Without a centre box the start and end boxes share the
+row by their max-content widths, or by max minus min when those do not fit; with one, the centre box shares the row with
+an imaginary box twice as wide as the wider side box, is centred, and each side box gets half of the rest, also when the
+other side is empty; a box alone takes the whole row; where all widths are zero, the row is shared by the number of boxes
+each stands for (Chromium 159: two empty side boxes half each, an empty centre box beside an empty side box a third). The
+row is only the content of a header or footer area with a fixed height, and each box is as tall as that height less its
+own margins, its content placed by `vertical-align` (`ModelCheck` refuses a row anywhere else, a child without a place and
+two at one place: `Documents.Input.Invalid.MarginBoxes`). Content taller than its box is drawn as Chromium draws it:
+the box keeps its height and the body does not move, the content starts at the top of the box's content box under every
+vertical alignment and runs on unclipped over the box's border, the body or past the sheet; the header area is painted
+before the body, so the body lies over it, as in Chromium (cases `pm-tall-*`). Content wider than its box is refused at
+the box (`Documents.Layout.MarginBoxOverflow`), also when not even the min-content widths fit the row, and so is a box
+whose own margins, padding and border are taller than the row; Chromium draws wider content unclipped over the
+neighbouring box or past the sheet — a known limit, pinned by `MarginBoxesLayoutTests` (at 12 pt "Left" beside a word
+wider than the row: Chromium shrinks "Left" to 15.0 pt and draws both words over their boxes; case `pm-overflow`). Checked against the measured edges of Chromium's
+rectangles at whole pixels: one edge is not reproduced ("Eeeeeee Eeeeeee" beside "Dd": 306.75 pt in Chromium, 307.13 pt
+here, which paints at 307.5); the widths computed in 1/64 px would give Chromium's pixel there, which is not built.
+
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
-engine ships four algorithms (flow, inline, tracks, image) and registering another is internal
+engine ships five algorithms (flow, inline, tracks, image, margin-boxes) and registering another is internal
 (`LayoutEnvironment.WithAlgorithm`); `BreakToken` can only be derived inside the layout assembly, and the parts of a
 table are a display type (`TableDisplay`), not algorithms. When a front-end needs an algorithm of its own, these are
 the three places to open, with that front-end as their first user.
@@ -580,7 +600,7 @@ it.
 
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
-`FontMetricRounding.WholePixels`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -648,7 +668,12 @@ cells keep padding, background and `vertical-align` `top`, `middle` or `bottom`;
 rows and groups no padding (§17.5), the table no padding (§17.6.2); `colspan` and `rowspan` are read by the rules for
 non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); at a page break between rows the
 engine splits the grid line there at its centre, its upper half ending one page and its lower half starting the next
-(`BoxDecorationBreak.Slice`), where Chromium paints that line whole on one page: not yet equal. Column sizes, as Chromium lays them out: in the automatic layout a
+(`BoxDecorationBreak.Slice`), each half a whole pixel at least, as Chromium prints it (`SplitLineHalves.AtLeastOnePixel`;
+"Table breaks" under Known limits). A footer group (`tfoot`) is drawn after the other row groups wherever it stands in the source; only
+the first is the table's footer, a later one is a row group in its place (CSS 2.1 §17.2; Chromium's
+`TableGroupedChildren`; cases `tf-after`, `tf-before`, `tf-head`, `tf-two`, `tf-top-border`, equal). The model's table
+has no footer group, so its rows are the last body rows: the tagged PDF has them in a `TBody`, not a `TFoot`, and
+Chromium's repetition of the footer on every page is not drawn (Known limits). Column sizes, as Chromium lays them out: in the automatic layout a
 column element's length is the column's preferred width (`TrackSize.Preferred`) and a column without one is sized by
 its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only for a table whose width is not `auto`
 (`ComputedStyle::IsFixedTableLayout`; case `tl-fixed-width-auto`, where a 30 pt column element under
@@ -658,11 +683,22 @@ columns without one share what is left (fill columns of weight 1). A table of wi
 need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
 it; the two agree while the content fits its column (case `tl-fixed-fill-wide-word`, listed;
-`HtmlListedDifferenceTests`). Refused (`Documents.Html.Unsupported.Table`,
+`HtmlListedDifferenceTests`). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
+a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
+(case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
+(`tp-sum-100`, `tp-sum-below`, `tp-sum-above`, `tp-thirds`); beside columns without a width each keeps its percentage
+and those columns share the rest equally (`tp-beside-auto`); a span gives each of its columns the percentage
+(`tp-col-span`). Each is a fill column whose weight is its share, so layout divides the width exactly where Chromium cuts
+each share to 1/64 px and gives the last column the remainder (less than 0.012 pt per column). Refused at the column
+element (`Value`): a percent column in the automatic layout, beside a column of a length (Chromium widens the length
+columns to what the percentages leave, `tp-beside-length`), and percentages of 100 or more beside a column without a
+width (Chromium gives that column no width); a percent column, like a fill column, is never narrower than its
+content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
-(§17.2.1); a table part on another element than its HTML element; captions, footer groups, a header group after a row
+(§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
-a column in which no cell starts; percent columns, a width on a cell or a column group, a table width other than
+a column in which no cell starts; the percent columns named above, a width on a cell or a column group (`tp-colgroup`), a table width other than
 `auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
@@ -674,8 +710,16 @@ margins, which the reference tool prints on: cases `h-default-page`, `h-page-siz
 `h-page-portrait`, `h-page-default-media`). Media queries see that page also where an `@page` rule sets another
 size, as Chromium evaluates them (cases `h-media-page-size-narrow`, `h-media-page-size-wide`). A root element with `display: none` generates no box: one empty page of
 the caller's page, whatever the `@page` rules say (case `h-root-display-none`). An `@page` rule without a selector gives `size` and the margins;
-declarations that reach only the page-margin boxes (inherited properties, the counters) have no effect; any other
-declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Box generation makes
+the declarations that reach the page-margin boxes and the margin rules are the page-context cascade's
+(`PageContextCascade`, `Css.Unsupported.PageRule`; the page context inherits from the root element, `font-family`
+included, cases `pm-inherit` and `pm-inherit-family`); any other declaration, an invalid value and the size and margins of
+`@page :first` are refused (`PageRule`). A generated margin box gives every page a header area as high as the top margin
+and a footer area as high as the bottom one, each a row of the margin-boxes algorithm that starts where Chromium starts
+it, at the smaller of the left margin cut to 1/64 px and the page area's start (`PageArea.StartInMargin`; cases `pm-*`,
+`pm-start-25mm`, `pm-start-12pt`); the model's top and bottom margins are then 0. An image in a margin box's `content`
+(`url()`, or `image-set()` of one URL and its resolution) is an image box among the runs of its line, as an `img` in a
+line of text is, at its natural size divided by the resolution, its URL resolved against the style sheet that holds the
+`content` declaration (CSS Values 4 §4.5.1; cases `pm-image-*`). Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
 leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
@@ -717,6 +761,10 @@ fails the test, and so does a status that changes without the file; writing the 
 the committed file does not already name. To read it: `cut -d' ' -f2 html-status.txt | sort | uniq -c` gives the
 picture; grep a code or a property for the cases it holds back.
 
+The whole documents (`tools/reference/chromium/documents`: the timesheet on one page, a normal month and a long
+month, and the invoice) are compared by the same code, against their own files: `documents/measured/` and the status
+file `documents/html-status.txt`, one line per document, pinned by the same test and written by the same variable.
+
 ## Known limits (all stages)
 
 Each is documented next to its code as well.
@@ -734,6 +782,25 @@ Each is documented next to its code as well.
 - **A ligature across the border of an inline element:** the engine's text keeps every character the glyph
   shows, Chromium's print maps it to the first run's characters only (`f<span>i</span>x` reads "fx"; the rule for shaping
   across runs above; case `sr-same-font`, listed; `HtmlListedDifferenceTests`).
+- **A repeated table footer (HTML):** Chromium repeats a footer group at the end of every page its table is on when the
+  group is at most a quarter of the page area and does not break inside (`break-inside: avoid`, which the user-agent
+  style sheet gives `tfoot`), as it repeats a header group (`TableLayoutAlgorithm::Layout`); the model's table has no
+  footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
+  `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
+  (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
+- **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
+  without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
+  column without a width they are refused, as are widths on cells and column groups. A percent column is never
+  narrower than its content's min-content width, where Chromium lets the content overflow (as for a fill column,
+  `tl-fixed-fill-wide-word`). The percentages are of the table's width less its outer half borders; the engine and
+  Chromium both take that half border from the widest line at the table's edge in any row, on every page (cases
+  `te-left-first`, `te-left-later`, `te-right-first`, `te-right-later`, `te-table-border`, `te-break`), and each cell
+  is inset by half of its own line. Percent columns in a table whose rows have outer borders of different widths are
+  not measured (the `tp-*` cases have one border width).
+- **A face that only a page-margin box uses (HTML):** Chromium has not loaded an `@font-face` face that no body text
+  uses when it prints the margin boxes, and prints that text in its fallback serif face; the engine draws the face
+  (case `pm-family-unused`, the same in three prints, listed; `HtmlListedDifferenceTests`). Used in the body too, the
+  face prints in both (case `pm-inherit-family`).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 
@@ -932,9 +999,10 @@ Each is documented next to its code as well.
   in the engine, below the line drawn again in Chromium (a paragraph's baseline at 24.00 pt against 24.75 with a 0.75 pt
   line, against 30.00 with a 6 pt line; `a2-row-end-after`, `a2-row-end-6pt-after`). The engine reserves no offset
   without the line: a gap with no line would be a third behaviour.
-  (iii) At the break between the first row and the next, the engine draws half of the line on each page (192 to 192.375
-  and 12 to 12.375), where Chromium draws the whole line on both; content after it is 0.375 pt higher (1.125 pt below
-  the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
+  (iii) At the break between the first row and the next, inside a cell that spans both, the engine draws the upper half
+  of the line at the end of the page (192 to 192.375) and nothing at the top of the next, keeping the half's room, where
+  Chromium lets the whole line pass the page end and draws it again at the top of the next page; content after it is
+  0.375 pt higher (1.125 pt below the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
   (iv) A table that itself starts at the top of a page with such a first row: Chromium prints it in three ways. Where
   the content ends within half the grid line of the page end, so that only the outer half of the line below passes,
   it places the row whole; the engine does the same under `Allow` (`TablePage.PassesOnlyByItsLineBelow`: the row up to
@@ -1100,9 +1168,14 @@ Each is documented next to its code as well.
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
-  lower half starting the next (as Chromium 159 draws a line of several pixels, cases `mf4-line-*`; a one-pixel line
-  Chromium cannot split: it draws it whole on both pages, and the next page's first row starts 0.375 pt lower than in
-  the engine, case `a2-split-line-1px`; a difference, left to the HTML front-end's stage); `Clone`, the code front-end's default for tables, ends the
+  lower half starting the next (as Chromium 159 does, cases `mf4-line-*`, `a2-row-break-line-6pt`). Chromium puts both
+  edges of each half on the nearest pixel and draws at least one pixel, so each half of a one-pixel line prints one
+  pixel thick; `LayoutProfile.SplitLineHalves` (`AtLeastOnePixel`, the HTML front-end's value) draws a half thinner than
+  a pixel one pixel thick from its top edge, which gives Chromium's pixels, and moves nothing (cases `a2-cells-end`,
+  `a2-row-break-line-1-5pt`, `a2-row-break-line-2-25pt`; `TableBreakLineHalfTests`). Where a cell that spans rows
+  continues over the break, the next page draws nothing of the line, in any column, and keeps the half's room (case
+  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt lower in Chromium than in the
+  engine; a difference of layout, pinned in `RowPartTests`; `Clone`, the code front-end's default for tables, ends the
   page with the whole line and starts the next page with it again (the engine's own rule for collapsed borders,
   modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
   break inside a row, `Slice` draws no line at the cut (a box cut by a break gets no border there); `Clone` closes the

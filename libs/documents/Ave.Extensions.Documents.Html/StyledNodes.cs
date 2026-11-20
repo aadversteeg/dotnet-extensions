@@ -41,4 +41,9 @@ public sealed record StyledHtmlDocument(
     /// <summary>The page without <c>@page</c> rules that styles were resolved for (<see cref="HtmlStyleOptions.Page"/>):
     /// box generation makes the document's page from it.</summary>
     public PageStyle Page { get; init; } = HtmlStyleOptions.A4Page;
+
+    /// <summary>The page contexts of every page and of page 1 with their generated margin boxes, and the diagnostics of
+    /// their cascade (CSS Paged Media 3 §5.3): what box generation makes the margin boxes from. Those diagnostics are not
+    /// in <see cref="Diagnostics"/>: box generation reports them when it draws margin boxes.</summary>
+    public PageContexts PageContexts { get; init; } = PageContexts.None;
 }

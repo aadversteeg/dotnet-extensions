@@ -1,0 +1,19 @@
+page 1 400.080 300.000
+word 1 49.992 76.302 12.000 12.000 Over #ff0000 Lato-Regular
+word 1 49.992 70.440 26.250 12.000 two #ff0000 Lato-Regular
+word 1 49.992 77.784 40.500 12.000 three #ff0000 Lato-Regular
+word 1 49.992 71.862 54.750 12.000 four #ff0000 Lato-Regular
+word 1 49.992 69.222 69.000 12.000 five #ff0000 Lato-Regular
+word 1 50.250 73.062 69.750 9.997 Body #000000 Lato-Regular
+word 1 75.370 101.035 69.750 9.997 under #000000 Lato-Regular
+word 1 103.384 117.824 69.750 9.997 the #000000 Lato-Regular
+word 1 120.382 150.271 69.750 9.997 margin #000000 Lato-Regular
+word 1 152.830 178.230 69.750 9.997 boxes #000000 Lato-Regular
+word 1 50.250 82.448 81.750 9.997 Second #000000 Lato-Regular
+word 1 85.006 100.621 81.750 9.997 line #000000 Lato-Regular
+word 1 49.992 64.044 83.250 12.000 six #ff0000 Lato-Regular
+rect 1 50.250 0.000 147.750 60.000 #ffff00
+rect 1 147.750 0.000 253.500 60.000 #ff00ff
+rect 1 50.250 60.000 251.250 72.000 #00ffff
+rect 1 50.250 72.000 251.250 84.000 #00ffff
+image 1 185.250 0.000 215.250 120.000

@@ -43,6 +43,17 @@ public sealed class ComputedStyle : IEquatable<ComputedStyle>
     internal CssValue WidthBehindStyle(PropertyDefinition property) =>
         _widthsBehindStyle?[PropertyRegistry.BorderWidthSide(property)] ?? _values[property.Index];
 
+    /// <summary>This style with one longhand's computed value replaced.</summary>
+    /// <param name="property">The longhand.</param>
+    /// <param name="value">Its computed value.</param>
+    /// <returns>The new style.</returns>
+    internal ComputedStyle With(PropertyDefinition property, CssValue value)
+    {
+        var values = (CssValue[])_values.Clone();
+        values[property.Index] = value;
+        return new ComputedStyle(values, CustomProperties, FontSizeSource, _widthsBehindStyle);
+    }
+
     /// <summary>The computed custom properties, by name (with the two hyphens).</summary>
     public IReadOnlyDictionary<string, CssTokens> CustomProperties { get; }
 
