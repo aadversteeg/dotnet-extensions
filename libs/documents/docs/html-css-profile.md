@@ -92,6 +92,12 @@ names nothing.
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
 so `clip` beside `visible` is accepted and kept, as in Chromium.
 
+`width` on a table part: a table is drawn at `auto` or `100%`; a `col` takes a length, or a percentage in the fixed
+layout (`table-layout: fixed` on a table of width `100%`) when every other column is a percentage or has no width
+and, beside a column without a width, the percentages add up to less than 100. A percentage on a `col` of the
+automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body
+rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).
+
 ### Supported at the initial value only
 
 What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and
@@ -440,6 +446,20 @@ Pseudo-elements never draw in an accepted document and are ignored by rule: `::p
 - Refused: @color-profile, @container, @counter-style, @document, @font-feature-values, @font-palette-values, @function, @namespace, @position-try, @property, @scope, @starting-style, @view-transition, and every
   other at-rule the engine does not know, a vendor-prefixed one too (`@-moz-document`); Chromium drops those.
 - Read without effect: @charset (the encoding is decided before the sheet is parsed).
+
+Page-margin boxes (CSS Paged Media 3 §5) are drawn for `@page` and `@page :first`: the top and bottom rows
+(`@top-left`, `@top-center`, `@top-right`, `@bottom-left`, `@bottom-center`, `@bottom-right`), their widths as
+§5.3.2 shares them, each box with its margin, padding, solid borders, background colour, text alignment and
+vertical alignment (top, middle, bottom), and its content: strings, `counter(page)`, `counter(pages)` and images
+(`url()`, or `image-set()` of one URL and its resolution) on the baseline as an `img` in a line, at their natural
+size divided by the resolution, the URL resolved against the style sheet that holds the `content` declaration;
+an image that does not come or does not decode is refused there. The
+page context inherits from the root element, `font-family` too; a face that only a margin box uses is drawn,
+where Chromium prints its fallback serif face (it has not loaded the face then; case `pm-family-unused`). Refused at their
+place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, the size and
+margins of `@page :first`, and content wider than its box (`Documents.Layout.MarginBoxOverflow`), which
+Chromium draws over its neighbours. Content taller than its box is drawn as Chromium draws it: from the top of
+the box whatever its vertical alignment, unclipped, under the body; the box keeps its height.
 
 ## HTML
 

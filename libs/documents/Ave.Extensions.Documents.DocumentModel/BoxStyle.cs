@@ -84,6 +84,28 @@ public sealed record BoxStyle
     /// <c>box-decoration-break</c> (CSS Fragmentation 3 §5.4); <see cref="BoxDecorationBreak.Slice"/>, the CSS initial
     /// value, unless set. Used by the tracks algorithm for a table; every other box is sliced.</summary>
     public BoxDecorationBreak DecorationBreak { get; init; }
+
+    /// <summary>Which page-margin box of its edge this box is (CSS Paged Media 3 §5: the start, centre and end boxes
+    /// of the row, <c>@top-left</c>, <c>@top-center</c> and <c>@top-right</c> on the top edge), for a child of a box laid
+    /// out by <see cref="LayoutAlgorithmId.MarginBoxes"/>; <see cref="MarginBoxPlace.None"/> for every other box.</summary>
+    public MarginBoxPlace MarginBoxPlace { get; init; }
+}
+
+/// <summary>The values of <see cref="BoxStyle.MarginBoxPlace"/>: the three places of a row of page-margin boxes (CSS
+/// Paged Media 3 §5), in horizontal left-to-right writing, the only one the engine has.</summary>
+public enum MarginBoxPlace
+{
+    /// <summary>Not a page-margin box (the initial value).</summary>
+    None,
+
+    /// <summary>The box at the start of the row (<c>@top-left</c>, <c>@bottom-left</c>).</summary>
+    Start,
+
+    /// <summary>The box centred on the row (<c>@top-center</c>, <c>@bottom-center</c>).</summary>
+    Center,
+
+    /// <summary>The box at the end of the row (<c>@top-right</c>, <c>@bottom-right</c>).</summary>
+    End,
 }
 
 /// <summary>

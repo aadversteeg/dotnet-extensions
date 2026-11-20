@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; font-style: normal; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; font-style: normal; }
+html { font-size: 20pt; color: #008000; font-family: Lato; font-weight: 700; }
+body { margin: 0; }
+@page { size: 400pt 300pt; margin: 60pt 50pt; font-family: Lato;
+  @top-left { content: "TL"; background-color: #ff0000; }
+  @top-center { content: "TC"; background-color: #00ff00; }
+  @top-right { content: "TR"; background-color: #0000ff; }
+  @bottom-left { content: "BL"; background-color: #ff0000; }
+  @bottom-center { content: "BC"; background-color: #00ff00; }
+  @bottom-right { content: "BR"; background-color: #0000ff; }
+}
+@page :first {
+  @top-right { content: normal; }
+  @bottom-left { content: none; }
+  @bottom-center { content: none; }
+}
+</style></head>
+<body><p>one</p><p style="break-before: page">two</p></body></html>

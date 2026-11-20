@@ -76,6 +76,8 @@ internal static class HtmlCases
         ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_is_refused",
         ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
         ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
+        ["tf-pages"] = "A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page",
+        ["pm-family-unused"] = "A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -87,7 +89,9 @@ internal static class HtmlCases
     /// <summary>The codes that are a refusal of the HTML path, by their exact code: what the CSS stage and the HTML
     /// front-end refuse to draw (<see cref="CssErrorCodes.Unsupported"/>, <see cref="HtmlStyleErrorCodes.Unsupported"/>),
     /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
-    /// and the source line of the box, where Chromium prints the content past the page end). Any other error, also
+    /// and the source line of the box, where Chromium prints the content past the page end) or that is wider than its
+    /// page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration,
+    /// where Chromium draws it over its box). Any other error, also
     /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -112,25 +116,36 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
+        LayoutErrorCodes.MarginBoxOverflow.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
     public static string Folder([CallerFilePath] string thisFile = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", "..", "tools", "reference", "chromium", "cases"));
 
-    /// <summary>The committed status file: one line per case, <c>name status rest</c> (<see cref="Accepted"/>).</summary>
-    public static string StatusFile => Path.Combine(Folder(), "..", "html-status.txt");
+    /// <summary>The reference cases: <c>cases</c>, their measured files in <c>measured</c> and their status file
+    /// <c>html-status.txt</c>, beside the folder.</summary>
+    public static CaseFolder Cases { get; } = new(Folder(), Path.Combine(Folder(), "..", "measured"), Path.Combine(Folder(), "..", "html-status.txt"));
+
+    /// <summary>The whole documents (<c>tools/reference/chromium/documents</c>: the timesheets and the invoice), compared as
+    /// the cases are: their measured files in the folder's <c>measured</c>, their status file <c>html-status.txt</c> in the
+    /// folder.</summary>
+    public static CaseFolder Documents { get; } = new(
+        Path.Combine(Folder(), "..", "documents"), Path.Combine(Folder(), "..", "documents", "measured"), Path.Combine(Folder(), "..", "documents", "html-status.txt"));
+
+    /// <summary>The committed status file of the cases: one line per case, <c>name status rest</c> (<see cref="Accepted"/>).</summary>
+    public static string StatusFile => Cases.StatusFile;
 
     /// <summary>Every case, by name, in ordinal order.</summary>
-    public static IReadOnlyList<string> Names =>
-        [.. Directory.GetFiles(Folder(), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
+    public static IReadOnlyList<string> Names => Cases.Names;
 
     /// <summary>The family folder: what the cases' relative URLs may reach.</summary>
     private static string Family => Path.GetFullPath(Path.Combine(Folder(), "..", "..", "..", ".."));
 
     /// <summary>The measured files of a case, without their extension.</summary>
-    private static string Measured(string name) => Path.Combine(Folder(), "..", "measured", name);
+    private static string Measured(CaseFolder folder, string name) => Path.Combine(folder.Measured, name);
 
     /// <summary>A status line by its fields: the case's name, its status (the second field) and the rest.</summary>
     /// <param name="line">The line.</param>
@@ -154,17 +169,20 @@ internal static class HtmlCases
     }
 
     /// <summary>The parsed HTML of a case.</summary>
-    private static Result<HtmlParseResult, Error> Parsed(string name) =>
-        HtmlParser.Parse(File.ReadAllText(Path.Combine(Folder(), name + ".html")), new HtmlParseOptions(name + ".html"));
+    private static Result<HtmlParseResult, Error> Parsed(CaseFolder folder, string name) =>
+        HtmlParser.Parse(File.ReadAllText(Path.Combine(folder.Html, name + ".html")), new HtmlParseOptions(name + ".html"));
 
     /// <summary>The paper the reference tool prints on (Playwright's default for a PDF): US Letter, no margins.</summary>
     public static PageStyle Letter { get; } = new(Length.FromPoints(612), Length.FromPoints(792), default);
 
     /// <summary>The boxes of a case, on the reference tool's paper (<see cref="Letter"/>).</summary>
-    public static Result<HtmlBoxes, Error> Boxes(string name, UnsupportedPolicy policy = UnsupportedPolicy.Refuse)
+    public static Result<HtmlBoxes, Error> Boxes(string name, UnsupportedPolicy policy = UnsupportedPolicy.Refuse) => Boxes(Cases, name, policy);
+
+    /// <summary>The boxes of an HTML file of a folder, on the reference tool's paper (<see cref="Letter"/>).</summary>
+    public static Result<HtmlBoxes, Error> Boxes(CaseFolder folder, string name, UnsupportedPolicy policy = UnsupportedPolicy.Refuse)
     {
-        var baseUrl = new Uri(Path.Combine(Folder(), name + ".html")).AbsoluteUri;
-        return Parsed(name)
+        var baseUrl = new Uri(Path.GetFullPath(Path.Combine(folder.Html, name + ".html"))).AbsoluteUri;
+        return Parsed(folder, name)
             .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }))
             .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }));
     }
@@ -178,9 +196,16 @@ internal static class HtmlCases
     /// <param name="name">The case.</param>
     /// <param name="committed">The status the committed file gives the case (its second field), or null.</param>
     /// <returns>The status, without the name.</returns>
-    public static string Status(string name, string? committed = null)
+    public static string Status(string name, string? committed = null) => Status(Cases, name, committed);
+
+    /// <summary>The status of an HTML file of a folder, by the same rules as a case's (<see cref="Status(string, string?)"/>).</summary>
+    /// <param name="folder">The folder of the file, its measured files and its status file.</param>
+    /// <param name="name">The file, without its extension.</param>
+    /// <param name="committed">The status the folder's committed file gives it (its second field), or null.</param>
+    /// <returns>The status, without the name.</returns>
+    public static string Status(CaseFolder folder, string name, string? committed = null)
     {
-        var boxes = Boxes(name);
+        var boxes = Boxes(folder, name);
         if (boxes.IsFailure)
         {
             return Refusal(boxes.Error);
@@ -192,22 +217,22 @@ internal static class HtmlCases
             return Refusal(pages.Error);
         }
 
-        if (!File.Exists(Measured(name) + ".print.txt"))
+        if (!File.Exists(Measured(folder, name) + ".print.txt"))
         {
             return "failed no print of the case";
         }
 
         var engine = PrintedPages.Engine(pages.Value);
-        var clips = Clips(name);
-        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(name) + ".print.txt"));
+        var clips = Clips(folder, name);
+        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt"));
         var unused = clips.ToList();
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
-        var lines = Cut(Rows(name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
+        var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
         var missed = unused.Count > 0 ? $"page {unused[0].Line.Page} the line clipped at y {Of(unused[0].Line.Y0)} is no rectangle of the print (ink.txt)" : null;
         var difference = missed ?? Difference(engine, chromium, LineTops(boxes.Value))
             ?? RectangleDifference(engine, chromium, lines)
-            ?? PopplerDifference(pages.Value, engine, Rows(name, "words"), LineTops(boxes.Value))
-            ?? BoxDifference(name, boxes.Value, Rows(name, "boxes"));
+            ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
+            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"));
         return (difference, Listed.TryGetValue(name, out var listed)) switch
         {
             (null, false) => "equal",
@@ -224,9 +249,9 @@ internal static class HtmlCases
     /// line's rows between two gaps; <c>part</c>: a rectangle of its own, where a clip cuts only part of the line's height).
     /// Each clipped line with the pieces it leaves; none for a case without the file.
     /// </summary>
-    private static List<(PrintedBox Line, List<PrintedBox> Pieces)> Clips(string name)
+    private static List<(PrintedBox Line, List<PrintedBox> Pieces)> Clips(CaseFolder folder, string name)
     {
-        var path = Measured(name) + ".ink.txt";
+        var path = Measured(folder, name) + ".ink.txt";
         var clips = new List<(PrintedBox Line, List<PrintedBox> Pieces)>();
         foreach (var parts in File.Exists(path) ? File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ')) : [])
         {
@@ -300,8 +325,8 @@ internal static class HtmlCases
     }
 
     /// <summary>The non-empty lines of a measured file of a case, split at spaces.</summary>
-    private static List<string[]> Rows(string name, string kind) =>
-        [.. File.ReadAllLines($"{Measured(name)}.{kind}.txt").Where(line => line.Length > 0).Select(line => line.Split(' '))];
+    private static List<string[]> Rows(CaseFolder folder, string name, string kind) =>
+        [.. File.ReadAllLines($"{Measured(folder, name)}.{kind}.txt").Where(line => line.Length > 0).Select(line => line.Split(' '))];
 
     private static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
 
@@ -508,14 +533,14 @@ internal static class HtmlCases
     /// cell, one whose element does not start its line, and one on more than one page are differences: the comparison
     /// does not skip them.
     /// </summary>
-    private static string? BoxDifference(string name, HtmlBoxes boxes, List<string[]> rows)
+    private static string? BoxDifference(CaseFolder folder, string name, HtmlBoxes boxes, List<string[]> rows)
     {
         if (rows.Count == 0)
         {
             return null;
         }
 
-        var elements = Elements(Parsed(name).Value.Document).ToList();
+        var elements = Elements(Parsed(folder, name).Value.Document).ToList();
         var pages = Paginator.Paginate(LayoutEnvironment.Create(boxes.Fonts), boxes.Document);
         if (pages.IsFailure)
         {
@@ -721,7 +746,10 @@ internal static class HtmlCases
     private static double PaintedBaseline(double baseline, double? top) => top is { } lineTop ? WholePixel(lineTop) + (baseline - lineTop) : WholePixel(baseline);
 
     /// <summary>The top of the line each text of the engine's pages lies in, by page number and baseline (rounded to 1e-6
-    /// pt), from the fragments of the same layout: a line's offset, and a text's baseline its offset plus its ascent.</summary>
+    /// pt), from the fragments of the same layout: a line's offset, and a text's baseline its offset plus its ascent. The
+    /// lines of the page-margin boxes too: Chromium lays a margin box's margins and padding out in its unit of 1/64 px, as
+    /// in the body, and paints their lines by the same rule (cases <c>pm-len-sum</c>, <c>pm-len-margin</c>,
+    /// <c>pm-len-padding</c>, <c>pm-len-body</c>: 5pt + 5pt above a line puts its top at 13 px, not 14).</summary>
     private static Dictionary<(int Page, double Baseline), double> LineTops(HtmlBoxes boxes)
     {
         var tops = new Dictionary<(int Page, double Baseline), double>();
@@ -733,7 +761,14 @@ internal static class HtmlCases
 
         foreach (var (page, number) in pages.Value.Select((page, index) => (page, index + 1)))
         {
-            var pending = new Stack<(PlacedFragment Placed, double X, double Y, double? LineTop)>([(page.Root, 0, 0, null)]);
+            var pending = new Stack<(PlacedFragment Placed, double X, double Y, double? LineTop)>();
+            foreach (var area in new[] { page.Footer, page.Root, page.Header })
+            {
+                if (area is not null)
+                {
+                    pending.Push((area, 0, 0, null));
+                }
+            }
             while (pending.Count > 0)
             {
                 var (placed, x, y, lineTop) = pending.Pop();
@@ -814,4 +849,16 @@ internal static class HtmlCases
 
         return joined;
     }
+}
+
+/// <summary>A folder of HTML files compared with Chromium's prints of them (<see cref="HtmlCases.Status(CaseFolder, string, string?)"/>):
+/// the HTML files, the folder of their measured files and the committed status file, one line per file.</summary>
+/// <param name="Html">The folder of the HTML files.</param>
+/// <param name="Measured">The folder of the files measured for each (<c>&lt;name&gt;.print.txt</c> and the others).</param>
+/// <param name="StatusFile">The committed status file.</param>
+internal sealed record CaseFolder(string Html, string Measured, string StatusFile)
+{
+    /// <summary>Every HTML file of the folder, by name without its extension, in ordinal order.</summary>
+    public IReadOnlyList<string> Names =>
+        [.. Directory.GetFiles(Html, "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
 }

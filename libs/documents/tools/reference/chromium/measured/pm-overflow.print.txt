@@ -1,0 +1,4 @@
+page 1 400.080 300.000
+word 1 50.250 66.774 79.500 9.997 one #000000 Lato-Regular
+word 1 49.992 363.302 275.250 12.000 Averyveryverylongunbreakablewordwiderthanthewholerow #000000 Lato-Regular
+rect 1 50.250 240.000 351.000 300.000 #00ff00

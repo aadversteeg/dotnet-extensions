@@ -47,9 +47,11 @@ public sealed class RasterReferenceTests
     /// page 1 of timesheet-edge.nl has 12 753 pixels over 128 steps from poppler, where the viewers have 12 569 between
     /// them (and the engine 552 from MuPDF). The test holds the page to those two numbers, so it fails if the engine's
     /// count grows or the viewers' count changes; every other metric of the page, and every other page, keeps the rule.
+    /// Since each table cell is inset by half of its own grid line (the rows beside the 1.5 pt total row moved 0.25 pt
+    /// towards the table's edges), the page has 13 166 and 13 046 (551 from MuPDF), measured on 2026-11-20.
     /// </summary>
     private static readonly (string Name, double Resolution, int Page, int EngineToPoppler, int Viewers) KnownException =
-        ("timesheet-edge.nl", 300, 1, 12_753, 12_569);
+        ("timesheet-edge.nl", 300, 1, 13_166, 13_046);
 
     /// <summary>What separates the engine's page from a viewer's, removed one at a time for a named exception.</summary>
     [Flags]

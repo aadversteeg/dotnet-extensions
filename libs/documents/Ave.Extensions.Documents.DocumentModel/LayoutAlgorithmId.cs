@@ -1,9 +1,9 @@
 namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
-/// Names the layout algorithm of a box: its inner display type (CSS Display 3 §2.2). The engine ships four —
-/// <see cref="Flow"/>, <see cref="Inline"/>, <see cref="Tracks"/> and <see cref="Image"/> — and layout looks them up
-/// by this name. The parts of a table are not algorithms (<see cref="TableDisplay"/>).
+/// Names the layout algorithm of a box: its inner display type (CSS Display 3 §2.2). The engine ships five —
+/// <see cref="Flow"/>, <see cref="Inline"/>, <see cref="Tracks"/>, <see cref="Image"/> and <see cref="MarginBoxes"/> —
+/// and layout looks them up by this name. The parts of a table are not algorithms (<see cref="TableDisplay"/>).
 /// </summary>
 /// <param name="Name">The algorithm name, for example <c>flow</c>.</param>
 public readonly record struct LayoutAlgorithmId(string Name)
@@ -22,6 +22,13 @@ public readonly record struct LayoutAlgorithmId(string Name)
 
     /// <summary>A replaced element: one image (CSS 2.1 §10.3.2), its only child an image node.</summary>
     public static LayoutAlgorithmId Image => new("image");
+
+    /// <summary>
+    /// The page-margin boxes of one page edge side by side (CSS Paged Media 3 §5, the rows of the top and bottom edges): at most
+    /// one child box at each place of <see cref="BoxStyle.MarginBoxPlace"/>, their widths by §5.3.2. Only the content
+    /// of a header or footer area with a fixed height (<see cref="PageArea.Height"/>), whose height it takes.
+    /// </summary>
+    public static LayoutAlgorithmId MarginBoxes => new("margin-boxes");
 
     /// <summary>Returns the name.</summary>
     /// <returns>The text form.</returns>

@@ -31,8 +31,9 @@ public sealed record Document(
     public ValueList<Attachment> Attachments { get; init; }
 
     /// <summary>The layout policies of the document: <see cref="LayoutProfile.Default"/> unless changed with
-    /// <see cref="MonolithicOverflow(DocumentModel.MonolithicOverflow)"/>, <see cref="EmptyRowParts(DocumentModel.EmptyRowParts)"/> or
-    /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>.</summary>
+    /// <see cref="MonolithicOverflow(DocumentModel.MonolithicOverflow)"/>, <see cref="EmptyRowParts(DocumentModel.EmptyRowParts)"/>,
+    /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>
+    /// or <see cref="TableEndOverflow(DocumentModel.TableEndOverflow)"/>.</summary>
     public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
 
     /// <summary>
@@ -59,6 +60,24 @@ public sealed record Document(
     /// <param name="rounding">The policy.</param>
     /// <returns>A copy with the policy.</returns>
     public Document FontMetricRounding(FontMetricRounding rounding) => this with { Profile = Profile with { FontMetricRounding = rounding } };
+
+    /// <summary>
+    /// How thick each half of a table's grid line is drawn where a page break between rows splits the line
+    /// (<see cref="TableElement.SplitLinesAtBreaks"/>): exactly half the line (the default), or at least one CSS pixel,
+    /// as a browser (Chromium) prints it (<see cref="DocumentModel.SplitLineHalves"/>). Layout does not change.
+    /// </summary>
+    /// <param name="halves">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document SplitLineHalves(SplitLineHalves halves) => this with { Profile = Profile with { SplitLineHalves = halves } };
+
+    /// <summary>
+    /// Where a grid line that passes the page end below a table row goes: the table ends on the page (the default),
+    /// or what passed continues on the next page and takes its height there, as a browser (Chromium) prints it
+    /// (<see cref="DocumentModel.TableEndOverflow"/>).
+    /// </summary>
+    /// <param name="overflow">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document TableEndOverflow(TableEndOverflow overflow) => this with { Profile = Profile with { TableEndOverflow = overflow } };
 
     /// <summary>
     /// Embeds a file in the document, for example its data as XML. Made with <see cref="Elements.Attachment"/>;
