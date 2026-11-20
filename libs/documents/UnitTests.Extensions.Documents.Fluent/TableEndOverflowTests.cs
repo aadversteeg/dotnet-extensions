@@ -76,6 +76,7 @@ public class TableEndOverflowTests
 
     [Theory]
     [InlineData("a2-row-end-first-row-half-alone", 0.75, 13.875, 12)]
+    [InlineData("a2-row-end-first-row-half-6pt-alone", 6, 6, 10.5)]
     public void Where_such_a_table_ends_the_document_the_outer_half_is_on_a_page_of_its_own_that_shows_nothing(string caseName, double line, double padding, double fontSize)
     {
         var chromium = PrintedPages.Chromium(caseName);
@@ -98,6 +99,7 @@ public class TableEndOverflowTests
     [Theory]
     [InlineData("a2-row-end-after", 0.75, 12, 204, 24.75, 12.75)]
     [InlineData("a2-row-end-6pt-after", 6, 12, 204, 30, 18)]
+    [InlineData("a2-row-end-6pt-part-after", 6, 10.5, 205.5, 27.75, 16.5)]
     public void Where_part_of_a_cell_passes_the_next_page_draws_what_passed_again_and_takes_its_height(
         string caseName, double line, double fontSize, double pageHeight, double continues, double passedBottom)
     {
@@ -141,6 +143,26 @@ public class TableEndOverflowTests
         next.Pages[2].Rectangles.Min(box => box.Y0).Should().Be(12);
         next.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(passedBottom);
         end.Pages.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void A_table_at_the_top_of_a_table_cell_takes_the_outer_half_that_passed_again_as_in_Chromium()
+    {
+        // The inner table starts below only the outer cell's top inset (half the outer grid line): its row is placed whole
+        // on page 1 with its line below passing by its outer half, as Chromium prints it, and page 2 takes that half again
+        // before "below". Laid out at 12.375 + 11.25; Chromium prints 24, the line's top at the nearest whole pixel.
+        var chromium = PrintedPages.Chromium("a2-row-end-first-row-half-in-cell");
+        Element[] body = [Table(Columns(Fill(1)), [TableRow([Cell([Grid(0.75, Cell([Lines("x", 11)]).PaddingTop(13.125.Pt())), Paragraph("below")])])])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks()];
+        var next = Printed(body, TableEndOverflow.ContinuesOnNextPage, 10.5);
+        var end = Printed(body, TableEndOverflow.EndsOnPage, 10.5);
+
+        chromium.PageTexts.Should().Equal("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "below");
+        Word(chromium, "below").Baseline.Should().Be(24);
+        next.PageTexts.Should().Equal(chromium.PageTexts);
+        Word(next, "below").Baseline.Should().Be(23.625);
+        end.PageTexts.Should().Equal(chromium.PageTexts);
+        Word(end, "below").Baseline.Should().Be(23.25);
     }
 
     [Fact]

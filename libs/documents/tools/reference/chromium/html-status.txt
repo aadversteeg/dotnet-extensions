@@ -27,6 +27,7 @@ a2-row-break-line-6pt equal
 a2-row-end open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
 a2-row-end-6pt open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 2944 px #000000, Chromium 3200 px (print.txt)
 a2-row-end-6pt-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 2944 px #000000, Chromium 3200 px (print.txt)
+a2-row-end-6pt-part-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 2208 px #000000, Chromium 3168 px (print.txt)
 a2-row-end-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
 a2-row-end-background open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
 a2-row-end-below-paragraph equal
@@ -34,11 +35,13 @@ a2-row-end-bottom-padding-30 equal
 a2-row-end-first-row refused Documents.Layout.DoesNotFit 180 at 3
 a2-row-end-first-row-cut open box td 'x0x1x2x3x4x5x6x7x8x9x10x' height 179.625, Chromium 180.047 (boxes.txt)
 a2-row-end-first-row-half-2col equal
+a2-row-end-first-row-half-6pt-alone equal
 a2-row-end-first-row-half-6pt-below equal
 a2-row-end-first-row-half-alone equal
 a2-row-end-first-row-half-block equal
 a2-row-end-first-row-half-break equal
 a2-row-end-first-row-half-emptyblock equal
+a2-row-end-first-row-half-in-cell open box td 'x0x1x2x3x4x5x6x7x8x9x10b' height 179.625, Chromium 195.375 (boxes.txt)
 a2-row-end-first-row-half-page2 equal
 a2-row-end-first-row-half-second-row equal
 a2-row-end-first-row-half-top equal
