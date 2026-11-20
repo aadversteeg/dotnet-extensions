@@ -809,6 +809,19 @@ Each is documented next to its code as well.
   footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
   `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
   (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
+- **What follows the row of an image sliced in a table (HTML):** Chromium lays an image taller than the page area out
+  whole on the page where it starts and draws it in slices on the following pages. It ends the image's row on the next
+  page, as tall as the rest of the image, also past the page end. In a row of two or more cells the next row starts
+  below that end, or at the top of the following page, drawn over the slices still to come (a 408 pt image: the next
+  row at 24.75 pt on page 4, over the last slice, which ends at 60 pt; a 588 pt image: on page 4, over the third of four
+  slices). In a one-column table the next row starts below the last slice, as in the engine (case
+  `a4-image-single-cell`, equal). After any table, what follows does not wait for the slices: it starts at the top of the
+  following page, over them (24.75 pt). The engine starts what follows below the last slice in every shape (72.75 pt), so
+  no text is drawn over an image; that place is the whole difference (cases `a4-image-in-cell`,
+  `a4-slice4-cell-row-after`, `a4-row-image-row`, `a4-two-image-rows`, listed; `HtmlListedDifferenceTests`). In a table
+  inside a cell (`a4-image-nested-table`, open) the engine also draws the inner table's bottom line and the outer row's
+  line one below the other (60 to 61.5 pt) where Chromium draws them as one (60 to 60.75 pt). The other cells of the
+  image's row go on below the slices, as Chromium prints them (`CellsBesideSlices.Below`).
 - **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
   column without a width they are refused, as are widths on cells and column groups. A percent column is never

@@ -79,7 +79,7 @@ a4-image-beside-lines open box td '' height 179.625, Chromium 450.75 (boxes.txt)
 a4-image-block-padding-133 equal
 a4-image-block-padding-60 equal
 a4-image-first equal
-a4-image-in-cell open page 4 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
+a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-image-nested-table open page 4 'after' baseline 73.5 (laid out at 73.5), Chromium 24.75 (print.txt)
 a4-image-rowspan open page 1 reads 'a b', Chromium 'a' (print.txt)
 a4-image-single-cell open box td '' height 179.625, Chromium 408.75 (boxes.txt)
@@ -87,14 +87,14 @@ a4-intro-header-image-row open page 2 painted area: the pixel at (12, 28.5): Chr
 a4-line-after-text equal
 a4-line-beside-lines open page 1 'p0' x0 220.594, Chromium 150.375 (print.txt)
 a4-nested-padded-image-160 open box td '' height 179.625, Chromium 192.246 (boxes.txt)
-a4-row-image-row open page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
+a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-slice-near-end-beside-lines open box td '' height 179.625, Chromium 510.75 (boxes.txt)
 a4-slice-near-end-block equal
 a4-slice2-beside-lines open box td '' height 179.625, Chromium 383.25 (boxes.txt)
 a4-slice2-cell-para-after open box td 'x' height 179.625, Chromium 228.75 (boxes.txt)
 a4-slice2-cell-row-after open box td 'x' height 179.625, Chromium 228.75 (boxes.txt)
-a4-slice4-cell-row-after open page 4 reads '', Chromium 'after a' (print.txt)
-a4-two-image-rows open page 8 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
+a4-slice4-cell-row-after listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 reads '', Chromium 'after a' (print.txt)
+a4-two-image-rows listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 8 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a5-cell-in-row open box td 'a0a1a2' height 108.375, Chromium 129 (boxes.txt)
 a5-kept-cell-by-box open box td 'a0a1' height 179.625, Chromium 285.75 (boxes.txt)
 a5-kept-cell-in-row equal
