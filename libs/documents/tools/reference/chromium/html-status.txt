@@ -65,6 +65,8 @@ a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_
 a4-header-cut-row-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-empty-rowspan-line-image open page 2 painted area: the pixel at (12, 13.5): Chromium paints it and the engine does not; the engine paints 736 px #000000, Chromium 1450 px (print.txt)
 a4-header-image-150-image open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-image-170 open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-image-228 open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-image-360-image open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-image-row open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-image-row-image open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
@@ -73,6 +75,8 @@ a4-header-rows-fill-image-row open page 2 painted area: the pixel at (12, 28.5):
 a4-header-rows-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-tall-line open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-two-image-rows open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-unrepeated-image-228 equal
+a4-header2-image-228 open page 1 painted area: the pixel at (12, 44.25): Chromium paints it and the engine does not; the engine paints 1184 px #000000, Chromium 1578 px (print.txt)
 a4-image-177-block-padding-3 equal
 a4-image-after-text equal
 a4-image-beside-lines equal
@@ -87,6 +91,7 @@ a4-intro-header-image-row open page 2 painted area: the pixel at (12, 28.5): Chr
 a4-line-after-text equal
 a4-line-beside-lines open page 1 'p0' x0 220.594, Chromium 150.375 (print.txt)
 a4-nested-padded-image-160 equal
+a4-noheader-image-228 equal
 a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-slice-near-end-beside-lines equal
 a4-slice-near-end-block equal

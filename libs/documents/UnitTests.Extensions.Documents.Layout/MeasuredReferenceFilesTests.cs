@@ -288,6 +288,14 @@ public class MeasuredReferenceFilesTests
         ["a4-header-image-150-image.lines.txt"] = 25,
         ["a4-header-image-150-image.print.txt"] = 38,
         ["a4-header-image-150-image.words.txt"] = 4,
+        ["a4-header-image-170.boxes.txt"] = 2,
+        ["a4-header-image-170.lines.txt"] = 15,
+        ["a4-header-image-170.print.txt"] = 23,
+        ["a4-header-image-170.words.txt"] = 3,
+        ["a4-header-image-228.boxes.txt"] = 2,
+        ["a4-header-image-228.lines.txt"] = 15,
+        ["a4-header-image-228.print.txt"] = 22,
+        ["a4-header-image-228.words.txt"] = 2,
         ["a4-header-image-360-image.boxes.txt"] = 3,
         ["a4-header-image-360-image.lines.txt"] = 39,
         ["a4-header-image-360-image.print.txt"] = 58,
@@ -320,6 +328,14 @@ public class MeasuredReferenceFilesTests
         ["a4-header-two-image-rows.lines.txt"] = 39,
         ["a4-header-two-image-rows.print.txt"] = 58,
         ["a4-header-two-image-rows.words.txt"] = 6,
+        ["a4-header-unrepeated-image-228.boxes.txt"] = 2,
+        ["a4-header-unrepeated-image-228.lines.txt"] = 12,
+        ["a4-header-unrepeated-image-228.print.txt"] = 22,
+        ["a4-header-unrepeated-image-228.words.txt"] = 4,
+        ["a4-header2-image-228.boxes.txt"] = 3,
+        ["a4-header2-image-228.lines.txt"] = 21,
+        ["a4-header2-image-228.print.txt"] = 30,
+        ["a4-header2-image-228.words.txt"] = 4,
         ["a4-image-177-block-padding-3.boxes.txt"] = 1,
         ["a4-image-177-block-padding-3.lines.txt"] = 0,
         ["a4-image-177-block-padding-3.print.txt"] = 4,
@@ -376,6 +392,10 @@ public class MeasuredReferenceFilesTests
         ["a4-nested-padded-image-160.lines.txt"] = 12,
         ["a4-nested-padded-image-160.print.txt"] = 16,
         ["a4-nested-padded-image-160.words.txt"] = 1,
+        ["a4-noheader-image-228.boxes.txt"] = 1,
+        ["a4-noheader-image-228.lines.txt"] = 8,
+        ["a4-noheader-image-228.print.txt"] = 13,
+        ["a4-noheader-image-228.words.txt"] = 1,
         ["a4-row-image-row.boxes.txt"] = 2,
         ["a4-row-image-row.lines.txt"] = 14,
         ["a4-row-image-row.print.txt"] = 24,
@@ -2093,7 +2113,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(512);
+        cases.Should().HaveCount(517);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
