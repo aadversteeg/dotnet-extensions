@@ -533,8 +533,8 @@ internal static class TablePage
 
     /// <summary>
     /// Whether all that is left of the table at <paramref name="resume"/> is the rest of pieces laid out on an earlier
-    /// page: laid out without the header rows and without a page end, the rest of the table is complete, holds a later
-    /// slice, and its body cells draw nothing besides slices (no row still to come draws anything, no cell beside the
+    /// page: laid out without the header rows and without a page end (so it ends there), the rest of the table holds a
+    /// later slice, and its body cells draw nothing besides slices (no row still to come draws anything, no cell beside the
     /// piece goes on). Chromium draws no header rows on such a page (cases <c>a4-header-image-228</c>,
     /// <c>a4-header-row-image-228</c>, <c>a4-header-tall-line</c>; and on the pages of <c>a4-header-image-360-image</c>
     /// and <c>a4-header-image-beside-lines</c> where a row or text is still to come, it does).
@@ -548,7 +548,7 @@ internal static class TablePage
 
         var bare = geometry with { CellFragmentainerBlockSize = space.FragmentainerBlockSize };
         return Attempt(bare, space with { AvailableHeight = double.PositiveInfinity }, resume, isFirst: false, includeHeader: false, breakAt: null)
-            .OnSuccessMap(rest => rest.HasValue && rest.Value.Continuation is null && ContinuesSlice(rest) && !ShowsBody(bare, rest.Value.Content));
+            .OnSuccessMap(rest => ContinuesSlice(rest) && !ShowsBody(bare, rest.Value.Content));
     }
 
     /// <summary>The header rows, whole; None when they do not fit with the line below them.</summary>
