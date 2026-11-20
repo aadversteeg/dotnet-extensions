@@ -54,6 +54,13 @@ public static class HtmlStyleErrorCodes
         /// Value (the element's name), SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode BlockInInline = _ / "BlockInInline";
 
+        /// <summary>A table whose structure the document model's table does not have in the same form (CSS 2.1 §17.2,
+        /// <c>Boxes/TableBoxes.cs</c>): a table part outside the part it belongs in, which CSS would wrap in anonymous
+        /// table boxes (§17.2.1); a caption or a footer group; a header group after a body group; a table, group or row
+        /// without rows or cells; column sizes the model cannot give. Metadata: Value (what is refused), SourceFile,
+        /// SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode Table = _ / "Table";
+
         /// <summary>A background on the root or body element, which Chromium paints on the page canvas (CSS Backgrounds 3
         /// §2.11.2); the document model has no page background. Metadata: Property, Value, SourceFile, SourceLine,
         /// SourceColumn.</summary>

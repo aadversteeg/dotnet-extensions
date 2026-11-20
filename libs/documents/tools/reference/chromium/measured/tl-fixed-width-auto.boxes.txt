@@ -1,0 +1,8 @@
+table 125.543 18.234 cols
+td 92.098 17.484 Supercalifragilistic
+td 32.695 17.484 short
+p 960.000 12.750 gap
+table 173.742 18.234 texts
+td 26.109 17.484 one
+td 57.281 17.484 two words
+td 89.602 17.484 a longer text here

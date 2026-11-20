@@ -136,8 +136,9 @@ public class BoxGenerationTests
     {
         var div = (Box)Body(Doc("<div style=\"margin:1pt 2pt 3pt 4pt;padding:5pt;border:3pt solid #102030;border-left-style:none;background-color:#ff0000;break-before:page;break-inside:avoid-page;orphans:3;widows:4;text-align:center\">x</div>")).Children.Single();
         var style = div.Style;
-        style.Margin.Should().Be(new Edges(Length.FromPoints(1), Length.FromPoints(2), Length.FromPoints(3), Length.FromPoints(4)));
-        style.Padding.Top.Points.Should().Be(5);
+        // In Chromium's layout unit of 1/64 px (0.01171875 pt), cut toward zero: 1pt is 85 units, 5pt 426.
+        style.Margin.Should().Be(new Edges(Length.FromPoints(85 * 0.75 / 64), Length.FromPoints(170 * 0.75 / 64), Length.FromPoints(3), Length.FromPoints(341 * 0.75 / 64)));
+        style.Padding.Top.Points.Should().Be(426 * 0.75 / 64);
         style.Border.Top.Should().Be(new BorderSide(Length.FromPoints(3), new Color(0x10, 0x20, 0x30)));
         style.Border.Left.Should().Be(BorderSide.None);
         style.Background.Should().Be(new Color(255, 0, 0));
@@ -172,7 +173,7 @@ public class BoxGenerationTests
 
     [Theory]
     [InlineData("<ul><li>a</li></ul>", "display")]
-    [InlineData("<table><tr><td>a</td></tr></table>", "display")]
+    [InlineData("<table><tr><td>a</td></tr></table>", "border-collapse")]
     [InlineData("<pre>a\tb</pre>", "white-space-collapse")]
     [InlineData("<hr>", "border-top-style")]
     [InlineData("<p><span style=\"vertical-align:top\">a</span></p>", "vertical-align")]

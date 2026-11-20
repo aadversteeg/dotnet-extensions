@@ -240,7 +240,8 @@ public class LineBreakAndImageTests
         (images[0].Role, images[1].Role).Should().Be((SemanticRole.Figure("F"), SemanticRole.Decorative));
 
         var style = images[0].Style;
-        (style.Margin.Top.Points, style.Margin.Right.Points, style.Padding.Left.Points, style.Border.Top.Width.Points).Should().Be((1, 2, 3, 0.75), "a border width is floored to whole pixels");
+        (style.Margin.Top.Points, style.Margin.Right.Points, style.Padding.Left.Points, style.Border.Top.Width.Points).Should().Be((85 * 0.75 / 64, 170 * 0.75 / 64, 3, 0.75),
+            "margins and padding are in Chromium's layout unit of 1/64 px (1 pt is 85.33 units, laid out as 85), a border width is floored to whole pixels");
         (style.Border.Top.Color, style.Background).Should().Be((new Color(255, 0, 0), new Color(0, 0, 255)));
         ((ImageNode)images[0].Children.Single()).Width.Should().Be(Length.FromPoints(10.5), "the width attribute is a hint for width, 14 px");
 

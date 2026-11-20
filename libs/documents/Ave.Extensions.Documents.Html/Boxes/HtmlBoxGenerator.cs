@@ -379,7 +379,7 @@ public static partial class HtmlBoxGenerator
         private void Child(Stack<object> stack, BlockFrame block, int index)
         {
             var node = block.Element.Children[index];
-            if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none"))
+            if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none") || TableChild(stack, block, node))
             {
                 RefuseBreakBetweenBlocks(block.Dropped[index] ? node : null);
                 return;
@@ -528,7 +528,7 @@ public static partial class HtmlBoxGenerator
 
             // CSS Fragmentation 3 §3.1: a forced break after the last child is a break after this box.
             var forcedAfter = block.ForcedBreakPending || Value(element, "break-after") is CssKeyword { Name: "page" };
-            return (new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position)), forcedAfter);
+            return (TablePartBox(block, new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position))), forcedAfter);
         }
 
         private SemanticRole RoleOf(StyledElement element)
@@ -558,7 +558,7 @@ public static partial class HtmlBoxGenerator
 
         private BoxStyle BoxStyleOf(StyledElement element)
         {
-            Length Side(string name) => Value(element, name) is CssLength length ? length.Value : Length.Zero;
+            Length Side(string name) => Value(element, name) is CssLength length ? LayoutUnits(length.Value) : Length.Zero;
             BorderSide Border(string side) =>
                 Value(element, $"border-{side}-style") is CssKeyword { Name: "solid" } && Value(element, $"border-{side}-width") is CssLength { Value.Points: > 0 } width
                 && Value(element, $"border-{side}-color") is { } color && ColorOf(BoxProperties.Resolved(color, element.Style)) is { } drawn
@@ -646,6 +646,18 @@ public static partial class HtmlBoxGenerator
 
             _text[element] = style;
             return style;
+        }
+
+        /// <summary>
+        /// A margin or padding in Chromium's layout unit of 1/64 CSS px: 25.313pt is laid out as 33.75 px, 25.3125pt
+        /// (measured: cases <c>a6-nested-first-h253125</c> and <c>a6-nested-late-h2521875</c>, whose headers repeat only at
+        /// the length so cut). Cut toward zero; the direction is not settled, as these cases give the same to the nearest
+        /// unit.
+        /// </summary>
+        private static Length LayoutUnits(Length length)
+        {
+            const double unit = 0.75 / 64;
+            return Length.FromPoints(Math.Truncate(length.Points / unit) * unit);
         }
 
         /// <summary>
