@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
@@ -13,6 +14,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// else). Each child is one generated box at its place (<see cref="BoxStyle.MarginBoxPlace"/>); its width comes from the
 /// intrinsic widths of all of them (§5.3.2, <see cref="Widths"/>), its height is the row's height less its own margins
 /// (§5.3), and its content sits in that height as <see cref="BoxStyle.VerticalAlign"/> says. The row never breaks.
+/// The fragments of the boxes follow the order of the row's children, so they are painted in that order; their places
+/// do not depend on it (a front-end that follows Chromium 159 lists the bottom row from right to left, case
+/// <c>pm-paint-order</c>).
 /// </summary>
 /// <remarks>
 /// Content taller than its box is drawn as Chromium 159 prints it: the box keeps its height, the content starts at the
@@ -68,7 +72,7 @@ public static class MarginBoxesLayout
                 Outer(environment, end.Value).OnSuccessBind(endWidths =>
                 {
                     var (startWidth, centerWidth, endWidth) = Widths(startWidths, centerWidths, endWidths, width);
-                    var placed = new List<PlacedFragment>(3);
+                    var placed = new List<(int Order, PlacedFragment Fragment)>(3);
                     foreach (var (child, widths, x, outer) in new[]
                              {
                                  (start.Value, startWidths, 0.0, startWidth),
@@ -87,10 +91,12 @@ public static class MarginBoxesLayout
                             return Result<LayoutResult, Error>.Failure(fragment.Error);
                         }
 
-                        placed.Add(new PlacedFragment(new Point(left + x + child.Style.Margin.Left.Points, top + child.Style.Margin.Top.Points), fragment.Value));
+                        placed.Add((Order(box, child), new PlacedFragment(new Point(left + x + child.Style.Margin.Left.Points, top + child.Style.Margin.Top.Points), fragment.Value)));
                     }
 
-                    return LayoutResult.Place(new BoxFragment(box, new Size(space.AvailableWidth, rowHeight), [.. placed], style.Border), null);
+                    // Laid out by place; kept in the order of the row's children, which is the order they are painted in.
+                    var painted = placed.OrderBy(entry => entry.Order).Select(entry => entry.Fragment);
+                    return LayoutResult.Place(new BoxFragment(box, new Size(space.AvailableWidth, rowHeight), [.. painted], style.Border), null);
                 })));
     }
 
@@ -214,6 +220,20 @@ public static class MarginBoxesLayout
         }
 
         return Result<Box?, Error>.Success(found);
+    }
+
+    /// <summary>Where a child stands among the row's children.</summary>
+    private static int Order(Box row, Box child)
+    {
+        for (var i = 0; i < row.Children.Count; i++)
+        {
+            if (ReferenceEquals(row.Children[i], child))
+            {
+                return i;
+            }
+        }
+
+        return 0;
     }
 
     /// <summary>A box's outer intrinsic widths: its border box's (<see cref="LayoutEnvironment.Measure"/>) and its

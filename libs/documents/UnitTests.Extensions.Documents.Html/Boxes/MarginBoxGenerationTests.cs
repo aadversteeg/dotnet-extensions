@@ -251,6 +251,21 @@ public class MarginBoxGenerationTests
         }
     }
 
+    /// <summary>Measured (case <c>pm-paint-order</c>, whose rules come in neither order): Chromium paints the top row from
+    /// left to right and the bottom row from right to left, backgrounds and images alike.</summary>
+    [Fact]
+    public void The_boxes_of_a_row_are_painted_in_Chromium_s_order_whatever_the_order_of_their_rules()
+    {
+        var boxes = HtmlCases.Boxes("pm-paint-order").Value;
+        var engine = PrintedPages.Engine(DocumentLayout.Run(boxes.Document, boxes.Fonts).Value).Pages[0];
+        var chromium = PrintedPages.Chromium("pm-paint-order").Pages[0];
+        static double Pixel(double points) => Math.Round(points / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+
+        engine.Images.Select(image => (Pixel(image.X0), Pixel(image.Y0))).Should().Equal(chromium.Images.Select(image => (image.X0, image.Y0)));
+        engine.Rectangles.Select(rectangle => (Pixel(rectangle.Y0), rectangle.Colour)).Should().Equal(chromium.Rectangles.Select(rectangle => (rectangle.Y0, rectangle.Colour)),
+            "top row red, green, blue; bottom row blue, green, red");
+    }
+
     /// <summary>CSS Values 4 §4.5.1: a URL in a style sheet is resolved against that sheet's URL, a URL in the document's
     /// own style element against the document's.</summary>
     [Fact]

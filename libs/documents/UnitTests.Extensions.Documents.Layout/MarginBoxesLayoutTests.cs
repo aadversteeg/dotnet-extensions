@@ -527,4 +527,18 @@ public class MarginBoxesLayoutTests
         result.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Length);
         result.Error.Metadata![ErrorMetadataKeys.Property].Should().Be("start-in-margin");
     }
+
+    /// <summary>Chromium 159 paints the bottom row from right to left (case <c>pm-paint-order</c>): the row keeps the order
+    /// its children are listed in, and each box keeps the place its <see cref="BoxStyle.MarginBoxPlace"/> gives it.</summary>
+    [Fact]
+    public void A_row_paints_its_boxes_in_the_order_of_its_children_at_the_places_they_name()
+    {
+        Box Boxes(params MarginBoxPlace[] order) => Row(10, [.. order.Select(place => Text(20 + (10 * (int)place), place, place.ToString()))]);
+        var inOrder = Laid(Page(null, Boxes(MarginBoxPlace.Start, MarginBoxPlace.Center, MarginBoxPlace.End))).Footer!;
+        var reversed = Laid(Page(null, Boxes(MarginBoxPlace.End, MarginBoxPlace.Center, MarginBoxPlace.Start))).Footer!;
+
+        var places = ((BoxFragment)reversed.Fragment).Children.Select(child => ((BoxFragment)child.Fragment).Box.Style.MarginBoxPlace).ToList();
+        places.Should().Equal(MarginBoxPlace.End, MarginBoxPlace.Center, MarginBoxPlace.Start);
+        Edges(reversed).Should().Equal(Edges(inOrder).Chunk(2).Reverse().SelectMany(edges => edges), "the places do not depend on the order");
+    }
 }

@@ -89,7 +89,10 @@ public static partial class HtmlBoxGenerator
             return new PageTemplate(Area(top: true, header), Area(top: false, footer));
         }
 
-        /// <summary>One row: the generated margin boxes of one edge, each at its place (CSS Paged Media 3 §5.3.2).</summary>
+        /// <summary>One row: the generated margin boxes of one edge, each at its place (CSS Paged Media 3 §5.3.2), listed
+        /// in the order Chromium 159 paints them whatever the order of their rules: the top row from left to right, the
+        /// bottom row from right to left (measured: case <c>pm-paint-order</c>, whose rules come in neither order, and the
+        /// bottom rows of <c>pm-width</c>, <c>pm-snap-image</c> and <c>pm-defaults</c>).</summary>
         private Box Row(PageContextStyle context, bool top)
         {
             var id = NewId();
@@ -103,6 +106,11 @@ public static partial class HtmlBoxGenerator
                     _ => MarginBoxPlace.End,
                 };
                 children.Add(MarginBox(box, place));
+            }
+
+            if (!top)
+            {
+                children.Reverse();
             }
 
             return new Box(id, SemanticRole.Generic, LayoutAlgorithmId.MarginBoxes, BoxStyle.Initial, [.. children], Source(styled.Root.Element.Position));

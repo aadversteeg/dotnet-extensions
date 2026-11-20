@@ -721,7 +721,9 @@ it, at the smaller of the left margin cut to 1/64 px and the page area's start (
 line of text is, at its natural size divided by the resolution, its URL resolved against the style sheet that holds the
 `content` declaration (CSS Values 4 §4.5.1; cases `pm-image-*`). A margin box's margins and padding are laid out in
 Chromium's unit of 1/64 px, as an element's are, and none is put on a whole pixel; Chromium paints the top of each of its
-lines on the nearest whole pixel, as in the body (cases `pm-len-*`). Box generation makes
+lines on the nearest whole pixel, as in the body (cases `pm-len-*`). The top row is listed from left to right and the
+bottom row from right to left, the order Chromium paints them in whatever the order of their rules (case
+`pm-paint-order`); the row keeps that order and places each box by its place. Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
 leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
