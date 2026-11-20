@@ -384,9 +384,16 @@ pm-image-top equal
 pm-image-url equal
 pm-inherit equal
 pm-inherit-family equal
+pm-len-body equal
+pm-len-border open page 1 image 4 x0 61.5 (laid out at 61.732), Chromium 321 (print.txt)
+pm-len-inline equal
+pm-len-margin open page 1 image 4 x0 61.5 (laid out at 61.732), Chromium 321 (print.txt)
+pm-len-padding open page 1 image 4 x0 61.5 (laid out at 61.732), Chromium 321 (print.txt)
+pm-len-sum open page 1 image 4 x0 61.5 (laid out at 61.732), Chromium 321 (print.txt)
 pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.308>301.008 at 6:18
 pm-overflow-tall equal
 pm-pages equal
+pm-paint-order open page 1 image 4 x0 58.5 (laid out at 58.717), Chromium 336 (print.txt)
 pm-snap-image open page 1 image 4 x0 50.25 (laid out at 49.992), Chromium 321 (print.txt)
 pm-snap-pitch equal
 pm-snap-text equal

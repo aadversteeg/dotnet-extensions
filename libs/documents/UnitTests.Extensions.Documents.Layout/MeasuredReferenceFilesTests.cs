@@ -1564,6 +1564,30 @@ public class MeasuredReferenceFilesTests
         ["pm-inherit.lines.txt"] = 0,
         ["pm-inherit.print.txt"] = 8,
         ["pm-inherit.words.txt"] = 7,
+        ["pm-len-body.boxes.txt"] = 1,
+        ["pm-len-body.lines.txt"] = 7,
+        ["pm-len-body.print.txt"] = 20,
+        ["pm-len-body.words.txt"] = 6,
+        ["pm-len-border.boxes.txt"] = 1,
+        ["pm-len-border.lines.txt"] = 12,
+        ["pm-len-border.print.txt"] = 26,
+        ["pm-len-border.words.txt"] = 7,
+        ["pm-len-inline.boxes.txt"] = 1,
+        ["pm-len-inline.lines.txt"] = 6,
+        ["pm-len-inline.print.txt"] = 14,
+        ["pm-len-inline.words.txt"] = 7,
+        ["pm-len-margin.boxes.txt"] = 1,
+        ["pm-len-margin.lines.txt"] = 6,
+        ["pm-len-margin.print.txt"] = 20,
+        ["pm-len-margin.words.txt"] = 7,
+        ["pm-len-padding.boxes.txt"] = 1,
+        ["pm-len-padding.lines.txt"] = 6,
+        ["pm-len-padding.print.txt"] = 20,
+        ["pm-len-padding.words.txt"] = 7,
+        ["pm-len-sum.boxes.txt"] = 1,
+        ["pm-len-sum.lines.txt"] = 6,
+        ["pm-len-sum.print.txt"] = 20,
+        ["pm-len-sum.words.txt"] = 7,
         ["pm-overflow-tall.boxes.txt"] = 1,
         ["pm-overflow-tall.lines.txt"] = 2,
         ["pm-overflow-tall.print.txt"] = 14,
@@ -1576,6 +1600,10 @@ public class MeasuredReferenceFilesTests
         ["pm-pages.lines.txt"] = 6,
         ["pm-pages.print.txt"] = 30,
         ["pm-pages.words.txt"] = 21,
+        ["pm-paint-order.boxes.txt"] = 1,
+        ["pm-paint-order.lines.txt"] = 6,
+        ["pm-paint-order.print.txt"] = 20,
+        ["pm-paint-order.words.txt"] = 7,
         ["pm-snap-image.boxes.txt"] = 1,
         ["pm-snap-image.lines.txt"] = 6,
         ["pm-snap-image.print.txt"] = 14,
@@ -1993,7 +2021,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(487);
+        cases.Should().HaveCount(494);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

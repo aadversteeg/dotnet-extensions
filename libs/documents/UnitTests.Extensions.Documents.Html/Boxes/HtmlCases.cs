@@ -746,7 +746,10 @@ internal static class HtmlCases
     private static double PaintedBaseline(double baseline, double? top) => top is { } lineTop ? WholePixel(lineTop) + (baseline - lineTop) : WholePixel(baseline);
 
     /// <summary>The top of the line each text of the engine's pages lies in, by page number and baseline (rounded to 1e-6
-    /// pt), from the fragments of the same layout: a line's offset, and a text's baseline its offset plus its ascent.</summary>
+    /// pt), from the fragments of the same layout: a line's offset, and a text's baseline its offset plus its ascent. The
+    /// lines of the page-margin boxes too: Chromium lays a margin box's margins and padding out in its unit of 1/64 px, as
+    /// in the body, and paints their lines by the same rule (cases <c>pm-len-sum</c>, <c>pm-len-margin</c>,
+    /// <c>pm-len-padding</c>, <c>pm-len-body</c>: 5pt + 5pt above a line puts its top at 13 px, not 14).</summary>
     private static Dictionary<(int Page, double Baseline), double> LineTops(HtmlBoxes boxes)
     {
         var tops = new Dictionary<(int Page, double Baseline), double>();
@@ -758,7 +761,14 @@ internal static class HtmlCases
 
         foreach (var (page, number) in pages.Value.Select((page, index) => (page, index + 1)))
         {
-            var pending = new Stack<(PlacedFragment Placed, double X, double Y, double? LineTop)>([(page.Root, 0, 0, null)]);
+            var pending = new Stack<(PlacedFragment Placed, double X, double Y, double? LineTop)>();
+            foreach (var area in new[] { page.Footer, page.Root, page.Header })
+            {
+                if (area is not null)
+                {
+                    pending.Push((area, 0, 0, null));
+                }
+            }
             while (pending.Count > 0)
             {
                 var (placed, x, y, lineTop) = pending.Pop();
