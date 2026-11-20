@@ -138,6 +138,12 @@ internal static class InputChecks
                 ((int)profile.FontMetricRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-metric-rounding", source);
         }
 
+        if (!Enum.IsDefined(profile.FontSizeRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font size rounding policy must be Exact or FlooredToPixelFractions.",
+                ((int)profile.FontSizeRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-size-rounding", source);
+        }
+
         if (!Enum.IsDefined(profile.SplitLineHalves))
         {
             yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The split line halves policy must be Exact or AtLeastOnePixel.",

@@ -32,7 +32,8 @@ public sealed record Document(
 
     /// <summary>The layout policies of the document: <see cref="LayoutProfile.Default"/> unless changed with
     /// <see cref="MonolithicOverflow(DocumentModel.MonolithicOverflow)"/>, <see cref="EmptyRowParts(DocumentModel.EmptyRowParts)"/>,
-    /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/> or <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>.</summary>
+    /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="FontSizeRounding(DocumentModel.FontSizeRounding)"/>
+    /// or <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>.</summary>
     public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
 
     /// <summary>
@@ -59,6 +60,16 @@ public sealed record Document(
     /// <param name="rounding">The policy.</param>
     /// <returns>A copy with the policy.</returns>
     public Document FontMetricRounding(FontMetricRounding rounding) => this with { Profile = Profile with { FontMetricRounding = rounding } };
+
+    /// <summary>
+    /// Whether text is shaped at its font size as it is given (the default) or at the two sizes a browser (Chromium) rounds
+    /// it to: floored to 1/100 CSS pixel for kerning and mark positions, and further truncated to 1/64 pixel for the
+    /// glyphs' advances, which makes text at a size that is not a whole number of 1/64 pixels a little narrower
+    /// (<see cref="DocumentModel.FontSizeRounding"/>).
+    /// </summary>
+    /// <param name="rounding">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document FontSizeRounding(FontSizeRounding rounding) => this with { Profile = Profile with { FontSizeRounding = rounding } };
 
     /// <summary>
     /// How thick each half of a table's grid line is drawn where a page break between rows splits the line

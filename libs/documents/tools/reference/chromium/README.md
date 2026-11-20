@@ -216,8 +216,9 @@ under `third_party/blink/renderer/`):
 
 ## Where Chromium is not exact
 
-At some font sizes Chromium's text is narrower than the font's advances, and the engine deliberately does not follow it.
-Before the advances are computed, the font size is rounded twice:
+At some font sizes Chromium's text is narrower than the font's advances. The engine follows it only under the layout
+policy `FontSizeRounding.FlooredToPixelFractions` (`Typesetting/ShapingSize.cs`); by default it keeps the font's
+advances. Before the advances are computed, the font size is rounded twice:
 
 1. Blink floors the font size to 1/100 px: `third_party/blink/renderer/platform/fonts/font_description.cc:263–274`
    (`FontDescription::EffectiveFontSize`, precision multiplier 100 in `font_cache_key.h:54`);
@@ -227,7 +228,20 @@ Before the advances are computed, the font size is rounded twice:
    `platform/fonts/web_font_typeface_factory.cc`).
 
 At 10 pt (13.333 px) the advances are therefore computed for 13.33 px truncated to 853/64 = 13.328125 px: every advance
-is 0.039 % (a factor of 0.99960938) smaller. At 9 pt (12 px), 10.5 pt (14 px) and 12 pt (16 px) nothing is rounded.
+is 0.039 % (a factor of 0.99960938) smaller. The first size, 13.33 px, is the size of the font itself: the size in the PDF
+(`Tf`; `print.txt` gives 7.995 pt for 8 pt) and HarfBuzz's scale (`shaping/harfbuzz_face.cc`,
+`HarfBuzzFace::GetScaledFont`), so kerning and the place of a mark on its base are at it; only the font's own advances
+are at the second. Both are computed in single precision (8.4 px is the float 8.3999996 and floors to 8.39 px). Nothing
+is rounded per glyph, word or space: Skia writes a `Td` for every glyph, at the positions HarfBuzz gave (an "i" at 8 pt
+advances 2.5575256 px = 480 × 10.65625 / 2000). Measured: `ta-sizes` (one line at 8, 9, 10, 10.5, 11, 12 and 13 pt: the
+line is narrower by the ratio of the second size to the font size, constant along the line, 0.27 pt over 276 pt at
+8 pt), `ta-px` (10.667px and 10.66px print as 8 pt; 10.65625px, already a multiple of 1/64 px, prints at 10.65 px and
+advances at 10.640625 px), `ta-right` (right-aligned: the start of the line moves), `ta-kerning-scale` (the kerning of
+30 "AV" pairs is that of 10.5 pt scaled to the first size within 0.0002 pt, not to the second), `ta-marks` (combining
+marks on bases without a precomposed form at 8 pt, 10.65625px and 12 pt: x + U+0301 is drawn 4.7810059 px from x's
+origin, 897 units at 10.66 px, not 4.7793 at 10.65625 px). Under the
+policy every word of these cases is within 0.01 pt of Chromium's (`TextAdvanceTests`). `ta-kerning` and
+`ta-kerning-scale` are refused for `font-kerning: none`. At 9 pt (12 px), 10.5 pt (14 px) and 12 pt (16 px) nothing is rounded.
 Measured in the container (case `font-sizes`, widths in px; the text is "n", advance 1116 of 2000 units, no kerning):
 
 | Font size | 10 × "n": font's advances → Chromium | 100 × "n": font's advances → Chromium |
@@ -323,6 +337,7 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `tf-*` | footer groups (`tfoot`) through the HTML front-end (Lato 10.5 pt, collapsed borders): after the body, before it in the source, with a header group, two footer groups (the first is drawn last, the second in its place), an empty one, the invoice's shape (a 1.5 pt top border on the footer row, grey bottom borders); a table that breaks over four pages (page area 276 × 150 pt), where Chromium repeats the footer at the end of every page (`tf-pages`, listed), and the same with `break-inside: auto` on the footer, which Chromium does not repeat (`tf-pages-auto`) | `CaseStatusTests`, `HtmlListedDifferenceTests` (`UnitTests.Extensions.Documents.Html`) |
 | `tp-*` | percent columns (`col` of `width: <percentage>`) under `table-layout: fixed`, collapsed borders, through the HTML front-end (page area 276 pt, 368 px; Lato 10.5 pt): percentages that sum to 100 (the timesheet's 14.29, 17.14, 57.14, 11.43), to 50 and to 130 (scaled to fill the table), 33.3 / 33.3 / 33.4; beside a column without a width (keeps its percentage, the other takes the rest) and beside a 60 pt column (Chromium widens the length column to what the percentages leave: refused); a `col` of span 2 and a `colgroup` of span 2 at 25 % (each column 25 %; the column group's width is refused); a 3 pt table border (the percentages are of the width less the outer half borders); a table of width 240 pt (the same rule; refused for the table width). Read from the grid lines in `lines.txt` | `CaseStatusTests` (`UnitTests.Extensions.Documents.Html`) |
 | `mf4-line-*` | 3 pt lines (4 px, not snapped), Lato 12 pt, no padding; the page area ends at the centre of row 8's bottom line plus 0, 0.75, 1.5 or 2.25 pt | `TableBreakLineTests.A_row_that_fits_down_to_its_bottom_line_s_centre_stays_and_the_line_is_split_like_Chromium` |
+| `ta-*` | text at font sizes that are not a whole number of CSS pixels (Lato, one line per size, `white-space: nowrap`, page 612 × 432 pt): seven sizes in points (`ta-sizes`), sizes given in pixels (`ta-px`), right-aligned (`ta-right`), `letter-spacing: 0` and `font-kerning: none` (`ta-kerning`), the kerning of 30 "AV" pairs with and without `font-kerning: none` (`ta-kerning-scale`), combining marks (`ta-marks`). Chromium shapes at the font size floored to 1/100 px and advances at that size truncated to 1/64 px ("Where Chromium is not exact") | `ShapingSizeTests` (`UnitTests.Extensions.Documents.Typesetting`), `TextAdvanceTests`; one status line each in `html-status.txt` (`CaseStatusTests`) |
 | `te-*` | the table's outer border where the lines along one edge differ (Lato 10.5 pt, two fixed columns in 200 pt, 1.5 pt lines, one 6 pt border in red): a wider left or right border in the first or in a later row (`te-left-first`, `te-left-later`, `te-right-first`, `te-right-later`, which also has a wider line between two columns), a wider top border over one cell of the first row (`te-top`), a wider bottom border under one cell of the last row (`te-bottom`), a 3 pt and a 0.75 pt border on the table itself (`te-table-border`), a wider left border on the second page (`te-break`). Chromium centres every row's outer line half of the widest line at that edge inside the table, on every page, and insets each cell by half of its own line; the wider line is painted inside the table's border box | `CollapsedCellInsetTests`; one status line each in `html-status.txt` (`CaseStatusTests`) |
 | `tj-*` | the corners where the grid lines of a collapsed table meet (Lato 10.5 pt, fixed columns in 200 pt, solid lines of 0.75 to 4.5 pt in several colours): each side of every cell in its own colour (`tj-same-cell`); equal lines of different cells at a corner, the cell above right against the one below left and the left against the right (`tj-order`); a table's line against a cell's of the same width (`tj-cell-table`); a wider line at each of the four outer corners (`tj-outer`); four lines of four widths at two inner corners (`tj-four`); wide left lines in later rows and the right edge (`tj-right-edge`); wider outer side lines where a wider line elsewhere sets the top and bottom border (`tj-top-edge`); the half lines at a page break, 3 pt and 1.5 pt, with coloured lines below them (`tj-break`). Chromium gives each corner to the edge that wins there (wider, then cell over row over row group over table, then the earlier box in the table) and to every edge of that box as wide as it; the others stop at the corner. At a page break the vertical lines end and start at the line's centre | `CollapsedJointTests`; one status line each in `html-status.txt` (`CaseStatusTests`) |
 

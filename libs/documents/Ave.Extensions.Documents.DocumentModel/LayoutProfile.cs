@@ -10,7 +10,7 @@ namespace Ave.Extensions.Documents.DocumentModel;
 public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
-    /// <see cref="FontMetricRounding.Exact"/> and <see cref="SplitLineHalves.Exact"/>.</summary>
+    /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/> and <see cref="SplitLineHalves.Exact"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -22,6 +22,10 @@ public sealed record LayoutProfile
     /// <summary>Whether a font's ascent, descent and line gap are used as they are or rounded to whole pixels as Chromium
     /// rounds them (<see cref="DocumentModel.FontMetricRounding"/>).</summary>
     public FontMetricRounding FontMetricRounding { get; init; } = FontMetricRounding.Exact;
+
+    /// <summary>Whether text is shaped at its font size as it is given or at the two rounded sizes Chromium shapes with
+    /// (<see cref="DocumentModel.FontSizeRounding"/>).</summary>
+    public FontSizeRounding FontSizeRounding { get; init; } = FontSizeRounding.Exact;
 
     /// <summary>How thick the half of a grid line is drawn where a page break between table rows splits the line
     /// (<see cref="DocumentModel.SplitLineHalves"/>).</summary>
@@ -50,6 +54,37 @@ public enum SplitLineHalves
     /// from the half's top edge covers the same pixel as Chromium's once both edges are put on whole pixels.
     /// </summary>
     AtLeastOnePixel,
+}
+
+/// <summary>
+/// The font size text is shaped at: the glyphs' advances, the kerning between them and the place of a mark on its base.
+/// The font is drawn at its size under either value; where an advance differs from the font's own width at that size,
+/// the back-ends place each glyph where layout put it (the PDF with a TJ adjustment, ISO 32000-1 §9.4.3, as it places
+/// kerned glyphs). A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// </summary>
+public enum FontSizeRounding
+{
+    /// <summary>Everything at the font size as it is given.</summary>
+    Exact,
+
+    /// <summary>
+    /// The font size in pixels floored to 1/100 px for kerning and every other positioning value, and that size truncated
+    /// to 1/64 px for the glyphs' own advances, in single precision, as Chromium prints text: Blink rounds a font's size
+    /// down to its font cache's precision (<c>platform/fonts/font_description.cc</c>,
+    /// <c>FontDescription::EffectiveFontSize</c>), and the font library under Skia scales the advances with the pixels per
+    /// em truncated to 1/64 px (skrifa <c>src/instance.rs</c>, <c>Size::fixed_linear_scale</c>). Nothing is rounded per glyph,
+    /// word or space, so the text is narrower by a constant share along the line: 0.098 % at 8 pt (10.66 px and
+    /// 10.65625 px), 0.039 % at 10 pt, 0.071 % at 11 pt, 0.030 % at 13 pt; none at 9, 10.5 and 12 pt. Measured against
+    /// Chromium's print (<c>tools/reference/chromium</c>): every word within 0.01 pt in cases <c>ta-sizes</c> (seven sizes),
+    /// <c>ta-px</c> (sizes given in px, 10.65625 px floored to 10.65), <c>ta-right</c> (right-aligned: the start of the line
+    /// moves), <c>ta-kerning-scale</c> (kerning at the floored size) and <c>ta-marks</c> (combining marks at the floored
+    /// size). What the policy does not cover: the font is drawn at its size, where Chromium draws it at the floored size
+    /// (7.995 pt for 8 pt); the 16.16 fixed-point rounding of the font library's scale (at most 2·10⁻⁵ of a width); and the
+    /// width of each text item (a run of one style), which Chromium ceils to its layout unit of 1/64 px and the engine
+    /// keeps exact, so text after an item can start up to 0.0117 pt earlier than in Chromium (case <c>sk-size</c>: an
+    /// underline's gap edge 0.011 pt early, one pixel more painted).
+    /// </summary>
+    FlooredToPixelFractions,
 }
 
 /// <summary>
