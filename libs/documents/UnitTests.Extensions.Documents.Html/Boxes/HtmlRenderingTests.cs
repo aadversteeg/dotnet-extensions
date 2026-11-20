@@ -67,8 +67,8 @@ public class HtmlRenderingTests
     [Fact]
     public void Under_warn_every_entry_returns_its_output_with_a_diagnostic_for_everything_left_out_or_changed()
     {
-        // What is left out or changed: the image, the quotation (its words), white-space: nowrap, the table and its cells,
-        // visibility: hidden (drawn), the float, the list item's marker.
+        // What is left out or changed: the image, the quotation (its words), white-space: nowrap, the table's separated
+        // borders (drawn collapsed), visibility: hidden (drawn), the float, the list item's marker.
         const string Body = "<p>before</p><p>keep <img src=\"x.png\" alt=\"ALT\"> this <q>quoted words</q> and <span style=\"white-space:nowrap\">no wrap</span></p>" +
             "<table><tr><td>cell one</td><td>cell two</td></tr></table><p style=\"visibility:hidden\">secret</p><p style=\"float:right\">floated</p><ul><li>item</li></ul>";
         var html = Html.Replace("<p>Hello</p>", Body, StringComparison.Ordinal);
@@ -79,8 +79,7 @@ public class HtmlRenderingTests
 
         pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
         var values = pages.Value.Diagnostics.Select(error => error.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.Value, out var value) ? value as string : null).ToList();
-        values.Should().Contain(["img", "q", "nowrap", "hidden", "right"]);
-        values.Should().Contain(value => value != null && value.StartsWith("table", StringComparison.Ordinal));
+        values.Should().Contain(["img", "q", "nowrap", "hidden", "right", "separate"]);
         values.Should().Contain(value => value != null && value.StartsWith("list-item", StringComparison.Ordinal));
         pages.Value.Diagnostics.Should().OnlyContain(error => error.Metadata != null && error.Metadata.ContainsKey(ErrorMetadataKeys.SourceLine));
         var pdf = HtmlRendering.ToPdf(html, warn, new PdfRenderOptions(new DateTimeOffset(2026, 11, 19, 12, 0, 0, TimeSpan.Zero)));

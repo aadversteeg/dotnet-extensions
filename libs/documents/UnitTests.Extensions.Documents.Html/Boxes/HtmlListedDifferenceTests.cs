@@ -112,6 +112,31 @@ public class HtmlListedDifferenceTests
         HtmlCases.Difference(engine, read).Should().BeNull();
     }
 
+    /// <summary>
+    /// The fixed table layout at width 100% with three columns without a width, the first holding a word wider than an
+    /// even share of the 276 pt page area (case <c>tl-fixed-fill-wide-word</c>): Chromium gives each column its share,
+    /// 92 pt, and lets the word overflow into the next column (CSS 2.1 §17.5.2.1: in the fixed layout the widths do not
+    /// depend on the content). The engine's columns without a width are fill columns, which are never narrower than their
+    /// content's min-content width: the first column is as wide as the word and its padding, and the other two share what
+    /// is left equally. Where every cell's content fits its share, both give the same columns.
+    /// </summary>
+    [Fact]
+    public void A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow()
+    {
+        var (engine, chromium) = (Engine("tl-fixed-fill-wide-word").Pages.Single(), Chromium("tl-fixed-fill-wide-word").Pages.Single());
+        var word = chromium.Words.Single(word => word.Text == "Pneumonoultramicroscopic");
+        static double[] Starts(PrintedPage page) => [.. page.Words.Where(word => word.Text is "two" or "three").Select(word => word.X0)];
+
+        static double[] Lines(PrintedPage page) => [.. page.Rectangles.Where(line => line.Height > line.X1 - line.X0).Select(line => line.X0).Distinct().Order()];
+
+        Lines(chromium).Should().Equal([12, 103.5, 195.75, 287.25], "Chromium's columns are even shares, painted at whole pixels (a line per row)");
+        word.X1.Should().BeGreaterThan(Starts(chromium)[0], "Chromium lets the word overflow into the second column");
+        Starts(engine)[0].Should().BeGreaterThan(word.X1, "the engine's first column holds the word");
+        var lines = Lines(engine);
+        (lines[2] - lines[1]).Should().BeApproximately(lines[3] - lines[2], 0.01, "the other two columns share what is left equally");
+        engine.Words.Single(other => other.Text == word.Text).X0.Should().BeApproximately(word.X0, 0.01);
+    }
+
     /// <summary>Chromium's print with each word's text read through <paramref name="text"/>.</summary>
     private static PrintedPages Read(PrintedPages pages, Func<string, string> text) =>
         new([.. pages.Pages.Select(page => page with { Words = [.. page.Words.Select(word => word with { Text = text(word.Text) })] })]);
