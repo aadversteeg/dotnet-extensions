@@ -253,7 +253,10 @@ internal static class TablePage
     /// <see cref="TableEndOverflow.ContinuesOnNextPage"/>: what passed takes its height again at the top of the next page,
     /// painted where part of a cell's border box passed (cases <c>a2-row-end</c>, <c>-after</c>, <c>-6pt</c>,
     /// <c>-6pt-after</c>), else empty (only the table's outer half of its bottom line passed: cases
-    /// <c>a2-row-end-first-row-half-*</c>). In the collapsing border model a cell's border box ends at the centre of the
+    /// <c>a2-row-end-first-row-half-*</c>). Where only part of that outer half passed, the next page takes the whole half,
+    /// as Chromium moves the table's own bottom border that does not fit to the next page (cases
+    /// <c>a2-row-end-thick-less-after</c>: 3 pt of a 6 pt line, 0.75 of them past the page end; <c>a4-cell-image-179-5</c>:
+    /// 0.375 pt, 0.25 of them past). In the collapsing border model a cell's border box ends at the centre of the
     /// line below it (CSS 2.1 §17.6.2), so a cell passes where that centre lies below the page end. Where the table goes
     /// on after the row, at a break between rows, the next page lays its rows out below what passed (<see cref="BelowPassed"/>):
     /// the part of the line's upper half that passed the page end is then on the next page above the lower half (case
@@ -271,9 +274,10 @@ internal static class TablePage
     {
         var topOf = content.Rows.ToDictionary(row => row.Row, row => row.Top);
         var paints = content.Cells.Any(cell => !Fitting.Fits(topOf[cell.TopRow] + cell.Fragment.Size.Height, end));
+        var outerHalfOnly = !paints && token.NextRow == table.Grid.Rows.Length;
         return token with
         {
-            Passed = fragment.Size.Height - end,
+            Passed = outerHalfOnly ? fragment.Size.Height - content.Bottom : fragment.Size.Height - end,
             PaintsPassed = paints,
             PassedLines = paints ? TableFragments.Below(fragment, end) : [],
         };

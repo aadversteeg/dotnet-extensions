@@ -53,7 +53,7 @@ a2-row-end-pad-past-after open 2 pages, Chromium 3 (print.txt)
 a2-row-end-span equal
 a2-row-end-span-after equal
 a2-row-end-thick-less equal
-a2-row-end-thick-less-after open page 2 'z' baseline 22.5 (laid out at 22.5), Chromium 24.75 (print.txt)
+a2-row-end-thick-less-after equal
 a2-row-end-thick-more refused Documents.Layout.DoesNotFit 150 at 8
 a2-row-end-thick-more-after refused Documents.Layout.DoesNotFit 150 at 8
 a2-rowspan-blocks equal
@@ -63,7 +63,7 @@ a3-mirror-px equal
 a3-pad-kept equal
 a3-pad-kept-lower equal
 a3-pad-line equal
-a4-cell-image-179-5 open page 3 'after' baseline 24 (laid out at 24.25), Chromium 24.75 (print.txt)
+a4-cell-image-179-5 equal
 a4-cell-pad3-image-177 equal
 a4-cell-pad3-line-177 equal
 a4-continued-cell-pad-bottom-30 open page 2 reads 't34 t35 t36 t37', Chromium 't34 t35 t36 t37 t39 t40 t41 t42' (print.txt)

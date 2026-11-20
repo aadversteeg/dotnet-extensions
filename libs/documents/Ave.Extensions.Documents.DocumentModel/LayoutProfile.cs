@@ -114,7 +114,8 @@ public enum TableEndOverflow
     /// page starts with a part of the table as tall as what passed, and what follows the table starts below it; where the
     /// table ends the document, that part is on a page of its own. It is painted only where part of a cell's border box
     /// passed: then the next page draws the grid lines that passed, as they lay below the page end. Where only the
-    /// table's outer half of its bottom line passed, the part is empty. Measured against Chromium's print
+    /// table's outer half of its bottom line passed, the part is empty, and as tall as that whole half also where only part
+    /// of it passed (cases <c>a2-row-end-thick-less-after</c>, <c>a4-cell-image-179-5</c>). Measured against Chromium's print
     /// (<c>tools/reference/chromium</c>): a row whose line below passes by its outer half only takes that half again at
     /// the top of the next page, unpainted (cases <c>a2-row-end-first-row-half-*</c>, with a 6 pt line
     /// <c>a2-row-end-first-row-half-6pt-below</c>), and on a page of its own where nothing follows

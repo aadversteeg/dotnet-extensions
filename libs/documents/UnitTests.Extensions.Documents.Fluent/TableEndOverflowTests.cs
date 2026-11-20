@@ -75,6 +75,27 @@ public class TableEndOverflowTests
         Word(end, "below").Baseline.Should().Be(ends);
     }
 
+    [Fact]
+    public void Where_only_part_of_the_outer_half_of_the_last_line_passes_the_next_page_takes_the_whole_half()
+    {
+        // Chromium: a one-row table at the top of the page whose 6 pt bottom line lies at 156.75 to 162.75, past the page
+        // end at 162 by 0.75 pt; its outer half, 3 pt, is what the next page takes: "z" at 24.75, 3 pt below where a
+        // first line starts a page ("i" at 21.75). Likewise a 0.75 pt line that passes by 0.25 pt of its 0.375 pt half
+        // (a4-cell-image-179-5: "after" at 24.375, printed at 24.75 where 24.25 would print at 24).
+        var chromium = PrintedPages.Chromium("a2-row-end-thick-less-after");
+        chromium.Pages[0].Rectangles.Should().Contain(new PrintedBox(1, 12, 156.75, 288, 162, "#000000"));
+        Word(chromium, "z").Baseline.Should().Be(Word(PrintedPages.Chromium("fr-row-later-padding-beside-line"), "i").Baseline + 3);
+
+        // The same with 6 pt grid lines: 4.5 pt of top padding put the middle of the line below at 190.5, so 1.5 pt of
+        // its outer half pass the page end at 192; the next page takes all 3 pt, as where the whole half passes (6 pt).
+        var part = Printed(OuterHalf(6, 4.5, below: true), TableEndOverflow.ContinuesOnNextPage, 10.5);
+        var whole = Printed(OuterHalf(6, 6, below: true), TableEndOverflow.ContinuesOnNextPage, 10.5);
+        part.Pages[0].Rectangles.Max(box => box.Y1).Should().Be(193.5);
+        Word(part, "below").Baseline.Should().Be(26.25).And.Be(Word(whole, "below").Baseline);
+        part.Pages[1].Rectangles.Should().BeEmpty();
+        Word(Printed(OuterHalf(6, 4.5, below: true), TableEndOverflow.EndsOnPage, 10.5), "below").Baseline.Should().Be(23.25, "the default ends the table on its page");
+    }
+
     [Theory]
     [InlineData("a2-row-end-first-row-half-alone", 0.75, 13.875, 12)]
     [InlineData("a2-row-end-first-row-half-6pt-alone", 6, 6, 10.5)]
