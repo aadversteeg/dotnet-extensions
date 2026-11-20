@@ -88,7 +88,9 @@ internal static class HtmlCases
     /// <summary>The codes that are a refusal of the HTML path, by their exact code: what the CSS stage and the HTML
     /// front-end refuse to draw (<see cref="CssErrorCodes.Unsupported"/>, <see cref="HtmlStyleErrorCodes.Unsupported"/>),
     /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
-    /// and the source line of the box, where Chromium prints the content past the page end). Any other error, also
+    /// and the source line of the box, where Chromium prints the content past the page end) or in its page-margin box
+    /// (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration, where Chromium
+    /// draws it over its box). Any other error, also
     /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -113,7 +115,9 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
+        LayoutErrorCodes.MarginBoxOverflow.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>

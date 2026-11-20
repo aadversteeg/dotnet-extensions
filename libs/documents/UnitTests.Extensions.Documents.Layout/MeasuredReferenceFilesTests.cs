@@ -1524,6 +1524,38 @@ public class MeasuredReferenceFilesTests
         ["mf4-line-225.lines.txt"] = 106,
         ["mf4-line-225.print.txt"] = 169,
         ["mf4-line-225.words.txt"] = 60,
+        ["pm-defaults.boxes.txt"] = 1,
+        ["pm-defaults.lines.txt"] = 9,
+        ["pm-defaults.print.txt"] = 22,
+        ["pm-defaults.words.txt"] = 11,
+        ["pm-empty.boxes.txt"] = 1,
+        ["pm-empty.lines.txt"] = 9,
+        ["pm-empty.print.txt"] = 17,
+        ["pm-empty.words.txt"] = 6,
+        ["pm-inherit.boxes.txt"] = 1,
+        ["pm-inherit.lines.txt"] = 0,
+        ["pm-inherit.print.txt"] = 8,
+        ["pm-inherit.words.txt"] = 7,
+        ["pm-overflow.boxes.txt"] = 1,
+        ["pm-overflow.lines.txt"] = 4,
+        ["pm-overflow.print.txt"] = 18,
+        ["pm-overflow.words.txt"] = 12,
+        ["pm-pages.boxes.txt"] = 1,
+        ["pm-pages.lines.txt"] = 6,
+        ["pm-pages.print.txt"] = 30,
+        ["pm-pages.words.txt"] = 21,
+        ["pm-width.boxes.txt"] = 1,
+        ["pm-width.lines.txt"] = 10,
+        ["pm-width.print.txt"] = 48,
+        ["pm-width.words.txt"] = 36,
+        ["pm-zero-alone.boxes.txt"] = 1,
+        ["pm-zero-alone.lines.txt"] = 6,
+        ["pm-zero-alone.print.txt"] = 10,
+        ["pm-zero-alone.words.txt"] = 2,
+        ["pm-zero.boxes.txt"] = 1,
+        ["pm-zero.lines.txt"] = 5,
+        ["pm-zero.print.txt"] = 10,
+        ["pm-zero.words.txt"] = 3,
         ["sr-counter.boxes.txt"] = 1,
         ["sr-counter.lines.txt"] = 0,
         ["sr-counter.print.txt"] = 23,
@@ -1861,7 +1893,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(454);
+        cases.Should().HaveCount(462);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
