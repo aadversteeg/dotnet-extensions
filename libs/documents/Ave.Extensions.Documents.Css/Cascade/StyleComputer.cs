@@ -139,7 +139,62 @@ public sealed class StyleComputer
         }
 
         var candidates = Collect(element, own ?? ElementDeclarations.None);
-        var context = new ComputeContext(parent, _rootFontSize, _values, element.IsRoot);
+        var computed = ComputeFrom(candidates, parent, element.IsRoot, own?.ResetsLegacyAlignment == true);
+        if (!computed.IsFailure && element.IsRoot)
+        {
+            _rootFontSize = ((CssLength)computed.Value[PropertyRegistry.FontSize]).Points;
+        }
+
+        if (!computed.IsFailure)
+        {
+            _styles[element] = computed.Value;
+        }
+
+        return computed;
+    }
+
+    /// <summary>
+    /// The computed style of a box outside the element tree, a page context or a page-margin box (CSS Paged Media 3
+    /// §5.3, §4.2): the declarations of its rules cascaded as an element's are (origin and importance, layer,
+    /// specificity, order; the same refusals, reported once per declaration), inheriting from
+    /// <paramref name="parent"/>.
+    /// </summary>
+    /// <param name="blocks">The rules' declarations, each with its origin, layer and specificity.</param>
+    /// <param name="parent">The style it inherits from.</param>
+    /// <returns>Its computed style, or a limit's error.</returns>
+    internal Result<ComputedStyle, Error> ComputeOutside(IEnumerable<OutsideBlock> blocks, ComputedStyle parent)
+    {
+        _element = null;
+        if (_failure is not null)
+        {
+            return Result<ComputedStyle, Error>.Failure(_failure.Value);
+        }
+
+        var candidates = new Candidates();
+        foreach (var block in blocks)
+        {
+            _budget.Charge(1 + block.Block.Entries.Count);
+            Applied(block.Block);
+            foreach (var entry in block.Block.Entries)
+            {
+                var important = entry.Declaration.Important;
+                var layer = block.Layer?.Rank ?? 0;
+                candidates.Add(new Candidate(
+                    entry,
+                    new Priority(Priority.OriginRank(block.Origin, important), 0, important ? -layer : layer, block.Specificity, entry.Declaration.Order),
+                    block.Origin,
+                    (object?)block.Layer ?? StyleAttributeLayer));
+            }
+        }
+
+        return ComputeFrom(candidates, parent, isRoot: false, resetsLegacyAlignment: false);
+    }
+
+    /// <summary>Computes every longhand from the collected candidates (the steps of <see cref="Compute"/> after
+    /// collecting).</summary>
+    private Result<ComputedStyle, Error> ComputeFrom(Candidates candidates, ComputedStyle? parent, bool isRoot, bool resetsLegacyAlignment)
+    {
+        var context = new ComputeContext(parent, _rootFontSize, _values, isRoot);
         var custom = _failure is null ? CustomProperties(candidates.Custom, parent) : ImmutableDictionary<string, CssTokens>.Empty;
         _custom = custom;
         var readings = new Dictionary<PreparedDeclaration, Reading>();
@@ -165,15 +220,9 @@ public sealed class StyleComputer
             return Result<ComputedStyle, Error>.Failure(_failure.Value);
         }
 
-        Adjust(context, own?.ResetsLegacyAlignment == true);
+        Adjust(context, resetsLegacyAlignment);
 
         var style = new ComputedStyle([.. PropertyRegistry.Longhands.Select(property => context.Own(property)!)], custom, context.FontSizeSource, context.WidthsBehindStyle);
-        if (element.IsRoot)
-        {
-            _rootFontSize = ((CssLength)style[PropertyRegistry.FontSize]).Points;
-        }
-
-        _styles[element] = style;
         return Result<ComputedStyle, Error>.Success(style);
     }
 
@@ -206,6 +255,16 @@ public sealed class StyleComputer
     private void Fail(Error error) => _failure ??= error;
 
     // ---- collecting (§6.1) ----
+
+    /// <summary>The rank of an origin and importance in the cascade order (CSS Cascade 5 §6.2), higher wins.</summary>
+    internal static int OriginRank(CascadeOrigin origin, bool important) => Priority.OriginRank(origin, important);
+
+    /// <summary>The declarations of one rule for a box outside the element tree (<see cref="ComputeOutside"/>).</summary>
+    /// <param name="Block">The declarations, prepared.</param>
+    /// <param name="Origin">The rule's origin.</param>
+    /// <param name="Specificity">The rule's specificity (a page selector's, CSS Paged Media 3 §4.1).</param>
+    /// <param name="Layer">The rule's cascade layer; null for none.</param>
+    internal readonly record struct OutsideBlock(PreparedBlock Block, CascadeOrigin Origin, Specificity Specificity, LayerNode? Layer);
 
     /// <summary>One declared value competing in the cascade.</summary>
     private readonly record struct Candidate(Entry Entry, Priority Priority, CascadeOrigin Origin, object Layer);

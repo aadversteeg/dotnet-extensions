@@ -1,0 +1,13 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; font-style: normal; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; font-style: normal; }
+html, body { margin: 0; font-family: Lato; font-size: 10pt; }
+@page { size: 400pt 300pt; margin: 60pt 50pt; font-family: Lato; font-size: 10pt;
+  @top-left { content: "Text"; background-color: #ff0000; border-bottom: 3pt solid #0000ff; }
+  @top-right { background-color: #00ff00; padding: 0 10pt; border-bottom: 3pt solid #0000ff; }
+  @bottom-left { content: none; background-color: #ff0000; padding: 0 10pt; }
+  @bottom-right { content: "R"; background-color: #00ff00; }
+}
+@page :first { @top-right { content: ""; } @bottom-left { content: ""; } }
+</style></head>
+<body><p>one</p><p style="break-before: page">two</p></body></html>

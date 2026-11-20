@@ -137,6 +137,13 @@ public static class CssErrorCodes
         /// <summary>A colour function other than rgb(), rgba(), hsl() and hsla() (CSS Color 4: lab(), color() …).
         /// Metadata: Property, Value, SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode ColorFunction = _ / "ColorFunction";
+
+        /// <summary>Something in an <c>@page</c> rule or a page-margin rule outside the page-margin boxes the engine
+        /// draws (CSS Paged Media 3 §4, §5): a page selector other than none and <c>:first</c>, a margin box outside the
+        /// top and bottom rows, a declaration a margin box does not take, a <c>content</c> item other than strings,
+        /// <c>counter(page)</c>, <c>counter(pages)</c> and an image, <c>rem</c>, <c>var()</c>, a margin box without a
+        /// font family. Metadata: Property or Value, SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode PageRule = _ / "PageRule";
     }
 
     /// <summary>Input past one of the limits of <see cref="CssInputLimits"/>: a style sheet longer than

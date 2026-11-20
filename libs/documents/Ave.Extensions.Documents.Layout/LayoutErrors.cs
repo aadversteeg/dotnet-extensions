@@ -39,6 +39,25 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(height))
             .WithSource(content.Source);
 
+    /// <summary>
+    /// Content wider or taller than its page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>): Chromium lets
+    /// it overflow the box unclipped, which the engine does not draw, so it refuses it at the box's source (the margin rule
+    /// it was made from).
+    /// </summary>
+    /// <param name="box">The page-margin box, or the row whose own padding and border leave no room.</param>
+    /// <param name="axis"><c>width</c> or <c>height</c>.</param>
+    /// <param name="needed">What the content needs: its min-content width, or its height (padding and border included).</param>
+    /// <param name="room">What the box has.</param>
+    public static Error MarginBoxOverflow(Box box, string axis, double needed, double room) =>
+        new Error(
+                LayoutErrorCodes.MarginBoxOverflow,
+                $"{Describe(box)} needs a {axis} of {InvariantNumber.Format(needed)}pt and its page-margin box has {InvariantNumber.Format(room)}pt; "
+                + "content larger than its page-margin box is not drawn over the boxes beside it or over the page.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Property, axis)
+            .With(ErrorMetadataKeys.Value, $"{InvariantNumber.Format(needed)}>{InvariantNumber.Format(room)}")
+            .WithSource(box.Source);
+
     /// <summary>A layout algorithm broke the layout contract (<see cref="LayoutErrorCodes.EngineDefect"/>).</summary>
     /// <param name="box">The box whose algorithm broke it.</param>
     /// <param name="contract">Which contract, for the message and the metadata.</param>

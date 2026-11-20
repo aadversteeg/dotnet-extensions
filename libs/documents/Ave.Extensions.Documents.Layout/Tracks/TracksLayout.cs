@@ -96,7 +96,7 @@ public static class TracksLayout
         TableGrid.Build(box).OnSuccessBind(grid =>
         {
             var lines = VerticalLineWidths(box, grid);
-            return ColumnRanges(environment, box, grid, lines).OnSuccessMap(ranges =>
+            return ColumnRanges(environment, box, grid).OnSuccessMap(ranges =>
                 new IntrinsicWidths(ranges.Sum(range => range.MinContent), ranges.Sum(range => range.MaxContent))
                     .Plus((lines[0] + lines[^1]) / 2));
         });
@@ -126,17 +126,26 @@ public static class TracksLayout
     }
 
     /// <summary>The width of each vertical grid line: per column boundary the widest resolved line over all rows, so
-    /// every row's cells line up.</summary>
+    /// every row's cells line up. At the table's edges half of it is the table's left and right border, on every page:
+    /// measured in Chromium 159, a 6 pt left or right border on one cell of the first row, of a later row, or of a row
+    /// on the next page puts the centre of every row's outer line 3 pt inside the table's edge (cases
+    /// <c>te-left-first</c>, <c>te-left-later</c>, <c>te-right-first</c>, <c>te-right-later</c>, <c>te-break</c>), and a
+    /// table border wider than its cells' counts the same way (<c>te-table-border</c>). Where each cell's content
+    /// starts is half of its own line (<see cref="CollapsedBorders.OwnVerticalWidth"/>), not of this one.</summary>
     internal static ImmutableArray<double> VerticalLineWidths(Box box, TableGrid grid) =>
         [.. Enumerable.Range(0, grid.ColumnCount + 1).Select(boundary =>
             Enumerable.Range(0, grid.Rows.Length).Select(row => CollapsedBorders.Vertical(box, grid, row, boundary).Width.Points).DefaultIfEmpty(0).Max())];
 
-    /// <summary>The columns' ranges, from every cell measured with half the vertical lines beside it.</summary>
-    private static Result<ImmutableArray<IntrinsicWidths>, Error> ColumnRanges(
-        LayoutEnvironment environment, Box box, TableGrid grid, ImmutableArray<double> lines) =>
+    /// <summary>The columns' ranges, from every cell measured with half of its own vertical lines beside it
+    /// (<see cref="CollapsedBorders.OwnVerticalWidth"/>), as it is laid out.</summary>
+    private static Result<ImmutableArray<IntrinsicWidths>, Error> ColumnRanges(LayoutEnvironment environment, Box box, TableGrid grid) =>
         grid.Cells
             .TraverseAll(cell => environment
-                .Measure(CellBox(cell, new Edges(Length.Zero, (lines[cell.Column + cell.ColumnSpan] / 2).Pt(), Length.Zero, (lines[cell.Column] / 2).Pt())))
+                .Measure(CellBox(cell, new Edges(
+                    Length.Zero,
+                    (CollapsedBorders.OwnVerticalWidth(box, grid, cell, cell.Column + cell.ColumnSpan) / 2).Pt(),
+                    Length.Zero,
+                    (CollapsedBorders.OwnVerticalWidth(box, grid, cell, cell.Column) / 2).Pt())))
                 .OnSuccessMap(widths => new TrackSizing.Contribution(cell.Column, cell.ColumnSpan, widths)))
             .OnSuccessMap(contributions => TrackSizing.ColumnRanges(box.Style.Columns, contributions));
 
@@ -149,7 +158,7 @@ public static class TracksLayout
     {
         var lines = VerticalLineWidths(box, grid);
         var outer = (lines[0] + lines[^1]) / 2;
-        return ColumnRanges(environment, box, grid, lines).OnSuccessBind(ranges =>
+        return ColumnRanges(environment, box, grid).OnSuccessBind(ranges =>
         {
             var (widths, needed) = TrackSizing.Resolve(box.Style.Columns, ranges, availableWidth - outer, box.Style.Width);
             if (needed is { } width)
@@ -231,4 +240,10 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
             .Select(column => CollapsedBorders.Horizontal(Box, Grid, above, below, column, context).Width.Points)
             .DefaultIfEmpty(0)
             .Max();
+
+    /// <summary>A cell's own part of a horizontal grid line: the widest of the line's segments over the cell's columns
+    /// (<see cref="TableSegments.CellLayoutBox"/>).</summary>
+    public double HorizontalWidth(int? above, int? below, CollapsedBorders.LineContext context, TableGrid.Cell cell) =>
+        Enumerable.Range(cell.Column, cell.ColumnSpan)
+            .Max(column => CollapsedBorders.Horizontal(Box, Grid, above, below, column, context).Width.Points);
 }

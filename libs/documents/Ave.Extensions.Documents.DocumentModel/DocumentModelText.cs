@@ -50,7 +50,8 @@ public static class DocumentModelText
     private static IEnumerable<string> AreaLines(string name, PageArea? area) =>
         area is null
             ? []
-            : [$"  {name}" + (area.Height is { } height ? $" height={height}" : string.Empty), .. NodeLines(area.Content, depth: 2)];
+            : [$"  {name}" + (area.Height is { } height ? $" height={height}" : string.Empty) + (area.StartInMargin.Points != 0 ? $" start-in-margin={area.StartInMargin}" : string.Empty),
+                .. NodeLines(area.Content, depth: 2)];
 
     private static IEnumerable<string> NodeLines(Node node, int depth)
     {
