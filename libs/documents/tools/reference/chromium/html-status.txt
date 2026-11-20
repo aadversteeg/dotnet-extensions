@@ -71,6 +71,7 @@ a4-header-image-170 equal
 a4-header-image-174 equal
 a4-header-image-180 equal
 a4-header-image-228 equal
+a4-header-image-228-background open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-image-228-line3-below equal
 a4-header-image-360-image open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-image-beside-lines open 5 pages, Chromium 4 (print.txt)
