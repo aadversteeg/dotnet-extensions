@@ -377,6 +377,11 @@ mf4-line-225 equal
 pm-defaults equal
 pm-empty equal
 pm-family-unused listed A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face: page 1 'Cc' x1 61.322, Chromium 61.65 (print.txt)
+pm-image-exact equal
+pm-image-middle equal
+pm-image-set equal
+pm-image-top equal
+pm-image-url equal
 pm-inherit equal
 pm-inherit-family equal
 pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.308>301.008 at 7:18

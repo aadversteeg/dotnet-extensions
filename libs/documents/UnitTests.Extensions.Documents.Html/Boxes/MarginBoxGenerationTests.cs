@@ -175,6 +175,24 @@ public class MarginBoxGenerationTests
         box.Children.Select(child => child.GetType().Name).Should().Equal(new[] { nameof(TextRun), nameof(Box), nameof(TextRun) }, "an atomic inline between the strings");
     }
 
+    /// <summary>Measured (case <c>pm-image-middle</c>): the image on the baseline after "Aa", "Bb" after it, painted at
+    /// whole pixels.</summary>
+    [Fact]
+    public void An_image_between_two_strings_is_drawn_where_Chromium_draws_it()
+    {
+        var html = Doc($"@page {{ {Page} @top-left {{ content: \"Aa\" image-set(url(badge.png) 1.5x) \"Bb\" }} }}", "<p>Ee</p>");
+
+        var pages = HtmlRendering.ToPages(html, Options);
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+        var printed = PrintedPages.Engine(pages.Value.Output);
+        var chromium = PrintedPages.Chromium("pm-image-middle").Pages[0].Images.Single();
+        var image = printed.Pages[0].Images.Single();
+        static double Pixel(double points) => Math.Round(points / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+        (Pixel(image.X0), Pixel(image.Y0), Pixel(image.X1), Pixel(image.Y1)).Should().Be((chromium.X0, chromium.Y0, chromium.X1, chromium.Y1), "Chromium paints it at whole pixels: 61.5, 23.25, 81.75, 35.25");
+        Pixel(Word(printed, 1, "Aa").Baseline).Should().Be(35.25, "the image's bottom edge is on the baseline, the line in the middle of the box, at a whole pixel");
+        Word(printed, 1, "Bb").X0.Should().BeApproximately(81.727, 0.75 / 64, "20pt after the end of 'Aa', within Chromium's layout unit");
+    }
+
     /// <summary>CSS Values 4 §4.5.1: a URL in a style sheet is resolved against that sheet's URL, a URL in the document's
     /// own style element against the document's.</summary>
     [Fact]

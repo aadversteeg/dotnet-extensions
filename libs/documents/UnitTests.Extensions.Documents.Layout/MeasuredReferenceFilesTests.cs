@@ -1536,6 +1536,26 @@ public class MeasuredReferenceFilesTests
         ["pm-family-unused.lines.txt"] = 0,
         ["pm-family-unused.print.txt"] = 5,
         ["pm-family-unused.words.txt"] = 4,
+        ["pm-image-exact.boxes.txt"] = 1,
+        ["pm-image-exact.lines.txt"] = 1,
+        ["pm-image-exact.print.txt"] = 6,
+        ["pm-image-exact.words.txt"] = 3,
+        ["pm-image-middle.boxes.txt"] = 1,
+        ["pm-image-middle.lines.txt"] = 1,
+        ["pm-image-middle.print.txt"] = 6,
+        ["pm-image-middle.words.txt"] = 3,
+        ["pm-image-set.boxes.txt"] = 1,
+        ["pm-image-set.lines.txt"] = 3,
+        ["pm-image-set.print.txt"] = 8,
+        ["pm-image-set.words.txt"] = 1,
+        ["pm-image-top.boxes.txt"] = 1,
+        ["pm-image-top.lines.txt"] = 1,
+        ["pm-image-top.print.txt"] = 6,
+        ["pm-image-top.words.txt"] = 3,
+        ["pm-image-url.boxes.txt"] = 1,
+        ["pm-image-url.lines.txt"] = 1,
+        ["pm-image-url.print.txt"] = 5,
+        ["pm-image-url.words.txt"] = 2,
         ["pm-inherit-family.boxes.txt"] = 1,
         ["pm-inherit-family.lines.txt"] = 0,
         ["pm-inherit-family.print.txt"] = 5,
@@ -1909,7 +1929,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(466);
+        cases.Should().HaveCount(471);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
