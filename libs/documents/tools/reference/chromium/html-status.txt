@@ -280,6 +280,9 @@ fr-pad-then-sibling equal
 fr-pad-three-lines equal
 fr-pad-top-and-bottom equal
 fr-positions equal
+fr-row-later-padding-beside-line open page 1 reads 'i a0 b a1 a2 a3 a4 a5 a6 a7 a8 a9 v1', Chromium 'i a0 b a1 a2 a3 a4 a5 a6 a7 a8 a9' (print.txt)
+fr-row-later-padding-fits-line-not equal
+fr-row-later-padding-under-header open page 1 painted area: the pixel at (12, 146.25): the engine paints it and Chromium does not; the engine paints 1498 px #000000, Chromium 1456 px (print.txt)
 fr-row-later-page-padding-overflows open page 1 painted area: the pixel at (12, 157.5): the engine paints it and Chromium does not; the engine paints 1084 px #000000, Chromium 1072 px (print.txt)
 fr-row-later-page-padding-overflows-two-cells open page 1 painted area: the pixel at (12, 157.5): the engine paints it and Chromium does not; the engine paints 1258 px #000000, Chromium 1240 px (print.txt)
 h-break-after-last equal
