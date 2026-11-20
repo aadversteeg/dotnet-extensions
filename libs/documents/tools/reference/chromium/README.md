@@ -117,6 +117,54 @@ Chromium snaps more than layout units when it prints, which a case must allow fo
   keep every decision clear of that difference, and their tests compare which words are on which page exactly and
   positions only where the difference does not enter.
 
+## Whole documents
+
+The cases are small on purpose: each shows one rule. `documents/` holds whole documents, written the way an author
+writes HTML and CSS for print, that the HTML/CSS front-end is measured against as a whole: which parts of them it lays
+out as Chromium prints them, and which it refuses. They are measured with the same tool and kept the same way, in a
+folder of their own so that the case tests, which walk `cases/` and `measured/` and pin every case's files, stay apart
+from them:
+
+```
+pwsh -NoProfile -File measure.ps1 -CaseFolder documents
+```
+
+and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`. The timesheets' prints have an
+`ink.txt` too: Chromium clips the right end of the table's grey lines at x 567.105, 0.105 pt into the right border, and
+`ink.py` reads such a clip as it reads a decoration line cut around ink.
+
+The HTML front-end reads the documents as it reads the cases, with the same comparison (`CaseStatusTests`,
+`UnitTests.Extensions.Documents.Html`): one status line per document in `documents/html-status.txt`, in the form of
+`html-status.txt`. A document stays `open` with its first difference, or `refused` with its first refusal, until the
+front-end lays it out as Chromium prints it.
+
+| Document | What it is | Chromium's print |
+| --- | --- | --- |
+| `timesheet-one-page` | the samples' timesheet (`samples/Ave.Extensions.Documents.Samples`, `Timesheet/Timesheet.cs`) as HTML, in Dutch, with the edge-case data set (`data/sample-edge.json`) | 1 page |
+| `timesheet-normal` | the same with the normal month (`data/sample-normal.json`), the data set of the samples' golden pictures (`UnitTests.Extensions.Documents.Samples/Golden/timesheet-normal.nl.page*.png`), so the two can be laid side by side | 2 pages |
+| `timesheet-pages` | the same with the long month (`data/sample-long.json`): the header row repeats, entries with a description stay together | 5 pages |
+| `invoice` | the invoice of the HtmlStyles sample (`samples/Ave.Extensions.Documents.Samples.HtmlStyles/data/invoice.html`) as an author keeps it for print: `invoice.html` with `invoice.css` and `invoice-theme.css` | 1 page |
+
+The timesheet HTML is made from the samples' synthetic data by `timesheet-html.py` (in this folder; `python3
+timesheet-html.py` writes the three files): the engine takes finished HTML, and filling a template with data is the
+caller's job, so the script is that caller. It drops what Lato cannot show as the sample does (`FontCoverage`). The
+documents load their fonts with `@font-face` from `assets/fonts/lato` and the logo from the samples' `assets/`, by
+paths relative to this folder.
+
+The timesheet's header is page furniture, in the `@page` margin boxes of every page, as in the sample. A margin box
+holds no element, so the logo is generated content, and generated content shows an image at its own size (the
+400 x 400 pixel logo would be 300pt square; `width` and `height` on the margin box do not change it). The resolution in
+`image-set(url(…) 160dpcm)` gives the sample's 2.5 cm. The title follows the logo in the same box, after an em space;
+an image in a line sits on the baseline, so the title's baseline is at the logo's bottom edge, where the sample centres
+the title on the logo. A second margin box for the title would centre it vertically, but `@top-center` is centred on
+the page, which puts the title further right than the sample and leaves the right box too narrow for the customer's
+name.
+
+The yardstick invoice is a copy, not the sample: the sample shows diagnostics on purpose (`cursor`, `float`) and names
+its fonts without `@font-face`, so Chromium prints it in the container's fallback fonts. The copy loads Lato by
+`@font-face`; the repo has no fixed-width face, so the amounts use Lato too, right-aligned. The floated closing
+paragraph is a paragraph with `text-align: right`.
+
 ## The reference
 
 The reference is Chromium of the pinned version (Playwright 1.65.1, Chromium 159.0.8154.6) in the pinned Playwright
@@ -272,6 +320,8 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `f-mixed-lato`, `f-tiny`, `f-tiny-038` | Lato 11 pt with a 13 pt word and a 9 pt bold word on every line (40 lines); fifty lines of Lato at 0.37 and 0.38 pt, then a 12 pt line: Chromium prints none of the tiny text and gives its lines no height | `FontMetricRoundingTests` |
 | `f-theano-13-ab` | one line "Ab" in Theano Didot 13 pt, `line-height: normal` (page 200 × 100 pt, 10 pt margins, printed as 13 px): the line is 22 px (16.5 pt), from the OS/2 typographic metrics rounded (13 + 4 + 5 px), the baseline 2 + 13 px below the page area's top | `HalfLeadingTests` (`UnitTests.Extensions.Documents.Layout`) |
 | `f-length-three`, `f-length-nine`, `f-letter-length`, `f-letter-percent`, `f-letter-number`, `f-length-15004`, `f-number-1501`, `f-length-floor` | line heights given as a length, a percentage or a number (20 pt on page areas of 60 and 180 pt; 14.4 pt, 120 % and 1.2 at 12 pt on US Letter with 36 pt margins; 15.004 pt and 1.501 at 10 pt; 14.245 pt at 11 pt): Chromium keeps them in 1/64 px, a length or a percentage rounded, a number times the font size floored | `ChromiumLineHeightTests` (`UnitTests.Extensions.Documents.Fluent`) |
+| `tf-*` | footer groups (`tfoot`) through the HTML front-end (Lato 10.5 pt, collapsed borders): after the body, before it in the source, with a header group, two footer groups (the first is drawn last, the second in its place), an empty one, the invoice's shape (a 1.5 pt top border on the footer row, grey bottom borders); a table that breaks over four pages (page area 276 × 150 pt), where Chromium repeats the footer at the end of every page (`tf-pages`, listed), and the same with `break-inside: auto` on the footer, which Chromium does not repeat (`tf-pages-auto`) | `CaseStatusTests`, `HtmlListedDifferenceTests` (`UnitTests.Extensions.Documents.Html`) |
+| `tp-*` | percent columns (`col` of `width: <percentage>`) under `table-layout: fixed`, collapsed borders, through the HTML front-end (page area 276 pt, 368 px; Lato 10.5 pt): percentages that sum to 100 (the timesheet's 14.29, 17.14, 57.14, 11.43), to 50 and to 130 (scaled to fill the table), 33.3 / 33.3 / 33.4; beside a column without a width (keeps its percentage, the other takes the rest) and beside a 60 pt column (Chromium widens the length column to what the percentages leave: refused); a `col` of span 2 and a `colgroup` of span 2 at 25 % (each column 25 %; the column group's width is refused); a 3 pt table border (the percentages are of the width less the outer half borders); a table of width 240 pt (the same rule; refused for the table width). Read from the grid lines in `lines.txt` | `CaseStatusTests` (`UnitTests.Extensions.Documents.Html`) |
 | `mf4-line-*` | 3 pt lines (4 px, not snapped), Lato 12 pt, no padding; the page area ends at the centre of row 8's bottom line plus 0, 0.75, 1.5 or 2.25 pt | `TableBreakLineTests.A_row_that_fits_down_to_its_bottom_line_s_centre_stays_and_the_line_is_split_like_Chromium` |
 | `te-*` | the table's outer border where the lines along one edge differ (Lato 10.5 pt, two fixed columns in 200 pt, 1.5 pt lines, one 6 pt border in red): a wider left or right border in the first or in a later row (`te-left-first`, `te-left-later`, `te-right-first`, `te-right-later`, which also has a wider line between two columns), a wider top border over one cell of the first row (`te-top`), a wider bottom border under one cell of the last row (`te-bottom`), a 3 pt and a 0.75 pt border on the table itself (`te-table-border`), a wider left border on the second page (`te-break`). Chromium centres every row's outer line half of the widest line at that edge inside the table, on every page, and insets each cell by half of its own line; the wider line is painted inside the table's border box | `CollapsedCellInsetTests`; one status line each in `html-status.txt` (`CaseStatusTests`) |
 
