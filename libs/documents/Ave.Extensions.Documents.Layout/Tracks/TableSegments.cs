@@ -42,6 +42,10 @@ internal static class TableSegments
         public double RowsHeight(int first, int last) => Heights.Skip(first - FirstRow).Take(last - first + 1).Sum();
 
         public double Height => Heights.Sum();
+
+        /// <summary>The cells that go on below the slice of a piece in another cell of the segment, each with the height
+        /// it is lowered by (<see cref="CellsBesideSlices.Below"/>, <see cref="BelowSlices"/>); empty otherwise.</summary>
+        public ImmutableDictionary<int, double> BelowSlice { get; init; } = ImmutableDictionary<int, double>.Empty;
     }
 
     /// <summary>
@@ -86,7 +90,10 @@ internal static class TableSegments
             return Result<(BoxFragment, CellBreak, BreakAppeal, bool), Error>.Success((EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, null, true), BreakAppeal.Perfect, false));
         }
 
-        var inset = ReopenedInset(table, segment, cell) + (lineAbove ? LineAboveInside(table, segment, cell) : 0);
+        // A cell that goes on below a slice in another cell (BelowSlices) does not start the page: its content is lowered.
+        var belowSlice = segment.BelowSlice.GetValueOrDefault(cell.Cell);
+        startsPage &= belowSlice <= 0;
+        var inset = ReopenedInset(table, segment, cell) + (lineAbove ? LineAboveInside(table, segment, cell) : 0) + belowSlice;
         Result<LayoutResult, Error> LayOutIn(double height) =>
             table.Environment.Layout(box, new ConstraintSpace(width, Math.Max(0, height - inset), IsAtPageStart: startsPage || belowHeader, IsNewFormattingContext: true)
             {
@@ -219,9 +226,72 @@ internal static class TableSegments
                         LayoutErrors.InvalidContent(table.Grid.Cells[cell.Cell].Box, "a table cell cannot hold a forced page break."))))
             .OnSuccessMap(natural =>
             {
-                var fragments = natural.ToImmutableDictionary();
-                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments), Natural = fragments };
+                var measured = natural.ToImmutableDictionary();
+                var below = BelowSlices(table, cells, measured);
+                var fragments = measured.SetItems(below.Select(cell => KeyValuePair.Create(cell.Key, Lowered(measured[cell.Key], cell.Value))));
+                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments), Natural = fragments, BelowSlice = below };
             });
+    }
+
+    /// <summary>
+    /// Under <see cref="CellsBesideSlices.Below"/>, the cells that go on below the slice of a piece taller than the page
+    /// area in another cell, on a page that goes on with that piece: every cell that continues from the previous page with
+    /// content left and holds no such slice itself, lowered by the bottom of the lowest slice the continued cells start
+    /// with (measured with unlimited height, so it is all that is left of the piece; where that passes the page end, the
+    /// cell places nothing on this page and goes on below the next slice on the next). Chromium lays the piece out whole
+    /// on the page where it starts and starts what the row has left below it on the later pages (cases
+    /// <c>a4-image-beside-lines</c>, <c>a4-slice2-beside-lines</c>, <c>a4-slice-near-end-beside-lines</c>). Empty under
+    /// <see cref="CellsBesideSlices.GoOn"/>, and on a page where no continued cell goes on with a slice.
+    /// </summary>
+    private static ImmutableDictionary<int, double> BelowSlices(TableGeometry table, ImmutableArray<ActiveCell> cells, ImmutableDictionary<int, BoxFragment> natural)
+    {
+        if (table.Environment.Profile.CellsBesideSlices != CellsBesideSlices.Below)
+        {
+            return ImmutableDictionary<int, double>.Empty;
+        }
+
+        var continued = cells.Where(cell => cell.Token is not null && natural.ContainsKey(cell.Cell))
+            .Select(cell => (cell.Cell, Slice: ContinuedSliceBottom(natural[cell.Cell])))
+            .ToList();
+        var piece = continued.Select(cell => cell.Slice).DefaultIfEmpty(0).Max();
+        return piece <= 0
+            ? ImmutableDictionary<int, double>.Empty
+            : continued.Where(cell => cell.Slice <= 0).ToImmutableDictionary(cell => cell.Cell, _ => piece);
+    }
+
+    /// <summary>The bottom of the lowest later slice (<see cref="SliceFragment.IsContinuation"/>) in a fragment, from its
+    /// top; 0 when it holds none. Walks the fragment without recursion (fragments nest as deep as the input).</summary>
+    private static double ContinuedSliceBottom(Fragment fragment)
+    {
+        var bottom = 0.0;
+        var pending = new Stack<(Fragment Fragment, double Top)>();
+        pending.Push((fragment, 0));
+        while (pending.Count > 0)
+        {
+            var (current, top) = pending.Pop();
+            switch (current)
+            {
+                case SliceFragment { IsContinuation: true } slice:
+                    bottom = Math.Max(bottom, top + slice.Size.Height);
+                    break;
+                case BoxFragment box:
+                    foreach (var child in box.Children)
+                    {
+                        pending.Push((child.Fragment, top + child.Offset.Y));
+                    }
+
+                    break;
+                case LineFragment line:
+                    foreach (var child in line.Children)
+                    {
+                        pending.Push((child.Fragment, top + child.Offset.Y));
+                    }
+
+                    break;
+            }
+        }
+
+        return bottom;
     }
 
     /// <summary>The row heights of §17.5.3 for one segment: single-row cells first, then each spanning cell grows the

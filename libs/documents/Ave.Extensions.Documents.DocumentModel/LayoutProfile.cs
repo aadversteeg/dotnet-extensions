@@ -11,7 +11,8 @@ public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
-    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/> and <see cref="BodyClip.None"/>.</summary>
+    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/> and
+    /// <see cref="CellsBesideSlices.GoOn"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -42,6 +43,34 @@ public sealed record LayoutProfile
 
     /// <summary>Whether what a page's body draws past the body's area shows (<see cref="DocumentModel.BodyClip"/>).</summary>
     public BodyClip BodyClip { get; init; } = BodyClip.None;
+
+    /// <summary>Where the other cells of a table row go on, on the pages that go on with the slices of a piece in one of
+    /// its cells (<see cref="DocumentModel.CellsBesideSlices"/>).</summary>
+    public CellsBesideSlices CellsBesideSlices { get; init; } = CellsBesideSlices.GoOn;
+}
+
+/// <summary>
+/// Where the other cells of a table row go on, on a page that goes on with the next slice of a piece taller than the page
+/// area in one of its cells (<see cref="MonolithicOverflow.Slice"/>): beside the slice from the top of the page, or below
+/// it. Only a cell that continues from the previous page is concerned; a cell whose content ended there stays empty either
+/// way, and nothing changes on the page where the piece starts.
+/// </summary>
+public enum CellsBesideSlices
+{
+    /// <summary>The other cells go on from the top of the page, beside the slice, page by page: no page beside a slice is
+    /// left empty when a cell beside it has content left.</summary>
+    GoOn,
+
+    /// <summary>
+    /// The other cells go on below the slice the page shows, as Chromium prints it: Chromium lays the piece out whole on
+    /// the page where it starts, and a cell beside it that goes on starts each later page below what is left of the piece
+    /// there. A page wholly covered by a slice shows nothing of those cells; on the page of the last slice they go on right
+    /// below it, and where their next line does not fit there, at the top of the next page. Measured against Chromium's
+    /// print (<c>tools/reference/chromium</c>): a 408 pt image beside 30 lines (case <c>a4-image-beside-lines</c>), a
+    /// 228 pt image beside 30 lines (<c>a4-slice2-beside-lines</c>), a 348 pt image whose last slice ends 12 pt above the
+    /// page end beside 40 lines (<c>a4-slice-near-end-beside-lines</c>).
+    /// </summary>
+    Below,
 }
 
 /// <summary>
