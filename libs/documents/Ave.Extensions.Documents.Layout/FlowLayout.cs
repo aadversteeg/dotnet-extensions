@@ -336,9 +336,12 @@ public static class FlowLayout
                 // A child that keeps its break is compared at its kept appeal (BreakAvoidance.Kept, lowered by its own
                 // break-inside), as Chromium compares a box laid out again to its early break; a tie keeps the break
                 // inside, which places more. A box whose page ends inside such a child keeps the break too: Chromium follows
-                // such a break from the top, through every box around it (measured two boxes deep: i x0 a0 a1 | a2 z).
+                // such a break from the top, through every box around it (measured two boxes deep: i x0 a0 a1 | a2 z). A
+                // child that ends below its content (it or a box inside it broke before its bottom padding) makes this box
+                // end below its content as well (SlicedBox.Layout).
                 placed.Add(placement.Fragment);
-                return Broken(SlicedBox.Placed(placed.ToImmutable(), top + placement.Fragment.Fragment.Size.Height, new FlowBreakToken(index, continuation), appeal, keepsItsBreak: inside is null && placement.KeepsItsBreak, keptAppeal: kept));
+                return Broken(SlicedBox.Placed(placed.ToImmutable(), top + placement.Fragment.Fragment.Size.Height, new FlowBreakToken(index, continuation), appeal, keepsItsBreak: inside is null && placement.KeepsItsBreak, keptAppeal: kept,
+                    endsBelowContent: placement.EndsBelowContent));
             }
 
             if (inside is not null)
