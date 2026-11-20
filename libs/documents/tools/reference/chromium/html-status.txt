@@ -198,6 +198,10 @@ font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal
 fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value width: 50% at 3:58
+fr-continued-pad-past-33 open page 2 reads 'a11 a12 a13 a14 a15 a16 a17 a18 a19', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
+fr-continued-pad-past-33-next-row open page 2 reads 'a11 a12 a13 a14 a15 a16 a17 a18 a19', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
+fr-continued-pad-past-45 open page 2 reads 'a11 a12 a13 a14 a15 a16 a17 a18', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
+fr-continued-pad-past-60 open page 2 reads 'a11 a12 a13 a14 a15 a16 a17', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
 fr-cut-row-between-aligned-rows equal
 fr-cut-row-three-pages-bottom equal
 fr-cut-row-uncut-bottom-cell equal

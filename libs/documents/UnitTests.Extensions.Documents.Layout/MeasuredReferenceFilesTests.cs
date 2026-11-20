@@ -820,6 +820,22 @@ public class MeasuredReferenceFilesTests
         ["fr-cell-first-line-block-fits.lines.txt"] = 8,
         ["fr-cell-first-line-block-fits.print.txt"] = 13,
         ["fr-cell-first-line-block-fits.words.txt"] = 3,
+        ["fr-continued-pad-past-33-next-row.boxes.txt"] = 2,
+        ["fr-continued-pad-past-33-next-row.lines.txt"] = 11,
+        ["fr-continued-pad-past-33-next-row.print.txt"] = 38,
+        ["fr-continued-pad-past-33-next-row.words.txt"] = 24,
+        ["fr-continued-pad-past-33.boxes.txt"] = 1,
+        ["fr-continued-pad-past-33.lines.txt"] = 8,
+        ["fr-continued-pad-past-33.print.txt"] = 34,
+        ["fr-continued-pad-past-33.words.txt"] = 23,
+        ["fr-continued-pad-past-45.boxes.txt"] = 1,
+        ["fr-continued-pad-past-45.lines.txt"] = 8,
+        ["fr-continued-pad-past-45.print.txt"] = 34,
+        ["fr-continued-pad-past-45.words.txt"] = 23,
+        ["fr-continued-pad-past-60.boxes.txt"] = 1,
+        ["fr-continued-pad-past-60.lines.txt"] = 8,
+        ["fr-continued-pad-past-60.print.txt"] = 34,
+        ["fr-continued-pad-past-60.words.txt"] = 23,
         ["fr-cut-row-between-aligned-rows.boxes.txt"] = 6,
         ["fr-cut-row-between-aligned-rows.lines.txt"] = 20,
         ["fr-cut-row-between-aligned-rows.print.txt"] = 53,
@@ -2165,7 +2181,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(530);
+        cases.Should().HaveCount(534);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
