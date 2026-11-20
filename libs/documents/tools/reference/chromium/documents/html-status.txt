@@ -1,4 +1,4 @@
 invoice equal
 timesheet-normal equal
 timesheet-one-page equal
-timesheet-pages open box td '2026-09-01' height 39, Chromium 29.25 (boxes.txt)
+timesheet-pages equal

@@ -39,6 +39,12 @@ def drawings(page):
             yield drawing, clips[max(clips)] if clips else None
 
 
+def body_clip(page):
+    """The clip Chromium opens around the page's body: the box of the page's first clip outside any other (level 0),
+    or None where the page opens none."""
+    return next((tuple(drawing["scissor"]) for drawing in page.get_drawings(extended=True) if drawing["type"] == "clip" and drawing["level"] == 0), None)
+
+
 class _ImageClips(mupdf.FzDevice2):
     """A MuPDF device that keeps the stack of open clips while the page runs, and the rectangle it leaves for each image
     drawn, in drawing order. PyMuPDF's image list does not say which clip an image is under, and its drawing list holds no

@@ -40,8 +40,11 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `<case>.pdf`: Chromium's print of the case (`preferCSSPageSize`, so the case's `@page` rule sets the page);
 - `<case>.words.txt`: every word as `page xMin yMin xMax yMax text`, in points, origin top left (`pdftotext -bbox`);
 - `<case>.boxes.txt`: width and height in points of every table cell, every element with an id and every grid item,
-  with print media, measured in the browser window after the print (1 CSS px = 0.75 pt): one layout without page
-  breaks, so a box the print cuts over pages has its whole height here;
+  with print media, measured in a browser window as wide as the print's page area (1 CSS px = 0.75 pt; see "Box
+  sizes"): one layout without page breaks, so a box the print cuts over pages has its whole height here;
+- `<case>.area`: the width in points of each page's page area, as `page width` (`page none` for a page whose body
+  draws nothing), read from the print (`area.py`, PyMuPDF): the window width of `boxes.txt`. Not a measured file:
+  `measured/` does not keep it;
 - `<case>.lines.txt`: every filled rectangle as `page x0 y0 x1 y1 height`, in points, origin top left
   (`rectangles.py`, PyMuPDF): the pieces of the grid lines, each the part the print shows (see "Print positions");
 - `<case>.print.txt`: where the print put things, page by page, read from the PDF alone (`positions.py`, PyMuPDF; see
@@ -66,6 +69,22 @@ seven cases in Liberation Serif, and their prints were committed so: `a4-cell-im
 `a4-cell-pad3-line-177` and the four `a6-header-quarter-*`, since measured again). So `measure.mjs` lays the case out,
 waits for `document.fonts.ready` and stops when a font face of the case failed to load. A copy of the tool needs the
 family's `assets/fonts` four folders above `cases/`.
+
+## Box sizes
+
+`boxes.txt` is measured after the print, in a second layout: the browser window, with print media. A window lays the
+document out without page breaks, so a box has one size there, the size it has before the print cuts it. That window
+is as wide as the print's page area, so a box is as wide as in the print and a height that depends on the width (text
+that wraps onto another line) is the print's too. The width is a fact of the print, not of the CSS: Chromium draws
+each page's body under one clip, the page area at its own size (see "Print positions"), and `area.py` writes the width
+of that clip on every page (`visible.body_clip`: the page's first clip outside any other). Chromium lays a page out in
+the page area rounded up to a whole CSS pixel (a 280 pt page area, 373.33 px, is laid out 374 px wide), so the window is
+the clip's width rounded up to a whole pixel; the clip's box is up to 0.012 pt wider than the page area (a 300 pt page
+area, case `pm-len-body`, is clipped 300.012 pt wide), so 0.05 px is taken off before rounding up. A page whose body
+draws nothing opens no clip (the empty page a forced break leaves, case `a1-after-forced-break`; page 1 of
+`a1-header-row`, which holds only an empty block's margin): it gives no width, and the other pages give it. Page areas
+of different widths give no one window width: the boxes step stops with an error naming the case, and so it does for a
+print that draws nothing on any page but has boxes to measure (`h-root-display-none` has none).
 
 ## Print positions
 

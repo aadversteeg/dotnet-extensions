@@ -520,9 +520,10 @@ internal static class HtmlCases
     /// <summary>
     /// The first difference between the engine's boxes and the sizes measured in the page (<c>boxes.txt</c>: <c>tag width
     /// height label</c>, the label the element's id where it has one): the height of the box of the element, within
-    /// <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>). The width is not compared:
-    /// <c>measure.mjs</c> measures the boxes in the browser window (1280 px wide) with print media, not in the printed
-    /// page, so a block is as wide as the window (960 pt in <c>fr-empty-span</c>, whose page is 300 pt wide).
+    /// <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>); the width is not compared.
+    /// <c>measure.mjs</c> measures the boxes with print media in a browser window as wide as the print's page area, the
+    /// width of the clip around each page's body rounded up to a whole pixel (README of <c>tools/reference/chromium</c>,
+    /// "Box sizes"), so a height that depends on the width, text that wraps, is the print's.
     /// <para>What is compared with what. The window is one layout without page breaks, so the file holds one height per
     /// element, the whole box (case <c>a2-row-end</c>: a cell of 22 lines, 330.75 pt, over two pages). A box the engine
     /// prints in one part is compared on every page it is on: that part, and each copy of it in a header row a table
