@@ -48,8 +48,14 @@ a2-row-end-first-row-half-top equal
 a2-row-end-nested-under-header equal
 a2-row-end-nested-under-header-13875 open page 2 reads 'x0 x1 x2 x3 x4 x5 x6 x7 x8 x9', Chromium 'H x0 x1 x2 x3 x4 x5 x6 x7' (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
+a2-row-end-pad-past open 2 pages, Chromium 3 (print.txt)
+a2-row-end-pad-past-after open 2 pages, Chromium 3 (print.txt)
 a2-row-end-span equal
 a2-row-end-span-after equal
+a2-row-end-thick-less equal
+a2-row-end-thick-less-after open page 2 'z' baseline 22.5 (laid out at 22.5), Chromium 24.75 (print.txt)
+a2-row-end-thick-more refused Documents.Layout.DoesNotFit 150 at 8
+a2-row-end-thick-more-after refused Documents.Layout.DoesNotFit 150 at 8
 a2-rowspan-blocks equal
 a2-split-line-1px equal
 a3-mirror equal
