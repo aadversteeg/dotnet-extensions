@@ -102,13 +102,16 @@ other side is empty; a box alone takes the whole row; where all widths are zero,
 each stands for (Chromium 159: two empty side boxes half each, an empty centre box beside an empty side box a third). The
 row is only the content of a header or footer area with a fixed height, and each box is as tall as that height less its
 own margins, its content placed by `vertical-align` (`ModelCheck` refuses a row anywhere else, a child without a place and
-two at one place: `Documents.Input.Invalid.MarginBoxes`). Content wider or taller than its box is refused at the box
-(`Documents.Layout.MarginBoxOverflow`), also when not even the min-content widths fit the row; Chromium draws it
-unclipped over the neighbouring box, the body or past the sheet — a known limit, pinned by `MarginBoxesLayoutTests`
-(at 12 pt "Left" beside a word wider than the row: Chromium shrinks "Left" to 15.0 pt and draws both words over their
-boxes; seven preserved lines in a 60 pt box run over the body). Checked against the measured edges of Chromium's
+two at one place: `Documents.Input.Invalid.MarginBoxes`). Content taller than its box is drawn as Chromium draws it:
+the box keeps its height and the body does not move, the content starts at the top of the box's content box under every
+vertical alignment and runs on unclipped over the box's border, the body or past the sheet; the header area is painted
+before the body, so the body lies over it, as in Chromium (cases `pm-tall-*`). Content wider than its box is refused at
+the box (`Documents.Layout.MarginBoxOverflow`), also when not even the min-content widths fit the row, and so is a box
+whose own margins, padding and border are taller than the row; Chromium draws wider content unclipped over the
+neighbouring box or past the sheet — a known limit, pinned by `MarginBoxesLayoutTests` (at 12 pt "Left" beside a word
+wider than the row: Chromium shrinks "Left" to 15.0 pt and draws both words over their boxes; case `pm-overflow`). Checked against the measured edges of Chromium's
 rectangles at whole pixels: one edge is not reproduced ("Eeeeeee Eeeeeee" beside "Dd": 306.75 pt in Chromium, 307.13 pt
-here, which paints at 307.5), because Chromium computes the widths in 1/64 px.
+here, which paints at 307.5); the widths computed in 1/64 px would give Chromium's pixel there, which is not built.
 
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
@@ -712,7 +715,11 @@ the declarations that reach the page-margin boxes and the margin rules are the p
 included, cases `pm-inherit` and `pm-inherit-family`); any other declaration, an invalid value and the size and margins of
 `@page :first` are refused (`PageRule`). A generated margin box gives every page a header area as high as the top margin
 and a footer area as high as the bottom one, each a row of the margin-boxes algorithm that starts where Chromium starts
-it, the left margin cut to 1/64 px (`PageArea.StartInMargin`; cases `pm-*`); the model's top and bottom margins are then 0. Box generation makes
+it, at the smaller of the left margin cut to 1/64 px and the page area's start (`PageArea.StartInMargin`; cases `pm-*`,
+`pm-start-25mm`, `pm-start-12pt`); the model's top and bottom margins are then 0. An image in a margin box's `content`
+(`url()`, or `image-set()` of one URL and its resolution) is an image box among the runs of its line, as an `img` in a
+line of text is, at its natural size divided by the resolution, its URL resolved against the style sheet that holds the
+`content` declaration (CSS Values 4 §4.5.1; cases `pm-image-*`). Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
 leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4

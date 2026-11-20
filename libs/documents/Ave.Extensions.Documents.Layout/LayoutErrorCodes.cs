@@ -37,11 +37,12 @@ public static class LayoutErrorCodes
     /// SourceLine of the first page-count reference.</summary>
     public static readonly ErrorCode NotConverging = _ / "NotConverging";
 
-    /// <summary>Content wider or taller than the page-margin box it is in (<c>MarginBoxesLayout</c>): text whose narrowest
-    /// line is wider than the width the row gives the box, also when not even the min-content widths of the row's boxes
-    /// fit the row, or content taller than the row less the box's margins. Chromium 159 lets such content overflow its box
-    /// unclipped; the engine refuses it. Metadata: Node, Property (<c>width</c> or <c>height</c>), Value (needed and
-    /// available, in points), SourceFile, SourceLine of the box.</summary>
+    /// <summary>Content wider than the page-margin box it is in (<c>MarginBoxesLayout</c>): text whose narrowest line is
+    /// wider than the width the row gives the box, also when not even the min-content widths of the row's boxes fit the
+    /// row; or a box whose own margins, padding and border are taller than the row. Chromium 159 lets such content
+    /// overflow its box unclipped; the engine refuses it. Content taller than its box is drawn, as Chromium draws it.
+    /// Metadata: Node, Property (<c>width</c> or <c>height</c>), Value (needed and available, in points), SourceFile,
+    /// SourceLine of the box.</summary>
     public static readonly ErrorCode MarginBoxOverflow = _ / "MarginBoxOverflow";
 
     /// <summary>A break token a layout algorithm cannot have returned for the box it is given: a token of another
