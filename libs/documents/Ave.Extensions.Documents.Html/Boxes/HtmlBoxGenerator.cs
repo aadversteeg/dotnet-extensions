@@ -59,6 +59,8 @@ public static partial class HtmlBoxGenerator
         MonolithicOverflow = MonolithicOverflow.Slice,
         EmptyRowParts = EmptyRowParts.Allow,
         FontMetricRounding = FontMetricRounding.WholePixels,
+        SplitLineHalves = SplitLineHalves.AtLeastOnePixel,
+        TableEndOverflow = TableEndOverflow.ContinuesOnNextPage,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>
@@ -704,8 +706,9 @@ public static partial class HtmlBoxGenerator
 
         private PageStyle Page()
         {
-            var page = new PageRules(_sourceName, Refusals);
-            return page.Apply(styled.PageRules, styled.Page);
+            var rules = new PageRules(_sourceName, Refusals);
+            var page = rules.Apply(styled.PageRules, styled.Page);
+            return WithMarginBoxes(page, rules.RowStart);
         }
     }
 }

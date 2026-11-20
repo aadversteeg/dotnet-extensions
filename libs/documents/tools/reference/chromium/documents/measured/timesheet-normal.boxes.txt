@@ -1,0 +1,153 @@
+td 492.281 32.496 Jansen & Zn. Installatie
+td 467.719 32.496 SmallBusiness onderhoudP
+th 136.969 15.750 Uitgevoerd op
+th 164.285 15.750 Taak
+th 547.688 15.750 Titel
+th 109.559 15.750 Duur (uur)
+td 136.969 15.750 2026-10-01
+td 164.285 15.750 Beheer
+td 547.688 15.750 Migratie naar Aspire 13.
+td 109.559 15.750 1,00
+td 136.969 29.250 2026-10-01
+td 164.285 15.750 Analyse
+td 547.688 15.750 Datamodel facturatie (fa
+td 109.559 29.250 3,50
+td 711.973 13.500 Inclusief unit tests en 
+td 136.969 29.250 2026-10-02
+td 164.285 15.750 Overleg
+td 547.688 15.750 Code review PR #128 & #1
+td 109.559 29.250 1,75
+td 711.973 13.500 Afgestemd met de product
+td 136.969 29.250 2026-10-05
+td 164.285 15.750 Overleg
+td 547.688 15.750 Logging naar OTLP-collec
+td 109.559 29.250 1,00
+td 711.973 13.500 Café-overleg met Zoë en 
+td 136.969 29.250 2026-10-06
+td 164.285 15.750 Ontwikkeling
+td 547.688 15.750 Logging naar OTLP-collec
+td 109.559 29.250 3,00
+td 711.973 13.500 Café-overleg met Zoë en 
+td 136.969 29.250 2026-10-06
+td 164.285 15.750 Beheer
+td 547.688 15.750 Performance-analyse rapp
+td 109.559 29.250 1,00
+td 711.973 13.500 Café-overleg met Zoë en 
+td 136.969 29.250 2026-10-07
+td 164.285 15.750 Ontwikkeling
+td 547.688 15.750 Back-up en restore test
+td 109.559 29.250 2,75
+td 711.973 13.500 Afgestemd met de product
+td 136.969 15.750 2026-10-08
+td 164.285 15.750 Ontwikkeling
+td 547.688 15.750 Refinement sprint 42
+td 109.559 15.750 0,75
+td 136.969 29.250 2026-10-08
+td 164.285 15.750 Analyse
+td 547.688 15.750 Migratie naar Aspire 13.
+td 109.559 29.250 3,50
+td 711.973 13.500 Inclusief unit tests en 
+td 136.969 15.750 2026-10-09
+td 164.285 15.750 Beheer
+td 547.688 15.750 API endpoint voor weekov
+td 109.559 15.750 2,50
+td 136.969 29.250 2026-10-09
+td 164.285 15.750 Beheer
+td 547.688 15.750 Performance-analyse rapp
+td 109.559 29.250 1,00
+td 711.973 13.500 Afgestemd met de product
+td 136.969 15.750 2026-10-12
+td 164.285 15.750 Review
+td 547.688 15.750 Migratie naar Aspire 13.
+td 109.559 15.750 0,50
+td 136.969 29.250 2026-10-13
+td 164.285 15.750 Beheer
+td 547.688 15.750 Overleg met Jansen & Zn.
+td 109.559 29.250 2,00
+td 711.973 13.500 Inclusief unit tests en 
+td 136.969 15.750 2026-10-14
+td 164.285 15.750 Ontwikkeling
+td 547.688 15.750 API endpoint voor weekov
+td 109.559 15.750 3,00
+td 136.969 29.250 2026-10-14
+td 164.285 15.750 Overleg
+td 547.688 15.750 Documentatie *deploy* pr
+td 109.559 29.250 2,25
+td 711.973 13.500 Café-overleg met Zoë en 
+td 136.969 15.750 2026-10-15
+td 164.285 15.750 Overleg
+td 547.688 15.750 Refinement sprint 42
+td 109.559 15.750 3,75
+td 136.969 15.750 2026-10-16
+td 164.285 15.750 Beheer
+td 547.688 15.750 Documentatie *deploy* pr
+td 109.559 15.750 3,00
+td 136.969 29.250 2026-10-19
+td 164.285 15.750 Review
+td 547.688 15.750 Code review PR #128 & #1
+td 109.559 29.250 1,00
+td 711.973 13.500 Café-overleg met Zoë en 
+td 136.969 29.250 2026-10-19
+td 164.285 15.750 Review
+td 547.688 15.750 Code review PR #128 & #1
+td 109.559 29.250 1,00
+td 711.973 13.500 Afgestemd met de product
+td 136.969 29.250 2026-10-20
+td 164.285 15.750 Documentatie
+td 547.688 15.750 Datamodel facturatie (fa
+td 109.559 29.250 3,75
+td 711.973 13.500 Afgestemd met de product
+td 136.969 15.750 2026-10-21
+td 164.285 15.750 Documentatie
+td 547.688 15.750 Logging naar OTLP-collec
+td 109.559 15.750 3,00
+td 136.969 15.750 2026-10-21
+td 164.285 15.750 Ontwikkeling
+td 547.688 15.750 Documentatie *deploy* pr
+td 109.559 15.750 1,00
+td 136.969 15.750 2026-10-22
+td 164.285 15.750 Overleg
+td 547.688 15.750 Logging naar OTLP-collec
+td 109.559 15.750 0,75
+td 136.969 15.750 2026-10-23
+td 164.285 15.750 Analyse
+td 547.688 15.750 Code review PR #128 & #1
+td 109.559 15.750 3,75
+td 136.969 15.750 2026-10-26
+td 164.285 15.750 Documentatie
+td 547.688 15.750 Back-up en restore test
+td 109.559 15.750 1,25
+td 136.969 15.750 2026-10-27
+td 164.285 15.750 Beheer
+td 547.688 15.750 Logging naar OTLP-collec
+td 109.559 15.750 3,00
+td 136.969 15.750 2026-10-27
+td 164.285 15.750 Ontwikkeling
+td 547.688 15.750 Refinement sprint 42
+td 109.559 15.750 1,25
+td 136.969 29.250 2026-10-28
+td 164.285 15.750 Documentatie
+td 547.688 15.750 Refinement sprint 42
+td 109.559 29.250 1,00
+td 711.973 13.500 Inclusief unit tests en 
+td 136.969 29.250 2026-10-28
+td 164.285 15.750 Review
+td 547.688 15.750 Logging naar OTLP-collec
+td 109.559 29.250 0,75
+td 711.973 13.500 Afgestemd met de product
+td 136.969 29.250 2026-10-29
+td 164.285 15.750 Overleg
+td 547.688 15.750 Overleg met Jansen & Zn.
+td 109.559 29.250 4,00
+td 711.973 13.500 Café-overleg met Zoë en 
+td 136.969 29.250 2026-10-30
+td 164.285 15.750 Ontwikkeling
+td 547.688 15.750 Back-up en restore test
+td 109.559 29.250 0,50
+td 711.973 13.500 Café-overleg met Zoë en 
+td 136.969 16.125 2026-10-30
+td 164.285 16.125 Review
+td 547.688 16.125 Prijsberekening 50% kort
+td 109.559 16.125 2,25
+th 848.941 23.484 Totaal:
+td 109.559 23.484 64,50

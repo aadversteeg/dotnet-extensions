@@ -39,7 +39,7 @@ page 1 size=595.276x841.89
       box #17 table-head at (0.75, 0.5) size=537.083x16
         box #18 table-row at (0, 0) size=537.083x16
           box #19 table-header-cell at (0, 0) size=76.726x16
-            box #20 paragraph at (2.75, 2) size=71.476x12
+            box #20 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=63.325x12
                 text #21 Lato-Bold 10pt at (0, 0) size=63.325x12 ascent=9.87 "Uitgevoerd op"
           box #22 table-header-cell at (76.726, 0) size=92.071x16
@@ -47,17 +47,17 @@ page 1 size=595.276x841.89
               line at (0, 0) size=20.39x12
                 text #24 Lato-Bold 10pt at (0, 0) size=20.39x12 ascent=9.87 "Taak"
           box #25 table-header-cell at (168.797, 0) size=306.904x16
-            box #26 paragraph at (2.5, 2) size=301.654x12
+            box #26 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=20x12
                 text #27 Lato-Bold 10pt at (0, 0) size=20x12 ascent=9.87 "Titel"
           box #28 table-header-cell at (475.702, 0) size=61.381x16
-            box #29 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #30 Lato-Bold 10pt at (11.031, 0) size=44.85x12 ascent=9.87 "Duur (uur)"
+            box #29 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #30 Lato-Bold 10pt at (11.531, 0) size=44.85x12 ascent=9.87 "Duur (uur)"
       box #31 table-body at (0.75, 16.5) size=537.083x16
         box #32 table-row at (0, 0) size=537.083x16
           box #33 table-cell at (0, 0) size=76.726x16
-            box #34 paragraph at (2.75, 2) size=71.476x12
+            box #34 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #35 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-01"
           box #36 table-cell at (76.726, 0) size=92.071x16
@@ -65,17 +65,17 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.45x12
                 text #38 Lato-Regular 10pt at (0, 0) size=31.45x12 ascent=9.87 "Beheer"
           box #39 table-cell at (168.797, 0) size=306.904x16
-            box #40 paragraph at (2.5, 2) size=301.654x12
+            box #40 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=110.59x12
                 text #41 Lato-Regular 10pt at (0, 0) size=110.59x12 ascent=9.87 "Migratie naar Aspire 13.6"
           box #42 table-cell at (475.702, 0) size=61.381x16
-            box #43 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #44 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #43 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #44 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
       box #45 table-body at (0.75, 32.5) size=537.083x29.6
         box #46 table-row at (0, 0) size=537.083x16
           box #47 table-cell at (0, 0) size=76.726x29.6
-            box #48 paragraph at (2.75, 2) size=71.476x12
+            box #48 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #49 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-01"
           box #50 table-cell at (76.726, 0) size=92.071x16
@@ -83,22 +83,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.335x12
                 text #52 Lato-Regular 10pt at (0, 0) size=34.335x12 ascent=9.87 "Analyse"
           box #53 table-cell at (168.797, 0) size=306.904x16
-            box #54 paragraph at (2.5, 2) size=301.654x12
+            box #54 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=127.065x12
                 text #55 Lato-Regular 10pt at (0, 0) size=127.065x12 ascent=9.87 "Datamodel facturatie (fase 2)"
           box #56 table-cell at (475.702, 0) size=61.381x29.6
-            box #57 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #58 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,50"
+            box #57 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #58 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,50"
         box #59 table-row at (0, 16) size=537.083x13.6
           box #60 table-cell at (76.726, 0) size=398.976x13.6
-            box #61 paragraph at (2.5, 2) size=393.726x9.6
+            box #61 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=340.492x9.6
                 text #62 Lato-Italic 8pt at (0, 0) size=340.492x9.6 ascent=7.896 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
       box #63 table-body at (0.75, 62.1) size=537.083x29.6
         box #64 table-row at (0, 0) size=537.083x16
           box #65 table-cell at (0, 0) size=76.726x29.6
-            box #66 paragraph at (2.75, 2) size=71.476x12
+            box #66 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #67 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-02"
           box #68 table-cell at (76.726, 0) size=92.071x16
@@ -106,22 +106,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.765x12
                 text #70 Lato-Regular 10pt at (0, 0) size=34.765x12 ascent=9.87 "Overleg"
           box #71 table-cell at (168.797, 0) size=306.904x16
-            box #72 paragraph at (2.5, 2) size=301.654x12
+            box #72 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=130.765x12
                 text #73 Lato-Regular 10pt at (0, 0) size=130.765x12 ascent=9.87 "Code review PR #128 & #131"
           box #74 table-cell at (475.702, 0) size=61.381x29.6
-            box #75 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #76 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,75"
+            box #75 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #76 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,75"
         box #77 table-row at (0, 16) size=537.083x13.6
           box #78 table-cell at (76.726, 0) size=398.976x13.6
-            box #79 paragraph at (2.5, 2) size=393.726x9.6
+            box #79 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=190.048x9.6
                 text #80 Lato-Italic 8pt at (0, 0) size=190.048x9.6 ascent=7.896 "Afgestemd met de product owner; vervolgactie ingepland."
       box #81 table-body at (0.75, 91.7) size=537.083x29.6
         box #82 table-row at (0, 0) size=537.083x16
           box #83 table-cell at (0, 0) size=76.726x29.6
-            box #84 paragraph at (2.75, 2) size=71.476x12
+            box #84 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #85 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-05"
           box #86 table-cell at (76.726, 0) size=92.071x16
@@ -129,22 +129,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.765x12
                 text #88 Lato-Regular 10pt at (0, 0) size=34.765x12 ascent=9.87 "Overleg"
           box #89 table-cell at (168.797, 0) size=306.904x16
-            box #90 paragraph at (2.5, 2) size=301.654x12
+            box #90 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=124.26x12
                 text #91 Lato-Regular 10pt at (0, 0) size=124.26x12 ascent=9.87 "Logging naar OTLP-collector"
           box #92 table-cell at (475.702, 0) size=61.381x29.6
-            box #93 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #94 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #93 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #94 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
         box #95 table-row at (0, 16) size=537.083x13.6
           box #96 table-cell at (76.726, 0) size=398.976x13.6
-            box #97 paragraph at (2.5, 2) size=393.726x9.6
+            box #97 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=346.56x9.6
                 text #98 Lato-Italic 8pt at (0, 0) size=346.56x9.6 ascent=7.896 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
       box #99 table-body at (0.75, 121.3) size=537.083x29.6
         box #100 table-row at (0, 0) size=537.083x16
           box #101 table-cell at (0, 0) size=76.726x29.6
-            box #102 paragraph at (2.75, 2) size=71.476x12
+            box #102 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #103 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-06"
           box #104 table-cell at (76.726, 0) size=92.071x16
@@ -152,22 +152,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=57.95x12
                 text #106 Lato-Regular 10pt at (0, 0) size=57.95x12 ascent=9.87 "Ontwikkeling"
           box #107 table-cell at (168.797, 0) size=306.904x16
-            box #108 paragraph at (2.5, 2) size=301.654x12
+            box #108 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=124.26x12
                 text #109 Lato-Regular 10pt at (0, 0) size=124.26x12 ascent=9.87 "Logging naar OTLP-collector"
           box #110 table-cell at (475.702, 0) size=61.381x29.6
-            box #111 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #112 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,00"
+            box #111 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #112 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,00"
         box #113 table-row at (0, 16) size=537.083x13.6
           box #114 table-cell at (76.726, 0) size=398.976x13.6
-            box #115 paragraph at (2.5, 2) size=393.726x9.6
+            box #115 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=346.56x9.6
                 text #116 Lato-Italic 8pt at (0, 0) size=346.56x9.6 ascent=7.896 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
       box #117 table-body at (0.75, 150.9) size=537.083x29.6
         box #118 table-row at (0, 0) size=537.083x16
           box #119 table-cell at (0, 0) size=76.726x29.6
-            box #120 paragraph at (2.75, 2) size=71.476x12
+            box #120 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #121 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-06"
           box #122 table-cell at (76.726, 0) size=92.071x16
@@ -175,22 +175,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.45x12
                 text #124 Lato-Regular 10pt at (0, 0) size=31.45x12 ascent=9.87 "Beheer"
           box #125 table-cell at (168.797, 0) size=306.904x16
-            box #126 paragraph at (2.5, 2) size=301.654x12
+            box #126 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=142.885x12
                 text #127 Lato-Regular 10pt at (0, 0) size=142.885x12 ascent=9.87 "Performance-analyse rapportage"
           box #128 table-cell at (475.702, 0) size=61.381x29.6
-            box #129 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #130 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #129 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #130 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
         box #131 table-row at (0, 16) size=537.083x13.6
           box #132 table-cell at (76.726, 0) size=398.976x13.6
-            box #133 paragraph at (2.5, 2) size=393.726x9.6
+            box #133 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=346.56x9.6
                 text #134 Lato-Italic 8pt at (0, 0) size=346.56x9.6 ascent=7.896 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
       box #135 table-body at (0.75, 180.5) size=537.083x29.6
         box #136 table-row at (0, 0) size=537.083x16
           box #137 table-cell at (0, 0) size=76.726x29.6
-            box #138 paragraph at (2.75, 2) size=71.476x12
+            box #138 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #139 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-07"
           box #140 table-cell at (76.726, 0) size=92.071x16
@@ -198,22 +198,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=57.95x12
                 text #142 Lato-Regular 10pt at (0, 0) size=57.95x12 ascent=9.87 "Ontwikkeling"
           box #143 table-cell at (168.797, 0) size=306.904x16
-            box #144 paragraph at (2.5, 2) size=301.654x12
+            box #144 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=102.16x12
                 text #145 Lato-Regular 10pt at (0, 0) size=102.16x12 ascent=9.87 "Back-up en restore test"
           box #146 table-cell at (475.702, 0) size=61.381x29.6
-            box #147 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #148 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "2,75"
+            box #147 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #148 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "2,75"
         box #149 table-row at (0, 16) size=537.083x13.6
           box #150 table-cell at (76.726, 0) size=398.976x13.6
-            box #151 paragraph at (2.5, 2) size=393.726x9.6
+            box #151 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=190.048x9.6
                 text #152 Lato-Italic 8pt at (0, 0) size=190.048x9.6 ascent=7.896 "Afgestemd met de product owner; vervolgactie ingepland."
       box #153 table-body at (0.75, 210.1) size=537.083x16
         box #154 table-row at (0, 0) size=537.083x16
           box #155 table-cell at (0, 0) size=76.726x16
-            box #156 paragraph at (2.75, 2) size=71.476x12
+            box #156 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #157 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-08"
           box #158 table-cell at (76.726, 0) size=92.071x16
@@ -221,17 +221,17 @@ page 1 size=595.276x841.89
               line at (0, 0) size=57.95x12
                 text #160 Lato-Regular 10pt at (0, 0) size=57.95x12 ascent=9.87 "Ontwikkeling"
           box #161 table-cell at (168.797, 0) size=306.904x16
-            box #162 paragraph at (2.5, 2) size=301.654x12
+            box #162 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=92.145x12
                 text #163 Lato-Regular 10pt at (0, 0) size=92.145x12 ascent=9.87 "Refinement sprint 42"
           box #164 table-cell at (475.702, 0) size=61.381x16
-            box #165 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #166 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "0,75"
+            box #165 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #166 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "0,75"
       box #167 table-body at (0.75, 226.1) size=537.083x29.6
         box #168 table-row at (0, 0) size=537.083x16
           box #169 table-cell at (0, 0) size=76.726x29.6
-            box #170 paragraph at (2.75, 2) size=71.476x12
+            box #170 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #171 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-08"
           box #172 table-cell at (76.726, 0) size=92.071x16
@@ -239,22 +239,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.335x12
                 text #174 Lato-Regular 10pt at (0, 0) size=34.335x12 ascent=9.87 "Analyse"
           box #175 table-cell at (168.797, 0) size=306.904x16
-            box #176 paragraph at (2.5, 2) size=301.654x12
+            box #176 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=110.59x12
                 text #177 Lato-Regular 10pt at (0, 0) size=110.59x12 ascent=9.87 "Migratie naar Aspire 13.6"
           box #178 table-cell at (475.702, 0) size=61.381x29.6
-            box #179 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #180 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,50"
+            box #179 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #180 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,50"
         box #181 table-row at (0, 16) size=537.083x13.6
           box #182 table-cell at (76.726, 0) size=398.976x13.6
-            box #183 paragraph at (2.5, 2) size=393.726x9.6
+            box #183 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=340.492x9.6
                 text #184 Lato-Italic 8pt at (0, 0) size=340.492x9.6 ascent=7.896 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
       box #185 table-body at (0.75, 255.7) size=537.083x16
         box #186 table-row at (0, 0) size=537.083x16
           box #187 table-cell at (0, 0) size=76.726x16
-            box #188 paragraph at (2.75, 2) size=71.476x12
+            box #188 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #189 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-09"
           box #190 table-cell at (76.726, 0) size=92.071x16
@@ -262,17 +262,17 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.45x12
                 text #192 Lato-Regular 10pt at (0, 0) size=31.45x12 ascent=9.87 "Beheer"
           box #193 table-cell at (168.797, 0) size=306.904x16
-            box #194 paragraph at (2.5, 2) size=301.654x12
+            box #194 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=145.23x12
                 text #195 Lato-Regular 10pt at (0, 0) size=145.23x12 ascent=9.87 "API endpoint voor weekoverzicht"
           box #196 table-cell at (475.702, 0) size=61.381x16
-            box #197 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #198 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "2,50"
+            box #197 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #198 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "2,50"
       box #199 table-body at (0.75, 271.7) size=537.083x29.6
         box #200 table-row at (0, 0) size=537.083x16
           box #201 table-cell at (0, 0) size=76.726x29.6
-            box #202 paragraph at (2.75, 2) size=71.476x12
+            box #202 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #203 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-09"
           box #204 table-cell at (76.726, 0) size=92.071x16
@@ -280,22 +280,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.45x12
                 text #206 Lato-Regular 10pt at (0, 0) size=31.45x12 ascent=9.87 "Beheer"
           box #207 table-cell at (168.797, 0) size=306.904x16
-            box #208 paragraph at (2.5, 2) size=301.654x12
+            box #208 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=142.885x12
                 text #209 Lato-Regular 10pt at (0, 0) size=142.885x12 ascent=9.87 "Performance-analyse rapportage"
           box #210 table-cell at (475.702, 0) size=61.381x29.6
-            box #211 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #212 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #211 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #212 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
         box #213 table-row at (0, 16) size=537.083x13.6
           box #214 table-cell at (76.726, 0) size=398.976x13.6
-            box #215 paragraph at (2.5, 2) size=393.726x9.6
+            box #215 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=190.048x9.6
                 text #216 Lato-Italic 8pt at (0, 0) size=190.048x9.6 ascent=7.896 "Afgestemd met de product owner; vervolgactie ingepland."
       box #217 table-body at (0.75, 301.3) size=537.083x16
         box #218 table-row at (0, 0) size=537.083x16
           box #219 table-cell at (0, 0) size=76.726x16
-            box #220 paragraph at (2.75, 2) size=71.476x12
+            box #220 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #221 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-12"
           box #222 table-cell at (76.726, 0) size=92.071x16
@@ -303,17 +303,17 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.755x12
                 text #224 Lato-Regular 10pt at (0, 0) size=31.755x12 ascent=9.87 "Review"
           box #225 table-cell at (168.797, 0) size=306.904x16
-            box #226 paragraph at (2.5, 2) size=301.654x12
+            box #226 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=110.59x12
                 text #227 Lato-Regular 10pt at (0, 0) size=110.59x12 ascent=9.87 "Migratie naar Aspire 13.6"
           box #228 table-cell at (475.702, 0) size=61.381x16
-            box #229 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #230 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "0,50"
+            box #229 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #230 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "0,50"
       box #231 table-body at (0.75, 317.3) size=537.083x29.6
         box #232 table-row at (0, 0) size=537.083x16
           box #233 table-cell at (0, 0) size=76.726x29.6
-            box #234 paragraph at (2.75, 2) size=71.476x12
+            box #234 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #235 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-13"
           box #236 table-cell at (76.726, 0) size=92.071x16
@@ -321,22 +321,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.45x12
                 text #238 Lato-Regular 10pt at (0, 0) size=31.45x12 ascent=9.87 "Beheer"
           box #239 table-cell at (168.797, 0) size=306.904x16
-            box #240 paragraph at (2.5, 2) size=301.654x12
+            box #240 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=187.795x12
                 text #241 Lato-Regular 10pt at (0, 0) size=187.795x12 ascent=9.87 "Overleg met Jansen & Zn. over factuurflow"
           box #242 table-cell at (475.702, 0) size=61.381x29.6
-            box #243 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #244 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "2,00"
+            box #243 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #244 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "2,00"
         box #245 table-row at (0, 16) size=537.083x13.6
           box #246 table-cell at (76.726, 0) size=398.976x13.6
-            box #247 paragraph at (2.5, 2) size=393.726x9.6
+            box #247 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=340.492x9.6
                 text #248 Lato-Italic 8pt at (0, 0) size=340.492x9.6 ascent=7.896 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
       box #249 table-body at (0.75, 346.9) size=537.083x16
         box #250 table-row at (0, 0) size=537.083x16
           box #251 table-cell at (0, 0) size=76.726x16
-            box #252 paragraph at (2.75, 2) size=71.476x12
+            box #252 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #253 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-14"
           box #254 table-cell at (76.726, 0) size=92.071x16
@@ -344,17 +344,17 @@ page 1 size=595.276x841.89
               line at (0, 0) size=57.95x12
                 text #256 Lato-Regular 10pt at (0, 0) size=57.95x12 ascent=9.87 "Ontwikkeling"
           box #257 table-cell at (168.797, 0) size=306.904x16
-            box #258 paragraph at (2.5, 2) size=301.654x12
+            box #258 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=145.23x12
                 text #259 Lato-Regular 10pt at (0, 0) size=145.23x12 ascent=9.87 "API endpoint voor weekoverzicht"
           box #260 table-cell at (475.702, 0) size=61.381x16
-            box #261 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #262 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,00"
+            box #261 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #262 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,00"
       box #263 table-body at (0.75, 362.9) size=537.083x29.6
         box #264 table-row at (0, 0) size=537.083x16
           box #265 table-cell at (0, 0) size=76.726x29.6
-            box #266 paragraph at (2.75, 2) size=71.476x12
+            box #266 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #267 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-14"
           box #268 table-cell at (76.726, 0) size=92.071x16
@@ -362,22 +362,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.765x12
                 text #270 Lato-Regular 10pt at (0, 0) size=34.765x12 ascent=9.87 "Overleg"
           box #271 table-cell at (168.797, 0) size=306.904x16
-            box #272 paragraph at (2.5, 2) size=301.654x12
+            box #272 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=149.885x12
                 text #273 Lato-Regular 10pt at (0, 0) size=149.885x12 ascent=9.87 "Documentatie *deploy* procedure"
           box #274 table-cell at (475.702, 0) size=61.381x29.6
-            box #275 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #276 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "2,25"
+            box #275 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #276 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "2,25"
         box #277 table-row at (0, 16) size=537.083x13.6
           box #278 table-cell at (76.726, 0) size=398.976x13.6
-            box #279 paragraph at (2.5, 2) size=393.726x9.6
+            box #279 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=346.56x9.6
                 text #280 Lato-Italic 8pt at (0, 0) size=346.56x9.6 ascent=7.896 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
       box #281 table-body at (0.75, 392.5) size=537.083x32
         box #282 table-row at (0, 0) size=537.083x16
           box #283 table-cell at (0, 0) size=76.726x16
-            box #284 paragraph at (2.75, 2) size=71.476x12
+            box #284 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #285 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-15"
           box #286 table-cell at (76.726, 0) size=92.071x16
@@ -385,16 +385,16 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.765x12
                 text #288 Lato-Regular 10pt at (0, 0) size=34.765x12 ascent=9.87 "Overleg"
           box #289 table-cell at (168.797, 0) size=306.904x16
-            box #290 paragraph at (2.5, 2) size=301.654x12
+            box #290 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=92.145x12
                 text #291 Lato-Regular 10pt at (0, 0) size=92.145x12 ascent=9.87 "Refinement sprint 42"
           box #292 table-cell at (475.702, 0) size=61.381x16
-            box #293 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #294 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,75"
+            box #293 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #294 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,75"
         box #295 table-row at (0, 16) size=537.083x16
           box #296 table-cell at (0, 0) size=76.726x16
-            box #297 paragraph at (2.75, 2) size=71.476x12
+            box #297 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #298 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-16"
           box #299 table-cell at (76.726, 0) size=92.071x16
@@ -402,17 +402,17 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.45x12
                 text #301 Lato-Regular 10pt at (0, 0) size=31.45x12 ascent=9.87 "Beheer"
           box #302 table-cell at (168.797, 0) size=306.904x16
-            box #303 paragraph at (2.5, 2) size=301.654x12
+            box #303 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=149.885x12
                 text #304 Lato-Regular 10pt at (0, 0) size=149.885x12 ascent=9.87 "Documentatie *deploy* procedure"
           box #305 table-cell at (475.702, 0) size=61.381x16
-            box #306 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #307 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,00"
+            box #306 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #307 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,00"
       box #308 table-body at (0.75, 424.5) size=537.083x29.6
         box #309 table-row at (0, 0) size=537.083x16
           box #310 table-cell at (0, 0) size=76.726x29.6
-            box #311 paragraph at (2.75, 2) size=71.476x12
+            box #311 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #312 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-19"
           box #313 table-cell at (76.726, 0) size=92.071x16
@@ -420,22 +420,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.755x12
                 text #315 Lato-Regular 10pt at (0, 0) size=31.755x12 ascent=9.87 "Review"
           box #316 table-cell at (168.797, 0) size=306.904x16
-            box #317 paragraph at (2.5, 2) size=301.654x12
+            box #317 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=130.765x12
                 text #318 Lato-Regular 10pt at (0, 0) size=130.765x12 ascent=9.87 "Code review PR #128 & #131"
           box #319 table-cell at (475.702, 0) size=61.381x29.6
-            box #320 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #321 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #320 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #321 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
         box #322 table-row at (0, 16) size=537.083x13.6
           box #323 table-cell at (76.726, 0) size=398.976x13.6
-            box #324 paragraph at (2.5, 2) size=393.726x9.6
+            box #324 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=346.56x9.6
                 text #325 Lato-Italic 8pt at (0, 0) size=346.56x9.6 ascent=7.896 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
       box #326 table-body at (0.75, 454.1) size=537.083x29.6
         box #327 table-row at (0, 0) size=537.083x16
           box #328 table-cell at (0, 0) size=76.726x29.6
-            box #329 paragraph at (2.75, 2) size=71.476x12
+            box #329 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #330 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-19"
           box #331 table-cell at (76.726, 0) size=92.071x16
@@ -443,22 +443,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.755x12
                 text #333 Lato-Regular 10pt at (0, 0) size=31.755x12 ascent=9.87 "Review"
           box #334 table-cell at (168.797, 0) size=306.904x16
-            box #335 paragraph at (2.5, 2) size=301.654x12
+            box #335 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=130.765x12
                 text #336 Lato-Regular 10pt at (0, 0) size=130.765x12 ascent=9.87 "Code review PR #128 & #131"
           box #337 table-cell at (475.702, 0) size=61.381x29.6
-            box #338 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #339 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #338 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #339 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
         box #340 table-row at (0, 16) size=537.083x13.6
           box #341 table-cell at (76.726, 0) size=398.976x13.6
-            box #342 paragraph at (2.5, 2) size=393.726x9.6
+            box #342 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=190.048x9.6
                 text #343 Lato-Italic 8pt at (0, 0) size=190.048x9.6 ascent=7.896 "Afgestemd met de product owner; vervolgactie ingepland."
       box #344 table-body at (0.75, 483.7) size=537.083x29.6
         box #345 table-row at (0, 0) size=537.083x16
           box #346 table-cell at (0, 0) size=76.726x29.6
-            box #347 paragraph at (2.75, 2) size=71.476x12
+            box #347 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #348 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-20"
           box #349 table-cell at (76.726, 0) size=92.071x16
@@ -466,22 +466,22 @@ page 1 size=595.276x841.89
               line at (0, 0) size=62.5x12
                 text #351 Lato-Regular 10pt at (0, 0) size=62.5x12 ascent=9.87 "Documentatie"
           box #352 table-cell at (168.797, 0) size=306.904x16
-            box #353 paragraph at (2.5, 2) size=301.654x12
+            box #353 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=127.065x12
                 text #354 Lato-Regular 10pt at (0, 0) size=127.065x12 ascent=9.87 "Datamodel facturatie (fase 2)"
           box #355 table-cell at (475.702, 0) size=61.381x29.6
-            box #356 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #357 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,75"
+            box #356 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #357 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,75"
         box #358 table-row at (0, 16) size=537.083x13.6
           box #359 table-cell at (76.726, 0) size=398.976x13.6
-            box #360 paragraph at (2.5, 2) size=393.726x9.6
+            box #360 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=190.048x9.6
                 text #361 Lato-Italic 8pt at (0, 0) size=190.048x9.6 ascent=7.896 "Afgestemd met de product owner; vervolgactie ingepland."
       box #362 table-body at (0.75, 513.3) size=537.083x112
         box #363 table-row at (0, 0) size=537.083x16
           box #364 table-cell at (0, 0) size=76.726x16
-            box #365 paragraph at (2.75, 2) size=71.476x12
+            box #365 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #366 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-21"
           box #367 table-cell at (76.726, 0) size=92.071x16
@@ -489,16 +489,16 @@ page 1 size=595.276x841.89
               line at (0, 0) size=62.5x12
                 text #369 Lato-Regular 10pt at (0, 0) size=62.5x12 ascent=9.87 "Documentatie"
           box #370 table-cell at (168.797, 0) size=306.904x16
-            box #371 paragraph at (2.5, 2) size=301.654x12
+            box #371 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=124.26x12
                 text #372 Lato-Regular 10pt at (0, 0) size=124.26x12 ascent=9.87 "Logging naar OTLP-collector"
           box #373 table-cell at (475.702, 0) size=61.381x16
-            box #374 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #375 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,00"
+            box #374 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #375 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,00"
         box #376 table-row at (0, 16) size=537.083x16
           box #377 table-cell at (0, 0) size=76.726x16
-            box #378 paragraph at (2.75, 2) size=71.476x12
+            box #378 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #379 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-21"
           box #380 table-cell at (76.726, 0) size=92.071x16
@@ -506,16 +506,16 @@ page 1 size=595.276x841.89
               line at (0, 0) size=57.95x12
                 text #382 Lato-Regular 10pt at (0, 0) size=57.95x12 ascent=9.87 "Ontwikkeling"
           box #383 table-cell at (168.797, 0) size=306.904x16
-            box #384 paragraph at (2.5, 2) size=301.654x12
+            box #384 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=149.885x12
                 text #385 Lato-Regular 10pt at (0, 0) size=149.885x12 ascent=9.87 "Documentatie *deploy* procedure"
           box #386 table-cell at (475.702, 0) size=61.381x16
-            box #387 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #388 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #387 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #388 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
         box #389 table-row at (0, 32) size=537.083x16
           box #390 table-cell at (0, 0) size=76.726x16
-            box #391 paragraph at (2.75, 2) size=71.476x12
+            box #391 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #392 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-22"
           box #393 table-cell at (76.726, 0) size=92.071x16
@@ -523,16 +523,16 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.765x12
                 text #395 Lato-Regular 10pt at (0, 0) size=34.765x12 ascent=9.87 "Overleg"
           box #396 table-cell at (168.797, 0) size=306.904x16
-            box #397 paragraph at (2.5, 2) size=301.654x12
+            box #397 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=124.26x12
                 text #398 Lato-Regular 10pt at (0, 0) size=124.26x12 ascent=9.87 "Logging naar OTLP-collector"
           box #399 table-cell at (475.702, 0) size=61.381x16
-            box #400 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #401 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "0,75"
+            box #400 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #401 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "0,75"
         box #402 table-row at (0, 48) size=537.083x16
           box #403 table-cell at (0, 0) size=76.726x16
-            box #404 paragraph at (2.75, 2) size=71.476x12
+            box #404 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #405 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-23"
           box #406 table-cell at (76.726, 0) size=92.071x16
@@ -540,16 +540,16 @@ page 1 size=595.276x841.89
               line at (0, 0) size=34.335x12
                 text #408 Lato-Regular 10pt at (0, 0) size=34.335x12 ascent=9.87 "Analyse"
           box #409 table-cell at (168.797, 0) size=306.904x16
-            box #410 paragraph at (2.5, 2) size=301.654x12
+            box #410 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=130.765x12
                 text #411 Lato-Regular 10pt at (0, 0) size=130.765x12 ascent=9.87 "Code review PR #128 & #131"
           box #412 table-cell at (475.702, 0) size=61.381x16
-            box #413 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #414 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,75"
+            box #413 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #414 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,75"
         box #415 table-row at (0, 64) size=537.083x16
           box #416 table-cell at (0, 0) size=76.726x16
-            box #417 paragraph at (2.75, 2) size=71.476x12
+            box #417 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #418 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-26"
           box #419 table-cell at (76.726, 0) size=92.071x16
@@ -557,16 +557,16 @@ page 1 size=595.276x841.89
               line at (0, 0) size=62.5x12
                 text #421 Lato-Regular 10pt at (0, 0) size=62.5x12 ascent=9.87 "Documentatie"
           box #422 table-cell at (168.797, 0) size=306.904x16
-            box #423 paragraph at (2.5, 2) size=301.654x12
+            box #423 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=102.16x12
                 text #424 Lato-Regular 10pt at (0, 0) size=102.16x12 ascent=9.87 "Back-up en restore test"
           box #425 table-cell at (475.702, 0) size=61.381x16
-            box #426 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #427 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,25"
+            box #426 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #427 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,25"
         box #428 table-row at (0, 80) size=537.083x16
           box #429 table-cell at (0, 0) size=76.726x16
-            box #430 paragraph at (2.75, 2) size=71.476x12
+            box #430 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #431 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-27"
           box #432 table-cell at (76.726, 0) size=92.071x16
@@ -574,16 +574,16 @@ page 1 size=595.276x841.89
               line at (0, 0) size=31.45x12
                 text #434 Lato-Regular 10pt at (0, 0) size=31.45x12 ascent=9.87 "Beheer"
           box #435 table-cell at (168.797, 0) size=306.904x16
-            box #436 paragraph at (2.5, 2) size=301.654x12
+            box #436 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=124.26x12
                 text #437 Lato-Regular 10pt at (0, 0) size=124.26x12 ascent=9.87 "Logging naar OTLP-collector"
           box #438 table-cell at (475.702, 0) size=61.381x16
-            box #439 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #440 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "3,00"
+            box #439 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #440 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "3,00"
         box #441 table-row at (0, 96) size=537.083x16
           box #442 table-cell at (0, 0) size=76.726x16
-            box #443 paragraph at (2.75, 2) size=71.476x12
+            box #443 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #444 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-27"
           box #445 table-cell at (76.726, 0) size=92.071x16
@@ -591,55 +591,55 @@ page 1 size=595.276x841.89
               line at (0, 0) size=57.95x12
                 text #447 Lato-Regular 10pt at (0, 0) size=57.95x12 ascent=9.87 "Ontwikkeling"
           box #448 table-cell at (168.797, 0) size=306.904x16
-            box #449 paragraph at (2.5, 2) size=301.654x12
+            box #449 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=92.145x12
                 text #450 Lato-Regular 10pt at (0, 0) size=92.145x12 ascent=9.87 "Refinement sprint 42"
           box #451 table-cell at (475.702, 0) size=61.381x16
-            box #452 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #453 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,25"
-      rule at (0, 0) size=538.583x1 #d3d3d3
-      rule at (0, 16) size=538.583x1 #d3d3d3
-      rule at (0, 32) size=538.583x1 #d3d3d3
-      rule at (76.976, 48) size=400.226x1 #d3d3d3
-      rule at (0, 61.6) size=538.583x1 #d3d3d3
-      rule at (76.976, 77.6) size=400.226x1 #d3d3d3
-      rule at (0, 91.2) size=538.583x1 #d3d3d3
-      rule at (76.976, 107.2) size=400.226x1 #d3d3d3
-      rule at (0, 120.8) size=538.583x1 #d3d3d3
-      rule at (76.976, 136.8) size=400.226x1 #d3d3d3
-      rule at (0, 150.4) size=538.583x1 #d3d3d3
-      rule at (76.976, 166.4) size=400.226x1 #d3d3d3
-      rule at (0, 180) size=538.583x1 #d3d3d3
-      rule at (76.976, 196) size=400.226x1 #d3d3d3
-      rule at (0, 209.6) size=538.583x1 #d3d3d3
-      rule at (0, 225.6) size=538.583x1 #d3d3d3
-      rule at (76.976, 241.6) size=400.226x1 #d3d3d3
-      rule at (0, 255.2) size=538.583x1 #d3d3d3
-      rule at (0, 271.2) size=538.583x1 #d3d3d3
-      rule at (76.976, 287.2) size=400.226x1 #d3d3d3
-      rule at (0, 300.8) size=538.583x1 #d3d3d3
-      rule at (0, 316.8) size=538.583x1 #d3d3d3
-      rule at (76.976, 332.8) size=400.226x1 #d3d3d3
-      rule at (0, 346.4) size=538.583x1 #d3d3d3
-      rule at (0, 362.4) size=538.583x1 #d3d3d3
-      rule at (76.976, 378.4) size=400.226x1 #d3d3d3
-      rule at (0, 392) size=538.583x1 #d3d3d3
-      rule at (0, 408) size=538.583x1 #d3d3d3
-      rule at (0, 424) size=538.583x1 #d3d3d3
-      rule at (76.976, 440) size=400.226x1 #d3d3d3
-      rule at (0, 453.6) size=538.583x1 #d3d3d3
-      rule at (76.976, 469.6) size=400.226x1 #d3d3d3
-      rule at (0, 483.2) size=538.583x1 #d3d3d3
-      rule at (76.976, 499.2) size=400.226x1 #d3d3d3
-      rule at (0, 512.8) size=538.583x1 #d3d3d3
-      rule at (0, 528.8) size=538.583x1 #d3d3d3
-      rule at (0, 544.8) size=538.583x1 #d3d3d3
-      rule at (0, 560.8) size=538.583x1 #d3d3d3
-      rule at (0, 576.8) size=538.583x1 #d3d3d3
-      rule at (0, 592.8) size=538.583x1 #d3d3d3
-      rule at (0, 608.8) size=538.583x1 #d3d3d3
-      rule at (0, 624.8) size=538.583x1 #d3d3d3
+            box #452 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #453 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,25"
+      rule at (0.25, 0) size=538.083x1 #d3d3d3
+      rule at (0.25, 16) size=538.083x1 #d3d3d3
+      rule at (0.25, 32) size=538.083x1 #d3d3d3
+      rule at (76.976, 48) size=399.976x1 #d3d3d3
+      rule at (0.25, 61.6) size=538.083x1 #d3d3d3
+      rule at (76.976, 77.6) size=399.976x1 #d3d3d3
+      rule at (0.25, 91.2) size=538.083x1 #d3d3d3
+      rule at (76.976, 107.2) size=399.976x1 #d3d3d3
+      rule at (0.25, 120.8) size=538.083x1 #d3d3d3
+      rule at (76.976, 136.8) size=399.976x1 #d3d3d3
+      rule at (0.25, 150.4) size=538.083x1 #d3d3d3
+      rule at (76.976, 166.4) size=399.976x1 #d3d3d3
+      rule at (0.25, 180) size=538.083x1 #d3d3d3
+      rule at (76.976, 196) size=399.976x1 #d3d3d3
+      rule at (0.25, 209.6) size=538.083x1 #d3d3d3
+      rule at (0.25, 225.6) size=538.083x1 #d3d3d3
+      rule at (76.976, 241.6) size=399.976x1 #d3d3d3
+      rule at (0.25, 255.2) size=538.083x1 #d3d3d3
+      rule at (0.25, 271.2) size=538.083x1 #d3d3d3
+      rule at (76.976, 287.2) size=399.976x1 #d3d3d3
+      rule at (0.25, 300.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 316.8) size=538.083x1 #d3d3d3
+      rule at (76.976, 332.8) size=399.976x1 #d3d3d3
+      rule at (0.25, 346.4) size=538.083x1 #d3d3d3
+      rule at (0.25, 362.4) size=538.083x1 #d3d3d3
+      rule at (76.976, 378.4) size=399.976x1 #d3d3d3
+      rule at (0.25, 392) size=538.083x1 #d3d3d3
+      rule at (0.25, 408) size=538.083x1 #d3d3d3
+      rule at (0.25, 424) size=538.083x1 #d3d3d3
+      rule at (76.976, 440) size=399.976x1 #d3d3d3
+      rule at (0.25, 453.6) size=538.083x1 #d3d3d3
+      rule at (76.976, 469.6) size=399.976x1 #d3d3d3
+      rule at (0.25, 483.2) size=538.083x1 #d3d3d3
+      rule at (76.976, 499.2) size=399.976x1 #d3d3d3
+      rule at (0.25, 512.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 528.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 544.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 560.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 576.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 592.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 608.8) size=538.083x1 #d3d3d3
+      rule at (0.25, 624.8) size=538.083x1 #d3d3d3
       rule at (0.25, 0.5) size=1x624.8 #d3d3d3
       rule at (76.976, 0.5) size=1x624.8 #d3d3d3
       rule at (169.047, 0.5) size=1x48 #d3d3d3
@@ -715,7 +715,7 @@ page 2 size=595.276x841.89
       box #17 table-head at (0.75, 0.5) size=537.083x16 repeated
         box #18 table-row at (0, 0) size=537.083x16
           box #19 table-header-cell at (0, 0) size=76.726x16
-            box #20 paragraph at (2.75, 2) size=71.476x12
+            box #20 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=63.325x12
                 text #21 Lato-Bold 10pt at (0, 0) size=63.325x12 ascent=9.87 "Uitgevoerd op"
           box #22 table-header-cell at (76.726, 0) size=92.071x16
@@ -723,17 +723,17 @@ page 2 size=595.276x841.89
               line at (0, 0) size=20.39x12
                 text #24 Lato-Bold 10pt at (0, 0) size=20.39x12 ascent=9.87 "Taak"
           box #25 table-header-cell at (168.797, 0) size=306.904x16
-            box #26 paragraph at (2.5, 2) size=301.654x12
+            box #26 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=20x12
                 text #27 Lato-Bold 10pt at (0, 0) size=20x12 ascent=9.87 "Titel"
           box #28 table-header-cell at (475.702, 0) size=61.381x16
-            box #29 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #30 Lato-Bold 10pt at (11.031, 0) size=44.85x12 ascent=9.87 "Duur (uur)"
+            box #29 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #30 Lato-Bold 10pt at (11.531, 0) size=44.85x12 ascent=9.87 "Duur (uur)"
       box #454 table-body at (0.75, 16.5) size=537.083x29.6
         box #455 table-row at (0, 0) size=537.083x16
           box #456 table-cell at (0, 0) size=76.726x29.6
-            box #457 paragraph at (2.75, 2) size=71.476x12
+            box #457 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #458 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-28"
           box #459 table-cell at (76.726, 0) size=92.071x16
@@ -741,22 +741,22 @@ page 2 size=595.276x841.89
               line at (0, 0) size=62.5x12
                 text #461 Lato-Regular 10pt at (0, 0) size=62.5x12 ascent=9.87 "Documentatie"
           box #462 table-cell at (168.797, 0) size=306.904x16
-            box #463 paragraph at (2.5, 2) size=301.654x12
+            box #463 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=92.145x12
                 text #464 Lato-Regular 10pt at (0, 0) size=92.145x12 ascent=9.87 "Refinement sprint 42"
           box #465 table-cell at (475.702, 0) size=61.381x29.6
-            box #466 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #467 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "1,00"
+            box #466 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #467 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "1,00"
         box #468 table-row at (0, 16) size=537.083x13.6
           box #469 table-cell at (76.726, 0) size=398.976x13.6
-            box #470 paragraph at (2.5, 2) size=393.726x9.6
+            box #470 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=340.492x9.6
                 text #471 Lato-Italic 8pt at (0, 0) size=340.492x9.6 ascent=7.896 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
       box #472 table-body at (0.75, 46.1) size=537.083x29.6
         box #473 table-row at (0, 0) size=537.083x16
           box #474 table-cell at (0, 0) size=76.726x29.6
-            box #475 paragraph at (2.75, 2) size=71.476x12
+            box #475 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #476 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-28"
           box #477 table-cell at (76.726, 0) size=92.071x16
@@ -764,22 +764,22 @@ page 2 size=595.276x841.89
               line at (0, 0) size=31.755x12
                 text #479 Lato-Regular 10pt at (0, 0) size=31.755x12 ascent=9.87 "Review"
           box #480 table-cell at (168.797, 0) size=306.904x16
-            box #481 paragraph at (2.5, 2) size=301.654x12
+            box #481 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=124.26x12
                 text #482 Lato-Regular 10pt at (0, 0) size=124.26x12 ascent=9.87 "Logging naar OTLP-collector"
           box #483 table-cell at (475.702, 0) size=61.381x29.6
-            box #484 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #485 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "0,75"
+            box #484 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #485 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "0,75"
         box #486 table-row at (0, 16) size=537.083x13.6
           box #487 table-cell at (76.726, 0) size=398.976x13.6
-            box #488 paragraph at (2.5, 2) size=393.726x9.6
+            box #488 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=190.048x9.6
                 text #489 Lato-Italic 8pt at (0, 0) size=190.048x9.6 ascent=7.896 "Afgestemd met de product owner; vervolgactie ingepland."
       box #490 table-body at (0.75, 75.7) size=537.083x29.6
         box #491 table-row at (0, 0) size=537.083x16
           box #492 table-cell at (0, 0) size=76.726x29.6
-            box #493 paragraph at (2.75, 2) size=71.476x12
+            box #493 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #494 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-29"
           box #495 table-cell at (76.726, 0) size=92.071x16
@@ -787,22 +787,22 @@ page 2 size=595.276x841.89
               line at (0, 0) size=34.765x12
                 text #497 Lato-Regular 10pt at (0, 0) size=34.765x12 ascent=9.87 "Overleg"
           box #498 table-cell at (168.797, 0) size=306.904x16
-            box #499 paragraph at (2.5, 2) size=301.654x12
+            box #499 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=187.795x12
                 text #500 Lato-Regular 10pt at (0, 0) size=187.795x12 ascent=9.87 "Overleg met Jansen & Zn. over factuurflow"
           box #501 table-cell at (475.702, 0) size=61.381x29.6
-            box #502 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #503 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "4,00"
+            box #502 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #503 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "4,00"
         box #504 table-row at (0, 16) size=537.083x13.6
           box #505 table-cell at (76.726, 0) size=398.976x13.6
-            box #506 paragraph at (2.5, 2) size=393.726x9.6
+            box #506 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=346.56x9.6
                 text #507 Lato-Italic 8pt at (0, 0) size=346.56x9.6 ascent=7.896 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
       box #508 table-body at (0.75, 105.3) size=537.083x29.6
         box #509 table-row at (0, 0) size=537.083x16
           box #510 table-cell at (0, 0) size=76.726x29.6
-            box #511 paragraph at (2.75, 2) size=71.476x12
+            box #511 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #512 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-30"
           box #513 table-cell at (76.726, 0) size=92.071x16
@@ -810,22 +810,22 @@ page 2 size=595.276x841.89
               line at (0, 0) size=57.95x12
                 text #515 Lato-Regular 10pt at (0, 0) size=57.95x12 ascent=9.87 "Ontwikkeling"
           box #516 table-cell at (168.797, 0) size=306.904x16
-            box #517 paragraph at (2.5, 2) size=301.654x12
+            box #517 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=102.16x12
                 text #518 Lato-Regular 10pt at (0, 0) size=102.16x12 ascent=9.87 "Back-up en restore test"
           box #519 table-cell at (475.702, 0) size=61.381x29.6
-            box #520 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #521 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "0,50"
+            box #520 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #521 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "0,50"
         box #522 table-row at (0, 16) size=537.083x13.6
           box #523 table-cell at (76.726, 0) size=398.976x13.6
-            box #524 paragraph at (2.5, 2) size=393.726x9.6
+            box #524 paragraph at (2.5, 2) size=393.976x9.6
               line at (0, 0) size=346.56x9.6
                 text #525 Lato-Italic 8pt at (0, 0) size=346.56x9.6 ascent=7.896 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
       box #526 table-body at (0.75, 134.9) size=537.083x39.75
         box #527 table-row at (0, 0) size=537.083x16.25
           box #528 table-cell at (0, 0) size=76.726x16.25
-            box #529 paragraph at (2.75, 2) size=71.476x12
+            box #529 paragraph at (2.5, 2) size=71.726x12
               line at (0, 0) size=53.83x12
                 text #530 Lato-Regular 10pt at (0, 0) size=53.83x12 ascent=9.87 "2026-10-30"
           box #531 table-cell at (76.726, 0) size=92.071x16.25
@@ -833,13 +833,13 @@ page 2 size=595.276x841.89
               line at (0, 0) size=31.755x12
                 text #533 Lato-Regular 10pt at (0, 0) size=31.755x12 ascent=9.87 "Review"
           box #534 table-cell at (168.797, 0) size=306.904x16.25
-            box #535 paragraph at (2.5, 2) size=301.654x12
+            box #535 paragraph at (2.5, 2) size=301.904x12
               line at (0, 0) size=202.89x12
                 text #536 Lato-Regular 10pt at (0, 0) size=202.89x12 ascent=9.87 "Prijsberekening 50% korting = $x? (onderzoek)"
           box #537 table-cell at (475.702, 0) size=61.381x16.25
-            box #538 paragraph at (2.75, 2) size=55.881x12
-              line at (0, 0) size=55.881x12
-                text #539 Lato-Regular 10pt at (36.211, 0) size=19.67x12 ascent=9.87 "2,25"
+            box #538 paragraph at (2.5, 2) size=56.381x12
+              line at (0, 0) size=56.381x12
+                text #539 Lato-Regular 10pt at (36.711, 0) size=19.67x12 ascent=9.87 "2,25"
         box #540 table-row at (0, 16.25) size=537.083x23.5
           box #541 table-cell at (0, 0) size=475.702x23.5
             box #542 paragraph at (2.75, 5.75) size=470.202x12
@@ -849,29 +849,29 @@ page 2 size=595.276x841.89
             box #545 paragraph at (2.75, 5.75) size=55.881x12
               line at (0, 0) size=55.881x12
                 text #546 Lato-Bold 10pt at (30.341, 0) size=25.54x12 ascent=9.87 "64,50"
-      rule at (0, 0) size=538.583x1 #d3d3d3
-      rule at (0, 16) size=538.583x1 #d3d3d3
-      rule at (76.976, 32) size=400.226x1 #d3d3d3
-      rule at (0, 45.6) size=538.583x1 #d3d3d3
-      rule at (76.976, 61.6) size=400.226x1 #d3d3d3
-      rule at (0, 75.2) size=538.583x1 #d3d3d3
-      rule at (76.976, 91.2) size=400.226x1 #d3d3d3
-      rule at (0, 104.8) size=538.583x1 #d3d3d3
-      rule at (76.976, 120.8) size=400.226x1 #d3d3d3
-      rule at (0, 134.4) size=538.583x1 #d3d3d3
+      rule at (0.25, 0) size=538.083x1 #d3d3d3
+      rule at (0.25, 16) size=538.083x1 #d3d3d3
+      rule at (76.976, 32) size=399.976x1 #d3d3d3
+      rule at (0.25, 45.6) size=538.083x1 #d3d3d3
+      rule at (76.976, 61.6) size=399.976x1 #d3d3d3
+      rule at (0.25, 75.2) size=538.083x1 #d3d3d3
+      rule at (76.976, 91.2) size=399.976x1 #d3d3d3
+      rule at (0.25, 104.8) size=538.083x1 #d3d3d3
+      rule at (76.976, 120.8) size=399.976x1 #d3d3d3
+      rule at (0.25, 134.4) size=538.083x1 #d3d3d3
       rule at (0, 150.4) size=538.583x1.5 #000000
       rule at (0, 173.9) size=538.583x1.5 #000000
-      rule at (0.25, 0.5) size=1x150.65 #d3d3d3
+      rule at (0.25, 0.5) size=1x149.9 #d3d3d3
       rule at (0, 151.15) size=1.5x23.5 #000000
-      rule at (76.976, 0.5) size=1x150.65 #d3d3d3
+      rule at (76.976, 0.5) size=1x149.9 #d3d3d3
       rule at (169.047, 0.5) size=1x32 #d3d3d3
       rule at (169.047, 46.1) size=1x16 #d3d3d3
       rule at (169.047, 75.7) size=1x16 #d3d3d3
       rule at (169.047, 105.3) size=1x16 #d3d3d3
-      rule at (169.047, 134.9) size=1x16.25 #d3d3d3
-      rule at (475.952, 0.5) size=1x150.65 #d3d3d3
+      rule at (169.047, 134.9) size=1x15.5 #d3d3d3
+      rule at (475.952, 0.5) size=1x149.9 #d3d3d3
       rule at (475.702, 151.15) size=1.5x23.5 #000000
-      rule at (537.333, 0.5) size=1x150.65 #d3d3d3
+      rule at (537.333, 0.5) size=1x149.9 #d3d3d3
       rule at (537.083, 151.15) size=1.5x23.5 #000000
   footer
     box #567 generic at (28.346, 785.197) size=538.583x29.939
