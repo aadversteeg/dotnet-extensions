@@ -1096,6 +1096,14 @@ public class MeasuredReferenceFilesTests
         ["fr-pad-against-keep.lines.txt"] = 0,
         ["fr-pad-against-keep.print.txt"] = 6,
         ["fr-pad-against-keep.words.txt"] = 4,
+        ["fr-pad-ancestor-background.boxes.txt"] = 1,
+        ["fr-pad-ancestor-background.lines.txt"] = 8,
+        ["fr-pad-ancestor-background.print.txt"] = 13,
+        ["fr-pad-ancestor-background.words.txt"] = 2,
+        ["fr-pad-ancestor-boxes.boxes.txt"] = 1,
+        ["fr-pad-ancestor-boxes.lines.txt"] = 12,
+        ["fr-pad-ancestor-boxes.print.txt"] = 17,
+        ["fr-pad-ancestor-boxes.words.txt"] = 2,
         ["fr-pad-figure.boxes.txt"] = 1,
         ["fr-pad-figure.lines.txt"] = 0,
         ["fr-pad-figure.print.txt"] = 6,
@@ -1124,6 +1132,10 @@ public class MeasuredReferenceFilesTests
         ["fr-pad-own-break.lines.txt"] = 0,
         ["fr-pad-own-break.print.txt"] = 6,
         ["fr-pad-own-break.words.txt"] = 4,
+        ["fr-pad-then-sibling.boxes.txt"] = 1,
+        ["fr-pad-then-sibling.lines.txt"] = 8,
+        ["fr-pad-then-sibling.print.txt"] = 14,
+        ["fr-pad-then-sibling.words.txt"] = 3,
         ["fr-pad-three-lines.boxes.txt"] = 1,
         ["fr-pad-three-lines.lines.txt"] = 0,
         ["fr-pad-three-lines.print.txt"] = 8,
@@ -2093,7 +2105,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(512);
+        cases.Should().HaveCount(515);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

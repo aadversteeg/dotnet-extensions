@@ -267,6 +267,8 @@ fr-old-row-without-cells equal
 fr-own-avoid-early-break equal
 fr-pad-after-content equal
 fr-pad-against-keep equal
+fr-pad-ancestor-background open page 1 painted area: the pixel at (12, 28.5): the engine paints it and Chromium does not; the engine paints 920 px #0000ff, Chromium 816 px (print.txt)
+fr-pad-ancestor-boxes open page 1 painted area: the pixel at (12, 30): the engine paints it and Chromium does not; the engine paints 920 px #ff0000, Chromium 824 px (print.txt)
 fr-pad-figure equal
 fr-pad-line equal
 fr-pad-line-does-not-fit equal
@@ -274,6 +276,7 @@ fr-pad-line-in-block equal
 fr-pad-margin-inside equal
 fr-pad-own-break equal
 fr-pad-own-break-paragraph equal
+fr-pad-then-sibling open page 1 painted area: the pixel at (12, 28.5): the engine paints it and Chromium does not; the engine paints 920 px #0000ff, Chromium 816 px (print.txt)
 fr-pad-three-lines equal
 fr-pad-top-and-bottom equal
 fr-positions equal
