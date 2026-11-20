@@ -143,6 +143,12 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The split line halves policy must be Exact or AtLeastOnePixel.",
                 ((int)profile.SplitLineHalves).ToString(System.Globalization.CultureInfo.InvariantCulture), "split-line-halves", source);
         }
+
+        if (!Enum.IsDefined(profile.TableEndOverflow))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The table end overflow policy must be EndsOnPage or ContinuesOnNextPage.",
+                ((int)profile.TableEndOverflow).ToString(System.Globalization.CultureInfo.InvariantCulture), "table-end-overflow", source);
+        }
     }
 
     /// <summary>Heading levels are 1–6, as PDF structure types H1–H6 (ISO 32000-1 §14.8.4.3.2).</summary>

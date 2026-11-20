@@ -60,6 +60,7 @@ public static partial class HtmlBoxGenerator
         EmptyRowParts = EmptyRowParts.Allow,
         FontMetricRounding = FontMetricRounding.WholePixels,
         SplitLineHalves = SplitLineHalves.AtLeastOnePixel,
+        TableEndOverflow = TableEndOverflow.ContinuesOnNextPage,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>

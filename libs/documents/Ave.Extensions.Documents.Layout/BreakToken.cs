@@ -110,16 +110,34 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// </summary>
     public bool? RepeatsHeader { get; init; }
 
-    /// <summary>Equal when the positions are equal (<see cref="Prepared"/> is not compared).</summary>
+    /// <summary>
+    /// How much of the table passed the end of the page this token ends, below its last row, under
+    /// <see cref="TableEndOverflow.ContinuesOnNextPage"/>: the next fragment is that tall and holds no row
+    /// (<see cref="NextRow"/> is then the end of the table). 0 when nothing passed. Part of the position.
+    /// </summary>
+    public double Passed { get; init; }
+
+    /// <summary>True when part of a cell's border box passed the page end with <see cref="Passed"/>: the next fragment
+    /// then draws the grid lines that passed; otherwise it draws nothing. Part of the position.</summary>
+    public bool PaintsPassed { get; init; }
+
+    /// <summary>
+    /// The grid lines that passed the page end, as the page that ended drew them, moved up so that the page end is their
+    /// top and cut there: what the next fragment draws when <see cref="PaintsPassed"/> is true. Empty in a token not made
+    /// by the layout; then the next fragment draws nothing. Not part of the position, as <see cref="Prepared"/>.
+    /// </summary>
+    internal ValueList<PlacedFragment> PassedLines { get; init; }
+
+    /// <summary>Equal when the positions are equal (<see cref="Prepared"/> and <see cref="PassedLines"/> are not compared).</summary>
     /// <param name="other">The other token.</param>
     /// <returns>True for the same position.</returns>
     public bool Equals(TracksBreakToken? other) =>
         other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown
-        && RepeatsHeader == other.RepeatsHeader;
+        && RepeatsHeader == other.RepeatsHeader && Passed.Equals(other.Passed) && PaintsPassed == other.PaintsPassed;
 
     /// <summary>The hash of the position.</summary>
     /// <returns>The hash code.</returns>
-    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, RepeatsHeader);
+    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, RepeatsHeader, Passed, PaintsPassed);
 }
 
 /// <summary>Where one cut cell continues.</summary>

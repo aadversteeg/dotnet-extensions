@@ -159,6 +159,11 @@ internal static class TablePage
     public static Result<LayoutResult, Error> LayOut(TableGeometry geometry, ConstraintSpace space, TracksBreakToken? incoming)
     {
         var grid = geometry.Grid;
+        if (incoming is { Passed: > 0 } passed)
+        {
+            return PlacePassed(geometry, space, passed);
+        }
+
         var isFirst = incoming is null;
         var decided = RepeatsHeader(geometry, space, incoming);
         if (decided.IsFailure)
@@ -221,15 +226,67 @@ internal static class TablePage
             return LayoutResult.NothingFits(table.Box, space);
         }
 
-        return outcome.Value.HasValue
-            ? LayoutResult.Place(
-                WithinPageArea(table, TableFragments.Build(table, outcome.Value.Value), space),
-                outcome.Value.Value.Continuation is { } next ? next with { BodyShown = ShowsBody(table, outcome.Value.Value.Content), RepeatsHeader = repeatsHeader } : null,
-                outcome.Value.Value.Appeal,
-                outcome.Value.Value.BestBreak,
-                outcome.Value.Value.KeepsItsBreak,
-                outcome.Value.Value.Appeal)
-            : LayoutResult.NothingFits(table.Box, space);
+        if (outcome.Value.HasNoValue)
+        {
+            return LayoutResult.NothingFits(table.Box, space);
+        }
+
+        var placed = outcome.Value.Value;
+        var fragment = TableFragments.Build(table, placed);
+        var passes = PassesPageArea(table, fragment, space);
+        var continuation = placed.Continuation is { } next ? next
+            : passes && table.Environment.Profile.TableEndOverflow == TableEndOverflow.ContinuesOnNextPage ? Passed(table, placed.Content, fragment, space.AvailableHeight)
+            : null;
+        return LayoutResult.Place(
+            passes ? WithinPageArea(fragment, space) : fragment,
+            continuation is null ? null : continuation with { BodyShown = ShowsBody(table, placed.Content), RepeatsHeader = repeatsHeader },
+            placed.Appeal,
+            placed.BestBreak,
+            placed.KeepsItsBreak,
+            placed.Appeal);
+    }
+
+    /// <summary>
+    /// The token after a page whose table ends on it and passes its page area below the last row, under
+    /// <see cref="TableEndOverflow.ContinuesOnNextPage"/>: what passed takes its height again at the top of the next page,
+    /// painted where part of a cell's border box passed (cases <c>a2-row-end</c>, <c>-after</c>, <c>-6pt</c>,
+    /// <c>-6pt-after</c>), else empty (only the table's outer half of its bottom line passed: cases
+    /// <c>a2-row-end-first-row-half-*</c>). In the collapsing border model a cell's border box ends at the centre of the
+    /// line below it (CSS 2.1 §17.6.2), so a cell passes where that centre lies below the page end.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="content">What the page holds.</param>
+    /// <param name="fragment">The page's fragment, before it is cut to the page area.</param>
+    /// <param name="end">The page end, from the table's top edge.</param>
+    /// <returns>The token: past the last row, with what passed.</returns>
+    private static TracksBreakToken Passed(TableGeometry table, Content content, BoxFragment fragment, double end)
+    {
+        var topOf = content.Rows.ToDictionary(row => row.Row, row => row.Top);
+        var paints = content.Cells.Any(cell => !Fitting.Fits(topOf[cell.TopRow] + cell.Fragment.Size.Height, end));
+        return new TracksBreakToken(table.Grid.Rows.Length, [], false)
+        {
+            Passed = fragment.Size.Height - end,
+            PaintsPassed = paints,
+            PassedLines = paints ? TableFragments.Below(fragment, end) : [],
+        };
+    }
+
+    /// <summary>
+    /// The next page's part of a table that passed the page end below its last row (<see cref="Passed"/>): as tall as what
+    /// passed, with the grid lines that passed when the token paints them, and no row. Its height is never more than the
+    /// page area at the top of a page, as on the page that ended (<see cref="WithinPageArea"/>), and nothing passes again.
+    /// Lower on a page, where it does not fit, the table reports no room.
+    /// </summary>
+    private static Result<LayoutResult, Error> PlacePassed(TableGeometry table, ConstraintSpace space, TracksBreakToken passed)
+    {
+        var fits = Fitting.Fits(passed.Passed, space.AvailableHeight);
+        if (!fits && !space.IsAtPageStart)
+        {
+            return LayoutResult.NothingFits(table.Box, space);
+        }
+
+        var lines = passed.PaintsPassed ? passed.PassedLines : [];
+        return LayoutResult.Place(new BoxFragment(table.Box, new Size(table.Width, fits ? passed.Passed : space.AvailableHeight), lines), null);
     }
 
     /// <summary>Whether a page's body cells draw anything besides slices of content taller than the page
@@ -463,11 +520,14 @@ internal static class TablePage
     /// unit that starts its page area (nothing above it on the page, not even a header row: a row that continues from the
     /// page before, or the first on the page), or the first row of such a unit, whose cells' content fits and whose grid
     /// line below does not, is placed whole; the line passes the page area, by at most its width. Moving the row would gain
-    /// nothing, and cutting it would put words on other pages than Chromium does (cases a2-row-end*). Chromium draws the
-    /// overflowing line again at the top of the next page; the engine does not slice borders (docs/architecture.md, Known
-    /// limits). In a table that itself starts at the top of the page, the first row is placed so only when the row up to
+    /// nothing, and cutting it would put words on other pages than Chromium does (cases a2-row-end*). Where that row ends
+    /// the table, what passes continues on the next page under <see cref="TableEndOverflow.ContinuesOnNextPage"/>
+    /// (<see cref="Passed"/>), and ends on this page under <see cref="TableEndOverflow.EndsOnPage"/>. In a table that itself
+    /// starts at the top of the page, the first row is placed so only when the row up to
     /// the middle of its line below fits, so that only the outer half of the line passes: Chromium places that row whole
-    /// (cases a2-row-end-first-row-half-*). Where only the content fits, Chromium leaves that page empty or cuts the row
+    /// (cases a2-row-end-first-row-half-*), also where the table starts below only the top insets of boxes that start the
+    /// page (<see cref="ConstraintSpace.IsBelowStartInsets"/>, case a2-row-end-first-row-half-in-cell: a table at the top of
+    /// a table cell). Where only the content fits, Chromium leaves that page empty or cuts the row
     /// between its lines (cases a2-row-end-first-row, a2-row-end-first-row-cut), and the engine refuses the table
     /// (docs/architecture.md, Known limits).
     /// </summary>
@@ -479,19 +539,25 @@ internal static class TablePage
     /// <returns>True when it is placed whole and its line below passes the page area.</returns>
     internal static bool PassesOnlyByItsLineBelow(TableGeometry table, Content content, double bottom, int row, double height) =>
         table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
-        && table.IsAtPageStart
+        && (table.IsAtPageStart || table.IsBelowStartInsets)
         && content.Rows.IsEmpty
         && Fitting.Fits(table.ContinuesFromPageBefore ? bottom - LineBelowShare(table, row) : bottom, height);
 
+    /// <summary>Whether the table's fragment passes the page area where a unit placed whole lets its line below pass the
+    /// page end (<see cref="PassesOnlyByItsLineBelow"/>): at the top of the page, or below only the top insets of boxes that
+    /// start it.</summary>
+    private static bool PassesPageArea(TableGeometry table, BoxFragment fragment, ConstraintSpace space) =>
+        table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow && (space.IsAtPageStart || space.IsBelowStartInsets) && !Fitting.Fits(fragment.Size.Height, space.AvailableHeight);
+
     /// <summary>
-    /// The table's fragment as tall as the page area where a unit placed whole lets its line below pass the page end
-    /// (<see cref="PassesOnlyByItsLineBelow"/>): the line and the cells' share of it are drawn past the page area, but the
-    /// table takes no more than the page area in its container, so what follows the table starts on the next page.
+    /// The table's fragment as tall as the page area where it passes the page area (<see cref="PassesPageArea"/>): the
+    /// line and the cells' share of it are drawn past the page area, but the table takes no more than the page area in
+    /// its container, so what follows the table starts on the next page; there, under
+    /// <see cref="TableEndOverflow.ContinuesOnNextPage"/>, below what passed when the table ends on this page
+    /// (<see cref="Passed"/>).
     /// </summary>
-    private static BoxFragment WithinPageArea(TableGeometry table, BoxFragment fragment, ConstraintSpace space) =>
-        table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow && space.IsAtPageStart && !Fitting.Fits(fragment.Size.Height, space.AvailableHeight)
-            ? new BoxFragment(fragment.Box, new Size(fragment.Size.Width, space.AvailableHeight), fragment.Children, fragment.Border, fragment.IsRepeated)
-            : fragment;
+    private static BoxFragment WithinPageArea(BoxFragment fragment, ConstraintSpace space) =>
+        new(fragment.Box, new Size(fragment.Size.Width, space.AvailableHeight), fragment.Children, fragment.Border, fragment.IsRepeated);
 
     /// <summary>The half of the grid line below a row that lies inside the row's cells.</summary>
     private static double LineBelowShare(TableGeometry table, int row) =>
