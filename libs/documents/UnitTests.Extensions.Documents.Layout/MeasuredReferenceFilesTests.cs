@@ -836,6 +836,14 @@ public class MeasuredReferenceFilesTests
         ["fr-continued-pad-past-60.lines.txt"] = 8,
         ["fr-continued-pad-past-60.print.txt"] = 34,
         ["fr-continued-pad-past-60.words.txt"] = 23,
+        ["fr-continued-pad-past-taller-than-page-next-row.boxes.txt"] = 2,
+        ["fr-continued-pad-past-taller-than-page-next-row.lines.txt"] = 13,
+        ["fr-continued-pad-past-taller-than-page-next-row.print.txt"] = 41,
+        ["fr-continued-pad-past-taller-than-page-next-row.words.txt"] = 24,
+        ["fr-continued-pad-past-taller-than-page.boxes.txt"] = 1,
+        ["fr-continued-pad-past-taller-than-page.lines.txt"] = 10,
+        ["fr-continued-pad-past-taller-than-page.print.txt"] = 37,
+        ["fr-continued-pad-past-taller-than-page.words.txt"] = 23,
         ["fr-cut-row-between-aligned-rows.boxes.txt"] = 6,
         ["fr-cut-row-between-aligned-rows.lines.txt"] = 20,
         ["fr-cut-row-between-aligned-rows.print.txt"] = 53,
@@ -2181,7 +2189,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(534);
+        cases.Should().HaveCount(536);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
