@@ -85,7 +85,7 @@ a4-header-row-image-228 equal
 a4-header-row-image-row open page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-rows-fill-image-row equal
 a4-header-rows-image-row equal
-a4-header-tall-line open page 3 'W' baseline 45 (laid out at 45.375), Chromium 45.75 (print.txt)
+a4-header-tall-line equal
 a4-header-two-image-rows open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-unrepeated-image-228 equal
 a4-header2-image-228 equal

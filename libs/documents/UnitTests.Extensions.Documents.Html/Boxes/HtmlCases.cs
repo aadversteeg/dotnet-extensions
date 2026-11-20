@@ -427,7 +427,7 @@ internal static class HtmlCases
     private static string? PaintedDifference(PrintedPage page, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
     {
         var (engine, chromium) = (Painted(page, ours), Painted(page, theirs));
-        var columns = (int)Math.Round(page.Width / 0.75, MidpointRounding.AwayFromZero);
+        var columns = ChromiumLayout.Pixel(page.Width);
         for (var cell = 0; cell < engine.Length; cell++)
         {
             if (engine[cell] != chromium[cell])
@@ -454,7 +454,7 @@ internal static class HtmlCases
     /// page's edges.</summary>
     private static string?[] Painted(PrintedPage page, IReadOnlyList<PrintedBox> boxes)
     {
-        static int Pixel(double length) => (int)Math.Round(length / 0.75, MidpointRounding.AwayFromZero);
+        static int Pixel(double length) => ChromiumLayout.Pixel(length);
         var (columns, rows) = (Pixel(page.Width), Pixel(page.Height));
         var cells = new string?[columns * rows];
         foreach (var box in boxes)
@@ -916,7 +916,8 @@ internal static class HtmlCases
             .MaxBy(run => run.Origin.X)!.Font.Metrics;
 
     /// <summary>
-    /// A length down or across the page as Chromium paints it: at the nearest whole CSS pixel of the page (0.75 pt).
+    /// A length down or across the page as Chromium paints it: at the nearest whole CSS pixel of the page (0.75 pt), half a
+    /// pixel up for either sign (<see cref="ChromiumLayout.Pixel"/>).
     /// Chromium paints a baseline at a whole pixel (docs/architecture.md, "Against Chromium"; <c>FontMetricRoundingTests</c>
     /// compares the same way) where the line holds text only (beside an image: <see cref="BaselineDifference"/>), and the
     /// edges of a filled rectangle and of an image area too. Measured: all 6,104 rectangle
@@ -925,7 +926,7 @@ internal static class HtmlCases
     /// 0.375 pt, so a difference that small in a baseline or an edge can stay inside one pixel; the x positions of words
     /// and the box heights of <c>boxes.txt</c> are not snapped in Chromium's files and are compared as they are.
     /// </summary>
-    private static double WholePixel(double length) => Math.Round(length / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+    private static double WholePixel(double length) => ChromiumLayout.WholePixel(length);
 
     /// <summary>
     /// The engine's words as PyMuPDF finds them in Chromium's PDF (<c>positions.py</c>, <c>print.txt</c>): two runs of

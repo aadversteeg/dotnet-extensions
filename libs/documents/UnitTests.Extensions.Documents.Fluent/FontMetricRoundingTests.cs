@@ -116,7 +116,7 @@ public class FontMetricRoundingTests
         var chromium = Words(PrintedPages.Chromium(caseName));
         var engine = Words(Print(FontMetricRounding.WholePixels, paragraph));
 
-        static double Pixels(double baseline) => Math.Round((baseline - 12) / 0.75, MidpointRounding.AwayFromZero) * 0.75 + 12;
+        static double Pixels(double baseline) => ChromiumLayout.WholePixel(baseline - 12) + 12;
         engine.Select(word => (word.Page, word.Text)).Should().Equal(chromium.Select(word => (word.Page, word.Text)));
         engine.GroupBy(word => word.Page).Select(page => page.First().Baseline).Should().Equal(chromium.GroupBy(word => word.Page).Select(page => page.First().Baseline));
         engine.Select(word => Pixels(word.Baseline)).Should().Equal(chromium.Select(word => word.Baseline));

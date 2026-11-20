@@ -31,6 +31,23 @@ public static class ChromiumLayout
     /// <returns>The length in layout units.</returns>
     public static double InLayoutUnits(double measured) => Math.Round(measured / LayoutUnit);
 
+    /// <summary>
+    /// A position down or across the page as Chromium paints it, in whole CSS pixels (1 px = 0.75 pt): the nearest one,
+    /// and half a pixel up, towards the larger value, for either sign. Measured against Chromium's print
+    /// (<c>tools/reference/chromium</c>): every baseline, image edge and grid-line edge the engine lays out at a half pixel
+    /// that Chromium paints a pixel apart from it prints at the larger one, but at the end of a sliced piece's rest, which
+    /// is a rule of layout (<c>SliceRestEnd</c>); below zero too: a line 240 pt tall drawn again a page area higher has its
+    /// top at -202.5 px and prints at -202 px (case <c>a4-header-tall-line</c>, "W" at 45.75 pt).
+    /// </summary>
+    /// <param name="points">The position in points.</param>
+    /// <returns>The pixel, a whole number.</returns>
+    public static int Pixel(double points) => (int)Math.Floor((points / 0.75) + 0.5);
+
+    /// <summary>A position as Chromium paints it (<see cref="Pixel"/>), in points.</summary>
+    /// <param name="points">The position in points.</param>
+    /// <returns>The painted position in points.</returns>
+    public static double WholePixel(double points) => Pixel(points) * 0.75;
+
     /// <summary>How far the engine's length is from Chromium's, in layout units.</summary>
     /// <param name="engine">The engine's length, in points.</param>
     /// <param name="measured">Chromium's length as the measurement wrote it, in points.</param>

@@ -187,7 +187,7 @@ public class MarginBoxGenerationTests
         var printed = PrintedPages.Engine(pages.Value.Output);
         var chromium = PrintedPages.Chromium("pm-image-middle").Pages[0].Images.Single();
         var image = printed.Pages[0].Images.Single();
-        static double Pixel(double points) => Math.Round(points / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+        static double Pixel(double points) => ChromiumLayout.WholePixel(points);
         (Pixel(image.X0), Pixel(image.Y0), Pixel(image.X1), Pixel(image.Y1)).Should().Be((chromium.X0, chromium.Y0, chromium.X1, chromium.Y1), "Chromium paints it at whole pixels: 61.5, 23.25, 81.75, 35.25");
         Pixel(Word(printed, 1, "Aa").Baseline).Should().Be(35.25, "the image's bottom edge is on the baseline, the line in the middle of the box, at a whole pixel");
         Word(printed, 1, "Bb").X0.Should().BeApproximately(81.727, 0.75 / 64, "20pt after the end of 'Aa', within Chromium's layout unit");
@@ -210,7 +210,7 @@ public class MarginBoxGenerationTests
         foreach (var word in engine)
         {
             var measured = chromium.Single(other => other.Text == word.Text && Math.Abs(other.X0 - word.X0) < 0.1 && Math.Abs(other.Baseline - word.Baseline) < 0.75);
-            Math.Round(word.Baseline / 0.75, MidpointRounding.AwayFromZero).Should().Be(measured.Baseline / 0.75, $"'{word.Text}' at x {word.X0} is laid out at {word.Baseline / 0.75} px");
+            ((double)ChromiumLayout.Pixel(word.Baseline)).Should().Be(measured.Baseline / 0.75, $"'{word.Text}' at x {word.X0} is laid out at {word.Baseline / 0.75} px");
         }
 
         var right = engine.Where(word => word.X0 > 300 && word.Baseline < 60).Select(word => word.Baseline / 0.75).ToList();
@@ -241,7 +241,7 @@ public class MarginBoxGenerationTests
             var top = (word.Baseline / 0.75) - image;
             tops.Add(top);
             var measured = chromium.Single(other => Math.Abs(other.X0 - word.X0) < 0.1 && Math.Abs(other.Baseline - word.Baseline) < 1.5);
-            (Math.Round(top, MidpointRounding.AwayFromZero) + image).Should().BeApproximately(measured.Baseline / 0.75, 1.0 / 64, $"the line at x {word.X0} is laid out with its top at {top} px");
+            (ChromiumLayout.Pixel(top * 0.75) + image).Should().BeApproximately(measured.Baseline / 0.75, 1.0 / 64, $"the line at x {word.X0} is laid out with its top at {top} px");
         }
 
         // 5pt is 6.65625 px and 10.4px is 10.390625 px in Chromium's unit; 10.25px is exact.
@@ -259,7 +259,7 @@ public class MarginBoxGenerationTests
         var boxes = HtmlCases.Boxes("pm-paint-order").Value;
         var engine = PrintedPages.Engine(DocumentLayout.Run(boxes.Document, boxes.Fonts).Value).Pages[0];
         var chromium = PrintedPages.Chromium("pm-paint-order").Pages[0];
-        static double Pixel(double points) => Math.Round(points / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+        static double Pixel(double points) => ChromiumLayout.WholePixel(points);
 
         engine.Images.Select(image => (Pixel(image.X0), Pixel(image.Y0))).Should().Equal(chromium.Images.Select(image => (image.X0, image.Y0)));
         engine.Rectangles.Select(rectangle => (Pixel(rectangle.Y0), rectangle.Colour)).Should().Equal(chromium.Rectangles.Select(rectangle => (rectangle.Y0, rectangle.Colour)),

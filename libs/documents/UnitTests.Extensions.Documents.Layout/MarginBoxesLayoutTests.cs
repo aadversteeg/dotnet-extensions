@@ -32,7 +32,7 @@ public class MarginBoxesLayoutTests
 
     private static readonly BoxStyle Middle = BoxStyle.Initial with { VerticalAlign = VerticalAlign.Middle };
 
-    private static double WholePixel(double length) => Math.Round(length / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+    private static double WholePixel(double length) => ChromiumLayout.WholePixel(length);
 
     private static TextStyle Lato(double size, bool bold = false) => new("Lato", size.Pt(), bold ? FontWeight.Bold : FontWeight.Regular, Color.Black);
 
