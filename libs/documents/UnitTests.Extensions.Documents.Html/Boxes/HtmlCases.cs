@@ -735,13 +735,26 @@ internal static class HtmlCases
     /// The same boxes on one page tall enough that nothing in them breaks: the page as tall as the model allows
     /// (<see cref="ModelLimits.MaxLength"/>, 14,400 pt; the longest document, <c>timesheet-pages</c>, is under 5,000 pt
     /// laid out), as wide, with the same margins and the same templates. The window <c>boxes.txt</c> is measured in is such
-    /// a layout. That nothing broke is checked, not assumed: the layout must be one page
-    /// (<see cref="SizeDifference"/>); a break the document forces, which a window ignores, gives a second page and is
-    /// then the difference. The header and footer areas (the HTML front-end's rows of page-margin boxes) stay: no box of
-    /// <c>boxes.txt</c> is in them, and they take from the page area what they take on a printed first page, so the body
-    /// starts where it starts there and is as wide.
+    /// a layout. A window has no pages, so it ignores a break the document forces (<c>break-before: page</c>): the forced
+    /// breaks are dropped too (case <c>fr-forced-table</c>: the cell cut after a forced break is one box in the window).
+    /// That nothing broke is checked, not assumed: the layout must be one page (<see cref="SizeDifference"/>). The header
+    /// and footer areas (the HTML front-end's rows of page-margin boxes) stay: no box of <c>boxes.txt</c> is in them, and
+    /// they take from the page area what they take on a printed first page, so the body starts where it starts there and is
+    /// as wide.
     /// </summary>
-    internal static StyledDocument Unbroken(StyledDocument document) => document with { Page = document.Page with { Height = ModelLimits.MaxLength } };
+    internal static StyledDocument Unbroken(StyledDocument document) =>
+        document with { Page = document.Page with { Height = ModelLimits.MaxLength }, Root = WithoutForcedBreaks(document.Root) };
+
+    /// <summary>The box and every box inside it without a forced break before or after it.</summary>
+    private static Box WithoutForcedBreaks(Box box) => box with
+    {
+        Style = box.Style with
+        {
+            BreakBefore = box.Style.BreakBefore == BreakBetween.Page ? BreakBetween.Auto : box.Style.BreakBefore,
+            BreakAfter = box.Style.BreakAfter == BreakBetween.Page ? BreakBetween.Auto : box.Style.BreakAfter,
+        },
+        Children = [.. box.Children.Select(child => child is Box inner ? WithoutForcedBreaks(inner) : child)],
+    };
 
     /// <summary>The first fragment of a page of the box with the id, in document order, and whether it is inside a
     /// repeated copy (<see cref="BoxFragment.IsRepeated"/>, set on the copy's row group, not on the boxes inside it); or

@@ -63,9 +63,14 @@ public sealed record ConstraintSpace(
     /// the box on this page. A break before the box would then leave only those insets on the page, which is a last
     /// resort too, so a last-resort break inside the box is taken instead: it is as good, and it lies deeper, where
     /// Chromium breaks when no breakpoint is valid (case <c>a4-image-nested-table</c>: the content of a table in a table
-    /// cell goes on on the next page, inside both tables). Set only under <c>MonolithicOverflow.Slice</c>, where it lets the
-    /// slice of such content start at the top of the next page; under the default profile a break before the box keeps
-    /// its own strip of insets and leaves no empty part of a table row (<c>EmptyRowParts.Avoid</c>).
+    /// cell goes on on the next page, inside both tables). Below such insets it is set only under
+    /// <c>MonolithicOverflow.Slice</c>, where it lets the slice of such content start at the top of the next page; under the
+    /// default profile a break before the box keeps its own strip of insets and leaves no empty part of a table row
+    /// (<c>EmptyRowParts.Avoid</c>). Under every profile it is set too for the first child of a box that starts the page
+    /// when nothing but the margins kept at the page start lie above it (after a forced break, CSS Fragmentation 3 §5.2),
+    /// also through boxes around it without top padding or border: there is no breakpoint before it, and a break before
+    /// it would leave only those margins on the page. A table there keeps its first row's top line and padding on the page
+    /// and goes on on the next, as Chromium prints it (cases <c>fr-forced-table</c>, <c>fr-forced-table-in-box</c>).
     /// </summary>
     public bool IsBelowStartInsets { get; init; }
 }

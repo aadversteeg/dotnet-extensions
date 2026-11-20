@@ -230,9 +230,9 @@ fr-f9-padded-box-orphans3 equal
 fr-forced-margin equal
 fr-forced-margin-a4 equal
 fr-forced-padded equal
-fr-forced-table open page 2 painted area: the pixel at (12, 152.25): Chromium paints it and the engine does not; the engine paints 0 px #000000, Chromium 392 px (print.txt)
+fr-forced-table equal
 fr-forced-table-header equal
-fr-forced-table-in-box open page 2 painted area: the pixel at (12, 152.25): Chromium paints it and the engine does not; the engine paints 0 px #000000, Chromium 392 px (print.txt)
+fr-forced-table-in-box equal
 fr-forced-table-row-fits equal
 fr-header-cell-margin refused Documents.Layout.DoesNotFit 36 at 3
 fr-header-pad-box-20 equal

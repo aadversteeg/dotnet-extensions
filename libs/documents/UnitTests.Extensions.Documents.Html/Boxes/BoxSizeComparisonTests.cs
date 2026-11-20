@@ -115,7 +115,7 @@ public class BoxSizeComparisonTests
     }
 
     [Fact]
-    public void A_break_the_document_forces_makes_the_layout_without_breaks_a_difference()
+    public void A_break_the_document_forces_is_dropped_in_the_layout_without_breaks_as_a_window_ignores_it()
     {
         const string Html = """
             <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"><style>@page { size: 300pt 204pt; margin: 12pt; } body { font-size: 12pt; line-height: 15pt; } td { padding: 0; }</style></head><body>
@@ -123,7 +123,10 @@ public class BoxSizeComparisonTests
             </body></html>
             """;
 
-        HtmlCases.BoxDifference(Html, ["td 0 210 a0a1a2"]).Should().Be("box td 'a0a1a2': the layout without breaks has 2 pages (boxes.txt)");
+        // The cell is cut over two pages; the forced break before "after" gives the layout without breaks no second page,
+        // so the cell is compared there, whole: 210 pt is not its height.
+        var difference = HtmlCases.BoxDifference(Html, ["td 0 210 a0a1a2"]);
+        difference.Should().Contain("height without breaks (in 2 parts)").And.NotContain("pages");
     }
 
     [Fact]
@@ -134,7 +137,7 @@ public class BoxSizeComparisonTests
 
         unbroken.Page.Height.Should().Be(ModelLimits.MaxLength);
         unbroken.Page.Should().Be(document.Page with { Height = ModelLimits.MaxLength }, "only the height changes: the width, margins, clip and templates stay");
-        unbroken.Root.Should().BeSameAs(document.Root);
+        unbroken.Root.Should().Be(document.Root, "a document without forced breaks keeps its boxes");
     }
 
     private static double Height(string difference) =>
