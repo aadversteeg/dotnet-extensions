@@ -126,6 +126,10 @@ internal static class TablePage
 
         /// <summary>The half below the centre: the line at the start of the next page.</summary>
         LowerHalf,
+
+        /// <summary>Nothing of the line, though the page keeps the room of its lower half: the line at the start of the
+        /// next page where a cell that spans rows is cut by the break between them (see <see cref="ContinuationLine"/>).</summary>
+        Unpainted,
     }
 
     /// <summary>What is on the page so far: an immutable snapshot, so that a breakpoint can keep it.</summary>
@@ -521,7 +525,11 @@ internal static class TablePage
     /// <summary>The line that starts a page after a break between rows, resolved from the row before the break and the
     /// first row of this page: its lower half at the table's top, or the whole line, centred half its width down. When
     /// the page starts at the table's first row there is no row before (with clone after a cut inside that row, or a
-    /// token for row 0 of a table without header rows): the line is the table's top line.</summary>
+    /// token for row 0 of a table without header rows): the line is the table's top line. Where a cell that spans rows
+    /// continues over the break (with slice), the page draws nothing of the lower half, in any column, and keeps its
+    /// room: Chromium prints no line at the top of that page, while the first row's content starts below the half
+    /// (case <c>b4-row-span-6pt</c>: page 2 has no rectangle at 12 pt, and row r8's text starts at 15 pt = 12 + 3, half of the
+    /// 6 pt line, as in <c>a2-row-break-line-6pt</c>; case <c>b4-row-span</c> with a 0.75 pt line likewise).</summary>
     private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context)
     {
         if (firstRow == 0)
@@ -532,7 +540,7 @@ internal static class TablePage
 
         return IsCloned(table)
             ? new LineAt(firstRow - 1, firstRow, context, table.HorizontalWidth(firstRow - 1, firstRow, context) / 2)
-            : new LineAt(firstRow - 1, firstRow, context, 0, LinePart.LowerHalf);
+            : new LineAt(firstRow - 1, firstRow, context, 0, context.CutCells.Count > 0 ? LinePart.Unpainted : LinePart.LowerHalf);
     }
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,

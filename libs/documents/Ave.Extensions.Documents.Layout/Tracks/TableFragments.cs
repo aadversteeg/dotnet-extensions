@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -101,12 +102,14 @@ internal static class TableFragments
 
     /// <summary>
     /// The horizontal lines: per line, runs of columns with the same resolved border become one rectangle, centred on
-    /// the line (or, at a break between rows, its half on this page) and reaching half the width of the vertical lines
-    /// at both ends so that the corners are filled.
+    /// the line (or, at a break between rows, its half on this page, as thick as <see cref="HalfThickness"/> says) and
+    /// reaching half the width of the vertical lines at both ends so that the corners are filled. A line whose page
+    /// draws no part of it (<see cref="TablePage.LinePart.Unpainted"/>) gives no rectangle.
     /// </summary>
     private static IEnumerable<PlacedFragment> HorizontalRules(TableGeometry table, ImmutableList<TablePage.LineAt> lines)
     {
-        foreach (var line in lines)
+        var halves = table.Environment.Profile.SplitLineHalves;
+        foreach (var line in lines.Where(line => line.Part != TablePage.LinePart.Unpainted))
         {
             var sides = Enumerable.Range(0, table.Grid.ColumnCount)
                 .Select(column => CollapsedBorders.Horizontal(table.Box, table.Grid, line.Above, line.Below, column, line.Context))
@@ -118,14 +121,26 @@ internal static class TableFragments
                 var width = side.Width.Points;
                 var (top, height) = line.Part switch
                 {
-                    TablePage.LinePart.UpperHalf => (line.Y - width / 2, width / 2),
-                    TablePage.LinePart.LowerHalf => (line.Y, width / 2),
+                    TablePage.LinePart.UpperHalf => (line.Y - width / 2, HalfThickness(width, halves)),
+                    TablePage.LinePart.LowerHalf => (line.Y, HalfThickness(width, halves)),
                     _ => (line.Y - width / 2, width),
                 };
                 yield return new PlacedFragment(new Point(left, top), new RuleFragment(side.Color, new Size(right - left, height)));
             }
         }
     }
+
+    /// <summary>
+    /// How thick the half of a line of width <paramref name="width"/> is drawn at a break between rows: half the width,
+    /// or under <see cref="SplitLineHalves.AtLeastOnePixel"/> at least one CSS pixel (0.75 pt), from the half's top edge
+    /// down, as Chromium prints it (<see cref="SplitLineHalves.AtLeastOnePixel"/> names the measured cases). Paint only:
+    /// the half's place and the room layout keeps for it stay as they are.
+    /// </summary>
+    internal static double HalfThickness(double width, SplitLineHalves halves) =>
+        halves == SplitLineHalves.AtLeastOnePixel ? Math.Max(width / 2, OnePixel) : width / 2;
+
+    /// <summary>One CSS pixel, 1/96 inch, in points (CSS Values 4 §6.2).</summary>
+    private const double OnePixel = 0.75;
 
     /// <summary>The vertical lines: per column boundary, consecutive rows with the same resolved border become one
     /// rectangle from the top of the first row to the bottom of the last, centred on the line.</summary>

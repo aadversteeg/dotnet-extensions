@@ -580,7 +580,7 @@ it.
 
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
-`FontMetricRounding.WholePixels`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -648,7 +648,8 @@ cells keep padding, background and `vertical-align` `top`, `middle` or `bottom`;
 rows and groups no padding (§17.5), the table no padding (§17.6.2); `colspan` and `rowspan` are read by the rules for
 non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); at a page break between rows the
 engine splits the grid line there at its centre, its upper half ending one page and its lower half starting the next
-(`BoxDecorationBreak.Slice`), where Chromium paints that line whole on one page: not yet equal. A footer group (`tfoot`) is drawn after the other row groups wherever it stands in the source; only
+(`BoxDecorationBreak.Slice`), each half a whole pixel at least, as Chromium prints it (`SplitLineHalves.AtLeastOnePixel`;
+"Table breaks" under Known limits). A footer group (`tfoot`) is drawn after the other row groups wherever it stands in the source; only
 the first is the table's footer, a later one is a row group in its place (CSS 2.1 §17.2; Chromium's
 `TableGroupedChildren`; cases `tf-after`, `tf-before`, `tf-head`, `tf-two`, `tf-top-border`, equal). The model's table
 has no footer group, so its rows are the last body rows: the tagged PDF has them in a `TBody`, not a `TFoot`, and
@@ -965,9 +966,10 @@ Each is documented next to its code as well.
   in the engine, below the line drawn again in Chromium (a paragraph's baseline at 24.00 pt against 24.75 with a 0.75 pt
   line, against 30.00 with a 6 pt line; `a2-row-end-after`, `a2-row-end-6pt-after`). The engine reserves no offset
   without the line: a gap with no line would be a third behaviour.
-  (iii) At the break between the first row and the next, the engine draws half of the line on each page (192 to 192.375
-  and 12 to 12.375), where Chromium draws the whole line on both; content after it is 0.375 pt higher (1.125 pt below
-  the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
+  (iii) At the break between the first row and the next, inside a cell that spans both, the engine draws the upper half
+  of the line at the end of the page (192 to 192.375) and nothing at the top of the next, keeping the half's room, where
+  Chromium lets the whole line pass the page end and draws it again at the top of the next page; content after it is
+  0.375 pt higher (1.125 pt below the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
   (iv) A table that itself starts at the top of a page with such a first row: Chromium prints it in three ways. Where
   the content ends within half the grid line of the page end, so that only the outer half of the line below passes,
   it places the row whole; the engine does the same under `Allow` (`TablePage.PassesOnlyByItsLineBelow`: the row up to
@@ -1133,9 +1135,14 @@ Each is documented next to its code as well.
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
-  lower half starting the next (as Chromium 159 draws a line of several pixels, cases `mf4-line-*`; a one-pixel line
-  Chromium cannot split: it draws it whole on both pages, and the next page's first row starts 0.375 pt lower than in
-  the engine, case `a2-split-line-1px`; a difference, left to the HTML front-end's stage); `Clone`, the code front-end's default for tables, ends the
+  lower half starting the next (as Chromium 159 does, cases `mf4-line-*`, `a2-row-break-line-6pt`). Chromium puts both
+  edges of each half on the nearest pixel and draws at least one pixel, so each half of a one-pixel line prints one
+  pixel thick; `LayoutProfile.SplitLineHalves` (`AtLeastOnePixel`, the HTML front-end's value) draws a half thinner than
+  a pixel one pixel thick from its top edge, which gives Chromium's pixels, and moves nothing (cases `a2-cells-end`,
+  `a2-row-break-line-1-5pt`, `a2-row-break-line-2-25pt`; `TableBreakLineHalfTests`). Where a cell that spans rows
+  continues over the break, the next page draws nothing of the line, in any column, and keeps the half's room (case
+  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt lower in Chromium than in the
+  engine; a difference of layout, pinned in `RowPartTests`; `Clone`, the code front-end's default for tables, ends the
   page with the whole line and starts the next page with it again (the engine's own rule for collapsed borders,
   modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
   break inside a row, `Slice` draws no line at the cut (a box cut by a break gets no border there); `Clone` closes the
