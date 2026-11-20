@@ -66,7 +66,7 @@ a3-pad-line equal
 a4-cell-image-179-5 equal
 a4-cell-pad3-image-177 equal
 a4-cell-pad3-line-177 equal
-a4-continued-cell-pad-bottom-30 open page 2 reads 't34 t35 t36 t37', Chromium 't34 t35 t36 t37 t39 t40 t41 t42' (print.txt)
+a4-continued-cell-pad-bottom-30 equal
 a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header: 2 pages, Chromium 3 (print.txt)
 a4-header-cut-row-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-empty-rowspan-line-image open page 2 painted area: the pixel at (12, 13.5): Chromium paints it and the engine does not; the engine paints 736 px #000000, Chromium 1450 px (print.txt)
@@ -198,12 +198,12 @@ font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal
 fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value width: 50% at 3:58
-fr-continued-pad-past-33 open page 2 reads 'a11 a12 a13 a14 a15 a16 a17 a18 a19', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
-fr-continued-pad-past-33-next-row open page 2 reads 'a11 a12 a13 a14 a15 a16 a17 a18 a19', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
-fr-continued-pad-past-45 open page 2 reads 'a11 a12 a13 a14 a15 a16 a17 a18', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
-fr-continued-pad-past-60 open page 2 reads 'a11 a12 a13 a14 a15 a16 a17', Chromium 'a11 a12 a13 a14 a15 a16 a17 a18 a19 a20' (print.txt)
-fr-continued-pad-past-taller-than-page refused Documents.Layout.DoesNotFit 0 at 8
-fr-continued-pad-past-taller-than-page-next-row refused Documents.Layout.DoesNotFit 0 at 8
+fr-continued-pad-past-33 equal
+fr-continued-pad-past-33-next-row open page 3 painted area: the pixel at (12.75, 15.75): the engine paints it and Chromium does not; the engine paints 1142 px #000000, Chromium 776 px (print.txt)
+fr-continued-pad-past-45 equal
+fr-continued-pad-past-60 equal
+fr-continued-pad-past-taller-than-page open page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
+fr-continued-pad-past-taller-than-page-next-row open page 4 painted area: the pixel at (12.75, 52.5): the engine paints it and Chromium does not; the engine paints 1240 px #000000, Chromium 874 px (print.txt)
 fr-cut-row-between-aligned-rows equal
 fr-cut-row-three-pages-bottom equal
 fr-cut-row-uncut-bottom-cell equal
@@ -280,7 +280,7 @@ fr-old-header-quarter-240-over equal
 fr-old-header-taller-than-page refused Documents.Layout.DoesNotFit 42 at 8
 fr-old-keep-together-hides listed A_box_kept_together_does_not_hide_a_better_breakpoint_before_it: page 1 reads 'n0', Chromium 'n0 n1 o0 o1' (print.txt)
 fr-old-margin-at-row-cut listed A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height: page 2 'z' baseline 62.25 (laid out at 62.25), Chromium 74.25 (print.txt)
-fr-old-row-taller-by-padding listed A_row_taller_than_the_page_only_through_its_cell_padding_is_refused: 4 pages, Chromium 3 (print.txt)
+fr-old-row-taller-by-padding listed A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank: page 1 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 766 px #000000, Chromium 0 px (print.txt)
 fr-old-row-without-cells equal
 fr-own-avoid-early-break equal
 fr-pad-after-content equal
@@ -301,7 +301,7 @@ fr-positions equal
 fr-row-later-padding-beside-line equal
 fr-row-later-padding-fits-line-not equal
 fr-row-later-padding-under-header equal
-fr-row-later-page-padding-overflows open page 2 reads 'w1 w2 w3 w4 w5 w6', Chromium 'w1 w2 w3 w4 w5 w6 w7' (print.txt)
+fr-row-later-page-padding-overflows equal
 fr-row-later-page-padding-overflows-two-cells open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
 h-break-after-last equal
 h-break-after-last-nested equal

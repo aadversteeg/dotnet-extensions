@@ -199,6 +199,39 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A one-row table at the top of the first page whose row is taller than the page area only through its cell's bottom
+    /// padding (case <c>fr-old-row-taller-by-padding</c>: "w" above 140 pt of padding, 159.5 pt in a 150 pt page area, then
+    /// "z"): Chromium leaves the first page blank, prints the row on the second with its padding passing the page end, and
+    /// starts the third with the rest of the padding and the bottom line. The engine cuts the row as a last resort on the
+    /// first page, where nothing of it shows but the table's top line and the cell's sides, because a table at the top of
+    /// a page cannot move to a better page; on the second page the row's rest keeps "w" and its padding passes the page
+    /// end, as in Chromium (<c>TableEndOverflow.ContinuesOnNextPage</c>). Under the code front-end's defaults the row is
+    /// refused (docs/architecture.md, "Known limits"; the code front-end's <c>ListedDifferenceTests</c>). Where the row
+    /// starts is the whole difference: with the engine's first page empty and the top line drawn at the top of its second
+    /// page instead, what lies below it lowered by the line's 0.75 pt, the engine's pages are Chromium's.
+    /// </summary>
+    [Fact]
+    public void A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank()
+    {
+        var (engine, chromium) = (Engine("fr-old-row-taller-by-padding"), Chromium("fr-old-row-taller-by-padding"));
+
+        engine.PageTexts.Should().Equal(string.Empty, "w", "z");
+        chromium.PageTexts.Should().Equal(engine.PageTexts);
+        chromium.Pages[0].Rectangles.Should().BeEmpty();
+        var line = engine.Pages[0].Rectangles.Single(box => box.X1 - box.X0 > 200);
+        line.Should().Be(new PrintedBox(1, 12, 12, 288, 12.75, line.Colour));
+        engine.Pages[0].Rectangles.Except([line]).Should().HaveCount(2).And.OnlyContain(side => side.X1 - side.X0 == 0.75 && side.Y1 == 162, "the cell's sides, down to the page end");
+        var second = engine.Pages[1];
+        var started = second with
+        {
+            Words = [.. second.Words.Select(word => word with { Baseline = word.Baseline + line.Height })],
+            Rectangles = [line with { Page = 2 }, .. second.Rectangles],
+        };
+        var blank = engine.Pages[0] with { Rectangles = [] };
+        HtmlCases.Difference(new PrintedPages([blank, started, engine.Pages[2]]), chromium).Should().BeNull("where the row starts is the whole difference");
+    }
+
+    /// <summary>
     /// A margin dropped at a row cut (case <c>fr-old-margin-at-row-cut</c>: "a" with a 12 pt bottom margin ends the first
     /// page, "b0 b1" follow it in the same cell): the margin is truncated at the break (CSS Fragmentation 3 §5.2), and the
     /// engine's rest of the row is as tall as its content; Chromium's row keeps the height it has uncut, so its rest is

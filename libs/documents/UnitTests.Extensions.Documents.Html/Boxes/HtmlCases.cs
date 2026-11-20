@@ -73,7 +73,7 @@ internal static class HtmlCases
         ["sr-same-font"] = "A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run",
         ["sr-zwnj"] = "A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it",
         ["a4-continued-cell-pad-bottom-30-under-header"] = "A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header",
-        ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_is_refused",
+        ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank",
         ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
         ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["tf-pages"] = "A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page",

@@ -857,7 +857,10 @@ Each is documented next to its code as well.
   cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a table header taller than
   the page is refused (`Documents.Layout.DoesNotFit`; Chromium cuts it like a body row); a table row taller than the page
   only through its cells' padding is refused (Chromium prints it on a fresh page and lets the padding overflow; case
-  `fr-old-row-taller-by-padding`); a table
+  `fr-old-row-taller-by-padding`; through the HTML front-end the engine cuts that row on the first page as a last
+  resort, which then shows only the table's top line and the cell's sides, and prints "w" on the second with its padding
+  passing to the third, as Chromium does: Chromium's blank first page, with the 0.75 pt top line at the top of the
+  second, is the whole difference, `HtmlListedDifferenceTests`); a table
   row without cells is refused as input (`Documents.Input.Invalid.Table`; Chromium lays it out with no height) — each
   pinned with Chromium's pages in `ListedDifferenceTests`; under `EmptyRowParts.Avoid` and `MonolithicOverflow.Refuse`,
   the defaults, a table row that continues from the page before, whose rest fills the page area with only the half of
@@ -941,7 +944,16 @@ Each is documented next to its code as well.
   second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
   after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
   line, where Chromium prints all its lines on that page and lets the padding overflow (cases
-  `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`).
+  `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`). Under
+  `TableEndOverflow.ContinuesOnNextPage`, the HTML front-end's value, such a row and a row that continues from the page
+  before keep their lines and their padding continues on the next page, as Chromium prints it, where every cell of the
+  row passes the page end with content on the page (cases `fr-continued-pad-past-*`,
+  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). Still cut so: a row
+  with a cell that ends above the page end, whose whole bottom padding Chromium gives the next page (13.5 pt in
+  `-two-cells`), and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
+  Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;
+  without a row after the table Chromium then starts what follows 0.75 pt below the page's top, over the padding, where
+  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, open).
   Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
   the header is repeated, the engine leaves the header alone on the first page, where Chromium cuts the row below it
   because its line fits and only its padding does not (`fr-header-pad-box-72`). Where the header is more than a quarter
@@ -1170,8 +1182,10 @@ Each is documented next to its code as well.
   177 pt image in a cell with 3 pt padding), and what follows starts lower on the next page. Under `Refuse` such a piece
   is refused as before. **Listed difference from Chromium:** the same holds for content that fits the page area only
   without its cell's bottom padding when the cell continues from the page before. Chromium places the rest of the
-  cell on the page and lets the padding pass the page end; the engine never lets a cell's bottom padding pass the
-  page end, and records no breakpoint inside content that continues from the page before (`FlowLayout`), so under
+  cell on the page and lets the padding pass the page end; under `TableEndOverflow.EndsOnPage`, the code front-end's
+  default, the engine never lets a cell's bottom padding pass the page end (under `ContinuesOnNextPage` it does, as
+  Chromium, see the cut rows above: `a4-continued-cell-pad-bottom-30` is equal through the HTML front-end), and
+  records no breakpoint inside content that continues from the page before (`FlowLayout`), so under
   `Refuse` the table is refused (`Documents.Layout.DoesNotFit`), and under `Slice` the content is laid out again above
   the bottom padding and breaks earlier: a cell with 30 pt bottom padding around a table whose rest on page 2 fits the
   page area gives `t34 t35 t36 t37 t39 t40 t41 t42` on page 2 in Chromium and `t34 t35 t36 t37`, then `t39 t40 t41 t42`
