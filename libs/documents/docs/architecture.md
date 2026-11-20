@@ -828,6 +828,15 @@ Each is documented next to its code as well.
   inside a cell (`a4-image-nested-table`, open) the engine also draws the inner table's bottom line and the outer row's
   line one below the other (60 to 61.5 pt) where Chromium draws them as one (60 to 60.75 pt). The other cells of the
   image's row go on below the slices, as Chromium prints them (`CellsBesideSlices.Below`).
+- **A repeated header row over a slice (HTML):** on a later page where a table repeats its header rows and goes on with
+  the slices of a piece taller than the page area (a row still to come), Chromium still moves the piece up a whole page
+  area, so the slice starts at the top of the page area (12 pt), and draws the header over it: 16.5 pt of the piece are
+  never shown. The engine draws the header, then the slice below it (28.125 pt), so the piece shows whole and once, and
+  what follows the slices in the table starts that much lower; where Chromium starts the next row in an empty part below
+  the header on the page of the last slice, that row goes on 0.375 pt higher on the next page than the engine's, which
+  starts it there. That is the whole difference (cases `a4-header-image-360-image`, `a4-header-row-image-row`,
+  `a4-header-image-row-image`, `a4-header-two-image-rows`, listed; `HtmlListedDifferenceTests`). A writer does not want
+  a header over an image, so the engine does not copy it.
 - **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
   column without a width they are refused, as are widths on cells and column groups. A percent column is never
@@ -1175,10 +1184,11 @@ Each is documented next to its code as well.
   value, the engine does the same (`SliceUnderHeaderTests`). Under `AboveEverySlice`, the code front-end's default, a
   deliberate deviation from Chromium, the engine repeats the header above every slice and makes each slice as tall as the
   room below it, so the content is shown whole and once, and a piece taller than the room below the header but not than
-  the page area goes on without the header. **Open difference from Chromium** under both values: on a page where the
-  header is repeated, Chromium still moves the content up a whole page area and draws the header over 16.5 pt of it,
-  which are never shown (`a4-header-row-image-row`, `a4-header-image-360-image`, `a4-header-image-beside-lines`); the
-  engine draws the header above the slice, the slice below it.
+  the page area goes on without the header. Under both values, on a page where the header is repeated over a slice,
+  Chromium still moves the content up a whole page area and draws the header over 16.5 pt of it, which are never shown;
+  the engine draws the header above the slice, the slice below it (Known limits, "A repeated header row over a slice").
+  With text beside the image (`a4-header-image-beside-lines`, open) the engine also differs on the first page: it leaves
+  the header alone where the cut row's other cell would draw text, where Chromium starts the row.
   A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
   grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
   taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases

@@ -201,6 +201,48 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A repeated header row over a slice: on a later page where a table repeats its header rows and goes on with the
+    /// slices of a piece taller than the page area (a row still to come), Chromium still moves the piece up a whole page
+    /// area, so the slice starts at the top of the page area, and draws the header over it, over 16.5 pt of the piece that
+    /// are never shown. The engine draws the header, then the slice below it, so the whole piece shows once
+    /// (docs/architecture.md, "Known limits"). That is the whole difference: on the pages before, both print the same; on
+    /// the pages of the slices the header lies over the slice in Chromium and above it in the engine; what follows the
+    /// slices in the table starts that much lower in the engine, and where Chromium starts the next row in an empty part
+    /// below the header on the page of the last slice, that row goes on half a grid line higher on the next page than the
+    /// engine's, which starts it there (0.375 pt, within the comparison's whole pixel until the end of the table).
+    /// Cases: a 360 pt image, then a 408 pt image (<c>a4-header-image-360-image</c>, pages 3 and 4); a row, a 408 pt image,
+    /// a row (<c>a4-header-row-image-row</c>, pages 4 and 5); a 408 pt image, a row, a 408 pt image
+    /// (<c>a4-header-image-row-image</c>, pages 3 and 4); two 408 pt images (<c>a4-header-two-image-rows</c>, pages 3 and 4).
+    /// </summary>
+    /// <param name="name">The case.</param>
+    /// <param name="first">The first page where the header is repeated over a slice.</param>
+    /// <param name="last">The last such page.</param>
+    [Theory]
+    [InlineData("a4-header-image-360-image", 3, 4)]
+    [InlineData("a4-header-row-image-row", 4, 5)]
+    [InlineData("a4-header-image-row-image", 3, 4)]
+    [InlineData("a4-header-two-image-rows", 3, 4)]
+    public void A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice(string name, int first, int last)
+    {
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        var before = (PrintedPages pages) => new PrintedPages([.. pages.Pages.Take(first - 1)]);
+
+        engine.Pages.Length.Should().Be(chromium.Pages.Length);
+        HtmlCases.Difference(before(engine), before(chromium)).Should().BeNull("the pages before the slices are the same");
+        for (var number = first; number <= last; number++)
+        {
+            var (ours, theirs) = (engine.Pages[number - 1], chromium.Pages[number - 1]);
+            theirs.Words.Single(word => word.Text == "H").Baseline.Should().Be(24.75);
+            theirs.Images.Single().Y0.Should().Be(12, "Chromium's slice starts at the top of the page area");
+            theirs.Images.Single().Y1.Should().BeGreaterThanOrEqualTo(28.5, "and the header is drawn over it (the last slice of the 360 pt image lies wholly under it)");
+            ours.Words.Single(word => word.Text == "H").Baseline.Should().Be(24.75);
+            ours.Images.Single().Y0.Should().BeApproximately(28.125, 1e-6, "the engine's slice starts below the header, at the centre of its line");
+        }
+
+        HtmlCases.Difference(engine, chromium).Should().NotBeNull();
+    }
+
+    /// <summary>
     /// What follows the row of an image sliced over pages in a table cell: Chromium lays the image out whole on the page
     /// where it starts, ends the row on the next page as tall as the rest of the image, and starts what follows there:
     /// in a row of two or more cells the next row, and after any table the content after it, below the row's end, or at

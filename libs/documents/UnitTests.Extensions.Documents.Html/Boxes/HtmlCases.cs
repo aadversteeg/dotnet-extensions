@@ -82,6 +82,10 @@ internal static class HtmlCases
         ["a4-row-image-row"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-two-image-rows"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-slice4-cell-row-after"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
+        ["a4-header-image-360-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-row-image-row"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-row-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-two-image-rows"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
