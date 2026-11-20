@@ -199,10 +199,14 @@ public class MarginBoxGenerationTests
         (box.Metadata![ErrorMetadataKeys.SourceLine], box.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((4, 13));
     }
 
-    [Fact]
-    public void A_left_margin_that_rounds_down_to_a_whole_pixel_refuses_the_margin_boxes()
+    /// <summary>Measured (cases <c>pm-start-25mm</c>, <c>pm-start-12pt</c>): beside a left margin that rounds down to a
+    /// whole pixel Chromium starts the rows at the page area's start, not at the margin cut to 1/64 px; refused.</summary>
+    [Theory]
+    [InlineData("margin: 60pt 50pt 60pt 12.2pt")]
+    [InlineData("margin: 25mm")]
+    public void A_left_margin_that_rounds_down_to_a_whole_pixel_refuses_the_margin_boxes(string margin)
     {
-        var error = Boxes(Doc("@page { size: 400pt 300pt; margin: 60pt 50pt 60pt 12.2pt; font-family: Lato; @top-left { content: \"Aa\" } }")).Error.Parts().Single();
+        var error = Boxes(Doc($"@page {{ size: 400pt 300pt; {margin}; font-family: Lato; @top-left {{ content: \"Aa\" }} }}")).Error.Parts().Single();
 
         error.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.PageRule);
     }
