@@ -84,7 +84,7 @@ paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with th
 is left. When the document shows its page count, it repeats the whole document until that count settles (at most 5
 passes); otherwise one pass is all.
 
-The four algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
+The five algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
 that another box's layout returned. Each algorithm checks the token it is given, and a token it cannot have returned for
 the box — another algorithm's kind, a child, line, row or cell the box does not have, a height shown that is negative,
 not finite, or the whole height of the sliced image or line or more — is the error `Documents.Layout.InvalidBreakToken`,
@@ -93,9 +93,26 @@ carry its grid over to another table (`BreakTokenCheckTests`). The token types k
 caller can pass one box's token to another box, so closing the constructors would not close the hole. Pagination never
 meets the error: it hands each box the token that box's own layout returned.
 
+**The row of page-margin boxes** (`Layout/MarginBoxesLayout.cs`, id `margin-boxes`) lays out the generated boxes of one
+page edge side by side, CSS Paged Media 3 §5.3.2: each child carries its place in the row (`BoxStyle.MarginBoxPlace`:
+start, center, end), and a box that is not generated is no child. Without a centre box the start and end boxes share the
+row by their max-content widths, or by max minus min when those do not fit; with one, the centre box shares the row with
+an imaginary box twice as wide as the wider side box, is centred, and each side box gets half of the rest, also when the
+other side is empty; a box alone takes the whole row; where all widths are zero, the row is shared by the number of boxes
+each stands for (Chromium 159: two empty side boxes half each, an empty centre box beside an empty side box a third). The
+row is only the content of a header or footer area with a fixed height, and each box is as tall as that height less its
+own margins, its content placed by `vertical-align` (`ModelCheck` refuses a row anywhere else, a child without a place and
+two at one place: `Documents.Input.Invalid.MarginBoxes`). Content wider or taller than its box is refused at the box
+(`Documents.Layout.MarginBoxOverflow`), also when not even the min-content widths fit the row; Chromium draws it
+unclipped over the neighbouring box, the body or past the sheet — a known limit, pinned by `MarginBoxesLayoutTests`
+(at 12 pt "Left" beside a word wider than the row: Chromium shrinks "Left" to 15.0 pt and draws both words over their
+boxes; seven preserved lines in a 60 pt box run over the body). Checked against the measured edges of Chromium's
+rectangles at whole pixels: one edge is not reproduced ("Eeeeeee Eeeeeee" beside "Dd": 306.75 pt in Chromium, 307.13 pt
+here, which paints at 307.5), because Chromium computes the widths in 1/64 px.
+
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
-engine ships four algorithms (flow, inline, tracks, image) and registering another is internal
+engine ships five algorithms (flow, inline, tracks, image, margin-boxes) and registering another is internal
 (`LayoutEnvironment.WithAlgorithm`); `BreakToken` can only be derived inside the layout assembly, and the parts of a
 table are a display type (`TableDisplay`), not algorithms. When a front-end needs an algorithm of its own, these are
 the three places to open, with that front-end as their first user.
@@ -690,8 +707,12 @@ margins, which the reference tool prints on: cases `h-default-page`, `h-page-siz
 `h-page-portrait`, `h-page-default-media`). Media queries see that page also where an `@page` rule sets another
 size, as Chromium evaluates them (cases `h-media-page-size-narrow`, `h-media-page-size-wide`). A root element with `display: none` generates no box: one empty page of
 the caller's page, whatever the `@page` rules say (case `h-root-display-none`). An `@page` rule without a selector gives `size` and the margins;
-declarations that reach only the page-margin boxes (inherited properties, the counters) have no effect; any other
-declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Box generation makes
+the declarations that reach the page-margin boxes and the margin rules are the page-context cascade's
+(`PageContextCascade`, `Css.Unsupported.PageRule`; the page context inherits from the root element, `font-family`
+included, cases `pm-inherit` and `pm-inherit-family`); any other declaration, an invalid value and the size and margins of
+`@page :first` are refused (`PageRule`). A generated margin box gives every page a header area as high as the top margin
+and a footer area as high as the bottom one, each a row of the margin-boxes algorithm that starts where Chromium starts
+it, the left margin cut to 1/64 px (`PageArea.StartInMargin`; cases `pm-*`); the model's top and bottom margins are then 0. Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
 leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
@@ -769,6 +790,10 @@ Each is documented next to its code as well.
   `te-left-first`, `te-left-later`, `te-right-first`, `te-right-later`, `te-table-border`, `te-break`), and each cell
   is inset by half of its own line. Percent columns in a table whose rows have outer borders of different widths are
   not measured (the `tp-*` cases have one border width).
+- **A face that only a page-margin box uses (HTML):** Chromium has not loaded an `@font-face` face that no body text
+  uses when it prints the margin boxes, and prints that text in its fallback serif face; the engine draws the face
+  (case `pm-family-unused`, the same in three prints, listed; `HtmlListedDifferenceTests`). Used in the body too, the
+  face prints in both (case `pm-inherit-family`).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 

@@ -77,6 +77,7 @@ internal static class HtmlCases
         ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
         ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["tf-pages"] = "A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page",
+        ["pm-family-unused"] = "A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -88,7 +89,9 @@ internal static class HtmlCases
     /// <summary>The codes that are a refusal of the HTML path, by their exact code: what the CSS stage and the HTML
     /// front-end refuse to draw (<see cref="CssErrorCodes.Unsupported"/>, <see cref="HtmlStyleErrorCodes.Unsupported"/>),
     /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
-    /// and the source line of the box, where Chromium prints the content past the page end). Any other error, also
+    /// and the source line of the box, where Chromium prints the content past the page end) or in its page-margin box
+    /// (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration, where Chromium
+    /// draws it over its box). Any other error, also
     /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -113,7 +116,9 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
+        LayoutErrorCodes.MarginBoxOverflow.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
