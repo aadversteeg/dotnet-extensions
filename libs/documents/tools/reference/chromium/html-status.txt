@@ -62,28 +62,28 @@ a4-cell-pad3-image-177 equal
 a4-cell-pad3-line-177 equal
 a4-continued-cell-pad-bottom-30 open page 2 reads 't34 t35 t36 t37', Chromium 't34 t35 t36 t37 t39 t40 t41 t42' (print.txt)
 a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header: 2 pages, Chromium 3 (print.txt)
-a4-header-cut-row-image-row open page 5 reads 'H', Chromium '' (print.txt)
+a4-header-cut-row-image-row open page 6 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
 a4-header-cut-text-row equal
-a4-header-empty-rowspan-line-image open page 4 painted area: the pixel at (12.75, 12): the engine paints it and Chromium does not; the engine paints 1767 px #000000, Chromium 1031 px (print.txt)
-a4-header-image-150-image open page 4 reads 'H', Chromium '' (print.txt)
+a4-header-empty-rowspan-line-image open page 4 painted area: the pixel at (12.75, 177.75): Chromium paints it and the engine does not; the engine paints 1034 px #000000, Chromium 1031 px (print.txt)
+a4-header-image-150-image open page 5 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
 a4-header-image-153 equal
-a4-header-image-170 open page 2 reads '', Chromium 'H' (print.txt)
-a4-header-image-174 open page 2 reads '', Chromium 'H' (print.txt)
-a4-header-image-180 open page 2 reads '', Chromium 'H' (print.txt)
-a4-header-image-228 open page 3 reads 'H', Chromium '' (print.txt)
+a4-header-image-170 equal
+a4-header-image-174 open page 3 'after' baseline 34.5 (laid out at 34.125), Chromium 33.75 (print.txt)
+a4-header-image-180 open page 3 'after' baseline 40.5 (laid out at 40.125), Chromium 39.75 (print.txt)
+a4-header-image-228 open page 3 painted area: the pixel at (12.75, 75.75): Chromium paints it and the engine does not; the engine paints 540 px #000000, Chromium 538 px (print.txt)
 a4-header-image-360-image open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-image-beside-lines open 5 pages, Chromium 4 (print.txt)
-a4-header-image-row open page 3 reads 'H', Chromium '' (print.txt)
+a4-header-image-row open page 4 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
 a4-header-image-row-image open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
-a4-header-line6-image-228 open page 3 reads 'H', Chromium '' (print.txt)
-a4-header-row-image-228 open page 4 reads 'H', Chromium '' (print.txt)
+a4-header-line6-image-228 equal
+a4-header-row-image-228 open page 4 painted area: the pixel at (12.75, 75.75): Chromium paints it and the engine does not; the engine paints 540 px #000000, Chromium 538 px (print.txt)
 a4-header-row-image-row open page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
-a4-header-rows-fill-image-row open page 4 reads 'H', Chromium '' (print.txt)
-a4-header-rows-image-row open page 5 reads 'H', Chromium '' (print.txt)
-a4-header-tall-line open page 3 reads 'H W after', Chromium 'W after' (print.txt)
+a4-header-rows-fill-image-row open page 5 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
+a4-header-rows-image-row open page 6 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
+a4-header-tall-line open page 3 'W' baseline 45 (laid out at 45.375), Chromium 45.75 (print.txt)
 a4-header-two-image-rows open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-unrepeated-image-228 equal
-a4-header2-image-228 open page 3 reads 'H0 H1', Chromium '' (print.txt)
+a4-header2-image-228 open page 3 painted area: the pixel at (12.75, 91.5): Chromium paints it and the engine does not; the engine paints 582 px #000000, Chromium 580 px (print.txt)
 a4-image-177-block-padding-3 equal
 a4-image-after-text equal
 a4-image-beside-lines equal
@@ -94,7 +94,7 @@ a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_start
 a4-image-nested-table open page 4 'after' baseline 73.5 (laid out at 73.5), Chromium 24.75 (print.txt)
 a4-image-rowspan open page 1 reads 'a b', Chromium 'a' (print.txt)
 a4-image-single-cell equal
-a4-intro-header-image-row open page 4 reads 'H', Chromium '' (print.txt)
+a4-intro-header-image-row open page 5 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
 a4-line-after-text equal
 a4-line-beside-lines open page 1 'p0' x0 220.594, Chromium 150.375 (print.txt)
 a4-nested-padded-image-160 equal

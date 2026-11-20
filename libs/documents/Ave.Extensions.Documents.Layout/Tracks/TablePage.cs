@@ -95,7 +95,12 @@ namespace Ave.Extensions.Documents.Layout;
 /// whole cell's content starts. Whether the piece is taller than the page area is found by laying the page out without
 /// the header in that way: only if it is sliced even then. A piece not sliced yet that is taller than the room below the
 /// header but not than the page area goes on without the header, as any body content does; the last slice of a sliced
-/// piece stays below the header however tall it is.</para>
+/// piece stays below the header however tall it is. All of this under <see cref="RepeatedHeaderRows.AboveEverySlice"/>.
+/// Under <see cref="RepeatedHeaderRows.WhereContentIsLaidOut"/>, as Chromium prints it, such a piece is sliced below the
+/// header also when it is no taller than the page area, and a later page where all that is left of the table is the rest
+/// of pieces laid out before (<see cref="OnlyRestLeft"/>) is laid out without the header, so the rest starts at the top
+/// of the page area; where a row is still to come or a cell beside the piece goes on, the header stays above the slice
+/// (Chromium draws it over the slice there, which the engine does not copy).</para>
 /// </remarks>
 internal static class TablePage
 {
@@ -187,6 +192,22 @@ internal static class TablePage
             TracksEarlyBreak row => row,
             _ => throw new ArgumentException($"Tracks received a {space.BreakAt.GetType().Name} it did not report.", nameof(space)),
         };
+        // Under RepeatedHeaderRows.WhereContentIsLaidOut a later page that only shows the rest of content laid out on an
+        // earlier page draws no header rows; the rest starts at the top of the page area (see remarks).
+        var leavesOutHeader = !isFirst && hasHeader && LaysOutBelowHeader(table)
+            ? OnlyRestLeft(geometry, space, resume)
+            : Result<bool, Error>.Success(false);
+        if (leavesOutHeader.IsFailure)
+        {
+            return Result<LayoutResult, Error>.Failure(leavesOutHeader.Error);
+        }
+
+        if (leavesOutHeader.Value)
+        {
+            table = geometry with { CellFragmentainerBlockSize = space.FragmentainerBlockSize };
+            hasHeader = false;
+        }
+
         var outcome = Attempt(table, space, resume, isFirst, hasHeader, breakAt);
 
         // A later page that cannot hold the header and some body content that shows goes on without the header (see
@@ -199,8 +220,9 @@ internal static class TablePage
             // Taller than the page area: laid out on the page without the header, with the first row's cells starting the
             // page (through the line above them), it would still be sliced.
             var sliced = table with { SlicesBelowHeader = true };
-            var taller = space.IsAtPageStart && table.Environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice
-                ? Attempt(sliced, space, resume, isFirst, includeHeader: false, breakAt)
+            var slices = space.IsAtPageStart && table.Environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice;
+            var taller = slices
+                ? Attempt(sliced, space, resume, isFirst, includeHeader: LaysOutBelowHeader(table), breakAt)
                 : Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
             var belowHeader = taller.IsFailure || (taller.Value.HasValue && StartsSlice(taller.Value.Value))
                 ? taller.OnSuccessBind(_ => resume.BodyShown
@@ -500,6 +522,34 @@ internal static class TablePage
     /// </summary>
     private static bool CutsBelowHeader(TableGeometry table, TracksBreakToken resume) =>
         resume.RepeatsHeader == true && table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow;
+
+    /// <summary>
+    /// Whether the repeated header rows are drawn where the table lays content out and left out where it only shows the
+    /// rest of content laid out before (<see cref="RepeatedHeaderRows.WhereContentIsLaidOut"/>, see remarks).
+    /// </summary>
+    private static bool LaysOutBelowHeader(TableGeometry table) =>
+        table.Environment.Profile.RepeatedHeaderRows == RepeatedHeaderRows.WhereContentIsLaidOut
+        && table.Environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice;
+
+    /// <summary>
+    /// Whether all that is left of the table at <paramref name="resume"/> is the rest of pieces laid out on an earlier
+    /// page: laid out without the header rows and without a page end, the rest of the table is complete, holds a later
+    /// slice, and its body cells draw nothing besides slices (no row still to come draws anything, no cell beside the
+    /// piece goes on). Chromium draws no header rows on such a page (cases <c>a4-header-image-228</c>,
+    /// <c>a4-header-row-image-228</c>, <c>a4-header-tall-line</c>; and on the pages of <c>a4-header-image-360-image</c>
+    /// and <c>a4-header-image-beside-lines</c> where a row or text is still to come, it does).
+    /// </summary>
+    private static Result<bool, Error> OnlyRestLeft(TableGeometry geometry, ConstraintSpace space, TracksBreakToken resume)
+    {
+        if (resume.Cells.Count == 0)
+        {
+            return Result<bool, Error>.Success(false);
+        }
+
+        var bare = geometry with { CellFragmentainerBlockSize = space.FragmentainerBlockSize };
+        return Attempt(bare, space with { AvailableHeight = double.PositiveInfinity }, resume, isFirst: false, includeHeader: false, breakAt: null)
+            .OnSuccessMap(rest => rest.HasValue && rest.Value.Continuation is null && ContinuesSlice(rest) && !ShowsBody(bare, rest.Value.Content));
+    }
 
     /// <summary>The header rows, whole; None when they do not fit with the line below them.</summary>
     private static Result<Maybe<Content>, Error> PlaceHeader(

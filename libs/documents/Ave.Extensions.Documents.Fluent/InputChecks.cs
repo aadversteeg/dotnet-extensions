@@ -173,6 +173,12 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The cells beside slices policy must be GoOn or Below.",
                 ((int)profile.CellsBesideSlices).ToString(System.Globalization.CultureInfo.InvariantCulture), "cells-beside-slices", source);
         }
+
+        if (!Enum.IsDefined(profile.RepeatedHeaderRows))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The repeated header rows policy must be AboveEverySlice or WhereContentIsLaidOut.",
+                ((int)profile.RepeatedHeaderRows).ToString(System.Globalization.CultureInfo.InvariantCulture), "repeated-header-rows", source);
+        }
     }
 
     /// <summary>Heading levels are 1–6, as PDF structure types H1–H6 (ISO 32000-1 §14.8.4.3.2).</summary>

@@ -605,7 +605,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `RepeatedHeaderRows.WhereContentIsLaidOut`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -1153,12 +1153,19 @@ Each is documented next to its code as well.
   and there the engine starts a part of a cell that continues 0.375 pt higher than Chromium, half the grid line below
   the header (as everywhere below a repeated header: `a4-header-cut-row-image-row`, "c10" at 40.125 pt, Chromium
   40.5 pt), so the first slice lies at 28.125 pt where Chromium's lies at 28.5 pt, within the comparison's whole pixel.
-  A piece taller than the room below the header but not than the page area goes on without the header in the engine,
-  where Chromium keeps the header above it and lets it pass the page end (`a4-header-image-170`, open).
-  **Deliberate deviation from Chromium:** on the later pages the engine repeats the header above every slice and makes
-  each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
-  page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt
-  of the content that are never shown (`a4-header-row-image-row`).
+  On the later pages the policy `RepeatedHeaderRows` decides. Chromium lays the piece out whole below the header of the
+  page where it starts, also a piece no taller than the page area, and lets it pass the page end; it repeats the header
+  on every later page where the table still lays content out (a row still to come, a cell beside the piece that goes on),
+  and not on a page that only shows the rest of content laid out before: there the rest starts at the top of the page
+  area (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-row-image-228`, `a4-header-image-row`,
+  `a4-header-tall-line`, `a4-header-image-170`, `-174`, `-180`). Under `WhereContentIsLaidOut`, the HTML front-end's
+  value, the engine does the same (`SliceUnderHeaderTests`). Under `AboveEverySlice`, the code front-end's default, a
+  deliberate deviation from Chromium, the engine repeats the header above every slice and makes each slice as tall as the
+  room below it, so the content is shown whole and once, and a piece taller than the room below the header but not than
+  the page area goes on without the header. **Open difference from Chromium** under both values: on a page where the
+  header is repeated, Chromium still moves the content up a whole page area and draws the header over 16.5 pt of it,
+  which are never shown (`a4-header-row-image-row`, `a4-header-image-360-image`, `a4-header-image-beside-lines`); the
+  engine draws the header above the slice, the slice below it.
   A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
   grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
   taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases

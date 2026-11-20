@@ -11,8 +11,8 @@ public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
-    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/> and
-    /// <see cref="CellsBesideSlices.GoOn"/>.</summary>
+    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
+    /// <see cref="CellsBesideSlices.GoOn"/> and <see cref="RepeatedHeaderRows.AboveEverySlice"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -47,6 +47,38 @@ public sealed record LayoutProfile
     /// <summary>Where the other cells of a table row go on, on the pages that go on with the slices of a piece in one of
     /// its cells (<see cref="DocumentModel.CellsBesideSlices"/>).</summary>
     public CellsBesideSlices CellsBesideSlices { get; init; } = CellsBesideSlices.GoOn;
+
+    /// <summary>On which later pages of a table its repeated header rows are drawn, where a piece taller than the room
+    /// below them is sliced in one of its cells (<see cref="DocumentModel.RepeatedHeaderRows"/>).</summary>
+    public RepeatedHeaderRows RepeatedHeaderRows { get; init; } = RepeatedHeaderRows.AboveEverySlice;
+}
+
+/// <summary>
+/// On which later pages of a table its repeated header rows are drawn, where a piece in one of its body cells (an image,
+/// a line) is taller than the room below them (<see cref="MonolithicOverflow.Slice"/>). Only a table whose header rows
+/// repeat is concerned; nothing changes on its first page.
+/// </summary>
+public enum RepeatedHeaderRows
+{
+    /// <summary>The header rows are drawn above every slice, and each slice is as tall as the room below them; a piece
+    /// taller than that room but not than the page area goes on without them, whole.</summary>
+    AboveEverySlice,
+
+    /// <summary>
+    /// The header rows are drawn on every page where the table still lays content out, and not on a page that only shows
+    /// the rest of content laid out on an earlier page, as Chromium prints it. Chromium lays a piece out whole below the
+    /// header rows of the page where it starts, also one no taller than the page area, and lets it pass the page end; on a
+    /// later page where nothing of the table is left but the rest of such pieces, it draws no header rows, and the rest
+    /// starts at the top of the page area. Measured against Chromium's print (<c>tools/reference/chromium</c>): a 228 pt
+    /// image below one or two header rows (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>), as the second
+    /// body row (<c>a4-header-row-image-228</c>), a 408 pt image (<c>a4-header-image-row</c>), a line 240 pt tall
+    /// (<c>a4-header-tall-line</c>), images of 170, 174 and 180 pt, taller than the room below the header row and no
+    /// taller than the page area (<c>a4-header-image-170</c>, <c>-174</c>, <c>-180</c>). Where the table has rows still to
+    /// come or a cell beside the piece goes on (<c>a4-header-image-360-image</c>, <c>a4-header-image-beside-lines</c>),
+    /// Chromium draws the header rows over the slice at the top of the page; the engine draws them above it, the slice
+    /// below them, an open difference (docs/architecture.md, "Known limits", monolithic content taller than the page).
+    /// </summary>
+    WhereContentIsLaidOut,
 }
 
 /// <summary>

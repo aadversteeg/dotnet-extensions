@@ -59,6 +59,17 @@ public class LayoutProfileTests
     }
 
     [Fact]
+    public void The_repeated_header_rows_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
+    {
+        var model = DocumentTranslator.ToModel(Doc().RepeatedHeaderRows(RepeatedHeaderRows.WhereContentIsLaidOut)).Value;
+        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { RepeatedHeaderRows = (RepeatedHeaderRows)4 } });
+
+        LayoutProfile.Default.RepeatedHeaderRows.Should().Be(RepeatedHeaderRows.AboveEverySlice);
+        model.Profile.Should().Be(new LayoutProfile { RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut });
+        undefined.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
+    }
+
+    [Fact]
     public void The_cells_beside_slices_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
     {
         var model = DocumentTranslator.ToModel(Doc().CellsBesideSlices(CellsBesideSlices.Below)).Value;

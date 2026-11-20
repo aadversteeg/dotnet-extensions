@@ -52,15 +52,21 @@ public class SliceUnderHeaderTests
             "a4-two-image-rows" => [Table(Row(TallImage()), Row(TallImage())), Paragraph("after")],
             "a4-row-image-row" => [Table(TableRow([Cell("r1")]), Row(TallImage())), Paragraph("after")],
             "a4-header-image-228" => [Table(header, Row(TallImage(228)))],
+            "a4-header-row-image-228" => [Table(header, TableRow([Cell("r1")]), Row(TallImage(228)))],
+            "a4-header-image-170" => [Table(header, Row(TallImage(170))), Paragraph("after")],
+            "a4-header-image-174" => [Table(header, Row(TallImage(174))), Paragraph("after")],
+            "a4-header-image-180" => [Table(header, Row(TallImage(180))), Paragraph("after")],
             "a4-header2-image-228" => [Table(HeaderRow([Cell("H0")]), HeaderRow([Cell("H1")]), Row(TallImage(228)))],
             "a4-header-unrepeated-image-228" => [Table(HeaderRow([Cell([Paragraph([Text("H0"), LineBreak(), Text("H1"), LineBreak(), Text("H2"), LineBreak(), Text("H3")])])]), Row(TallImage(228)))],
             _ => throw new ArgumentException(caseName, nameof(caseName)),
         };
     }
 
-    private static Document Doc(string caseName, MonolithicOverflow overflow = MonolithicOverflow.Slice, EmptyRowParts parts = EmptyRowParts.Avoid) =>
+    private static Document Doc(
+        string caseName, MonolithicOverflow overflow = MonolithicOverflow.Slice, EmptyRowParts parts = EmptyRowParts.Avoid, RepeatedHeaderRows rows = RepeatedHeaderRows.AboveEverySlice) =>
         Document([.. Body(caseName)], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")
-            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(overflow).EmptyRowParts(parts).FontMetricRounding(FontMetricRounding.WholePixels);
+            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(overflow).EmptyRowParts(parts).RepeatedHeaderRows(rows)
+            .FontMetricRounding(FontMetricRounding.WholePixels);
 
     private static PageDocument Run(Document document)
     {
@@ -154,6 +160,51 @@ public class SliceUnderHeaderTests
         var slices = FirstSlices(chromium);
         FirstSlices(allow).Should().Equal([(slices[0].Page, slices[0].Top - 0.375), .. slices.Skip(1)]);
     }
+
+    /// <summary>The cases of <see cref="RepeatedHeaderRows"/>: a piece in a body row below a repeated header row, sliced
+    /// over pages that only show its rest (the first nine), or with a row still to come below it (the last two).</summary>
+    public static TheoryData<string> RestPages => new()
+    {
+        "a4-header-image-228",
+        "a4-header2-image-228",
+        "a4-header-row-image-228",
+        "a4-header-image-row",
+        "a4-header-tall-line",
+        "a4-header-image-170",
+        "a4-header-image-174",
+        "a4-header-image-180",
+        "a4-header-rows-image-row",
+        "a4-header-image-360-image",
+        "a4-header-two-image-rows",
+    };
+
+    [Theory]
+    [MemberData(nameof(RestPages))]
+    public void Under_RepeatedHeaderRows_WhereContentIsLaidOut_a_page_that_only_shows_the_rest_of_a_piece_draws_no_header_rows(string caseName)
+    {
+        // Chromium lays the piece out whole below the header row of the page where it starts, also an image of 170, 174 or
+        // 180 pt, no taller than the page area but taller than the 163.5 pt below the header, and lets it pass the page
+        // end. It repeats the header row on every later page where the table still lays content out (in
+        // a4-header-image-360-image and a4-header-two-image-rows: the pages of the first image, with the second row still
+        // to come), and leaves it out on a page that only shows the rest of a piece laid out before: there the rest
+        // starts at the top of the page area, 12 pt. Under WhereContentIsLaidOut the engine draws the header row on
+        // Chromium's pages, and the rest on a page without it from 12 pt; under AboveEverySlice it draws the header row
+        // above every slice, and a piece no taller than the page area goes on without it.
+        var document = Run(Doc(caseName, parts: EmptyRowParts.Allow, rows: RepeatedHeaderRows.WhereContentIsLaidOut));
+        var chromium = PrintedPages.Chromium(caseName);
+        var above = PrintedPages.Engine(Run(Doc(caseName, parts: EmptyRowParts.Allow)));
+
+        HeaderPages(PrintedPages.Engine(document)).Should().Equal(HeaderPages(chromium));
+        HeaderPages(chromium).Should().Contain(false);
+        HeaderPages(above).Should().NotEqual(HeaderPages(chromium));
+        var rest = HeaderPages(chromium).Select((header, index) => (header, index)).Where(page => !page.header).Select(page => page.index).ToList();
+        rest.SelectMany(index => document.Pages[index].Items.OfType<ClipStart>()).Select(clip => clip.Area.Origin.Y).Should().AllBeEquivalentTo(12.0);
+        rest.SelectMany(index => chromium.Pages[index].Images).Select(image => image.Y0).Should().AllBeEquivalentTo(12.0);
+    }
+
+    /// <summary>Per page, whether it shows a header row ("H", "H0").</summary>
+    private static List<bool> HeaderPages(PrintedPages pages) =>
+        [.. pages.Pages.Select(page => page.Words.Any(word => word.Text is "H" or "H0"))];
 
     [Fact]
     public void Under_EmptyRowParts_Allow_a_header_that_does_not_repeat_still_ends_its_page_alone()
