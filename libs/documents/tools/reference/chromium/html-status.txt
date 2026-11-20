@@ -392,6 +392,14 @@ sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
+te-bottom open page 1 painted area: the pixel at (36, 54): the engine paints it #ff0000, Chromium #000000; the engine paints 1174 px #ff0000, Chromium 1172 px (print.txt)
+te-break open page 1 'a0' x0 45.996, Chromium 43.746 (print.txt)
+te-left-first open page 1 'a1' x0 45.996, Chromium 43.746 (print.txt)
+te-left-later open page 1 'a0' x0 45.996, Chromium 43.746 (print.txt)
+te-right-first open page 1 painted area: the pixel at (134.25, 12): the engine paints it #ff0000, Chromium #000000; the engine paints 736 px #ff0000, Chromium 736 px (print.txt)
+te-right-later open page 1 'd0' x0 142.998, Chromium 140.742 (print.txt)
+te-table-border open page 1 'a0' x0 45.996, Chromium 44.496 (print.txt)
+te-top open page 1 'a0' baseline 31.5 (laid out at 31.242), Chromium 29.25 (print.txt)
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.485, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
 tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
