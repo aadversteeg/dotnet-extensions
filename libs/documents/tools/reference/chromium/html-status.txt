@@ -24,29 +24,32 @@ a2-padded-blocks-px open box td '' height 164.625, Chromium 180.75 (boxes.txt)
 a2-row-break-line-1-5pt equal
 a2-row-break-line-2-25pt equal
 a2-row-break-line-6pt equal
-a2-row-end open 2 pages, Chromium 3 (print.txt)
-a2-row-end-6pt open 2 pages, Chromium 3 (print.txt)
-a2-row-end-6pt-after open page 3 'after' baseline 24 (laid out at 24), Chromium 30 (print.txt)
-a2-row-end-after open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a2-row-end-background open 2 pages, Chromium 3 (print.txt)
+a2-row-end open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
+a2-row-end-6pt open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 2944 px #000000, Chromium 3200 px (print.txt)
+a2-row-end-6pt-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 2944 px #000000, Chromium 3200 px (print.txt)
+a2-row-end-6pt-part-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 2208 px #000000, Chromium 3168 px (print.txt)
+a2-row-end-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
+a2-row-end-background open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
 a2-row-end-below-paragraph equal
 a2-row-end-bottom-padding-30 equal
 a2-row-end-first-row refused Documents.Layout.DoesNotFit 180 at 3
 a2-row-end-first-row-cut open box td 'x0x1x2x3x4x5x6x7x8x9x10x' height 179.625, Chromium 180.047 (boxes.txt)
-a2-row-end-first-row-half-2col open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a2-row-end-first-row-half-6pt-below open page 2 'below' baseline 23.25 (laid out at 23.25), Chromium 26.25 (print.txt)
-a2-row-end-first-row-half-alone open 1 pages, Chromium 2 (print.txt)
-a2-row-end-first-row-half-block open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a2-row-end-first-row-half-break open page 3 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a2-row-end-first-row-half-emptyblock open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a2-row-end-first-row-half-page2 open page 3 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-2col equal
+a2-row-end-first-row-half-6pt-alone equal
+a2-row-end-first-row-half-6pt-below equal
+a2-row-end-first-row-half-alone equal
+a2-row-end-first-row-half-block equal
+a2-row-end-first-row-half-break equal
+a2-row-end-first-row-half-emptyblock equal
+a2-row-end-first-row-half-in-cell open box td 'x0x1x2x3x4x5x6x7x8x9x10b' height 179.625, Chromium 195.375 (boxes.txt)
+a2-row-end-first-row-half-page2 equal
 a2-row-end-first-row-half-second-row equal
-a2-row-end-first-row-half-top open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-top equal
 a2-row-end-nested-under-header open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-13875 open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
-a2-row-end-span open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 371 px #000000, Chromium 601 px (print.txt)
-a2-row-end-span-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 371 px #000000, Chromium 601 px (print.txt)
+a2-row-end-span open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
+a2-row-end-span-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
 a2-rowspan-blocks open box td 's' height 163.875, Chromium 281.063 (boxes.txt)
 a2-split-line-1px equal
 a3-mirror open box td 't1' height 15.141, Chromium 16.734 (boxes.txt)
@@ -54,9 +57,9 @@ a3-mirror-px open box td 't1' height 16.875, Chromium 18.75 (boxes.txt)
 a3-pad-kept equal
 a3-pad-kept-lower equal
 a3-pad-line equal
-a4-cell-image-179-5 open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a4-cell-pad3-image-177 open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a4-cell-pad3-line-177 open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a4-cell-image-179-5 open page 3 'after' baseline 24 (laid out at 24.25), Chromium 24.75 (print.txt)
+a4-cell-pad3-image-177 open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
+a4-cell-pad3-line-177 open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 368 px #000000, Chromium 400 px (print.txt)
 a4-continued-cell-pad-bottom-30 open page 2 reads 't34 t35 t36 t37', Chromium 't34 t35 t36 t37 t39 t40 t41 t42' (print.txt)
 a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header: 2 pages, Chromium 3 (print.txt)
 a4-header-cut-row-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
@@ -377,12 +380,32 @@ mf4-line-225 equal
 pm-defaults equal
 pm-empty equal
 pm-family-unused listed A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face: page 1 'Cc' x1 61.32, Chromium 61.65 (print.txt)
+pm-image-exact equal
+pm-image-middle equal
+pm-image-set equal
+pm-image-top equal
+pm-image-url equal
 pm-inherit equal
 pm-inherit-family equal
-pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.313>301.008 at 7:18
+pm-len-body equal
+pm-len-border equal
+pm-len-inline equal
+pm-len-margin equal
+pm-len-padding equal
+pm-len-sum equal
+pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.313>301.008 at 6:18
+pm-overflow-tall equal
 pm-pages equal
-pm-start-12pt refused Documents.Html.Unsupported.PageRule "Aa" at 8:15
-pm-start-25mm refused Documents.Html.Unsupported.PageRule "Aa" at 8:15
+pm-paint-order equal
+pm-snap-image equal
+pm-snap-pitch equal
+pm-snap-text equal
+pm-start-12pt equal
+pm-start-25mm equal
+pm-tall-bottom equal
+pm-tall-box equal
+pm-tall-over equal
+pm-tall-top equal
 pm-width equal
 pm-zero equal
 pm-zero-alone equal

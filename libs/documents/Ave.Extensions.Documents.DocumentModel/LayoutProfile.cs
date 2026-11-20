@@ -10,8 +10,8 @@ namespace Ave.Extensions.Documents.DocumentModel;
 public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
-    /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/> and
-    /// <see cref="SplitLineHalves.Exact"/>.</summary>
+    /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
+    /// <see cref="SplitLineHalves.Exact"/> and <see cref="TableEndOverflow.EndsOnPage"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -35,6 +35,40 @@ public sealed record LayoutProfile
     /// <summary>How thick the half of a grid line is drawn where a page break between table rows splits the line
     /// (<see cref="DocumentModel.SplitLineHalves"/>).</summary>
     public SplitLineHalves SplitLineHalves { get; init; } = SplitLineHalves.Exact;
+
+    /// <summary>Where the part of a table that passes the page end below a row placed whole goes: it ends on the page, or it
+    /// continues on the next page and takes its height there (<see cref="DocumentModel.TableEndOverflow"/>).</summary>
+    public TableEndOverflow TableEndOverflow { get; init; } = TableEndOverflow.EndsOnPage;
+}
+
+/// <summary>
+/// Where the part of a table goes that passes the page end below a row placed whole at the top of a page under
+/// <see cref="EmptyRowParts.Allow"/> (its content fits, its line below does not): below the table's last row, or at a
+/// break between rows after it. That part is never content: it is a grid line, or the half of a line that a cell holds.
+/// The page that ends draws the line under either value; the value decides what the next page does.
+/// </summary>
+public enum TableEndOverflow
+{
+    /// <summary>The table ends on the page: it takes no more than the page area, and what follows it starts at the top of
+    /// the next page. A table that ends the document adds no page.</summary>
+    EndsOnPage,
+
+    /// <summary>
+    /// What passes the page end continues on the next page and takes its height there, as Chromium prints it: the next
+    /// page starts with a part of the table as tall as what passed, and what follows the table starts below it; where the
+    /// table ends the document, that part is on a page of its own. It is painted only where part of a cell's border box
+    /// passed: then the next page draws the grid lines that passed, as they lay below the page end. Where only the
+    /// table's outer half of its bottom line passed, the part is empty. Measured against Chromium's print
+    /// (<c>tools/reference/chromium</c>): a row whose line below passes by its outer half only takes that half again at
+    /// the top of the next page, unpainted (cases <c>a2-row-end-first-row-half-*</c>, with a 6 pt line
+    /// <c>a2-row-end-first-row-half-6pt-below</c>), and on a page of its own where nothing follows
+    /// (<c>a2-row-end-first-row-half-alone</c>); a row whose content ends at the page end passes by the whole line, which
+    /// the next page draws again and takes (cases <c>a2-row-end</c>, <c>a2-row-end-after</c>, with a 6 pt line
+    /// <c>a2-row-end-6pt</c> and <c>a2-row-end-6pt-after</c>, under a cell background <c>a2-row-end-background</c>, and part
+    /// of the cell's half in <c>a2-row-end-6pt-part-after</c>); at a break between rows the next page lays its rows out
+    /// below what passed (<c>a2-row-end-span-after</c>).
+    /// </summary>
+    ContinuesOnNextPage,
 }
 
 /// <summary>
@@ -148,8 +182,9 @@ public enum FontMetricRounding
     /// (a length or a percentage rounded to it, a number times the font size floored), so pages can differ; a front-end
     /// that follows Chromium gives the line height in that unit, and then the pages are Chromium's (cases
     /// <c>f-length-*</c>, <c>f-letter-*</c>, <c>f-number-1501</c>). Chromium also paints each text baseline at a whole
-    /// pixel, which moves ink by at most half a pixel and never a line; the engine does not (docs/architecture.md,
-    /// "Against Chromium").
+    /// pixel, the nearest one, half up, which moves ink by at most half a pixel and never a line (case
+    /// <c>pm-snap-pitch</c>: lines 20.5 px apart from a top at 19.5 px have their baselines painted at 35 and 55 px); the
+    /// engine does not (docs/architecture.md, "Against Chromium").
     /// </summary>
     WholePixels,
 }

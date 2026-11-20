@@ -5,6 +5,7 @@ using Ave.Extensions.Documents.Css.Cascade;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html.Parsing;
+using Ave.Extensions.Documents.Images;
 using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Html.Boxes;
@@ -36,17 +37,9 @@ public static partial class HtmlBoxGenerator
                 return page;
             }
 
-            // The page area starts at the left margin rounded to a whole pixel and the rows at it cut to 1/64 px where
-            // the rounding goes up. Where it goes down, Chromium starts the rows at the page area's start, not at the
-            // cut (cases pm-start-25mm, pm-start-12pt), which is not built.
+            // The page area starts at the left margin rounded to a whole pixel, the rows at the smaller of that and the
+            // margin cut to 1/64 px: never after the page area's start.
             var startInMargin = page.Margins.Left - rowStart;
-            if (startInMargin.Points < 0)
-            {
-                Refuse(HtmlStyleErrorCodes.Unsupported.PageRule,
-                    "Page-margin boxes beside a left page margin that is less than half a CSS pixel past a whole pixel are not drawn in this version. Give the left margin in whole pixels (a multiple of 0.75pt).",
-                    boxes[0].Content.ToString(), boxes[0].Position);
-                return page;
-            }
 
             var (header, footer) = (page.Margins.Top, page.Margins.Bottom);
             foreach (var box in boxes.Where(box => (IsTop(box.Box) ? header : footer).Points <= 0))
@@ -96,7 +89,10 @@ public static partial class HtmlBoxGenerator
             return new PageTemplate(Area(top: true, header), Area(top: false, footer));
         }
 
-        /// <summary>One row: the generated margin boxes of one edge, each at its place (CSS Paged Media 3 §5.3.2).</summary>
+        /// <summary>One row: the generated margin boxes of one edge, each at its place (CSS Paged Media 3 §5.3.2), listed
+        /// in the order Chromium 159 paints them whatever the order of their rules: the top row from left to right, the
+        /// bottom row from right to left (measured: case <c>pm-paint-order</c>, whose rules come in neither order, and the
+        /// bottom rows of <c>pm-width</c>, <c>pm-snap-image</c> and <c>pm-defaults</c>).</summary>
         private Box Row(PageContextStyle context, bool top)
         {
             var id = NewId();
@@ -112,6 +108,11 @@ public static partial class HtmlBoxGenerator
                 children.Add(MarginBox(box, place));
             }
 
+            if (!top)
+            {
+                children.Reverse();
+            }
+
             return new Box(id, SemanticRole.Generic, LayoutAlgorithmId.MarginBoxes, BoxStyle.Initial, [.. children], Source(styled.Root.Element.Position));
         }
 
@@ -122,8 +123,8 @@ public static partial class HtmlBoxGenerator
         /// It is mapped as an element is (<see cref="BoxStyleOf"/>, <see cref="TextStyleOf"/>), through an element that
         /// stands in for it, has no children and carries its computed style: the page-context cascade already refused
         /// what a margin box does not draw. Its source is its <c>content</c> declaration, line and column, where a
-        /// layout refusal of it (<c>Documents.Layout.MarginBoxOverflow</c>) points. An image in <c>content</c> is
-        /// refused there, and left out under <see cref="UnsupportedPolicy.Warn"/>.
+        /// layout refusal of it (<c>Documents.Layout.MarginBoxOverflow</c>) points. An image in <c>content</c> is an
+        /// atomic inline among the text (<see cref="ContentImage"/>).
         /// </summary>
         private Box MarginBox(MarginBoxStyle box, MarginBoxPlace place)
         {
@@ -142,10 +143,8 @@ public static partial class HtmlBoxGenerator
                     case CssContentCounter counter when text is not null:
                         runs.Add(new CounterRun(NewId(), counter.Counter == PageCounterName.Page ? PageCounter.PageNumber : PageCounter.PageCount, text, source));
                         break;
-                    case CssContentImage image:
-                        Refuse(HtmlStyleErrorCodes.Unsupported.PageRule,
-                            $"An image in the content of @{Name(box.Box)} is not drawn in this version: only strings, counter(page) and counter(pages) are.",
-                            image.ToString(), box.Position, "content");
+                    case CssContentImage image when text is not null && ContentImage(box, image, text) is { } imageBox:
+                        runs.Add(imageBox);
                         break;
                 }
             }
@@ -158,6 +157,50 @@ public static partial class HtmlBoxGenerator
                 MarginBoxPlace = place,
             };
             return new Box(id, SemanticRole.Generic, layout, style, children, source);
+        }
+
+        /// <summary>
+        /// An image in a margin box's <c>content</c> (<c>url()</c>, or <c>image-set()</c> of one URL and its resolution,
+        /// CSS Images 4 §2.2): an atomic inline on the baseline, as an <c>img</c> inside a line of text is
+        /// (<see cref="InlineImage"/>), of its natural size divided by the resolution (CSS Images 4 §2.2, §5.3; measured
+        /// in Chromium 159, a 40 × 24 px image: <c>url()</c> 30 × 18 pt, <c>2x</c> 15 × 9 pt, <c>144dpi</c> 20 × 12 pt,
+        /// <c>60dpcm</c> 18.898 × 11.339 pt laid out and painted at whole pixels; cases <c>pm-image-url</c>,
+        /// <c>pm-image-set</c>, <c>pm-image-middle</c>, <c>pm-image-top</c>, <c>pm-image-exact</c>). The file is a
+        /// <c>data:</c> URL or what the resource resolver gives for the URL resolved against the base URL of the style
+        /// sheet that holds the <c>content</c> declaration (CSS Values 4 §4.5.1, <see cref="MarginBoxStyle.BaseUrl"/>), as
+        /// a font of <c>@font-face</c> is found. A margin box is part of the pagination artifact, so the image is
+        /// decorative: no alternative text is asked. One that does not come or does not decode is refused at the
+        /// <c>content</c> declaration, as <c>img</c> refuses it, and left out under <see cref="UnsupportedPolicy.Warn"/>.
+        /// </summary>
+        /// <returns>The image's box; null when it is refused.</returns>
+        private Box? ContentImage(MarginBoxStyle box, CssContentImage image, TextStyle text)
+        {
+            var url = DataUrl.Body(image.Url) is null ? Urls.Absolute(image.Url, box.BaseUrl ?? options.BaseUrl) ?? image.Url : image.Url;
+            var bytes = DataUrl.Body(url) ?? options.Resources?.Invoke(url)?.Bytes;
+            if (bytes is null)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} is not there (neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version.",
+                    image.ToString(), box.Position, "content");
+                return null;
+            }
+
+            var decoded = ImageDecoder.Decode(bytes.Value);
+            if (decoded.IsFailure)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} does not decode ({decoded.Error.Message}), and what Chromium shows instead is not drawn in this version.",
+                    image.ToString(), box.Position, "content");
+                return null;
+            }
+
+            var source = Source(box.Position) with { Column = box.Position.Column };
+            // The natural size is the pixel size in CSS pixels (1px = 0.75pt, CSS Values 4 §6.2), divided by the resolution.
+            const double point = 0.75;
+            var width = Length.FromPoints(decoded.Value.PixelWidth * point / image.Resolution);
+            var height = Length.FromPoints(decoded.Value.PixelHeight * point / image.Resolution);
+            var node = new ImageNode(NewId(), decoded.Value, width, height, source);
+
+            // CSS Text Decoration 3 §2: decorations are not propagated into an atomic inline.
+            return new Box(NewId(), SemanticRole.Decorative, LayoutAlgorithmId.Image, BoxStyle.Initial with { Text = text with { Decorations = [] } }, [node], source);
         }
 
         private static string Name(PageMarginBox box) => box switch

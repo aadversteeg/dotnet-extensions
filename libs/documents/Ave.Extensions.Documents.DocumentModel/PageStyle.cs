@@ -57,9 +57,11 @@ public sealed record PageArea(Box Content, Length? Height)
     /// <summary>
     /// How far the area starts before the page area's start edge, in the page margin: the area is this much wider than
     /// the page area and ends at the same end edge. Zero (the default) for an area exactly as wide as the page area. The
-    /// HTML front-end sets it for the rows of page-margin boxes: Chromium 159 lays them out from the left page margin
-    /// cut to 1/64 CSS px, where the page area starts at that margin rounded to a whole pixel (measured on a 50 pt
-    /// margin: the row from 49.992 pt, the page area from 50.25 pt, case <c>pm-width</c>). At most the start margin.
+    /// HTML front-end sets it for the rows of page-margin boxes: Chromium 159 lays them out from the smaller of the left
+    /// page margin cut to 1/64 CSS px and the page area's start, that margin rounded to a whole pixel (measured on a 50 pt
+    /// margin: the row from 49.992 pt, the page area from 50.25 pt, case <c>pm-width</c>; on margins that round down
+    /// both from the page area's start, so 0 here, cases <c>pm-start-25mm</c>, <c>pm-start-12pt</c>). At most the start
+    /// margin.
     /// </summary>
     public Length StartInMargin { get; init; } = Length.Zero;
 }

@@ -101,15 +101,19 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
             }
         }
 
-        RowStart = Length.FromPoints(System.Math.Truncate(margins.Left.Points / 0.75 * 64) / 64 * 0.75);
-        return Pixels(width, height, margins);
+        var pixels = Pixels(width, height, margins);
+        var cut = Length.FromPoints(System.Math.Truncate(margins.Left.Points / 0.75 * 64) / 64 * 0.75);
+        RowStart = cut.Points < pixels.Margins.Left.Points ? cut : pixels.Margins.Left;
+        return pixels;
     }
 
     /// <summary>
-    /// After <see cref="Apply"/>: where Chromium 159 starts the rows of page-margin boxes, the left page margin cut to
-    /// 1/64 CSS px, where the page area starts at that margin rounded to a whole pixel (<see cref="Pixels"/>). Measured:
-    /// a 50 pt margin (66.65625 px) starts the rows at 49.992 pt and the page area at 50.25 pt (cases <c>pm-width</c>,
-    /// <c>pm-defaults</c>), an A4 margin of 1 cm at 28.336 pt where the page area starts at 28.5 pt (the timesheets).
+    /// After <see cref="Apply"/>: where Chromium 159 starts the rows of page-margin boxes, the smaller of the left page
+    /// margin cut to 1/64 CSS px and the page area's start, that margin rounded to a whole pixel (<see cref="Pixels"/>).
+    /// Measured: a 50 pt margin (66.65625 px) starts the rows at 49.992 pt and the page area at 50.25 pt (cases
+    /// <c>pm-width</c>, <c>pm-defaults</c>), an A4 margin of 1 cm at 28.336 pt where the page area starts at 28.5 pt (the
+    /// timesheets); margins that round down start both at the page area's start: 25 mm (94.488 px) at 70.5 pt, 12.2 pt
+    /// (16.267 px) at 12.0 pt (cases <c>pm-start-25mm</c>, <c>pm-start-12pt</c>).
     /// </summary>
     public Length RowStart { get; private set; }
 
