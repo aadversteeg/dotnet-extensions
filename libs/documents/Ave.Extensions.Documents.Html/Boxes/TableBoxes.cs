@@ -54,13 +54,15 @@ internal enum TablePart
 /// <c>Value</c> for a computed value, <see cref="TableProperties"/>): a part outside the part it belongs in, which CSS
 /// wraps in anonymous table boxes (§17.2.1), as text or an inline box directly in a row; a part made by another element
 /// than the HTML element of its display type (HTML Standard §15.3.8), which would have no structure role of its own; a
-/// caption, a footer group, a header group after a row group; a table, group or row group without rows.</para>
+/// caption, a header group after a row group; a table, group or row group without rows. A footer group is drawn after
+/// the other row groups, as the table's last body rows (<c>DrawOrder</c>).</para>
 /// <para>Column widths (§17.5.2), as Chromium lays them out: in the fixed table layout (<c>table-layout: fixed</c> on a
 /// table of width <c>100%</c>; at width <c>auto</c> Chromium lays the table out automatically) the lengths of the column
 /// elements as fixed columns, and the width left shared equally over the columns without one (fill columns of weight
 /// 1). In the automatic table layout a column element's length is the column's preferred width and a column without
 /// one is sized by its content. The table's width is <c>auto</c> (as wide as its columns need) or <c>100%</c> (its
-/// container's width). Percent columns and widths on cells and column groups are refused.</para>
+/// container's width). Percent columns are drawn in the fixed layout (<c>PercentColumns</c>); widths on cells and
+/// column groups are refused.</para>
 /// <para>The parts follow CSS 2.1 §17.5: internal table elements have no margins; rows and row groups no padding; the
 /// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A row span ends with its row
 /// group (HTML Standard §4.9.12.1). The table breaks with <see cref="BoxDecorationBreak.Slice"/>: layout splits a grid
@@ -90,7 +92,8 @@ public static partial class HtmlBoxGenerator
     private static bool IsElementOf(TablePart part, HtmlElement element) =>
         element.Namespace == ElementNamespace.Html && (part, element.LocalName) switch
         {
-            (TablePart.Table, "table") or (TablePart.HeaderGroup, "thead") or (TablePart.RowGroup, "tbody") or (TablePart.Row, "tr")
+            (TablePart.Table, "table") or (TablePart.HeaderGroup, "thead") or (TablePart.RowGroup, "tbody") or (TablePart.FooterGroup, "tfoot")
+                or (TablePart.Row, "tr")
                 or (TablePart.Cell, "td" or "th") or (TablePart.Column, "col") or (TablePart.ColumnGroup, "colgroup") => true,
             _ => false,
         };
@@ -111,8 +114,11 @@ public static partial class HtmlBoxGenerator
 
     private sealed partial class Run
     {
-        /// <summary>Per table: per column, the width its column element gives, or null for none (auto).</summary>
-        private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span)>> _columns = new(ReferenceEqualityComparer.Instance);
+        /// <summary>Per table: per column element, the width it gives (null for none, auto), its span and its start tag.</summary>
+        private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span, TextPosition Position)>> _columns = new(ReferenceEqualityComparer.Instance);
+
+        /// <summary>The boxes of the footer groups, which their table draws after its other row groups.</summary>
+        private readonly HashSet<NodeId> _footers = [];
 
         private static TablePart PartOf(StyledElement element) => HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]);
 
@@ -131,7 +137,7 @@ public static partial class HtmlBoxGenerator
             var element = node as StyledElement;
             var part = element is null ? TablePart.None : PartOf(element);
             var position = Position(node);
-            if (parent is not (TablePart.Table or TablePart.HeaderGroup or TablePart.RowGroup or TablePart.Row))
+            if (parent is not (TablePart.Table or TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Row))
             {
                 if (part == TablePart.None || (part == TablePart.Table && IsElementOf(part, element!.Element)))
                 {
@@ -148,7 +154,7 @@ public static partial class HtmlBoxGenerator
             var host = block.Element.Element.LocalName;
             var belongs = parent switch
             {
-                TablePart.Table => part is TablePart.HeaderGroup or TablePart.RowGroup or TablePart.Column or TablePart.ColumnGroup,
+                TablePart.Table => part is TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Column or TablePart.ColumnGroup,
                 TablePart.Row => part == TablePart.Cell,
                 _ => part == TablePart.Row,
             };
@@ -158,12 +164,11 @@ public static partial class HtmlBoxGenerator
                 var message = part switch
                 {
                     TablePart.Caption => $"The table caption <{element!.Element.LocalName}> is not drawn in this version.",
-                    TablePart.FooterGroup => $"The footer row group <{element!.Element.LocalName}> is not drawn in this version: the document model's table has no footer rows.",
                     _ => $"The {what} directly inside the <{host}> ({DisplayName(parent)}) is not drawn in this version: CSS would wrap it in an anonymous table box (CSS 2.1 §17.2.1).",
                 };
                 var value = part switch
                 {
-                    TablePart.Caption or TablePart.FooterGroup => element!.Element.LocalName,
+                    TablePart.Caption => element!.Element.LocalName,
                     _ => $"{element?.Element.LocalName ?? "text"} in {host}",
                 };
                 RefuseTable(message, value, position);
@@ -221,14 +226,14 @@ public static partial class HtmlBoxGenerator
                 : [];
             if (children.Count == 0)
             {
-                columns.Add((Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
+                columns.Add((Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), element.Element.Position));
                 return;
             }
 
             foreach (var column in children)
             {
                 Check(column, isBlock: true);
-                columns.Add((Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1)));
+                columns.Add((Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), column.Element.Position));
             }
         }
 
@@ -277,6 +282,7 @@ public static partial class HtmlBoxGenerator
         {
             TablePart.Table => TableBox(block.Element, box),
             TablePart.HeaderGroup or TablePart.RowGroup => GroupBox(block.Element, box),
+            TablePart.FooterGroup => Footer(GroupBox(block.Element, box)),
             TablePart.Row => box with
             {
                 Role = SemanticRole.TableRow,
@@ -347,12 +353,39 @@ public static partial class HtmlBoxGenerator
             };
         }
 
+        private Box Footer(Box group)
+        {
+            _footers.Add(group.Id);
+            return group;
+        }
+
+        /// <summary>
+        /// The table's row groups in the order they are drawn: the first footer group last, wherever it stands in the
+        /// source; a later footer group is a row group in its place (CSS 2.1 §17.2, <c>table-footer-group</c>: "always
+        /// displayed after all other rows and row groups"; Chromium: <c>TableGroupedChildren</c>, which takes the first
+        /// footer group as the table's footer and the others as bodies). The model's table has no footer group, so the
+        /// footer's rows are its last body rows: drawn once, after the body.
+        /// </summary>
+        private List<Box> DrawOrder(List<Box> groups)
+        {
+            var footer = groups.FindIndex(group => _footers.Contains(group.Id));
+            if (footer < 0)
+            {
+                return groups;
+            }
+
+            var ordered = new List<Box>(groups);
+            ordered.RemoveAt(footer);
+            ordered.Add(groups[footer]);
+            return ordered;
+        }
+
         private Box TableBox(StyledElement element, Box box)
         {
             var html = element.Element;
             // A row group without rows was refused (GroupBox); under Warn it is left out, and a table without rows is an
             // empty block.
-            var groups = box.Children.OfType<Box>().Where(group => group.Children.Count > 0).ToList();
+            var groups = DrawOrder([.. box.Children.OfType<Box>().Where(group => group.Children.Count > 0)]);
             if (groups.Count == 0)
             {
                 RefuseTable($"The table <{html.LocalName}> without rows is not drawn in this version.", "table without rows", html.Position);
@@ -429,15 +462,24 @@ public static partial class HtmlBoxGenerator
                 return (Equal(count), width);
             }
 
-            var lengths = new CssLength?[count];
+            var widths = new CssValue?[count];
+            var places = new TextPosition[count];
             var next = 0;
-            foreach (var (length, span) in given)
+            foreach (var (value, span, position) in given)
             {
-                Array.Fill(lengths, length as CssLength, next, span);
+                Array.Fill(widths, value, next, span);
+                Array.Fill(places, position, next, span);
                 next += span;
             }
 
-            if (stretch && Value(table, "table-layout") is CssKeyword { Name: "fixed" })
+            var isFixed = stretch && Value(table, "table-layout") is CssKeyword { Name: "fixed" };
+            if (PercentColumns(widths, places, isFixed) is { } shares)
+            {
+                return (shares, width);
+            }
+
+            var lengths = widths.Select(value => value as CssLength).ToArray();
+            if (isFixed)
             {
                 // §17.5.2.1: the widths of the column elements, exact, and the width left over shared equally by the
                 // columns without one (fill columns of weight 1); with no such column the table's width left over goes to
@@ -447,6 +489,54 @@ public static partial class HtmlBoxGenerator
 
             // §17.5.2.2: a column length is the column's preferred width, a column without one is sized by its content.
             return ([.. lengths.Select(length => length is null ? TrackSize.Auto.Instance : (TrackSize)new TrackSize.Preferred(length.Value))], width);
+        }
+
+        /// <summary>
+        /// The columns of a table with percent columns (CSS 2.1 §17.5.2.1, where a percentage is of the table's width), as
+        /// Chromium's fixed layout sizes them (<c>SynchronizeAssignableTableInlineSizeAndColumnsFixed</c>,
+        /// table_layout_utils.cc): a percentage is of the width the columns share, the table's width less its outer half
+        /// borders in the collapsing model (case <c>tp-outer-border</c>). Without a column of another kind the percent
+        /// columns grow or shrink in proportion to fill that width (sums below and above 100, cases <c>tp-sum-below</c>,
+        /// <c>tp-sum-above</c>); beside columns without a width each keeps its percentage and those columns share the rest
+        /// equally (<c>tp-beside-auto</c>). Both are fill columns whose weights are the shares of the width, so layout
+        /// divides the width exactly where Chromium cuts each share to 1/64 px and gives the remainder to the last column.
+        /// A span repeats the percentage over its columns (<c>tp-col-span</c>). Refused, at the column element, and then
+        /// read as a column without a width: a percent column outside the fixed layout of a table of width <c>100%</c>
+        /// (Chromium's automatic layout has other rules); beside a column of a length, which Chromium widens to what the
+        /// percentages leave (<c>tp-beside-length</c>); and percentages of 100 or more beside a column without a width,
+        /// which Chromium leaves no width. Null when the table has no percent column or it was refused.
+        /// </summary>
+        private ValueList<TrackSize>? PercentColumns(CssValue?[] widths, TextPosition[] places, bool isFixed)
+        {
+            var first = Array.FindIndex(widths, value => value is CssPercentage);
+            if (first < 0)
+            {
+                return null;
+            }
+
+            var total = widths.Sum(value => value is CssPercentage percent ? percent.Value : 0);
+            var others = widths.Count(value => value is null);
+            var reason = !isFixed ? "a percent column is drawn only in the fixed table layout (table-layout: fixed) of a table of width 100% in this version"
+                : Array.Exists(widths, value => value is CssLength) ? "a percent column beside a column of a length is not drawn in this version"
+                : others > 0 && total >= 100 ? "percent columns of 100% or more beside a column without a width are not drawn in this version"
+                : null;
+            if (reason is not null)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'width: {widths[first]}' on a column element is not drawn: {reason}.", widths[first]!.ToString()!, places[first], "width");
+                for (var i = 0; i < widths.Length; i++)
+                {
+                    widths[i] = widths[i] is CssPercentage ? null : widths[i];
+                }
+
+                return null;
+            }
+
+            return [.. widths.Select(value => (TrackSize)new TrackSize.Fill(value switch
+            {
+                CssPercentage percent when others == 0 => percent.Value * 100 / total,
+                CssPercentage percent => percent.Value,
+                _ => (100 - total) / others,
+            }))];
         }
 
         private static ValueList<TrackSize> Equal(int count) => [.. Enumerable.Repeat((TrackSize)new TrackSize.Fill(1), count)];
