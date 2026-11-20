@@ -92,6 +92,12 @@ names nothing.
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
 so `clip` beside `visible` is accepted and kept, as in Chromium.
 
+`width` on a table part: a table is drawn at `auto` or `100%`; a `col` takes a length, or a percentage in the fixed
+layout (`table-layout: fixed` on a table of width `100%`) when every other column is a percentage or has no width
+and, beside a column without a width, the percentages add up to less than 100. A percentage on a `col` of the
+automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body
+rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).
+
 ### Supported at the initial value only
 
 What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and

@@ -59,6 +59,7 @@ public static partial class HtmlBoxGenerator
         MonolithicOverflow = MonolithicOverflow.Slice,
         EmptyRowParts = EmptyRowParts.Allow,
         FontMetricRounding = FontMetricRounding.WholePixels,
+        SplitLineHalves = SplitLineHalves.AtLeastOnePixel,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>
