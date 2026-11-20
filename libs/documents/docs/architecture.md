@@ -687,8 +687,9 @@ its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only f
 columns without one share what is left (fill columns of weight 1). A table of width `auto` is as wide as its columns
 need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
-it; the two agree while the content fits its column (case `tl-fixed-fill-wide-word`, listed;
-`HtmlListedDifferenceTests`). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+it; the two agree while the content fits its column (cases `tl-fixed-fill-wide-word` and `a4-line-beside-lines`, a
+200 pt word in the first of two columns of 137.625 pt in Chromium, listed; `HtmlListedDifferenceTests`: the columns'
+widths are the whole difference). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
 the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
 a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
 (case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
@@ -825,8 +826,10 @@ Each is documented next to its code as well.
   following page, over them (24.75 pt). The engine starts what follows below the last slice in every shape (72.75 pt), so
   no text is drawn over an image; that place is the whole difference (cases `a4-image-in-cell`,
   `a4-slice4-cell-row-after`, `a4-row-image-row`, `a4-two-image-rows`, listed; `HtmlListedDifferenceTests`). In a table
-  inside a cell (`a4-image-nested-table`, open) the engine also draws the inner table's bottom line and the outer row's
-  line one below the other (60 to 61.5 pt) where Chromium draws them as one (60 to 60.75 pt). The other cells of the
+  inside a cell (`a4-image-nested-table`, listed with them) the engine also draws the inner table's bottom line and the
+  outer row's line one below the other (60 to 61.5 pt) where Chromium draws them as one (60 to 60.75 pt): Chromium ends
+  the outer row as tall as the rest of the image as well, which comes with drawing over the slices; the test states
+  the 0.75 pt and finds no other difference. The other cells of the
   image's row go on below the slices, as Chromium prints them (`CellsBesideSlices.Below`).
 - **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
@@ -928,9 +931,12 @@ Each is documented next to its code as well.
   its orphans before a break on that page, where Chromium counts its widows there too (it differs only where widows are
   more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). The rest of a cut cell aligned `middle` or `bottom` is aligned
   in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
-  (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
-  the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
-  row whole on the next (cases `fr-f4-padding-page-start`, `a2-cells-end-page-top`); a row that starts a later page,
+  (Chromium keeps the uncut height: the rest of the row is 12 pt taller; case `fr-old-margin-at-row-cut`, listed
+  through the HTML front-end too, `HtmlListedDifferenceTests`, where that height is the whole difference). Where a
+  cell's lines all fit and only its bottom padding or grid line does not, at the top of a page the engine cuts the row
+  as a last resort, where Chromium leaves the first page blank and prints the row whole on the next (cases
+  `fr-f4-padding-page-start`, listed through the HTML front-end too, where the engine's first page is Chromium's
+  second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
   after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
   line, where Chromium prints all its lines on that page and lets the padding overflow (cases
   `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`).
@@ -948,7 +954,10 @@ Each is documented next to its code as well.
   the same pages (cases `fr-kwn-pad-*`).
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
-  stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
+  stretch); a row span's missing height goes to its last row (Chromium spreads it over the spanned rows: with an image
+  sliced in a cell that spans two rows, case `a4-image-rowspan`, the engine keeps the second row on the first page and
+  starts the next row below the last slice, where Chromium puts the second row beside the first slice and draws the
+  next one over the second slice; listed, `HtmlListedDifferenceTests`); a page that cannot hold a table's header plus some body
   continues without the header. A line breaks before and after an image in it also next to a character of the Unicode
   classes GL, WJ or ZWJ (a word joiner, a zero width joiner, a narrow no-break space), where CSS Text 3 §5.5 asks for
   no break ("with the exception of U+00A0 NO-BREAK SPACE, there must be no soft wrap opportunity between atomic inlines

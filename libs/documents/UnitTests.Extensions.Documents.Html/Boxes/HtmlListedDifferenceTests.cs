@@ -130,28 +130,126 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
-    /// The fixed table layout at width 100% with three columns without a width, the first holding a word wider than an
-    /// even share of the 276 pt page area (case <c>tl-fixed-fill-wide-word</c>): Chromium gives each column its share,
-    /// 92 pt, and lets the word overflow into the next column (CSS 2.1 §17.5.2.1: in the fixed layout the widths do not
-    /// depend on the content). The engine's columns without a width are fill columns, which are never narrower than their
-    /// content's min-content width: the first column is as wide as the word and its padding, and the other two share what
-    /// is left equally. Where every cell's content fits its share, both give the same columns.
+    /// The fixed table layout at width 100% with columns without a width, the first holding a word wider than an even
+    /// share of the page area: Chromium gives each column its share and lets the word overflow into the next column
+    /// (CSS 2.1 §17.5.2.1: in the fixed layout the widths do not depend on the content). The engine's columns without a
+    /// width are fill columns, which are never narrower than their content's min-content width: the first column is as
+    /// wide as the word and its padding, and the others share what is left equally. Where every cell's content fits its
+    /// share, both give the same columns. Cases: three columns in a 276 pt page area, 92 pt shares
+    /// (<c>tl-fixed-fill-wide-word</c>); two columns, 137.625 pt each in Chromium (<c>boxes.txt</c>), the first holding a
+    /// 200 pt "W" that ends at 219.945 pt, beside thirty lines over four pages (<c>a4-line-beside-lines</c>). The column
+    /// widths are the whole difference: every word is on Chromium's page, on Chromium's baseline, and the words of each
+    /// column lie one distance to the right of Chromium's (none for the first).
+    /// </summary>
+    /// <param name="name">The case.</param>
+    /// <param name="wide">The word wider than its column's share.</param>
+    /// <param name="next">The first word of the second column.</param>
+    /// <param name="chromiumLines">The left edges of Chromium's column lines, painted at whole pixels.</param>
+    [Theory]
+    [InlineData("tl-fixed-fill-wide-word", "Pneumonoultramicroscopic", "two", new[] { 12, 103.5, 195.75, 287.25 })]
+    [InlineData("a4-line-beside-lines", "W", "p0", new[] { 12, 150, 287.25 })]
+    public void A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow(
+        string name, string wide, string next, double[] chromiumLines)
+    {
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        static PrintedWord First(PrintedPages pages, string text) => pages.Pages.SelectMany(page => page.Words).First(word => word.Text == text);
+
+        static double[] Lines(PrintedPages pages) =>
+            [.. pages.Pages[0].Rectangles.Where(line => line.Height > line.X1 - line.X0).Select(line => line.X0).Distinct().Order()];
+
+        var word = First(chromium, wide);
+        Lines(chromium).Should().Equal(chromiumLines, "Chromium's columns are even shares, painted at whole pixels (a line per row)");
+        word.X1.Should().BeGreaterThan(First(chromium, next).X0, "Chromium lets the word overflow into the second column");
+        First(engine, next).X0.Should().BeGreaterThan(word.X1, "the engine's first column holds the word");
+        var lines = Lines(engine);
+        lines.Zip(lines.Skip(1)).Skip(1).Select(pair => pair.Second - pair.First).Should().OnlyContain(share => Math.Abs(share - (lines[2] - lines[1])) < 0.01,
+            "the other columns share what is left equally");
+        First(engine, wide).X0.Should().BeApproximately(word.X0, 0.01);
+
+        engine.Pages.Select(page => page.Text).Should().Equal(chromium.Pages.Select(page => page.Text));
+        var pairs = engine.Pages.SelectMany(page => page.Words).Zip(chromium.Pages.SelectMany(page => page.Words)).ToList();
+        pairs.Should().OnlyContain(pair => pair.First.Page == pair.Second.Page && Math.Abs((Math.Round(pair.First.Baseline / 0.75, MidpointRounding.AwayFromZero) * 0.75) - pair.Second.Baseline) < HtmlCases.Bound,
+            "every word is on Chromium's page and baseline, which Chromium paints at the nearest whole pixel");
+        var column = (PrintedWord theirs) => chromiumLines.Count(line => line <= theirs.X0) - 1;
+        var shifts = pairs.GroupBy(pair => column(pair.Second)).ToDictionary(group => group.Key, group => group.First().First.X0 - group.First().Second.X0);
+        shifts[0].Should().BeApproximately(0, 0.01, "the first column starts where Chromium's does");
+        pairs.Should().OnlyContain(pair => Math.Abs(pair.First.X0 - pair.Second.X0 - shifts[column(pair.Second)]) < 0.01, "each column's words move by one distance");
+    }
+
+    /// <summary>
+    /// A row whose cell's lines fill the page area and whose padding does not fit with them, at the top of the first page
+    /// (case <c>fr-f4-padding-page-start</c>, eight lines with 3 pt padding, 151.5 pt in a 150 pt page area): Chromium
+    /// leaves the first page blank and prints the row whole on the second, its bottom padding and line passing the page
+    /// end; the engine cuts the row as a last resort before its last line, because a table at the top of a page cannot
+    /// move to a better page (docs/architecture.md, "Known limits"; the code front-end's
+    /// <c>TableBreakReferenceTests</c> pins the same pages). Where the page breaks is the whole difference: the engine's
+    /// first page is Chromium's second without its last line, every word and line where Chromium prints it.
     /// </summary>
     [Fact]
-    public void A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow()
+    public void At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page()
     {
-        var (engine, chromium) = (Engine("tl-fixed-fill-wide-word").Pages.Single(), Chromium("tl-fixed-fill-wide-word").Pages.Single());
-        var word = chromium.Words.Single(word => word.Text == "Pneumonoultramicroscopic");
-        static double[] Starts(PrintedPage page) => [.. page.Words.Where(word => word.Text is "two" or "three").Select(word => word.X0)];
+        var (engine, chromium) = (Engine("fr-f4-padding-page-start"), Chromium("fr-f4-padding-page-start"));
 
-        static double[] Lines(PrintedPage page) => [.. page.Rectangles.Where(line => line.Height > line.X1 - line.X0).Select(line => line.X0).Distinct().Order()];
+        engine.PageTexts.Should().Equal("a0 a1 a2 a3 a4 a5 a6", "a7 z");
+        chromium.PageTexts.Should().Equal(string.Empty, "a0 a1 a2 a3 a4 a5 a6 a7", "z");
+        var second = chromium.Pages[1];
+        second.Words[^1].Baseline.Should().Be(155.25);
+        var cut = second with { Number = 1, Words = [.. second.Words.SkipLast(1).Select(word => word with { Page = 1 })], Rectangles = [.. second.Rectangles.Select(line => line with { Page = 1 })] };
+        HtmlCases.Difference(new PrintedPages([engine.Pages[0]]), new PrintedPages([cut])).Should().BeNull("the row is cut where the page ends, as Chromium lays it out");
+    }
 
-        Lines(chromium).Should().Equal([12, 103.5, 195.75, 287.25], "Chromium's columns are even shares, painted at whole pixels (a line per row)");
-        word.X1.Should().BeGreaterThan(Starts(chromium)[0], "Chromium lets the word overflow into the second column");
-        Starts(engine)[0].Should().BeGreaterThan(word.X1, "the engine's first column holds the word");
-        var lines = Lines(engine);
-        (lines[2] - lines[1]).Should().BeApproximately(lines[3] - lines[2], 0.01, "the other two columns share what is left equally");
-        engine.Words.Single(other => other.Text == word.Text).X0.Should().BeApproximately(word.X0, 0.01);
+    /// <summary>
+    /// A margin dropped at a row cut (case <c>fr-old-margin-at-row-cut</c>: "a" with a 12 pt bottom margin ends the first
+    /// page, "b0 b1" follow it in the same cell): the margin is truncated at the break (CSS Fragmentation 3 §5.2), and the
+    /// engine's rest of the row is as tall as its content; Chromium's row keeps the height it has uncut, so its rest is
+    /// 12 pt taller (docs/architecture.md, "Known limits"; the code front-end's <c>ListedDifferenceTests</c> pins the same).
+    /// That height is the whole difference: the engine's second page with what lies below the row's rest moved 12 pt
+    /// lower, and the cell's side lines 12 pt longer, is Chromium's.
+    /// </summary>
+    [Fact]
+    public void A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height()
+    {
+        var (engine, chromium) = (Engine("fr-old-margin-at-row-cut"), Chromium("fr-old-margin-at-row-cut"));
+        double Z(PrintedPages pages) => pages.Pages[1].Words.Single(word => word.Text == "z").Baseline;
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts).And.Equal("i a", "b0 b1 z");
+        (Z(engine), Z(chromium)).Should().Be((62.25, 74.25));
+        var page = engine.Pages[1];
+        var end = page.Rectangles.Where(line => line.X1 - line.X0 > line.Height).Min(line => line.Y0);
+        end.Should().Be(48, "the rest of the row ends below b1");
+        var taller = page with
+        {
+            Words = [.. page.Words.Select(word => word.Baseline > end ? word with { Baseline = word.Baseline + 12 } : word)],
+            Rectangles = [.. page.Rectangles.Select(line => line.Y0 >= end ? line with { Y0 = line.Y0 + 12, Y1 = line.Y1 + 12 } : line.Y1 > end ? line with { Y1 = line.Y1 + 12 } : line)],
+        };
+        HtmlCases.Difference(new PrintedPages([engine.Pages[0], taller]), chromium).Should().BeNull("the row's height is the whole difference");
+    }
+
+    /// <summary>
+    /// An image in a cell that spans two rows (case <c>a4-image-rowspan</c>; the code front-end's <c>SliceInTableTests</c>
+    /// pins the same pages): a difference that follows from two stated rules. A row span's missing height goes to its
+    /// last row (docs/architecture.md, "Deliberate deviations from CSS"), so the engine keeps "b"'s row on the first page
+    /// (baseline 40.5 pt) where Chromium, which spreads that height over the spanned rows, puts it beside the first slice
+    /// (49.5 pt on page 2); and what follows the image's row starts below the last slice (72.75 pt on page 4) where
+    /// Chromium draws it over the second slice (73.5 pt on page 3; the limit of
+    /// <see cref="What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices"/>).
+    /// The slices are the same on every page.
+    /// </summary>
+    [Fact]
+    public void An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells()
+    {
+        var (engine, chromium) = (Engine("a4-image-rowspan"), Chromium("a4-image-rowspan"));
+        static (int Page, double Baseline) At(PrintedPages pages, string text) =>
+            pages.Pages.SelectMany(page => page.Words).Where(word => word.Text == text).Select(word => (word.Page, word.Baseline)).Single();
+
+        engine.PageTexts.Should().Equal("a b", string.Empty, string.Empty, "after z");
+        chromium.PageTexts.Should().Equal("a", "b", "after z", string.Empty);
+        engine.Pages.Select(page => page.Images).Should().BeEquivalentTo(chromium.Pages.Select(page => page.Images), options => options.WithStrictOrdering(), "the slices are the same");
+        (At(engine, "a"), At(chromium, "a")).Should().Be(((1, 24.75), (1, 24.75)));
+        (At(engine, "b"), At(chromium, "b")).Should().Be(((1, 40.5), (2, 49.5)));
+        (At(engine, "after"), At(chromium, "after")).Should().Be(((4, 72.75), (3, 73.5)));
+        At(engine, "after").Baseline.Should().BeGreaterThan(engine.Pages[3].Images.Single().Y1, "the next row comes below the last slice");
+        At(chromium, "after").Baseline.Should().BeLessThan(chromium.Pages[2].Images.Single().Y1, "Chromium draws it over the slice");
     }
 
     /// <summary>
@@ -213,7 +311,12 @@ public class HtmlListedDifferenceTests
     /// of two cells, then a row (<c>a4-image-in-cell</c>); in the last row of a one-column table, then a paragraph
     /// (<c>a4-row-image-row</c>);
     /// two such rows, then a paragraph (<c>a4-two-image-rows</c>); a 588 pt image in the second of two cells, then a row,
-    /// which Chromium draws over the third of four slices, a page before the engine's (<c>a4-slice4-cell-row-after</c>).
+    /// which Chromium draws over the third of four slices, a page before the engine's (<c>a4-slice4-cell-row-after</c>); a
+    /// 408 pt image in a table inside a cell, then a row (<c>a4-image-nested-table</c>). There Chromium ends the outer row
+    /// as tall as the rest of the image too, so its line lies on the inner table's bottom line (both 60 to 60.75 pt);
+    /// the engine stacks the outer cell's bottom inset below the inner table, its line 0.75 pt lower. That distance is
+    /// stated and taken out before the comparison: Chromium's coinciding lines come with drawing over the slices, not with
+    /// a geometry the engine follows.
     /// </summary>
     /// <param name="name">The case.</param>
     /// <param name="first">The first word after the sliced row.</param>
@@ -221,13 +324,16 @@ public class HtmlListedDifferenceTests
     /// <param name="chromiumBaseline">Its baseline there, over the slice.</param>
     /// <param name="enginePage">The page the engine draws it on.</param>
     /// <param name="engineBaseline">Its baseline there, below the last slice.</param>
+    /// <param name="linesApart">How far below the line at the slice's bottom edge the engine draws the outer row's line,
+    /// where Chromium draws both in one place; 0 where there is one line.</param>
     [Theory]
-    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.75)]
-    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.75)]
-    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.75)]
-    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 71.25)]
+    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.75, 0)]
+    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.75, 0)]
+    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.75, 0)]
+    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 71.25, 0)]
+    [InlineData("a4-image-nested-table", "after", 4, 24.75, 4, 73.5, 0.75)]
     public void What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices(
-        string name, string first, int chromiumPage, double chromiumBaseline, int enginePage, double engineBaseline)
+        string name, string first, int chromiumPage, double chromiumBaseline, int enginePage, double engineBaseline, double linesApart)
     {
         var (engine, chromium) = (Engine(name), Chromium(name));
         var word = (PrintedPages pages, int page) => pages.Pages[page - 1].Words.First(candidate => candidate.Text == first);
@@ -240,12 +346,24 @@ public class HtmlListedDifferenceTests
         HtmlCases.Difference(engine, chromium).Should().NotBeNull();
 
         // Every word below the last slice moves, and every rectangle below the line at the slice's bottom edge, which
-        // both draw (it ends the sliced row); a column's line that runs on through that edge is split there.
+        // both draw (it ends the sliced row); a column's line that runs on through that edge is split there. An outer
+        // row's line drawn below it is first lifted onto it, as Chromium draws it.
         var from = sliceEnd(engine, enginePage);
         var source = engine.Pages[enginePage - 1];
-        var cut = source.Rectangles.Where(line => Math.Abs(line.Y0 - from) < 0.01 && line.X1 - line.X0 > line.Height).Max(line => line.Y1);
+        var across = (PrintedBox line, double y) => Math.Abs(line.Y0 - y) < 0.01 && line.X1 - line.X0 > line.Height;
+        var lifted = source.Rectangles.Where(line => across(line, from + linesApart)).ToList();
+        lifted.Should().NotBeEmpty("the line that ends the sliced row");
+        if (linesApart > 0)
+        {
+            source.Rectangles.Should().Contain(line => across(line, from), "the inner table's bottom line");
+            chromium.Pages[enginePage - 1].Rectangles.Where(line => across(line, from)).Should().HaveCountGreaterThanOrEqualTo(2, "Chromium draws the inner and the outer line in one place");
+            chromium.Pages[enginePage - 1].Rectangles.Should().NotContain(line => across(line, from + linesApart));
+        }
+
+        var cut = lifted.Max(line => line.Y1);
         var shift = engineBaseline - chromiumBaseline;
-        var stays = source.Rectangles.Where(item => item.Y0 < cut).Select(item => item with { Y1 = Math.Min(item.Y1, cut) });
+        var stays = source.Rectangles.Where(item => lifted.Contains(item) || item.Y0 < cut - linesApart)
+            .Select(item => lifted.Contains(item) ? item with { Y0 = item.Y0 - linesApart, Y1 = item.Y1 - linesApart } : item with { Y1 = Math.Min(item.Y1, cut - linesApart) });
         var goes = source.Rectangles.Where(item => item.Y1 > cut).Select(item => item with { Page = chromiumPage, Y0 = Math.Max(item.Y0, cut) - shift, Y1 = item.Y1 - shift });
         var moved = new PrintedPages([.. engine.Pages.Select(page =>
         {

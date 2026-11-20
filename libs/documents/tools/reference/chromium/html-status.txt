@@ -80,12 +80,12 @@ a4-image-block-padding-133 equal
 a4-image-block-padding-60 equal
 a4-image-first equal
 a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
-a4-image-nested-table open page 4 'after' baseline 73.5 (laid out at 73.5), Chromium 24.75 (print.txt)
-a4-image-rowspan open page 1 reads 'a b', Chromium 'a' (print.txt)
+a4-image-nested-table listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 73.5 (laid out at 73.5), Chromium 24.75 (print.txt)
+a4-image-rowspan listed An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells: page 1 reads 'a b', Chromium 'a' (print.txt)
 a4-image-single-cell equal
 a4-intro-header-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-line-after-text equal
-a4-line-beside-lines open page 1 'p0' x0 220.594, Chromium 150.375 (print.txt)
+a4-line-beside-lines listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'p0' x0 220.594, Chromium 150.375 (print.txt)
 a4-nested-padded-image-160 equal
 a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-slice-near-end-beside-lines equal
@@ -198,7 +198,7 @@ fr-f4-grid-line-second-row equal
 fr-f4-one-line-cell-beside-cut-cell equal
 fr-f4-one-line-cell-beside-cut-cell-control equal
 fr-f4-one-line-cell-widows3 equal
-fr-f4-padding-page-start open 2 pages, Chromium 3 (print.txt)
+fr-f4-padding-page-start listed At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page: 2 pages, Chromium 3 (print.txt)
 fr-f4-padding-second-row equal
 fr-f4-padding-two-cells equal
 fr-f5-continued-box-table-padding equal
@@ -261,7 +261,7 @@ fr-old-header-quarter-240-at equal
 fr-old-header-quarter-240-over equal
 fr-old-header-taller-than-page refused Documents.Layout.DoesNotFit 42 at 8
 fr-old-keep-together-hides listed A_box_kept_together_does_not_hide_a_better_breakpoint_before_it: page 1 reads 'n0', Chromium 'n0 n1 o0 o1' (print.txt)
-fr-old-margin-at-row-cut open page 2 'z' baseline 62.25 (laid out at 62.25), Chromium 74.25 (print.txt)
+fr-old-margin-at-row-cut listed A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height: page 2 'z' baseline 62.25 (laid out at 62.25), Chromium 74.25 (print.txt)
 fr-old-row-taller-by-padding listed A_row_taller_than_the_page_only_through_its_cell_padding_is_refused: 4 pages, Chromium 3 (print.txt)
 fr-old-row-without-cells equal
 fr-own-avoid-early-break equal
