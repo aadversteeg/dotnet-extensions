@@ -8,9 +8,7 @@ td 136.969 29.250 2026-10-01
 td 164.285 15.750 Test
 td 547.688 15.750 Emoji  and arrows → => a
 td 109.559 29.250 1.234,50
-td 711.973 13.500 Line one
-line two
-  with
+td 711.973 13.500 Line one line two   with
 td 136.969 15.750 2026-10-02
 td 164.285 15.750 Test
 td 547.688 15.750 Rounding 0.005

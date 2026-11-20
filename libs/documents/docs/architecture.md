@@ -717,6 +717,10 @@ fails the test, and so does a status that changes without the file; writing the 
 the committed file does not already name. To read it: `cut -d' ' -f2 html-status.txt | sort | uniq -c` gives the
 picture; grep a code or a property for the cases it holds back.
 
+The whole documents (`tools/reference/chromium/documents`: the timesheet on one page, a normal month and a long
+month, and the invoice) are compared by the same code, against their own files: `documents/measured/` and the status
+file `documents/html-status.txt`, one line per document, pinned by the same test and written by the same variable.
+
 ## Known limits (all stages)
 
 Each is documented next to its code as well.

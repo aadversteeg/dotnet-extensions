@@ -129,7 +129,14 @@ from them:
 pwsh -NoProfile -File measure.ps1 -CaseFolder documents
 ```
 
-and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`.
+and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`. The timesheets' prints have an
+`ink.txt` too: Chromium clips the right end of the table's grey lines at x 567.105, 0.105 pt into the right border, and
+`ink.py` reads such a clip as it reads a decoration line cut around ink.
+
+The HTML front-end reads the documents as it reads the cases, with the same comparison (`CaseStatusTests`,
+`UnitTests.Extensions.Documents.Html`): one status line per document in `documents/html-status.txt`, in the form of
+`html-status.txt`. A document stays `open` with its first difference, or `refused` with its first refusal, until the
+front-end lays it out as Chromium prints it.
 
 | Document | What it is | Chromium's print |
 | --- | --- | --- |
