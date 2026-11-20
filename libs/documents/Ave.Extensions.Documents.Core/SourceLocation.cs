@@ -12,6 +12,10 @@ namespace Ave.Extensions.Documents.Core;
 /// <param name="Line">The 1-based line number; 0 when unknown.</param>
 public readonly record struct SourceLocation(string File, int Line)
 {
+    /// <summary>The 1-based column, for a front-end that reads a text and knows it (a declaration in a style sheet);
+    /// 0 when unknown, as for the code front-end. Not part of <see cref="ToString"/>.</summary>
+    public int Column { get; init; }
+
     /// <summary>
     /// Formats as <c>FileName.cs:42</c>. Only the file NAME is written, not the full path, so text output
     /// (golden files) is the same on every machine and in every checkout directory.

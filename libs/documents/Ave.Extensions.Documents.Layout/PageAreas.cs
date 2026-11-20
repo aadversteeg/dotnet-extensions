@@ -15,7 +15,8 @@ namespace Ave.Extensions.Documents.Layout;
 internal static class PageAreas
 {
     /// <summary>One laid-out area.</summary>
-    /// <param name="Fragment">Its fragment, positioned relative to the area's top-left corner; null for no area.</param>
+    /// <param name="Fragment">Its fragment, positioned relative to the page area's start edge and the area's top (an area
+    /// that starts in the page margin, <see cref="PageArea.StartInMargin"/>, is at a negative x); null for no area.</param>
     /// <param name="Height">The height it takes from the page area: its fixed height, or its content's height
     /// including the content's margins.</param>
     public sealed record Area(PlacedFragment? Fragment, double Height)
@@ -36,7 +37,8 @@ internal static class PageAreas
 
     /// <summary>
     /// One area: its content is placed with its top margin inside the area (a new formatting context keeps its
-    /// margins, CSS 2.1 §8.3.1) and may use the whole page area, or the fixed height when one is set.
+    /// margins, CSS 2.1 §8.3.1) and may use the whole page area, or the fixed height when one is set. An area that
+    /// starts in the page margin is that much wider and that much further left.
     /// </summary>
     private static Result<Area, Error> LayOut(LayoutEnvironment environment, PageArea? area, double width, double pageAreaHeight)
     {
@@ -48,7 +50,8 @@ internal static class PageAreas
         var content = area.Content;
         var available = area.Height?.Points ?? pageAreaHeight;
         var margin = content.Style.Margin;
-        return InFlowChild.Place(environment, content, width, margin.Top.Points, available, available, isAtPageStart: true, resume: null, isPageRoot: true)
+        var start = area.StartInMargin.Points;
+        return InFlowChild.Place(environment, content, width + start, margin.Top.Points, available, available, isAtPageStart: true, resume: null, isPageRoot: true)
             .OnSuccessBind(placement =>
             {
                 // At the start of an empty area NoRoom cannot happen (the contract turns it into DoesNotFit); a
@@ -64,7 +67,7 @@ internal static class PageAreas
                 var used = margin.Top.Points + fragment.Fragment.Size.Height + margin.Bottom.Points;
                 return area.Height is { } fixedHeight && !Fitting.Fits(used, fixedHeight.Points)
                     ? Result<Area, Error>.Failure(LayoutErrors.AreaDoesNotFit(content, fixedHeight.Points))
-                    : Result<Area, Error>.Success(new Area(fragment, area.Height?.Points ?? used));
+                    : Result<Area, Error>.Success(new Area(fragment with { Offset = fragment.Offset + new Point(-start, 0) }, area.Height?.Points ?? used));
             });
     }
 }

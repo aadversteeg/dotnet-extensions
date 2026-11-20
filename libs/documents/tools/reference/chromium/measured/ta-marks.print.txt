@@ -1,0 +1,25 @@
+page 1 612.000 432.000
+word 1 12.000 33.704 27.000 7.995 Marks #000000 Lato-Regular
+word 1 35.749 39.335 27.000 7.995 x́ #000000 Lato-Regular
+word 1 41.775 45.889 27.000 7.995 b́ #000000 Lato-Regular
+word 1 48.297 52.326 27.000 7.995 q̇ #000000 Lato-Regular
+word 1 54.819 62.924 27.000 7.995 x̣ỵ #000000 Lato-Regular
+word 1 64.661 106.048 27.000 7.995 WWWWW #000000 Lato-Regular
+word 1 107.979 119.525 27.000 7.995 x́x́x́ #000000 Lato-Regular
+word 1 121.965 140.693 27.000 7.995 quick #000000 Lato-Regular
+word 1 12.000 33.674 51.000 7.987 Marks #000000 Lato-Regular
+word 1 35.714 39.296 51.000 7.987 x́ #000000 Lato-Regular
+word 1 41.731 45.841 51.000 7.987 b́ #000000 Lato-Regular
+word 1 48.243 52.269 51.000 7.987 q̇ #000000 Lato-Regular
+word 1 54.755 62.851 51.000 7.987 x̣ỵ #000000 Lato-Regular
+word 1 64.583 105.913 51.000 7.987 WWWWW #000000 Lato-Regular
+word 1 107.837 119.368 51.000 7.987 x́x́x́ #000000 Lato-Regular
+word 1 121.803 140.505 51.000 7.987 quick #000000 Lato-Regular
+word 1 12.000 44.586 76.500 12.000 Marks #000000 Lato-Regular
+word 1 47.658 53.040 76.500 12.000 x́ #000000 Lato-Regular
+word 1 56.705 62.879 76.500 12.000 b́ #000000 Lato-Regular
+word 1 66.497 72.545 76.500 12.000 q̇ #000000 Lato-Regular
+word 1 76.289 88.457 76.500 12.000 x̣ỵ #000000 Lato-Regular
+word 1 91.067 153.202 76.500 12.000 WWWWW #000000 Lato-Regular
+word 1 156.106 173.440 76.500 12.000 x́x́x́ #000000 Lato-Regular
+word 1 177.106 205.222 76.500 12.000 quick #000000 Lato-Regular

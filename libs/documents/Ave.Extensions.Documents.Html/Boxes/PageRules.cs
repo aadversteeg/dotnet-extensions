@@ -11,9 +11,11 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <summary>
 /// The page box of the document from its <c>@page</c> rules (CSS Paged Media 3 §4–§7): the rules without a page
 /// selector, in cascade order (later wins, important over normal), give the page size (§7.1, <c>size</c>) and the page
-/// margins (§4.2 and CSS Box Model 3 §5.1). A rule with a selector or page-margin rules, another declaration, and a
-/// value that is not an absolute length of 0 or more (a percentage, a relative length, a negative one) are refused at
-/// their place; the page is then made from what is left.
+/// margins (§4.2 and CSS Box Model 3 §5.1). Another declaration, a value that is not an absolute length of 0 or more
+/// (a percentage, a relative length, a negative one), and the size and margins of an <c>@page :first</c> rule are
+/// refused at their place; the page is then made from what is left. The page-margin rules and the rest of a
+/// <c>:first</c> rule are the page-context cascade's (<see cref="Css.Cascade.PageContextCascade"/>), which also refuses
+/// the rules with any other selector; they are read for the margin boxes (<see cref="HtmlBoxGenerator"/>).
 /// </summary>
 internal sealed class PageRules(string sourceName, List<Error> refusals)
 {
@@ -44,13 +46,19 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
         foreach (var cascaded in rules)
         {
             var rule = cascaded.Rule;
-            if (rule.Selectors.Count > 0 || rule.Margins.Count > 0)
+            if (rule.Selectors is [{ Name: null, PseudoClasses: ["first"] }])
             {
-                Refuse(rule.Selectors.Count > 0 ? "an @page rule with a page selector" : "a page-margin rule", "@page", rule.Position);
-                continue;
+                foreach (var declaration in rule.Declarations.Where(declaration => declaration.Name == "size" || declaration.Name.StartsWith("margin", System.StringComparison.Ordinal)))
+                {
+                    refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.PageRule, $"'{declaration.Name}' in an @page :first rule is not drawn in this version: every page takes the size and the margins of the @page rules without a selector.")
+                        .With(ErrorMetadataKeys.Value, declaration.Name).WithSource(sourceName, declaration.Position));
+                }
             }
 
-            declarations.AddRange(rule.Declarations);
+            if (rule.Selectors.Count == 0)
+            {
+                declarations.AddRange(rule.Declarations);
+            }
         }
 
         var (width, height) = (page.Width, page.Height);
@@ -93,8 +101,21 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
             }
         }
 
-        return Pixels(width, height, margins);
+        var pixels = Pixels(width, height, margins);
+        var cut = Length.FromPoints(System.Math.Truncate(margins.Left.Points / 0.75 * 64) / 64 * 0.75);
+        RowStart = cut.Points < pixels.Margins.Left.Points ? cut : pixels.Margins.Left;
+        return pixels;
     }
+
+    /// <summary>
+    /// After <see cref="Apply"/>: where Chromium 159 starts the rows of page-margin boxes, the smaller of the left page
+    /// margin cut to 1/64 CSS px and the page area's start, that margin rounded to a whole pixel (<see cref="Pixels"/>).
+    /// Measured: a 50 pt margin (66.65625 px) starts the rows at 49.992 pt and the page area at 50.25 pt (cases
+    /// <c>pm-width</c>, <c>pm-defaults</c>), an A4 margin of 1 cm at 28.336 pt where the page area starts at 28.5 pt (the
+    /// timesheets); margins that round down start both at the page area's start: 25 mm (94.488 px) at 70.5 pt, 12.2 pt
+    /// (16.267 px) at 12.0 pt (cases <c>pm-start-25mm</c>, <c>pm-start-12pt</c>).
+    /// </summary>
+    public Length RowStart { get; private set; }
 
     /// <summary>
     /// The page as Chromium 159 lays it out and prints it. Blink lays the page out in CSS pixels held in units of 1/64
@@ -107,6 +128,8 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
     /// are what the sheet leaves beside that page area; where the area reaches past the sheet (no margin, a size that is
     /// not whole pixels) they are 0 and the engine's page area is the smaller by less than a pixel: a listed difference
     /// (measured on A4 without margins, cases <c>h-page-a4-zero-*</c>; 1 px margins remove it, <c>h-page-a4-margin-px</c>).
+    /// The body is clipped to the page area's own size from the same start, which is up to a pixel less than the area
+    /// laid out (<see cref="PageStyle.BodyClipInset"/>; cases <c>mf4-line-0</c>, <c>b2-split-row</c>).
     /// Measured: cases
     /// <c>h-page-margin-round</c> (11.75 pt margins: area from 16 px to 385 px), <c>h-page-margin-half</c> (15.5 px
     /// margins: left at 16 px), <c>h-page-area-half</c> (368.5 px left: 369 px), <c>h-page-area-right</c>,
@@ -123,11 +146,20 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
         var (areaWidth, areaHeight) = (System.Math.Ceiling(boxWidth - left - right), System.Math.Ceiling(boxHeight - top - bottom));
         var (sheetWidth, sheetHeight) = (Printed(boxWidth * 0.75), Printed(boxHeight * 0.75));
         static Length Points(double points) => Length.FromPoints(System.Math.Max(0, points));
-        return new PageStyle(sheetWidth, sheetHeight, new Edges(
+        var page = new PageStyle(sheetWidth, sheetHeight, new Edges(
             Points(y * 0.75),
             Points(sheetWidth.Points - ((x + areaWidth) * 0.75)),
             Points(sheetHeight.Points - ((y + areaHeight) * 0.75)),
             Points(x * 0.75)));
+
+        // The body is clipped to the page area's own size, not rounded (BodyClip.BodyArea), where that is less than the
+        // area laid out (on a sheet that cuts the area, the sheet may leave less than the page area's own size).
+        return page with
+        {
+            BodyClipInset = new Size(
+                System.Math.Max(0, page.AreaWidth.Points - ((boxWidth - left - right) * 0.75)),
+                System.Math.Max(0, page.AreaHeight.Points - ((boxHeight - top - bottom) * 0.75))),
+        };
     }
 
     /// <summary>
@@ -143,10 +175,10 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
         Length.FromPoints(System.Math.Round(System.Math.Round(points, System.MidpointRounding.AwayFromZero) * 300 / 72, System.MidpointRounding.AwayFromZero) * 72 / 300);
 
     /// <summary>
-    /// Declarations in an <c>@page</c> rule that cannot change the print while page-margin boxes are refused: the
-    /// inherited properties (they reach only the margin boxes, CSS Paged Media 3 §5.3) and the page counters' changes
-    /// (only margin boxes show counters). Every other declaration but the size and the margins is refused, also one
-    /// the registry does not know: CSS reads an @page rule's declarations unchecked (stage 3 keeps them as written).
+    /// Declarations in an <c>@page</c> rule that are not the page box's: the inherited properties (they reach only the
+    /// margin boxes, CSS Paged Media 3 §5.3) and the page counters' changes, both checked by the page-context cascade.
+    /// Every other declaration but the size and the margins is refused, also one the registry does not know: CSS reads
+    /// an @page rule's declarations unchecked (stage 3 keeps them as written).
     /// </summary>
     internal static bool HasNoEffect(string name) =>
         name is "counter-reset" or "counter-increment" or "counter-set"

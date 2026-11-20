@@ -39,4 +39,10 @@ internal sealed record GlyphItem(
     /// broken before this glyph's cluster shapes differently: both sides must be shaped again (HarfBuzz's
     /// <c>HB_GLYPH_FLAG_UNSAFE_TO_BREAK</c>, <see cref="ShapedGlyph.UnsafeToBreak"/>).</summary>
     public bool UnsafeToBreak { get; init; }
+
+    /// <summary>For a mark whose attachment is resolved into its offsets: the index of its base in the run. Its
+    /// <see cref="XOffset"/> then holds the anchor difference less the advances from the base up to the mark, which the
+    /// shaper takes apart again where the advances and the positions are scaled at different sizes
+    /// (<see cref="ShapingSize"/>).</summary>
+    public int? Base { get; init; }
 }

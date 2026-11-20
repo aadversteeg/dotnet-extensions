@@ -5,6 +5,8 @@
 //   node measure.mjs [case-name ...]                 every step, on a machine with Chromium and Docker
 //   node measure.mjs --step print [case-name ...]    only Chromium: <case>.pdf, <case>.boxes.txt
 //   node measure.mjs --step words [case-name ...]    only reading back what extract.sh wrote: <case>.words.txt
+//   node measure.mjs --cases documents [name ...]    the HTML files of another folder than ./cases (a path relative to
+//                                                    this folder), such as the whole documents in ./documents
 //
 // measure.ps1 runs the print and words steps in the official Playwright container of the pinned version and
 // extract.sh in the tools image between them, so the host needs only Docker.
@@ -28,10 +30,14 @@ import { pathToFileURL } from 'node:url';
 const chromiumArgs = ['--font-render-hinting=none'];
 
 const here = resolve(import.meta.dirname);
-const cases = join(here, 'cases');
 const out = join(here, 'out');
 
-const args = process.argv.slice(2);
+let args = process.argv.slice(2);
+const casesAt = args.indexOf('--cases');
+const cases = join(here, casesAt >= 0 ? args[casesAt + 1] : 'cases');
+if (casesAt >= 0) {
+  args = args.filter((_, index) => index !== casesAt && index !== casesAt + 1);
+}
 const stepAt = args.indexOf('--step');
 const step = stepAt >= 0 ? args[stepAt + 1] : 'all';
 if (!['all', 'print', 'words'].includes(step)) {

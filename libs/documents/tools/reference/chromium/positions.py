@@ -17,7 +17,9 @@
 # advances of the word (not its ink), which is what a layout engine places. The baseline is the origin of the
 # characters: it does not depend on the ascent and descent a reader assumes for the font, as a bounding box does.
 # Words come per page sorted by baseline and then x0; rectangles in drawing order; an image is the rectangle it is
-# drawn into, which may reach past the page when the page shows only a slice of it. A colour is #rrggbb, with the
+# drawn into. A rectangle, a stroke's band and an image are written as the part the print shows, inside the clips they
+# are drawn under, and not at all where they lie wholly outside them (visible.py: Chromium clips each page's body to the
+# page area and draws what passes it all the same); words are written whole. A colour is #rrggbb, with the
 # opacity as a fourth byte (#rrggbbaa) where it is not 1: a word's is its text's fill colour, a rectangle's its fill.
 # The face is the PostScript name of the font the word is drawn with, without the subset tag ("ABCDEF+") a PDF writer
 # puts before it: it names the font file, and with it the weight and the style. The colour and the face come last on a
@@ -31,6 +33,8 @@ import re
 import sys
 
 import pymupdf
+
+import visible
 
 
 def colour(red, green, blue, alpha=255):
@@ -81,15 +85,18 @@ for number, page in enumerate(pymupdf.open(sys.argv[1]), start=1):
     print(f"page {number} {page.rect.width:.3f} {page.rect.height:.3f}")
     for baseline, x0, x1, size, text, drawn, name in words(page):
         print(f"word {number} {x0:.3f} {x1:.3f} {baseline:.3f} {size:.3f} {text} {drawn} {name}")
-    for drawing in page.get_drawings():
-        if drawing.get("fill") is not None:
-            r = drawing["rect"]
+    for drawing, clip in visible.drawings(page):
+        if drawing.get("fill") is not None and (shown := visible.cut(tuple(drawing["rect"]), clip)) is not None:
             fill = colour(*(round(part * 255) for part in drawing["fill"]), round((drawing.get("fill_opacity") or 1) * 255))
-            print(f"rect {number} {r.x0:.3f} {r.y0:.3f} {r.x1:.3f} {r.y1:.3f} {fill}")
+            print(f"rect {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {fill}")
         if drawing.get("color") is not None:
-            for x0, y0, x1, y1 in stroked(drawing):
-                ink = colour(*(round(part * 255) for part in drawing["color"]), round((drawing.get("stroke_opacity") or 1) * 255))
-                print(f"stroke {number} {x0:.3f} {y0:.3f} {x1:.3f} {y1:.3f} {ink}")
-    for image in page.get_image_info():
-        x0, y0, x1, y1 = image["bbox"]
-        print(f"image {number} {x0:.3f} {y0:.3f} {x1:.3f} {y1:.3f}")
+            for band in stroked(drawing):
+                if (shown := visible.cut(band, clip)) is not None:
+                    ink = colour(*(round(part * 255) for part in drawing["color"]), round((drawing.get("stroke_opacity") or 1) * 255))
+                    print(f"stroke {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {ink}")
+    images, clips = page.get_image_info(), visible.image_clips(page)
+    if len(images) != len(clips):
+        raise ValueError(f"page {number}: {len(images)} images listed, {len(clips)} drawn")
+    for image, clip in zip(images, clips):
+        if (shown := visible.cut(tuple(image["bbox"]), clip)) is not None:
+            print(f"image {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f}")

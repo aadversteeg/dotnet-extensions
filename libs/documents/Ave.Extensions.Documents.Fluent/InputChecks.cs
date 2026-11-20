@@ -137,6 +137,36 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font metric rounding policy must be Exact or WholePixels.",
                 ((int)profile.FontMetricRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-metric-rounding", source);
         }
+
+        if (!Enum.IsDefined(profile.FontSizeRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font size rounding policy must be Exact or FlooredToPixelFractions.",
+                ((int)profile.FontSizeRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-size-rounding", source);
+        }
+
+        if (!Enum.IsDefined(profile.LengthRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The length rounding policy must be Exact or SixtyFourthPixels.",
+                ((int)profile.LengthRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "length-rounding", source);
+        }
+
+        if (!Enum.IsDefined(profile.SplitLineHalves))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The split line halves policy must be Exact or AtLeastOnePixel.",
+                ((int)profile.SplitLineHalves).ToString(System.Globalization.CultureInfo.InvariantCulture), "split-line-halves", source);
+        }
+
+        if (!Enum.IsDefined(profile.TableEndOverflow))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The table end overflow policy must be EndsOnPage or ContinuesOnNextPage.",
+                ((int)profile.TableEndOverflow).ToString(System.Globalization.CultureInfo.InvariantCulture), "table-end-overflow", source);
+        }
+
+        if (!Enum.IsDefined(profile.BodyClip))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The body clip policy must be None or BodyArea.",
+                ((int)profile.BodyClip).ToString(System.Globalization.CultureInfo.InvariantCulture), "body-clip", source);
+        }
     }
 
     /// <summary>Heading levels are 1–6, as PDF structure types H1–H6 (ISO 32000-1 §14.8.4.3.2).</summary>
