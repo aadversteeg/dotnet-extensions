@@ -51,6 +51,9 @@ public class SliceUnderHeaderTests
             "a4-header-image-150-image" => [Table(header, Row(TallImage(150)), Row(TallImage())), Paragraph("after")],
             "a4-two-image-rows" => [Table(Row(TallImage()), Row(TallImage())), Paragraph("after")],
             "a4-row-image-row" => [Table(TableRow([Cell("r1")]), Row(TallImage())), Paragraph("after")],
+            "a4-header-image-228" => [Table(header, Row(TallImage(228)))],
+            "a4-header2-image-228" => [Table(HeaderRow([Cell("H0")]), HeaderRow([Cell("H1")]), Row(TallImage(228)))],
+            "a4-header-unrepeated-image-228" => [Table(HeaderRow([Cell([Paragraph([Text("H0"), LineBreak(), Text("H1"), LineBreak(), Text("H2"), LineBreak(), Text("H3")])])]), Row(TallImage(228)))],
             _ => throw new ArgumentException(caseName, nameof(caseName)),
         };
     }
@@ -113,6 +116,77 @@ public class SliceUnderHeaderTests
         FirstSlices(document).Select(slice => slice.Page).Should().Equal(pages);
         engine.PageTexts.Take(pages[0]).Should().Equal(chromium.PageTexts.Take(pages[0]));
     }
+
+    /// <summary>The cases whose page before the first slice the engine ends right below the header under
+    /// <see cref="EmptyRowParts.Avoid"/>, with that page: on the table's first page at the top of the page, after a page
+    /// that showed a body row, and on the page after an intro paragraph; and the bottom of the header rows there.</summary>
+    public static TheoryData<string, int, double> PagesBelowTheHeader => new()
+    {
+        { "a4-header-image-row", 1, 28.5 },
+        { "a4-header-image-228", 1, 28.5 },
+        { "a4-header2-image-228", 1, 44.25 },
+        { "a4-header-tall-line", 1, 28.5 },
+        { "a4-header-two-image-rows", 1, 28.5 },
+        { "a4-header-row-image-row", 2, 28.5 },
+        { "a4-header-rows-image-row", 3, 28.5 },
+        { "a4-intro-header-image-row", 2, 28.5 },
+    };
+
+    [Theory]
+    [MemberData(nameof(PagesBelowTheHeader))]
+    public void Under_EmptyRowParts_Allow_the_page_before_the_first_slice_ends_with_the_row_cut_empty_below_the_header(string caseName, int page, double header)
+    {
+        // Chromium never ends a page right below a header that repeats: it cuts the first body row below it, draws the
+        // row's cells empty down to the page end (their side lines from the header to 192 pt, no line below them) and starts the
+        // image or the 200 pt line in their part on the next page. Under Allow the engine paints that page as Chromium
+        // does; under Avoid the page holds the header alone. The first slice is on Chromium's page, in the cells' part
+        // there, which starts 0.375 pt higher than Chromium's, as every part of a cell that continues below a repeated
+        // header does in the engine (a4-header-cut-row-image-row: "c10" on page 2 at 40.125 pt, Chromium 40.5 pt); a
+        // second image (a4-header-two-image-rows) starts a row of its own, at Chromium's place.
+        var allow = Run(Doc(caseName, parts: EmptyRowParts.Allow));
+        var avoid = PrintedPages.Engine(Run(Doc(caseName)));
+        var chromium = PrintedPages.Chromium(caseName);
+
+        Painted(PrintedPages.Engine(allow).Pages[page - 1]).Should().Equal(Painted(chromium.Pages[page - 1]));
+        Painted(chromium.Pages[page - 1]).Should().Contain(Cells(12, header, 12.75, 192)).And.Contain(Cells(287.25, header, 288, 192))
+            .And.NotContain(Cells(12.75, 191.625, 287.25, 192));
+        Painted(avoid.Pages[page - 1]).Should().NotContain(Cells(12, header, 12.75, 192));
+        var slices = FirstSlices(chromium);
+        FirstSlices(allow).Should().Equal([(slices[0].Page, slices[0].Top - 0.375), .. slices.Skip(1)]);
+    }
+
+    [Fact]
+    public void Under_EmptyRowParts_Allow_a_header_that_does_not_repeat_still_ends_its_page_alone()
+    {
+        // Case a4-header-unrepeated-image-228: a header of four lines (61.5 pt) is more than a quarter of the page area and
+        // is shown on page 1 only. Chromium ends page 1 with the header alone and starts the row on page 2, cut before the
+        // image below the grid line above it (a blank strip, as without a header: a4-noheader-image-228), with the image
+        // from page 3. The engine does the same under both values: nothing below the header on page 1, the strip from the
+        // top of page 2 to its end, the image where Chromium draws it.
+        const string caseName = "a4-header-unrepeated-image-228";
+        var chromium = PrintedPages.Chromium(caseName);
+        foreach (var parts in new[] { EmptyRowParts.Avoid, EmptyRowParts.Allow })
+        {
+            var engine = PrintedPages.Engine(Run(Doc(caseName, parts: parts)));
+
+            Painted(engine.Pages[0]).Should().NotContain(Cells(12, 73.5, 12.75, 74.25), parts.ToString());
+            Painted(engine.Pages[1]).Should().Contain(Cells(12, 12, 12.75, 192), parts.ToString());
+            engine.Pages.Select(page => page.Images).Should().BeEquivalentTo(chromium.Pages.Select(page => page.Images), options => options.WithStrictOrdering(), parts.ToString());
+        }
+
+        Painted(chromium.Pages[0]).Should().NotContain(Cells(12, 73.5, 12.75, 74.25));
+        Painted(chromium.Pages[1]).Should().Contain(Cells(12, 12, 12.75, 192));
+    }
+
+    /// <summary>The area a page's rectangles paint, as the cells of a grid of 0.375 pt that they cover (every edge in
+    /// these cases lies on it: a 0.75 pt line and its centre).</summary>
+    private static List<(int X, int Y)> Painted(PrintedPage page) =>
+        [.. page.Rectangles.SelectMany(box => Cells(box.X0, box.Y0, box.X1, box.Y1)).Distinct().Order()];
+
+    private static IEnumerable<(int X, int Y)> Cells(double x0, double y0, double x1, double y1) =>
+        Enumerable.Range(Step(x0), Step(x1) - Step(x0)).SelectMany(x => Enumerable.Range(Step(y0), Step(y1) - Step(y0)).Select(y => (x, y)));
+
+    private static int Step(double value) => (int)Math.Round(value / 0.375);
 
     [Theory]
     [InlineData("a4-header-image-row")]

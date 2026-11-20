@@ -1138,11 +1138,23 @@ Each is documented next to its code as well.
   comes below the last slice (case `a4-image-rowspan`; Chromium breaks between the spanned rows and draws the next row
   over the slice).
   Under a repeated header row the content is sliced right below the header, on a page after one that showed no body row
-  other than slices of a piece that was itself sliced; after a page that did show one, the page holds only the header
-  and the row moves on once. That page with only the header is Chromium's: the first slice starts on Chromium's page and
-  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
+  other than slices of a piece that was itself sliced; after a page that did show one, the page before the first slice
+  ends below the header and the row moves on once. That page is Chromium's: the first slice starts on Chromium's page
+  and at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
   each with a header of at most a quarter of the page area; a taller header is not repeated (above), and the piece is
-  sliced as without a header.
+  sliced as without a header. Chromium never ends a page with a header that repeats alone: it cuts the first body row
+  below it and draws the row's cells empty down to the page end, their side lines and no line below them
+  (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-tall-line`, `a4-header-row-image-row`, and so every
+  `a4-header-*` case); a header that does not repeat ends its page alone (`a4-header-unrepeated-image-228`). Under
+  `EmptyRowParts.Allow`, the HTML front-end's value, the engine cuts the row there too, where the row's cells draw
+  nothing on that page; under `Avoid`, the code front-end's default, that page holds the header alone, and so it does
+  under `Allow` where a cell of the row would draw something on it (`fr-header-pad-box-72` above, where Chromium cuts
+  the row; with an image beside text, not measured). The cut row's cells then go on below the header on the next page,
+  and there the engine starts a part of a cell that continues 0.375 pt higher than Chromium, half the grid line below
+  the header (as everywhere below a repeated header: `a4-header-cut-row-image-row`, "c10" at 40.125 pt, Chromium
+  40.5 pt), so the first slice lies at 28.125 pt where Chromium's lies at 28.5 pt, within the comparison's whole pixel.
+  A piece taller than the room below the header but not than the page area goes on without the header in the engine,
+  where Chromium keeps the header above it and lets it pass the page end (`a4-header-image-170`, open).
   **Deliberate deviation from Chromium:** on the later pages the engine repeats the header above every slice and makes
   each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
   page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt

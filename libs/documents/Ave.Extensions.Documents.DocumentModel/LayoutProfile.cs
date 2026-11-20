@@ -293,6 +293,9 @@ public enum EmptyRowParts
     /// (<c>tools/reference/chromium</c>, cases <c>a2-padded-blocks</c>, <c>a2-line-breaks</c> and <c>a3-mirror</c>); and a
     /// row whose cells all end on the page, with only the half of the grid line below it past the page end, is not cut
     /// but moves to the next page whole, as Chromium does (cases <c>a2-cells-end*</c>); so does a row whose lines all fit
-    /// but whose bottom padding or border passes the page end (case <c>a2-row-end-bottom-padding-30</c>).</summary>
+    /// but whose bottom padding or border passes the page end (case <c>a2-row-end-bottom-padding-30</c>). Below header
+    /// rows that repeat, a page does not end with the header alone where the first body row's content (an image, a line)
+    /// does not fit below the header: the row is cut before it, its cells empty down to the page end, as Chromium prints
+    /// it (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>, <c>a4-header-row-image-row</c>).</summary>
     Allow,
 }
