@@ -25,6 +25,8 @@ concurrency:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # Seconds dotnet test waits for a test host to start; the default of 90 is too short on a busy runner.
+  VSTEST_CONNECTION_TIMEOUT: 300
 
 defaults:
   run:
