@@ -200,15 +200,19 @@ public class MarginBoxGenerationTests
     }
 
     /// <summary>Measured (cases <c>pm-start-25mm</c>, <c>pm-start-12pt</c>): beside a left margin that rounds down to a
-    /// whole pixel Chromium starts the rows at the page area's start, not at the margin cut to 1/64 px; refused.</summary>
+    /// whole pixel Chromium starts the rows at the page area's start, not at the margin cut to 1/64 px, which lies after
+    /// it.</summary>
     [Theory]
-    [InlineData("margin: 60pt 50pt 60pt 12.2pt")]
-    [InlineData("margin: 25mm")]
-    public void A_left_margin_that_rounds_down_to_a_whole_pixel_refuses_the_margin_boxes(string margin)
+    [InlineData("margin: 60pt 50pt 60pt 12.2pt", 12.0)]
+    [InlineData("margin: 25mm", 70.5)]
+    public void Beside_a_left_margin_that_rounds_down_the_rows_start_at_the_page_area(string margin, double start)
     {
-        var error = Boxes(Doc($"@page {{ size: 400pt 300pt; {margin}; font-family: Lato; @top-left {{ content: \"Aa\" }} }}")).Error.Parts().Single();
+        var html = Doc($"@page {{ size: 400pt 300pt; {margin}; font-family: Lato; @top-left {{ content: \"Aa\" }} }}", "<p>Ee</p>");
 
-        error.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.PageRule);
+        Model(html).Template.Header!.StartInMargin.Should().Be(Length.Zero);
+        var printed = Printed(html);
+        Word(printed, 1, "Aa").X0.Should().Be(start);
+        Word(printed, 1, "Ee").X0.Should().Be(start, "the body starts there too");
     }
 
     [Fact]

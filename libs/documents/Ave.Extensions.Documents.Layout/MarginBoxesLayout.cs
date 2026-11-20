@@ -117,7 +117,7 @@ public static class MarginBoxesLayout
     /// beside an empty start box a third of it. On A4 with <c>margin: 4cm 1cm 2cm</c>, 8 pt, the bottom row of three
     /// boxes meets at 198.0 and 398.25 pt. One measured edge is not reproduced: "Eeeeeee Eeeeeee" beside "Dd" meet at
     /// 306.75 pt in Chromium, where this rule puts the edge at 307.13 pt, 0.005 pt past the middle of the pixel, which
-    /// paints at 307.5 pt; Chromium computes in 1/64 px and the engine exactly.
+    /// paints at 307.5 pt; the widths computed in 1/64 px would give Chromium's pixel there, which is not built.
     /// </remarks>
     /// <param name="start">The start box's outer widths, or null.</param>
     /// <param name="center">The centre box's outer widths, or null.</param>

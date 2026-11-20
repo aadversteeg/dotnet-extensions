@@ -36,17 +36,9 @@ public static partial class HtmlBoxGenerator
                 return page;
             }
 
-            // The page area starts at the left margin rounded to a whole pixel and the rows at it cut to 1/64 px where
-            // the rounding goes up. Where it goes down, Chromium starts the rows at the page area's start, not at the
-            // cut (cases pm-start-25mm, pm-start-12pt), which is not built.
+            // The page area starts at the left margin rounded to a whole pixel, the rows at the smaller of that and the
+            // margin cut to 1/64 px: never after the page area's start.
             var startInMargin = page.Margins.Left - rowStart;
-            if (startInMargin.Points < 0)
-            {
-                Refuse(HtmlStyleErrorCodes.Unsupported.PageRule,
-                    "Page-margin boxes beside a left page margin that is less than half a CSS pixel past a whole pixel are not drawn in this version. Give the left margin in whole pixels (a multiple of 0.75pt).",
-                    boxes[0].Content.ToString(), boxes[0].Position);
-                return page;
-            }
 
             var (header, footer) = (page.Margins.Top, page.Margins.Bottom);
             foreach (var box in boxes.Where(box => (IsTop(box.Box) ? header : footer).Points <= 0))

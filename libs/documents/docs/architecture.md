@@ -108,7 +108,7 @@ unclipped over the neighbouring box, the body or past the sheet — a known limi
 (at 12 pt "Left" beside a word wider than the row: Chromium shrinks "Left" to 15.0 pt and draws both words over their
 boxes; seven preserved lines in a 60 pt box run over the body). Checked against the measured edges of Chromium's
 rectangles at whole pixels: one edge is not reproduced ("Eeeeeee Eeeeeee" beside "Dd": 306.75 pt in Chromium, 307.13 pt
-here, which paints at 307.5), because Chromium computes the widths in 1/64 px.
+here, which paints at 307.5); the widths computed in 1/64 px would give Chromium's pixel there, which is not built.
 
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the

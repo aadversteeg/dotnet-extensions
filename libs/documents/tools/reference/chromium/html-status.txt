@@ -381,8 +381,8 @@ pm-inherit equal
 pm-inherit-family equal
 pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.308>301.008 at 7:18
 pm-pages equal
-pm-start-12pt refused Documents.Html.Unsupported.PageRule "Aa" at 8:15
-pm-start-25mm refused Documents.Html.Unsupported.PageRule "Aa" at 8:15
+pm-start-12pt equal
+pm-start-25mm equal
 pm-width open page 1 painted area: the pixel at (306.75, 0): the engine paints it #ff0000, Chromium #00ff00; the engine paints 35600 px #ff0000, Chromium 35520 px (print.txt)
 pm-zero equal
 pm-zero-alone equal
