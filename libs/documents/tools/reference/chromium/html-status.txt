@@ -71,12 +71,15 @@ a4-header-image-170 equal
 a4-header-image-174 open page 3 'after' baseline 34.5 (laid out at 34.125), Chromium 33.75 (print.txt)
 a4-header-image-180 open page 3 'after' baseline 40.5 (laid out at 40.125), Chromium 39.75 (print.txt)
 a4-header-image-228 open page 3 painted area: the pixel at (12.75, 75.75): Chromium paints it and the engine does not; the engine paints 540 px #000000, Chromium 538 px (print.txt)
+a4-header-image-228-line3-below open page 3 'after' baseline 90 (laid out at 89.625), Chromium 88.5 (print.txt)
 a4-header-image-360-image open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-image-beside-lines open 5 pages, Chromium 4 (print.txt)
 a4-header-image-row open page 4 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
 a4-header-image-row-image open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
+a4-header-line2-25-cut-text-row equal
 a4-header-line2-25-image-228 open page 3 painted area: the pixel at (12.75, 76.5): Chromium paints it and the engine does not; the engine paints 542 px #000000, Chromium 540 px (print.txt)
 a4-header-line6-image-228 equal
+a4-header-nested-image-228 open 5 pages, Chromium 3 (print.txt)
 a4-header-row-image-228 open page 4 painted area: the pixel at (12.75, 75.75): Chromium paints it and the engine does not; the engine paints 540 px #000000, Chromium 538 px (print.txt)
 a4-header-row-image-row open page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-rows-fill-image-row open page 5 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
@@ -101,6 +104,7 @@ a4-line-beside-lines open page 1 'p0' x0 220.594, Chromium 150.375 (print.txt)
 a4-nested-padded-image-160 equal
 a4-noheader-image-228 equal
 a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
+a4-row-line3-image-228 equal
 a4-slice-near-end-beside-lines equal
 a4-slice-near-end-block equal
 a4-slice2-beside-lines equal
