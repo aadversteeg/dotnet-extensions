@@ -38,10 +38,11 @@ public class SliceInTableTests
         _ => throw new ArgumentException(caseName, nameof(caseName)),
     };
 
-    private static PrintedPages Printed(string caseName)
+    private static PrintedPages Printed(string caseName, CellsBesideSlices cells = CellsBesideSlices.GoOn)
     {
         var document = Document([.. Body(caseName)], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")
-            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(MonolithicOverflow.Slice).FontMetricRounding(FontMetricRounding.WholePixels);
+            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(MonolithicOverflow.Slice).FontMetricRounding(FontMetricRounding.WholePixels)
+            .CellsBesideSlices(cells);
         var result = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         return result.Value;
@@ -73,7 +74,8 @@ public class SliceInTableTests
     [InlineData("a4-line-beside-lines")]
     public void Text_in_the_cell_beside_a_slice_runs_on_beside_the_slices_where_Chromium_holds_it_back(string caseName)
     {
-        // A deliberate difference, pinned. Thirty lines beside the 408 pt image (or the 240 pt line): the engine cuts the
+        // A deliberate difference under the default CellsBesideSlices.GoOn, pinned (the next test: Below, as Chromium
+        // prints it). Thirty lines beside the 408 pt image (or the 240 pt line): the engine cuts the
         // row at each page end and every cell goes on on the next page, so the text runs on beside the slices; the row
         // after follows below the longer of the two. Chromium stops the text cell while the slices run and goes on with it
         // below the end of the sliced piece, on the page of its last slice (image: p23 at 72 pt, under the 48 pt slice; the
@@ -94,6 +96,38 @@ public class SliceInTableTests
         {
             Images(engine).Should().BeEquivalentTo(Images(chromium), options => options.WithStrictOrdering(), "the slices themselves are Chromium's");
         }
+    }
+
+    [Theory]
+    [InlineData("a4-image-beside-lines")]
+    [InlineData("a4-line-beside-lines")]
+    public void Under_CellsBesideSlices_Below_the_text_beside_a_slice_goes_on_below_it_as_Chromium_prints_it(string caseName)
+    {
+        // Chromium lays the piece out whole on the page where it starts; on each later page the text cell goes on below
+        // what is left of the piece there: nothing beside a slice that covers the whole page, and p23 right below the last
+        // slice (the image: 72 pt, under its 48 pt slice; the line: 84 pt, under its 60 pt slice). The row after follows
+        // the text: below it under the image; under the line it starts page 4, where this test splits the grid line at
+        // the break exactly (SplitLineHalves.Exact: "after" at 24.375 pt, Chromium's whole pixel gives 24.75). The
+        // engine's pages and slices are Chromium's.
+        var engine = Printed(caseName, CellsBesideSlices.Below);
+        var chromium = PrintedPages.Chromium(caseName);
+
+        var image = caseName == "a4-image-beside-lines";
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        Baseline(engine, "p23").Should().Be(Baseline(chromium, "p23")).And.Be(image ? 72 : 84);
+        Baseline(engine, "after").Should().Be(image ? Baseline(chromium, "after") : 24.375);
+        Images(engine).Should().BeEquivalentTo(Images(chromium), options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public void Under_CellsBesideSlices_Below_a_row_without_a_slice_goes_on_as_under_GoOn()
+    {
+        // Only a page that goes on with a slice lowers the other cells: a table whose pieces all fit lays out the same.
+        var below = Printed("a4-image-single-cell", CellsBesideSlices.Below);
+        var goOn = Printed("a4-image-single-cell");
+
+        below.PageTexts.Should().Equal(goOn.PageTexts);
+        Baseline(below, "after").Should().Be(Baseline(goOn, "after"));
     }
 
     [Fact]

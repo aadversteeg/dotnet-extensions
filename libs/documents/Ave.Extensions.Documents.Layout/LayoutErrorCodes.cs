@@ -37,10 +37,18 @@ public static class LayoutErrorCodes
     /// SourceLine of the first page-count reference.</summary>
     public static readonly ErrorCode NotConverging = _ / "NotConverging";
 
+    /// <summary>Content wider than the page-margin box it is in (<c>MarginBoxesLayout</c>): text whose narrowest line is
+    /// wider than the width the row gives the box, also when not even the min-content widths of the row's boxes fit the
+    /// row; or a box whose own margins, padding and border are taller than the row. Chromium 159 lets such content
+    /// overflow its box unclipped; the engine refuses it. Content taller than its box is drawn, as Chromium draws it.
+    /// Metadata: Node, Property (<c>width</c> or <c>height</c>), Value (needed and available, in points), SourceFile,
+    /// SourceLine of the box.</summary>
+    public static readonly ErrorCode MarginBoxOverflow = _ / "MarginBoxOverflow";
+
     /// <summary>A break token a layout algorithm cannot have returned for the box it is given: a token of another
     /// algorithm's kind, or a position the box does not have (a child, line, row or cell outside it, a height shown that is
     /// negative, not finite, or the whole height of the sliced image or line or more). Only a caller of the algorithms
-    /// themselves (<c>FlowLayout.Layout</c> and the other three) meets it: pagination hands each box the token that box's
+    /// themselves (<c>FlowLayout.Layout</c> and the other four) meets it: pagination hands each box the token that box's
     /// own layout returned. Metadata: Node, Value (the token's type), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode InvalidBreakToken = _ / "InvalidBreakToken";
 

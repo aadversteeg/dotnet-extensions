@@ -51,13 +51,22 @@ public class SliceUnderHeaderTests
             "a4-header-image-150-image" => [Table(header, Row(TallImage(150)), Row(TallImage())), Paragraph("after")],
             "a4-two-image-rows" => [Table(Row(TallImage()), Row(TallImage())), Paragraph("after")],
             "a4-row-image-row" => [Table(TableRow([Cell("r1")]), Row(TallImage())), Paragraph("after")],
+            "a4-header-image-228" => [Table(header, Row(TallImage(228)))],
+            "a4-header-row-image-228" => [Table(header, TableRow([Cell("r1")]), Row(TallImage(228)))],
+            "a4-header-image-170" => [Table(header, Row(TallImage(170))), Paragraph("after")],
+            "a4-header-image-174" => [Table(header, Row(TallImage(174))), Paragraph("after")],
+            "a4-header-image-180" => [Table(header, Row(TallImage(180))), Paragraph("after")],
+            "a4-header2-image-228" => [Table(HeaderRow([Cell("H0")]), HeaderRow([Cell("H1")]), Row(TallImage(228)))],
+            "a4-header-unrepeated-image-228" => [Table(HeaderRow([Cell([Paragraph([Text("H0"), LineBreak(), Text("H1"), LineBreak(), Text("H2"), LineBreak(), Text("H3")])])]), Row(TallImage(228)))],
             _ => throw new ArgumentException(caseName, nameof(caseName)),
         };
     }
 
-    private static Document Doc(string caseName, MonolithicOverflow overflow = MonolithicOverflow.Slice, EmptyRowParts parts = EmptyRowParts.Avoid) =>
+    private static Document Doc(
+        string caseName, MonolithicOverflow overflow = MonolithicOverflow.Slice, EmptyRowParts parts = EmptyRowParts.Avoid, RepeatedHeaderRows rows = RepeatedHeaderRows.AboveEverySlice) =>
         Document([.. Body(caseName)], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")
-            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(overflow).EmptyRowParts(parts).FontMetricRounding(FontMetricRounding.WholePixels);
+            .FontFamily("Lato").LineHeight(15.Pt()).MonolithicOverflow(overflow).EmptyRowParts(parts).RepeatedHeaderRows(rows)
+            .FontMetricRounding(FontMetricRounding.WholePixels);
 
     private static PageDocument Run(Document document)
     {
@@ -66,11 +75,21 @@ public class SliceUnderHeaderTests
         return result.Value;
     }
 
-    /// <summary>Where each image or the 200 pt line starts: the page and top of its first slice, or of the whole image
-    /// when it fits (an image's top edge; for the line, the baseline of its first "W").</summary>
-    private static List<(int Page, double Top)> FirstSlices(PrintedPages pages) =>
-        [.. pages.Pages.SelectMany(page => page.Images.Where(image => image.Y0 >= 0).Select(image => (page.Number, image.Y0))),
-         .. pages.Pages.SelectMany(page => page.Words.Where(word => word.Text == "W").Select(word => (page.Number, word.Baseline))).Take(1)];
+    /// <summary>Where each image or the 200 pt line starts in the engine's pages: the page and top of its first slice, or
+    /// of the whole image when it fits (an image's top edge as drawn, before its clip: a later slice is drawn higher than
+    /// the page; for the line, the baseline of its first "W").</summary>
+    private static List<(int Page, double Top)> FirstSlices(PageDocument document) =>
+        [.. document.Pages.SelectMany((page, index) => page.Items.OfType<DrawImage>().Where(image => image.Area.Origin.Y >= 0).Select(image => (index + 1, image.Area.Origin.Y))),
+         .. Words(PrintedPages.Engine(document))];
+
+    /// <summary>The same in Chromium's print, from what it shows: Chromium draws a later slice moved up by the page area's
+    /// height under its clip to the page area, so a later slice shows from the page area's top (12 pt), and a first slice,
+    /// which starts below the header, from lower.</summary>
+    private static List<(int Page, double Top)> FirstSlices(PrintedPages chromium) =>
+        [.. chromium.Pages.SelectMany(page => page.Images.Where(image => image.Y0 > 12).Select(image => (page.Number, image.Y0))), .. Words(chromium)];
+
+    private static IEnumerable<(int Page, double Top)> Words(PrintedPages pages) =>
+        pages.Pages.SelectMany(page => page.Words.Where(word => word.Text == "W").Select(word => (page.Number, word.Baseline))).Take(1);
 
     /// <summary>The cases with a header row, with the pages Chromium starts their pieces on.</summary>
     public static TheoryData<string, int[]> HeaderCases => new()
@@ -95,13 +114,130 @@ public class SliceUnderHeaderTests
         // Page and top of every piece's first slice: right below the header (an image at 28.5 pt, the line's baseline at
         // 225.75 pt), on the page after the one that showed only the header, or only slices of the piece before. The
         // pages up to the first slice hold the same words as Chromium's.
-        var engine = PrintedPages.Engine(Run(Doc(caseName)));
+        var document = Run(Doc(caseName));
+        var engine = PrintedPages.Engine(document);
         var chromium = PrintedPages.Chromium(caseName);
 
-        FirstSlices(engine).Should().Equal(FirstSlices(chromium));
-        FirstSlices(engine).Select(slice => slice.Page).Should().Equal(pages);
+        FirstSlices(document).Should().Equal(FirstSlices(chromium));
+        FirstSlices(document).Select(slice => slice.Page).Should().Equal(pages);
         engine.PageTexts.Take(pages[0]).Should().Equal(chromium.PageTexts.Take(pages[0]));
     }
+
+    /// <summary>The cases whose page before the first slice the engine ends right below the header under
+    /// <see cref="EmptyRowParts.Avoid"/>, with that page: on the table's first page at the top of the page, after a page
+    /// that showed a body row, and on the page after an intro paragraph; and the bottom of the header rows there.</summary>
+    public static TheoryData<string, int, double> PagesBelowTheHeader => new()
+    {
+        { "a4-header-image-row", 1, 28.5 },
+        { "a4-header-image-228", 1, 28.5 },
+        { "a4-header2-image-228", 1, 44.25 },
+        { "a4-header-tall-line", 1, 28.5 },
+        { "a4-header-two-image-rows", 1, 28.5 },
+        { "a4-header-row-image-row", 2, 28.5 },
+        { "a4-header-rows-image-row", 3, 28.5 },
+        { "a4-intro-header-image-row", 2, 28.5 },
+    };
+
+    [Theory]
+    [MemberData(nameof(PagesBelowTheHeader))]
+    public void Under_EmptyRowParts_Allow_the_page_before_the_first_slice_ends_with_the_row_cut_empty_below_the_header(string caseName, int page, double header)
+    {
+        // Chromium never ends a page right below a header that repeats: it cuts the first body row below it, draws the
+        // row's cells empty down to the page end (their side lines from the header to 192 pt, no line below them) and starts the
+        // image or the 200 pt line in their part on the next page. Under Allow the engine paints that page as Chromium
+        // does; under Avoid the page holds the header alone. The first slice is on Chromium's page, in the cells' part
+        // there, which starts 0.375 pt higher than Chromium's, as every part of a cell that continues below a repeated
+        // header does in the engine (a4-header-cut-row-image-row: "c10" on page 2 at 40.125 pt, Chromium 40.5 pt); a
+        // second image (a4-header-two-image-rows) starts a row of its own, at Chromium's place.
+        var allow = Run(Doc(caseName, parts: EmptyRowParts.Allow));
+        var avoid = PrintedPages.Engine(Run(Doc(caseName)));
+        var chromium = PrintedPages.Chromium(caseName);
+
+        Painted(PrintedPages.Engine(allow).Pages[page - 1]).Should().Equal(Painted(chromium.Pages[page - 1]));
+        Painted(chromium.Pages[page - 1]).Should().Contain(Cells(12, header, 12.75, 192)).And.Contain(Cells(287.25, header, 288, 192))
+            .And.NotContain(Cells(12.75, 191.625, 287.25, 192));
+        Painted(avoid.Pages[page - 1]).Should().NotContain(Cells(12, header, 12.75, 192));
+        var slices = FirstSlices(chromium);
+        FirstSlices(allow).Should().Equal([(slices[0].Page, slices[0].Top - 0.375), .. slices.Skip(1)]);
+    }
+
+    /// <summary>The cases of <see cref="RepeatedHeaderRows"/>: a piece in a body row below a repeated header row, sliced
+    /// over pages that only show its rest (the first nine), or with a row still to come below it (the last two).</summary>
+    public static TheoryData<string> RestPages => new()
+    {
+        "a4-header-image-228",
+        "a4-header2-image-228",
+        "a4-header-row-image-228",
+        "a4-header-image-row",
+        "a4-header-tall-line",
+        "a4-header-image-170",
+        "a4-header-image-174",
+        "a4-header-image-180",
+        "a4-header-rows-image-row",
+        "a4-header-image-360-image",
+        "a4-header-two-image-rows",
+    };
+
+    [Theory]
+    [MemberData(nameof(RestPages))]
+    public void Under_RepeatedHeaderRows_WhereContentIsLaidOut_a_page_that_only_shows_the_rest_of_a_piece_draws_no_header_rows(string caseName)
+    {
+        // Chromium lays the piece out whole below the header row of the page where it starts, also an image of 170, 174 or
+        // 180 pt, no taller than the page area but taller than the 163.5 pt below the header, and lets it pass the page
+        // end. It repeats the header row on every later page where the table still lays content out (in
+        // a4-header-image-360-image and a4-header-two-image-rows: the pages of the first image, with the second row still
+        // to come), and leaves it out on a page that only shows the rest of a piece laid out before: there the rest
+        // starts at the top of the page area, 12 pt. Under WhereContentIsLaidOut the engine draws the header row on
+        // Chromium's pages, and the rest on a page without it from 12 pt; under AboveEverySlice it draws the header row
+        // above every slice, and a piece no taller than the page area goes on without it.
+        var document = Run(Doc(caseName, parts: EmptyRowParts.Allow, rows: RepeatedHeaderRows.WhereContentIsLaidOut));
+        var chromium = PrintedPages.Chromium(caseName);
+        var above = PrintedPages.Engine(Run(Doc(caseName, parts: EmptyRowParts.Allow)));
+
+        HeaderPages(PrintedPages.Engine(document)).Should().Equal(HeaderPages(chromium));
+        HeaderPages(chromium).Should().Contain(false);
+        HeaderPages(above).Should().NotEqual(HeaderPages(chromium));
+        var rest = HeaderPages(chromium).Select((header, index) => (header, index)).Where(page => !page.header).Select(page => page.index).ToList();
+        rest.SelectMany(index => document.Pages[index].Items.OfType<ClipStart>()).Select(clip => clip.Area.Origin.Y).Should().AllBeEquivalentTo(12.0);
+        rest.SelectMany(index => chromium.Pages[index].Images).Select(image => image.Y0).Should().AllBeEquivalentTo(12.0);
+    }
+
+    /// <summary>Per page, whether it shows a header row ("H", "H0").</summary>
+    private static List<bool> HeaderPages(PrintedPages pages) =>
+        [.. pages.Pages.Select(page => page.Words.Any(word => word.Text is "H" or "H0"))];
+
+    [Fact]
+    public void Under_EmptyRowParts_Allow_a_header_that_does_not_repeat_still_ends_its_page_alone()
+    {
+        // Case a4-header-unrepeated-image-228: a header of four lines (61.5 pt) is more than a quarter of the page area and
+        // is shown on page 1 only. Chromium ends page 1 with the header alone and starts the row on page 2, cut before the
+        // image below the grid line above it (a blank strip, as without a header: a4-noheader-image-228), with the image
+        // from page 3. The engine does the same under both values: nothing below the header on page 1, the strip from the
+        // top of page 2 to its end, the image where Chromium draws it.
+        const string caseName = "a4-header-unrepeated-image-228";
+        var chromium = PrintedPages.Chromium(caseName);
+        foreach (var parts in new[] { EmptyRowParts.Avoid, EmptyRowParts.Allow })
+        {
+            var engine = PrintedPages.Engine(Run(Doc(caseName, parts: parts)));
+
+            Painted(engine.Pages[0]).Should().NotContain(Cells(12, 73.5, 12.75, 74.25), parts.ToString());
+            Painted(engine.Pages[1]).Should().Contain(Cells(12, 12, 12.75, 192), parts.ToString());
+            engine.Pages.Select(page => page.Images).Should().BeEquivalentTo(chromium.Pages.Select(page => page.Images), options => options.WithStrictOrdering(), parts.ToString());
+        }
+
+        Painted(chromium.Pages[0]).Should().NotContain(Cells(12, 73.5, 12.75, 74.25));
+        Painted(chromium.Pages[1]).Should().Contain(Cells(12, 12, 12.75, 192));
+    }
+
+    /// <summary>The area a page's rectangles paint, as the cells of a grid of 0.375 pt that they cover (every edge in
+    /// these cases lies on it: a 0.75 pt line and its centre).</summary>
+    private static List<(int X, int Y)> Painted(PrintedPage page) =>
+        [.. page.Rectangles.SelectMany(box => Cells(box.X0, box.Y0, box.X1, box.Y1)).Distinct().Order()];
+
+    private static IEnumerable<(int X, int Y)> Cells(double x0, double y0, double x1, double y1) =>
+        Enumerable.Range(Step(x0), Step(x1) - Step(x0)).SelectMany(x => Enumerable.Range(Step(y0), Step(y1) - Step(y0)).Select(y => (x, y)));
+
+    private static int Step(double value) => (int)Math.Round(value / 0.375);
 
     [Theory]
     [InlineData("a4-header-image-row")]
@@ -119,14 +255,15 @@ public class SliceUnderHeaderTests
         var document = Run(Doc(caseName));
         var engine = PrintedPages.Engine(document);
         var chromium = PrintedPages.Chromium(caseName);
-        var first = FirstSlices(engine)[0].Page;
+        var first = FirstSlices(document)[0].Page;
 
         var clips = document.Pages.Skip(first - 1).SelectMany(page => page.Items.OfType<ClipStart>()).Select(clip => clip.Area).ToList();
         clips.Sum(area => area.Size.Height).Should().BeApproximately(408, 1e-9);
         clips.Select(area => area.Origin.Y).Should().Equal([28.5, .. Enumerable.Repeat(28.125, clips.Count - 1)]);
         engine.Pages.Skip(first - 1).Take(clips.Count).Should().AllSatisfy(page => page.Words.Select(word => word.Text).Should().Contain("H"));
-        chromium.Pages.Skip(first).Take(clips.Count - 1).SelectMany(page => page.Images).Select(image => image.Y0)
-            .Should().Equal(Enumerable.Range(1, clips.Count - 1).Select(k => 28.5 - (180.0 * k)), "Chromium moves the image a whole page area per page");
+        chromium.Pages.Skip(first).Take(clips.Count - 1).SelectMany(page => page.Images).Select(image => (image.Y0, image.Y1))
+            .Should().Equal(Enumerable.Range(1, clips.Count - 1).Select(k => (12.0, Math.Min(192, 28.5 - (180.0 * k) + 408))),
+                "Chromium moves the image a whole page area per page (drawn from 28.5 − 180 k), and its clip shows it inside the page area");
         chromium.Pages.Skip(first).Take(clips.Count - 1).Select(page => page.Words.Any(word => word.Text == "H"))
             .Should().AllBeEquivalentTo(caseName == "a4-header-row-image-row");
     }
@@ -155,7 +292,8 @@ public class SliceUnderHeaderTests
         document.Pages[0].Items.OfType<ClipStart>().Should().BeEmpty("the line is not sliced");
         var clips = document.Pages.Skip(2).SelectMany(page => page.Items.OfType<ClipStart>()).Select(clip => clip.Area.Size.Height).ToList();
         clips.Should().Equal(178.5, 166.5);
-        chromium.Pages[3].Images.Single().Y0.Should().Be(chromium.Pages[2].Images.Single().Y0 - 180);
+        (chromium.Pages[3].Images.Single().Y0, chromium.Pages[3].Images.Single().Y1).Should().Be((12, chromium.Pages[2].Images.Single().Y0 - 180 + 345),
+            "Chromium moves the image up a whole page area and shows it inside the page area");
     }
 
     /// <summary>A table with a one-line repeated header (15 pt) and one cell holding <paramref name="piece"/>, then
@@ -219,8 +357,7 @@ public class SliceUnderHeaderTests
         // Chromium: the first image on pages 2 to 4, the second from page 5 at 28.5 pt; the engine the same pages here,
         // though its later pages are its own (the header above every slice).
         var document = Run(Doc(caseName));
-        var engine = PrintedPages.Engine(document);
-        var firsts = FirstSlices(engine);
+        var firsts = FirstSlices(document);
         var lastOfFirst = document.Pages.Select((page, index) => (page, index)).Last(pair => pair.index < firsts[1].Page - 1
             && pair.page.Items.OfType<ClipStart>().Any()).index + 1;
 

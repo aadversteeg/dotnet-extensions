@@ -196,8 +196,9 @@ public class ListedDifferenceTests
     [InlineData("bottom")]
     public void The_rest_of_a_cut_middle_or_bottom_cell_is_aligned_in_the_rest_of_its_row(string align)
     {
-        // Same pages; the engine aligns the rest of the shorter cell in the row's rest, Chromium puts it at the top: a3
-        // is 36 pt (middle) or 72 pt (bottom) lower in the engine.
+        // Same pages; under the default CutRowAlignment.RestAlignedInItsPart the engine aligns the rest of the shorter
+        // cell in the row's rest, Chromium puts it at the top: a3 is 36 pt (middle) or 72 pt (bottom) lower in the engine
+        // (TopOnEveryPage follows Chromium, CutRowAlignmentTests).
         var alignment = align == "middle" ? Ave.Extensions.Documents.DocumentModel.VerticalAlign.Middle : Ave.Extensions.Documents.DocumentModel.VerticalAlign.Bottom;
         var table = Grid(Table([Fill(), Fill()], [TableRow([Cell([Lines("a0", "a1", "a2", "a3")]).VerticalAlign(alignment), Cell([Lines("b0", "b1", "b2", "b3", "b4", "b5", "b6", "b7")])])]));
         var document = Document([Paragraph("i").MarginBottom(72.Pt()).Orphans(1).Widows(1), table.Orphans(1).Widows(1), Paragraph("z")], Page(300.Pt(), 174.Pt()).Margin(12.Pt()), title: "Title", language: "en")

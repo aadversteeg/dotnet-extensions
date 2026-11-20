@@ -149,7 +149,9 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     /// The engine's page model in the same form. A word is a run of glyphs whose text has no white space; a glyph with no
     /// text of its own continues the word before it (the later glyphs of a one-to-many substitution). Its baseline is its
     /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
-    /// and face are its run's. A rectangle's colour is its fill's.
+    /// and face are its run's. A rectangle's colour is its fill's. A rectangle and an image are the part the page shows,
+    /// inside the clips open around them (<see cref="ClipStart"/>, <see cref="Visible"/>), and left out where they lie
+    /// wholly outside them, as <c>positions.py</c> reads Chromium's print; a word is whole.
     /// </summary>
     /// <param name="document">The page model.</param>
     /// <returns>The pages.</returns>
@@ -157,11 +159,60 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
         new([.. document.Pages.Select((page, index) =>
         {
             var number = index + 1;
+            var (rectangles, images) = (ImmutableArray.CreateBuilder<PrintedBox>(), ImmutableArray.CreateBuilder<PrintedBox>());
+            var clips = new System.Collections.Generic.Stack<Core.Rect>();
+            foreach (var item in page.Items)
+            {
+                switch (item)
+                {
+                    case ClipStart start:
+                        clips.Push(clips.Count == 0 ? start.Area : Intersection(clips.Peek(), start.Area));
+                        break;
+                    case ClipEnd:
+                        clips.Pop();
+                        break;
+                    case FillRectangle fill when Visible(Box(number, fill.Area) with { Colour = Hex(fill.Color) }, clips.Count == 0 ? null : clips.Peek()) is { } shown:
+                        rectangles.Add(shown);
+                        break;
+                    case DrawImage image when Visible(Box(number, image.Area), clips.Count == 0 ? null : clips.Peek()) is { } shown:
+                        images.Add(shown);
+                        break;
+                }
+            }
+
             return new PrintedPage(number, page.Size.Width, page.Size.Height,
-                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))),
-                [.. page.Items.OfType<FillRectangle>().Select(fill => Box(number, fill.Area) with { Colour = Hex(fill.Color) })],
-                [.. page.Items.OfType<DrawImage>().Select(image => Box(number, image.Area))]);
+                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))), rectangles.ToImmutable(), images.ToImmutable());
         })]);
+
+    /// <summary>
+    /// The part of a painted rectangle or an image area that a clip lets show: the rectangle cut to the clip, or null
+    /// where nothing of it lies inside (an edge on the clip's edge shows nothing beyond it). Without a clip, the rectangle
+    /// as it is. A PDF paints a drawing only inside the clipping path around it (ISO 32000-1 §8.5.4); Chromium clips
+    /// each page's body to the page area and draws what passes it all the same (<c>tools/reference/chromium/visible.py</c>,
+    /// which reads its print back by this rule).
+    /// </summary>
+    /// <param name="box">The rectangle as drawn.</param>
+    /// <param name="clip">The rectangle the clips around it leave, or null where no clip is open.</param>
+    /// <returns>The part that shows, or null.</returns>
+    public static PrintedBox? Visible(PrintedBox box, Core.Rect? clip)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+        if (clip is not { } area)
+        {
+            return box;
+        }
+
+        var (x0, y0) = (Math.Max(box.X0, area.Origin.X), Math.Max(box.Y0, area.Origin.Y));
+        var (x1, y1) = (Math.Min(box.X1, area.Origin.X + area.Size.Width), Math.Min(box.Y1, area.Origin.Y + area.Size.Height));
+        return x0 < x1 && y0 < y1 ? box with { X0 = x0, Y0 = y0, X1 = x1, Y1 = y1 } : null;
+    }
+
+    private static Core.Rect Intersection(Core.Rect outer, Core.Rect inner)
+    {
+        var (x0, y0) = (Math.Max(outer.Origin.X, inner.Origin.X), Math.Max(outer.Origin.Y, inner.Origin.Y));
+        var (x1, y1) = (Math.Min(outer.Origin.X + outer.Size.Width, inner.Origin.X + inner.Size.Width), Math.Min(outer.Origin.Y + outer.Size.Height, inner.Origin.Y + inner.Size.Height));
+        return new Core.Rect(new Core.Point(x0, y0), new Core.Size(Math.Max(0, x1 - x0), Math.Max(0, y1 - y0)));
+    }
 
     private static string Hex(Core.Color color) => FormattableString.Invariant($"#{color.Red:x2}{color.Green:x2}{color.Blue:x2}");
 

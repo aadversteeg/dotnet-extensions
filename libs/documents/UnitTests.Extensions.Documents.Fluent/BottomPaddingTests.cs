@@ -56,6 +56,50 @@ public class BottomPaddingTests
         pages.Pages[1].Rectangles.Single().Should().Be(chromium.Pages[1].Rectangles.Single());
     }
 
+    /// <summary>
+    /// Every box whose page ends only because a box inside it broke before its bottom padding ends right below its
+    /// content, as that box does, through any number of boxes; a box whose page ends at a break between its children
+    /// fills the page (CSS Fragmentation 3 §5.3), also where that break follows the moved padding (SlicedBox). Each page's
+    /// boxes are compared by where their borders and background end, colour by colour, with Chromium's print. Cases: a
+    /// paragraph with 30 pt of bottom padding in a 36 pt page area, inside a red and a blue bordered box: both end at
+    /// 30 pt on page 1, below the line, not at the page end, 48 pt (<c>fr-pad-ancestor-boxes</c>); the blue box with a
+    /// grey background, which ends with it at 28.5 pt (<c>fr-pad-ancestor-background</c>); the blue box with a second
+    /// paragraph after the padded one: 28.5 pt on page 1, and on page 2, where the padding fits and the box breaks before
+    /// the second paragraph, the page end (<c>fr-pad-then-sibling</c>).
+    /// </summary>
+    /// <param name="caseName">The case.</param>
+    [Theory]
+    [InlineData("fr-pad-ancestor-boxes")]
+    [InlineData("fr-pad-ancestor-background")]
+    [InlineData("fr-pad-then-sibling")]
+    public void A_box_around_a_break_before_bottom_padding_ends_below_its_content_and_one_around_a_break_between_children_fills_the_page(string caseName)
+    {
+        var (red, blue, grey) = (new Color(0xFF, 0, 0), new Color(0, 0, 0xFF), new Color(0xCC, 0xCC, 0xCC));
+        var padded = Paragraph("a").PaddingBottom(30.Pt());
+        Element box = caseName switch
+        {
+            "fr-pad-ancestor-boxes" => Block([Block([padded]).Border(1.5.Pt(), blue)]).Border(1.5.Pt(), red),
+            "fr-pad-ancestor-background" => Block([padded]).Border(1.5.Pt(), blue).Background(grey),
+            _ => Block([padded, Paragraph("b")]).Border(1.5.Pt(), blue),
+        };
+        var document = Document([box, Paragraph("after")], Page(300.Pt(), 60.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+            .FontFamily("Lato").FontSize(10.5.Pt()).LineHeight(15.Pt());
+        var engine = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
+        engine.IsSuccess.Should().BeTrue(engine.IsFailure ? engine.Error.ToString() : string.Empty);
+        var chromium = PrintedPages.Chromium(caseName);
+
+        static (string? Colour, double End)[] Ends(PrintedPage page) =>
+            [.. page.Rectangles.GroupBy(rectangle => rectangle.Colour).Select(group => (group.Key, group.Max(rectangle => rectangle.Y1))).OrderBy(end => end.Key, StringComparer.Ordinal)];
+
+        engine.Value.PageTexts.Should().Equal(chromium.PageTexts);
+        chromium.Pages[0].Rectangles.Max(rectangle => rectangle.Y1).Should().Be(caseName == "fr-pad-ancestor-boxes" ? 30 : 28.5, "Chromium ends the boxes below the line");
+        foreach (var (ours, theirs) in engine.Value.Pages.Zip(chromium.Pages))
+        {
+            Ends(ours).Should().Equal(Ends(theirs), (mine, measured) => mine.Colour == measured.Colour && Math.Abs(mine.End - measured.End) < 0.01,
+                $"page {ours.Number}: each colour's rectangles end where Chromium's do");
+        }
+    }
+
     [Fact]
     public void The_same_inside_a_block_with_a_paragraph_after_it()
     {

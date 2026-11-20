@@ -39,7 +39,8 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// Chromium prints on the paper of the print call (measured: case <c>h-default-page</c> of
 /// <c>tools/reference/chromium</c>, printed on US Letter, 612 × 792 pt, no margins). The layout policies are Chromium's
 /// (<see cref="LayoutProfile"/>: <see cref="MonolithicOverflow.Slice"/>, <see cref="EmptyRowParts.Allow"/>,
-/// <see cref="FontMetricRounding.WholePixels"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
+/// <see cref="FontMetricRounding.WholePixels"/>, <see cref="FontSizeRounding.FlooredToPixelFractions"/>,
+/// <see cref="LengthRounding.SixtyFourthPixels"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
 /// root element's language (§3.2.6.2).</para>
 /// <para>The tree is walked with an explicit stack, never by recursion, so the depth of the input costs heap, not call
 /// frames.</para>
@@ -59,6 +60,15 @@ public static partial class HtmlBoxGenerator
         MonolithicOverflow = MonolithicOverflow.Slice,
         EmptyRowParts = EmptyRowParts.Allow,
         FontMetricRounding = FontMetricRounding.WholePixels,
+        FontSizeRounding = FontSizeRounding.FlooredToPixelFractions,
+        LengthRounding = LengthRounding.SixtyFourthPixels,
+        SplitLineHalves = SplitLineHalves.AtLeastOnePixel,
+        TableEndOverflow = TableEndOverflow.ContinuesOnNextPage,
+        BodyClip = BodyClip.BodyArea,
+        CellsBesideSlices = CellsBesideSlices.Below,
+        CutRowAlignment = CutRowAlignment.TopOnEveryPage,
+        RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut,
+        SliceRestEnd = SliceRestEnd.AtLineCentre,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>
@@ -704,8 +714,9 @@ public static partial class HtmlBoxGenerator
 
         private PageStyle Page()
         {
-            var page = new PageRules(_sourceName, Refusals);
-            return page.Apply(styled.PageRules, styled.Page);
+            var rules = new PageRules(_sourceName, Refusals);
+            var page = rules.Apply(styled.PageRules, styled.Page);
+            return WithMarginBoxes(page, rules.RowStart);
         }
     }
 }

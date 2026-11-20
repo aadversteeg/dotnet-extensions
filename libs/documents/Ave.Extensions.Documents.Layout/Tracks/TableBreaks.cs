@@ -87,7 +87,7 @@ internal static class TableBreaks
 
             var bottom = top + segment.Heights[row - segment.FirstRow];
             var fits = Fitting.Fits(bottom + InsideBelow(table, row), height)
-                || (row == segment.FirstRow && PassesOnlyByItsLineBelow(table, content, bottom, row, height));
+                || (row == segment.FirstRow && PassesOnlyByItsLineBelow(table, content, segment, bottom, row, height));
             if (!fits || row == segment.LastRow)
             {
                 // A break inside the row ends the page inside the row's cells, below the whole line above the row: the

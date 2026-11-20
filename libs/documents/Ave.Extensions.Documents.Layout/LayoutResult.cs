@@ -40,6 +40,11 @@ public abstract record LayoutResult
         /// comparison (<see cref="BreakAvoidance.Kept"/>): perfect, lowered by the <c>break-inside: avoid</c> of the boxes
         /// inside it that the break lies inside. <see cref="LayoutResult.Placed.Appeal"/> keeps the break's own appeal.</summary>
         internal BreakAppeal KeptAppeal { get; init; } = BreakAppeal.Perfect;
+
+        /// <summary>For a fragment that breaks, true when it ends right below its content instead of filling the page:
+        /// the box broke before its own bottom padding and border, or its page ends only because a box inside it did
+        /// (<see cref="SlicedBox.Layout"/>).</summary>
+        internal bool EndsBelowContent { get; init; }
     }
 
     /// <summary>Nothing of the box fits in the space left on this page; the parent moves it to the next page.</summary>
@@ -60,12 +65,14 @@ public abstract record LayoutResult
 
     /// <summary>The successful result "placed this fragment, continue here", for a box that may keep its break
     /// (<see cref="Placed.KeepsItsBreak"/>).</summary>
-    internal static Result<LayoutResult, Error> Place(BoxFragment fragment, BreakToken? continuation, BreakAppeal appeal, EarlyBreak? bestBreak, bool keepsItsBreak, BreakAppeal keptAppeal) =>
+    internal static Result<LayoutResult, Error> Place(
+        BoxFragment fragment, BreakToken? continuation, BreakAppeal appeal, EarlyBreak? bestBreak, bool keepsItsBreak, BreakAppeal keptAppeal, bool endsBelowContent = false) =>
         Result<LayoutResult, Error>.Success(new Placed(fragment, continuation, appeal)
         {
             BestBreak = continuation is null ? bestBreak : null,
             KeepsItsBreak = continuation is not null && keepsItsBreak,
             KeptAppeal = continuation is not null && keepsItsBreak ? keptAppeal : BreakAppeal.Perfect,
+            EndsBelowContent = continuation is not null && endsBelowContent,
         });
 
     /// <summary>

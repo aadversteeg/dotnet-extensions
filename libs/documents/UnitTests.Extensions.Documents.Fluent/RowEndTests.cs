@@ -188,9 +188,8 @@ public class RowEndTests
     public void The_95_documents_that_were_refused_print_the_words_of_Chromium_on_the_same_pages_and_in_87_at_the_same_places()
     {
         // Same words on the same pages in all 95, at the same places in 87. In the 8 with a first row of 10 or 11 lines and
-        // a second of 23 (in the four table shapes), page 2 starts below the line between the rows, which the engine splits at the break and Chromium
-        // draws whole on both pages: page 2 is 0.375 pt higher (the pinned difference of RowPartTests, the a2 split-line
-        // cases).
+        // a second of 23 (in the four table shapes), page 2 starts below the line between the rows, split at the break in
+        // both: page 2 is 0.375 pt higher in the engine (the pinned difference of RowPartTests, the a2 split-line cases).
         var chromium = ChromiumFamily();
         chromium.Should().HaveCount(95);
         var differences = new List<string>();
@@ -299,8 +298,9 @@ public class RowEndTests
     [Fact]
     public void A_table_that_starts_the_page_and_ends_the_document_with_such_a_first_row_has_a_page_less_than_in_Chromium()
     {
-        // Limit, docs/architecture.md, row end (i): the same row with nothing after the table. Chromium ends the document
-        // with a second page that shows nothing; the engine has the one page.
+        // Limit, docs/architecture.md, row end (i), under TableEndOverflow.EndsOnPage, the default: the same row with
+        // nothing after the table. Chromium ends the document with a second page that shows nothing; the engine has the
+        // one page. Under ContinuesOnNextPage it has Chromium's two (TableEndOverflowTests).
         PrintedPages.Chromium("a2-row-end-first-row-half-alone").PageTexts.Should().Equal("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "");
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {
@@ -330,14 +330,12 @@ public class RowEndTests
     }
 
     [Fact]
-    public void Under_an_outer_table_s_repeated_header_a_continued_row_that_fits_but_for_its_line_below_is_not_placed_whole_there()
+    public void Under_an_outer_table_s_repeated_header_a_row_that_moved_from_the_page_before_is_cut_below_the_header_as_in_Chromium()
     {
         // A table inside the one body cell of a table with a header row "H": its row of 10 lines fills page 1, and its
-        // second row, 10 lines below 14.25 pt top padding, starts page 2 below the repeated header. There the inner table
-        // continues but does not start the page, so the rule does not place the row whole below the header. Under Avoid
-        // the row is cut before "x8", as Chromium prints it. Under Allow the cut below the header is not taken: page 2
-        // goes on without the header, where the rule places the row whole (docs/architecture.md, "Known limits"); Chromium
-        // repeats the header and cuts the row.
+        // second row, 10 lines below 14.25 pt top padding, has no room there for its padding and moves to page 2 whole
+        // (CellTopInsetTests), below the repeated header. There the inner table continues but does not start the page, so
+        // the rule does not place the row whole below the header: the row is cut before "x8", as Chromium prints it.
         Element[] body =
         [
             Grid(1, HeaderRow([Cell("H")]), TableRow([Cell([Grid(1,
@@ -346,14 +344,13 @@ public class RowEndTests
                 TableRow([Cell("after")]))])])),
         ];
         var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header");
-        string[] withoutHeader = ["H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after"];
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {
             foreach (var parts in Enum.GetValues<EmptyRowParts>())
             {
                 var result = Run(body, parts, overflow);
                 result.IsSuccess.Should().BeTrue($"{overflow}/{parts}: {(result.IsFailure ? result.Error.ToString() : string.Empty)}");
-                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(parts == EmptyRowParts.Avoid ? chromium.PageTexts : withoutHeader, $"{overflow}/{parts}");
+                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(chromium.PageTexts, $"{overflow}/{parts}");
             }
         }
 
@@ -394,18 +391,19 @@ public class RowEndTests
     [Fact]
     public void Under_an_outer_table_s_repeated_header_a_continued_row_below_13_875_pt_of_padding_is_cut_as_in_Chromium_under_Avoid_only()
     {
-        // The shape above with 10 lines below 13.875 pt top padding. Under Avoid the row is cut below the repeated header
-        // as Chromium cuts it. Under Allow it is refused under Refuse, and under Slice page 2 goes on without the header,
-        // as in a2-row-end-nested-under-header (docs/architecture.md, "Known limits").
+        // The shape above with 10 lines below 13.875 pt top padding: the row moves to page 2 whole as above. Under Avoid it
+        // is cut below the repeated header as Chromium cuts it. Under Allow page 2 goes on without the header: below the
+        // header the engine starts the inner table 0.375 pt higher than Chromium (its top line at 28.125, Chromium's at
+        // 28.5), so the row's ten lines fit there and only its line below passes the page end; such a row is not cut, and
+        // it cannot move (docs/architecture.md, "Known limits").
         var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header-13875");
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {
             Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Avoid, overflow).OnSuccessMap(PrintedPages.Engine).Value.PageTexts.Should().Equal(chromium.PageTexts, $"{overflow}/Avoid");
+            Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, overflow).OnSuccessMap(PrintedPages.Engine).Value.PageTexts
+                .Should().Equal(["H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after"], $"{overflow}/Allow");
         }
 
-        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Refuse).Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
-        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Slice).OnSuccessMap(PrintedPages.Engine).Value.PageTexts
-            .Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after");
         chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7", "H x8 x9 after");
     }
 
@@ -431,14 +429,16 @@ public class RowEndTests
     [Fact]
     public void The_line_below_passes_the_page_area_whole_as_in_Chromium_but_the_engine_does_not_draw_it_again_on_a_next_page()
     {
-        // Limit (i), docs/architecture.md: the whole bottom line, 192 to 192.75, on page 2 in both. Chromium draws the
-        // overflowing border again on a page 3 that holds only that line; the table ends the document, and the engine
-        // ends with page 2.
+        // Limit (i), docs/architecture.md, under TableEndOverflow.EndsOnPage, the default: the whole bottom line, 192 to
+        // 192.75, on page 2 in both. Chromium draws the overflowing border again on a page 3 that holds only that line; the
+        // table ends the document, and the engine ends with page 2. Under ContinuesOnNextPage it draws that page 3 too
+        // (TableEndOverflowTests). Chromium draws its line under its clip to the page area, so its print shows nothing
+        // below 192 (the measured files hold what shows); the engine, under BodyClip.None, the default, shows the line.
         var engine = Printed(Smallest());
         var chromium = PrintedPages.Chromium("a2-row-end");
 
         engine.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.75);
-        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.75);
+        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192);
         chromium.Pages.Should().HaveCount(3);
         chromium.Pages[2].Words.Should().BeEmpty();
         chromium.Pages[2].Rectangles.Should().NotBeEmpty();
@@ -450,9 +450,10 @@ public class RowEndTests
     [InlineData("a2-row-end-6pt-after", 6)]
     public void Content_after_the_table_starts_on_the_next_page_higher_than_in_Chromium_by_the_line_s_width(string caseName, double width)
     {
-        // Limit (ii): Chromium starts "after" below the line it draws again at the top of page 3; the engine starts it at
-        // the top of page 3, higher by the line's width. No reserved offset without the line (a gap without a line would
-        // be a third behaviour); both become equal when borders are sliced.
+        // Limit (ii), under TableEndOverflow.EndsOnPage, the default: Chromium starts "after" below the line it draws
+        // again at the top of page 3; the engine starts it at the top of page 3, higher by the line's width. Under
+        // ContinuesOnNextPage the engine draws what passed again and starts "after" where Chromium does
+        // (TableEndOverflowTests).
         var body = Smallest(after: true);
         if (width > 1)
         {
@@ -479,9 +480,10 @@ public class RowEndTests
         var engine = PrintedPages.Engine(result.Value);
         var chromium = PrintedPages.Chromium("a2-row-end-6pt");
 
+        // Both draw the whole line, 192 to 198; Chromium's clip to the page area shows none of it (BodyClip.BodyArea), the engine's default shows it.
         engine.PageTexts.Should().Equal(chromium.PageTexts.Where(text => text.Length > 0));
         engine.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(198);
-        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(198);
+        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192);
         PastTheArea(result.Value, EmptyRowParts.Allow, 6).Should().BeEmpty();
         PastTheArea(result.Value, EmptyRowParts.Allow, 3).Should().NotBeEmpty("the whole line passes, not half of it");
     }
@@ -490,7 +492,8 @@ public class RowEndTests
     public void A_cell_background_ends_at_the_middle_of_the_line_below_where_Chromium_ends_it_at_its_outer_edge()
     {
         // The table model's own rule, not new here: a cell's box ends at the middle of its grid lines. The 0.375 pt between
-        // is under the opaque line (the engine has no dashed or translucent lines), so the pages look the same.
+        // is under the opaque line (the engine has no dashed or translucent lines), so the pages look the same. Chromium's
+        // print shows its background only to the page area's end, 192, where its clip cuts it.
         var light = new Color(0xc8, 0xdc, 0xff);
         var body = new Element[] { Lines("a", 1), Table(Columns(Fill(1)), [TableRow([Cell([Lines("b", 22)]).Background(light)])]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks() };
         var result = Run(body, EmptyRowParts.Allow);
@@ -498,7 +501,7 @@ public class RowEndTests
         var chromium = PrintedPages.Chromium("a2-row-end-background");
 
         background.Max(fill => fill.Area.Origin.Y + fill.Area.Size.Height).Should().Be(192.375);
-        chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 200).Max(box => box.Y1).Should().Be(192.75);
+        chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 200).Max(box => box.Y1).Should().Be(192);
         PrintedPages.Engine(result.Value).PageTexts.Should().Equal(chromium.PageTexts.Where(text => text.Length > 0));
         PastTheArea(result.Value, EmptyRowParts.Allow, 0.75).Should().BeEmpty();
     }
@@ -512,10 +515,14 @@ public class RowEndTests
     [Fact]
     public void The_first_row_of_a_unit_that_starts_the_page_area_is_placed_whole_and_the_page_breaks_before_the_next_row()
     {
-        // Chromium's words on all 3 pages. Limit (iii): at this break between rows the engine draws half of the line on
-        // each page (192 to 192.375 on page 2, 12 to 12.375 on page 3, then the empty row and the table's bottom line to
-        // 13.125), where Chromium draws the whole line on both; so "after" is 0.375 pt higher than in Chromium (+1.125
-        // below the top of the page against +1.5).
+        // Chromium's words on all 3 pages. Limit (iii): at this break between rows the engine draws the upper half of the
+        // line on page 2 (192 to 192.375) and nothing at the top of page 3, where the cell that spans both rows continues
+        // (as Chromium prints a break inside a spanning cell, case b4-row-span-6pt), keeping the half's room: the first
+        // line on page 3 is the table's bottom line, 12.375 to 13.125. Chromium lets the whole line pass the end of page 2
+        // and draws it again at the top of page 3, so "after" is 0.375 pt higher than in Chromium (+1.125 below the top of
+        // the page against +1.5). That is under TableEndOverflow.EndsOnPage, the default; under ContinuesOnNextPage page 3
+        // takes the passed part of the upper half again and "after" is where Chromium prints it (TableEndOverflowTests).
+        // Chromium's clip to the page area shows nothing of its line below 192.
         var engine = Printed(Spanning());
         var chromium = PrintedPages.Chromium("a2-row-end-span");
         var engineAfter = Printed(Spanning(after: true));
@@ -525,9 +532,9 @@ public class RowEndTests
         engine.PageTexts.Should().Equal(chromium.PageTexts);
         engine.Pages[1].Words.Select(word => word.Text).Should().Equal(Enumerable.Range(11, 12).Select(i => $"b{i}"));
         engine.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.375);
-        engine.Pages[2].Rectangles.Where(box => box.X1 - box.X0 > 100).Min(box => box.Y0).Should().Be(12);
+        engine.Pages[2].Rectangles.Where(box => box.X1 - box.X0 > 100).Min(box => box.Y0).Should().Be(12.375);
         engine.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(13.125);
-        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.75);
+        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192);
         After(engineAfter).Should().Be(24 + 1.125);
         After(chromiumAfter).Should().Be(24 + 1.5);
     }

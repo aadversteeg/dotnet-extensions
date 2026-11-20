@@ -255,8 +255,11 @@ public static class FlowLayout
         var contentIsAtPageStart = SlicedBox.ContentIsAtPageStart(box.Style, space, incoming);
         // Only where content taller than the page area is sliced: there the deepest last resort keeps the content's boxes
         // going on, so the slice starts at the top of the next page (ConstraintSpace.IsBelowStartInsets).
-        var contentIsBelowStartInsets = environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice
-            && !contentIsAtPageStart && (space.IsAtPageStart || space.IsBelowStartInsets);
+        // Under every profile, a box with no top border or padding passes on what lies above it: a box below nothing but
+        // margins kept at the page start (see belowKeptMargins) puts its first child there too.
+        var contentIsBelowStartInsets = (environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice
+            && !contentIsAtPageStart && (space.IsAtPageStart || space.IsBelowStartInsets))
+            || (space.IsBelowStartInsets && !(SlicedBox.TopInset(box.Style, incoming) > 0));
         for (var index = resume.ChildIndex; index < children.Length; index++)
         {
             var child = children[index];
@@ -294,9 +297,14 @@ public static class FlowLayout
 
             var followsContent = space.FollowsContent || hasContent;
             var inside = breakAt is { Inside: { } target } && breakAt.ChildIndex == index ? target : null;
+            // The first child of a box that starts the page after a forced break before that child, below nothing but the
+            // margins the break keeps (§5.2): there is no breakpoint before it, so a break before it leaves only those
+            // margins on the page, a last resort as well (ConstraintSpace.IsBelowStartInsets). Not the margins at the start
+            // of the first page: there Chromium moves a table that does not fit below its margin (case a1-table-own-margin).
+            var belowKeptMargins = incoming is not null && resume.IsForced && contentIsAtPageStart && top > 0 && best is null && placed.Count == 0;
             var outcome = InFlowChild.Place(
                 environment, child, contentWidth, top, contentHeight, space.FragmentainerBlockSize, childIsAtPageStart, childResume, followsContent: followsContent, breakAt: inside,
-                isBelowStartInsets: contentIsBelowStartInsets && !(top > 0));
+                isBelowStartInsets: (contentIsBelowStartInsets && !(top > 0)) || belowKeptMargins);
             if (outcome.IsFailure)
             {
                 return Result<Maybe<Stacked>, Error>.Failure(outcome.Error);
@@ -336,9 +344,12 @@ public static class FlowLayout
                 // A child that keeps its break is compared at its kept appeal (BreakAvoidance.Kept, lowered by its own
                 // break-inside), as Chromium compares a box laid out again to its early break; a tie keeps the break
                 // inside, which places more. A box whose page ends inside such a child keeps the break too: Chromium follows
-                // such a break from the top, through every box around it (measured two boxes deep: i x0 a0 a1 | a2 z).
+                // such a break from the top, through every box around it (measured two boxes deep: i x0 a0 a1 | a2 z). A
+                // child that ends below its content (it or a box inside it broke before its bottom padding) makes this box
+                // end below its content as well (SlicedBox.Layout).
                 placed.Add(placement.Fragment);
-                return Broken(SlicedBox.Placed(placed.ToImmutable(), top + placement.Fragment.Fragment.Size.Height, new FlowBreakToken(index, continuation), appeal, keepsItsBreak: inside is null && placement.KeepsItsBreak, keptAppeal: kept));
+                return Broken(SlicedBox.Placed(placed.ToImmutable(), top + placement.Fragment.Fragment.Size.Height, new FlowBreakToken(index, continuation), appeal, keepsItsBreak: inside is null && placement.KeepsItsBreak, keptAppeal: kept,
+                    endsBelowContent: placement.EndsBelowContent));
             }
 
             if (inside is not null)

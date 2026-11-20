@@ -137,6 +137,60 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font metric rounding policy must be Exact or WholePixels.",
                 ((int)profile.FontMetricRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-metric-rounding", source);
         }
+
+        if (!Enum.IsDefined(profile.FontSizeRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The font size rounding policy must be Exact or FlooredToPixelFractions.",
+                ((int)profile.FontSizeRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "font-size-rounding", source);
+        }
+
+        if (!Enum.IsDefined(profile.LengthRounding))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The length rounding policy must be Exact or SixtyFourthPixels.",
+                ((int)profile.LengthRounding).ToString(System.Globalization.CultureInfo.InvariantCulture), "length-rounding", source);
+        }
+
+        if (!Enum.IsDefined(profile.SplitLineHalves))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The split line halves policy must be Exact or AtLeastOnePixel.",
+                ((int)profile.SplitLineHalves).ToString(System.Globalization.CultureInfo.InvariantCulture), "split-line-halves", source);
+        }
+
+        if (!Enum.IsDefined(profile.TableEndOverflow))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The table end overflow policy must be EndsOnPage or ContinuesOnNextPage.",
+                ((int)profile.TableEndOverflow).ToString(System.Globalization.CultureInfo.InvariantCulture), "table-end-overflow", source);
+        }
+
+        if (!Enum.IsDefined(profile.BodyClip))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The body clip policy must be None or BodyArea.",
+                ((int)profile.BodyClip).ToString(System.Globalization.CultureInfo.InvariantCulture), "body-clip", source);
+        }
+
+        if (!Enum.IsDefined(profile.CellsBesideSlices))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The cells beside slices policy must be GoOn or Below.",
+                ((int)profile.CellsBesideSlices).ToString(System.Globalization.CultureInfo.InvariantCulture), "cells-beside-slices", source);
+        }
+
+        if (!Enum.IsDefined(profile.CutRowAlignment))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The cut row alignment policy must be RestAlignedInItsPart or TopOnEveryPage.",
+                ((int)profile.CutRowAlignment).ToString(System.Globalization.CultureInfo.InvariantCulture), "cut-row-alignment", source);
+        }
+
+        if (!Enum.IsDefined(profile.RepeatedHeaderRows))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The repeated header rows policy must be AboveEverySlice or WhereContentIsLaidOut.",
+                ((int)profile.RepeatedHeaderRows).ToString(System.Globalization.CultureInfo.InvariantCulture), "repeated-header-rows", source);
+        }
+
+        if (!Enum.IsDefined(profile.SliceRestEnd))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The slice rest end policy must be InsideCell or AtLineCentre.",
+                ((int)profile.SliceRestEnd).ToString(System.Globalization.CultureInfo.InvariantCulture), "slice-rest-end", source);
+        }
     }
 
     /// <summary>Heading levels are 1–6, as PDF structure types H1–H6 (ISO 32000-1 §14.8.4.3.2).</summary>
