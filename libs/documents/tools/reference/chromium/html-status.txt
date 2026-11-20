@@ -88,6 +88,12 @@ a4-line-after-text equal
 a4-line-beside-lines open 3 pages, Chromium 4 (print.txt)
 a4-nested-padded-image-160 open box td '' height 179.625, Chromium 192.246 (boxes.txt)
 a4-row-image-row open page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
+a4-slice-near-end-beside-lines open page 3 reads 'p28 p29 p30 p31 p32 p33 p34 p35 p36 p37 p38 p39', Chromium '' (print.txt)
+a4-slice-near-end-block equal
+a4-slice2-beside-lines open page 3 'p28' baseline 22.5 (laid out at 22.5), Chromium 70.5 (print.txt)
+a4-slice2-cell-para-after open box td 'x' height 179.625, Chromium 228.75 (boxes.txt)
+a4-slice2-cell-row-after open box td 'x' height 179.625, Chromium 228.75 (boxes.txt)
+a4-slice4-cell-row-after open page 4 reads '', Chromium 'after a' (print.txt)
 a4-two-image-rows open page 8 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a5-cell-in-row open box td 'a0a1a2' height 108.375, Chromium 129 (boxes.txt)
 a5-kept-cell-by-box open box td 'a0a1' height 179.625, Chromium 285.75 (boxes.txt)
