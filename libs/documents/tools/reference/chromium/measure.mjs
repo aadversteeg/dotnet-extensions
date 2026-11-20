@@ -125,9 +125,12 @@ async function boxes() {
 /**
  * The window width for the boxes of a case, in CSS px: the width of its pages' page area (out/<case>.area, one line
  * "page width" in points per page, "page none" for a page that draws nothing in its body and so opens no clip) rounded
- * up to a whole pixel. The clip's box is up to 0.012 pt wider than the page area (a 300 pt page area, case pm-len-body,
- * is clipped 300.012 pt wide), so 0.05 px is taken off before rounding up. A print whose pages have page areas of
- * different widths has no one width: an error. A print that draws nothing in any page's body has none: null, and then
+ * up to a whole pixel. The clip is the page area at its own size in Chromium's unit of 1/64 px: 200 pt less two 10 pt
+ * margins is 266.671875 px less 2 x 13.328125 px, 240.015625 px, clipped 180.012 pt wide (cases f-theano-13-ab,
+ * h-page-area-justify), and laid out 241 px wide: the justified lines of h-page-area-justify end at 190.497 pt, 9.75 pt
+ * + 241 px. So the clip's width is rounded up as it is; only 0.001 px is taken off first, for the three decimals
+ * area.py writes (at most 0.0007 px), so that a page area of whole pixels (276 pt, 368 px) stays 368 px. A print whose
+ * pages have page areas of different widths has no one width: an error. A print that draws nothing in any page's body has none: null, and then
  * it must have no box to measure.
  */
 function windowWidth(name) {
@@ -136,7 +139,7 @@ function windowWidth(name) {
   if (widths.some((width) => Math.abs(width - widths[0]) > 0.001)) {
     throw new Error(`${name}: the page areas of the print are not one width (${widths.join(', ')}); the boxes have no window to be measured in`);
   }
-  return widths.length === 0 ? null : Math.ceil(widths[0] / 0.75 - 0.05);
+  return widths.length === 0 ? null : Math.ceil(widths[0] / 0.75 - 0.001);
 }
 
 /** Opens a case and waits for its fonts, so layout uses them. */

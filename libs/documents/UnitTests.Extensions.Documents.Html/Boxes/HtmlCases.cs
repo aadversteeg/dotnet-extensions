@@ -519,18 +519,18 @@ internal static class HtmlCases
 
     /// <summary>
     /// The first difference between the engine's boxes and the sizes measured in the page (<c>boxes.txt</c>: <c>tag width
-    /// height label</c>, the label the element's id where it has one): the height of the box of the element, within
-    /// <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>); the width is not compared.
-    /// <c>measure.mjs</c> measures the boxes with print media in a browser window as wide as the print's page area, the
-    /// width of the clip around each page's body rounded up to a whole pixel (README of <c>tools/reference/chromium</c>,
-    /// "Box sizes"), so a height that depends on the width, text that wraps, is the print's.
-    /// <para>What is compared with what. The window is one layout without page breaks, so the file holds one height per
+    /// height label</c>, the label the element's id where it has one): the height and the width of the box of the
+    /// element, each within <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>). <c>measure.mjs</c>
+    /// measures the boxes with print media in a browser window as wide as the print's page area, the width of the clip
+    /// around each page's body rounded up to a whole pixel (README of <c>tools/reference/chromium</c>, "Box sizes"), so a
+    /// box is as wide as in the print, and a height that depends on the width, text that wraps, is the print's.
+    /// <para>What is compared with what. The window is one layout without page breaks, so the file holds one size per
     /// element, the whole box (case <c>a2-row-end</c>: a cell of 22 lines, 330.75 pt, over two pages). A box the engine
     /// prints in one part is compared on every page it is on: that part, and each copy of it in a header row a table
     /// repeats (<see cref="BoxFragment.IsRepeated"/>), which is repeated whole. A box the engine cuts over pages has no
     /// part of that height: each part ends where its page ends, with the room left empty above the break, and a table
-    /// repeats its header rows inside it. Its height is compared in the engine's layout of the same boxes without breaks
-    /// (<see cref="Unbroken"/>), and its copies in repeated header rows as above; its parts are what the print shows, and
+    /// repeats its header rows inside it. Its height and width are compared in the engine's layout of the same boxes
+    /// without breaks (<see cref="Unbroken"/>), and its copies in repeated header rows as above; its parts are what the print shows, and
     /// <c>print.txt</c>, <c>lines.txt</c> and <c>words.txt</c> compare them.</para>
     /// <para>How a box is found. A table cell (<c>td</c>, <c>th</c>; <c>measure.mjs</c> writes every cell, in document
     /// order, with its id or the start of its text): the file's n-th cell is the document's n-th cell element, and its box
@@ -605,7 +605,7 @@ internal static class HtmlCases
         {
             var label = row.Length > 3 ? string.Join(' ', row[3..]) : string.Empty;
             var (box, missing) = row[0] is "td" or "th" ? CellBox(boxes.Document.Root, cells, cells[cellIndex++], row, label) : IdBox(boxes.Document.Root, elements, row, label);
-            if ((missing ?? HeightDifference(box!, pages.Value, unbroken, row, label)) is { } different)
+            if ((missing ?? SizeDifference(box!, pages.Value, unbroken, row, label)) is { } different)
             {
                 return different + " (boxes.txt)";
             }
@@ -677,12 +677,12 @@ internal static class HtmlCases
     };
 
     /// <summary>
-    /// The height difference of one box (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>): its
+    /// The size difference of one box, its height and then its width (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>): its
     /// parts on the pages, a copy in a repeated header row not counted as a part. One part: that part and every copy.
     /// More than one: the box in the layout without breaks (<see cref="Unbroken"/>), which must be one page, and every
     /// copy. Else the difference.
     /// </summary>
-    internal static string? HeightDifference(Box box, IReadOnlyList<PageFragment> pages, Lazy<Result<ValueList<PageFragment>, Error>> unbroken, string[] row, string label)
+    internal static string? SizeDifference(Box box, IReadOnlyList<PageFragment> pages, Lazy<Result<ValueList<PageFragment>, Error>> unbroken, string[] row, string label)
     {
         var at = $"box {row[0]} '{label}'";
         var found = pages.Select(page => Part(page.Root.Fragment, box.Id)).Where(part => part is not null).Select(part => part!.Value).ToList();
@@ -695,7 +695,7 @@ internal static class HtmlCases
         var parts = found.Where(part => !part.Repeated).Select(part => part.Fragment).ToList();
         if (parts.Count <= 1)
         {
-            return parts.Concat(copies).Select(fragment => Far(at, "height", fragment.Size.Height, Number(row[2]))).FirstOrDefault(difference => difference is not null);
+            return parts.Concat(copies).Select(fragment => Sized(at, string.Empty, fragment, row)).FirstOrDefault(difference => difference is not null);
         }
 
         if (unbroken.Value.IsFailure)
@@ -713,16 +713,21 @@ internal static class HtmlCases
             return $"{at} has no box in the layout without breaks";
         }
 
-        return Far(at, $"height without breaks (in {parts.Count} parts)", whole.Fragment.Size.Height, Number(row[2]))
-            ?? copies.Select(fragment => Far(at, "height", fragment.Size.Height, Number(row[2]))).FirstOrDefault(difference => difference is not null);
+        return Sized(at, $" without breaks (in {parts.Count} parts)", whole.Fragment, row)
+            ?? copies.Select(fragment => Sized(at, string.Empty, fragment, row)).FirstOrDefault(difference => difference is not null);
     }
+
+    /// <summary>The height of a fragment against the row's height, then its width against the row's width (<c>tag width
+    /// height label</c>), each within <see cref="Bound"/>; or null.</summary>
+    private static string? Sized(string at, string where, BoxFragment fragment, string[] row) =>
+        Far(at, "height" + where, fragment.Size.Height, Number(row[2])) ?? Far(at, "width" + where, fragment.Size.Width, Number(row[1]));
 
     /// <summary>
     /// The same boxes on one page tall enough that nothing in them breaks: the page as tall as the model allows
     /// (<see cref="ModelLimits.MaxLength"/>, 14,400 pt; the longest document, <c>timesheet-pages</c>, is under 5,000 pt
     /// laid out), as wide, with the same margins and the same templates. The window <c>boxes.txt</c> is measured in is such
     /// a layout. That nothing broke is checked, not assumed: the layout must be one page
-    /// (<see cref="HeightDifference"/>); a break the document forces, which a window ignores, gives a second page and is
+    /// (<see cref="SizeDifference"/>); a break the document forces, which a window ignores, gives a second page and is
     /// then the difference. The header and footer areas (the HTML front-end's rows of page-margin boxes) stay: no box of
     /// <c>boxes.txt</c> is in them, and they take from the page area what they take on a printed first page, so the body
     /// starts where it starts there and is as wide.

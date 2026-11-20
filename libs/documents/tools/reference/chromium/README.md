@@ -79,8 +79,11 @@ that wraps onto another line) is the print's too. The width is a fact of the pri
 each page's body under one clip, the page area at its own size (see "Print positions"), and `area.py` writes the width
 of that clip on every page (`visible.body_clip`: the page's first clip outside any other). Chromium lays a page out in
 the page area rounded up to a whole CSS pixel (a 280 pt page area, 373.33 px, is laid out 374 px wide), so the window is
-the clip's width rounded up to a whole pixel; the clip's box is up to 0.012 pt wider than the page area (a 300 pt page
-area, case `pm-len-body`, is clipped 300.012 pt wide), so 0.05 px is taken off before rounding up. A page whose body
+the clip's width rounded up to a whole pixel. The clip is the page area at its own size in Chromium's unit of 1/64 px,
+which can be a little over a whole pixel: a 200 pt page with 10 pt margins is 266.671875 px less 2 × 13.328125 px,
+240.015625 px, clipped 180.012 pt wide, and laid out 241 px wide (the justified lines of `h-page-area-justify` end at
+190.497 pt, 9.75 pt + 241 px; `f-theano-13-ab` has the same page). Only 0.001 px is taken off before rounding up, for
+the three decimals `area.py` writes, so a page area of whole pixels stays that many pixels. A page whose body
 draws nothing opens no clip (the empty page a forced break leaves, case `a1-after-forced-break`; page 1 of
 `a1-header-row`, which holds only an empty block's margin): it gives no width, and the other pages give it. Page areas
 of different widths give no one window width: the boxes step stops with an error naming the case, and so it does for a

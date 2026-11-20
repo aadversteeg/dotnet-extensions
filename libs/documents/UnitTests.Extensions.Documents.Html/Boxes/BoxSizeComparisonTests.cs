@@ -4,8 +4,8 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 
 /// <summary>
 /// The comparison of <c>boxes.txt</c> itself (<see cref="HtmlCases.BoxDifference(CaseFolder, string, IReadOnlyList{string})"/>):
-/// how a box named by its id is found, and which height of the engine's is put against the one height the file holds
-/// per element. The file is measured in a window, one layout without page breaks; a box the engine prints in one part
+/// how a box named by its id is found, and which size of the engine's is put against the one size the file holds per
+/// element. The file is measured in a window, one layout without page breaks; a box the engine prints in one part
 /// is compared on its page, one it cuts over pages in the engine's layout of the same boxes without breaks. Each test
 /// changes one row of a measured file in memory and reads the difference that row gives.
 /// </summary>
@@ -19,6 +19,15 @@ public class BoxSizeComparisonTests
         index.Should().BeGreaterThanOrEqualTo(0, $"the file has a row '{label}'");
         var fields = rows[index].Split(' ');
         fields[2] = height;
+        return [.. rows.Select((row, at) => at == index ? string.Join(' ', fields) : row)];
+    }
+
+    private static List<string> WithWidth(List<string> rows, string label, string width)
+    {
+        var index = rows.FindIndex(row => row.Split(' ') is { Length: > 3 } fields && string.Join(' ', fields[3..]) == label);
+        index.Should().BeGreaterThanOrEqualTo(0, $"the file has a row '{label}'");
+        var fields = rows[index].Split(' ');
+        fields[1] = width;
         return [.. rows.Select((row, at) => at == index ? string.Join(' ', fields) : row)];
     }
 
@@ -80,6 +89,15 @@ public class BoxSizeComparisonTests
     public void A_cell_the_engine_prints_in_one_part_is_compared_on_its_page()
     {
         Difference("te-top", With(Rows("te-top"), "a0", "23.484")).Should().Be("box td 'a0' height 22.734, Chromium 23.484 (boxes.txt)");
+    }
+
+    [Fact]
+    public void The_width_of_a_box_is_compared_after_its_height_where_the_engine_prints_it_and_without_breaks_where_it_cuts_it()
+    {
+        Difference("te-top", WithWidth(Rows("te-top"), "a0", "99.996")).Should().Be("box td 'a0' width 99.252, Chromium 99.996 (boxes.txt)");
+        Difference("te-top", WithWidth(Rows("te-top"), "t", "200.754")).Should().Be("box table 't' width 200.004, Chromium 200.754 (boxes.txt)");
+        Difference("a2-row-end", WithWidth(Rows("a2-row-end"), "b0b1b2b3b4b5b6b7b8b9b10b", "276.000"))
+            .Should().Be("box td 'b0b1b2b3b4b5b6b7b8b9b10b' width without breaks (in 2 parts) 275.25, Chromium 276 (boxes.txt)");
     }
 
     [Fact]
