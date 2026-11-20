@@ -1160,8 +1160,9 @@ Each is documented next to its code as well.
   holds nothing but the rest of a piece sliced on an earlier page, Chromium ends the part where the rest ends, without
   its half of the grid line below it, so the line is centred on the rest's end (a 0.75 pt line at 75.75–76.5 pt below a
   rest that ends at 76.125 pt, `a4-header-image-228`; a 2.25 pt line at 75–77.25 pt, `a4-header-image-228-line3-below`;
-  the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; inside a nested
-  table, `a4-header-nested-image-228`, whose pages differ for another reason, open). A part that lays content out on
+  the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; in a cell with a
+  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, both open for
+  other reasons). A part that lays content out on
   the page keeps its half (`a4-header-cut-text-row`). Under `SliceRestEnd.AtLineCentre`, the HTML front-end's value,
   the engine does the same (`Tracks/TableSegments.cs`, `AtRestEnd`; `SliceRestEndTests`); under `InsideCell`, the code
   front-end's default, the part holds its half as every cell does, and the line starts where the rest ends.

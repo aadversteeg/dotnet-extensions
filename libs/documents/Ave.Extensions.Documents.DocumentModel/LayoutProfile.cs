@@ -76,7 +76,8 @@ public enum SliceRestEnd
     /// 228 pt image that ends at 76.125 pt the 0.75 pt line runs from 75.75 to 76.5 pt, where a whole cell's would run from
     /// 76.125 to 76.875 pt (case <c>a4-header-image-228</c>; Chromium paints the image's end at the whole pixel, 76.5 pt),
     /// and a 2.25 pt line from 75 to 77.25 pt (<c>a4-header-image-228-line3-below</c>); the text after the table starts
-    /// that much higher (<c>a4-header-image-row</c>, <c>a4-header-image-174</c>, <c>-180</c>); the same below the rest of a
+    /// that much higher (<c>a4-header-image-row</c>, <c>a4-header-image-174</c>, <c>-180</c>); the same in a cell with a
+    /// background (<c>a4-header-image-228-background</c>), below the rest of a
     /// line 240 pt tall (<c>a4-header-tall-line</c>) and of an image in a table nested in the cell
     /// (<c>a4-header-nested-image-228</c>, the nested table's line). A part that lays content out on the page holds its
     /// half under this value too (<c>a4-header-cut-text-row</c>, <c>a4-header-line2-25-cut-text-row</c>), and so does a

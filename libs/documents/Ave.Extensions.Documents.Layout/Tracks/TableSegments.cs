@@ -180,10 +180,11 @@ internal static class TableSegments
     /// <summary>
     /// Under <see cref="SliceRestEnd.AtLineCentre"/>, the measured fragment of a cell that continues from an earlier page
     /// and holds nothing but the rest of a piece sliced there (its later slices end where its own half of the line below
-    /// it starts, and it draws nothing beside them): made as tall as that rest, without the half, so its row ends where the
-    /// rest ends and the line below is centred there, as Chromium prints it (<see cref="SliceRestEnd.AtLineCentre"/>; cases
-    /// <c>a4-header-image-228</c>, <c>a4-header-image-228-line3-below</c>). The half takes no part in the cell's paint: the
-    /// table draws the grid lines. Any other fragment as it is.
+    /// it starts, and its content draws nothing beside them): made as tall as that rest, without the half, so its row ends
+    /// where the rest ends and the line below is centred there, as Chromium prints it (<see cref="SliceRestEnd.AtLineCentre"/>;
+    /// cases <c>a4-header-image-228</c>, <c>a4-header-image-228-line3-below</c>). The cell's own background does not
+    /// decide it (<c>a4-header-image-228-background</c>). The half takes no part in the cell's paint: the table draws the grid lines. Any other
+    /// fragment as it is.
     /// </summary>
     private static BoxFragment AtRestEnd(TableGeometry table, ActiveCell cell, BoxFragment fragment)
     {
@@ -194,7 +195,8 @@ internal static class TableSegments
 
         var rest = ContinuedSliceBottom(fragment);
         var half = LineBelowInside(table, table.Grid.Cells[cell.Cell]);
-        return rest > 0 && half > 0 && Math.Abs(rest + half - fragment.Size.Height) < 1e-6 && !DrawnContent.DrawsOutsideSlices(fragment)
+        return rest > 0 && half > 0 && Math.Abs(rest + half - fragment.Size.Height) < 1e-6
+            && !fragment.Children.Any(child => DrawnContent.DrawsOutsideSlices(child.Fragment))
             ? new BoxFragment(fragment.Box, new Size(fragment.Size.Width, rest), fragment.Children, fragment.Border, fragment.IsRepeated)
             : fragment;
     }

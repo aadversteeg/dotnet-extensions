@@ -72,6 +72,20 @@ public class SliceRestEndTests
         inside.Words.Single(word => word.Text == "after").Baseline.Should().BeApproximately(centre.Words.Single(word => word.Text == "after").Baseline + 1.125, 1e-6);
     }
 
+    /// <summary>The cell's background does not decide it: with one, Chromium's line lies where it lies without
+    /// (<c>a4-header-image-228-background</c> against <c>a4-header-image-228</c>), and the engine centres it on the rest's
+    /// end too. That case differs from Chromium on its first page for another reason (open): the engine leaves the header
+    /// row alone there where the cut row's cell would draw its background.</summary>
+    [Fact]
+    public void With_a_background_the_line_below_the_rest_is_centred_on_the_rests_end_too()
+    {
+        LineBelow(Chromium("a4-header-image-228-background").Pages[2]).Should().Be(LineBelow(Chromium("a4-header-image-228").Pages[2]));
+
+        var page = Engine("a4-header-image-228-background").Pages[^1];
+        var line = LineBelow(page);
+        ((line.Y0 + line.Y1) / 2).Should().BeApproximately(page.Images.Single().Y1, 1e-6);
+    }
+
     /// <summary>A part that lays content out on the page holds its half of the line below it under either value: the
     /// rest of a row cut inside its text, below a repeated header row with a 0.75 pt and a 2.25 pt line
     /// (<c>a4-header-cut-text-row</c>, <c>a4-header-line2-25-cut-text-row</c>, both equal to Chromium).</summary>
