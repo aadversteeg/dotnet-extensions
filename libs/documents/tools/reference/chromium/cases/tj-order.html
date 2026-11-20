@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Collapsed borders, 1.5 pt lines, one colour per cell, equal widths at every corner. Table t: no right and no bottom border on a0, so the middle corner is met by the lines of b0 (red, above right) and a1 (blue, below left). Table t2: no line above the middle corner, so it is met by a1 (blue, left) and b1 (green, right). -->
+<style>@page { size: 300pt 204pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } div { margin: 0 52pt 0 24pt; } table { width: 100%; table-layout: fixed; } td { border-width: 1.5pt; } .r { border-color: #ff0000; } .b { border-color: #0000ff; } .g { border-color: #008000; }</style></head><body>
+<div><table id="t"><tbody>
+<tr><td style="border-right: none; border-bottom: none">a0</td><td class="r">b0</td></tr>
+<tr><td class="b">a1</td><td class="g">b1</td></tr>
+</tbody></table></div><p>between</p>
+<div><table id="t2"><tbody>
+<tr><td style="border-right: none; border-bottom: none">a0</td><td class="r" style="border-left: none; border-bottom: none">b0</td></tr>
+<tr><td class="b" style="border-right: none">a1</td><td class="g">b1</td></tr>
+</tbody></table></div><p>end</p>
+</body></html>
