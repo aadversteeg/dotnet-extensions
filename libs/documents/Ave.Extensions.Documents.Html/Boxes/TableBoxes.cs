@@ -303,12 +303,7 @@ public static partial class HtmlBoxGenerator
                 rows = 1;
             }
 
-            var align = Value(element, "vertical-align") switch
-            {
-                CssKeyword { Name: "middle" } => VerticalAlign.Middle,
-                CssKeyword { Name: "bottom" } => VerticalAlign.Bottom,
-                _ => VerticalAlign.Top,
-            };
+            var align = VerticalAlignOf(element);
             return box with
             {
                 Role = html.LocalName == "th" ? SemanticRole.TableHeaderCell : SemanticRole.TableCell,
@@ -320,6 +315,15 @@ public static partial class HtmlBoxGenerator
                 },
             };
         }
+
+        /// <summary>The vertical alignment of a box's content in its height, for a table cell and a page-margin box (CSS 2.1
+        /// §17.5.3, CSS Paged Media 3 §5.3): middle, bottom, else top.</summary>
+        private VerticalAlign VerticalAlignOf(StyledElement element) => Value(element, "vertical-align") switch
+        {
+            CssKeyword { Name: "middle" } => VerticalAlign.Middle,
+            CssKeyword { Name: "bottom" } => VerticalAlign.Bottom,
+            _ => VerticalAlign.Top,
+        };
 
         /// <summary>A row group; the row spans of its cells end with it (HTML Standard §4.9.12.1, "ending a row group").
         /// The header group's role is set by its table, which knows whether there are body rows.</summary>

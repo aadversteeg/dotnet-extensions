@@ -707,8 +707,11 @@ margins, which the reference tool prints on: cases `h-default-page`, `h-page-siz
 `h-page-portrait`, `h-page-default-media`). Media queries see that page also where an `@page` rule sets another
 size, as Chromium evaluates them (cases `h-media-page-size-narrow`, `h-media-page-size-wide`). A root element with `display: none` generates no box: one empty page of
 the caller's page, whatever the `@page` rules say (case `h-root-display-none`). An `@page` rule without a selector gives `size` and the margins;
-declarations that reach only the page-margin boxes (inherited properties, the counters) have no effect; any other
-declaration, an invalid value, a page selector and a page-margin rule are refused (`PageRule`). Box generation makes
+the declarations that reach the page-margin boxes and the margin rules are the page-context cascade's
+(`PageContextCascade`, `Css.Unsupported.PageRule`); any other declaration, an invalid value and the size and margins of
+`@page :first` are refused (`PageRule`). A generated margin box gives every page a header area as high as the top margin
+and a footer area as high as the bottom one, each a row of the margin-boxes algorithm that starts where Chromium starts
+it, the left margin cut to 1/64 px (`PageArea.StartInMargin`; cases `pm-*`); the model's top and bottom margins are then 0. Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
 leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4

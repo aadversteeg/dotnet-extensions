@@ -28,7 +28,8 @@ public static class ModelCheck
     }
 
     /// <summary>The page: a positive width and height of at most <see cref="ModelLimits.MaxLength"/>, margins finite, not
-    /// negative and at most that long, header and footer heights positive and at most that long.</summary>
+    /// negative and at most that long, header and footer heights positive and at most that long, and how far each starts
+    /// in the page margin (<see cref="PageArea.StartInMargin"/>) not negative and at most the left margin.</summary>
     private static Error? Page(PageStyle page)
     {
         if (!(IsPositiveAndBounded(page.Width) && IsPositiveAndBounded(page.Height)))
@@ -46,6 +47,12 @@ public static class ModelCheck
             if (area?.Height is { } height && !IsPositiveAndBounded(height))
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A header or footer height must be a positive length of at most {ModelLimits.MaxLength}.", height.ToString(), "height", area.Content);
+            }
+
+            if (area is not null && !(area.StartInMargin.Points >= 0 && area.StartInMargin.Points <= page.Margins.Left.Points))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Length, "How far a header or footer starts in the page margin must be 0 or more and at most the left margin.",
+                    area.StartInMargin.ToString(), "start-in-margin", area.Content);
             }
         }
 

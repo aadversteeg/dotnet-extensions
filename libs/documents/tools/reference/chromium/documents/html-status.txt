@@ -1,4 +1,4 @@
 invoice equal
-timesheet-normal refused Documents.Html.Unsupported.PageRule @page at 16:1
-timesheet-one-page refused Documents.Html.Unsupported.PageRule @page at 16:1
-timesheet-pages refused Documents.Html.Unsupported.PageRule @page at 16:1
+timesheet-normal refused Documents.Html.Unsupported.PageRule content: image-set(url("../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png") 4.233333333333333x) at 22:5
+timesheet-one-page refused Documents.Html.Unsupported.PageRule content: image-set(url("../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png") 4.233333333333333x) at 22:5
+timesheet-pages refused Documents.Html.Unsupported.PageRule content: image-set(url("../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png") 4.233333333333333x) at 22:5

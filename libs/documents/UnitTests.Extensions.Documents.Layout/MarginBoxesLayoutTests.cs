@@ -451,4 +451,35 @@ public class MarginBoxesLayoutTests
         page.Header!.Fragment.Size.Should().Be(new Size(RowRight - RowLeft, 60));
         page.Root.Offset.Y.Should().Be(60);
     }
+
+    /// <summary>The page of the HTML front-end: the page area from the margin rounded to a whole pixel (50.25 pt), the
+    /// areas from the margin cut to 1/64 px (49.992 pt), so they start 0.258 pt in the page margin.</summary>
+    private static StyledDocument InMargin(Box top, double startInMargin)
+    {
+        var document = Page(null, null);
+        var page = document.Page with { Margins = document.Page.Margins with { Left = 50.25.Pt() } };
+        return document with { Page = page with { Template = new PageTemplate(new PageArea(top, 60.Pt()) { StartInMargin = startInMargin.Pt() }, null) } };
+    }
+
+    [Fact]
+    public void An_area_that_starts_in_the_page_margin_is_wider_by_that_length_and_ends_at_the_page_area_s_end()
+    {
+        var page = Laid(InMargin(Row(10, Text(20, MarginBoxPlace.Start, "Aaaa")), 50.25 - RowLeft));
+
+        page.Header!.Offset.X.Should().BeApproximately(RowLeft, 1e-9, "the row starts in the left margin");
+        page.Header.Fragment.Size.Width.Should().BeApproximately(RowRight - RowLeft, 1e-9, "and ends where the page area ends");
+        page.Root.Offset.X.Should().Be(50.25, "the body stays at the page area's start");
+    }
+
+    [Theory]
+    [InlineData(-0.1)]
+    [InlineData(50.5)]
+    public void How_far_an_area_starts_in_the_page_margin_is_0_or_more_and_at_most_the_left_margin(double startInMargin)
+    {
+        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), InMargin(Row(10, Text(20, MarginBoxPlace.Start, "a")), startInMargin));
+
+        result.IsFailure.Should().BeTrue("the model is not valid");
+        result.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Length);
+        result.Error.Metadata![ErrorMetadataKeys.Property].Should().Be("start-in-margin");
+    }
 }

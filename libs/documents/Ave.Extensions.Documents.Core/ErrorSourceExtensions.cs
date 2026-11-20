@@ -17,11 +17,14 @@ public static class ErrorSourceExtensions
     /// <param name="error">The error.</param>
     /// <param name="location">Where the node or call that caused it was written.</param>
     /// <returns>The error with <see cref="ErrorMetadataKeys.SourceFile"/> and
-    /// <see cref="ErrorMetadataKeys.SourceLine"/> set.</returns>
+    /// <see cref="ErrorMetadataKeys.SourceLine"/> set, and <see cref="ErrorMetadataKeys.SourceColumn"/> when the location
+    /// has a column.</returns>
     public static Error WithSource(this Error error, SourceLocation location) =>
         error.Code == ErrorCodes.Aggregate
             ? Errors.Aggregate([.. error.Parts().Select(part => part.WithSource(location))])
-            : error.With(ErrorMetadataKeys.SourceFile, location.File).With(ErrorMetadataKeys.SourceLine, location.Line);
+            : location.Column > 0
+                ? error.With(ErrorMetadataKeys.SourceFile, location.File).With(ErrorMetadataKeys.SourceLine, location.Line).With(ErrorMetadataKeys.SourceColumn, location.Column)
+                : error.With(ErrorMetadataKeys.SourceFile, location.File).With(ErrorMetadataKeys.SourceLine, location.Line);
 
     /// <summary>
     /// Adds a place in a text a front-end read (an HTML document, a style sheet) to an error's metadata: the text's

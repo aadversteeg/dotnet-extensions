@@ -169,6 +169,15 @@ public class ProfileDocumentTests
         Line("  other at-rule the engine does not know, a vendor-prefixed one too (`@-moz-document`); Chromium drops those.");
         Line("- Read without effect: @charset (the encoding is decided before the sheet is parsed).");
         Line();
+        Line("Page-margin boxes (CSS Paged Media 3 §5) are drawn for `@page` and `@page :first`: the top and bottom rows");
+        Line("(`@top-left`, `@top-center`, `@top-right`, `@bottom-left`, `@bottom-center`, `@bottom-right`), their widths as");
+        Line("§5.3.2 shares them, each box with its margin, padding, solid borders, background colour, text alignment and");
+        Line("vertical alignment (top, middle, bottom), and its content: strings and `counter(page)`, `counter(pages)`. The");
+        Line("page context inherits from the root element; name `font-family` in `@page` or the margin rule. Refused at their");
+        Line("place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, an image in");
+        Line("`content`, the size and margins of `@page :first`, and content wider or taller than its box");
+        Line("(`Documents.Layout.MarginBoxOverflow`), which Chromium draws over its neighbours.");
+        Line();
         Line("## HTML");
         Line();
         Line("- The user-agent style sheet: `Ave.Extensions.Documents.Html/UserAgent/html.css` (HTML Standard §15, as Chromium 159");
