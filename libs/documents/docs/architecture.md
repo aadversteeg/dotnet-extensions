@@ -1089,11 +1089,13 @@ Each is documented next to its code as well.
   The rule is not for a table that starts lower on the page: below a paragraph such a first row moves to the next
   page with its table, as in Chromium (`a2-row-end-below-paragraph`). Nor for a table that continues below an outer
   table's repeated header row, which does not start the page: under `Avoid` the row is cut below the header as Chromium
-  cuts it (`a2-row-end-nested-under-header`). (v) Under `Allow` the engine does not take that cut; that page goes on
-  without the outer header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and
-  Chromium repeats the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`). With
-  13.875 pt of top padding the same holds under `Slice`, and under `Refuse` the document is refused
-  (`Documents.Layout.DoesNotFit`; `a2-row-end-nested-under-header-13875`). With 9 lines below 12 pt of top padding the
+  cuts it (`a2-row-end-nested-under-header`; under `Allow` too, as the row, whose 14.25 pt of top padding do not fit
+  page 1, moves to page 2 whole). (v) With 13.875 pt of top padding, under `Allow` that page goes on without the outer
+  header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and Chromium repeats
+  the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`,
+  `a2-row-end-nested-under-header-13875`): below the header the engine starts the inner table 0.375 pt higher than
+  Chromium (its top line at 28.125, Chromium's at 28.5), so the row's ten lines fit there with only its line below past
+  the page end, and such a row is not cut. With 9 lines below 12 pt of top padding the
   rest of the inner table fits below the repeated header but for the outer table's bottom line: Chromium repeats the
   header and lets that line pass the page end (and draws it again on a third page that shows nothing else), and the
   engine goes on without the header under every profile (`H a0`..`a9`, `x0`..`x8 after`;

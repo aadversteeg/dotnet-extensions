@@ -293,6 +293,10 @@ public enum EmptyRowParts
     /// (<c>tools/reference/chromium</c>, cases <c>a2-padded-blocks</c>, <c>a2-line-breaks</c> and <c>a3-mirror</c>); and a
     /// row whose cells all end on the page, with only the half of the grid line below it past the page end, is not cut
     /// but moves to the next page whole, as Chromium does (cases <c>a2-cells-end*</c>); so does a row whose lines all fit
-    /// but whose bottom padding or border passes the page end (case <c>a2-row-end-bottom-padding-30</c>).</summary>
+    /// but whose bottom padding or border passes the page end (case <c>a2-row-end-bottom-padding-30</c>). A row is not cut
+    /// where one of its cells that starts on the page has no room there for its top border and padding, or for its first
+    /// line below them: that cell has no breakpoint on the page, and the row moves to the next page whole where a break
+    /// before it is valid, also beside a cell whose first line fits (cases <c>fr-row-later-padding-*</c>,
+    /// <c>fr-row-later-page-padding-overflows</c>, <c>a2-row-end-nested-under-header</c>).</summary>
     Allow,
 }

@@ -63,7 +63,8 @@ internal static class TableSegments
     /// it no longer ends there and does not take it again. Returns
     /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
     /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
-    /// itself; for a cell that keeps its break (its content broke at a breakpoint it chose,
+    /// itself (under <see cref="EmptyRowParts.Allow"/> a last resort for a fresh cell that places nothing, see
+    /// <see cref="StartsNothing"/>); for a cell that keeps its break (its content broke at a breakpoint it chose,
     /// <see cref="LayoutResult.Placed.KeepsItsBreak"/>: the row keeps that break too, as Chromium follows such a break,
     /// case <c>fr-f9-cell-orphans3</c>) the kept appeal, perfect unless the break lies inside a box kept together
     /// (<see cref="LayoutResult.Placed.KeptAppeal"/>, cases <c>kb-n5-*</c>, <c>kb-n6-*</c>); a last resort for a cell whose lines all fit the slice and only its bottom padding
@@ -116,9 +117,23 @@ internal static class TableSegments
                     : placed.KeepsItsBreak ? placed.KeptAppeal
                     : placed.Appeal,
                     placed.Continuation is not null && placed.KeepsItsBreak && !endsInItsBottomEdge),
-                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), endsInItsBottomEdge ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),
+                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false),
+                    endsInItsBottomEdge || StartsNothing(table, cell) ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),
             });
     }
+
+    /// <summary>
+    /// Under <see cref="EmptyRowParts.Allow"/>, whether a cell that starts on this page and has no room for its top border
+    /// and padding makes a cut inside its row a last resort: the cell has no breakpoint on this page (a break inside its
+    /// top insets is none, CSS Fragmentation 3 §4.1), so the row is not cut where its cells can break, and moves to the
+    /// next page whole where a break before it is valid, as Chromium prints it (cases
+    /// <c>fr-row-later-page-padding-overflows</c>, <c>fr-row-later-padding-beside-line</c>: also beside a cell whose first
+    /// line fits, <c>fr-row-later-padding-under-header</c>, <c>a2-row-end-nested-under-header</c>). A cell whose insets
+    /// fit and whose first line does not already breaks at a last resort (<see cref="SlicedBox"/>, case
+    /// <c>fr-row-later-padding-fits-line-not</c>). Under <see cref="EmptyRowParts.Avoid"/> such a cut stays as it was.
+    /// </summary>
+    private static bool StartsNothing(TableGeometry table, ActiveCell cell) =>
+        table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow && cell.Token is null;
 
     /// <summary>
     /// Under <see cref="MonolithicOverflow.Slice"/>, a cell that starts the page and ends there, but whose content and

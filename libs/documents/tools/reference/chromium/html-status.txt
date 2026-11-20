@@ -45,8 +45,8 @@ a2-row-end-first-row-half-in-cell equal
 a2-row-end-first-row-half-page2 equal
 a2-row-end-first-row-half-second-row equal
 a2-row-end-first-row-half-top equal
-a2-row-end-nested-under-header open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
-a2-row-end-nested-under-header-13875 open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
+a2-row-end-nested-under-header equal
+a2-row-end-nested-under-header-13875 open page 2 reads 'x0 x1 x2 x3 x4 x5 x6 x7 x8 x9', Chromium 'H x0 x1 x2 x3 x4 x5 x6 x7' (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
 a2-row-end-span equal
 a2-row-end-span-after equal
@@ -280,11 +280,11 @@ fr-pad-then-sibling equal
 fr-pad-three-lines equal
 fr-pad-top-and-bottom equal
 fr-positions equal
-fr-row-later-padding-beside-line open page 1 reads 'i a0 b a1 a2 a3 a4 a5 a6 a7 a8 a9 v1', Chromium 'i a0 b a1 a2 a3 a4 a5 a6 a7 a8 a9' (print.txt)
+fr-row-later-padding-beside-line equal
 fr-row-later-padding-fits-line-not equal
-fr-row-later-padding-under-header open page 1 painted area: the pixel at (12, 146.25): the engine paints it and Chromium does not; the engine paints 1498 px #000000, Chromium 1456 px (print.txt)
-fr-row-later-page-padding-overflows open page 1 painted area: the pixel at (12, 157.5): the engine paints it and Chromium does not; the engine paints 1084 px #000000, Chromium 1072 px (print.txt)
-fr-row-later-page-padding-overflows-two-cells open page 1 painted area: the pixel at (12, 157.5): the engine paints it and Chromium does not; the engine paints 1258 px #000000, Chromium 1240 px (print.txt)
+fr-row-later-padding-under-header equal
+fr-row-later-page-padding-overflows open page 2 reads 'w1 w2 w3 w4 w5 w6', Chromium 'w1 w2 w3 w4 w5 w6 w7' (print.txt)
+fr-row-later-page-padding-overflows-two-cells open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
 h-break-after-last equal
 h-break-after-last-nested equal
 h-char-cr equal
