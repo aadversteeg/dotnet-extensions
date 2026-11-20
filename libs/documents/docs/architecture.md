@@ -984,7 +984,8 @@ Each is documented next to its code as well.
   192 to 198). Only grid lines and cell backgrounds pass, by at most the width of the line below the row; never a glyph
   or an image. The table's fragment is as tall as the page area; the line is drawn past it, so what follows the table
   starts on the next page. Where that row ends the table, what passed is a policy (`LayoutProfile.TableEndOverflow`):
-  under `ContinuesOnNextPage`, the HTML front-end's value, it continues on the next page and takes its height there,
+  under `ContinuesOnNextPage`, the HTML front-end's value, it continues on the next page and takes its height there
+  (and so does the part of a split line's upper half that passed, at a break between rows, limit (iii) below),
   as Chromium prints it: the next page starts with a part of the table as tall as what passed, painted with the grid
   lines that passed where part of a cell's border box passed, empty where only the table's outer half of its bottom
   line passed, and on a page of its own when the table ends the document (`a2-row-end`, `a2-row-end-after`,
@@ -1003,7 +1004,9 @@ Each is documented next to its code as well.
   (iii) At the break between the first row and the next, inside a cell that spans both, the engine draws the upper half
   of the line at the end of the page (192 to 192.375) and nothing at the top of the next, keeping the half's room, where
   Chromium lets the whole line pass the page end and draws it again at the top of the next page; content after it is
-  0.375 pt higher (1.125 pt below the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`).
+  0.375 pt higher (1.125 pt below the top of the page against 1.5; `a2-row-end-span`, `a2-row-end-span-after`). Under
+  `ContinuesOnNextPage` the part of the upper half that passed the page end continues too: the next page lays its rows
+  out below it and draws it, and content after it is where Chromium prints it.
   (iv) A table that itself starts at the top of a page with such a first row: Chromium prints it in three ways. Where
   the content ends within half the grid line of the page end, so that only the outer half of the line below passes,
   it places the row whole; the engine does the same under `Allow` (`TablePage.PassesOnlyByItsLineBelow`: the row up to
@@ -1038,9 +1041,9 @@ Each is documented next to its code as well.
   `a2-row-end-nested-under-header-end`).
   A cell background ends at the middle of the line below (192.375), where Chromium ends it at the line's outer edge
   (192.75; `a2-row-end-background`). That is the table model's own rule, not new here; the 0.375 pt between lies under
-  the line, which hides it, as the engine has only solid, opaque lines (no dashed or translucent ones). Limit (iii)
-  and the background stay under either value of `TableEndOverflow`: the policy is for what passes below the table's last
-  row only.
+  the line, which hides it, as the engine has only solid, opaque lines (no dashed or translucent ones). The
+  background stays under either value of `TableEndOverflow`. What passes is not carried after a cut inside a row, nor in
+  a table that repeats its header rows (not measured): there the table takes no more than the page area.
 - **Monolithic content taller than the page area is a policy** (`LayoutProfile.MonolithicOverflow`): refused by
   default, or sliced as Chromium slices it (`Layout/MonolithicSlices.cs`): the same pages and the same image
   rectangles where the piece stands alone on its pages, in a one-column table and in a table inside a cell, and the

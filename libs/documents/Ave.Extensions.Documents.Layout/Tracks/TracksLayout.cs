@@ -58,8 +58,8 @@ public static class TracksLayout
     /// Why a table cannot resume from <paramref name="token"/>, or null when it can: the next row is a body row of the
     /// table or its end, and every cut cell is a cell of the table, given once, that covers the next row (it started
     /// before it, or in it when the break fell inside the row). What passed the page end below the last row
-    /// (<see cref="TracksBreakToken.Passed"/>) is a finite height, not negative, and only at the table's end, painted
-    /// only where something passed. What lies inside a cell is the cell's algorithm's to check. Linear in the cut cells.
+    /// (<see cref="TracksBreakToken.Passed"/>) is a finite height, not negative, and never inside a row, painted only
+    /// where something passed. What lies inside a cell is the cell's algorithm's to check. Linear in the cut cells.
     /// </summary>
     private static string? InvalidToken(TableGrid grid, TracksBreakToken token)
     {
@@ -73,9 +73,9 @@ public static class TracksLayout
             return $"the height that passed the page end, {token.Passed}, is not a height that can pass it{(token.PaintsPassed ? " and be painted" : string.Empty)}";
         }
 
-        if (token.Passed > 0 && (token.NextRow < grid.Rows.Length || token.RowIsSplit))
+        if (token.Passed > 0 && token.RowIsSplit)
         {
-            return $"a height passes the page end only below the table's last row, not before row {token.NextRow}";
+            return $"a height passes the page end only below a row placed whole, not inside row {token.NextRow}";
         }
 
         var seen = new HashSet<int>();

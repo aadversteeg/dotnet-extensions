@@ -71,7 +71,7 @@ public sealed record Document(
     public Document SplitLineHalves(SplitLineHalves halves) => this with { Profile = Profile with { SplitLineHalves = halves } };
 
     /// <summary>
-    /// Where a grid line that passes the page end below a table's last row goes: the table ends on the page (the default),
+    /// Where a grid line that passes the page end below a table row goes: the table ends on the page (the default),
     /// or what passed continues on the next page and takes its height there, as a browser (Chromium) prints it
     /// (<see cref="DocumentModel.TableEndOverflow"/>).
     /// </summary>

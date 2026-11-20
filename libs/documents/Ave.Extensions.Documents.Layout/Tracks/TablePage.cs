@@ -161,7 +161,7 @@ internal static class TablePage
         var grid = geometry.Grid;
         if (incoming is { Passed: > 0 } passed)
         {
-            return PlacePassed(geometry, space, passed);
+            return passed.NextRow == grid.Rows.Length ? PlacePassed(geometry, space, passed) : BelowPassed(geometry, space, passed);
         }
 
         var isFirst = incoming is null;
@@ -234,9 +234,11 @@ internal static class TablePage
         var placed = outcome.Value.Value;
         var fragment = TableFragments.Build(table, placed);
         var passes = PassesPageArea(table, fragment, space);
-        var continuation = placed.Continuation is { } next ? next
-            : passes && table.Environment.Profile.TableEndOverflow == TableEndOverflow.ContinuesOnNextPage ? Passed(table, placed.Content, fragment, space.AvailableHeight)
-            : null;
+        var carries = passes && table.Environment.Profile.TableEndOverflow == TableEndOverflow.ContinuesOnNextPage
+            && (placed.Continuation is null || (!placed.Continuation.RowIsSplit && !repeatsHeader));
+        var continuation = carries
+            ? Passed(placed.Continuation ?? new TracksBreakToken(grid.Rows.Length, [], false), table, placed.Content, fragment, space.AvailableHeight)
+            : placed.Continuation;
         return LayoutResult.Place(
             passes ? WithinPageArea(fragment, space) : fragment,
             continuation is null ? null : continuation with { BodyShown = ShowsBody(table, placed.Content), RepeatsHeader = repeatsHeader },
@@ -247,23 +249,29 @@ internal static class TablePage
     }
 
     /// <summary>
-    /// The token after a page whose table ends on it and passes its page area below the last row, under
+    /// The token after a page whose table passes its page area below a row placed whole, under
     /// <see cref="TableEndOverflow.ContinuesOnNextPage"/>: what passed takes its height again at the top of the next page,
     /// painted where part of a cell's border box passed (cases <c>a2-row-end</c>, <c>-after</c>, <c>-6pt</c>,
     /// <c>-6pt-after</c>), else empty (only the table's outer half of its bottom line passed: cases
     /// <c>a2-row-end-first-row-half-*</c>). In the collapsing border model a cell's border box ends at the centre of the
-    /// line below it (CSS 2.1 §17.6.2), so a cell passes where that centre lies below the page end.
+    /// line below it (CSS 2.1 §17.6.2), so a cell passes where that centre lies below the page end. Where the table goes
+    /// on after the row, at a break between rows, the next page lays its rows out below what passed (<see cref="BelowPassed"/>):
+    /// the part of the line's upper half that passed the page end is then on the next page above the lower half (case
+    /// <c>a2-row-end-span-after</c>: "after" 1.5 pt below the page's top, the whole line between the rows, the empty row and
+    /// the table's bottom line). Not after a cut inside a row, and not in a table that repeats its header rows: there the
+    /// table takes no more than the page area, and what passed does not continue.
     /// </summary>
+    /// <param name="token">Where the table goes on: past its last row, or at a break before a row.</param>
     /// <param name="table">The table.</param>
     /// <param name="content">What the page holds.</param>
     /// <param name="fragment">The page's fragment, before it is cut to the page area.</param>
     /// <param name="end">The page end, from the table's top edge.</param>
-    /// <returns>The token: past the last row, with what passed.</returns>
-    private static TracksBreakToken Passed(TableGeometry table, Content content, BoxFragment fragment, double end)
+    /// <returns>The token with what passed.</returns>
+    private static TracksBreakToken Passed(TracksBreakToken token, TableGeometry table, Content content, BoxFragment fragment, double end)
     {
         var topOf = content.Rows.ToDictionary(row => row.Row, row => row.Top);
         var paints = content.Cells.Any(cell => !Fitting.Fits(topOf[cell.TopRow] + cell.Fragment.Size.Height, end));
-        return new TracksBreakToken(table.Grid.Rows.Length, [], false)
+        return token with
         {
             Passed = fragment.Size.Height - end,
             PaintsPassed = paints,
@@ -277,6 +285,34 @@ internal static class TablePage
     /// page area at the top of a page, as on the page that ended (<see cref="WithinPageArea"/>), and nothing passes again.
     /// Lower on a page, where it does not fit, the table reports no room.
     /// </summary>
+    /// <summary>
+    /// The next page of a table that passed the page end at a break between rows (<see cref="Passed"/>): the page's rows
+    /// are laid out in the room below what passed, and the page's fragment starts with it, painted with the grid lines that
+    /// passed when the token paints them. Where what passed does not fit, the table reports no room; at the top of a page
+    /// it is left out, so the table goes on.
+    /// </summary>
+    private static Result<LayoutResult, Error> BelowPassed(TableGeometry table, ConstraintSpace space, TracksBreakToken passed)
+    {
+        var rest = passed with { Passed = 0, PaintsPassed = false, PassedLines = [] };
+        if (!Fitting.Fits(passed.Passed, space.AvailableHeight))
+        {
+            return space.IsAtPageStart ? LayOut(table, space, rest) : LayoutResult.NothingFits(table.Box, space);
+        }
+
+        var lines = passed.PaintsPassed ? passed.PassedLines : [];
+        return LayOut(table, space with { AvailableHeight = space.AvailableHeight - passed.Passed }, rest)
+            .OnSuccessMap(result => result is LayoutResult.Placed placed ? placed with { Fragment = Below(placed.Fragment, passed.Passed, lines) } : result);
+    }
+
+    /// <summary>A page's fragment moved down by <paramref name="by"/>, with <paramref name="lines"/> above it.</summary>
+    private static BoxFragment Below(BoxFragment fragment, double by, ValueList<PlacedFragment> lines) =>
+        new(
+            fragment.Box,
+            new Size(fragment.Size.Width, fragment.Size.Height + by),
+            [.. lines, .. fragment.Children.Select(child => child with { Offset = new Point(child.Offset.X, child.Offset.Y + by) })],
+            fragment.Border,
+            fragment.IsRepeated);
+
     private static Result<LayoutResult, Error> PlacePassed(TableGeometry table, ConstraintSpace space, TracksBreakToken passed)
     {
         var fits = Fitting.Fits(passed.Passed, space.AvailableHeight);

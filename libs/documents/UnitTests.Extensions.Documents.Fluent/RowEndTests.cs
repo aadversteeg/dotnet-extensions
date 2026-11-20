@@ -519,7 +519,8 @@ public class RowEndTests
         // (as Chromium prints a break inside a spanning cell, case b4-row-span-6pt), keeping the half's room: the first
         // line on page 3 is the table's bottom line, 12.375 to 13.125. Chromium lets the whole line pass the end of page 2
         // and draws it again at the top of page 3, so "after" is 0.375 pt higher than in Chromium (+1.125 below the top of
-        // the page against +1.5).
+        // the page against +1.5). That is under TableEndOverflow.EndsOnPage, the default; under ContinuesOnNextPage page 3
+        // takes the passed part of the upper half again and "after" is where Chromium prints it (TableEndOverflowTests).
         var engine = Printed(Spanning());
         var chromium = PrintedPages.Chromium("a2-row-end-span");
         var engineAfter = Printed(Spanning(after: true));

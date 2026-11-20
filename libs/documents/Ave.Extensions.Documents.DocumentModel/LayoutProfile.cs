@@ -27,16 +27,16 @@ public sealed record LayoutProfile
     /// (<see cref="DocumentModel.SplitLineHalves"/>).</summary>
     public SplitLineHalves SplitLineHalves { get; init; } = SplitLineHalves.Exact;
 
-    /// <summary>Where the part of a table that passes the page end below its last row goes: it ends on the page, or it
+    /// <summary>Where the part of a table that passes the page end below a row placed whole goes: it ends on the page, or it
     /// continues on the next page and takes its height there (<see cref="DocumentModel.TableEndOverflow"/>).</summary>
     public TableEndOverflow TableEndOverflow { get; init; } = TableEndOverflow.EndsOnPage;
 }
 
 /// <summary>
-/// Where the part of a table goes that passes the page end below the table's last row. That part is never content: it
-/// is a grid line, or the half of a line that a cell holds, which passes the page end where the last row is placed whole
-/// at the top of a page under <see cref="EmptyRowParts.Allow"/> (its content fits, its line below does not). The page that
-/// ends draws the whole line under either value; the value decides what the next page does.
+/// Where the part of a table goes that passes the page end below a row placed whole at the top of a page under
+/// <see cref="EmptyRowParts.Allow"/> (its content fits, its line below does not): below the table's last row, or at a
+/// break between rows after it. That part is never content: it is a grid line, or the half of a line that a cell holds.
+/// The page that ends draws the line under either value; the value decides what the next page does.
 /// </summary>
 public enum TableEndOverflow
 {
@@ -55,7 +55,9 @@ public enum TableEndOverflow
     /// <c>a2-row-end-first-row-half-6pt-below</c>), and on a page of its own where nothing follows
     /// (<c>a2-row-end-first-row-half-alone</c>); a row whose content ends at the page end passes by the whole line, which
     /// the next page draws again and takes (cases <c>a2-row-end</c>, <c>a2-row-end-after</c>, with a 6 pt line
-    /// <c>a2-row-end-6pt</c> and <c>a2-row-end-6pt-after</c>, under a cell background <c>a2-row-end-background</c>).
+    /// <c>a2-row-end-6pt</c> and <c>a2-row-end-6pt-after</c>, under a cell background <c>a2-row-end-background</c>, and part
+    /// of the cell's half in <c>a2-row-end-6pt-part-after</c>); at a break between rows the next page lays its rows out
+    /// below what passed (<c>a2-row-end-span-after</c>).
     /// </summary>
     ContinuesOnNextPage,
 }

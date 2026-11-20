@@ -30,7 +30,7 @@ public class TableEndOverflowTests
         var result = DocumentTranslator.ToModel(Document([.. body], Page(300.Pt(), pageHeight.Pt()).Margin(12.Pt()), title: "Title", language: "en")
                 .FontFamily("Lato").FontSize(fontSize.Pt()).LineHeight(15.Pt())
                 .EmptyRowParts(EmptyRowParts.Allow).MonolithicOverflow(MonolithicOverflow.Slice).FontMetricRounding(FontMetricRounding.WholePixels)
-                .TableEndOverflow(overflow))
+                .SplitLineHalves(SplitLineHalves.AtLeastOnePixel).TableEndOverflow(overflow))
             .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic));
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         return result.Value;
@@ -143,6 +143,34 @@ public class TableEndOverflowTests
         next.Pages[2].Rectangles.Min(box => box.Y0).Should().Be(12);
         next.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(passedBottom);
         end.Pages.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void At_a_break_between_rows_below_a_row_placed_whole_the_next_page_lays_its_rows_out_below_what_passed()
+    {
+        // A cell that spans two rows beside a row of 23 lines, then an empty row: the first row continues on page 2 with
+        // 12 lines, which end at the page end, and the page breaks before the empty row, so the upper half of the line
+        // between the rows passes the page end. Page 3 takes it again, above the line's lower half (unpainted: the
+        // spanning cell continues), the empty row and the table's bottom line: "after" 1.5 pt below the page's top, as in
+        // Chromium, which draws the whole line between the rows from 12 to 12.75 in the second column.
+        Element[] Body(bool after) =>
+        [
+            Table(Columns(Fill(1), Fill(1)), [TableRow([Cell("").RowSpan(2), Cell([Lines("b", 23)])]), TableRow([Cell("")])])
+                .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks(),
+            .. after ? new Element[] { Paragraph("after") } : [],
+        ];
+        var chromium = PrintedPages.Chromium("a2-row-end-span-after");
+        var next = Printed(Body(after: true), TableEndOverflow.ContinuesOnNextPage, 12);
+        var end = Printed(Body(after: true), TableEndOverflow.EndsOnPage, 12);
+
+        Word(chromium, "after").Baseline.Should().Be(25.5);
+        chromium.Pages[2].Rectangles.Should().Contain(new PrintedBox(3, 150.75, 12, 288, 12.75, "#000000"));
+        next.PageTexts.Should().Equal(chromium.PageTexts);
+        Word(next, "after").Baseline.Should().Be(25.5);
+        next.Pages[2].Rectangles.Should().ContainSingle(box => box.Y0 == 12 && box.Y1 == 12.75 && box.X1 == 288 && box.X0 > 140, "the passed part of the line between the rows");
+        next.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(13.5);
+        Printed(Body(after: false), TableEndOverflow.ContinuesOnNextPage, 12).PageTexts.Should().Equal(PrintedPages.Chromium("a2-row-end-span").PageTexts);
+        Word(end, "after").Baseline.Should().Be(25.125);
     }
 
     [Fact]

@@ -48,8 +48,8 @@ a2-row-end-first-row-half-top equal
 a2-row-end-nested-under-header open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-13875 open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
-a2-row-end-span open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 371 px #000000, Chromium 601 px (print.txt)
-a2-row-end-span-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 371 px #000000, Chromium 601 px (print.txt)
+a2-row-end-span open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
+a2-row-end-span-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
 a2-rowspan-blocks open box td 's' height 163.875, Chromium 281.063 (boxes.txt)
 a2-split-line-1px equal
 a3-mirror open box td 't1' height 15.141, Chromium 16.734 (boxes.txt)

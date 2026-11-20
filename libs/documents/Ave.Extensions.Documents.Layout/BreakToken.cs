@@ -111,9 +111,10 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     public bool? RepeatsHeader { get; init; }
 
     /// <summary>
-    /// How much of the table passed the end of the page this token ends, below its last row, under
-    /// <see cref="TableEndOverflow.ContinuesOnNextPage"/>: the next fragment is that tall and holds no row
-    /// (<see cref="NextRow"/> is then the end of the table). 0 when nothing passed. Part of the position.
+    /// How much of the table passed the end of the page this token ends, below a row placed whole, under
+    /// <see cref="TableEndOverflow.ContinuesOnNextPage"/>: the next fragment starts with that height. Where the row was the
+    /// table's last (<see cref="NextRow"/> is the end of the table) the next fragment is that tall and holds no row; at a
+    /// break between rows its rows follow below it. 0 when nothing passed. Part of the position.
     /// </summary>
     public double Passed { get; init; }
 

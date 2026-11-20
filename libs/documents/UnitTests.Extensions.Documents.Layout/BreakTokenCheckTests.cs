@@ -13,7 +13,7 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// change one with <c>with</c>, or pass the token one box returned to another box. No such value makes an algorithm
 /// throw. A token of another algorithm's kind, or one whose position the box does not have (a child, line, row or cell
 /// outside it, a height shown that is negative, not finite, or the whole height of the sliced image or line or more, a
-/// height past the page end that is negative, not finite or not below the table's last row),
+/// height past the page end that is negative, not finite or inside a row),
 /// is the error <c>Documents.Layout.InvalidBreakToken</c>,
 /// naming the box. Pagination never meets it: it hands each box the token that box's own layout returned.
 /// </summary>
@@ -86,7 +86,6 @@ public class BreakTokenCheckTests
         ["a negative height past the page end"] = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = -0.75 },
         ["a height past the page end that is not a number"] = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = double.NaN },
         ["an infinite height past the page end"] = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = double.PositiveInfinity },
-        ["a height past the page end before the last row"] = new TracksBreakToken(2, [], RowIsSplit: false) { Passed = 0.75 },
         ["a height past the page end inside a row"] = new TracksBreakToken(3, [], RowIsSplit: true) { Passed = 0.75 },
         ["nothing past the page end, painted"] = new TracksBreakToken(3, [], RowIsSplit: false) { PaintsPassed = true },
     };
