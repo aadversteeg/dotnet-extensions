@@ -66,11 +66,21 @@ public class SliceUnderHeaderTests
         return result.Value;
     }
 
-    /// <summary>Where each image or the 200 pt line starts: the page and top of its first slice, or of the whole image
-    /// when it fits (an image's top edge; for the line, the baseline of its first "W").</summary>
-    private static List<(int Page, double Top)> FirstSlices(PrintedPages pages) =>
-        [.. pages.Pages.SelectMany(page => page.Images.Where(image => image.Y0 >= 0).Select(image => (page.Number, image.Y0))),
-         .. pages.Pages.SelectMany(page => page.Words.Where(word => word.Text == "W").Select(word => (page.Number, word.Baseline))).Take(1)];
+    /// <summary>Where each image or the 200 pt line starts in the engine's pages: the page and top of its first slice, or
+    /// of the whole image when it fits (an image's top edge as drawn, before its clip: a later slice is drawn higher than
+    /// the page; for the line, the baseline of its first "W").</summary>
+    private static List<(int Page, double Top)> FirstSlices(PageDocument document) =>
+        [.. document.Pages.SelectMany((page, index) => page.Items.OfType<DrawImage>().Where(image => image.Area.Origin.Y >= 0).Select(image => (index + 1, image.Area.Origin.Y))),
+         .. Words(PrintedPages.Engine(document))];
+
+    /// <summary>The same in Chromium's print, from what it shows: Chromium draws a later slice moved up by the page area's
+    /// height under its clip to the page area, so a later slice shows from the page area's top (12 pt), and a first slice,
+    /// which starts below the header, from lower.</summary>
+    private static List<(int Page, double Top)> FirstSlices(PrintedPages chromium) =>
+        [.. chromium.Pages.SelectMany(page => page.Images.Where(image => image.Y0 > 12).Select(image => (page.Number, image.Y0))), .. Words(chromium)];
+
+    private static IEnumerable<(int Page, double Top)> Words(PrintedPages pages) =>
+        pages.Pages.SelectMany(page => page.Words.Where(word => word.Text == "W").Select(word => (page.Number, word.Baseline))).Take(1);
 
     /// <summary>The cases with a header row, with the pages Chromium starts their pieces on.</summary>
     public static TheoryData<string, int[]> HeaderCases => new()
@@ -95,11 +105,12 @@ public class SliceUnderHeaderTests
         // Page and top of every piece's first slice: right below the header (an image at 28.5 pt, the line's baseline at
         // 225.75 pt), on the page after the one that showed only the header, or only slices of the piece before. The
         // pages up to the first slice hold the same words as Chromium's.
-        var engine = PrintedPages.Engine(Run(Doc(caseName)));
+        var document = Run(Doc(caseName));
+        var engine = PrintedPages.Engine(document);
         var chromium = PrintedPages.Chromium(caseName);
 
-        FirstSlices(engine).Should().Equal(FirstSlices(chromium));
-        FirstSlices(engine).Select(slice => slice.Page).Should().Equal(pages);
+        FirstSlices(document).Should().Equal(FirstSlices(chromium));
+        FirstSlices(document).Select(slice => slice.Page).Should().Equal(pages);
         engine.PageTexts.Take(pages[0]).Should().Equal(chromium.PageTexts.Take(pages[0]));
     }
 
@@ -119,14 +130,15 @@ public class SliceUnderHeaderTests
         var document = Run(Doc(caseName));
         var engine = PrintedPages.Engine(document);
         var chromium = PrintedPages.Chromium(caseName);
-        var first = FirstSlices(engine)[0].Page;
+        var first = FirstSlices(document)[0].Page;
 
         var clips = document.Pages.Skip(first - 1).SelectMany(page => page.Items.OfType<ClipStart>()).Select(clip => clip.Area).ToList();
         clips.Sum(area => area.Size.Height).Should().BeApproximately(408, 1e-9);
         clips.Select(area => area.Origin.Y).Should().Equal([28.5, .. Enumerable.Repeat(28.125, clips.Count - 1)]);
         engine.Pages.Skip(first - 1).Take(clips.Count).Should().AllSatisfy(page => page.Words.Select(word => word.Text).Should().Contain("H"));
-        chromium.Pages.Skip(first).Take(clips.Count - 1).SelectMany(page => page.Images).Select(image => image.Y0)
-            .Should().Equal(Enumerable.Range(1, clips.Count - 1).Select(k => 28.5 - (180.0 * k)), "Chromium moves the image a whole page area per page");
+        chromium.Pages.Skip(first).Take(clips.Count - 1).SelectMany(page => page.Images).Select(image => (image.Y0, image.Y1))
+            .Should().Equal(Enumerable.Range(1, clips.Count - 1).Select(k => (12.0, Math.Min(192, 28.5 - (180.0 * k) + 408))),
+                "Chromium moves the image a whole page area per page (drawn from 28.5 − 180 k), and its clip shows it inside the page area");
         chromium.Pages.Skip(first).Take(clips.Count - 1).Select(page => page.Words.Any(word => word.Text == "H"))
             .Should().AllBeEquivalentTo(caseName == "a4-header-row-image-row");
     }
@@ -155,7 +167,8 @@ public class SliceUnderHeaderTests
         document.Pages[0].Items.OfType<ClipStart>().Should().BeEmpty("the line is not sliced");
         var clips = document.Pages.Skip(2).SelectMany(page => page.Items.OfType<ClipStart>()).Select(clip => clip.Area.Size.Height).ToList();
         clips.Should().Equal(178.5, 166.5);
-        chromium.Pages[3].Images.Single().Y0.Should().Be(chromium.Pages[2].Images.Single().Y0 - 180);
+        (chromium.Pages[3].Images.Single().Y0, chromium.Pages[3].Images.Single().Y1).Should().Be((12, chromium.Pages[2].Images.Single().Y0 - 180 + 345),
+            "Chromium moves the image up a whole page area and shows it inside the page area");
     }
 
     /// <summary>A table with a one-line repeated header (15 pt) and one cell holding <paramref name="piece"/>, then
@@ -219,8 +232,7 @@ public class SliceUnderHeaderTests
         // Chromium: the first image on pages 2 to 4, the second from page 5 at 28.5 pt; the engine the same pages here,
         // though its later pages are its own (the header above every slice).
         var document = Run(Doc(caseName));
-        var engine = PrintedPages.Engine(document);
-        var firsts = FirstSlices(engine);
+        var firsts = FirstSlices(document);
         var lastOfFirst = document.Pages.Select((page, index) => (page, index)).Last(pair => pair.index < firsts[1].Page - 1
             && pair.page.Items.OfType<ClipStart>().Any()).index + 1;
 

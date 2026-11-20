@@ -66,10 +66,11 @@ public class TableEndOverflowTests
         next.PageTexts.Should().Equal(chromium.PageTexts);
         Word(next, "below").Baseline.Should().Be(continues);
         next.Pages[1].Rectangles.Should().BeEmpty();
-        // The whole line ends page 1, its outer half past the page end at 192: to 192.375, which Chromium prints to 192.75
-        // (its outer edge on a whole pixel, 256.5 px: 257 px), and to 195 with 6 pt in both.
+        // The whole line ends page 1, its outer half past the page end at 192: to 192.375 (to 195 with 6 pt). Chromium
+        // draws it to 192.75 (its outer edge on a whole pixel, 256.5 px: 257 px), or 195, under its clip to the page
+        // area, so its print shows nothing past 192; the engine shows it here, under BodyClip.None (BodyClipTests).
         next.Pages[0].Rectangles.Max(box => box.Y1).Should().Be(192 + (line / 2));
-        chromium.Pages[0].Rectangles.Max(box => box.Y1).Should().Be(line > 1 ? 195 : 192.75);
+        chromium.Pages[0].Rectangles.Max(box => box.Y1).Should().Be(192);
         end.PageTexts.Should().Equal(chromium.PageTexts);
         Word(end, "below").Baseline.Should().Be(ends);
     }
@@ -120,7 +121,8 @@ public class TableEndOverflowTests
         Word(next, "after").Baseline.Should().Be(continues);
         BottomLine(next.Pages[2]).Should().Be(new PrintedBox(3, 12, 12, 288, passedBottom, BottomLine(next.Pages[2]).Colour));
         next.Pages[2].Rectangles.Should().OnlyContain(box => box.Y0 >= 12 && box.Y1 <= passedBottom, "only what passed is drawn, from the page's top");
-        next.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(chromium.Pages[1].Rectangles.Max(box => box.Y1), "the whole line ends page 2 in both");
+        next.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192 + line, "the whole line ends page 2");
+        chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(pageHeight - 12, "Chromium draws it whole too, and its print shows it to the page area's end");
         end.PageTexts.Should().Equal(chromium.PageTexts);
         Word(end, "after").Baseline.Should().Be(fontSize == 12 ? 24 : 23.25);
         end.Pages[2].Rectangles.Should().BeEmpty();

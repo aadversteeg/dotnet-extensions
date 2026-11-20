@@ -11,7 +11,7 @@ public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
-    /// <see cref="SplitLineHalves.Exact"/> and <see cref="TableEndOverflow.EndsOnPage"/>.</summary>
+    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/> and <see cref="BodyClip.None"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -39,6 +39,33 @@ public sealed record LayoutProfile
     /// <summary>Where the part of a table that passes the page end below a row placed whole goes: it ends on the page, or it
     /// continues on the next page and takes its height there (<see cref="DocumentModel.TableEndOverflow"/>).</summary>
     public TableEndOverflow TableEndOverflow { get; init; } = TableEndOverflow.EndsOnPage;
+
+    /// <summary>Whether what a page's body draws past the body's area shows (<see cref="DocumentModel.BodyClip"/>).</summary>
+    public BodyClip BodyClip { get; init; } = BodyClip.None;
+}
+
+/// <summary>
+/// Whether each page clips its body to the body's area: the page area less the header and footer areas. (The HTML
+/// front-end lays out the top and bottom page-margin boxes as the header and footer areas of a page without top and
+/// bottom margins, so there the body's area is the CSS page area.) Layout places the body inside that area; what passes
+/// its edge is drawn all the same, such as the grid line below a table row placed whole at the top of a page
+/// (<see cref="TableEndOverflow"/>). The header and footer areas are never clipped.
+/// </summary>
+public enum BodyClip
+{
+    /// <summary>Nothing is clipped: what the body draws past its area shows on the page.</summary>
+    None,
+
+    /// <summary>
+    /// The body is drawn under a clip to its area, as Chromium prints it: what passes the area does not show. Measured
+    /// against Chromium's print (<c>tools/reference/chromium</c>, read back by <c>visible.py</c>): every page's body is drawn
+    /// under one rectangle clip, the page area (cases <c>a2-row-end-after</c>, <c>a2-row-end-6pt-part-after</c>,
+    /// <c>a4-image-in-cell</c>, <c>a4-header-tall-line</c>, <c>fr-positions</c>), and with page-margin boxes the page
+    /// area too, while the margin boxes are drawn before it, outside any clip, and show where they pass into the page area
+    /// (<c>pm-tall-over</c>). Fills, images and text are all under it. The pages, the text and the structure are those of
+    /// <see cref="None"/>; only what shows of a drawing that passes the area changes.
+    /// </summary>
+    BodyArea,
 }
 
 /// <summary>

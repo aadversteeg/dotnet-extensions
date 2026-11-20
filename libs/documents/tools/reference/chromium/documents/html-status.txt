@@ -1,4 +1,4 @@
 invoice equal
-timesheet-normal open page 1 painted area: the pixel at (567, 156): the engine paints it and Chromium does not; the engine paints 31474 px #d3d3d3, Chromium 30651 px (print.txt)
-timesheet-one-page open page 1 painted area: the pixel at (567, 156): the engine paints it and Chromium does not; the engine paints 3876 px #d3d3d3, Chromium 3774 px (print.txt)
-timesheet-pages open page 1 painted area: the pixel at (567, 156): the engine paints it and Chromium does not; the engine paints 29618 px #d3d3d3, Chromium 28791 px (print.txt)
+timesheet-normal equal
+timesheet-one-page equal
+timesheet-pages open box td '2026-09-01' height 39, Chromium 29.25 (boxes.txt)
