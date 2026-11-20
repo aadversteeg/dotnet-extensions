@@ -1,0 +1,18 @@
+page 1 400.080 300.000
+word 1 49.992 55.968 35.250 12.000 x #000000 Lato-Regular
+word 1 50.250 66.774 79.500 9.997 one #000000 Lato-Regular
+word 1 49.992 363.302 275.250 12.000 Averyveryverylongunbreakablewordwiderthanthewholerow #000000 Lato-Regular
+rect 1 50.250 0.000 351.000 60.000 #ff0000
+rect 1 50.250 240.000 351.000 300.000 #00ff00
+page 2 400.080 300.000
+word 2 49.992 69.828 12.000 12.000 one #000000 Lato-Regular
+word 2 49.992 70.440 26.250 12.000 two #000000 Lato-Regular
+word 2 49.992 77.784 40.500 12.000 three #000000 Lato-Regular
+word 2 49.992 71.862 54.750 12.000 four #000000 Lato-Regular
+word 2 49.992 69.222 69.000 12.000 five #000000 Lato-Regular
+word 2 50.250 67.284 79.500 9.997 two #000000 Lato-Regular
+word 2 49.992 64.044 83.250 12.000 six #000000 Lato-Regular
+word 2 49.992 80.448 97.500 12.000 seven #000000 Lato-Regular
+word 2 49.992 363.302 275.250 12.000 Averyveryverylongunbreakablewordwiderthanthewholerow #000000 Lato-Regular
+rect 2 50.250 0.000 351.000 60.000 #ff0000
+rect 2 50.250 240.000 351.000 300.000 #00ff00

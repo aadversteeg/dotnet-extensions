@@ -1,0 +1,5 @@
+page 1 400.080 300.000
+word 1 49.992 61.728 33.750 9.997 Aa #008000 Lato-Regular
+word 1 50.250 63.463 76.500 7.995 one #ff0000 Lato-Regular
+word 1 65.508 79.424 76.500 7.995 two #ff0000 Lato-Bold
+word 1 49.992 61.318 273.750 9.997 Cc #008000 Lato-Bold

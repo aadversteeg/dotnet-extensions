@@ -154,6 +154,52 @@ public class HtmlListedDifferenceTests
         engine.Words.Single(other => other.Text == word.Text).X0.Should().BeApproximately(word.X0, 0.01);
     }
 
+    /// <summary>
+    /// A footer group that is at most a quarter of the page area and does not break inside (<c>break-inside: avoid</c>,
+    /// which the user-agent style sheet gives <c>tfoot</c>) is repeated by Chromium at the end of every page its table
+    /// is on, as it repeats a header group (CSS Tables 3, <c>#repeated-headers</c>; Chromium:
+    /// <c>TableLayoutAlgorithm::Layout</c>, the repeatable header and footer check). The document model's table has
+    /// no footer group, so the engine draws the footer's rows once, after the last body row. With
+    /// <c>break-inside: auto</c> on the footer group Chromium does not repeat it either (case <c>tf-pages-auto</c>), and
+    /// on one page both print the same (<c>tf-after</c>).
+    /// </summary>
+    [Fact]
+    public void A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page()
+    {
+        var (engine, chromium) = (Engine("tf-pages"), Chromium("tf-pages"));
+        static string[] Ends(PrintedPages pages) => [.. pages.Pages.Select(page => string.Join(" ", page.Words.Where(word => word.Text != "after").TakeLast(2).Select(word => word.Text)))];
+
+        chromium.Pages.Should().HaveCount(4);
+        Ends(chromium).Should().AllBe("total footer", "Chromium ends every page with the footer row");
+        Ends(engine)[..^1].Should().NotContain("total footer", "the engine draws the footer only after the last body row");
+        Ends(engine)[^1].Should().Be("total footer");
+        engine.Pages.SelectMany(page => page.Words).Count(word => word.Text == "total").Should().Be(1);
+    }
+
+    /// <summary>
+    /// A face of an <c>@font-face</c> family that only a page-margin box uses: Chromium has not loaded it when it prints
+    /// the margin boxes and prints that box's text in its fallback serif face, the engine draws the face (case
+    /// <c>pm-family-unused</c>: the body uses Lato Regular only, <c>@bottom-left</c> asks for Lato Bold; three prints of
+    /// the case were the same). Once the body uses the face too, Chromium prints it (case <c>pm-inherit-family</c>,
+    /// equal). With Chromium's word read as the engine's (face, end and baseline), the case is equal: the face is the
+    /// whole difference.
+    /// </summary>
+    [Fact]
+    public void A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face()
+    {
+        var (engine, chromium) = (Engine("pm-family-unused"), Chromium("pm-family-unused"));
+        var theirs = chromium.Pages.Single().Words.Single(word => word.Text == "Cc");
+        var mine = engine.Pages.Single().Words.Single(word => word.Text == "Cc");
+        (theirs.Face, mine.Face).Should().Be(("LiberationSerif-Bold", "Lato-Bold"));
+        chromium.Pages.Single().Words.Where(word => word.Text != "Cc").Should().OnlyContain(word => word.Face == "Lato-Regular");
+
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select(word => word == theirs ? word with { Face = mine.Face, X1 = mine.X1, Baseline = mine.Baseline } : word)],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull();
+    }
+
     /// <summary>Chromium's print with each word's text read through <paramref name="text"/>.</summary>
     private static PrintedPages Read(PrintedPages pages, Func<string, string> text) =>
         new([.. pages.Pages.Select(page => page with { Words = [.. page.Words.Select(word => word with { Text = text(word.Text) })] })]);

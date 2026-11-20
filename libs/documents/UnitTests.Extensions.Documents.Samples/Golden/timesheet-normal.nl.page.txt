@@ -38,7 +38,7 @@ page 1 size=595.276x841.89
   start #18 table-row
   start #19 table-header-cell
   start #20 paragraph
-  glyphs Lato-Bold 10pt #000000 at (31.846, 168.556) "Uitgevoerd op" g38@0 g98@7.335 g124@9.875 g93@13.595 g59@18.785 g136@23.995 g111@29.115 g59@34.86 g117@40.2 g55@43.795 g2@49.47 g111@51.9 g114@57.645
+  glyphs Lato-Bold 10pt #000000 at (31.596, 168.556) "Uitgevoerd op" g38@0 g98@7.335 g124@9.875 g93@13.595 g59@18.785 g136@23.995 g111@29.115 g59@34.86 g117@40.2 g55@43.795 g2@49.47 g111@51.9 g114@57.645
   end #20
   end #19
   start #22 table-header-cell
@@ -53,7 +53,7 @@ page 1 size=595.276x841.89
   end #25
   start #28 table-header-cell
   start #29 paragraph
-  glyphs Lato-Bold 10pt #000000 at (518.579, 168.556) "Duur (uur)" g9@0 g134@7.535 g134@13.175 g117@18.815 g2@22.335 g336@24.765 g134@27.295 g134@32.935 g117@38.575 g337@42.105
+  glyphs Lato-Bold 10pt #000000 at (518.829, 168.556) "Duur (uur)" g9@0 g134@7.535 g134@13.175 g117@18.815 g2@22.335 g336@24.765 g134@27.295 g134@32.935 g117@38.575 g337@42.105
   end #29
   end #28
   end #18
@@ -62,7 +62,7 @@ page 1 size=595.276x841.89
   start #32 table-row
   start #33 table-cell
   start #34 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 184.556) "2026-10-01" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g400@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 184.556) "2026-10-01" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g400@48.03
   end #34
   end #33
   start #36 table-cell
@@ -77,7 +77,7 @@ page 1 size=595.276x841.89
   end #39
   start #42 table-cell
   start #43 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 184.556) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 184.556) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #43
   end #42
   end #32
@@ -86,7 +86,7 @@ page 1 size=595.276x841.89
   start #46 table-row
   start #47 table-cell span=1x2
   start #48 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 200.556) "2026-10-01" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g400@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 200.556) "2026-10-01" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g400@48.03
   end #48
   end #47
   start #50 table-cell
@@ -101,7 +101,7 @@ page 1 size=595.276x841.89
   end #53
   start #56 table-cell span=1x2
   start #57 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 200.556) "3,50" g402@0 g311@5.8 g404@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 200.556) "3,50" g402@0 g311@5.8 g404@8.07 g399@13.87
   end #57
   end #56
   end #46
@@ -117,7 +117,7 @@ page 1 size=595.276x841.89
   start #64 table-row
   start #65 table-cell span=1x2
   start #66 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 230.156) "2026-10-02" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g401@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 230.156) "2026-10-02" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g401@48.03
   end #66
   end #65
   start #68 table-cell
@@ -132,7 +132,7 @@ page 1 size=595.276x841.89
   end #71
   start #74 table-cell span=1x2
   start #75 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 230.156) "1,75" g400@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 230.156) "1,75" g400@0 g311@5.8 g405@8.07 g404@13.87
   end #75
   end #74
   end #64
@@ -148,7 +148,7 @@ page 1 size=595.276x841.89
   start #82 table-row
   start #83 table-cell span=1x2
   start #84 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 259.756) "2026-10-05" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g404@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 259.756) "2026-10-05" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g404@48.03
   end #84
   end #83
   start #86 table-cell
@@ -163,7 +163,7 @@ page 1 size=595.276x841.89
   end #89
   start #92 table-cell span=1x2
   start #93 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 259.756) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 259.756) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #93
   end #92
   end #82
@@ -179,7 +179,7 @@ page 1 size=595.276x841.89
   start #100 table-row
   start #101 table-cell span=1x2
   start #102 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 289.356) "2026-10-06" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1141@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 289.356) "2026-10-06" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1141@48.03
   end #102
   end #101
   start #104 table-cell
@@ -194,7 +194,7 @@ page 1 size=595.276x841.89
   end #107
   start #110 table-cell span=1x2
   start #111 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 289.356) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 289.356) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
   end #111
   end #110
   end #100
@@ -210,7 +210,7 @@ page 1 size=595.276x841.89
   start #118 table-row
   start #119 table-cell span=1x2
   start #120 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 318.956) "2026-10-06" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1141@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 318.956) "2026-10-06" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1141@48.03
   end #120
   end #119
   start #122 table-cell
@@ -225,7 +225,7 @@ page 1 size=595.276x841.89
   end #125
   start #128 table-cell span=1x2
   start #129 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 318.956) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 318.956) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #129
   end #128
   end #118
@@ -241,7 +241,7 @@ page 1 size=595.276x841.89
   start #136 table-row
   start #137 table-cell span=1x2
   start #138 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 348.556) "2026-10-07" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g405@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 348.556) "2026-10-07" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g405@48.03
   end #138
   end #137
   start #140 table-cell
@@ -256,7 +256,7 @@ page 1 size=595.276x841.89
   end #143
   start #146 table-cell span=1x2
   start #147 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 348.556) "2,75" g401@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 348.556) "2,75" g401@0 g311@5.8 g405@8.07 g404@13.87
   end #147
   end #146
   end #136
@@ -272,7 +272,7 @@ page 1 size=595.276x841.89
   start #154 table-row
   start #155 table-cell
   start #156 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 378.156) "2026-10-08" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1142@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 378.156) "2026-10-08" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1142@48.03
   end #156
   end #155
   start #158 table-cell
@@ -287,7 +287,7 @@ page 1 size=595.276x841.89
   end #161
   start #164 table-cell
   start #165 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 378.156) "0,75" g399@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 378.156) "0,75" g399@0 g311@5.8 g405@8.07 g404@13.87
   end #165
   end #164
   end #154
@@ -296,7 +296,7 @@ page 1 size=595.276x841.89
   start #168 table-row
   start #169 table-cell span=1x2
   start #170 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 394.156) "2026-10-08" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1142@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 394.156) "2026-10-08" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g1142@48.03
   end #170
   end #169
   start #172 table-cell
@@ -311,7 +311,7 @@ page 1 size=595.276x841.89
   end #175
   start #178 table-cell span=1x2
   start #179 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 394.156) "3,50" g402@0 g311@5.8 g404@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 394.156) "3,50" g402@0 g311@5.8 g404@8.07 g399@13.87
   end #179
   end #178
   end #168
@@ -327,7 +327,7 @@ page 1 size=595.276x841.89
   start #186 table-row
   start #187 table-cell
   start #188 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 423.756) "2026-10-09" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g406@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 423.756) "2026-10-09" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g406@48.03
   end #188
   end #187
   start #190 table-cell
@@ -342,7 +342,7 @@ page 1 size=595.276x841.89
   end #193
   start #196 table-cell
   start #197 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 423.756) "2,50" g401@0 g311@5.8 g404@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 423.756) "2,50" g401@0 g311@5.8 g404@8.07 g399@13.87
   end #197
   end #196
   end #186
@@ -351,7 +351,7 @@ page 1 size=595.276x841.89
   start #200 table-row
   start #201 table-cell span=1x2
   start #202 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 439.756) "2026-10-09" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g406@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 439.756) "2026-10-09" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g399@42.23 g406@48.03
   end #202
   end #201
   start #204 table-cell
@@ -366,7 +366,7 @@ page 1 size=595.276x841.89
   end #207
   start #210 table-cell span=1x2
   start #211 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 439.756) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 439.756) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #211
   end #210
   end #200
@@ -382,7 +382,7 @@ page 1 size=595.276x841.89
   start #218 table-row
   start #219 table-cell
   start #220 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 469.356) "2026-10-12" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g401@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 469.356) "2026-10-12" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g401@48.03
   end #220
   end #219
   start #222 table-cell
@@ -397,7 +397,7 @@ page 1 size=595.276x841.89
   end #225
   start #228 table-cell
   start #229 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 469.356) "0,50" g399@0 g311@5.8 g404@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 469.356) "0,50" g399@0 g311@5.8 g404@8.07 g399@13.87
   end #229
   end #228
   end #218
@@ -406,7 +406,7 @@ page 1 size=595.276x841.89
   start #232 table-row
   start #233 table-cell span=1x2
   start #234 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 485.356) "2026-10-13" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g402@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 485.356) "2026-10-13" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g402@48.03
   end #234
   end #233
   start #236 table-cell
@@ -421,7 +421,7 @@ page 1 size=595.276x841.89
   end #239
   start #242 table-cell span=1x2
   start #243 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 485.356) "2,00" g401@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 485.356) "2,00" g401@0 g311@5.8 g399@8.07 g399@13.87
   end #243
   end #242
   end #232
@@ -437,7 +437,7 @@ page 1 size=595.276x841.89
   start #250 table-row
   start #251 table-cell
   start #252 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 514.956) "2026-10-14" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g403@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 514.956) "2026-10-14" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g403@48.03
   end #252
   end #251
   start #254 table-cell
@@ -452,7 +452,7 @@ page 1 size=595.276x841.89
   end #257
   start #260 table-cell
   start #261 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 514.956) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 514.956) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
   end #261
   end #260
   end #250
@@ -461,7 +461,7 @@ page 1 size=595.276x841.89
   start #264 table-row
   start #265 table-cell span=1x2
   start #266 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 530.956) "2026-10-14" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g403@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 530.956) "2026-10-14" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g403@48.03
   end #266
   end #265
   start #268 table-cell
@@ -476,7 +476,7 @@ page 1 size=595.276x841.89
   end #271
   start #274 table-cell span=1x2
   start #275 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 530.956) "2,25" g401@0 g311@5.8 g401@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 530.956) "2,25" g401@0 g311@5.8 g401@8.07 g404@13.87
   end #275
   end #274
   end #264
@@ -492,7 +492,7 @@ page 1 size=595.276x841.89
   start #282 table-row
   start #283 table-cell
   start #284 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 560.556) "2026-10-15" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g404@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 560.556) "2026-10-15" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g404@48.03
   end #284
   end #283
   start #286 table-cell
@@ -507,14 +507,14 @@ page 1 size=595.276x841.89
   end #289
   start #292 table-cell
   start #293 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 560.556) "3,75" g402@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 560.556) "3,75" g402@0 g311@5.8 g405@8.07 g404@13.87
   end #293
   end #292
   end #282
   start #295 table-row
   start #296 table-cell
   start #297 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 576.556) "2026-10-16" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g1141@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 576.556) "2026-10-16" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g1141@48.03
   end #297
   end #296
   start #299 table-cell
@@ -529,7 +529,7 @@ page 1 size=595.276x841.89
   end #302
   start #305 table-cell
   start #306 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 576.556) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 576.556) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
   end #306
   end #305
   end #295
@@ -538,7 +538,7 @@ page 1 size=595.276x841.89
   start #309 table-row
   start #310 table-cell span=1x2
   start #311 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 592.556) "2026-10-19" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g406@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 592.556) "2026-10-19" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g406@48.03
   end #311
   end #310
   start #313 table-cell
@@ -553,7 +553,7 @@ page 1 size=595.276x841.89
   end #316
   start #319 table-cell span=1x2
   start #320 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 592.556) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 592.556) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #320
   end #319
   end #309
@@ -569,7 +569,7 @@ page 1 size=595.276x841.89
   start #327 table-row
   start #328 table-cell span=1x2
   start #329 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 622.156) "2026-10-19" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g406@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 622.156) "2026-10-19" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g400@42.23 g406@48.03
   end #329
   end #328
   start #331 table-cell
@@ -584,7 +584,7 @@ page 1 size=595.276x841.89
   end #334
   start #337 table-cell span=1x2
   start #338 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 622.156) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 622.156) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #338
   end #337
   end #327
@@ -600,7 +600,7 @@ page 1 size=595.276x841.89
   start #345 table-row
   start #346 table-cell span=1x2
   start #347 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 651.756) "2026-10-20" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g399@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 651.756) "2026-10-20" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g399@48.03
   end #347
   end #346
   start #349 table-cell
@@ -615,7 +615,7 @@ page 1 size=595.276x841.89
   end #352
   start #355 table-cell span=1x2
   start #356 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 651.756) "3,75" g402@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 651.756) "3,75" g402@0 g311@5.8 g405@8.07 g404@13.87
   end #356
   end #355
   end #345
@@ -631,7 +631,7 @@ page 1 size=595.276x841.89
   start #363 table-row
   start #364 table-cell
   start #365 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 681.356) "2026-10-21" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g400@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 681.356) "2026-10-21" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g400@48.03
   end #365
   end #364
   start #367 table-cell
@@ -646,14 +646,14 @@ page 1 size=595.276x841.89
   end #370
   start #373 table-cell
   start #374 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 681.356) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 681.356) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
   end #374
   end #373
   end #363
   start #376 table-row
   start #377 table-cell
   start #378 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 697.356) "2026-10-21" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g400@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 697.356) "2026-10-21" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g400@48.03
   end #378
   end #377
   start #380 table-cell
@@ -668,14 +668,14 @@ page 1 size=595.276x841.89
   end #383
   start #386 table-cell
   start #387 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 697.356) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 697.356) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #387
   end #386
   end #376
   start #389 table-row
   start #390 table-cell
   start #391 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 713.356) "2026-10-22" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g401@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 713.356) "2026-10-22" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g401@48.03
   end #391
   end #390
   start #393 table-cell
@@ -690,14 +690,14 @@ page 1 size=595.276x841.89
   end #396
   start #399 table-cell
   start #400 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 713.356) "0,75" g399@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 713.356) "0,75" g399@0 g311@5.8 g405@8.07 g404@13.87
   end #400
   end #399
   end #389
   start #402 table-row
   start #403 table-cell
   start #404 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 729.356) "2026-10-23" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g402@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 729.356) "2026-10-23" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g402@48.03
   end #404
   end #403
   start #406 table-cell
@@ -712,14 +712,14 @@ page 1 size=595.276x841.89
   end #409
   start #412 table-cell
   start #413 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 729.356) "3,75" g402@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 729.356) "3,75" g402@0 g311@5.8 g405@8.07 g404@13.87
   end #413
   end #412
   end #402
   start #415 table-row
   start #416 table-cell
   start #417 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 745.356) "2026-10-26" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g1141@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 745.356) "2026-10-26" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g1141@48.03
   end #417
   end #416
   start #419 table-cell
@@ -734,14 +734,14 @@ page 1 size=595.276x841.89
   end #422
   start #425 table-cell
   start #426 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 745.356) "1,25" g400@0 g311@5.8 g401@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 745.356) "1,25" g400@0 g311@5.8 g401@8.07 g404@13.87
   end #426
   end #425
   end #415
   start #428 table-row
   start #429 table-cell
   start #430 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 761.356) "2026-10-27" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g405@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 761.356) "2026-10-27" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g405@48.03
   end #430
   end #429
   start #432 table-cell
@@ -756,14 +756,14 @@ page 1 size=595.276x841.89
   end #435
   start #438 table-cell
   start #439 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 761.356) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 761.356) "3,00" g402@0 g311@5.8 g399@8.07 g399@13.87
   end #439
   end #438
   end #428
   start #441 table-row
   start #442 table-cell
   start #443 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 777.356) "2026-10-27" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g405@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 777.356) "2026-10-27" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g405@48.03
   end #443
   end #442
   start #445 table-cell
@@ -778,7 +778,7 @@ page 1 size=595.276x841.89
   end #448
   start #451 table-cell
   start #452 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 777.356) "1,25" g400@0 g311@5.8 g401@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 777.356) "1,25" g400@0 g311@5.8 g401@8.07 g404@13.87
   end #452
   end #451
   end #441
@@ -987,16 +987,16 @@ page 2 size=595.276x841.89
   start #0 document
   start #16 table
   artifact Repeated
-  glyphs Lato-Bold 10pt #000000 at (31.846, 125.756) "Uitgevoerd op" g38@0 g98@7.335 g124@9.875 g93@13.595 g59@18.785 g136@23.995 g111@29.115 g59@34.86 g117@40.2 g55@43.795 g2@49.47 g111@51.9 g114@57.645
+  glyphs Lato-Bold 10pt #000000 at (31.596, 125.756) "Uitgevoerd op" g38@0 g98@7.335 g124@9.875 g93@13.595 g59@18.785 g136@23.995 g111@29.115 g59@34.86 g117@40.2 g55@43.795 g2@49.47 g111@51.9 g114@57.645
   glyphs Lato-Bold 10pt #000000 at (108.323, 125.756) "Taak" g36@0 g45@4.895 g45@9.97 g104@15.045
   glyphs Lato-Bold 10pt #000000 at (200.394, 125.756) "Titel" g36@0 g98@5.955 g124@8.495 g59@12.175 g1140@17.515
-  glyphs Lato-Bold 10pt #000000 at (518.579, 125.756) "Duur (uur)" g9@0 g134@7.535 g134@13.175 g117@18.815 g2@22.335 g336@24.765 g134@27.295 g134@32.935 g117@38.575 g337@42.105
+  glyphs Lato-Bold 10pt #000000 at (518.829, 125.756) "Duur (uur)" g9@0 g134@7.535 g134@13.175 g117@18.815 g2@22.335 g336@24.765 g134@27.295 g134@32.935 g117@38.575 g337@42.105
   end artifact
   start #454 table-body
   start #455 table-row
   start #456 table-cell span=1x2
   start #457 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 141.756) "2026-10-28" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g1142@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 141.756) "2026-10-28" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g1142@48.03
   end #457
   end #456
   start #459 table-cell
@@ -1011,7 +1011,7 @@ page 2 size=595.276x841.89
   end #462
   start #465 table-cell span=1x2
   start #466 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 141.756) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 141.756) "1,00" g400@0 g311@5.8 g399@8.07 g399@13.87
   end #466
   end #465
   end #455
@@ -1027,7 +1027,7 @@ page 2 size=595.276x841.89
   start #473 table-row
   start #474 table-cell span=1x2
   start #475 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 171.356) "2026-10-28" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g1142@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 171.356) "2026-10-28" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g1142@48.03
   end #475
   end #474
   start #477 table-cell
@@ -1042,7 +1042,7 @@ page 2 size=595.276x841.89
   end #480
   start #483 table-cell span=1x2
   start #484 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 171.356) "0,75" g399@0 g311@5.8 g405@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 171.356) "0,75" g399@0 g311@5.8 g405@8.07 g404@13.87
   end #484
   end #483
   end #473
@@ -1058,7 +1058,7 @@ page 2 size=595.276x841.89
   start #491 table-row
   start #492 table-cell span=1x2
   start #493 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 200.956) "2026-10-29" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g406@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 200.956) "2026-10-29" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g401@42.23 g406@48.03
   end #493
   end #492
   start #495 table-cell
@@ -1073,7 +1073,7 @@ page 2 size=595.276x841.89
   end #498
   start #501 table-cell span=1x2
   start #502 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 200.956) "4,00" g403@0 g311@5.8 g399@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 200.956) "4,00" g403@0 g311@5.8 g399@8.07 g399@13.87
   end #502
   end #501
   end #491
@@ -1089,7 +1089,7 @@ page 2 size=595.276x841.89
   start #509 table-row
   start #510 table-cell span=1x2
   start #511 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 230.556) "2026-10-30" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g402@42.23 g399@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 230.556) "2026-10-30" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g402@42.23 g399@48.03
   end #511
   end #510
   start #513 table-cell
@@ -1104,7 +1104,7 @@ page 2 size=595.276x841.89
   end #516
   start #519 table-cell span=1x2
   start #520 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 230.556) "0,50" g399@0 g311@5.8 g404@8.07 g399@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 230.556) "0,50" g399@0 g311@5.8 g404@8.07 g399@13.87
   end #520
   end #519
   end #509
@@ -1120,7 +1120,7 @@ page 2 size=595.276x841.89
   start #527 table-row
   start #528 table-cell
   start #529 paragraph
-  glyphs Lato-Regular 10pt #000000 at (31.846, 260.156) "2026-10-30" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g402@42.23 g399@48.03
+  glyphs Lato-Regular 10pt #000000 at (31.596, 260.156) "2026-10-30" g401@0 g399@5.8 g401@11.6 g1141@17.4 g330@23.2 g400@26.915 g399@32.715 g330@38.515 g402@42.23 g399@48.03
   end #529
   end #528
   start #531 table-cell
@@ -1135,7 +1135,7 @@ page 2 size=595.276x841.89
   end #534
   start #537 table-cell
   start #538 paragraph
-  glyphs Lato-Regular 10pt #000000 at (543.759, 260.156) "2,25" g401@0 g311@5.8 g401@8.07 g404@13.87
+  glyphs Lato-Regular 10pt #000000 at (544.009, 260.156) "2,25" g401@0 g311@5.8 g401@8.07 g404@13.87
   end #538
   end #537
   end #527

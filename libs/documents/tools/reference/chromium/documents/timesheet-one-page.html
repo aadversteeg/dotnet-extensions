@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="nl-NL">
+<head>
+<meta charset="utf-8">
+<title>Urenstaat Müller &amp; Søn → “Klant” N/A - N/A</title>
+<style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; font-style: normal; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; font-style: normal; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+
+/* A4 with 1 cm side margins. The header is in the top margin of every page: the logo with the title at the left, and
+   from page 2 on the customer, project and period at the right; page 1 shows those in the flow instead. The footer is
+   in the bottom margin of every page. The margin boxes inherit from the page, not from the body, so the page names the
+   font too. A margin box takes an image only as generated content, at the image's own size: the resolution in
+   image-set() sets that size. */
+@page {
+  size: A4;
+  margin: 4cm 1cm 2cm;
+  font-family: Lato, sans-serif;
+
+  @top-left {
+    content: image-set(url(../../../../samples/Ave.Extensions.Documents.Samples/assets/logo.png) 160dpcm) "\2003Urenstaat";
+    font-size: 24pt;
+    font-weight: 700;
+    margin: 1cm 0 0.4cm;
+    border-bottom: 3pt solid #ffa500;
+    vertical-align: middle;
+  }
+  @top-right {
+    content: "Müller & Søn → “Klant”\A Randgevallen \A N/A - N/A";
+    white-space: pre;
+    font-size: 9pt;
+    line-height: 1.5;
+    text-align: right;
+    margin: 1cm 0 0.4cm;
+    border-bottom: 3pt solid #ffa500;
+    vertical-align: middle;
+  }
+  @bottom-left {
+    content: "Rekening: NL00 BANK 0123 4567 89";
+    font-size: 8pt;
+    margin-top: 0.4cm;
+    padding-top: 6pt;
+    border-top: 3pt solid #ffa500;
+    vertical-align: top;
+  }
+  @bottom-center {
+    content: "BTW: NL000000000B00\2003\2003KvK: 00000000";
+    font-size: 8pt;
+    margin-top: 0.4cm;
+    padding-top: 6pt;
+    border-top: 3pt solid #ffa500;
+    vertical-align: top;
+  }
+  @bottom-right {
+    content: "Pagina " counter(page) " van " counter(pages);
+    font-size: 8pt;
+    margin-top: 0.4cm;
+    padding-top: 6pt;
+    border-top: 3pt solid #ffa500;
+    vertical-align: top;
+  }
+}
+
+/* On page 1 the right box stays, empty, so the orange line still runs over the whole width. */
+@page :first {
+  @top-right { content: ""; }
+}
+
+body {
+  margin: 0;
+  font-family: Lato, sans-serif;
+  font-size: 10pt;
+  color: #000;
+}
+
+.parties {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.parties td {
+  padding: 0;
+  vertical-align: top;
+}
+
+.parties td + td {
+  text-align: right;
+}
+
+.parties p {
+  margin: 4pt 0 0;
+  font-size: 11pt;
+}
+
+.parties p.name {
+  margin: 0;
+  font-size: 13pt;
+}
+
+.entries {
+  width: 100%;
+  margin-top: 10pt;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.entries col.executed { width: 14.29%; }
+.entries col.task { width: 17.14%; }
+.entries col.item { width: 57.14%; }
+.entries col.hours { width: 11.43%; }
+
+.entries th,
+.entries td {
+  padding: 1.5pt 2pt;
+  border: 1pt solid #d3d3d3;
+  vertical-align: top;
+  text-align: left;
+}
+
+.entries tbody {
+  break-inside: avoid;
+}
+
+.entries .hours {
+  text-align: right;
+}
+
+.entries .description {
+  font-size: 8pt;
+  font-style: italic;
+  color: #232323;
+}
+
+.entries .total th,
+.entries .total td {
+  padding-top: 5pt;
+  padding-bottom: 5pt;
+  border: 1.5pt solid #000;
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+<main>
+<table class="parties" role="presentation">
+<tr>
+<td><p class="name">Müller &amp; Søn → “Klant”</p><p>2026-11-03</p></td>
+<td><p class="name">Randgevallen </p><p>Periode: N/A - N/A</p></td>
+</tr>
+</table>
+<table class="entries">
+<colgroup><col class="executed"><col class="task"><col class="item"><col class="hours"></colgroup>
+<thead>
+<tr><th scope="col">Uitgevoerd op</th><th scope="col">Taak</th><th scope="col">Titel</th><th scope="col" class="hours">Duur (uur)</th></tr>
+</thead>
+<tbody>
+<tr><td rowspan="2">2026-10-01</td><td>Test</td><td>Emoji  and arrows → =&gt; and a	tab</td><td class="hours" rowspan="2">1.234,50</td></tr>
+<tr><td class="description" colspan="2">Line one
+line two
+  with   extra   spaces, a non-breaking hyphen and CJK</td></tr>
+</tbody>
+<tbody>
+<tr><td>2026-10-02</td><td>Test</td><td>Rounding 0.005</td><td class="hours">0,01</td></tr>
+</tbody>
+<tbody>
+<tr><td>2026-10-03</td><td>Test</td><td>Correction (negative)</td><td class="hours">-1,25</td></tr>
+</tbody>
+<tbody class="total">
+<tr><th scope="row" colspan="3">Totaal:</th><td class="hours">1.233,26</td></tr>
+</tbody>
+</table>
+</main>
+</body>
+</html>

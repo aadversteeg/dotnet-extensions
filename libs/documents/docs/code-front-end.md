@@ -219,7 +219,9 @@ with `width: 100%`: the width left over goes to the auto columns in proportion t
 fixed columns in proportion to their widths when no column is auto. Columns that cannot fit are the
 error `Documents.Layout.ColumnsDoNotFit`. A row is as tall as its tallest cell. Between two cells there is one
 grid line; where two borders meet, the wider one wins, then a cell's over a row's, then the upper or left one (CSS
-2.1 §17.6.2.1). A page breaks between rows, or inside a row between the lines of its cells; kept-together rows and
+2.1 §17.6.2.1). Half of a line lies inside each cell beside it, so a wider border moves only the content of its own
+cell; the table's left and right borders are half of the widest line at that edge in any row, on every page, and its
+top and bottom borders half of the widest line over its first and last row. A page breaks between rows, or inside a row between the lines of its cells; kept-together rows and
 groups move to the next page whole when they fit on one, and break anyway when they do not.
 
 The page count is known only after layout, so layout runs again until the count it shows is the count it produces,
@@ -236,6 +238,7 @@ browser (Chromium) prints, with the differences listed in `docs/architecture.md`
 | `.MonolithicOverflow(…)`: an image or a line taller than the page area | `Refuse`: the error `Documents.Layout.DoesNotFit` at the element's line | `Slice`: the content is sliced over as many pages as it needs, each page showing the next part of it, as tall as the room it has there; what follows starts below its end; in tagged PDF every slice of an image is content of its figure and the later slices of a line are artifacts, so text and alternative text are read once; a piece is cut into at most 100 slices and a document into at most 1 000, and one that needs more is the error `Documents.Layout.TooManySlices` |
 | `.FontMetricRounding(…)`: a font's ascent, descent and line gap | `Exact`: as the font gives them, scaled to the size | `WholePixels`: each rounded to a whole CSS pixel (0.75 pt), as Chromium does, so a `normal` line is a whole number of pixels (Lato 12 pt: 14.25 pt instead of 14.4) |
 | `.EmptyRowParts(…)`: a table row whose part on a page would show nothing | `Avoid`: the row moves to the next page whole where that avoids the empty strip | `Allow`: the row is cut wherever its cells can break |
+| `.SplitLineHalves(…)`: each half of a table's grid line where a page break between rows splits it (`.SplitLinesAtBreaks()`) | `Exact`: half the line's width | `AtLeastOnePixel`: a half thinner than one CSS pixel is drawn one pixel (0.75 pt) thick from its top edge, as Chromium prints it; layout does not change |
 
 ```csharp
 var poster = Document([Image(photo).Alt("The team").Width(18.Cm())], PageSetup.A4.Margin(2.Cm()), title: "Poster", language: "en")

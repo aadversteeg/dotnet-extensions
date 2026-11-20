@@ -115,6 +115,11 @@ public static class DocumentErrorCodes
             /// Metadata: Value, Property.</summary>
             public static readonly ErrorCode Table = _ / "Table";
 
+            /// <summary>A row of page-margin boxes that is not valid: one that is not the content of a header or footer
+            /// area with a fixed height, a child that is not a box or has no place in the row, two children at the same
+            /// place, or a box with a place in a row outside one. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode MarginBoxes = _ / "MarginBoxes";
+
             /// <summary>An image size that is not a positive finite length. Metadata: Value, Property.</summary>
             public static readonly ErrorCode ImageSize = _ / "ImageSize";
 
