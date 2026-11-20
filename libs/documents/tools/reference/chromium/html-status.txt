@@ -408,6 +408,14 @@ tf-pages listed A_footer_group_is_drawn_once_after_the_body_where_Chromium_repea
 tf-pages-auto equal
 tf-top-border equal
 tf-two equal
+tj-break open page 1 painted area: the pixel at (36, 176.25): the engine paints it #000000, Chromium #ff0000; the engine paints 5502 px #000000, Chromium 5492 px (print.txt)
+tj-cell-table open page 1 painted area: the pixel at (36, 12): the engine paints it #0000ff, Chromium #000000; the engine paints 318 px #0000ff, Chromium 312 px (print.txt)
+tj-four open page 1 painted area: the pixel at (167.25, 12): the engine paints it #000000, Chromium #ff8000; the engine paints 1305 px #000000, Chromium 1285 px (print.txt)
+tj-order open page 1 painted area: the pixel at (135, 12): the engine paints it #ff0000, Chromium #000000; the engine paints 958 px #ff0000, Chromium 958 px (print.txt)
+tj-outer open page 1 painted area: the pixel at (36, 12): the engine paints it and Chromium does not; the engine paints 526 px #0000ff, Chromium 532 px (print.txt)
+tj-right-edge open page 1 painted area: the pixel at (36, 12): the engine paints it and Chromium does not; the engine paints 2416 px #000000, Chromium 2398 px (print.txt)
+tj-same-cell open page 1 painted area: the pixel at (135, 12): the engine paints it #0000ff, Chromium #008000; the engine paints 528 px #0000ff, Chromium 526 px (print.txt)
+tj-top-edge open page 1 painted area: the pixel at (36, 12.75): the engine paints it #000000, Chromium #ff0000; the engine paints 1442 px #000000, Chromium 1410 px (print.txt)
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.485, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
 tp-beside-auto equal
