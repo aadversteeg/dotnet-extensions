@@ -185,7 +185,7 @@ public static class Shaper
     private static Result<ImmutableArray<ShapedGlyph>, Error> ShapePieces(
         ImmutableArray<(string Tag, ImmutableArray<GlyphItem> Glyphs)> shaping, TrueTypeFont font, ShapingSize size, ShapingBudget? shared)
     {
-        var hyphen = Hyphen(font, size.Advances);
+        var hyphen = Hyphen(font, size);
         var budget = shared ?? new ShapingBudget(shaping.Sum(piece => piece.Glyphs.Length));
         var pieces = shaping.Select(piece => ShapeRun(piece.Glyphs, piece.Tag, font, budget)).ToList();
         return budget.Exceeded is { } limit
@@ -206,7 +206,8 @@ public static class Shaper
 
     /// <summary>
     /// The advance and the horizontal offset of each glyph of one shaped run, in points. At one size, the design units
-    /// scaled to it. At two (<see cref="ShapingSize"/>): the 'hmtx' advance at <see cref="ShapingSize.Advances"/> plus the
+    /// scaled to it. At two, or with advances in fixed point (<see cref="ShapingSize"/>): the 'hmtx' advance at
+    /// <see cref="ShapingSize.Advances"/> (<see cref="ShapingSize.AdvanceInPoints"/>) plus the
     /// rest of the advance (kerning) at <see cref="ShapingSize.Positions"/>; a mark keeps its zero advance; a mark on a base
     /// is drawn at the base's pen plus its anchor difference at <see cref="ShapingSize.Positions"/>, so the advances between
     /// the two, which its offset holds in design units, are taken back at the sizes they were scaled at. As HarfBuzz in
@@ -215,7 +216,7 @@ public static class Shaper
     private static IEnumerable<(GlyphItem Glyph, double Advance, double XOffset)> InPoints(ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, ShapingSize size)
     {
         var metrics = font.Metrics;
-        if (size.Positions == size.Advances)
+        if (size.Positions == size.Advances && !size.FixedPointAdvances)
         {
             return glyphs.Select(glyph => (glyph, metrics.ToPoints(glyph.XAdvance, size.Advances), metrics.ToPoints(glyph.XOffset, size.Advances)));
         }
@@ -228,7 +229,7 @@ public static class Shaper
         {
             var glyph = glyphs[index];
             var own = glyph.IsDefaultIgnorable || glyph.Class == GlyphClass.Mark ? 0 : font.AdvanceWidth(glyph.Glyph);
-            advances[index] = metrics.ToPoints(own, size.Advances) + metrics.ToPoints(glyph.XAdvance - own, size.Positions);
+            advances[index] = size.AdvanceInPoints(own, metrics.UnitsPerEm) + metrics.ToPoints(glyph.XAdvance - own, size.Positions);
             pens[index + 1] = pens[index] + advances[index];
             units[index + 1] = units[index] + glyph.XAdvance;
         }
@@ -252,9 +253,9 @@ public static class Shaper
     /// Tagged PDF asks for exactly this: "such an incidental word division shall be represented by a soft hyphen
     /// character" (ISO 32000-1 §14.8.2.2.3, Hyphenation).
     /// </summary>
-    private static ShapedGlyph? Hyphen(TrueTypeFont font, double fontSize) =>
+    private static ShapedGlyph? Hyphen(TrueTypeFont font, ShapingSize size) =>
         HyphenCharacter(font) is { } character && font.GlyphFor(new Rune(character[0])) is { HasValue: true } glyph
-            ? new ShapedGlyph(glyph.Value, font.Metrics.ToPoints(font.AdvanceWidth(glyph.Value), fontSize), SoftHyphen)
+            ? new ShapedGlyph(glyph.Value, size.AdvanceInPoints(font.AdvanceWidth(glyph.Value), font.Metrics.UnitsPerEm), SoftHyphen)
             : null;
 
     /// <summary>The character whose glyph shows a hyphen at a soft hyphen (<see cref="Hyphen"/>): U+2010 HYPHEN when the

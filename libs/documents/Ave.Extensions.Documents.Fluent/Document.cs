@@ -32,8 +32,8 @@ public sealed record Document(
 
     /// <summary>The layout policies of the document: <see cref="LayoutProfile.Default"/> unless changed with
     /// <see cref="MonolithicOverflow(DocumentModel.MonolithicOverflow)"/>, <see cref="EmptyRowParts(DocumentModel.EmptyRowParts)"/>,
-    /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="FontSizeRounding(DocumentModel.FontSizeRounding)"/>
-    /// or <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>.</summary>
+    /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="FontSizeRounding(DocumentModel.FontSizeRounding)"/>,
+    /// <see cref="LengthRounding(DocumentModel.LengthRounding)"/> or <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>.</summary>
     public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
 
     /// <summary>
@@ -70,6 +70,15 @@ public sealed record Document(
     /// <param name="rounding">The policy.</param>
     /// <returns>A copy with the policy.</returns>
     public Document FontSizeRounding(FontSizeRounding rounding) => this with { Profile = Profile with { FontSizeRounding = rounding } };
+
+    /// <summary>
+    /// Whether lengths are kept as layout computes them (the default) or put on a browser's (Chromium's) layout unit of
+    /// 1/64 CSS pixel where it puts them there: today the width of each text item, rounded up, which moves the text after
+    /// it and can wrap a line a little earlier (<see cref="DocumentModel.LengthRounding"/>).
+    /// </summary>
+    /// <param name="rounding">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document LengthRounding(LengthRounding rounding) => this with { Profile = Profile with { LengthRounding = rounding } };
 
     /// <summary>
     /// How thick each half of a table's grid line is drawn where a page break between rows splits the line

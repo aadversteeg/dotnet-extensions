@@ -7,7 +7,7 @@ namespace UnitTests.Extensions.Documents.Typesetting;
 /// The two sizes text is shaped at (<see cref="ShapingSize"/>) and how the shaper uses them. Chromium's sizes as its print
 /// shows them (<c>tools/reference/chromium</c>, cases <c>ta-sizes</c>, <c>ta-px</c>, <c>ta-kerning-scale</c>,
 /// <c>ta-marks</c>): the size of the font in the PDF (<c>Tf</c>) is the floored one, the distance between two glyphs is
-/// the font's advance at the truncated one. Lato Regular (2000 units per em): x = 996 units, i = 480, H = 1527 with
+/// the font's advance at the truncated one, in 16.16 fixed point. Lato Regular (2000 units per em): x = 996 units, i = 480, H = 1527 with
 /// H + i kerned by −15, and U+0302 put on x by an anchor difference of 497 − (−400) = 897 units.
 /// </summary>
 public class ShapingSizeTests
@@ -40,7 +40,23 @@ public class ShapingSizeTests
     [InlineData(24.0)]
     public void A_whole_pixel_size_and_eleven_pixels_are_kept(double points)
     {
-        ShapingSize.FlooredToPixelFractions(points).Should().Be(ShapingSize.Exact(points));
+        ShapingSize.FlooredToPixelFractions(points).Should().Be(ShapingSize.Exact(points) with { FixedPointAdvances = true });
+    }
+
+    /// <summary>skrifa's 16.16 advances: the 'i' Chromium's print places 2.5575256 px after itself at 8 pt (scale 22348,
+    /// 167610/65536 px) and 2.8800201 px at 12 px, 9 pt (scale 25166, 188745/65536 px); exact they would be 2.5575 and 2.88 px.
+    /// The scale's rounding makes a width larger at 8 pt and smaller at 11 pt (ta-right).</summary>
+    [Fact]
+    public void Advances_in_fixed_point_are_scaled_as_Chromium_s_font_library_scales_them()
+    {
+        var (eight, twelve, eleven) = (ShapingSize.FlooredToPixelFractions(8), ShapingSize.FlooredToPixelFractions(9), ShapingSize.FlooredToPixelFractions(11));
+
+        eight.AdvanceInPoints(480, 2000).Should().Be(167610 / 65536.0 * PointsPerPixel);
+        twelve.AdvanceInPoints(480, 2000).Should().Be(188745 / 65536.0 * PointsPerPixel);
+        eight.AdvanceInPoints(-480, 2000).Should().Be(-eight.AdvanceInPoints(480, 2000));
+        eight.AdvanceInPoints(100000, 2000).Should().BeGreaterThan(100000 * eight.Advances / 2000);
+        eleven.AdvanceInPoints(100000, 2000).Should().BeLessThan(100000 * eleven.Advances / 2000);
+        ShapingSize.Exact(8).AdvanceInPoints(480, 2000).Should().Be(480 * 8.0 / 2000);
     }
 
     [Fact]
@@ -58,9 +74,9 @@ public class ShapingSizeTests
 
         var glyphs = Shaper.Shape("Hi", TestFonts.Regular, size).Value;
 
-        glyphs[0].Advance.Should().BeApproximately((1527 * size.Advances - 15 * size.Positions) / 2000, 1e-12);
-        glyphs[1].Advance.Should().BeApproximately(480 * size.Advances / 2000, 1e-12);
-        (glyphs[1].Advance / PointsPerPixel).Should().BeApproximately(2.5575, 1e-4, "Chromium's Td after an 'i' at 8 pt is 2.5575256 px");
+        glyphs[0].Advance.Should().BeApproximately(size.AdvanceInPoints(1527, 2000) - (15 * size.Positions / 2000), 1e-12);
+        glyphs[1].Advance.Should().Be(size.AdvanceInPoints(480, 2000));
+        (glyphs[1].Advance / PointsPerPixel).Should().BeApproximately(2.5575256, 1e-7, "Chromium's Td after an 'i' at 8 pt is 2.5575256 px");
     }
 
     [Fact]
@@ -70,7 +86,7 @@ public class ShapingSizeTests
 
         var glyphs = Shaper.Shape("x̂", TestFonts.Regular, size).Value;
 
-        glyphs[0].Advance.Should().BeApproximately(996 * size.Advances / 2000, 1e-12);
+        glyphs[0].Advance.Should().Be(size.AdvanceInPoints(996, 2000));
         glyphs[1].Advance.Should().Be(0);
         // Drawn at the base's pen plus the anchor difference: the base's advance taken back as it was scaled.
         (glyphs[0].Advance + glyphs[1].XOffset).Should().BeApproximately(897 * size.Positions / 2000, 1e-12);
@@ -85,7 +101,7 @@ public class ShapingSizeTests
         var size = ShapingSize.FlooredToPixelFractions(8);
         var hyphen = Shaper.Shape("a­", TestFonts.Regular, size).Value[^1].BreakHyphen!;
 
-        hyphen.Advance.Should().BeApproximately(TestFonts.Regular.AdvanceWidth(hyphen.Glyph) * size.Advances / 2000, 1e-12);
+        hyphen.Advance.Should().Be(size.AdvanceInPoints(TestFonts.Regular.AdvanceWidth(hyphen.Glyph), 2000));
         Shaper.ShapeLinePiece("a­", TestFonts.Regular, size, showsHyphen: true, budget: null!).Value[^1].Should().Be(hyphen);
     }
 }

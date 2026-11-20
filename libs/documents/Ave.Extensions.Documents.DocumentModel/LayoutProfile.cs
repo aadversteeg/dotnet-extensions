@@ -10,7 +10,8 @@ namespace Ave.Extensions.Documents.DocumentModel;
 public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
-    /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/> and <see cref="SplitLineHalves.Exact"/>.</summary>
+    /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/> and
+    /// <see cref="SplitLineHalves.Exact"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -26,6 +27,10 @@ public sealed record LayoutProfile
     /// <summary>Whether text is shaped at its font size as it is given or at the two rounded sizes Chromium shapes with
     /// (<see cref="DocumentModel.FontSizeRounding"/>).</summary>
     public FontSizeRounding FontSizeRounding { get; init; } = FontSizeRounding.Exact;
+
+    /// <summary>Whether lengths are kept as they are or put on Chromium's layout unit of 1/64 CSS pixel where Chromium
+    /// puts them there (<see cref="DocumentModel.LengthRounding"/>).</summary>
+    public LengthRounding LengthRounding { get; init; } = LengthRounding.Exact;
 
     /// <summary>How thick the half of a grid line is drawn where a page break between table rows splits the line
     /// (<see cref="DocumentModel.SplitLineHalves"/>).</summary>
@@ -78,13 +83,45 @@ public enum FontSizeRounding
     /// Chromium's print (<c>tools/reference/chromium</c>): every word within 0.01 pt in cases <c>ta-sizes</c> (seven sizes),
     /// <c>ta-px</c> (sizes given in px, 10.65625 px floored to 10.65), <c>ta-right</c> (right-aligned: the start of the line
     /// moves), <c>ta-kerning-scale</c> (kerning at the floored size) and <c>ta-marks</c> (combining marks at the floored
-    /// size). What the policy does not cover: the font is drawn at its size, where Chromium draws it at the floored size
-    /// (7.995 pt for 8 pt); the 16.16 fixed-point rounding of the font library's scale (at most 2·10⁻⁵ of a width); and the
-    /// width of each text item (a run of one style), which Chromium ceils to its layout unit of 1/64 px and the engine
-    /// keeps exact, so text after an item can start up to 0.0117 pt earlier than in Chromium (case <c>sk-size</c>: an
-    /// underline's gap edge 0.011 pt early, one pixel more painted).
+    /// size). The advances are scaled in 16.16 fixed point as the font library scales them (case <c>ta-right</c>: which
+    /// layout unit a line's width rounds up to). What the policy does not cover: the font is drawn at its size, where
+    /// Chromium draws it at the floored size (7.995 pt for 8 pt); and the width of each text item, which Chromium rounds up
+    /// to its layout unit of 1/64 px: that is
+    /// <see cref="LengthRounding.SixtyFourthPixels"/>, a policy of its own (case <c>sk-size</c> needs both: an underline's
+    /// gap edge 0.011 pt early and one pixel more painted under this policy alone).
     /// </summary>
     FlooredToPixelFractions,
+}
+
+/// <summary>
+/// Whether layout keeps its lengths as they are or puts some of them on Chromium's length step: Blink's layout unit,
+/// 1/64 CSS pixel (<c>platform/geometry/layout_unit.h</c>, <c>LayoutUnit</c>, six fraction bits), 0.01171875 pt. Only the
+/// places listed under <see cref="SixtyFourthPixels"/> follow the policy; every other length stays as it is under either
+/// value. A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// </summary>
+public enum LengthRounding
+{
+    /// <summary>Every length as layout computes it.</summary>
+    Exact,
+
+    /// <summary>
+    /// The lengths below are put on steps of 1/64 px as Chromium puts them there; nothing else is. Measured against
+    /// Chromium's print (<c>tools/reference/chromium</c>).
+    /// <list type="number">
+    /// <item>The width of a text item as line layout sees it, rounded UP: the part of one run's text that lies on one line
+    /// (<c>Typesetting.LineSegment</c>), its glyphs' advances summed and rounded up to the next 1/64 px, for placing the
+    /// next item, for aligning the line and for whether the line fits. Blink's line breaker takes each text item's width
+    /// as <c>ShapeResult::SnappedWidth</c>, <c>LayoutUnit::FromFloatCeil</c> of the shaped width
+    /// (<c>core/layout/inline/line_breaker.cc</c>, <c>LineBreaker::HandleText</c>); a new item starts at every element
+    /// boundary. The glyphs inside an item keep their exact advances; an image on the line is not a text item. Cases
+    /// <c>ta-items</c> (30 inline elements of two one-letter words at 8 and 10.5 pt: every word within 0.0005 pt of the
+    /// item widths rounded up, where unrounded widths put the last word up to 0.176 pt early and widths rounded per word
+    /// 0.266 pt late), <c>ta-items-right</c> (right-aligned: the start of the line moves by the sum of the steps),
+    /// <c>ta-items-fit</c> (in a block wider than the unrounded widths and narrower than the rounded ones the last word
+    /// wraps) and <c>sk-size</c> (an underline gap's edge).</item>
+    /// </list>
+    /// </summary>
+    SixtyFourthPixels,
 }
 
 /// <summary>
