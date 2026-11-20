@@ -75,6 +75,7 @@ a4-header-image-360-image open page 3 image 1 y0 28.5 (laid out at 28.125), Chro
 a4-header-image-beside-lines open 5 pages, Chromium 4 (print.txt)
 a4-header-image-row open page 4 'after' baseline 89.25 (laid out at 88.875), Chromium 88.5 (print.txt)
 a4-header-image-row-image open page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
+a4-header-line2-25-image-228 open page 3 painted area: the pixel at (12.75, 76.5): Chromium paints it and the engine does not; the engine paints 542 px #000000, Chromium 540 px (print.txt)
 a4-header-line6-image-228 equal
 a4-header-row-image-228 open page 4 painted area: the pixel at (12.75, 75.75): Chromium paints it and the engine does not; the engine paints 540 px #000000, Chromium 538 px (print.txt)
 a4-header-row-image-row open page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
