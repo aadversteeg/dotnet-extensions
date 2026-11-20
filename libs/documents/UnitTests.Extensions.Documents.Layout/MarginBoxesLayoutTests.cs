@@ -363,19 +363,64 @@ public class MarginBoxesLayoutTests
         result.Error.Metadata![ErrorMetadataKeys.SourceLine].Should().NotBeNull("the HTML front-end points at the margin rule through the box's source");
     }
 
-    [Fact]
-    public void Content_taller_than_its_box_is_refused_at_the_box()
+    [Theory]
+    [InlineData(VerticalAlign.Top)]
+    [InlineData(VerticalAlign.Middle)]
+    [InlineData(VerticalAlign.Bottom)]
+    public void Content_taller_than_its_box_starts_at_its_top_under_every_alignment_and_the_box_keeps_its_height(VerticalAlign align)
     {
-        // Measured at 12 pt: "one" to "seven" on seven preserved lines in the 60 pt top box: Chromium starts them at the
-        // box's top and lets them run over the body (baselines 12.0 to 97.5). The engine refuses that.
+        // Measured at 12 pt: "one" to "seven" on seven preserved lines in the 60 pt top box (case pm-overflow-tall):
+        // Chromium starts them at the box's top and lets them run over the body, baselines 12.0 to 97.5; under top,
+        // middle and bottom alike (pm-tall-top). The box and the body stay where they are. Here the font's metrics are
+        // taken exactly, so the line pitch is 14.4 pt where Chromium's is 14.25 pt; the HTML cases compare every line.
         var preserved = Lato(12) with { WhiteSpaceCollapse = WhiteSpaceCollapse.Preserve };
-        var box = MarginBox(20, MarginBoxPlace.Start, [new TextRun(new NodeId(21), "one\ntwo\nthree\nfour\nfive\nsix\nseven", preserved, At(0))], strut: Lato(12));
-        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Page(Row(10, box), null));
+        var box = MarginBox(20, MarginBoxPlace.Start, [new TextRun(new NodeId(21), "one\ntwo\nthree\nfour\nfive\nsix\nseven", preserved, At(0))],
+            BoxStyle.Initial with { VerticalAlign = align }, Lato(12));
+        var page = Laid(Page(Row(10, box), null));
+        var oneLine = Laid(Page(Row(10, Text(20, MarginBoxPlace.Start, "one", 12)), null));
+
+        var baselines = Baselines(page.Header!);
+        baselines.Should().HaveCount(7);
+        baselines[0].Should().Be(12.0);
+        baselines[^1].Should().BeGreaterThan(60, "the lines run on below the box");
+        ((BoxFragment)page.Header!.Fragment).Children.Single().Fragment.Size.Height.Should().Be(60);
+        page.Header.Fragment.Size.Height.Should().Be(60);
+        page.Root.Offset.Should().Be(oneLine.Root.Offset);
+    }
+
+    [Fact]
+    public void Content_taller_than_a_box_with_a_bottom_border_runs_over_the_border_which_stays_at_the_box_s_bottom()
+    {
+        // Measured (pm-tall-box): an image 36 pt tall in a box with margin 20pt 0 10pt, 2 pt of padding above and below
+        // and a 3 pt bottom border: the box from 20 to 50 pt (border 47 to 50), the image from 22 pt, over the border.
+        var style = BoxStyle.Initial with
+        {
+            VerticalAlign = VerticalAlign.Middle,
+            Margin = new Edges(20.Pt(), 0.Pt(), 10.Pt(), 0.Pt()),
+            Padding = new Edges(2.Pt(), 0.Pt(), 2.Pt(), 0.Pt()),
+            Border = new Border(BorderSide.None, BorderSide.None, new BorderSide(3.Pt(), Color.Black), BorderSide.None),
+        };
+        var box = MarginBox(20, MarginBoxPlace.Start, [new Box(new NodeId(21), SemanticRole.Decorative, LayoutAlgorithmId.Image, BoxStyle.Initial,
+            [new ImageNode(new NodeId(22), TestImages.Load("baseline-rgb.jpg"), 60.Pt(), 36.Pt(), At(0))], At(0))], style);
+        var page = Laid(Page(Row(10, box), null));
+
+        var placed = ((BoxFragment)page.Header!.Fragment).Children.Single();
+        placed.Offset.Y.Should().Be(20);
+        placed.Fragment.Size.Height.Should().Be(30);
+        ((BoxFragment)placed.Fragment).Children.Single().Offset.Y.Should().Be(2);
+    }
+
+    [Fact]
+    public void A_box_whose_margins_padding_and_border_are_taller_than_its_row_is_refused_at_the_box()
+    {
+        var style = Middle with { Padding = new Edges(40.Pt(), 0.Pt(), 30.Pt(), 0.Pt()) };
+        var result = Paginator.Paginate(LayoutEnvironment.Create(TestFonts.Set), Page(Row(10, Text(20, MarginBoxPlace.Start, "Text", style: style)), null));
 
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be(LayoutErrorCodes.MarginBoxOverflow);
         result.Error.Metadata![ErrorMetadataKeys.Node].Should().Be("#20");
         result.Error.Metadata![ErrorMetadataKeys.Property].Should().Be("height");
+        result.Error.Metadata![ErrorMetadataKeys.Value].Should().Be("70>60");
     }
 
     private static Error ModelError(StyledDocument document)

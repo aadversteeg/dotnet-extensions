@@ -179,8 +179,9 @@ public class ProfileDocumentTests
         Line("page context inherits from the root element, `font-family` too; a face that only a margin box uses is drawn,");
         Line("where Chromium prints its fallback serif face (it has not loaded the face then; case `pm-family-unused`). Refused at their");
         Line("place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, the size and");
-        Line("margins of `@page :first`, and content wider or taller than its box");
-        Line("(`Documents.Layout.MarginBoxOverflow`), which Chromium draws over its neighbours.");
+        Line("margins of `@page :first`, and content wider than its box (`Documents.Layout.MarginBoxOverflow`), which");
+        Line("Chromium draws over its neighbours. Content taller than its box is drawn as Chromium draws it: from the top of");
+        Line("the box whatever its vertical alignment, unclipped, under the body; the box keeps its height.");
         Line();
         Line("## HTML");
         Line();

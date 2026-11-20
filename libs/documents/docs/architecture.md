@@ -102,11 +102,14 @@ other side is empty; a box alone takes the whole row; where all widths are zero,
 each stands for (Chromium 159: two empty side boxes half each, an empty centre box beside an empty side box a third). The
 row is only the content of a header or footer area with a fixed height, and each box is as tall as that height less its
 own margins, its content placed by `vertical-align` (`ModelCheck` refuses a row anywhere else, a child without a place and
-two at one place: `Documents.Input.Invalid.MarginBoxes`). Content wider or taller than its box is refused at the box
-(`Documents.Layout.MarginBoxOverflow`), also when not even the min-content widths fit the row; Chromium draws it
-unclipped over the neighbouring box, the body or past the sheet — a known limit, pinned by `MarginBoxesLayoutTests`
-(at 12 pt "Left" beside a word wider than the row: Chromium shrinks "Left" to 15.0 pt and draws both words over their
-boxes; seven preserved lines in a 60 pt box run over the body). Checked against the measured edges of Chromium's
+two at one place: `Documents.Input.Invalid.MarginBoxes`). Content taller than its box is drawn as Chromium draws it:
+the box keeps its height and the body does not move, the content starts at the top of the box's content box under every
+vertical alignment and runs on unclipped over the box's border, the body or past the sheet; the header area is painted
+before the body, so the body lies over it, as in Chromium (cases `pm-tall-*`). Content wider than its box is refused at
+the box (`Documents.Layout.MarginBoxOverflow`), also when not even the min-content widths fit the row, and so is a box
+whose own margins, padding and border are taller than the row; Chromium draws wider content unclipped over the
+neighbouring box or past the sheet — a known limit, pinned by `MarginBoxesLayoutTests` (at 12 pt "Left" beside a word
+wider than the row: Chromium shrinks "Left" to 15.0 pt and draws both words over their boxes; case `pm-overflow`). Checked against the measured edges of Chromium's
 rectangles at whole pixels: one edge is not reproduced ("Eeeeeee Eeeeeee" beside "Dd": 306.75 pt in Chromium, 307.13 pt
 here, which paints at 307.5); the widths computed in 1/64 px would give Chromium's pixel there, which is not built.
 

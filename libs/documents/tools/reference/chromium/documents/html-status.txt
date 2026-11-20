@@ -1,4 +1,4 @@
 invoice equal
-timesheet-normal refused Documents.Layout.MarginBoxOverflow height: 79.116>73.582 at 22:5
-timesheet-one-page refused Documents.Layout.MarginBoxOverflow height: 79.116>73.582 at 22:5
-timesheet-pages refused Documents.Layout.MarginBoxOverflow height: 79.116>73.582 at 22:5
+timesheet-normal open page 1 'Urenstaat' baseline 99 (laid out at 99.202), Chromium 99.363 (print.txt)
+timesheet-one-page open page 1 'Urenstaat' baseline 99 (laid out at 99.202), Chromium 99.363 (print.txt)
+timesheet-pages open page 1 'Urenstaat' baseline 99 (laid out at 99.202), Chromium 99.363 (print.txt)

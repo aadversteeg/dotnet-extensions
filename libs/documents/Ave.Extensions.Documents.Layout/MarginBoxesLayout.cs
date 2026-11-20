@@ -15,9 +15,12 @@ namespace Ave.Extensions.Documents.Layout;
 /// (§5.3), and its content sits in that height as <see cref="BoxStyle.VerticalAlign"/> says. The row never breaks.
 /// </summary>
 /// <remarks>
-/// Content wider or taller than its box is refused (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>), also when not
-/// even the boxes' min-content widths fit the row. Chromium 159 does not refuse it: it lets the content overflow its box
-/// unclipped, over the neighbouring box, the body or past the sheet (a documented limit, docs/architecture.md).
+/// Content taller than its box is drawn as Chromium 159 prints it: the box keeps its height, the content starts at the
+/// top of the box's content box whatever its vertical alignment, and it runs on unclipped over the box's border, the
+/// body or past the sheet (<see cref="LayOutBox"/>). Content wider than its box is refused
+/// (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>), also when not even the boxes' min-content widths fit the row;
+/// Chromium lets it overflow its box unclipped, over the neighbouring box or past the sheet (a documented limit,
+/// docs/architecture.md).
 /// </remarks>
 public static class MarginBoxesLayout
 {
@@ -226,8 +229,21 @@ public static class MarginBoxesLayout
     /// <see cref="BoxStyle.VerticalAlign"/> (the same stretch a table cell gets, <see cref="TableSegments.Stretch"/>).
     /// Measured in Chromium 159: one 10 pt line of Lato in a 60 pt box with <c>vertical-align: middle</c> has its
     /// baseline at 33.75 pt, two lines at 267.75 and 279.75 pt in the box from 240 to 300 pt. Content wider than the
-    /// box (its outer min-content width is more than the box's outer width) or taller than it is refused.
+    /// box (its outer min-content width is more than the box's outer width) is refused, and so is a box whose own
+    /// margins, padding and border leave it no height.
     /// </summary>
+    /// <remarks>
+    /// Content taller than the box: the box keeps its height (its background and border stay where they are, and the
+    /// body does not move), the content starts at the top of its content box under every vertical alignment, and the
+    /// rest runs on below the box, unclipped. Measured in Chromium 159 at 12 pt: six preserved lines in the 60 pt top
+    /// boxes have their first baseline at 12.0 pt under <c>top</c>, <c>middle</c> and <c>bottom</c> alike (case
+    /// <c>pm-tall-top</c>); four lines in bottom boxes 40 pt tall from 240 pt at 252.0 pt (<c>pm-tall-bottom</c>); an
+    /// image 36 pt tall in a box with 20 pt of top margin and 2 pt of top padding from 22 pt (painted from 21.75 pt, its
+    /// edge on a whole pixel), over the box's bottom border (<c>pm-tall-box</c>). The page painter paints the header
+    /// area before the body, as Chromium paints the margin boxes before the page area, so the body's backgrounds and
+    /// text lie over what overflows the top row (<c>pm-tall-over</c>); what overflows a bottom box starts below the page
+    /// area and never meets the body.
+    /// </remarks>
     private static Result<BoxFragment, Error> LayOutBox(LayoutEnvironment environment, Box box, IntrinsicWidths outer, double outerWidth, double rowHeight)
     {
         var margin = box.Style.Margin;
@@ -238,16 +254,19 @@ public static class MarginBoxesLayout
             return Result<BoxFragment, Error>.Failure(LayoutErrors.MarginBoxOverflow(box, "width", outer.MinContent - margin.Horizontal.Points, width));
         }
 
-        if (!Fitting.Fits(0, height))
+        var insets = box.Style.Padding.Vertical.Points + box.Style.Border.Widths.Vertical.Points;
+        if (!Fitting.Fits(margin.Vertical.Points + insets, rowHeight))
         {
-            return Result<BoxFragment, Error>.Failure(LayoutErrors.MarginBoxOverflow(box, "height", margin.Vertical.Points, rowHeight));
+            return Result<BoxFragment, Error>.Failure(LayoutErrors.MarginBoxOverflow(box, "height", margin.Vertical.Points + insets, rowHeight));
         }
 
         return environment.Layout(box, new ConstraintSpace(width, double.PositiveInfinity, false, true), null).OnSuccessBind(result =>
             result is LayoutResult.Placed { Continuation: null } placed
-                ? Fitting.Fits(placed.Fragment.Size.Height, height)
-                    ? Result<BoxFragment, Error>.Success(TableSegments.Stretch(placed.Fragment, height, box.Style.VerticalAlign))
-                    : Result<BoxFragment, Error>.Failure(LayoutErrors.MarginBoxOverflow(box, "height", placed.Fragment.Size.Height, height))
+                ? Result<BoxFragment, Error>.Success(InHeight(TableSegments.Stretch(placed.Fragment, height, box.Style.VerticalAlign), height))
                 : Result<BoxFragment, Error>.Failure(LayoutErrors.InvalidContent(box, "a page-margin box cannot hold a forced page break.")));
     }
+
+    /// <summary>The box at the height the row gives it, also where its content is taller and runs on below it.</summary>
+    private static BoxFragment InHeight(BoxFragment box, double height) =>
+        new(box.Box, new Size(box.Size.Width, height), box.Children, box.Border, box.IsRepeated);
 }

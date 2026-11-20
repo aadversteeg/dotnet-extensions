@@ -457,8 +457,9 @@ an image that does not come or does not decode is refused there. The
 page context inherits from the root element, `font-family` too; a face that only a margin box uses is drawn,
 where Chromium prints its fallback serif face (it has not loaded the face then; case `pm-family-unused`). Refused at their
 place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, the size and
-margins of `@page :first`, and content wider or taller than its box
-(`Documents.Layout.MarginBoxOverflow`), which Chromium draws over its neighbours.
+margins of `@page :first`, and content wider than its box (`Documents.Layout.MarginBoxOverflow`), which
+Chromium draws over its neighbours. Content taller than its box is drawn as Chromium draws it: from the top of
+the box whatever its vertical alignment, unclipped, under the body; the box keeps its height.
 
 ## HTML
 
