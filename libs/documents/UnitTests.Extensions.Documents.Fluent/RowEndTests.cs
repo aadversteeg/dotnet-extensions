@@ -512,10 +512,12 @@ public class RowEndTests
     [Fact]
     public void The_first_row_of_a_unit_that_starts_the_page_area_is_placed_whole_and_the_page_breaks_before_the_next_row()
     {
-        // Chromium's words on all 3 pages. Limit (iii): at this break between rows the engine draws half of the line on
-        // each page (192 to 192.375 on page 2, 12 to 12.375 on page 3, then the empty row and the table's bottom line to
-        // 13.125), where Chromium draws the whole line on both; so "after" is 0.375 pt higher than in Chromium (+1.125
-        // below the top of the page against +1.5).
+        // Chromium's words on all 3 pages. Limit (iii): at this break between rows the engine draws the upper half of the
+        // line on page 2 (192 to 192.375) and nothing at the top of page 3, where the cell that spans both rows continues
+        // (as Chromium prints a break inside a spanning cell, case b4-row-span-6pt), keeping the half's room: the first
+        // line on page 3 is the table's bottom line, 12.375 to 13.125. Chromium lets the whole line pass the end of page 2
+        // and draws it again at the top of page 3, so "after" is 0.375 pt higher than in Chromium (+1.125 below the top of
+        // the page against +1.5).
         var engine = Printed(Spanning());
         var chromium = PrintedPages.Chromium("a2-row-end-span");
         var engineAfter = Printed(Spanning(after: true));
@@ -525,7 +527,7 @@ public class RowEndTests
         engine.PageTexts.Should().Equal(chromium.PageTexts);
         engine.Pages[1].Words.Select(word => word.Text).Should().Equal(Enumerable.Range(11, 12).Select(i => $"b{i}"));
         engine.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.375);
-        engine.Pages[2].Rectangles.Where(box => box.X1 - box.X0 > 100).Min(box => box.Y0).Should().Be(12);
+        engine.Pages[2].Rectangles.Where(box => box.X1 - box.X0 > 100).Min(box => box.Y0).Should().Be(12.375);
         engine.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(13.125);
         chromium.Pages[1].Rectangles.Max(box => box.Y1).Should().Be(192.75);
         After(engineAfter).Should().Be(24 + 1.125);
