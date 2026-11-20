@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Combining marks on letters that have no precomposed form, at two sizes that are not whole pixels (8 pt; 10.65625px) and one that is (12 pt): where a mark is drawn on its base when the size of the font (floored to 1/100 px) and the size of its advances (that size truncated to 1/64 px) differ (see ../README.md, "Where Chromium is not exact"). -->
+<style>@page { size: 612pt 432pt; margin: 12pt; } body { line-height: 24pt; } div { white-space: nowrap; }</style></head><body>
+<div style="font-size:8pt">Marks x&#x301; b&#x301; q&#x307; x&#x323;y&#x323; WWWWW x&#x301;x&#x301;x&#x301; quick</div>
+<div style="font-size:10.65625px">Marks x&#x301; b&#x301; q&#x307; x&#x323;y&#x323; WWWWW x&#x301;x&#x301;x&#x301; quick</div>
+<div style="font-size:12pt">Marks x&#x301; b&#x301; q&#x307; x&#x323;y&#x323; WWWWW x&#x301;x&#x301;x&#x301; quick</div>
+</body></html>

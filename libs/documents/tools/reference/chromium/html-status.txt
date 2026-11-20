@@ -406,6 +406,7 @@ sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_ever
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
 ta-kerning refused Documents.Css.Unsupported.Value font-kerning: none at 6:28
 ta-kerning-scale refused Documents.Css.Unsupported.Value font-kerning: none at 5:31
+ta-marks open page 1 'x́x́x́' x1 119.628, Chromium 119.525 (print.txt)
 ta-px open page 1 'iiiiiiiiii' x1 111.495, Chromium 111.395 (print.txt)
 ta-right open page 1 'Water' x0 322.088, Chromium 322.348 (print.txt)
 ta-sizes open page 1 'WWWWW' x0 113.432, Chromium 113.332 (print.txt)
