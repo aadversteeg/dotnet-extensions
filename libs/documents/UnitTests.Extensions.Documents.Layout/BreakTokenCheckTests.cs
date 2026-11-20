@@ -12,7 +12,8 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// The four layout algorithms are public, and so are the break tokens a caller hands them: a caller can build a token,
 /// change one with <c>with</c>, or pass the token one box returned to another box. No such value makes an algorithm
 /// throw. A token of another algorithm's kind, or one whose position the box does not have (a child, line, row or cell
-/// outside it, a height shown that is negative, not finite, or the whole height of the sliced image or line or more),
+/// outside it, a height shown that is negative, not finite, or the whole height of the sliced image or line or more, a
+/// height past the page end that is negative, not finite or inside a row),
 /// is the error <c>Documents.Layout.InvalidBreakToken</c>,
 /// naming the box. Pagination never meets it: it hands each box the token that box's own layout returned.
 /// </summary>
@@ -82,6 +83,11 @@ public class BreakTokenCheckTests
         ["the same cell twice"] = new TracksBreakToken(1, [new CellBreak(1, null, IsComplete: false), new CellBreak(1, null, IsComplete: false)], RowIsSplit: true),
         ["a cell that does not cover the row"] = new TracksBreakToken(2, [new CellBreak(0, null, IsComplete: false)], RowIsSplit: true),
         ["a cell of the row, for a break before the row"] = new TracksBreakToken(1, [new CellBreak(1, null, IsComplete: false)], RowIsSplit: false),
+        ["a negative height past the page end"] = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = -0.75 },
+        ["a height past the page end that is not a number"] = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = double.NaN },
+        ["an infinite height past the page end"] = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = double.PositiveInfinity },
+        ["a height past the page end inside a row"] = new TracksBreakToken(3, [], RowIsSplit: true) { Passed = 0.75 },
+        ["nothing past the page end, painted"] = new TracksBreakToken(3, [], RowIsSplit: false) { PaintsPassed = true },
     };
 
     public static TheoryData<string> FlowCases => [.. NotForFlow.Keys];
@@ -123,6 +129,33 @@ public class BreakTokenCheckTests
         var table = TableBox(3);
 
         ShouldBeInvalid(() => TracksLayout.Layout(Environment, table, Space(), NotForTable[name]), table.Id.ToString(), name);
+    }
+
+    [Fact]
+    public void A_table_token_built_with_a_height_past_the_page_end_places_a_part_that_tall_that_draws_nothing()
+    {
+        // A token not made by the layout carries no grid lines (TracksBreakToken.PassedLines): the part is empty, painted
+        // or not, and the table ends there.
+        foreach (var paints in new[] { false, true })
+        {
+            var result = TracksLayout.Layout(Environment, TableBox(3), Space(), new TracksBreakToken(3, [], RowIsSplit: false) { Passed = 0.75, PaintsPassed = paints });
+
+            var placed = result.Value.Should().BeOfType<LayoutResult.Placed>().Subject;
+            placed.Fragment.Size.Height.Should().Be(0.75);
+            placed.Fragment.Children.Should().BeEmpty();
+            placed.Continuation.Should().BeNull();
+        }
+    }
+
+    [Fact]
+    public void A_table_token_s_height_past_the_page_end_and_whether_it_is_painted_are_part_of_its_position()
+    {
+        var token = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = 0.75, PaintsPassed = true };
+
+        token.Should().Be(new TracksBreakToken(3, [], RowIsSplit: false) { Passed = 0.75, PaintsPassed = true });
+        token.GetHashCode().Should().Be(new TracksBreakToken(3, [], RowIsSplit: false) { Passed = 0.75, PaintsPassed = true }.GetHashCode());
+        token.Should().NotBe(token with { Passed = 0.375 });
+        token.Should().NotBe(token with { PaintsPassed = false });
     }
 
     [Fact]

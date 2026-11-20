@@ -115,6 +115,10 @@ public class MeasuredReferenceFilesTests
         ["a2-row-end-6pt-after.lines.txt"] = 9,
         ["a2-row-end-6pt-after.print.txt"] = 36,
         ["a2-row-end-6pt-after.words.txt"] = 24,
+        ["a2-row-end-6pt-part-after.boxes.txt"] = 1,
+        ["a2-row-end-6pt-part-after.lines.txt"] = 9,
+        ["a2-row-end-6pt-part-after.print.txt"] = 36,
+        ["a2-row-end-6pt-part-after.words.txt"] = 24,
         ["a2-row-break-line-1-5pt.boxes.txt"] = 14,
         ["a2-row-break-line-1-5pt.lines.txt"] = 44,
         ["a2-row-break-line-1-5pt.print.txt"] = 61,
@@ -160,6 +164,10 @@ public class MeasuredReferenceFilesTests
         ["a2-row-end-first-row-half-6pt-below.lines.txt"] = 4,
         ["a2-row-end-first-row-half-6pt-below.print.txt"] = 18,
         ["a2-row-end-first-row-half-6pt-below.words.txt"] = 12,
+        ["a2-row-end-first-row-half-6pt-alone.boxes.txt"] = 1,
+        ["a2-row-end-first-row-half-6pt-alone.lines.txt"] = 4,
+        ["a2-row-end-first-row-half-6pt-alone.print.txt"] = 17,
+        ["a2-row-end-first-row-half-6pt-alone.words.txt"] = 11,
         ["a2-row-end-first-row-half-alone.boxes.txt"] = 1,
         ["a2-row-end-first-row-half-alone.lines.txt"] = 4,
         ["a2-row-end-first-row-half-alone.print.txt"] = 17,
@@ -176,6 +184,10 @@ public class MeasuredReferenceFilesTests
         ["a2-row-end-first-row-half-emptyblock.lines.txt"] = 4,
         ["a2-row-end-first-row-half-emptyblock.print.txt"] = 18,
         ["a2-row-end-first-row-half-emptyblock.words.txt"] = 12,
+        ["a2-row-end-first-row-half-in-cell.boxes.txt"] = 2,
+        ["a2-row-end-first-row-half-in-cell.lines.txt"] = 10,
+        ["a2-row-end-first-row-half-in-cell.print.txt"] = 24,
+        ["a2-row-end-first-row-half-in-cell.words.txt"] = 12,
         ["a2-row-end-first-row-half-page2.boxes.txt"] = 1,
         ["a2-row-end-first-row-half-page2.lines.txt"] = 4,
         ["a2-row-end-first-row-half-page2.print.txt"] = 31,
@@ -2021,7 +2033,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(494);
+        cases.Should().HaveCount(497);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

@@ -239,6 +239,7 @@ browser (Chromium) prints, with the differences listed in `docs/architecture.md`
 | `.FontMetricRounding(…)`: a font's ascent, descent and line gap | `Exact`: as the font gives them, scaled to the size | `WholePixels`: each rounded to a whole CSS pixel (0.75 pt), as Chromium does, so a `normal` line is a whole number of pixels (Lato 12 pt: 14.25 pt instead of 14.4) |
 | `.EmptyRowParts(…)`: a table row whose part on a page would show nothing | `Avoid`: the row moves to the next page whole where that avoids the empty strip | `Allow`: the row is cut wherever its cells can break |
 | `.SplitLineHalves(…)`: each half of a table's grid line where a page break between rows splits it (`.SplitLinesAtBreaks()`) | `Exact`: half the line's width | `AtLeastOnePixel`: a half thinner than one CSS pixel is drawn one pixel (0.75 pt) thick from its top edge, as Chromium prints it; layout does not change |
+| `.TableEndOverflow(…)`: a grid line that passes the page end below a table row (under `.EmptyRowParts(Allow)`, where that row is placed whole at the top of a page) | `EndsOnPage`: the table ends on the page; what follows starts at the top of the next page, and a table that ends the document adds no page | `ContinuesOnNextPage`: what passed continues on the next page and takes its height there, painted where part of a cell passed, as Chromium prints it; where the table ends the document, on a page of its own |
 
 ```csharp
 var poster = Document([Image(photo).Alt("The team").Width(18.Cm())], PageSetup.A4.Margin(2.Cm()), title: "Poster", language: "en")
