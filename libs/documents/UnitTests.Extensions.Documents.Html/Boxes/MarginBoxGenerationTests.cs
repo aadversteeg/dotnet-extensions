@@ -176,6 +176,29 @@ public class MarginBoxGenerationTests
         (error.Metadata![ErrorMetadataKeys.SourceLine], error.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((4, 18), "the left box's content declaration: it is pressed below its min-content width");
     }
 
+    /// <summary>Measured (case <c>pm-inherit-family</c>): with no font in <c>@page</c> the margin boxes print in the
+    /// root's family.</summary>
+    [Fact]
+    public void A_margin_box_draws_in_the_roots_family_when_page_names_none()
+    {
+        var printed = Printed(Doc("@page { size: 400pt 300pt; margin: 60pt 50pt; @top-left { content: \"Aa\" } }"));
+
+        Word(printed, 1, "Aa").Face.Should().Be("Lato-Regular");
+    }
+
+    /// <summary>A margin box in a family the caller did not supply is refused as an element in it is: the same code and
+    /// message, at the margin box's <c>content</c> declaration, once although page 1 draws the box of every page.</summary>
+    [Fact]
+    public void A_margin_box_in_a_family_the_caller_did_not_supply_is_refused_as_an_element_is()
+    {
+        var box = Boxes(Doc($"@page {{ {Page}\n@top-left {{ content: \"Aa\"; font-family: Nowhere }} }}")).Error.Parts().Single();
+        var element = Boxes(Doc(string.Empty, "<p style=\"font-family: Nowhere\">one</p>")).Error.Parts().Single();
+
+        box.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Font);
+        (box.Code, box.Message).Should().Be((element.Code, element.Message));
+        (box.Metadata![ErrorMetadataKeys.SourceLine], box.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((4, 13));
+    }
+
     [Fact]
     public void A_left_margin_that_rounds_down_to_a_whole_pixel_refuses_the_margin_boxes()
     {

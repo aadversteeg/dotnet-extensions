@@ -5,6 +5,7 @@ using Ave.Extensions.Documents.Css.Cascade;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html.Parsing;
+using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Html.Boxes;
 
@@ -55,17 +56,12 @@ public static partial class HtmlBoxGenerator
 
             var template = Template(contexts.EveryPage, header, footer, startInMargin);
 
-            // Page 1 shares the declarations of the rules without a selector: what is refused in both is reported once.
-            var reported = Refusals.Select(error => error.ToString()).ToHashSet(System.StringComparer.Ordinal);
-            var count = Refusals.Count;
+            // Page 1 shares the declarations of the rules without a selector: what is refused or fails in both (a face
+            // the fonts do not have) is reported once.
+            var (refusals, failures) = (Refusals.Count, Failures.Count);
             var firstPage = Template(contexts.FirstPage, header, footer, startInMargin);
-            for (var i = Refusals.Count - 1; i >= count; i--)
-            {
-                if (reported.Contains(Refusals[i].ToString()))
-                {
-                    Refusals.RemoveAt(i);
-                }
-            }
+            Once(Refusals, refusals);
+            Once(Failures, failures);
 
             return page with
             {
@@ -73,6 +69,19 @@ public static partial class HtmlBoxGenerator
                 Template = template,
                 FirstPage = firstPage,
             };
+        }
+
+        /// <summary>Removes the errors from <paramref name="count"/> on that repeat one before it.</summary>
+        private static void Once(List<Error> errors, int count)
+        {
+            var reported = errors.Take(count).Select(error => error.ToString()).ToHashSet(System.StringComparer.Ordinal);
+            for (var i = errors.Count - 1; i >= count; i--)
+            {
+                if (reported.Contains(errors[i].ToString()))
+                {
+                    errors.RemoveAt(i);
+                }
+            }
         }
 
         private static bool IsTop(PageMarginBox box) => box is PageMarginBox.TopLeft or PageMarginBox.TopCenter or PageMarginBox.TopRight;

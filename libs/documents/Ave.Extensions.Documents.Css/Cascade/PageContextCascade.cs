@@ -83,9 +83,11 @@ public sealed record PageContexts(PageContextStyle EveryPage, PageContextStyle F
 /// </summary>
 /// <remarks>
 /// <para>Inheritance, as Chromium 159 prints (measured): the page context inherits from the root element's computed
-/// style, except <c>font-family</c>, which starts from its initial value (<c>html { font-family: Lato }</c> leaves the
-/// margin boxes in the default serif face; <c>html { color: green; font-size: 20pt; font-weight: bold }</c> reaches
-/// them); <c>body</c>'s style does not reach them. <c>em</c> and a percentage font size are the page context's size
+/// style, <c>font-family</c> included (<c>html { font-family: Lato; color: green; font-size: 20pt; font-weight: bold }</c>
+/// and no font in <c>@page</c> print the margin boxes in Lato, green, 20pt, bold: cases <c>pm-inherit-family</c>,
+/// <c>pm-inherit</c>); <c>body</c>'s style does not reach them. A face that only a margin box uses is a known limit:
+/// Chromium has not loaded it when it prints the margin boxes and prints its fallback serif face there, the engine
+/// draws the face (case <c>pm-family-unused</c>). <c>em</c> and a percentage font size are the page context's size
 /// (2em in a margin rule under a 10pt page context is 20pt). <c>rem</c> is the page context's size too, not the root's
 /// (1rem under a 10pt page context is 10pt while <c>html</c> is 20pt): refused, so no writer is surprised by it.</para>
 /// <para>Defaults of the margin boxes (§5.3, measured): text-align left, center and right in the left, centre and right
@@ -160,14 +162,13 @@ public static class PageContextCascade
         }
 
         var computer = new StyleComputer(index, values);
-        var parent = root.With(PropertyRegistry.FontFamily, PropertyRegistry.FontFamily.Initial);
-        var every = builder.Context(computer, parent, firstPage: false);
+        var every = builder.Context(computer, root, firstPage: false);
         if (every.IsFailure)
         {
             return Result<PageContexts, Error>.Failure(every.Error);
         }
 
-        var first = builder.Context(computer, parent, firstPage: true);
+        var first = builder.Context(computer, root, firstPage: true);
         if (first.IsFailure)
         {
             return Result<PageContexts, Error>.Failure(first.Error);
@@ -177,21 +178,20 @@ public static class PageContextCascade
     }
 
     /// <summary>A <c>@page</c> rule the engine cascades: its declarations for the page context and its margin rules.</summary>
-    private sealed record Page(CascadedPageRule Rule, bool IsFirst, PreparedBlock Block, bool DeclaresFamily, List<Margin> Margins)
+    private sealed record Page(CascadedPageRule Rule, bool IsFirst, PreparedBlock Block, List<Margin> Margins)
     {
         public Specificity Specificity => IsFirst ? Rule.Rule.Selectors[0].Specificity : Specificity.Zero;
     }
 
     /// <summary>A margin rule of the six: its declarations without <c>content</c>, and its <c>content</c>
     /// declarations, each with its place in the order of appearance.</summary>
-    private sealed record Margin(PageMarginBox Box, PageMarginRule Rule, PreparedBlock Block, bool DeclaresFamily, List<(Declaration Declaration, int Order)> Content);
+    private sealed record Margin(PageMarginBox Box, PageMarginRule Rule, PreparedBlock Block, List<(Declaration Declaration, int Order)> Content);
 
     /// <summary>One cascade's worth of state: the rules read once, the diagnostics in order.</summary>
     private sealed class Builder
     {
         private readonly List<Page> _pages = [];
         private readonly HashSet<Declaration> _reported = new(ReferenceEqualityComparer.Instance);
-        private readonly HashSet<PageMarginRule> _withoutFamily = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<PageMarginBox, PreparedBlock> _defaults = [];
         private int _order;
 
@@ -239,10 +239,10 @@ public static class PageContextCascade
                 }
 
                 var prepared = DeclarationPreparer.Prepare(others, cascaded.SourceName, cascaded.Origin, ref _order, Diagnostics);
-                margins.Add(new Margin(box, margin, prepared, DeclaresFamily(prepared), content));
+                margins.Add(new Margin(box, margin, prepared, content));
             }
 
-            _pages.Add(new Page(cascaded, isFirst, block, DeclaresFamily(block), margins));
+            _pages.Add(new Page(cascaded, isFirst, block, margins));
         }
 
         /// <summary>The page context of every page or of page 1, with its generated margin boxes.</summary>
@@ -255,7 +255,6 @@ public static class PageContextCascade
                 return Result<PageContextStyle, Error>.Failure(context.Error);
             }
 
-            var pageDeclaresFamily = pages.Any(page => page.DeclaresFamily);
             var boxes = new List<MarginBoxStyle>();
             foreach (var box in Enum.GetValues<PageMarginBox>())
             {
@@ -273,15 +272,6 @@ public static class PageContextCascade
                 if (style.IsFailure)
                 {
                     return Result<PageContextStyle, Error>.Failure(style.Error);
-                }
-
-                if (!pageDeclaresFamily && !margins.Any(item => item.Margin.DeclaresFamily))
-                {
-                    var (page, margin) = margins[0];
-                    if (_withoutFamily.Add(margin.Rule))
-                    {
-                        Refuse(page.Rule, margin.Rule.Position, "@" + margin.Rule.Name, $"'@{margin.Rule.Name}' has no font-family: margin boxes do not take the document's font (Chromium draws them in its default serif face); name font-family in @page or in the margin rule.");
-                    }
                 }
 
                 boxes.Add(new MarginBoxStyle(box, style.Value.With(PageContextCascade.ContentProperty, content), contentPage.Rule.SourceName, declaration.Position) { BaseUrl = contentPage.Rule.BaseUrl });
@@ -442,7 +432,6 @@ public static class PageContextCascade
         private static bool IsRowAlignment(IReadOnlyList<ComponentValue> values) =>
             Trimmed(values) is [CssToken { Kind: CssTokenKind.Ident } keyword] && (keyword.IsIdent("top") || keyword.IsIdent("middle") || keyword.IsIdent("bottom"));
 
-        private static bool DeclaresFamily(PreparedBlock block) => block.Entries.Any(entry => entry.Longhand == PropertyRegistry.FontFamily);
 
         /// <summary>Whether a token anywhere in a value (in functions and blocks too) matches, without recursion.</summary>
         private static bool HasToken(IReadOnlyList<ComponentValue> values, Func<CssToken, bool> matches)

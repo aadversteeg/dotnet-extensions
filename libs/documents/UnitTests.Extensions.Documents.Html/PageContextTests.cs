@@ -78,22 +78,22 @@ public class PageContextTests
         styled.PageContexts.Diagnostics.Should().BeEmpty();
     }
 
-    /// <summary>Measured: <c>html { font-family: Lato }</c> leaves the margin boxes in Chromium's default serif face, and
-    /// <c>body { color: red; font-size: 8pt; font-weight: bold }</c> does not reach them.</summary>
+    /// <summary>Measured (case <c>pm-inherit-family</c>): <c>html { font-family: Lato }</c> and no font in <c>@page</c>
+    /// print the margin boxes in Lato, and <c>body { color: red; font-size: 8pt; font-weight: bold }</c> does not reach
+    /// them.</summary>
     [Fact]
-    public void The_roots_family_and_the_body_do_not_reach_the_margin_boxes()
+    public void The_roots_family_reaches_the_margin_boxes_and_the_body_does_not()
     {
-        var styled = Styled(Doctype + "<html style=\"font-family: Lato\"><head><style>@page { font-size: 10pt; @top-left { content: \"Text\" } }</style></head><body style=\"color: red; font-size: 8pt; font-weight: bold\">x</body></html>");
+        var styled = Styled(Doctype + "<html style=\"font-family: Lato\"><head><style>@page { font-size: 10pt; @top-left { content: \"Text\" } }</style></head><body style=\"color: red; font-size: 8pt; font-weight: bold; font-family: Other\">x</body></html>");
 
         var context = styled.PageContexts.EveryPage;
-        ComputedText.Of("font-family", context.Style).Should().Be(ComputedText.Of("font-family", Ave.Extensions.Documents.Css.Cascade.ComputedStyle.Initial));
+        ComputedText.Of("font-family", context.Style).Should().Be("Lato");
         var box = Box(context, PageMarginBox.TopLeft);
-        Value(box, "font-family").Should().NotContain("Lato");
+        Value(box, "font-family").Should().Be("Lato");
         Value(box, "color").Should().Be("rgb(0, 0, 0)");
         Value(box, "font-size").Should().Be("13.3333px");
         Value(box, "font-weight").Should().Be("400");
-        var refusal = styled.PageContexts.Diagnostics.Should().ContainSingle().Subject;
-        refusal.Message.Should().Contain("has no font-family");
+        styled.PageContexts.Diagnostics.Should().BeEmpty();
     }
 
     /// <summary>Measured: <c>font-size: 2em</c> in a margin rule under <c>@page { font-size: 10pt }</c> prints 20pt, while
@@ -347,14 +347,16 @@ public class PageContextTests
         Pages("@page { size: A4; margin: 4cm 1cm 2cm; margin-top: 2cm; background-color: red; --x: 1; display: block; font-family: Lato }").Diagnostics.Should().BeEmpty();
     }
 
+    /// <summary>Without <c>font-family</c> in the root, <c>@page</c> or the margin rule, a margin box has the initial
+    /// family, as an element without one: the cascade does not refuse it (box generation matches its face as an
+    /// element's).</summary>
     [Fact]
-    public void A_generated_margin_box_without_a_font_family_is_refused_at_its_rule_once()
+    public void A_generated_margin_box_without_a_font_family_has_the_initial_family()
     {
-        var css = "@page { @top-left { content: \"a\" } @top-right { content: none } }\n@page :first { @top-left { color: red } }";
+        var pages = Pages("@page { @top-left { content: \"a\" } }");
 
-        RefusedAt(css, "@top-left", "name font-family in @page or in the margin rule");
-        Pages("@page { @top-left { content: \"a\"; font: 10pt Lato } }").Diagnostics.Should().BeEmpty();
-        Pages("@page { font: 10pt Lato; @top-left { content: \"a\" } }").Diagnostics.Should().BeEmpty();
+        pages.Diagnostics.Should().BeEmpty();
+        Value(Box(pages.EveryPage, PageMarginBox.TopLeft), "font-family").Should().Be(ComputedText.Of("font-family", Ave.Extensions.Documents.Css.Cascade.ComputedStyle.Initial));
     }
 
     /// <summary>A value is read by the property's own parser, as on an element, with the same refusal.</summary>

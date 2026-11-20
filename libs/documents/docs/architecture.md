@@ -708,7 +708,8 @@ margins, which the reference tool prints on: cases `h-default-page`, `h-page-siz
 size, as Chromium evaluates them (cases `h-media-page-size-narrow`, `h-media-page-size-wide`). A root element with `display: none` generates no box: one empty page of
 the caller's page, whatever the `@page` rules say (case `h-root-display-none`). An `@page` rule without a selector gives `size` and the margins;
 the declarations that reach the page-margin boxes and the margin rules are the page-context cascade's
-(`PageContextCascade`, `Css.Unsupported.PageRule`); any other declaration, an invalid value and the size and margins of
+(`PageContextCascade`, `Css.Unsupported.PageRule`; the page context inherits from the root element, `font-family`
+included, cases `pm-inherit` and `pm-inherit-family`); any other declaration, an invalid value and the size and margins of
 `@page :first` are refused (`PageRule`). A generated margin box gives every page a header area as high as the top margin
 and a footer area as high as the bottom one, each a row of the margin-boxes algorithm that starts where Chromium starts
 it, the left margin cut to 1/64 px (`PageArea.StartInMargin`; cases `pm-*`); the model's top and bottom margins are then 0. Box generation makes
@@ -789,6 +790,10 @@ Each is documented next to its code as well.
   `te-left-first`, `te-left-later`, `te-right-first`, `te-right-later`, `te-table-border`, `te-break`), and each cell
   is inset by half of its own line. Percent columns in a table whose rows have outer borders of different widths are
   not measured (the `tp-*` cases have one border width).
+- **A face that only a page-margin box uses (HTML):** Chromium has not loaded an `@font-face` face that no body text
+  uses when it prints the margin boxes, and prints that text in its fallback serif face; the engine draws the face
+  (case `pm-family-unused`, the same in three prints, listed; `HtmlListedDifferenceTests`). Used in the body too, the
+  face prints in both (case `pm-inherit-family`).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 
