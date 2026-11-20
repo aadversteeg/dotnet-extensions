@@ -40,7 +40,8 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `<case>.pdf`: Chromium's print of the case (`preferCSSPageSize`, so the case's `@page` rule sets the page);
 - `<case>.words.txt`: every word as `page xMin yMin xMax yMax text`, in points, origin top left (`pdftotext -bbox`);
 - `<case>.boxes.txt`: width and height in points of every table cell, every element with an id and every grid item,
-  laid out for print (1 CSS px = 0.75 pt);
+  with print media, measured in the browser window after the print (1 CSS px = 0.75 pt): one layout without page
+  breaks, so a box the print cuts over pages has its whole height here;
 - `<case>.lines.txt`: every filled rectangle as `page x0 y0 x1 y1 height`, in points, origin top left
   (`rectangles.py`, PyMuPDF): the pieces of the grid lines, each the part the print shows (see "Print positions");
 - `<case>.print.txt`: where the print put things, page by page, read from the PDF alone (`positions.py`, PyMuPDF; see

@@ -749,8 +749,13 @@ through the whole HTML path unchanged and its pages are compared with every file
   same painted area, colour not compared (the file has none);
 - `<case>.words.txt`, the words read back by poppler: the same words inside the page, each start and end within
   0.1 pt, and the line box poppler gives it (the baseline less the face's ascender, plus its descender) within 0.1 pt;
-- `<case>.boxes.txt`, the boxes measured in the page: the height of each box named by an element id within 0.1 pt.
-  Not the width: the tool measures the boxes in the 1280 px browser window, not in the printed page.
+- `<case>.boxes.txt`, the boxes measured in the page: the height of each table cell and of each box named by an
+  element id within 0.1 pt. Not the width: the tool measures the boxes in the 1280 px browser window, not in the printed
+  page. The window is one layout without page breaks, so the file holds each box whole: a box the engine prints in one
+  part is compared on its page (and each copy in a repeated header row), a box it cuts over pages is compared in the
+  engine's layout of the same boxes on one page as tall as the model allows, which must stay one page; the parts of a
+  cut box are what `print.txt`, `lines.txt` and `words.txt` compare. A box named by its id is found by its place among
+  the boxes of the role its tag gives on its source line.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole

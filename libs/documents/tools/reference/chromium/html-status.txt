@@ -13,27 +13,27 @@ a1-paragraph-own-margin equal
 a1-paragraph-own-margin-fits equal
 a1-table-own-margin equal
 a1-text-before equal
-a2-blank-part open box td 'x' height 164.625, Chromium 456.75 (boxes.txt)
+a2-blank-part equal
 a2-cells-end equal
 a2-cells-end-header equal
 a2-cells-end-page-top refused Documents.Layout.DoesNotFit 180 at 3
 a2-cells-end-text equal
-a2-line-breaks open box td '' height 164.625, Chromium 285.75 (boxes.txt)
-a2-padded-blocks open box td '' height 164.625, Chromium 200.438 (boxes.txt)
-a2-padded-blocks-px open box td '' height 164.625, Chromium 180.75 (boxes.txt)
+a2-line-breaks equal
+a2-padded-blocks equal
+a2-padded-blocks-px equal
 a2-row-break-line-1-5pt equal
 a2-row-break-line-2-25pt equal
 a2-row-break-line-6pt equal
-a2-row-end open box td 'b0b1b2b3b4b5b6b7b8b9b10b' height 164.625, Chromium 330.75 (boxes.txt)
-a2-row-end-6pt open box td 'b0b1b2b3b4b5b6b7b8b9b10b' height 162, Chromium 336 (boxes.txt)
-a2-row-end-6pt-after open box td 'b0b1b2b3b4b5b6b7b8b9b10b' height 162, Chromium 336 (boxes.txt)
-a2-row-end-6pt-part-after open box td 'b0b1b2b3b4b5b6b7b8b9b10b' height 163.5, Chromium 336 (boxes.txt)
-a2-row-end-after open box td 'b0b1b2b3b4b5b6b7b8b9b10b' height 164.625, Chromium 330.75 (boxes.txt)
-a2-row-end-background open box td 'b0b1b2b3b4b5b6b7b8b9b10b' height 164.625, Chromium 330.75 (boxes.txt)
+a2-row-end equal
+a2-row-end-6pt equal
+a2-row-end-6pt-after equal
+a2-row-end-6pt-part-after equal
+a2-row-end-after equal
+a2-row-end-background equal
 a2-row-end-below-paragraph equal
 a2-row-end-bottom-padding-30 equal
 a2-row-end-first-row refused Documents.Layout.DoesNotFit 180 at 3
-a2-row-end-first-row-cut open box td 'x0x1x2x3x4x5x6x7x8x9x10x' height 179.625, Chromium 180.047 (boxes.txt)
+a2-row-end-first-row-cut equal
 a2-row-end-first-row-half-2col equal
 a2-row-end-first-row-half-6pt-alone equal
 a2-row-end-first-row-half-6pt-below equal
@@ -41,25 +41,25 @@ a2-row-end-first-row-half-alone equal
 a2-row-end-first-row-half-block equal
 a2-row-end-first-row-half-break equal
 a2-row-end-first-row-half-emptyblock equal
-a2-row-end-first-row-half-in-cell open box td 'x0x1x2x3x4x5x6x7x8x9x10b' height 179.625, Chromium 195.375 (boxes.txt)
+a2-row-end-first-row-half-in-cell equal
 a2-row-end-first-row-half-page2 equal
 a2-row-end-first-row-half-second-row equal
 a2-row-end-first-row-half-top equal
 a2-row-end-nested-under-header open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-13875 open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
-a2-row-end-span open box td '' height 179.625, Chromium 346.5 (boxes.txt)
-a2-row-end-span-after open box td '' height 179.625, Chromium 346.5 (boxes.txt)
-a2-rowspan-blocks open box td 's' height 163.875, Chromium 281.063 (boxes.txt)
+a2-row-end-span equal
+a2-row-end-span-after equal
+a2-rowspan-blocks equal
 a2-split-line-1px equal
-a3-mirror open box td 't1' height 15.141, Chromium 16.734 (boxes.txt)
-a3-mirror-px open box td 't1' height 16.875, Chromium 18.75 (boxes.txt)
+a3-mirror equal
+a3-mirror-px equal
 a3-pad-kept equal
 a3-pad-kept-lower equal
 a3-pad-line equal
 a4-cell-image-179-5 open page 3 'after' baseline 24 (laid out at 24.25), Chromium 24.75 (print.txt)
-a4-cell-pad3-image-177 open box td '' height 179.625, Chromium 183.75 (boxes.txt)
-a4-cell-pad3-line-177 open box td 'W' height 179.625, Chromium 183.75 (boxes.txt)
+a4-cell-pad3-image-177 equal
+a4-cell-pad3-line-177 equal
 a4-continued-cell-pad-bottom-30 open page 2 reads 't34 t35 t36 t37', Chromium 't34 t35 t36 t37 t39 t40 t41 t42' (print.txt)
 a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header: 2 pages, Chromium 3 (print.txt)
 a4-header-cut-row-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
@@ -82,15 +82,15 @@ a4-image-first equal
 a4-image-in-cell open page 4 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-image-nested-table open page 4 'after' baseline 73.5 (laid out at 73.5), Chromium 24.75 (print.txt)
 a4-image-rowspan open page 1 reads 'a b', Chromium 'a' (print.txt)
-a4-image-single-cell open box td '' height 179.625, Chromium 408.75 (boxes.txt)
+a4-image-single-cell equal
 a4-intro-header-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-line-after-text equal
 a4-line-beside-lines open 3 pages, Chromium 4 (print.txt)
-a4-nested-padded-image-160 open box td '' height 179.625, Chromium 192.246 (boxes.txt)
+a4-nested-padded-image-160 equal
 a4-row-image-row open page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-two-image-rows open page 8 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
-a5-cell-in-row open box td 'a0a1a2' height 108.375, Chromium 129 (boxes.txt)
-a5-kept-cell-by-box open box td 'a0a1' height 179.625, Chromium 285.75 (boxes.txt)
+a5-cell-in-row equal
+a5-kept-cell-by-box equal
 a5-kept-cell-in-row equal
 a5-kept-row equal
 a5-kept-taller-than-page equal
@@ -98,37 +98,37 @@ a6-header-quarter-180-4500 equal
 a6-header-quarter-180-4575 equal
 a6-header-quarter-360-9000 equal
 a6-header-quarter-360-9075 equal
-a6-nested-first-h2525 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 357.492 (boxes.txt)
-a6-nested-first-h253125 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 357.563 (boxes.txt)
-a6-nested-header-h4425-n14 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 282 (boxes.txt)
-a6-nested-header-h4425-n16 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 313.5 (boxes.txt)
-a6-nested-header-h4425-n20 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 376.5 (boxes.txt)
-a6-nested-header-h4425-n26 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 471 (boxes.txt)
-a6-nested-header-pad12-h2925 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 543 (boxes.txt)
-a6-nested-late-clone-h2525 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.492 (boxes.txt)
-a6-nested-late-d3-h2100 open box td 'Mb0b1b2b3b4b5b6b7b8b9b10' height 163.875, Chromium 559.5 (boxes.txt)
-a6-nested-late-d3-h2125 open box td 'Mb0b1b2b3b4b5b6b7b8b9b10' height 163.875, Chromium 559.746 (boxes.txt)
-a6-nested-late-h2521875 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.469 (boxes.txt)
-a6-nested-late-h2525 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.492 (boxes.txt)
-a6-nested-late-h253125 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.563 (boxes.txt)
-a6-nested-late-h2700 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 359.25 (boxes.txt)
-a6-nested-late6-h1800 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 93, Chromium 471 (boxes.txt)
-a6-nested-late6-h1850 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 93, Chromium 471.492 (boxes.txt)
-a6-nested-under-header-h2400 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 513.75 (boxes.txt)
-a6-nested-under-header-h2700 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 516.75 (boxes.txt)
-a6-nested-under-header-h2700-n16 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 296.25 (boxes.txt)
+a6-nested-first-h2525 equal
+a6-nested-first-h253125 equal
+a6-nested-header-h4425-n14 equal
+a6-nested-header-h4425-n16 equal
+a6-nested-header-h4425-n20 equal
+a6-nested-header-h4425-n26 equal
+a6-nested-header-pad12-h2925 equal
+a6-nested-late-clone-h2525 equal
+a6-nested-late-d3-h2100 equal
+a6-nested-late-d3-h2125 equal
+a6-nested-late-h2521875 equal
+a6-nested-late-h2525 equal
+a6-nested-late-h253125 equal
+a6-nested-late-h2700 equal
+a6-nested-late6-h1800 equal
+a6-nested-late6-h1850 equal
+a6-nested-under-header-h2400 equal
+a6-nested-under-header-h2700 equal
+a6-nested-under-header-h2700-n16 equal
 b-into-block equal
 b-into-paragraph equal
 b-into-table equal
 b-three-deep equal
 b1-repeat equal
-b2-split-row open box td 'r05' height 76.453, Chromium 304.734 (boxes.txt)
+b2-split-row equal
 b3-keep-group equal
-b4-row-span open box td 'm1' height 59.719, Chromium 100.406 (boxes.txt)
-b4-row-span-6pt open box td 's' height 51, Chromium 63 (boxes.txt)
+b4-row-span equal
+b4-row-span-6pt equal
 b5-row-span-kept-cell equal
 c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
-c-cell-orphan open box td 'a' height 35.625, Chromium 57.75 (boxes.txt)
+c-cell-orphan equal
 c-cell-orphan-moves equal
 c-custom equal
 c-few-lines equal
@@ -190,27 +190,27 @@ fr-empty-span equal
 fr-empty-span-trailing-space equal
 fr-f4-grid-line-second-row equal
 fr-f4-one-line-cell-beside-cut-cell equal
-fr-f4-one-line-cell-beside-cut-cell-control open box td 'a' height 20.625, Chromium 54.75 (boxes.txt)
+fr-f4-one-line-cell-beside-cut-cell-control equal
 fr-f4-one-line-cell-widows3 equal
 fr-f4-padding-page-start open 2 pages, Chromium 3 (print.txt)
 fr-f4-padding-second-row equal
 fr-f4-padding-two-cells equal
-fr-f5-continued-box-table-padding open box td 'b0b1b2b3b4b5b6b7' height 34.875, Chromium 144.75 (boxes.txt)
+fr-f5-continued-box-table-padding equal
 fr-f5-continued-table equal
 fr-f6-kept-group-kept-row-fits-a-page equal
 fr-f6-kept-group-orphans3 equal
 fr-f6-kept-table-orphans3-control equal
-fr-f7-rows-of-spanning-cells open box td 't' height 30.879, Chromium 36.75 (boxes.txt)
-fr-f7-span-cut-at-row-boundary open box td 's0s1s2s3' height 59.625, Chromium 73.5 (boxes.txt)
-fr-f7-span-fits-control open box td 's0' height 59.625, Chromium 73.5 (boxes.txt)
-fr-f7-span-orphans-moves-table open box td 's0s1s2s3' height 59.625, Chromium 73.5 (boxes.txt)
+fr-f7-rows-of-spanning-cells equal
+fr-f7-span-cut-at-row-boundary equal
+fr-f7-span-fits-control equal
+fr-f7-span-orphans-moves-table equal
 fr-f8-kept-row-with-spanning-cell equal
 fr-f8-kept-spanning-cell-control equal
-fr-f8-row-not-kept-control open box td 's' height 59.625, Chromium 73.5 (boxes.txt)
+fr-f8-row-not-kept-control equal
 fr-f9-box-orphans3 equal
-fr-f9-cell-orphans3 open box td 'a0a1a2q0q1q2q3' height 71.625, Chromium 126.75 (boxes.txt)
-fr-f9-cell-orphans3-second-row open box td 'a0a1a2q0q1q2q3' height 70.875, Chromium 126.75 (boxes.txt)
-fr-f9-padded-box-in-cell-orphans3 open box td 'a0a1a2' height 68.625, Chromium 74.25 (boxes.txt)
+fr-f9-cell-orphans3 equal
+fr-f9-cell-orphans3-second-row equal
+fr-f9-padded-box-in-cell-orphans3 equal
 fr-f9-padded-box-orphans3 equal
 fr-forced-margin equal
 fr-forced-margin-a4 equal
@@ -223,7 +223,7 @@ fr-header-pad-box-50 refused Documents.Layout.DoesNotFit 36 at 8
 fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: 4 pages, Chromium 3 (print.txt)
 fr-header-pad-grid-36 open page 2 painted area: the pixel at (12.75, 32.25): the engine paints it and Chromium does not; the engine paints 1374 px #000000, Chromium 1290 px (print.txt)
 fr-header-pad-none-36 open page 1 painted area: the pixel at (12, 31.5): the engine paints it and Chromium does not; the engine paints 920 px #000000, Chromium 832 px (print.txt)
-fr-header-pad-top-36 open box td 'a' height 36, Chromium 57 (boxes.txt)
+fr-header-pad-top-36 equal
 fr-keep-continued-box equal
 fr-keep-continued-paragraph equal
 fr-keep-inside-box equal
@@ -436,14 +436,14 @@ ta-marks equal
 ta-px equal
 ta-right equal
 ta-sizes equal
-te-bottom open box table 't' is not one element with that id that starts its line (boxes.txt)
-te-break open box table 't' is not one element with that id that starts its line (boxes.txt)
-te-left-first open box table 't' is not one element with that id that starts its line (boxes.txt)
-te-left-later open box table 't' is not one element with that id that starts its line (boxes.txt)
-te-right-first open box table 't' is not one element with that id that starts its line (boxes.txt)
-te-right-later open box table 't' is not one element with that id that starts its line (boxes.txt)
-te-table-border open box table 't3' is not one element with that id that starts its line (boxes.txt)
-te-top open box table 't' is not one element with that id that starts its line (boxes.txt)
+te-bottom equal
+te-break equal
+te-left-first equal
+te-left-later equal
+te-right-first equal
+te-right-later equal
+te-table-border equal
+te-top equal
 tf-after equal
 tf-before equal
 tf-empty refused Documents.Html.Unsupported.Table tfoot without rows at 6:9
@@ -452,14 +452,14 @@ tf-pages listed A_footer_group_is_drawn_once_after_the_body_where_Chromium_repea
 tf-pages-auto equal
 tf-top-border equal
 tf-two equal
-tj-break open box table 't' is not one element with that id that starts its line (boxes.txt)
-tj-cell-table open box table 't' is not one element with that id that starts its line (boxes.txt)
-tj-four open box table 't' is not one element with that id that starts its line (boxes.txt)
-tj-order open box table 't' is not one element with that id that starts its line (boxes.txt)
-tj-outer open box table 't' is not one element with that id that starts its line (boxes.txt)
-tj-right-edge open box table 't' is not one element with that id that starts its line (boxes.txt)
-tj-same-cell open box table 't' is not one element with that id that starts its line (boxes.txt)
-tj-top-edge open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-break equal
+tj-cell-table equal
+tj-four equal
+tj-order equal
+tj-outer equal
+tj-right-edge equal
+tj-same-cell equal
+tj-top-edge equal
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.49, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
 tp-beside-auto equal
