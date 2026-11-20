@@ -21,6 +21,8 @@ a2-cells-end-text equal
 a2-line-breaks open box td '' height 164.625, Chromium 285.75 (boxes.txt)
 a2-padded-blocks open box td '' height 164.625, Chromium 200.438 (boxes.txt)
 a2-padded-blocks-px open box td '' height 164.625, Chromium 180.75 (boxes.txt)
+a2-row-break-line-1-5pt equal
+a2-row-break-line-2-25pt equal
 a2-row-break-line-6pt equal
 a2-row-end open 2 pages, Chromium 3 (print.txt)
 a2-row-end-6pt open 2 pages, Chromium 3 (print.txt)
