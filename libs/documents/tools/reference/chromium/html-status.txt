@@ -14,10 +14,10 @@ a1-paragraph-own-margin-fits equal
 a1-table-own-margin equal
 a1-text-before equal
 a2-blank-part open box td 'x' height 164.625, Chromium 456.75 (boxes.txt)
-a2-cells-end open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
-a2-cells-end-header open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
+a2-cells-end equal
+a2-cells-end-header equal
 a2-cells-end-page-top refused Documents.Layout.DoesNotFit 180 at 3
-a2-cells-end-text open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
+a2-cells-end-text equal
 a2-line-breaks open box td '' height 164.625, Chromium 285.75 (boxes.txt)
 a2-padded-blocks open box td '' height 164.625, Chromium 200.438 (boxes.txt)
 a2-padded-blocks-px open box td '' height 164.625, Chromium 180.75 (boxes.txt)
@@ -38,13 +38,13 @@ a2-row-end-first-row-half-block open page 2 'below' baseline 24 (laid out at 24)
 a2-row-end-first-row-half-break open page 3 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
 a2-row-end-first-row-half-emptyblock open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
 a2-row-end-first-row-half-page2 open page 3 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a2-row-end-first-row-half-second-row open page 1 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 846 px #000000, Chromium 1214 px (print.txt)
+a2-row-end-first-row-half-second-row equal
 a2-row-end-first-row-half-top open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
 a2-row-end-nested-under-header open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-13875 open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
-a2-row-end-span open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
-a2-row-end-span-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
+a2-row-end-span open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 371 px #000000, Chromium 601 px (print.txt)
+a2-row-end-span-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 371 px #000000, Chromium 601 px (print.txt)
 a2-rowspan-blocks open box td 's' height 163.875, Chromium 281.063 (boxes.txt)
 a2-split-line-1px equal
 a3-mirror open box td 't1' height 15.141, Chromium 16.734 (boxes.txt)
@@ -57,7 +57,7 @@ a4-cell-pad3-image-177 open page 3 'after' baseline 24 (laid out at 24), Chromiu
 a4-cell-pad3-line-177 open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
 a4-continued-cell-pad-bottom-30 open page 2 reads 't34 t35 t36 t37', Chromium 't34 t35 t36 t37 t39 t40 t41 t42' (print.txt)
 a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header: 2 pages, Chromium 3 (print.txt)
-a4-header-cut-row-image-row open page 2 painted area: the pixel at (12, 103.5): Chromium paints it and the engine does not; the engine paints 976 px #000000, Chromium 1344 px (print.txt)
+a4-header-cut-row-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-empty-rowspan-line-image open page 2 painted area: the pixel at (12, 13.5): Chromium paints it and the engine does not; the engine paints 736 px #000000, Chromium 1450 px (print.txt)
 a4-header-image-150-image open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-image-360-image open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
@@ -90,38 +90,38 @@ a5-kept-cell-in-row equal
 a5-kept-row equal
 a5-kept-taller-than-page equal
 a6-header-quarter-180-4500 equal
-a6-header-quarter-180-4575 open page 2 painted area: the pixel at (12, 185.25): Chromium paints it and the engine does not; the engine paints 4488 px #000000, Chromium 4856 px (print.txt)
+a6-header-quarter-180-4575 equal
 a6-header-quarter-360-9000 equal
-a6-header-quarter-360-9075 open page 2 painted area: the pixel at (12, 358.5): Chromium paints it and the engine does not; the engine paints 8976 px #000000, Chromium 9344 px (print.txt)
-a6-nested-first-h2525 open page 1 painted area: the pixel at (12.75, 180): Chromium paints it and the engine does not; the engine paints 4528 px #000000, Chromium 4894 px (print.txt)
-a6-nested-first-h253125 open page 1 painted area: the pixel at (12.75, 180): Chromium paints it and the engine does not; the engine paints 4528 px #000000, Chromium 4894 px (print.txt)
+a6-header-quarter-360-9075 equal
+a6-nested-first-h2525 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 357.492 (boxes.txt)
+a6-nested-first-h253125 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 357.563 (boxes.txt)
 a6-nested-header-h4425-n14 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 282 (boxes.txt)
 a6-nested-header-h4425-n16 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 313.5 (boxes.txt)
-a6-nested-header-h4425-n20 open page 2 painted area: the pixel at (12.75, 185.25): Chromium paints it and the engine does not; the engine paints 4946 px #000000, Chromium 5312 px (print.txt)
-a6-nested-header-h4425-n26 open page 2 painted area: the pixel at (12.75, 185.25): Chromium paints it and the engine does not; the engine paints 4946 px #000000, Chromium 5312 px (print.txt)
+a6-nested-header-h4425-n20 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 376.5 (boxes.txt)
+a6-nested-header-h4425-n26 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 471 (boxes.txt)
 a6-nested-header-pad12-h2925 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 179.625, Chromium 543 (boxes.txt)
-a6-nested-late-clone-h2525 open page 2 painted area: the pixel at (12.75, 180): Chromium paints it and the engine does not; the engine paints 4368 px #000000, Chromium 4734 px (print.txt)
-a6-nested-late-d3-h2100 open page 2 painted area: the pixel at (13.5, 192): Chromium paints it and the engine does not; the engine paints 5544 px #000000, Chromium 5908 px (print.txt)
-a6-nested-late-d3-h2125 open page 2 painted area: the pixel at (13.5, 176.25): Chromium paints it and the engine does not; the engine paints 5140 px #000000, Chromium 5504 px (print.txt)
-a6-nested-late-h2521875 open page 2 painted area: the pixel at (12.75, 180): Chromium paints it and the engine does not; the engine paints 4368 px #000000, Chromium 4734 px (print.txt)
-a6-nested-late-h2525 open page 2 painted area: the pixel at (12.75, 180): Chromium paints it and the engine does not; the engine paints 4368 px #000000, Chromium 4734 px (print.txt)
-a6-nested-late-h253125 open page 2 painted area: the pixel at (12.75, 180): Chromium paints it and the engine does not; the engine paints 4368 px #000000, Chromium 4734 px (print.txt)
-a6-nested-late-h2700 open page 3 painted area: the pixel at (13.5, 28.5): Chromium paints it and the engine does not; the engine paints 5272 px #000000, Chromium 5636 px (print.txt)
+a6-nested-late-clone-h2525 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.492 (boxes.txt)
+a6-nested-late-d3-h2100 open box td 'Mb0b1b2b3b4b5b6b7b8b9b10' height 163.875, Chromium 559.5 (boxes.txt)
+a6-nested-late-d3-h2125 open box td 'Mb0b1b2b3b4b5b6b7b8b9b10' height 163.875, Chromium 559.746 (boxes.txt)
+a6-nested-late-h2521875 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.469 (boxes.txt)
+a6-nested-late-h2525 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.492 (boxes.txt)
+a6-nested-late-h253125 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 357.563 (boxes.txt)
+a6-nested-late-h2700 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 100.875, Chromium 359.25 (boxes.txt)
 a6-nested-late6-h1800 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 93, Chromium 471 (boxes.txt)
 a6-nested-late6-h1850 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 93, Chromium 471.492 (boxes.txt)
-a6-nested-under-header-h2400 open page 2 painted area: the pixel at (12.75, 178.5): Chromium paints it and the engine does not; the engine paints 4524 px #000000, Chromium 4890 px (print.txt)
-a6-nested-under-header-h2700 open page 2 painted area: the pixel at (13.5, 28.5): Chromium paints it and the engine does not; the engine paints 5272 px #000000, Chromium 5636 px (print.txt)
-a6-nested-under-header-h2700-n16 open page 2 painted area: the pixel at (13.5, 28.5): Chromium paints it and the engine does not; the engine paints 5176 px #000000, Chromium 5540 px (print.txt)
+a6-nested-under-header-h2400 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 513.75 (boxes.txt)
+a6-nested-under-header-h2700 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 516.75 (boxes.txt)
+a6-nested-under-header-h2700-n16 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 163.875, Chromium 296.25 (boxes.txt)
 b-into-block equal
 b-into-paragraph equal
 b-into-table equal
 b-three-deep equal
-b1-repeat open page 1 painted area: the pixel at (20.25, 171): Chromium paints it and the engine does not; the engine paints 3699 px #000000, Chromium 4046 px (print.txt)
+b1-repeat equal
 b2-split-row open box td 'r05' height 76.453, Chromium 304.734 (boxes.txt)
-b3-keep-group open page 1 painted area: the pixel at (20.25, 154.5): Chromium paints it and the engine does not; the engine paints 3289 px #000000, Chromium 3636 px (print.txt)
-b4-row-span open page 1 painted area: the pixel at (101.25, 171): Chromium paints it and the engine does not; the engine paints 2957 px #000000, Chromium 3196 px (print.txt)
-b4-row-span-6pt open page 2 painted area: the pixel at (153, 12): the engine paints it and Chromium does not; the engine paints 7632 px #000000, Chromium 6944 px (print.txt)
-b5-row-span-kept-cell open page 1 painted area: the pixel at (20.25, 120.75): Chromium paints it and the engine does not; the engine paints 1936 px #000000, Chromium 2283 px (print.txt)
+b3-keep-group equal
+b4-row-span open page 1 painted area: the pixel at (100.5, 171): the engine paints it and Chromium does not; the engine paints 3197 px #000000, Chromium 3196 px (print.txt)
+b4-row-span-6pt open box td 's' height 51, Chromium 63 (boxes.txt)
+b5-row-span-kept-cell equal
 c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
 c-cell-orphan open box td 'a' height 35.625, Chromium 57.75 (boxes.txt)
 c-cell-orphan-moves equal
@@ -195,10 +195,10 @@ fr-f5-continued-table equal
 fr-f6-kept-group-kept-row-fits-a-page equal
 fr-f6-kept-group-orphans3 equal
 fr-f6-kept-table-orphans3-control equal
-fr-f7-rows-of-spanning-cells open page 2 painted area: the pixel at (12.75, 12): the engine paints it and Chromium does not; the engine paints 626 px #000000, Chromium 443 px (print.txt)
-fr-f7-span-cut-at-row-boundary open page 2 painted area: the pixel at (150.75, 12): the engine paints it and Chromium does not; the engine paints 769 px #000000, Chromium 587 px (print.txt)
-fr-f7-span-fits-control open page 2 painted area: the pixel at (150.75, 12): the engine paints it and Chromium does not; the engine paints 769 px #000000, Chromium 587 px (print.txt)
-fr-f7-span-orphans-moves-table open page 2 painted area: the pixel at (150.75, 12): the engine paints it and Chromium does not; the engine paints 769 px #000000, Chromium 587 px (print.txt)
+fr-f7-rows-of-spanning-cells open box td 't' height 30.879, Chromium 36.75 (boxes.txt)
+fr-f7-span-cut-at-row-boundary open box td 's0s1s2s3' height 59.625, Chromium 73.5 (boxes.txt)
+fr-f7-span-fits-control open box td 's0' height 59.625, Chromium 73.5 (boxes.txt)
+fr-f7-span-orphans-moves-table open box td 's0s1s2s3' height 59.625, Chromium 73.5 (boxes.txt)
 fr-f8-kept-row-with-spanning-cell equal
 fr-f8-kept-spanning-cell-control equal
 fr-f8-row-not-kept-control open box td 's' height 59.625, Chromium 73.5 (boxes.txt)
@@ -243,7 +243,7 @@ fr-old-empty-box-past-end listed An_empty_box_whose_margin_carries_it_past_the_p
 fr-old-forced-after-empty listed A_forced_break_after_only_empty_boxes_is_not_taken: 1 pages, Chromium 2 (print.txt)
 fr-old-forced-in-keep-together listed A_forced_break_inside_a_box_kept_together_moves_the_whole_box_first: 3 pages, Chromium 2 (print.txt)
 fr-old-header-quarter-150-at equal
-fr-old-header-quarter-150-over open page 2 painted area: the pixel at (12, 162): Chromium paints it and the engine does not; the engine paints 3328 px #000000, Chromium 3696 px (print.txt)
+fr-old-header-quarter-150-over equal
 fr-old-header-quarter-180-at equal
 fr-old-header-quarter-180-over equal
 fr-old-header-quarter-240-at equal
