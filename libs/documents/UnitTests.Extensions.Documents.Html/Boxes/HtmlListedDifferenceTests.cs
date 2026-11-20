@@ -205,7 +205,8 @@ public class HtmlListedDifferenceTests
     /// where it starts, ends the row on the next page as tall as the rest of the image, and starts what follows there:
     /// in a row of two or more cells the next row, and after any table the content after it, below the row's end, or at
     /// the top of the next page, drawn over the slices still to come. The engine starts what follows below the last
-    /// slice, so no text is drawn over an image (docs/architecture.md, "Known limits"). That place is the whole
+    /// slice, so no text is drawn over an image (docs/architecture.md, "Known limits"); it centres the line that ends the
+    /// row on the end of the last slice (<c>SliceRestEnd.AtLineCentre</c>), which prints where Chromium's is. That place is the whole
     /// difference: the engine's print with what follows the slice moved up to Chromium's place (from the engine's page
     /// to Chromium's, by the difference of the first word's baseline) is Chromium's, compared as every case is
     /// (<see cref="HtmlCases.Difference"/>). The engine draws a column's grid line as one rectangle down through the
@@ -222,10 +223,10 @@ public class HtmlListedDifferenceTests
     /// <param name="enginePage">The page the engine draws it on.</param>
     /// <param name="engineBaseline">Its baseline there, below the last slice.</param>
     [Theory]
-    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.75)]
-    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.75)]
-    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.75)]
-    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 71.25)]
+    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.375)]
+    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.375)]
+    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.375)]
+    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 70.875)]
     public void What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices(
         string name, string first, int chromiumPage, double chromiumBaseline, int enginePage, double engineBaseline)
     {
@@ -239,11 +240,12 @@ public class HtmlListedDifferenceTests
         engineBaseline.Should().BeGreaterThan(sliceEnd(engine, enginePage), "the engine starts it below the last slice");
         HtmlCases.Difference(engine, chromium).Should().NotBeNull();
 
-        // Every word below the last slice moves, and every rectangle below the line at the slice's bottom edge, which
-        // both draw (it ends the sliced row); a column's line that runs on through that edge is split there.
+        // Every word below the last slice moves, and every rectangle below the line centred on the slice's bottom edge,
+        // which both draw (it ends the sliced row, SliceRestEnd.AtLineCentre); a column's line that runs on through it is
+        // split there.
         var from = sliceEnd(engine, enginePage);
         var source = engine.Pages[enginePage - 1];
-        var cut = source.Rectangles.Where(line => Math.Abs(line.Y0 - from) < 0.01 && line.X1 - line.X0 > line.Height).Max(line => line.Y1);
+        var cut = source.Rectangles.Where(line => Math.Abs(((line.Y0 + line.Y1) / 2) - from) < 0.01 && line.X1 - line.X0 > line.Height).Max(line => line.Y1);
         var shift = engineBaseline - chromiumBaseline;
         var stays = source.Rectangles.Where(item => item.Y0 < cut).Select(item => item with { Y1 = Math.Min(item.Y1, cut) });
         var goes = source.Rectangles.Where(item => item.Y1 > cut).Select(item => item with { Page = chromiumPage, Y0 = Math.Max(item.Y0, cut) - shift, Y1 = item.Y1 - shift });

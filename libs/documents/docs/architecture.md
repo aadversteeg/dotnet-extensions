@@ -605,7 +605,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `RepeatedHeaderRows.WhereContentIsLaidOut`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -1150,9 +1150,21 @@ Each is documented next to its code as well.
   nothing on that page; under `Avoid`, the code front-end's default, that page holds the header alone, and so it does
   under `Allow` where a cell of the row would draw something on it (`fr-header-pad-box-72` above, where Chromium cuts
   the row; with an image beside text, not measured). The cut row's cells then go on below the header on the next page,
-  and there the engine starts a part of a cell that continues 0.375 pt higher than Chromium, half the grid line below
-  the header (as everywhere below a repeated header: `a4-header-cut-row-image-row`, "c10" at 40.125 pt, Chromium
-  40.5 pt), so the first slice lies at 28.125 pt where Chromium's lies at 28.5 pt, within the comparison's whole pixel.
+  where the part of a cell that continues starts at the centre of the grid line below the header, as in Chromium: below
+  a 0.75 pt line at 28.125 pt, half a pixel below a whole one, which Chromium paints at the next whole pixel, 28.5 pt
+  (`a4-header-image-228`; "c10" at 40.125 pt, painted at 40.5 pt, `a4-header-cut-row-image-row`; below a 2.25 pt line
+  28.875 pt, painted at 29.25 pt, `a4-header-line2-25-image-228`, `a4-header-line2-25-cut-text-row`). That is the
+  paint, not the layout: where the engine lays a baseline, an image edge or an edge of a horizontal grid line out half
+  a pixel below a whole one, Chromium paints it at the next whole pixel in every case, except at the end of the rest of
+  a sliced piece, which follows. On the page where a cell's part
+  holds nothing but the rest of a piece sliced on an earlier page, Chromium ends the part where the rest ends, without
+  its half of the grid line below it, so the line is centred on the rest's end (a 0.75 pt line at 75.75–76.5 pt below a
+  rest that ends at 76.125 pt, `a4-header-image-228`; a 2.25 pt line at 75–77.25 pt, `a4-header-image-228-line3-below`;
+  the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; inside a nested
+  table, `a4-header-nested-image-228`, whose pages differ for another reason, open). A part that lays content out on
+  the page keeps its half (`a4-header-cut-text-row`). Under `SliceRestEnd.AtLineCentre`, the HTML front-end's value,
+  the engine does the same (`Tracks/TableSegments.cs`, `AtRestEnd`; `SliceRestEndTests`); under `InsideCell`, the code
+  front-end's default, the part holds its half as every cell does, and the line starts where the rest ends.
   On the later pages the policy `RepeatedHeaderRows` decides. Chromium lays the piece out whole below the header of the
   page where it starts, also a piece no taller than the page area, and lets it pass the page end; it repeats the header
   on every later page where the table still lays content out (a row still to come, a cell beside the piece that goes on),
@@ -1253,8 +1265,8 @@ Each is documented next to its code as well.
   a pixel one pixel thick from its top edge, which gives Chromium's pixels, and moves nothing (cases `a2-cells-end`,
   `a2-row-break-line-1-5pt`, `a2-row-break-line-2-25pt`; `TableBreakLineHalfTests`). Where a cell that spans rows
   continues over the break, the next page draws nothing of the line, in any column, and keeps the half's room (case
-  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt lower in Chromium than in the
-  engine; a difference of layout, pinned in `RowPartTests`; `Clone`, the code front-end's default for tables, ends the
+  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt, half a pixel, below the
+  page area's top, and Chromium paints its text at the next whole pixel, 0.375 pt lower (pinned in `RowPartTests`); `Clone`, the code front-end's default for tables, ends the
   page with the whole line and starts the next page with it again (the engine's own rule for collapsed borders,
   modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
   break inside a row, `Slice` draws no line at the cut (a box cut by a break gets no border there); `Clone` closes the

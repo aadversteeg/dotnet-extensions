@@ -177,6 +177,28 @@ internal static class TableSegments
             ? table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2
             : 0;
 
+    /// <summary>
+    /// Under <see cref="SliceRestEnd.AtLineCentre"/>, the measured fragment of a cell that continues from an earlier page
+    /// and holds nothing but the rest of a piece sliced there (its later slices end where its own half of the line below
+    /// it starts, and it draws nothing beside them): made as tall as that rest, without the half, so its row ends where the
+    /// rest ends and the line below is centred there, as Chromium prints it (<see cref="SliceRestEnd.AtLineCentre"/>; cases
+    /// <c>a4-header-image-228</c>, <c>a4-header-image-228-line3-below</c>). The half takes no part in the cell's paint: the
+    /// table draws the grid lines. Any other fragment as it is.
+    /// </summary>
+    private static BoxFragment AtRestEnd(TableGeometry table, ActiveCell cell, BoxFragment fragment)
+    {
+        if (table.Environment.Profile.SliceRestEnd != SliceRestEnd.AtLineCentre || cell.Token is null)
+        {
+            return fragment;
+        }
+
+        var rest = ContinuedSliceBottom(fragment);
+        var half = LineBelowInside(table, table.Grid.Cells[cell.Cell]);
+        return rest > 0 && half > 0 && Math.Abs(rest + half - fragment.Size.Height) < 1e-6 && !DrawnContent.DrawsOutsideSlices(fragment)
+            ? new BoxFragment(fragment.Box, new Size(fragment.Size.Width, rest), fragment.Children, fragment.Border, fragment.IsRepeated)
+            : fragment;
+    }
+
     /// <summary>A fragment moved <paramref name="inset"/> down inside itself, and that much taller.</summary>
     private static BoxFragment Lowered(BoxFragment fragment, double inset) =>
         inset <= 0
@@ -221,7 +243,7 @@ internal static class TableSegments
             .TraverseAll(cell => table.Environment
                 .Layout(CellLayoutBox(table, shell, cell), Unlimited(table, table.CellWidth(table.Grid.Cells[cell.Cell])), cell.Token)
                 .OnSuccessBind(result => result is LayoutResult.Placed { Continuation: null } placed
-                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell))))
+                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, AtRestEnd(table, cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell)))))
                     : Result<KeyValuePair<int, BoxFragment>, Error>.Failure(
                         LayoutErrors.InvalidContent(table.Grid.Cells[cell.Cell].Box, "a table cell cannot hold a forced page break."))))
             .OnSuccessMap(natural =>
@@ -343,7 +365,7 @@ internal static class TableSegments
         var grid = table.Grid;
         var info = grid.Cells[cell.Cell];
         var top = cell.Token is null && !withoutLineAbove ? LineAboveInside(table, segment, cell) : 0;
-        var bottom = table.HorizontalWidth(info.LastRow, TablePage.Next(grid, info.LastRow), TablePage.EdgeContext(grid, info.LastRow), info) / 2;
+        var bottom = LineBelowInside(table, info);
         var halves = new Edges(
             top.Pt(),
             (CollapsedBorders.OwnVerticalWidth(table.Box, grid, info, info.Column + info.ColumnSpan) / 2).Pt(),
@@ -351,6 +373,10 @@ internal static class TableSegments
             (CollapsedBorders.OwnVerticalWidth(table.Box, grid, info, info.Column) / 2).Pt());
         return TracksLayout.CellBox(info, halves);
     }
+
+    /// <summary>The half of the cell's own part of the line below its last row that lies inside the cell.</summary>
+    private static double LineBelowInside(TableGeometry table, TableGrid.Cell info) =>
+        table.HorizontalWidth(info.LastRow, TablePage.Next(table.Grid, info.LastRow), TablePage.EdgeContext(table.Grid, info.LastRow), info) / 2;
 
     /// <summary>The half of the cell's own part of the line above it that lies inside the cell when it starts on this
     /// page.</summary>

@@ -35,8 +35,8 @@ public sealed record Document(
     /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="FontSizeRounding(DocumentModel.FontSizeRounding)"/>,
     /// <see cref="LengthRounding(DocumentModel.LengthRounding)"/>, <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>,
     /// <see cref="TableEndOverflow(DocumentModel.TableEndOverflow)"/>, <see cref="BodyClip(DocumentModel.BodyClip)"/>,
-    /// <see cref="CellsBesideSlices(DocumentModel.CellsBesideSlices)"/> or
-    /// <see cref="RepeatedHeaderRows(DocumentModel.RepeatedHeaderRows)"/>.</summary>
+    /// <see cref="CellsBesideSlices(DocumentModel.CellsBesideSlices)"/>,
+    /// <see cref="RepeatedHeaderRows(DocumentModel.RepeatedHeaderRows)"/> or <see cref="SliceRestEnd(DocumentModel.SliceRestEnd)"/>.</summary>
     public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
 
     /// <summary>
@@ -128,6 +128,15 @@ public sealed record Document(
     /// <param name="rows">The policy.</param>
     /// <returns>A copy with the policy.</returns>
     public Document RepeatedHeaderRows(RepeatedHeaderRows rows) => this with { Profile = Profile with { RepeatedHeaderRows = rows } };
+
+    /// <summary>
+    /// Where the part of a table cell ends that holds nothing but the rest of a piece sliced on an earlier page: below its
+    /// half of the grid line below it (the default), or at the rest's end, the line centred on it, as a browser (Chromium)
+    /// prints it (<see cref="DocumentModel.SliceRestEnd"/>).
+    /// </summary>
+    /// <param name="end">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document SliceRestEnd(SliceRestEnd end) => this with { Profile = Profile with { SliceRestEnd = end } };
 
     /// <summary>
     /// Embeds a file in the document, for example its data as XML. Made with <see cref="Elements.Attachment"/>;

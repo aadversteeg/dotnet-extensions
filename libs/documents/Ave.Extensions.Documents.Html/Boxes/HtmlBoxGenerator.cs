@@ -67,6 +67,7 @@ public static partial class HtmlBoxGenerator
         BodyClip = BodyClip.BodyArea,
         CellsBesideSlices = CellsBesideSlices.Below,
         RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut,
+        SliceRestEnd = SliceRestEnd.AtLineCentre,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>
