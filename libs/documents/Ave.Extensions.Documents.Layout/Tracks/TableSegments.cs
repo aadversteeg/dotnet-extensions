@@ -258,28 +258,38 @@ internal static class TableSegments
     }
 
     /// <summary>
-    /// The box a cell is laid out as on this page (<see cref="TracksLayout.CellBox"/>): half of the vertical lines
-    /// beside it, half of the line above it when it starts here (the line above the segment, or the line between two
-    /// of its rows), and half of the line below its last row. A cell that continues from an earlier page has no top
-    /// inset (slice); its token already tells its algorithm so.
+    /// The box a cell is laid out as on this page (<see cref="TracksLayout.CellBox"/>): half of its own vertical lines
+    /// beside it (<see cref="CollapsedBorders.OwnVerticalWidth"/>), half of its own part of the line above it when it
+    /// starts here (the line above the segment, or the line between two of its rows), and half of its own part of the
+    /// line below its last row. Its own part: the widest of the line's segments over the cell's columns, not the whole
+    /// line, measured in Chromium 159 (a 6 pt top border on the second cell of the first row lowers that cell's
+    /// content alone, 2.25 pt below its neighbour's under a 1.5 pt line: case <c>te-top</c>; the bottom border of a last
+    /// row: <c>te-bottom</c>). The rows still start and end at the line's centre, and the room a line takes at a page
+    /// end is still its whole width. A cell that continues from an earlier page has no top inset (slice); its token
+    /// already tells its algorithm so.
     /// </summary>
     internal static Box CellLayoutBox(TableGeometry table, Segment segment, ActiveCell cell, bool withoutLineAbove = false)
     {
         var grid = table.Grid;
         var info = grid.Cells[cell.Cell];
         var top = cell.Token is null && !withoutLineAbove ? LineAboveInside(table, segment, cell) : 0;
-        var bottom = table.HorizontalWidth(info.LastRow, TablePage.Next(grid, info.LastRow), TablePage.EdgeContext(grid, info.LastRow)) / 2;
-        var halves = new Edges(top.Pt(), (table.LineWidths[info.Column + info.ColumnSpan] / 2).Pt(), bottom.Pt(), (table.LineWidths[info.Column] / 2).Pt());
+        var bottom = table.HorizontalWidth(info.LastRow, TablePage.Next(grid, info.LastRow), TablePage.EdgeContext(grid, info.LastRow), info) / 2;
+        var halves = new Edges(
+            top.Pt(),
+            (CollapsedBorders.OwnVerticalWidth(table.Box, grid, info, info.Column + info.ColumnSpan) / 2).Pt(),
+            bottom.Pt(),
+            (CollapsedBorders.OwnVerticalWidth(table.Box, grid, info, info.Column) / 2).Pt());
         return TracksLayout.CellBox(info, halves);
     }
 
-    /// <summary>The half of the line above a cell that lies inside the cell when it starts on this page.</summary>
+    /// <summary>The half of the cell's own part of the line above it that lies inside the cell when it starts on this
+    /// page.</summary>
     private static double LineAboveInside(TableGeometry table, Segment segment, ActiveCell cell)
     {
         var startsSegment = cell.StartRow == segment.FirstRow;
         var above = startsSegment ? segment.Above.Above : cell.StartRow - 1;
         var context = startsSegment ? segment.Above.Context : CollapsedBorders.LineContext.Interior;
-        return table.HorizontalWidth(above, cell.StartRow, context) / 2;
+        return table.HorizontalWidth(above, cell.StartRow, context, table.Grid.Cells[cell.Cell]) / 2;
     }
 
     internal static BoxFragment EmptyCell(Box box, double width, double height) => new(box, new Size(width, height), []);

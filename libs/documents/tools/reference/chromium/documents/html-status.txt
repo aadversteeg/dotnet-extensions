@@ -1,4 +1,4 @@
-invoice refused Documents.Html.Unsupported.Table tfoot at 23:3
-timesheet-normal refused Documents.Html.Unsupported.Value width: 14.29% at 153:11
-timesheet-one-page refused Documents.Html.Unsupported.Value width: 14.29% at 153:11
-timesheet-pages refused Documents.Html.Unsupported.Value width: 14.29% at 153:11
+invoice equal
+timesheet-normal refused Documents.Html.Unsupported.PageRule @page at 16:1
+timesheet-one-page refused Documents.Html.Unsupported.PageRule @page at 16:1
+timesheet-pages refused Documents.Html.Unsupported.PageRule @page at 16:1

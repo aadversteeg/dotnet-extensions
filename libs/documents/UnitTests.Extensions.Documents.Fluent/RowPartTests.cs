@@ -126,9 +126,9 @@ public class RowPartTests
             .Order()
             .ToList())];
 
-    private static Result<PrintedPages, global::Ave.Extensions.ErrorPaths.Error> PrintAllowed(Element[] body) =>
+    private static Result<PrintedPages, global::Ave.Extensions.ErrorPaths.Error> PrintAllowed(Element[] body, SplitLineHalves halves = SplitLineHalves.Exact) =>
         DocumentTranslator.ToModel(Document([.. body], Area, title: "Title", language: "en").FontFamily("Lato")
-                .EmptyRowParts(EmptyRowParts.Allow).FontMetricRounding(FontMetricRounding.WholePixels))
+                .EmptyRowParts(EmptyRowParts.Allow).FontMetricRounding(FontMetricRounding.WholePixels).SplitLineHalves(halves))
             .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).OnSuccessMap(PrintedPages.Engine);
 
     [Theory]
@@ -183,19 +183,23 @@ public class RowPartTests
     }
 
     [Fact]
-    public void At_a_break_between_rows_Chromium_draws_a_one_pixel_line_whole_on_both_pages_where_the_engine_splits_it()
+    public void At_a_break_between_rows_each_half_of_a_one_pixel_line_is_drawn_one_pixel_thick_as_in_Chromium_under_AtLeastOnePixel()
     {
-        // A difference, pinned (case a2-split-line-1px; .SplitLinesAtBreaks()): the engine draws the upper half of the
-        // 0.75 pt line at the end of page 1 and the lower half at the top of page 2, so page 2's first row starts at the
-        // page area's top. Chromium cannot split a pixel: it draws the whole line on both pages, and page 2's first row
-        // starts 0.375 pt lower (a 3 pt line, four pixels, it does split: cases mf4-line-*).
-        var engine = PrintAllowed(Mirror(133.5, 4.5)).Value;
+        // Case a2-split-line-1px; .SplitLinesAtBreaks(): the 0.75 pt line is split at the break, its upper half ends page 1
+        // and its lower half starts page 2 at the page area's top. Chromium draws each half, half a pixel, one pixel
+        // thick (SplitLineHalves.AtLeastOnePixel); under the default, Exact, each is 0.375 pt. Layout is the same under
+        // both: page 2's first row starts 0.375 pt higher than in Chromium either way, a difference pinned here.
+        var engine = PrintAllowed(Mirror(133.5, 4.5), SplitLineHalves.AtLeastOnePixel).Value;
+        var exact = PrintAllowed(Mirror(133.5, 4.5)).Value;
         var chromium = PrintedPages.Chromium("a2-split-line-1px");
 
         engine.PageTexts.Should().Equal(chromium.PageTexts);
         chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1).Min(box => box.Y0).Should().Be(12);
         chromium.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1 && box.Y0 == 12).Should().AllSatisfy(box => box.Height.Should().Be(0.75));
-        engine.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1 && box.Y0 == 12).Should().AllSatisfy(box => box.Height.Should().BeApproximately(0.375, 1e-9));
+        engine.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1 && box.Y0 == 12).Should().NotBeEmpty().And.AllSatisfy(box => box.Height.Should().Be(0.75));
+        exact.Pages[1].Rectangles.Where(box => box.X1 - box.X0 > 1 && box.Y0 == 12).Should().NotBeEmpty().And.AllSatisfy(box => box.Height.Should().BeApproximately(0.375, 1e-9));
+        HorizontalLines(engine).Select(page => page.Count).Should().Equal(HorizontalLines(chromium).Select(page => page.Count));
+        engine.Pages.Select(page => page.Words.Select(word => word.Baseline)).Should().BeEquivalentTo(exact.Pages.Select(page => page.Words.Select(word => word.Baseline)), options => options.WithStrictOrdering());
         (chromium.Pages[1].Words[0].Baseline - engine.Pages[1].Words[0].Baseline).Should().BeApproximately(0.375, 1e-9);
     }
 
