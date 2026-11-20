@@ -214,13 +214,18 @@ internal static class TableSegments
         return content with { Rows = rows, Cells = cells, Lines = lines, Bottom = segment.Top + segment.Height };
     }
 
-    /// <summary>A whole cell: its natural fragment stretched to the rows it covers, content aligned (§17.5.3).</summary>
+    /// <summary>A whole cell: its natural fragment stretched to the rows it covers, content aligned (§17.5.3); the rest of a
+    /// cell cut on an earlier page at the top under <see cref="CutRowAlignment.TopOnEveryPage"/>, as every part of a cut
+    /// row is on the page where it is cut (<see cref="Slice"/>).</summary>
     internal static PlacedCell Whole(TableGeometry table, Segment segment, ActiveCell cell)
     {
         var info = table.Grid.Cells[cell.Cell];
         var height = segment.RowsHeight(cell.StartRow, info.LastRow);
+        var align = cell.Token is not null && table.Environment.Profile.CutRowAlignment == CutRowAlignment.TopOnEveryPage
+            ? VerticalAlign.Top
+            : info.Box.Style.VerticalAlign;
         var fragment = segment.Natural.TryGetValue(cell.Cell, out var natural)
-            ? Stretch(natural, height, info.Box.Style.VerticalAlign)
+            ? Stretch(natural, height, align)
             : EmptyCell(CellLayoutBox(table, segment, cell), table.CellWidth(info), height);
         return new PlacedCell(cell.Cell, cell.StartRow, fragment);
     }

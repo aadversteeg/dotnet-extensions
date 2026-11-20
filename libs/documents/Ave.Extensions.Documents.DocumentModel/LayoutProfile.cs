@@ -11,8 +11,8 @@ public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
-    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/> and
-    /// <see cref="CellsBesideSlices.GoOn"/>.</summary>
+    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
+    /// <see cref="CellsBesideSlices.GoOn"/> and <see cref="CutRowAlignment.RestAlignedInItsPart"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -47,6 +47,33 @@ public sealed record LayoutProfile
     /// <summary>Where the other cells of a table row go on, on the pages that go on with the slices of a piece in one of
     /// its cells (<see cref="DocumentModel.CellsBesideSlices"/>).</summary>
     public CellsBesideSlices CellsBesideSlices { get; init; } = CellsBesideSlices.GoOn;
+
+    /// <summary>Where the content of a cell aligned <c>middle</c> or <c>bottom</c> goes on the later pages of a row that a
+    /// page break cuts (<see cref="DocumentModel.CutRowAlignment"/>).</summary>
+    public CutRowAlignment CutRowAlignment { get; init; } = CutRowAlignment.RestAlignedInItsPart;
+}
+
+/// <summary>
+/// Where the content of the cells of a table row that a page break cuts goes on the pages after the cut. On the page where
+/// the row starts, every cell of a cut row starts at the top of its part under both values, as Chromium prints it (case
+/// <c>fr-cut-row-uncut-bottom-cell</c>: a bottom-aligned cell that fits beside a cell that is cut); a row that no break
+/// cuts is aligned as its cells' <see cref="VerticalAlign"/> says under both values.
+/// </summary>
+public enum CutRowAlignment
+{
+    /// <summary>The rest of a cell aligned <c>middle</c> or <c>bottom</c> is aligned in the rest of its row on the last page
+    /// of the row: a shorter rest beside a longer one sits lower.</summary>
+    RestAlignedInItsPart,
+
+    /// <summary>
+    /// The rest of every cell of a cut row starts at the top of its part on every page, whatever its
+    /// <see cref="VerticalAlign"/>, as Chromium prints it: the rest continues where the cell's content broke off. Measured
+    /// against Chromium's print (<c>tools/reference/chromium</c>): the rest of a bottom- and of a middle-aligned cell on the
+    /// next page (cases <c>fr-old-cut-cell-bottom</c>, <c>fr-old-cut-cell-middle</c>), a row cut over three pages
+    /// (<c>fr-cut-row-three-pages-bottom</c>), a cut row between two rows that are not cut, whose bottom-aligned cells stay
+    /// aligned on both pages (<c>fr-cut-row-between-aligned-rows</c>).
+    /// </summary>
+    TopOnEveryPage,
 }
 
 /// <summary>

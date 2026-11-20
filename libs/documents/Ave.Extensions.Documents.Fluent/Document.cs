@@ -34,8 +34,9 @@ public sealed record Document(
     /// <see cref="MonolithicOverflow(DocumentModel.MonolithicOverflow)"/>, <see cref="EmptyRowParts(DocumentModel.EmptyRowParts)"/>,
     /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="FontSizeRounding(DocumentModel.FontSizeRounding)"/>,
     /// <see cref="LengthRounding(DocumentModel.LengthRounding)"/>, <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>,
-    /// <see cref="TableEndOverflow(DocumentModel.TableEndOverflow)"/>, <see cref="BodyClip(DocumentModel.BodyClip)"/> or
-    /// <see cref="CellsBesideSlices(DocumentModel.CellsBesideSlices)"/>.</summary>
+    /// <see cref="TableEndOverflow(DocumentModel.TableEndOverflow)"/>, <see cref="BodyClip(DocumentModel.BodyClip)"/>,
+    /// <see cref="CellsBesideSlices(DocumentModel.CellsBesideSlices)"/> or
+    /// <see cref="CutRowAlignment(DocumentModel.CutRowAlignment)"/>.</summary>
     public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
 
     /// <summary>
@@ -117,6 +118,15 @@ public sealed record Document(
     /// <param name="cells">The policy.</param>
     /// <returns>A copy with the policy.</returns>
     public Document CellsBesideSlices(CellsBesideSlices cells) => this with { Profile = Profile with { CellsBesideSlices = cells } };
+
+    /// <summary>
+    /// Where the content of a cell aligned middle or bottom goes on the later pages of a table row that a page break cuts:
+    /// aligned in the rest of its row (the default), or at the top of its part on every page, as a browser (Chromium)
+    /// prints it (<see cref="DocumentModel.CutRowAlignment"/>).
+    /// </summary>
+    /// <param name="alignment">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document CutRowAlignment(CutRowAlignment alignment) => this with { Profile = Profile with { CutRowAlignment = alignment } };
 
     /// <summary>
     /// Embeds a file in the document, for example its data as XML. Made with <see cref="Elements.Attachment"/>;

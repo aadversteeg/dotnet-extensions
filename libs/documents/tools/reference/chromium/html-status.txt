@@ -198,8 +198,8 @@ font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal
 fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value width: 50% at 3:58
-fr-cut-row-between-aligned-rows open page 2 reads 'b9 b10 a9 b11 f0 f1 e0 f2 z', Chromium 'a9 b9 b10 b11 f0 f1 e0 f2 z' (print.txt)
-fr-cut-row-three-pages-bottom open page 3 reads 'b17 b18 b19 b20 b21 b22 a17 b23 a18 b24 z', Chromium 'a17 b17 a18 b18 b19 b20 b21 b22 b23 b24 z' (print.txt)
+fr-cut-row-between-aligned-rows equal
+fr-cut-row-three-pages-bottom equal
 fr-cut-row-uncut-bottom-cell equal
 fr-empty-span equal
 fr-empty-span-trailing-space equal
@@ -260,8 +260,8 @@ fr-lh-mixed-sizes equal
 fr-moved-para-widows-3-control equal
 fr-moved-para-widows-4 listed A_paragraph_that_moved_to_a_new_page_whole_counts_only_its_orphans_before_a_break_there: page 2 reads 'a0 a1', Chromium 'a0 a1 a2' (print.txt)
 fr-old-blank-last-page listed An_empty_box_past_the_end_of_the_last_page_adds_no_page: 1 pages, Chromium 2 (print.txt)
-fr-old-cut-cell-bottom open page 2 reads 'b3 b4 b5 b6 a3 b7 z', Chromium 'a3 b3 b4 b5 b6 b7 z' (print.txt)
-fr-old-cut-cell-middle open page 2 reads 'b3 b4 a3 b5 b6 b7 z', Chromium 'a3 b3 b4 b5 b6 b7 z' (print.txt)
+fr-old-cut-cell-bottom equal
+fr-old-cut-cell-middle equal
 fr-old-empty-box-past-end listed An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page: page 1 reads 'a0 b0 head0', Chromium 'a0 b0' (print.txt)
 fr-old-forced-after-empty listed A_forced_break_after_only_empty_boxes_is_not_taken: 1 pages, Chromium 2 (print.txt)
 fr-old-forced-in-keep-together listed A_forced_break_inside_a_box_kept_together_moves_the_whole_box_first: 3 pages, Chromium 2 (print.txt)

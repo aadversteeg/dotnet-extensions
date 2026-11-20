@@ -605,7 +605,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -929,8 +929,10 @@ Each is documented next to its code as well.
   box kept together does not hide a better breakpoint before it (in Chromium it does, in one shape: `n0 n1 o0 o1 | p0`
   where the engine prints `n0 | n1 o0 o1 p0`); an empty box past the end of the last page adds no blank page; a paragraph that moved to a new page whole counts only
   its orphans before a break on that page, where Chromium counts its widows there too (it differs only where widows are
-  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). The rest of a cut cell aligned `middle` or `bottom` is aligned
-  in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
+  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). Under `CutRowAlignment.RestAlignedInItsPart`, the code front-end's
+  default, the rest of a cut cell aligned `middle` or `bottom` is aligned in the rest of its row (Chromium puts the content of
+  every cell of a cut row at the top of its part on every page, which `TopOnEveryPage`, the HTML front-end's value, follows:
+  cases `fr-old-cut-cell-*`, `fr-cut-row-*`, `CutRowAlignmentTests`); a margin dropped at a row cut does not stay in the row's height
   (Chromium keeps the uncut height: the rest of the row is 12 pt taller; case `fr-old-margin-at-row-cut`, listed
   through the HTML front-end too, `HtmlListedDifferenceTests`, where that height is the whole difference). Where a
   cell's lines all fit and only its bottom padding or grid line does not, at the top of a page the engine cuts the row

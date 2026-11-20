@@ -59,6 +59,17 @@ public class LayoutProfileTests
     }
 
     [Fact]
+    public void The_cut_row_alignment_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
+    {
+        var model = DocumentTranslator.ToModel(Doc().CutRowAlignment(CutRowAlignment.TopOnEveryPage)).Value;
+        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { CutRowAlignment = (CutRowAlignment)4 } });
+
+        LayoutProfile.Default.CutRowAlignment.Should().Be(CutRowAlignment.RestAlignedInItsPart);
+        model.Profile.Should().Be(new LayoutProfile { CutRowAlignment = CutRowAlignment.TopOnEveryPage });
+        undefined.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
+    }
+
+    [Fact]
     public void The_cells_beside_slices_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
     {
         var model = DocumentTranslator.ToModel(Doc().CellsBesideSlices(CellsBesideSlices.Below)).Value;
