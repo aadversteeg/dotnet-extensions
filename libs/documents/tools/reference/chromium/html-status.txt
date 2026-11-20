@@ -21,6 +21,7 @@ a2-cells-end-text open page 1 painted area: the pixel at (12, 175.5): Chromium p
 a2-line-breaks open box td '' height 164.625, Chromium 285.75 (boxes.txt)
 a2-padded-blocks open box td '' height 164.625, Chromium 200.438 (boxes.txt)
 a2-padded-blocks-px open box td '' height 164.625, Chromium 180.75 (boxes.txt)
+a2-row-break-line-6pt equal
 a2-row-end open 2 pages, Chromium 3 (print.txt)
 a2-row-end-6pt open 2 pages, Chromium 3 (print.txt)
 a2-row-end-6pt-after open page 3 'after' baseline 24 (laid out at 24), Chromium 30 (print.txt)
@@ -31,6 +32,7 @@ a2-row-end-bottom-padding-30 equal
 a2-row-end-first-row refused Documents.Layout.DoesNotFit 180 at 3
 a2-row-end-first-row-cut open box td 'x0x1x2x3x4x5x6x7x8x9x10x' height 179.625, Chromium 180.047 (boxes.txt)
 a2-row-end-first-row-half-2col open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-6pt-below open page 2 'below' baseline 23.25 (laid out at 23.25), Chromium 26.25 (print.txt)
 a2-row-end-first-row-half-alone open 1 pages, Chromium 2 (print.txt)
 a2-row-end-first-row-half-block open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
 a2-row-end-first-row-half-break open page 3 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
@@ -118,6 +120,7 @@ b1-repeat open page 1 painted area: the pixel at (20.25, 171): Chromium paints i
 b2-split-row open box td 'r05' height 76.453, Chromium 304.734 (boxes.txt)
 b3-keep-group open page 1 painted area: the pixel at (20.25, 154.5): Chromium paints it and the engine does not; the engine paints 3289 px #000000, Chromium 3636 px (print.txt)
 b4-row-span open page 1 painted area: the pixel at (101.25, 171): Chromium paints it and the engine does not; the engine paints 2957 px #000000, Chromium 3196 px (print.txt)
+b4-row-span-6pt open page 2 painted area: the pixel at (153, 12): the engine paints it and Chromium does not; the engine paints 7632 px #000000, Chromium 6944 px (print.txt)
 b5-row-span-kept-cell open page 1 painted area: the pixel at (20.25, 120.75): Chromium paints it and the engine does not; the engine paints 1936 px #000000, Chromium 2283 px (print.txt)
 c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
 c-cell-orphan open box td 'a' height 35.625, Chromium 57.75 (boxes.txt)
