@@ -76,8 +76,9 @@ public enum FontMetricRounding
     /// (a length or a percentage rounded to it, a number times the font size floored), so pages can differ; a front-end
     /// that follows Chromium gives the line height in that unit, and then the pages are Chromium's (cases
     /// <c>f-length-*</c>, <c>f-letter-*</c>, <c>f-number-1501</c>). Chromium also paints each text baseline at a whole
-    /// pixel, which moves ink by at most half a pixel and never a line; the engine does not (docs/architecture.md,
-    /// "Against Chromium").
+    /// pixel, the nearest one, half up, which moves ink by at most half a pixel and never a line (case
+    /// <c>pm-snap-pitch</c>: lines 20.5 px apart from a top at 19.5 px have their baselines painted at 35 and 55 px); the
+    /// engine does not (docs/architecture.md, "Against Chromium").
     /// </summary>
     WholePixels,
 }

@@ -387,6 +387,9 @@ pm-inherit-family equal
 pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.308>301.008 at 6:18
 pm-overflow-tall equal
 pm-pages equal
+pm-snap-image open page 1 image 4 x0 50.25 (laid out at 49.992), Chromium 321 (print.txt)
+pm-snap-pitch equal
+pm-snap-text equal
 pm-start-12pt equal
 pm-start-25mm equal
 pm-tall-bottom equal

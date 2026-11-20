@@ -193,6 +193,32 @@ public class MarginBoxGenerationTests
         Word(printed, 1, "Bb").X0.Should().BeApproximately(81.727, 0.75 / 64, "20pt after the end of 'Aa', within Chromium's layout unit");
     }
 
+    /// <summary>Measured (case <c>pm-snap-pitch</c>: a line height of 20.5 px, two lines in each box, the alignment leaving
+    /// the content's top a quarter, a half or three quarters of a pixel past a whole one): Chromium paints each baseline
+    /// on the nearest whole pixel, half up, and leaves the lines where they are laid out. A top at 19.5 px gives baselines
+    /// at 35 and 55 px (34.5 and 55.0 rounded), where a top put on 20 px would give 35 and 56. The engine lays the lines
+    /// out unsnapped and paints the baseline where it is laid out (a documented limit,
+    /// <see cref="FontMetricRounding.WholePixels"/>), so its baselines rounded to the pixel are Chromium's.</summary>
+    [Fact]
+    public void Each_baseline_of_a_margin_box_is_laid_out_unsnapped_and_rounds_to_the_pixel_Chromium_paints_it_on()
+    {
+        var boxes = HtmlCases.Boxes("pm-snap-pitch").Value;
+        var engine = PrintedPages.Engine(DocumentLayout.Run(boxes.Document, boxes.Fonts).Value).Pages[0].Words.Where(word => word.Text != "Body").ToList();
+        var chromium = PrintedPages.Chromium("pm-snap-pitch").Pages[0].Words.Where(word => word.Text != "Body").ToList();
+
+        engine.Should().HaveCount(12);
+        foreach (var word in engine)
+        {
+            var measured = chromium.Single(other => other.Text == word.Text && Math.Abs(other.X0 - word.X0) < 0.1 && Math.Abs(other.Baseline - word.Baseline) < 0.75);
+            Math.Round(word.Baseline / 0.75, MidpointRounding.AwayFromZero).Should().Be(measured.Baseline / 0.75, $"'{word.Text}' at x {word.X0} is laid out at {word.Baseline / 0.75} px");
+        }
+
+        var right = engine.Where(word => word.X0 > 300 && word.Baseline < 60).Select(word => word.Baseline / 0.75).ToList();
+        right.Should().HaveCount(2);
+        right[0].Should().BeApproximately(34.5, 1e-9, "the top-right box's content starts 19.5 px down and its first baseline is 15 px below that");
+        right[1].Should().BeApproximately(55.0, 1e-9, "one line of 20.5 px further down");
+    }
+
     /// <summary>CSS Values 4 §4.5.1: a URL in a style sheet is resolved against that sheet's URL, a URL in the document's
     /// own style element against the document's.</summary>
     [Fact]
