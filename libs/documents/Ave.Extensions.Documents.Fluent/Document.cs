@@ -35,7 +35,8 @@ public sealed record Document(
     /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="FontSizeRounding(DocumentModel.FontSizeRounding)"/>,
     /// <see cref="LengthRounding(DocumentModel.LengthRounding)"/>, <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>,
     /// <see cref="TableEndOverflow(DocumentModel.TableEndOverflow)"/>, <see cref="BodyClip(DocumentModel.BodyClip)"/>,
-    /// <see cref="CellsBesideSlices(DocumentModel.CellsBesideSlices)"/> or
+    /// <see cref="CellsBesideSlices(DocumentModel.CellsBesideSlices)"/>,
+    /// <see cref="RepeatedHeaderRows(DocumentModel.RepeatedHeaderRows)"/>, <see cref="SliceRestEnd(DocumentModel.SliceRestEnd)"/> or
     /// <see cref="CutRowAlignment(DocumentModel.CutRowAlignment)"/>.</summary>
     public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
 
@@ -127,6 +128,25 @@ public sealed record Document(
     /// <param name="alignment">The policy.</param>
     /// <returns>A copy with the policy.</returns>
     public Document CutRowAlignment(CutRowAlignment alignment) => this with { Profile = Profile with { CutRowAlignment = alignment } };
+
+    /// <summary>
+    /// On which later pages of a table its repeated header rows are drawn, where a piece taller than the room below them
+    /// is sliced in one of its cells: above every slice (the default), or on every page where the table still lays
+    /// content out and not on a page that only shows the rest of a piece, as a browser (Chromium) prints it
+    /// (<see cref="DocumentModel.RepeatedHeaderRows"/>).
+    /// </summary>
+    /// <param name="rows">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document RepeatedHeaderRows(RepeatedHeaderRows rows) => this with { Profile = Profile with { RepeatedHeaderRows = rows } };
+
+    /// <summary>
+    /// Where the part of a table cell ends that holds nothing but the rest of a piece sliced on an earlier page: below its
+    /// half of the grid line below it (the default), or at the rest's end, the line centred on it, as a browser (Chromium)
+    /// prints it (<see cref="DocumentModel.SliceRestEnd"/>).
+    /// </summary>
+    /// <param name="end">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document SliceRestEnd(SliceRestEnd end) => this with { Profile = Profile with { SliceRestEnd = end } };
 
     /// <summary>
     /// Embeds a file in the document, for example its data as XML. Made with <see cref="Elements.Attachment"/>;

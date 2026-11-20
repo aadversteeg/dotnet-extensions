@@ -12,7 +12,8 @@ public sealed record LayoutProfile
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
     /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
-    /// <see cref="CellsBesideSlices.GoOn"/> and <see cref="CutRowAlignment.RestAlignedInItsPart"/>.</summary>
+    /// <see cref="CellsBesideSlices.GoOn"/>, <see cref="RepeatedHeaderRows.AboveEverySlice"/>,
+    /// <see cref="SliceRestEnd.InsideCell"/> and <see cref="CutRowAlignment.RestAlignedInItsPart"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -51,6 +52,70 @@ public sealed record LayoutProfile
     /// <summary>Where the content of a cell aligned <c>middle</c> or <c>bottom</c> goes on the later pages of a row that a
     /// page break cuts (<see cref="DocumentModel.CutRowAlignment"/>).</summary>
     public CutRowAlignment CutRowAlignment { get; init; } = CutRowAlignment.RestAlignedInItsPart;
+
+    /// <summary>On which later pages of a table its repeated header rows are drawn, where a piece taller than the room
+    /// below them is sliced in one of its cells (<see cref="DocumentModel.RepeatedHeaderRows"/>).</summary>
+    public RepeatedHeaderRows RepeatedHeaderRows { get; init; } = RepeatedHeaderRows.AboveEverySlice;
+
+    /// <summary>Where the part of a table cell ends that holds nothing but the rest of a piece sliced on an earlier page
+    /// (<see cref="DocumentModel.SliceRestEnd"/>).</summary>
+    public SliceRestEnd SliceRestEnd { get; init; } = SliceRestEnd.InsideCell;
+}
+
+/// <summary>
+/// Where the part of a table cell ends, in the collapsing border model, that continues from an earlier page and holds
+/// nothing but the rest of a piece sliced there (an image or a line taller than the room left, <see cref="MonolithicOverflow.Slice"/>):
+/// the rest's later slices, no other content, no padding below them. It decides where the grid line below the cell lies,
+/// and so where the table ends and what follows starts. Every other cell, and such a cell under either value on the page
+/// where the piece starts, holds its half of the line below it (CSS 2.1 §17.6.2).
+/// </summary>
+public enum SliceRestEnd
+{
+    /// <summary>The part holds its half of the line below it, as every cell does: the line starts where the rest ends.</summary>
+    InsideCell,
+
+    /// <summary>
+    /// The part ends where the rest ends, without its half of the line below it, so the line is centred on the rest's end,
+    /// as Chromium prints it. Measured against Chromium's print (<c>tools/reference/chromium</c>): below the rest of a
+    /// 228 pt image that ends at 76.125 pt the 0.75 pt line runs from 75.75 to 76.5 pt, where a whole cell's would run from
+    /// 76.125 to 76.875 pt (case <c>a4-header-image-228</c>; Chromium paints the image's end at the whole pixel, 76.5 pt),
+    /// and a 2.25 pt line from 75 to 77.25 pt (<c>a4-header-image-228-line3-below</c>); the text after the table starts
+    /// that much higher (<c>a4-header-image-row</c>, <c>a4-header-image-174</c>, <c>-180</c>); the same in a cell with a
+    /// background (<c>a4-header-image-228-background</c>), below the rest of a
+    /// line 240 pt tall (<c>a4-header-tall-line</c>) and of an image in a table nested in the cell
+    /// (<c>a4-header-nested-image-228</c>, the nested table's line). A part that lays content out on the page holds its
+    /// half under this value too (<c>a4-header-cut-text-row</c>, <c>a4-header-line2-25-cut-text-row</c>), and so does a
+    /// whole cell. Where the rest ends on a whole pixel, the two values print alike (<c>a4-noheader-image-228</c>).
+    /// </summary>
+    AtLineCentre,
+}
+
+/// <summary>
+/// On which later pages of a table its repeated header rows are drawn, where a piece in one of its body cells (an image,
+/// a line) is taller than the room below them (<see cref="MonolithicOverflow.Slice"/>). Only a table whose header rows
+/// repeat is concerned; nothing changes on its first page.
+/// </summary>
+public enum RepeatedHeaderRows
+{
+    /// <summary>The header rows are drawn above every slice, and each slice is as tall as the room below them; a piece
+    /// taller than that room but not than the page area goes on without them, whole.</summary>
+    AboveEverySlice,
+
+    /// <summary>
+    /// The header rows are drawn on every page where the table still lays content out, and not on a page that only shows
+    /// the rest of content laid out on an earlier page, as Chromium prints it. Chromium lays a piece out whole below the
+    /// header rows of the page where it starts, also one no taller than the page area, and lets it pass the page end; on a
+    /// later page where nothing of the table is left but the rest of such pieces, it draws no header rows, and the rest
+    /// starts at the top of the page area. Measured against Chromium's print (<c>tools/reference/chromium</c>): a 228 pt
+    /// image below one or two header rows (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>), as the second
+    /// body row (<c>a4-header-row-image-228</c>), a 408 pt image (<c>a4-header-image-row</c>), a line 240 pt tall
+    /// (<c>a4-header-tall-line</c>), images of 170, 174 and 180 pt, taller than the room below the header row and no
+    /// taller than the page area (<c>a4-header-image-170</c>, <c>-174</c>, <c>-180</c>). Where the table has rows still to
+    /// come or a cell beside the piece goes on (<c>a4-header-image-360-image</c>, <c>a4-header-image-beside-lines</c>),
+    /// Chromium draws the header rows over the slice at the top of the page; the engine draws them above it, the slice
+    /// below them, an open difference (docs/architecture.md, "Known limits", monolithic content taller than the page).
+    /// </summary>
+    WhereContentIsLaidOut,
 }
 
 /// <summary>
@@ -332,6 +397,9 @@ public enum EmptyRowParts
     /// where one of its cells that starts on the page has no room there for its top border and padding, or for its first
     /// line below them: that cell has no breakpoint on the page, and the row moves to the next page whole where a break
     /// before it is valid, also beside a cell whose first line fits (cases <c>fr-row-later-padding-*</c>,
-    /// <c>fr-row-later-page-padding-overflows</c>, <c>a2-row-end-nested-under-header</c>).</summary>
+    /// <c>fr-row-later-page-padding-overflows</c>, <c>a2-row-end-nested-under-header</c>). Below header
+    /// rows that repeat, a page does not end with the header alone where the first body row's content (an image, a line)
+    /// does not fit below the header: the row is cut before it, its cells empty down to the page end, as Chromium prints
+    /// it (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>, <c>a4-header-row-image-row</c>).</summary>
     Allow,
 }

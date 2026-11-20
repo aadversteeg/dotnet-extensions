@@ -168,7 +168,7 @@ public class HtmlListedDifferenceTests
 
         engine.Pages.Select(page => page.Text).Should().Equal(chromium.Pages.Select(page => page.Text));
         var pairs = engine.Pages.SelectMany(page => page.Words).Zip(chromium.Pages.SelectMany(page => page.Words)).ToList();
-        pairs.Should().OnlyContain(pair => pair.First.Page == pair.Second.Page && Math.Abs((Math.Round(pair.First.Baseline / 0.75, MidpointRounding.AwayFromZero) * 0.75) - pair.Second.Baseline) < HtmlCases.Bound,
+        pairs.Should().OnlyContain(pair => pair.First.Page == pair.Second.Page && Math.Abs(ChromiumLayout.WholePixel(pair.First.Baseline) - pair.Second.Baseline) < HtmlCases.Bound,
             "every word is on Chromium's page and baseline, which Chromium paints at the nearest whole pixel");
         var column = (PrintedWord theirs) => chromiumLines.Count(line => line <= theirs.X0) - 1;
         var shifts = pairs.GroupBy(pair => column(pair.Second)).ToDictionary(group => group.Key, group => group.First().First.X0 - group.First().Second.X0);
@@ -263,7 +263,8 @@ public class HtmlListedDifferenceTests
     /// pins the same pages): a difference that follows from two stated rules. A row span's missing height goes to its
     /// last row (docs/architecture.md, "Deliberate deviations from CSS"), so the engine keeps "b"'s row on the first page
     /// (baseline 40.5 pt) where Chromium, which spreads that height over the spanned rows, puts it beside the first slice
-    /// (49.5 pt on page 2); and what follows the image's row starts below the last slice (72.75 pt on page 4) where
+    /// (49.5 pt on page 2); and what follows the image's row starts below the last slice (72.375 pt on page 4, below the
+    /// line centred on the slice's end, <c>SliceRestEnd.AtLineCentre</c>; printed at 72.75) where
     /// Chromium draws it over the second slice (73.5 pt on page 3; the limit of
     /// <see cref="What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices"/>).
     /// The slices are the same on every page.
@@ -280,7 +281,7 @@ public class HtmlListedDifferenceTests
         engine.Pages.Select(page => page.Images).Should().BeEquivalentTo(chromium.Pages.Select(page => page.Images), options => options.WithStrictOrdering(), "the slices are the same");
         (At(engine, "a"), At(chromium, "a")).Should().Be(((1, 24.75), (1, 24.75)));
         (At(engine, "b"), At(chromium, "b")).Should().Be(((1, 40.5), (2, 49.5)));
-        (At(engine, "after"), At(chromium, "after")).Should().Be(((4, 72.75), (3, 73.5)));
+        (At(engine, "after"), At(chromium, "after")).Should().Be(((4, 72.375), (3, 73.5)));
         At(engine, "after").Baseline.Should().BeGreaterThan(engine.Pages[3].Images.Single().Y1, "the next row comes below the last slice");
         At(chromium, "after").Baseline.Should().BeLessThan(chromium.Pages[2].Images.Single().Y1, "Chromium draws it over the slice");
     }
@@ -332,11 +333,54 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A repeated header row over a slice: on a later page where a table repeats its header rows and goes on with the
+    /// slices of a piece taller than the page area (a row still to come), Chromium still moves the piece up a whole page
+    /// area, so the slice starts at the top of the page area, and draws the header over it, over 16.5 pt of the piece that
+    /// are never shown. The engine draws the header, then the slice below it, so the whole piece shows once
+    /// (docs/architecture.md, "Known limits"). That is the whole difference: on the pages before, both print the same; on
+    /// the pages of the slices the header lies over the slice in Chromium and above it in the engine; what follows the
+    /// slices in the table starts that much lower in the engine, and where Chromium starts the next row in an empty part
+    /// below the header on the page of the last slice, that row goes on half a grid line higher on the next page than the
+    /// engine's, which starts it there (0.375 pt, within the comparison's whole pixel until the end of the table).
+    /// Cases: a 360 pt image, then a 408 pt image (<c>a4-header-image-360-image</c>, pages 3 and 4); a row, a 408 pt image,
+    /// a row (<c>a4-header-row-image-row</c>, pages 4 and 5); a 408 pt image, a row, a 408 pt image
+    /// (<c>a4-header-image-row-image</c>, pages 3 and 4); two 408 pt images (<c>a4-header-two-image-rows</c>, pages 3 and 4).
+    /// </summary>
+    /// <param name="name">The case.</param>
+    /// <param name="first">The first page where the header is repeated over a slice.</param>
+    /// <param name="last">The last such page.</param>
+    [Theory]
+    [InlineData("a4-header-image-360-image", 3, 4)]
+    [InlineData("a4-header-row-image-row", 4, 5)]
+    [InlineData("a4-header-image-row-image", 3, 4)]
+    [InlineData("a4-header-two-image-rows", 3, 4)]
+    public void A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice(string name, int first, int last)
+    {
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        var before = (PrintedPages pages) => new PrintedPages([.. pages.Pages.Take(first - 1)]);
+
+        engine.Pages.Length.Should().Be(chromium.Pages.Length);
+        HtmlCases.Difference(before(engine), before(chromium)).Should().BeNull("the pages before the slices are the same");
+        for (var number = first; number <= last; number++)
+        {
+            var (ours, theirs) = (engine.Pages[number - 1], chromium.Pages[number - 1]);
+            theirs.Words.Single(word => word.Text == "H").Baseline.Should().Be(24.75);
+            theirs.Images.Single().Y0.Should().Be(12, "Chromium's slice starts at the top of the page area");
+            theirs.Images.Single().Y1.Should().BeGreaterThanOrEqualTo(28.5, "and the header is drawn over it (the last slice of the 360 pt image lies wholly under it)");
+            ours.Words.Single(word => word.Text == "H").Baseline.Should().Be(24.75);
+            ours.Images.Single().Y0.Should().BeApproximately(28.125, 1e-6, "the engine's slice starts below the header, at the centre of its line");
+        }
+
+        HtmlCases.Difference(engine, chromium).Should().NotBeNull();
+    }
+
+    /// <summary>
     /// What follows the row of an image sliced over pages in a table cell: Chromium lays the image out whole on the page
     /// where it starts, ends the row on the next page as tall as the rest of the image, and starts what follows there:
     /// in a row of two or more cells the next row, and after any table the content after it, below the row's end, or at
     /// the top of the next page, drawn over the slices still to come. The engine starts what follows below the last
-    /// slice, so no text is drawn over an image (docs/architecture.md, "Known limits"). That place is the whole
+    /// slice, so no text is drawn over an image (docs/architecture.md, "Known limits"); it centres the line that ends the
+    /// row on the end of the last slice (<c>SliceRestEnd.AtLineCentre</c>), which prints where Chromium's is. That place is the whole
     /// difference: the engine's print with what follows the slice moved up to Chromium's place (from the engine's page
     /// to Chromium's, by the difference of the first word's baseline) is Chromium's, compared as every case is
     /// (<see cref="HtmlCases.Difference"/>). The engine draws a column's grid line as one rectangle down through the
@@ -360,11 +404,11 @@ public class HtmlListedDifferenceTests
     /// <param name="linesApart">How far below the line at the slice's bottom edge the engine draws the outer row's line,
     /// where Chromium draws both in one place; 0 where there is one line.</param>
     [Theory]
-    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.75, 0)]
-    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.75, 0)]
-    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.75, 0)]
-    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 71.25, 0)]
-    [InlineData("a4-image-nested-table", "after", 4, 24.75, 4, 73.5, 0.75)]
+    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.375, 0)]
+    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.375, 0)]
+    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.375, 0)]
+    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 70.875, 0)]
+    [InlineData("a4-image-nested-table", "after", 4, 24.75, 4, 73.125, 0.75)]
     public void What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices(
         string name, string first, int chromiumPage, double chromiumBaseline, int enginePage, double engineBaseline, double linesApart)
     {
@@ -378,19 +422,19 @@ public class HtmlListedDifferenceTests
         engineBaseline.Should().BeGreaterThan(sliceEnd(engine, enginePage), "the engine starts it below the last slice");
         HtmlCases.Difference(engine, chromium).Should().NotBeNull();
 
-        // Every word below the last slice moves, and every rectangle below the line at the slice's bottom edge, which
-        // both draw (it ends the sliced row); a column's line that runs on through that edge is split there. An outer
-        // row's line drawn below it is first lifted onto it, as Chromium draws it.
+        // Every word below the last slice moves, and every rectangle below the line centred on the slice's bottom edge,
+        // which both draw (it ends the sliced row, SliceRestEnd.AtLineCentre); a column's line that runs on through it is
+        // split there. An outer row's line drawn below it is first lifted onto it, as Chromium draws it.
         var from = sliceEnd(engine, enginePage);
         var source = engine.Pages[enginePage - 1];
-        var across = (PrintedBox line, double y) => Math.Abs(line.Y0 - y) < 0.01 && line.X1 - line.X0 > line.Height;
+        var across = (PrintedBox line, double y) => Math.Abs(((line.Y0 + line.Y1) / 2) - y) < 0.01 && line.X1 - line.X0 > line.Height;
         var lifted = source.Rectangles.Where(line => across(line, from + linesApart)).ToList();
         lifted.Should().NotBeEmpty("the line that ends the sliced row");
         if (linesApart > 0)
         {
             source.Rectangles.Should().Contain(line => across(line, from), "the inner table's bottom line");
-            chromium.Pages[enginePage - 1].Rectangles.Where(line => across(line, from)).Should().HaveCountGreaterThanOrEqualTo(2, "Chromium draws the inner and the outer line in one place");
-            chromium.Pages[enginePage - 1].Rectangles.Should().NotContain(line => across(line, from + linesApart));
+            chromium.Pages[enginePage - 1].Rectangles.Where(line => Math.Abs(line.Y0 - ChromiumLayout.WholePixel(from - (line.Height / 2))) < 0.01 && line.X1 - line.X0 > line.Height)
+                .Should().HaveCountGreaterThanOrEqualTo(2, "Chromium draws the inner and the outer line in one place");
         }
 
         var cut = lifted.Max(line => line.Y1);

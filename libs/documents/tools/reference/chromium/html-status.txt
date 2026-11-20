@@ -68,39 +68,58 @@ a4-cell-pad3-image-177 equal
 a4-cell-pad3-line-177 equal
 a4-continued-cell-pad-bottom-30 equal
 a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header: 2 pages, Chromium 3 (print.txt)
-a4-header-cut-row-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-empty-rowspan-line-image open page 2 painted area: the pixel at (12, 13.5): Chromium paints it and the engine does not; the engine paints 736 px #000000, Chromium 1450 px (print.txt)
-a4-header-image-150-image open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-image-360-image open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-image-row open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-image-row-image open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-row-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-rows-fill-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-rows-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-tall-line open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-two-image-rows open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-cut-row-image-row equal
+a4-header-cut-text-row equal
+a4-header-empty-rowspan-line-image equal
+a4-header-image-150-image equal
+a4-header-image-153 equal
+a4-header-image-170 equal
+a4-header-image-174 equal
+a4-header-image-180 equal
+a4-header-image-228 equal
+a4-header-image-228-background open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-image-228-beside-line open page 1 reads 'H G', Chromium 'H G beside' (print.txt)
+a4-header-image-228-line3-below equal
+a4-header-image-360-image listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
+a4-header-image-beside-lines open 5 pages, Chromium 4 (print.txt)
+a4-header-image-row equal
+a4-header-image-row-image listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
+a4-header-line2-25-cut-text-row equal
+a4-header-line2-25-image-228 equal
+a4-header-line6-image-228 equal
+a4-header-nested-image-228 open 5 pages, Chromium 3 (print.txt)
+a4-header-row-image-228 equal
+a4-header-row-image-row listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
+a4-header-rows-fill-image-row equal
+a4-header-rows-image-row equal
+a4-header-tall-line equal
+a4-header-two-image-rows listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
+a4-header-unrepeated-image-228 equal
+a4-header2-image-228 equal
 a4-image-177-block-padding-3 equal
 a4-image-after-text equal
 a4-image-beside-lines equal
 a4-image-block-padding-133 equal
 a4-image-block-padding-60 equal
 a4-image-first equal
-a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
-a4-image-nested-table listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 73.5 (laid out at 73.5), Chromium 24.75 (print.txt)
+a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)
+a4-image-nested-table listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 73.5 (laid out at 73.125), Chromium 24.75 (print.txt)
 a4-image-rowspan listed An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells: page 1 reads 'a b', Chromium 'a' (print.txt)
 a4-image-single-cell equal
-a4-intro-header-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-intro-header-image-row equal
 a4-line-after-text equal
 a4-line-beside-lines listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'p0' x0 220.594, Chromium 150.375 (print.txt)
 a4-nested-padded-image-160 equal
-a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
+a4-noheader-image-228 equal
+a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)
+a4-row-line3-image-228 equal
 a4-slice-near-end-beside-lines equal
 a4-slice-near-end-block equal
 a4-slice2-beside-lines equal
 a4-slice2-cell-para-after equal
 a4-slice2-cell-row-after equal
 a4-slice4-cell-row-after listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 reads '', Chromium 'after a' (print.txt)
-a4-two-image-rows listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 8 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
+a4-two-image-rows listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 8 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)
 a5-cell-in-row equal
 a5-kept-cell-by-box equal
 a5-kept-cell-in-row equal

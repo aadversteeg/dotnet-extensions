@@ -605,7 +605,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -831,6 +831,15 @@ Each is documented next to its code as well.
   the outer row as tall as the rest of the image as well, which comes with drawing over the slices; the test states
   the 0.75 pt and finds no other difference. The other cells of the
   image's row go on below the slices, as Chromium prints them (`CellsBesideSlices.Below`).
+- **A repeated header row over a slice (HTML):** on a later page where a table repeats its header rows and goes on with
+  the slices of a piece taller than the page area (a row still to come), Chromium still moves the piece up a whole page
+  area, so the slice starts at the top of the page area (12 pt), and draws the header over it: 16.5 pt of the piece are
+  never shown. The engine draws the header, then the slice below it (28.125 pt), so the piece shows whole and once, and
+  what follows the slices in the table starts that much lower; where Chromium starts the next row in an empty part below
+  the header on the page of the last slice, that row goes on 0.375 pt higher on the next page than the engine's, which
+  starts it there. That is the whole difference (cases `a4-header-image-360-image`, `a4-header-row-image-row`,
+  `a4-header-image-row-image`, `a4-header-two-image-rows`, listed; `HtmlListedDifferenceTests`). A writer does not want
+  a header over an image, so the engine does not copy it.
 - **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
   column without a width they are refused, as are widths on cells and column groups. A percent column is never
@@ -1163,15 +1172,48 @@ Each is documented next to its code as well.
   comes below the last slice (case `a4-image-rowspan`; Chromium breaks between the spanned rows and draws the next row
   over the slice).
   Under a repeated header row the content is sliced right below the header, on a page after one that showed no body row
-  other than slices of a piece that was itself sliced; after a page that did show one, the page holds only the header
-  and the row moves on once. That page with only the header is Chromium's: the first slice starts on Chromium's page and
-  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
+  other than slices of a piece that was itself sliced; after a page that did show one, the page before the first slice
+  ends below the header and the row moves on once. That page is Chromium's: the first slice starts on Chromium's page
+  and at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
   each with a header of at most a quarter of the page area; a taller header is not repeated (above), and the piece is
-  sliced as without a header.
-  **Deliberate deviation from Chromium:** on the later pages the engine repeats the header above every slice and makes
-  each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
-  page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt
-  of the content that are never shown (`a4-header-row-image-row`).
+  sliced as without a header. Chromium never ends a page with a header that repeats alone: it cuts the first body row
+  below it and draws the row's cells empty down to the page end, their side lines and no line below them
+  (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-tall-line`, `a4-header-row-image-row`, and so every
+  `a4-header-*` case); a header that does not repeat ends its page alone (`a4-header-unrepeated-image-228`). Under
+  `EmptyRowParts.Allow`, the HTML front-end's value, the engine cuts the row there too, where the row's cells draw
+  nothing on that page; under `Avoid`, the code front-end's default, that page holds the header alone, and so it does
+  under `Allow` where a cell of the row would draw something on it (`fr-header-pad-box-72` above, where Chromium cuts
+  the row; with an image beside text, not measured). The cut row's cells then go on below the header on the next page,
+  where the part of a cell that continues starts at the centre of the grid line below the header, as in Chromium: below
+  a 0.75 pt line at 28.125 pt, half a pixel below a whole one, which Chromium paints at the next whole pixel, 28.5 pt
+  (`a4-header-image-228`; "c10" at 40.125 pt, painted at 40.5 pt, `a4-header-cut-row-image-row`; below a 2.25 pt line
+  28.875 pt, painted at 29.25 pt, `a4-header-line2-25-image-228`, `a4-header-line2-25-cut-text-row`). That is the
+  paint, not the layout: where the engine lays a baseline, an image edge or an edge of a horizontal grid line out half
+  a pixel below a whole one, Chromium paints it at the next whole pixel in every case, except at the end of the rest of
+  a sliced piece, which follows. On the page where a cell's part
+  holds nothing but the rest of a piece sliced on an earlier page, Chromium ends the part where the rest ends, without
+  its half of the grid line below it, so the line is centred on the rest's end (a 0.75 pt line at 75.75–76.5 pt below a
+  rest that ends at 76.125 pt, `a4-header-image-228`; a 2.25 pt line at 75–77.25 pt, `a4-header-image-228-line3-below`;
+  the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; in a cell with a
+  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, both open for
+  other reasons). A part that lays content out on
+  the page keeps its half (`a4-header-cut-text-row`). Under `SliceRestEnd.AtLineCentre`, the HTML front-end's value,
+  the engine does the same (`Tracks/TableSegments.cs`, `AtRestEnd`; `SliceRestEndTests`); under `InsideCell`, the code
+  front-end's default, the part holds its half as every cell does, and the line starts where the rest ends.
+  On the later pages the policy `RepeatedHeaderRows` decides. Chromium lays the piece out whole below the header of the
+  page where it starts, also a piece no taller than the page area, and lets it pass the page end; it repeats the header
+  on every later page where the table still lays content out (a row still to come, a cell beside the piece that goes on),
+  and not on a page that only shows the rest of content laid out before: there the rest starts at the top of the page
+  area (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-row-image-228`, `a4-header-image-row`,
+  `a4-header-tall-line`, `a4-header-image-170`, `-174`, `-180`). Under `WhereContentIsLaidOut`, the HTML front-end's
+  value, the engine does the same (`SliceUnderHeaderTests`). Under `AboveEverySlice`, the code front-end's default, a
+  deliberate deviation from Chromium, the engine repeats the header above every slice and makes each slice as tall as the
+  room below it, so the content is shown whole and once, and a piece taller than the room below the header but not than
+  the page area goes on without the header. Under both values, on a page where the header is repeated over a slice,
+  Chromium still moves the content up a whole page area and draws the header over 16.5 pt of it, which are never shown;
+  the engine draws the header above the slice, the slice below it (Known limits, "A repeated header row over a slice").
+  With text beside the image (`a4-header-image-beside-lines`, open) the engine also differs on the first page: it leaves
+  the header alone where the cut row's other cell would draw text, where Chromium starts the row.
   A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
   grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
   taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases
@@ -1261,8 +1303,8 @@ Each is documented next to its code as well.
   a pixel one pixel thick from its top edge, which gives Chromium's pixels, and moves nothing (cases `a2-cells-end`,
   `a2-row-break-line-1-5pt`, `a2-row-break-line-2-25pt`; `TableBreakLineHalfTests`). Where a cell that spans rows
   continues over the break, the next page draws nothing of the line, in any column, and keeps the half's room (case
-  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt lower in Chromium than in the
-  engine; a difference of layout, pinned in `RowPartTests`; `Clone`, the code front-end's default for tables, ends the
+  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt, half a pixel, below the
+  page area's top, and Chromium paints its text at the next whole pixel, 0.375 pt lower (pinned in `RowPartTests`); `Clone`, the code front-end's default for tables, ends the
   page with the whole line and starts the next page with it again (the engine's own rule for collapsed borders,
   modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
   break inside a row, `Slice` draws no line at the cut (a box cut by a break gets no border there); `Clone` closes the
