@@ -150,7 +150,7 @@ dl-lato equal
 dl-lato-bold equal
 dl-lato-italic equal
 dl-lines equal
-dl-nest open page 1 painted area: the pixel at (39.75, 26.25): the engine paints it #000000, Chromium #cc0000; the engine paints 518 px #000000, Chromium 519 px (print.txt)
+dl-nest equal
 dl-skip equal
 dl-space refused Documents.Html.Unsupported.Value width: 40pt at 6:1
 dl-theano equal
@@ -287,9 +287,9 @@ h-kerning-normal equal
 h-media-page-size-narrow equal
 h-media-page-size-wide equal
 h-page-a4-margin-px equal
-h-page-a4-zero-justify listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: page 1 'sit' x1 116.494, Chromium 116.599 (print.txt)
+h-page-a4-zero-justify listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: page 1 'sit' x0 104.114, Chromium 104.215 (print.txt)
 h-page-a4-zero-lines listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: 2 pages, Chromium 1 (print.txt)
-h-page-a4-zero-right listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: page 1 'right' x0 541.95, Chromium 542.484 (print.txt)
+h-page-a4-zero-right listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: page 1 'right' x0 541.944, Chromium 542.484 (print.txt)
 h-page-area-bottom equal
 h-page-area-continued equal
 h-page-area-half equal
@@ -313,7 +313,7 @@ h-page-size-legal equal
 h-page-size-letter equal
 h-page-size-mm equal
 h-root-display-none equal
-h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.022, Chromium 290.241 (print.txt)
+h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.019, Chromium 290.241 (print.txt)
 h-wide-word-much listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 reads 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after', Chromium 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after' (print.txt)
 hb-anonymous equal
 hb-display-none equal
@@ -376,17 +376,17 @@ mf4-line-150 equal
 mf4-line-225 equal
 pm-defaults equal
 pm-empty equal
-pm-family-unused listed A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face: page 1 'Cc' x1 61.322, Chromium 61.65 (print.txt)
+pm-family-unused listed A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face: page 1 'Cc' x1 61.32, Chromium 61.65 (print.txt)
 pm-inherit equal
 pm-inherit-family equal
-pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.308>301.008 at 7:18
+pm-overflow refused Documents.Layout.MarginBoxOverflow width: 313.313>301.008 at 7:18
 pm-pages equal
 pm-start-12pt refused Documents.Html.Unsupported.PageRule "Aa" at 8:15
 pm-start-25mm refused Documents.Html.Unsupported.PageRule "Aa" at 8:15
-pm-width open page 1 painted area: the pixel at (306.75, 0): the engine paints it #ff0000, Chromium #00ff00; the engine paints 35600 px #ff0000, Chromium 35520 px (print.txt)
+pm-width equal
 pm-zero equal
 pm-zero-alone equal
-sk-extreme open page 1 'gạọụ' x1 53.504, Chromium 54.417 (print.txt)
+sk-extreme open page 1 'gạọụ' x1 53.489, Chromium 54.417 (print.txt)
 sk-lato equal
 sk-lato-bold equal
 sk-lato-italic equal
@@ -404,15 +404,15 @@ sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
-ta-items open page 1 'l' x0 229.1, Chromium 228.997 (print.txt)
-ta-items-fit open page 1 'l' x0 229.1, Chromium 228.997 (print.txt)
-ta-items-right open page 1 'a' x0 244.588, Chromium 244.758 (print.txt)
+ta-items equal
+ta-items-fit equal
+ta-items-right equal
 ta-kerning refused Documents.Css.Unsupported.Value font-kerning: none at 6:28
 ta-kerning-scale refused Documents.Css.Unsupported.Value font-kerning: none at 5:31
-ta-marks open page 1 'x́x́x́' x1 119.628, Chromium 119.525 (print.txt)
-ta-px open page 1 'iiiiiiiiii' x1 111.495, Chromium 111.395 (print.txt)
-ta-right open page 1 'Water' x0 322.088, Chromium 322.348 (print.txt)
-ta-sizes open page 1 'WWWWW' x0 113.432, Chromium 113.332 (print.txt)
+ta-marks equal
+ta-px equal
+ta-right equal
+ta-sizes equal
 te-bottom open box table 't' is not one element with that id that starts its line (boxes.txt)
 te-break open box table 't' is not one element with that id that starts its line (boxes.txt)
 te-left-first open box table 't' is not one element with that id that starts its line (boxes.txt)
@@ -437,7 +437,7 @@ tj-outer open box table 't' is not one element with that id that starts its line
 tj-right-edge open box table 't' is not one element with that id that starts its line (boxes.txt)
 tj-same-cell open box table 't' is not one element with that id that starts its line (boxes.txt)
 tj-top-edge open box table 't' is not one element with that id that starts its line (boxes.txt)
-tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.485, Chromium 200.238 (print.txt)
+tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.49, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
 tp-beside-auto equal
 tp-beside-length refused Documents.Html.Unsupported.Value width: 30% at 4:42
